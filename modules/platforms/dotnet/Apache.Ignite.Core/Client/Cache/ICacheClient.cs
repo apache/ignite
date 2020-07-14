@@ -444,35 +444,5 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <param name="continuousQuery">Continuous query.</param>
         /// <returns>Handle to stop query execution.</returns>
         IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery);
-
-        /// <summary>
-        /// Start continuous query execution.
-        /// </summary>
-        /// <param name="continuousQuery">Continuous query.</param>
-        /// <param name="initialQry">
-        /// The initial query. This query will be executed before continuous listener is registered which allows
-        /// to iterate through entries which have already existed at the time continuous query is executed.
-        /// </param>
-        /// <returns>
-        /// Handle to get initial query cursor or stop query execution.
-        /// </returns>
-        IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery,
-            ScanQuery<TK, TV> initialQry);
-
-        /// <summary>
-        /// Start continuous query execution.
-        /// </summary>
-        /// <param name="continuousQuery">Continuous query.</param>
-        /// <param name="initialQry">
-        /// The initial fields query. This query will be executed before continuous listener is registered which allows
-        /// to iterate through entries which have already existed at the time continuous query is executed.
-        /// </param>
-        /// <returns>
-        /// Handle to get initial query cursor or stop query execution.
-        /// </returns>
-        IContinuousQueryHandleFieldsClient QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery,
-            SqlFieldsQuery initialQry);
     }
 }

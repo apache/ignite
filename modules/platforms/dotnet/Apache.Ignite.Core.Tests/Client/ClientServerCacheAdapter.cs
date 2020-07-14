@@ -304,17 +304,5 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             throw new NotImplementedException();
         }
-
-        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery, ScanQuery<TK, TV> initialQry)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IContinuousQueryHandleFieldsClient QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

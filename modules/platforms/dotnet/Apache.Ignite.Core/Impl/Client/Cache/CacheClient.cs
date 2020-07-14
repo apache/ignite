@@ -646,39 +646,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery,
-            ScanQuery<TK, TV> initialQry)
-        {
-            IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
-            IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
-            IgniteArgumentCheck.NotNull(initialQry, "initialQry");
-
-            return QueryContinuousInternal(
-                continuousQuery,
-                writeInitialQueryAction: ctx =>
-                {
-                    ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
-
-                    WriteScanQuery(ctx.Writer, initialQry);
-                });
-        }
-
-        /** <inheritDoc /> */
-        public IContinuousQueryHandleFieldsClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery,
-            SqlFieldsQuery initialQry)
-        {
-            return QueryContinuousInternal(
-                continuousQuery,
-                writeInitialQueryAction: ctx =>
-                {
-                    ctx.Writer.WriteByte((byte) InitialQueryType.Sql);
-
-                    WriteSqlFieldsInitialQuery(ctx.Writer, initialQry);
-                },
-                columnsFunc: ctx => ctx.Reader.ReadStringCollection());
-        }
-
-        /** <inheritDoc /> */
         [ExcludeFromCodeCoverage]
         public T DoOutInOpExtension<T>(int extensionId, int opCode, Action<IBinaryRawWriter> writeAction,
             Func<IBinaryRawReader, T> readFunc)

@@ -365,19 +365,5 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             throw new System.NotImplementedException();
         }
-
-        /** <inheritDoc /> */
-        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery, ScanQuery<TK, TV> initialQry)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        /** <inheritDoc /> */
-        public IContinuousQueryHandleFieldsClient QueryContinuous(
-            ContinuousQueryClient<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 }
