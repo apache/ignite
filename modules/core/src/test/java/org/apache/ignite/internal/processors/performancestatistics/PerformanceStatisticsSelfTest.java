@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import javax.cache.processor.EntryProcessor;
@@ -28,15 +32,18 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOCK;
@@ -44,7 +51,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
-import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  * Tests performance statistics.
@@ -69,8 +75,14 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         }
     };
 
+    /** Cache entry count. */
+    private static final int ENTRY_COUNT = 100;
+
     /** Ignite. */
     private static IgniteEx ignite;
+
+    /** Test cache. */
+    private static IgniteCache<Object, Object> cache;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -89,24 +101,17 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCompute() throws Exception {
-        String taskName = "testTask";
+        String testTaskName = "testTask";
         int executions = 5;
-
-        LogListener taskLsnr = matches(s -> s.startsWith("task") &&
-            s.contains("nodeId=" + ignite.context().localNodeId()) &&
-            s.contains("taskName=" + taskName)).times(executions).build();
-
-        LogListener jobLsnr = matches(s -> s.startsWith("job") &&
-            s.contains("nodeId=" + ignite.context().localNodeId())).times(executions).build();
 
         startCollectStatistics();
 
@@ -117,9 +122,47 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         };
 
         for (int i = 0; i < executions; i++)
-            ignite.compute().withName(taskName).run(task);
+            ignite.compute().withName(testTaskName).run(task);
 
-        stopCollectStatisticsAndCheck(taskLsnr, jobLsnr);
+        HashMap<IgniteUuid, Integer> sessions = new HashMap<>();
+        AtomicInteger tasks = new AtomicInteger();
+        AtomicInteger jobs = new AtomicInteger();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+                int affPartId) {
+                sessions.compute(sesId, (uuid, val) -> val == null ? 1 : ++val);
+
+                tasks.incrementAndGet();
+
+                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(testTaskName, taskName);
+                assertTrue(startTime > 0);
+                assertTrue(duration >= 0);
+                assertEquals(-1, affPartId);
+            }
+
+            @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+            boolean timedOut) {
+                sessions.compute(sesId, (uuid, val) -> val == null ? 1 : ++val);
+
+                jobs.incrementAndGet();
+
+                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertTrue(queuedTime >= 0);
+                assertTrue(startTime > 0);
+                assertTrue(duration >= 0);
+                assertFalse(timedOut);
+            }
+        });
+
+        assertEquals(executions, tasks.get());
+        assertEquals(executions, jobs.get());
+
+        Collection<Integer> vals = sessions.values();
+
+        assertEquals(executions, vals.size());
+        assertTrue("Invalid sessions: " + sessions, vals.stream().allMatch(val -> val == 2));
     }
 
     /** @throws Exception If failed. */
@@ -134,6 +177,9 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         checkCacheOperation(CACHE_GET, cache -> cache.get(1));
         checkCacheOperation(CACHE_GET, cache -> cache.getAsync(2).get());
 
+        checkCacheOperation(CACHE_GET_AND_PUT, cache -> cache.getAndPut(1, 1));
+        checkCacheOperation(CACHE_GET_AND_PUT, cache -> cache.getAndPutAsync(2, 2).get());
+
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
 
@@ -143,15 +189,18 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
 
+        checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
+        checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemoveAsync(6).get());
+
         checkCacheOperation(CACHE_LOCK, cache -> {
-            Lock lock = cache.lock(5);
+            Lock lock = cache.lock(7);
 
             lock.lock();
             lock.unlock();
         });
 
         checkCacheOperation(CACHE_LOCK, cache -> {
-            Lock lock = cache.lockAll(Collections.singleton(5));
+            Lock lock = cache.lockAll(Collections.singleton(8));
 
             lock.lock();
             lock.unlock();
@@ -174,17 +223,26 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** Checks cache operation. */
     private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
-        LogListener lsnr = matches(s -> s.startsWith("cacheOperation") &&
-            s.contains("nodeId=" + ignite.context().localNodeId()) &&
-            s.contains("type=" + op) &&
-            s.contains("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId()))
-            .times(1).build();
-
         startCollectStatistics();
 
-        clo.accept(ignite.cache(DEFAULT_CACHE_NAME));
+        clo.accept(cache);
 
-        stopCollectStatisticsAndCheck(lsnr);
+        AtomicInteger ops = new AtomicInteger();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
+                long duration) {
+                ops.incrementAndGet();
+
+                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(op, type);
+                assertEquals(ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId(), cacheId);
+                assertTrue(startTime > 0);
+                assertTrue(duration >= 0);
+            }
+        });
+
+        assertEquals(1, ops.get());
     }
 
     /** @throws Exception If failed. */
@@ -197,13 +255,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** @param commited {@code True} if check transaction commited. */
     private void checkTx(boolean commited) throws Exception {
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
         int cacheId = ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId();
-
-        LogListener lsnr = matches(s -> s.startsWith("transaction") &&
-            s.contains("nodeId=" + ignite.context().localNodeId()) &&
-            s.contains("cacheIds=[" + cacheId + ']') &&
-            s.contains("commited=" + commited)).times(1).build();
 
         startCollectStatistics();
 
@@ -217,6 +269,22 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 tx.rollback();
         }
 
-        stopCollectStatisticsAndCheck(lsnr);
+        AtomicInteger txs = new AtomicInteger();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+                boolean txCommited) {
+                txs.incrementAndGet();
+
+                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(1, cacheIds.size());
+                assertEquals(cacheId, cacheIds.get(0));
+                assertTrue(startTime > 0);
+                assertTrue(duration >= 0);
+                assertEquals(commited, txCommited);
+            }
+        });
+
+        assertEquals(1, txs.get());
     }
 }

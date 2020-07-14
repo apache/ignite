@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.File;
 import java.lang.management.ThreadInfo;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
-import static org.apache.ignite.internal.processors.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -65,32 +64,26 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().startCollectStatistics();
+        statisticsMBean(ignite.name()).start();
 
         waitForStatisticsEnabled(true);
     }
 
-    /** Stops collecting performance statistics and checks listeners. */
-    protected static void stopCollectStatisticsAndCheck(LogListener... lsnrs) throws Exception {
+    /** Stops and reads collecting performance statistics. */
+    protected static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().stopCollectStatistics();
+        statisticsMBean(ignite.name()).stop();
 
         waitForStatisticsEnabled(false);
 
-        ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        for (LogListener lsnr : lsnrs)
-            log.registerListener(lsnr);
-
-        readToLog(log);
-
-        for (LogListener lsnr : lsnrs)
-            assertTrue(lsnr.check());
+        new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(dir));
     }
 
     /** Wait for statistics started/stopped in the cluster. */
@@ -118,5 +111,14 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
             return true;
         }, TIMEOUT));
+    }
+
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @return Ignite performance statistics MBean.
+     */
+    protected static PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
+        return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
+            PerformanceStatisticsMBean.class);
     }
 }

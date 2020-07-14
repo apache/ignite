@@ -29,8 +29,8 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
         IgniteEx srv0 = startGrid(0);
         IgniteEx srv1 = startGrid(1);
 
-        PerformanceStatisticsMBean statMBean0 = getMBean(srv0.name());
-        PerformanceStatisticsMBean statMBean1 = getMBean(srv1.name());
+        PerformanceStatisticsMBean statMBean0 = statisticsMBean(srv0.name());
+        PerformanceStatisticsMBean statMBean1 = statisticsMBean(srv1.name());
 
         assertFalse(statMBean0.started());
         assertFalse(statMBean1.started());
@@ -48,14 +48,5 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
 
         assertFalse(statMBean0.started());
         assertFalse(statMBean1.started());
-    }
-
-    /**
-     * @param igniteInstanceName Ignite instance name.
-     * @return Ignite performance statistics MBean.
-     */
-    private PerformanceStatisticsMBean getMBean(String igniteInstanceName) {
-        return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
-            PerformanceStatisticsMBean.class);
     }
 }
