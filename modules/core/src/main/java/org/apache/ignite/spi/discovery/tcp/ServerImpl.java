@@ -58,7 +58,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -6570,7 +6572,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                liveAddr = checkConnection(nodeAddrs, (int)(rcvdTime + effectiveExchangeTimeout() - now));
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
+                                    (int)(rcvdTime + effectiveExchangeTimeout() - now));
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7034,25 +7037,48 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
-        private InetSocketAddress checkConnection(Collection<InetSocketAddress> addrs, int timeout) {
+        private InetSocketAddress checkConnection(List<InetSocketAddress> addrs, int timeout) {
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
 
             CountDownLatch latch = new CountDownLatch(addrs.size());
 
-            for (InetSocketAddress addr : addrs) {
-                utilityPool.execute(() -> {
-                    try (Socket sock = new Socket()) {
-                        if (liveAddrHolder.get() == null) {
-                            sock.connect(addr, timeout);
+            int addrLeft = addrs.size();
 
-                            liveAddrHolder.compareAndSet(null, addr);
+            int threadsLeft = utilityPool.getMaximumPoolSize();
+
+            AtomicInteger addrIdx = new AtomicInteger();
+
+            while (addrLeft > 0) {
+                int addrPerThread = addrLeft / threadsLeft + (addrLeft % threadsLeft > 0 ? 1 : 0);
+
+                addrLeft -= addrPerThread;
+
+                --threadsLeft;
+
+                utilityPool.execute(new Thread() {
+                    private final int addrsToCheck = addrPerThread;
+
+                    /** */
+                    @Override public void run() {
+                        int perAddrTimeout = timeout / addrsToCheck;
+
+                        for (int i = 0; i < addrPerThread; ++i) {
+                            InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
+
+                            try (Socket sock = new Socket()) {
+                                if (liveAddrHolder.get() == null) {
+                                    sock.connect(addr, perAddrTimeout);
+
+                                    liveAddrHolder.compareAndSet(null, addr);
+                                }
+                            }
+                            catch (Exception ignored) {
+                                // No-op.
+                            }
+                            finally {
+                                latch.countDown();
+                            }
                         }
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-                    finally {
-                        latch.countDown();
                     }
                 });
             }
