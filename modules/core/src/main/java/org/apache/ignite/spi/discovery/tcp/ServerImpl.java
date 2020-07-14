@@ -60,7 +60,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -387,7 +386,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            Math.max(4, Runtime.getRuntime().availableProcessors() * 2),
+            4,
             2000,
             new LinkedBlockingQueue<>());
 
@@ -6565,9 +6564,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = System.nanoTime();
+                        long timeThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
 
                         // We got message from previous in less than effective exchange timeout.
-                        boolean ok = rcvdTime + U.millisToNanos(effectiveExchangeTimeout()) > now;
+                        boolean ok =  timeThreshold > now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -6588,7 +6588,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
-                                    (int)(rcvdTime + effectiveExchangeTimeout() - now));
+                                    (int)U.nanosToMillis(timeThreshold - now));
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7077,7 +7077,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     @Override public void run() {
                         int perAddrTimeout = timeout / addrsToCheck;
 
-                        for (int i = 0; i < addrPerThread; ++i) {
+                        for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
                             try (Socket sock = new Socket()) {
