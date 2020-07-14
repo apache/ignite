@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
+    using Apache.Ignite.Core.Tests.Client.Cache;
+
     /// <summary>
     /// Test runner.
     /// </summary>
@@ -27,7 +29,10 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// </summary>
         private static void Main(string[] args)
         {
-            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
+            var t = new ContinuousQueryTest();
+            t.FixtureSetUp();
+            t.TestSetUp();
+            t.TestComputeWorksWhenContinuousQueryIsActive();
         }
     }
 }

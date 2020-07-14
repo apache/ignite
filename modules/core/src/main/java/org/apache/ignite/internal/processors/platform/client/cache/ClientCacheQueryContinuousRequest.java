@@ -95,32 +95,12 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             QueryCursor cursor = cache.query(qry);
             long cursorId = ctx.resources().put(new ClientCacheQueryContinuousCursor(cursor));
 
-            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, getColumnNames(cursor));
+            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
         }
         catch (Exception e) {
             ctx.decrementCursors();
             throw e;
         }
-    }
-
-    /**
-     * Gets column names.
-     *
-     * @param cursor Cursor.
-     * @return Column names.
-     */
-    private Collection<String> getColumnNames(QueryCursor cursor) {
-        List<GridQueryFieldMetadata> meta = ((QueryCursorEx) cursor).fieldsMeta();
-
-        if (meta == null)
-            return null;
-
-        Collection<String> res = new ArrayList<>(meta.size());
-
-        for (GridQueryFieldMetadata fieldMeta : meta)
-            res.add(fieldMeta.fieldName());
-
-        return res;
     }
 
     /**
