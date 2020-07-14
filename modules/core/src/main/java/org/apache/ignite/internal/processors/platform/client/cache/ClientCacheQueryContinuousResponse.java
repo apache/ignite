@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Continuous query response.
@@ -34,9 +31,6 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     /** */
     private final long continuousQueryId;
 
-    /** */
-    private final Collection<String> columnNames;
-
     /**
      * Ctor.
      * @param reqId Request id.
@@ -44,14 +38,11 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
      * @param continuousQueryId Continuous query handle id.
      */
     public ClientCacheQueryContinuousResponse(long reqId, ClientCacheQueryContinuousHandle handle,
-                                              long continuousQueryId, @Nullable Collection<String> columnNames) {
+                                              long continuousQueryId) {
         super(reqId);
         this.handle = handle;
 
         this.continuousQueryId = continuousQueryId;
-
-        //noinspection AssignmentOrReturnOfFieldWithMutableType
-        this.columnNames = columnNames;
     }
 
     /** {@inheritDoc} */
@@ -59,13 +50,6 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
         super.encode(ctx, writer);
 
         writer.writeLong(continuousQueryId);
-
-        if (columnNames != null) {
-            writer.writeInt(columnNames.size());
-
-            for (String col : columnNames)
-                writer.writeString(col);
-        }
     }
 
     /** {@inheritDoc} */
