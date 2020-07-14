@@ -23,6 +23,7 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Predicate;
+
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;

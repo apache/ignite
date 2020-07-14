@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;

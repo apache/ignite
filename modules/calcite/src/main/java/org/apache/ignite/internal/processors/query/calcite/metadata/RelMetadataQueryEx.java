@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;

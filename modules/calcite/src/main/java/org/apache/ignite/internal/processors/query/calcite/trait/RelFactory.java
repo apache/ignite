@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 
