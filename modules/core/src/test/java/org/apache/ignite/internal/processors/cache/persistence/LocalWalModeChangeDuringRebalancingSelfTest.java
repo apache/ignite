@@ -256,11 +256,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache2 = ignite.cache(REPL_CACHE);
 
         int keysCnt = getKeysCount();
 
-        for (int k = 0; k < keysCnt; k++)
+        for (int k = 0; k < keysCnt; k++) {
             cache.put(k, k);
+            cache2.put(k, k); // Empty cache causes skipped checkpoint.
+        }
 
         IgniteEx newIgnite = startGrid(3);
 
@@ -581,9 +584,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         newIgnite.cluster().setBaselineTopology(newIgnite.cluster().nodes());
 
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
-
-        for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
 
         Collection<Integer> lostParts = cache.lostPartitions();
 
