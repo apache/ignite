@@ -55,7 +55,12 @@ public interface Command<T> {
         if (!client.connected()) {
             GridClientException lastErr = client.checkLastError();
 
-            client.close();
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
 
             throw lastErr;
         }
