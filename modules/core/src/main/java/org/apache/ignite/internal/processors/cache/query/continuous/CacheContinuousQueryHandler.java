@@ -1229,16 +1229,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     CacheContinuousQueryEventBuffer partitionBuffer(GridCacheContext<?, ?> cctx, int partId) {
         return entryBufs.computeIfAbsent(partId,
-            id ->
-                new CacheContinuousQueryEventBuffer((backup) -> {
-                    GridDhtLocalPartition locPart = cctx.topology().localPartition(id, null, false);
+            id -> new CacheContinuousQueryEventBuffer((backup) -> {
+                GridDhtLocalPartition locPart = cctx.topology().localPartition(id, null, false);
 
-                    if (locPart == null)
-                        return -1L;
+                if (locPart == null)
+                    return -1L;
 
-                    // Use HWM for primary, LWM for backup.
-                    return backup > 0 ? locPart.updateCounter() : locPart.reservedCounter();
-                }, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)));
+                // Use HWM for primary, LWM for backup.
+                return backup > 0 ? locPart.updateCounter() : locPart.reservedCounter();
+            }, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)));
     }
 
     /** {@inheritDoc} */

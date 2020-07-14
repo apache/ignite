@@ -130,10 +130,8 @@ public class CacheContinuousQueryEventBuffer {
         if (batch != null)
             batch.flushCurrentEntries(ret, filteredEntryFactory);
 
-        if (!pending.isEmpty()) {
-            for (CacheContinuousQueryEntry e : pending.values())
-                ret.put(e.updateCounter(), e);
-        }
+        for (CacheContinuousQueryEntry e : pending.values())
+            ret.put(e.updateCounter(), e);
 
         return ret.isEmpty() ? null : ret.values();
     }
@@ -253,7 +251,7 @@ public class CacheContinuousQueryEventBuffer {
         if (batch != null)
             return batch;
 
-        for (;;) {
+        for (; ; ) {
             // todo refactor this
             long curCntr = currPartCntr.applyAsLong(backup ? 1 : 0);
 
