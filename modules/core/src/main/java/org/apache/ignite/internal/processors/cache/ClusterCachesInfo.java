@@ -587,6 +587,8 @@ public class ClusterCachesInfo {
             if (res.needExchange) {
                 assert !exchangeActions.empty() : exchangeActions;
 
+                exchangeActions.securitySubjectId(batch.securitySubjectId());
+
                 batch.exchangeActions(exchangeActions);
             }
 

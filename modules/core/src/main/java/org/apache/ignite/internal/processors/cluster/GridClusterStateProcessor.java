@@ -696,6 +696,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 exchangeActions.stateChangeRequest(req);
 
+                exchangeActions.securitySubjectId(msg.securitySubjectId());
+
                 msg.exchangeActions(exchangeActions);
 
                 if (newState.state() != state.state()) {

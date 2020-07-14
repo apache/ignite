@@ -98,7 +98,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     public int opNum;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3},isClusterTest={4}")
+    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(
             new Object[] {1, SRV, EVT_CACHE_STARTED, 0},
@@ -114,8 +114,8 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
             new Object[] {1, "thin", EVT_CACHE_STARTED, 5},
             new Object[] {1, "thin", EVT_CACHE_STARTED, 6},
             new Object[] {1, "thin", EVT_CACHE_STOPPED, 7},
-            new Object[] {2, "new_client_node", EVT_CACHE_STARTED, 8},
-            new Object[] {2, "new_server_node", EVT_CACHE_STARTED, 8},
+            new Object[] {3, "new_client_node", EVT_CACHE_STARTED, 8},
+            new Object[] {3, "new_server_node", EVT_CACHE_STARTED, 8},
             new Object[] {2, SRV, EVT_CACHE_STARTED, 9},
             new Object[] {2, CLNT, EVT_CACHE_STARTED, 9},
             new Object[] {2, SRV, EVT_CACHE_STOPPED, 9},
@@ -154,7 +154,8 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                     startGrid(getConfiguration(login,
                         new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
                         .setClientMode(login.contains("client"))
-                        .setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[0]))
+                        .setCacheConfiguration(ccfgs.toArray(
+                            new CacheConfiguration[] {new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet())}))
                     );
                 }
                 catch (Exception e) {
