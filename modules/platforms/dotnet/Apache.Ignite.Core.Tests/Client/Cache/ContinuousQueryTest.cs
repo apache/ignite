@@ -247,16 +247,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
-        /// <summary>
-        /// Tests that initial Scan query returns data that existed before the Continuous query has started
-        /// in binary mode.
-        /// </summary>
-        [Test]
-        public void TestInitialScanQueryInBinaryMode([Values(true, false)] bool getAll)
-        {
-            // TODO:
-        }
-
         [Test]
         public void TestContinuousQueryInBinaryMode()
         {
@@ -537,14 +527,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 throw new Exception(Error);
             }
-        }
-
-        /** */
-        public enum InitialQueryMode
-        {
-            GetOne,
-            GetAll,
-            ToList
         }
     }
 }
