@@ -67,7 +67,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         KeyCacheObject key,
         final boolean create,
         final boolean touch) {
-        return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, touch, false);
+        return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, touch);
     }
 
     /**
@@ -77,7 +77,6 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param key Key.
      * @param create Create flag.
      * @param touch Touch flag.
-     * @param clearing Clearing flag.
      */
     protected final GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         @Nullable CacheMapHolder hld,
@@ -85,8 +84,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         final boolean create,
-        final boolean touch,
-        final boolean clearing
+        final boolean touch
     ) {
         if (hld == null)
             hld = entriesMapIfExists(ctx.cacheIdBoxed());
@@ -109,7 +107,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                 if (entry == null) {
                     if (create) {
                         if (created0 == null) {
-                            if (!reserved && !clearing) {
+                            if (!reserved) {
                                 if (!reserve())
                                     return null;
 
@@ -138,7 +136,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                         if (create) {
                             if (created0 == null) {
-                                if (!reserved && !clearing) {
+                                if (!reserved) {
                                     if (!reserve())
                                         return null;
 
@@ -226,9 +224,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             if (reserved)
                 release(sizeChange, hld, cur);
             else {
-                if (sizeChange == 1)
-                    incrementPublicSize(hld, cur);
-                else if (sizeChange == -1) {
+                if (sizeChange != 0) {
+                    assert sizeChange == -1;
                     assert doomed != null;
 
                     decrementPublicSize(hld, doomed);

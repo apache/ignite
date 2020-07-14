@@ -443,7 +443,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Reserves an owned partition so it won't be cleared or evicted.
+     * Reserves the partition so it won't be cleared or evicted.
      *
      * @return {@code True} if reserved.
      */
@@ -451,7 +451,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             long state = this.state.get();
 
-            if (getPartState(state) == RENTING || getPartState(state) == EVICTED)
+            if (getPartState(state) == EVICTED)
                 return false;
 
             long newState = setReservations(state, getReservations(state) + 1);
@@ -502,7 +502,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         // Prevents delayed renting on topology which expects ownership.
                         delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
                         rent(true);
-                    else if (getPartState(state) == RENTING)
+                    else if (getPartState(state) == RENTING) // If was reserved in renting state continue clearing.
                         tryContinueClearing();
                 }
 
@@ -828,15 +828,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState state = getPartState(state0);
 
+        assert state != EVICTED : this;
+
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
-        // If eviction is finished we expect an empty data store.
-        if (state == RENTING && casState(state0, EVICTED)) {
-            assert store.isEmpty() : this;
-            assert getReservations(state0) == 0 : this;
-
+        // A partition is promoted to EVICTED state if it is not reserved and empty.
+        if (getReservations(state0) == 0 && store.isEmpty() && state == RENTING && casState(state0, EVICTED))
             updateSeqOnDestroy = updateSeq;
-        }
     }
 
     /**
@@ -1167,8 +1165,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         grp.affinity().lastVersion(),
                         row.key(),
                         true,
-                        false,
-                        true);
+                        false);
 
                     if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                         removeEntry(cached);
