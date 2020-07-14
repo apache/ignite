@@ -34,19 +34,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -335,8 +328,6 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
-                    storePagesCountOnMetaPage(grp, partId, pagesCnt);
-
                     offsets.put(partId, (long)pagesCnt);
                 }
             });
@@ -345,57 +336,6 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         }
 
         return offsets;
-    }
-
-    /**
-     * Save number of pages on meta page.
-     *
-     * @param grp Cache group.
-     * @param partId Partition ID.
-     * @param cnt Number of pages to reencrypt.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void storePagesCountOnMetaPage(CacheGroupContext grp, int partId, int cnt) throws IgniteCheckedException {
-        assert ctx.cache().context().database().checkpointLockIsHeldByThread();
-
-        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-        long pageId = partId == PageIdAllocator.INDEX_PARTITION ?
-            pageMem.metaPageId(grp.groupId()) : pageMem.partitionMetaPageId(grp.groupId(), partId);
-
-        long page = pageMem.acquirePage(grp.groupId(), pageId, grp.statisticsHolderData());
-
-        try {
-            long pageAddr = pageMem.writeLock(grp.groupId(), pageId, page);
-
-            boolean changed = false;
-
-            try {
-                PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
-                    PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                changed |= metaIO.setEncryptedPageIndex(pageAddr, 0);
-                changed |= metaIO.setEncryptedPageCount(pageAddr, cnt);
-
-                IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
-
-                if (!PageHandler.isWalDeltaRecordNeeded(pageMem, grp.groupId(), pageId, page, wal, null))
-                    return;
-
-                // Save snapshot if page is dirty.
-                byte[] payload = PageUtils.getBytes(pageAddr, 0, pageMem.realPageSize(grp.groupId()));
-
-                FullPageId fullPageId = new FullPageId(pageId, grp.groupId());
-
-                wal.log(new PageSnapshot(fullPageId, payload, pageMem.realPageSize(grp.groupId())));
-            }
-            finally {
-                pageMem.writeUnlock(grp.groupId(), pageId, page, null, changed, true);
-            }
-        }
-        finally {
-            pageMem.releasePage(grp.groupId(), pageId, page);
-        }
     }
 
     /**

@@ -1211,9 +1211,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param total Total pages to be reencrypted.
      */
     public void setEncryptionState(int grpId, int partId, int idx, int total) {
-        if (idx == total)
-            idx = total = 0;
-
         reencryptGroups.computeIfAbsent(grpId,
             v -> new ConcurrentHashMap<>()).put(partId, ((long)idx) << 32 | (total & 0xffffffffL));
     }
@@ -1625,8 +1622,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     assert totalPages != 0 : "grpId=" + grpId + ", p=" + partId;
 
                     offsets.put(partId, (long)Math.min(savedPages, totalPages));
-
-                    reencryption.storePagesCountOnMetaPage(grp, partId, savedPages);
                 }
 
                 reencryptGroups.put(grpId, offsets);
