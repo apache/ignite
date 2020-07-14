@@ -83,8 +83,7 @@ public class FilePerformanceStatisticsReader {
 
     /** @param handlers Handlers to process deserialized operations. */
     FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
-        A.ensure(handlers != null, "At least one handler expected.");
-        A.ensure(handlers.length > 0, "At least one handler expected.");
+        A.notEmpty(handlers, "At least one handler expected.");
 
         this.handlers = handlers;
     }
