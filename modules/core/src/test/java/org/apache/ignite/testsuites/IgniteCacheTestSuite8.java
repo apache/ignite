@@ -55,30 +55,30 @@ public class IgniteCacheTestSuite8 {
         List<Class<?>> suite = new ArrayList<>();
 
         // Cache metrics.
-        suite.addAll(IgniteCacheMetricsSelfTestSuite.suite(ignoredTests));
+//        suite.addAll(IgniteCacheMetricsSelfTestSuite.suite(ignoredTests));
 
         // Topology validator.
         suite.addAll(IgniteTopologyValidatorTestSuite.suite(ignoredTests));
 
         // Eviction.
-        suite.addAll(IgniteCacheEvictionSelfTestSuite.suite(ignoredTests));
-
-        // Iterators.
-        suite.addAll(IgniteCacheIteratorsSelfTestSuite.suite(ignoredTests));
-
-        // Rebalancing.
-        GridTestUtils.addTestIfNeeded(suite, GridCacheOrderedPreloadingSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalanceOrderTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncCheckDataTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingUnmarshallingFailedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingAsyncSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingCancelTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, CacheStoreTxPutAllMultiNodeTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, CleanupRestoredCachesSlowTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ClientCreateCacheGroupOnJoinNodeMapsTest.class, ignoredTests);
+//        suite.addAll(IgniteCacheEvictionSelfTestSuite.suite(ignoredTests));
+//
+//        // Iterators.
+//        suite.addAll(IgniteCacheIteratorsSelfTestSuite.suite(ignoredTests));
+//
+//        // Rebalancing.
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheOrderedPreloadingSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalanceOrderTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncCheckDataTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingUnmarshallingFailedSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingAsyncSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingCancelTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, CacheStoreTxPutAllMultiNodeTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, CleanupRestoredCachesSlowTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, ClientCreateCacheGroupOnJoinNodeMapsTest.class, ignoredTests);
 
         return suite;
     }
