@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
 import java.util.Map;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;

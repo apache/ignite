@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
