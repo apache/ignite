@@ -51,7 +51,13 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionOperation;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
 /**
  * Walker over the performance statistics file.
@@ -215,7 +221,7 @@ public class FilePerformanceStatisticsReader {
             OperationType opType = OperationType.of(opTypeByte);
 
             if (cacheOperation(opType)) {
-                if (buf.remaining() < 4 + 8 + 8)
+                if (buf.remaining() < cacheRecordSize())
                     return false;
 
                 int cacheId = buf.getInt();
@@ -231,14 +237,14 @@ public class FilePerformanceStatisticsReader {
                 if (buf.remaining() < 4)
                     return false;
 
-                int cacheIdsSize = buf.getInt();
+                int cacheIdsCnt = buf.getInt();
 
-                if (buf.remaining() < 4 * cacheIdsSize + 8 + 8)
+                if (buf.remaining() < transactionRecordSize(cacheIdsCnt) - 4)
                     return false;
 
-                GridIntList cacheIds = new GridIntList(cacheIdsSize);
+                GridIntList cacheIds = new GridIntList(cacheIdsCnt);
 
-                for (int i = 0; i < cacheIdsSize; i++)
+                for (int i = 0; i < cacheIdsCnt; i++)
                     cacheIds.add(buf.getInt());
 
                 long startTime = buf.getLong();
@@ -250,17 +256,16 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == QUERY) {
-                if (buf.remaining() < 1 + 4 + 8 + 8 + 8 + 1)
+                if (buf.remaining() < 4)
                     return false;
 
+                int textLen = buf.getInt();
+
+                if (buf.remaining() < queryRecordSize(textLen) - 4)
+                    return false;
+
+                String text = readString(buf, textLen);
                 GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-
-                int textLength = buf.getInt();
-
-                if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
-                    return false;
-
-                String text = readString(buf, textLength);
                 long id = buf.getLong();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
@@ -272,11 +277,10 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == QUERY_READS) {
-                if (buf.remaining() < 1 + 16 + 8 + 8 + 8)
+                if (buf.remaining() < queryReadsRecordSize())
                     return false;
 
                 GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-
                 UUID uuid = readUuid(buf);
                 long id = buf.getLong();
                 long logicalReads = buf.getLong();
@@ -288,23 +292,19 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == TASK) {
-                if (buf.remaining() < 24 + 4 + 8 + 8 + 4)
+                if (buf.remaining() < 4)
                     return false;
 
+                int nameLen = buf.getInt();
+
+                if (buf.remaining() < taskRecordSize(nameLen) - 4)
+                    return false;
+
+                String taskName = readString(buf, nameLen);
                 IgniteUuid sesId = readIgniteUuid(buf);
-
-                int textLength = buf.getInt();
-
-                if (buf.remaining() < textLength + 8 + 8 + 4)
-                    return false;
-
-                String taskName = readString(buf, textLength);
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 int affPartId = buf.getInt();
-
-                if (taskName == null)
-                    return true;
 
                 for (PerformanceStatisticsHandler handler : handlers)
                     handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
@@ -312,7 +312,7 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == JOB) {
-                if (buf.remaining() < 24 + 8 + 8 + 8 + 1)
+                if (buf.remaining() < jobRecordSize())
                     return false;
 
                 IgniteUuid sesId = readIgniteUuid(buf);

@@ -129,4 +129,43 @@ public enum OperationType {
     public static boolean transactionOperation(OperationType op) {
         return TX_OPS.contains(op);
     }
+
+    /** @return Cache record size. */
+    public static int cacheRecordSize() {
+        return 4 + 8 + 8;
+    }
+
+    /**
+     * @param cachesIdsCnt Cache identifiers size.
+     * @return Transaction record size.
+     */
+    public static int transactionRecordSize(int cachesIdsCnt) {
+        return 4 + cachesIdsCnt * 4 + 8 + 8;
+    }
+
+    /**
+     * @param textLen Query text length.
+     * @return Query record size.
+     */
+    public static int queryRecordSize(int textLen) {
+        return 4 + textLen + 1 + 8 + 8 + 8 + 1;
+    }
+
+    /** @return Query reads record size. */
+    public static int queryReadsRecordSize() {
+        return 1 + 16 + 8 + 8 + 8;
+    }
+
+    /**
+     * @param nameLen Task name length.
+     * @return Task record size.
+     */
+    public static int taskRecordSize(int nameLen) {
+        return 4 + nameLen + 24 + 8 + 8 + 4;
+    }
+
+    /** @return Job record size. */
+    public static int jobRecordSize() {
+        return 24 + 8 + 8 + 8 + 1;
+    }
 }

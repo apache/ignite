@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -50,6 +49,12 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
 /**
  * Performance statistics writer based on logging to a file.
@@ -164,13 +169,11 @@ class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      */
     public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
-        doWrite(type,
-            () -> 4 + 8 + 8,
-            buf -> {
-                buf.putInt(cacheId);
-                buf.putLong(startTime);
-                buf.putLong(duration);
-            });
+        doWrite(type, cacheRecordSize(), buf -> {
+            buf.putInt(cacheId);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+        });
     }
 
     /**
@@ -180,19 +183,17 @@ class FilePerformanceStatisticsWriter {
      * @param commited {@code True} if commited.
      */
     public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
-        doWrite(commited ? TX_COMMIT : TX_ROLLBACK,
-            () -> 4 + cacheIds.size() * 4 + 8 + 8,
-            buf -> {
-                buf.putInt(cacheIds.size());
+        doWrite(commited ? TX_COMMIT : TX_ROLLBACK, transactionRecordSize(cacheIds.size()), buf -> {
+            buf.putInt(cacheIds.size());
 
-                GridIntIterator iter = cacheIds.iterator();
+            GridIntIterator iter = cacheIds.iterator();
 
-                while (iter.hasNext())
-                    buf.putInt(iter.next());
+            while (iter.hasNext())
+                buf.putInt(iter.next());
 
-                buf.putLong(startTime);
-                buf.putLong(duration);
-            });
+            buf.putLong(startTime);
+            buf.putLong(duration);
+        });
     }
 
     /**
@@ -206,17 +207,15 @@ class FilePerformanceStatisticsWriter {
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         byte[] textBytes = text.getBytes();
 
-        doWrite(QUERY,
-            () -> 1 + 4 + textBytes.length + 8 + 8 + 8 + 1,
-            buf -> {
-                buf.put((byte)type.ordinal());
-                buf.putInt(textBytes.length);
-                buf.put(textBytes);
-                buf.putLong(id);
-                buf.putLong(startTime);
-                buf.putLong(duration);
-                buf.put(success ? (byte)1 : 0);
-            });
+        doWrite(QUERY, queryRecordSize(textBytes.length), buf -> {
+            buf.putInt(textBytes.length);
+            buf.put(textBytes);
+            buf.put((byte)type.ordinal());
+            buf.putLong(id);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.put(success ? (byte)1 : 0);
+        });
     }
 
     /**
@@ -227,15 +226,13 @@ class FilePerformanceStatisticsWriter {
      * @param physicalReads Number of physical reads.
      */
     public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
-        doWrite(QUERY_READS,
-            () -> 1 + 16 + 8 + 8 + 8,
-            buf -> {
-                buf.put((byte)type.ordinal());
-                writeUuid(buf, queryNodeId);
-                buf.putLong(id);
-                buf.putLong(logicalReads);
-                buf.putLong(physicalReads);
-            });
+        doWrite(QUERY_READS, queryReadsRecordSize(), buf -> {
+            buf.put((byte)type.ordinal());
+            writeUuid(buf, queryNodeId);
+            buf.putLong(id);
+            buf.putLong(logicalReads);
+            buf.putLong(physicalReads);
+        });
     }
 
     /**
@@ -248,16 +245,14 @@ class FilePerformanceStatisticsWriter {
     public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
         byte[] nameBytes = taskName.getBytes();
 
-        doWrite(TASK,
-            () -> 24 + 4 + nameBytes.length + 8 + 8 + 4,
-            buf -> {
-                writeIgniteUuid(buf, sesId);
-                buf.putInt(nameBytes.length);
-                buf.put(nameBytes);
-                buf.putLong(startTime);
-                buf.putLong(duration);
-                buf.putInt(affPartId);
-            });
+        doWrite(TASK, taskRecordSize(nameBytes.length), buf -> {
+            buf.putInt(nameBytes.length);
+            buf.put(nameBytes);
+            writeIgniteUuid(buf, sesId);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.putInt(affPartId);
+        });
     }
 
     /**
@@ -268,24 +263,22 @@ class FilePerformanceStatisticsWriter {
      * @param timedOut {@code True} if job is timed out.
      */
     public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        doWrite(JOB,
-            () -> 24 + 8 + 8 + 8 + 1,
-            buf -> {
-                writeIgniteUuid(buf, sesId);
-                buf.putLong(queuedTime);
-                buf.putLong(startTime);
-                buf.putLong(duration);
-                buf.put(timedOut ? (byte)1 : 0);
-            });
+        doWrite(JOB, jobRecordSize(), buf -> {
+            writeIgniteUuid(buf, sesId);
+            buf.putLong(queuedTime);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.put(timedOut ? (byte)1 : 0);
+        });
     }
 
     /**
      * @param op Operation type.
-     * @param sizeSupplier Record size supplier.
+     * @param recSize Record size.
      * @param writer Record writer.
      */
-    private void doWrite(OperationType op, IntSupplier sizeSupplier, Consumer<ByteBuffer> writer) {
-        int size = sizeSupplier.getAsInt() + /*type*/ 1;
+    private void doWrite(OperationType op, int recSize, Consumer<ByteBuffer> writer) {
+        int size = recSize + /*type*/ 1;
 
         SegmentedRingByteBuffer.WriteSegment seg = ringByteBuf.offer(size);
 
