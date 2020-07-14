@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,10 +32,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;

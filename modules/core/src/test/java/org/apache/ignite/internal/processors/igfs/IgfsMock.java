@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.net.URI;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -35,10 +38,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Mocked IGFS implementation for IGFS tests.
