@@ -1126,11 +1126,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var flags = (ClientFlags) stream.ReadShort();
             var opCode = (ClientOp) stream.ReadShort();
 
-            if (opCode != ClientOp.QueryContinuousEventNotification)
-            {
-                GetLogger().Error("Error while handling Continuous Query notification: unexpected op '{0}'", opCode);
-            }
-            else if ((flags & ClientFlags.Error) == ClientFlags.Error)
+            if ((flags & ClientFlags.Error) == ClientFlags.Error)
             {
                 var status = (ClientStatusCode) stream.ReadInt();
                 var msg = _marsh.Unmarshal<string>(stream);
@@ -1138,13 +1134,27 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 GetLogger().Error("Error while handling Continuous Query notification ({0}): {1}", status, msg);
 
                 qryHandle.OnError(new IgniteClientException(msg, null, status));
+
+                return;
             }
-            else
+
+            if (opCode == ClientOp.QueryContinuousEventNotification)
             {
                 var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
 
                 listener.OnEvent(evts);
+
+                return;
             }
+
+            if (opCode == ClientOp.QueryContinuousEndNotification)
+            {
+                qryHandle.RemoveNotificationHandler();
+
+                return;
+            }
+
+            GetLogger().Error("Error while handling Continuous Query notification: unexpected op '{0}'", opCode);
         }
 
         /// <summary>

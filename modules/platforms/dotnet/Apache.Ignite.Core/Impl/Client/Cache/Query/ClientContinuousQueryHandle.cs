@@ -63,11 +63,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 {
                     _socket.DoOutInOp<object>(ClientOp.ResourceClose,
                         ctx => ctx.Writer.WriteLong(_queryId), null);
-
-                    // TODO: There is a race between removal and ongoing notifications
-                    // To fix this, introduce a special notification that marks the end of the query,
-                    // do not unsubscribe right here.
-                    _socket.RemoveNotificationHandler(_queryId);
                 }
 
                 _disposed = true;
@@ -75,7 +70,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         }
 
         /// <summary>
-        /// Called when error occurs during continuous query execution.
+        /// Removes the notification handler for the corresponding query.
+        /// </summary>
+        internal void RemoveNotificationHandler()
+        {
+            _socket.RemoveNotificationHandler(_queryId);
+        }
+
+        /// <summary>
+        /// Called when error occurs during the continuous query execution.
         /// </summary>
         internal void OnError(Exception exception)
         {
@@ -94,12 +97,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 
                 _disposed = true;
             }
-        }
-
-        /** <inheritdoc /> */
-        ~ClientContinuousQueryHandle()
-        {
-            Dispose();
         }
     }
 }
