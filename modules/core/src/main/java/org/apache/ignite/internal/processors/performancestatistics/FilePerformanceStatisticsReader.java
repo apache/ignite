@@ -105,10 +105,10 @@ public class FilePerformanceStatisticsReader {
             while (true) {
                 int read = io.read(buf);
 
-                buf.flip();
-
                 if (read <= 0)
                     break;
+
+                buf.flip();
 
                 while (des.read(buf));
 

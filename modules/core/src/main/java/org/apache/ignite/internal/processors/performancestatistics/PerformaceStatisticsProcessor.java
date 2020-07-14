@@ -51,7 +51,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     private static final String PERF_STAT_KEY = IGNITE_INTERNAL_KEY_PREFIX + "performanceStatistics.enabled";
 
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
-    @Nullable private volatile FilePerformanceStatisticsWriter writer = null;
+    @Nullable private volatile FilePerformanceStatisticsWriter writer;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
