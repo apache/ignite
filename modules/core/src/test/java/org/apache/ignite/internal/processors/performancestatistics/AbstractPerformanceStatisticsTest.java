@@ -62,9 +62,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         assertFalse(grids.isEmpty());
 
-        IgniteEx ignite = (IgniteEx)grids.get(0);
-
-        statisticsMBean(ignite.name()).start();
+        statisticsMBean(grids.get(0).name()).start();
 
         waitForStatisticsEnabled(true);
     }
@@ -75,9 +73,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         assertFalse(grids.isEmpty());
 
-        IgniteEx ignite = (IgniteEx)grids.get(0);
-
-        statisticsMBean(ignite.name()).stop();
+        statisticsMBean(grids.get(0).name()).stop();
 
         waitForStatisticsEnabled(false);
 
