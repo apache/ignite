@@ -207,7 +207,7 @@ class FilePerformanceStatisticsWriter {
         byte[] textBytes = text.getBytes();
 
         doWrite(QUERY,
-            () -> 1 + 4 + textBytes.length + 4 + 8 + 8 + 8 + 1,
+            () -> 1 + 4 + textBytes.length + 8 + 8 + 8 + 1,
             buf -> {
                 buf.put((byte)type.ordinal());
                 buf.putInt(textBytes.length);
