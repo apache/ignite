@@ -115,7 +115,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
             FieldsQueryCursor cur = curs.get(0);
 
             ClientCacheFieldsQueryCursor cliCur = new ClientCacheFieldsQueryCursor(
-                    (QueryCursorEx<List<?>>) cur, qry.getPageSize(), ctx, true);
+                cur, qry.getPageSize(), ctx);
 
             long cursorId = ctx.resources().put(cliCur);
 

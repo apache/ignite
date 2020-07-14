@@ -62,7 +62,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
             QueryCursor cur = cache.query(qry);
 
             ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(
-                    cur, qry.getPageSize(), ctx, true);
+                    cur, qry.getPageSize(), ctx);
 
             long cursorId = ctx.resources().put(cliCur);
 

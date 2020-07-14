@@ -46,18 +46,13 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
     /** Close guard. */
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
-    /** Auto-close flag. */
-    private final boolean releaseResourceOnIteratorEnd;
-
     /**
      * Ctor.
-     * @param cursor Cursor.
+     *  @param cursor Cursor.
      * @param pageSize Page size.
      * @param ctx Context.
-     * @param releaseResourceOnIteratorEnd Whether to close the re
      */
-    ClientCacheQueryCursor(QueryCursor<T> cursor, int pageSize, ClientConnectionContext ctx,
-                           boolean releaseResourceOnIteratorEnd) {
+    ClientCacheQueryCursor(QueryCursor<T> cursor, int pageSize, ClientConnectionContext ctx) {
         assert cursor != null;
         assert pageSize > 0;
         assert ctx != null;
@@ -65,7 +60,6 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
         this.cursor = cursor;
         this.pageSize = pageSize;
         this.ctx = ctx;
-        this.releaseResourceOnIteratorEnd = releaseResourceOnIteratorEnd;
     }
 
     /**
@@ -91,7 +85,7 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
 
         writer.writeBoolean(iter.hasNext());
 
-        if (!iter.hasNext() && releaseResourceOnIteratorEnd)
+        if (!iter.hasNext())
             ctx.resources().release(id);
     }
 

@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 /**
  * Query cursor holder.
   */
-class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List<?>> {
+class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
     /** Column count. */
     private final int columnCount;
 
@@ -36,15 +36,14 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List<?>> {
      * @param pageSize Page size.
      * @param ctx      Context.
      */
-    ClientCacheFieldsQueryCursor(QueryCursorEx<List<?>> cursor, int pageSize, ClientConnectionContext ctx,
-                                 boolean releaseResourceOnIteratorEnd) {
-        super(cursor, pageSize, ctx, releaseResourceOnIteratorEnd);
+    ClientCacheFieldsQueryCursor(FieldsQueryCursor<List> cursor, int pageSize, ClientConnectionContext ctx) {
+        super(cursor, pageSize, ctx);
 
-        columnCount = cursor.fieldsMeta().size();
+        columnCount = cursor.getColumnsCount();
     }
 
     /** {@inheritDoc} */
-    @Override void writeEntry(BinaryRawWriterEx writer, List<?> e) {
+    @Override void writeEntry(BinaryRawWriterEx writer, List e) {
         assert e.size() == columnCount;
 
         for (Object o : e)
