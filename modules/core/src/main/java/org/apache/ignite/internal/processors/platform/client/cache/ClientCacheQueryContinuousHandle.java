@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
 
@@ -29,12 +31,15 @@ import javax.cache.event.CacheEntryUpdatedListener;
  * NOTE: Do not mark with {@link org.apache.ignite.lang.IgniteAsyncCallback} - it disables batching and sends
  * events one by one.
  */
-public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener<Object, Object> {
+public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener<Object, Object>, ClientCloseableResource {
     /** */
     private final ClientConnectionContext ctx;
 
     /** */
-    private volatile Long continuousQueryId;
+    private volatile Long id;
+
+    /** */
+    private volatile QueryCursor<?> cur;
 
     /**
      * Ctor.
@@ -49,24 +54,38 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     /** {@inheritDoc} */
     @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
         // Client is not yet ready to receive notifications - skip them.
-        // TODO: Is this correct in presence of initial query? Should we cache notifications and then send them?
-        if (continuousQueryId == null)
+        if (id == null)
             return;
 
         ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
                 ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
-                continuousQueryId,
+                id,
                 iterable);
 
-        // TODO: Don't notify the client if the cursor has been closed - we need an RW lock for that.
         ctx.notifyClient(notification);
     }
 
     /**
      * Sets the cursor id.
-     * @param continuousQueryId Cursor id.
+     * @param id Cursor id.
      */
-    public void startNotifications(long continuousQueryId) {
-        this.continuousQueryId = continuousQueryId;
+    public void startNotifications(long id, QueryCursor<?> cur) {
+        assert cur != null;
+
+        this.id = id;
+        this.cur = cur;
+    }
+
+    /** <inheritdoc /> */
+    @Override public void close() {
+        QueryCursor<?> cur0 = cur;
+
+        if (cur0 != null)
+        {
+            cur0.close();
+            cur = null;
+        }
+
+        // TODO: Notify client with a special message that the query has ended.
     }
 }

@@ -82,15 +82,13 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                     ? rawCache(ctx)
                     : cache(ctx);
 
-            // TODO: writeLock on resource close, read lock on notifications?
-            // ReadWriteLock closeNotifyGuard = new ReentrantReadWriteLock();
             ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
             qry.setLocalListener(handle);
 
             QueryCursor cursor = cache.query(qry);
-            long cursorId = ctx.resources().put(new ClientCacheQueryContinuousCursor(cursor));
+            long cursorId = ctx.resources().put(handle);
 
-            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
+            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, cursor);
         }
         catch (Exception e) {
             ctx.decrementCursors();

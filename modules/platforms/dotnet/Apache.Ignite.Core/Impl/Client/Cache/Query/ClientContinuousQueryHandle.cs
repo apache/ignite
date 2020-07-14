@@ -65,9 +65,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                         ctx => ctx.Writer.WriteLong(_queryId), null);
 
                     // TODO: There is a race between removal and ongoing notifications
-                    // It is possible to receive notifications even after ResourceClose call due to async nature
-                    // of the server.
-                    // TODO: Strive to fix this on the server side, otherwise we'll get a leak.
+                    // To fix this, introduce a special notification that marks the end of the query,
+                    // do not unsubscribe right here.
                     _socket.RemoveNotificationHandler(_queryId);
                 }
 
