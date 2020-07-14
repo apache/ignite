@@ -28,55 +28,55 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum OperationType {
     /** Cache get. */
-    CACHE_GET((byte)0),
+    CACHE_GET(0),
 
     /** Cache put. */
-    CACHE_PUT((byte)1),
+    CACHE_PUT(1),
 
     /** Cache remove. */
-    CACHE_REMOVE((byte)2),
+    CACHE_REMOVE(2),
 
     /** Cache get and put. */
-    CACHE_GET_AND_PUT((byte)3),
+    CACHE_GET_AND_PUT(3),
 
     /** Cache get and remove. */
-    CACHE_GET_AND_REMOVE((byte)4),
+    CACHE_GET_AND_REMOVE(4),
 
     /** Cache invoke. */
-    CACHE_INVOKE((byte)5),
+    CACHE_INVOKE(5),
 
     /** Cache lock. */
-    CACHE_LOCK((byte)6),
+    CACHE_LOCK(6),
 
     /** Cache get all. */
-    CACHE_GET_ALL((byte)7),
+    CACHE_GET_ALL(7),
 
     /** Cache put all. */
-    CACHE_PUT_ALL((byte)8),
+    CACHE_PUT_ALL(8),
 
     /** Cache remove all. */
-    CACHE_REMOVE_ALL((byte)9),
+    CACHE_REMOVE_ALL(9),
 
     /** Cache invoke all. */
-    CACHE_INVOKE_ALL((byte)10),
+    CACHE_INVOKE_ALL(10),
 
     /** Transaction commit. */
-    TX_COMMIT((byte)11),
+    TX_COMMIT(11),
 
     /** Transaction rollback. */
-    TX_ROLLBACK((byte)12),
+    TX_ROLLBACK(12),
 
     /** Query. */
-    QUERY((byte)13),
+    QUERY(13),
 
     /** Query reads. */
-    QUERY_READS((byte)14),
+    QUERY_READS(14),
 
     /** Task. */
-    TASK((byte)15),
+    TASK(15),
 
     /** Job. */
-    JOB((byte)16);
+    JOB(16);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -106,8 +106,8 @@ public enum OperationType {
     }
 
     /** @param id Unique operation identifier. */
-    OperationType(byte id) {
-        this.id = id;
+    OperationType(int id) {
+        this.id = (byte)id;
     }
 
     /** @return Unique operation identifier. */
