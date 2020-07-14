@@ -830,6 +830,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
+        // If eviction is finished we expect an empty data store.
         if (state == RENTING && casState(state0, EVICTED)) {
             assert store.isEmpty() : this;
             assert getReservations(state0) == 0 : this;
@@ -907,9 +908,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param evictionCtx Eviction context.
      *
      * @return {@code false} if clearing is not started due to existing reservations.
-     * @throws NodeStoppingException If node is stopping.
+     * @throws Exception If failed.
      */
-    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx) throws Exception {
         if (clearFuture.isDone())
             return true;
 
@@ -926,16 +927,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (log.isDebugEnabled())
                     log.debug("Partition has been cleared [grp=" + grp.cacheOrGroupName()
                         + ", p=" + id + ", state=" + state() + ", clearedCnt=" + clearedEntities + "]");
+
+                clearFuture.finish(); // Invokes clear future listeners.
             }
-            catch (NodeStoppingException e) {
+            catch (Throwable e) {
                 clearFuture.finish(e);
 
                 throw e;
             }
             finally {
                 clearEvicting();
-
-                clearFuture.finish(); // Invokes clear future listeners.
             }
         }
 
@@ -1166,7 +1167,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         grp.affinity().lastVersion(),
                         row.key(),
                         true,
-                        false);
+                        false,
+                        true);
 
                     if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                         removeEntry(cached);
