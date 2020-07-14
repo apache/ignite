@@ -46,19 +46,19 @@ public class IgniteTopologyValidatorTestSuite {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorGridSplitCacheTest.class, ignoredTests);
 
