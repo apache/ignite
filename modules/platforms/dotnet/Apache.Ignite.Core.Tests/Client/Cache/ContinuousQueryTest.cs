@@ -402,7 +402,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // Stop the query before the batch is sent out by time interval.
             var interval = TimeSpan.FromSeconds(1);
-            TestBatches(keyCount: 1, bufferSize: 10, interval, (keys, res) => { });
+            TestBatches(1, 10, interval, (keys, res) => { });
             Thread.Sleep(interval);
 
             // Check that socket has no dangling notifications.
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
         {
-            TestBatches(keyCount: 8, bufferSize: 3, TimeSpan.Zero, (keys, res) =>
+            TestBatches(8, 3, TimeSpan.Zero, (keys, res) =>
             {
                 TestUtils.WaitForTrueCondition(() => res.Count == 2, () => res.Count.ToString());
 
@@ -516,7 +516,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomTimeIntervalCausesIncompleteBatches()
         {
-            TestBatches(keyCount: 2, bufferSize: 4, interval: TimeSpan.FromSeconds(1), (keys, res) =>
+            TestBatches(2, 4, TimeSpan.FromSeconds(1), (keys, res) =>
             {
                 TestUtils.WaitForTrueCondition(() => res.Count == 1, () => res.Count.ToString(), 2000);
 
@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests batching behavior.
         /// </summary>
         private void TestBatches(int keyCount, int bufferSize, TimeSpan interval,
-            Action<List<int>, IReadOnlyCollection<List<int>>> assert)
+            Action<List<int>, ICollection<List<int>>> assert)
         {
             var res = new ConcurrentQueue<List<int>>();
 
@@ -552,7 +552,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 keys.ForEach(k => serverCache.Put(k, k));
 
-                assert(keys, res);
+                assert(keys, res.ToArray());
             }
         }
 

@@ -62,8 +62,6 @@
     <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryClient.cs" />
     <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryDisconnectedEventArgs.cs" />
     <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleClient.cs" />
-    <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleClient{T}.cs" />
-    <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleFieldsClient.cs" />
     <Compile Include="Client\Compute\IComputeClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
