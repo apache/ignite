@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -32,22 +31,16 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     /** */
     private final long qryId;
 
-    /** */
-    private final QueryCursor<?> cur;
-
     /**
      * Ctor.
      * @param reqId Request id.
      * @param handle Handle.
      * @param qryId Continuous query handle id.
-     * @param cur Cursor.
      */
-    public ClientCacheQueryContinuousResponse(long reqId, ClientCacheQueryContinuousHandle handle,
-                                              long qryId, QueryCursor<?> cur) {
+    public ClientCacheQueryContinuousResponse(long reqId, ClientCacheQueryContinuousHandle handle, long qryId) {
         super(reqId);
         this.handle = handle;
         this.qryId = qryId;
-        this.cur = cur;
     }
 
     /** {@inheritDoc} */
@@ -61,6 +54,6 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     @Override public void onSent() {
         super.onSent();
 
-        handle.startNotifications(qryId, cur);
+        handle.startNotifications(qryId);
     }
 }

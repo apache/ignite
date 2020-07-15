@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientCloseableReso
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Continuous query handle.
  * NOTE: Do not mark with {@link org.apache.ignite.lang.IgniteAsyncCallback} - it disables batching and sends
@@ -39,6 +41,9 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
 
     /** */
     private volatile QueryCursor<?> cur;
+
+    /** Close guard. */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /**
      * Ctor.
@@ -63,24 +68,28 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     }
 
     /**
+     * Sets the cursor.
+     * @param cur Cursor.
+     */
+    public void setCursor(QueryCursor<?> cur) {
+        this.cur = cur;
+    }
+
+    /**
      * Sets the cursor id.
      * @param id Cursor id.
      */
-    public void startNotifications(long id, QueryCursor<?> cur) {
-        assert cur != null;
-
+    public void startNotifications(long id) {
         this.id = id;
-        this.cur = cur;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        QueryCursor<?> cur0 = cur;
+        if (closeGuard.compareAndSet(false, true)) {
+            assert cur != null;
+            cur.close();
 
-        if (cur0 != null)
-        {
-            cur0.close();
-            cur = null;
+            ctx.decrementCursors();
         }
     }
 }

@@ -87,10 +87,11 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
             qry.setLocalListener(handle);
 
-            QueryCursor cursor = cache.query(qry);
+            QueryCursor cur = cache.query(qry);
             long cursorId = ctx.resources().put(handle);
+            handle.setCursor(cur);
 
-            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, cursor);
+            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
         }
         catch (Exception e) {
             ctx.decrementCursors();
