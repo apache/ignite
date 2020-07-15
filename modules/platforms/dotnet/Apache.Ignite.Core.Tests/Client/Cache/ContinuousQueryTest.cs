@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 _action = action ?? (_ => {});
             }
 
-            /** */
+            /** <inheritdoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
             {
                 foreach (var evt in evts)
@@ -606,17 +606,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 _action = action ?? (_ => {});
             }
 
-            /** */
+            /** <inheritdoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
             {
                 _action(evts);
             }
         }
 
+        /** */
         private class OddKeyFilter : ICacheEntryEventFilter<int, int>, ICacheEntryFilter<int, int>
         {
+            /** */
             public static int LastKey;
 
+            /** <inheritdoc /> */
             public bool Evaluate(ICacheEntryEvent<int, int> evt)
             {
                 LastKey = evt.Key;
@@ -624,6 +627,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 return evt.Key % 2 == 1;
             }
 
+            /** <inheritdoc /> */
             public bool Invoke(ICacheEntry<int, int> entry)
             {
                 LastKey = entry.Key;
@@ -632,25 +636,32 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        /** */
         private class ExceptionalFilter : ICacheEntryEventFilter<int, int>, ICacheEntryFilter<int, int>
         {
+            /** */
             public const string Error = "Foo failed because of bar";
 
+            /** <inheritdoc /> */
             public bool Evaluate(ICacheEntryEvent<int, int> evt)
             {
                 throw new Exception(Error);
             }
 
+            /** <inheritdoc /> */
             public bool Invoke(ICacheEntry<int, int> entry)
             {
                 throw new Exception(Error);
             }
         }
 
+        /** */
         private class EvenIdBinaryFilter : ICacheEntryEventFilter<int, IBinaryObject>
         {
+            /** */
             public static IBinaryObject LastValue { get; set; }
 
+            /** <inheritdoc /> */
             public bool Evaluate(ICacheEntryEvent<int, IBinaryObject> evt)
             {
                 LastValue = evt.Value;
