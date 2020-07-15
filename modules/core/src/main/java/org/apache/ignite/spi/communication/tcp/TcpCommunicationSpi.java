@@ -3774,36 +3774,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         if (rcvCnt == ALREADY_CONNECTED)
                             return null;
-                        else if (rcvCnt == NODE_STOPPING)
+                        else if (rcvCnt == NODE_STOPPING) {
+                            // Safe to remap on remote node stopping.
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
+                        }
                         else if (rcvCnt == UNKNOWN_NODE)
-                            throw new ClusterTopologyCheckedException("Remote node does not observe current node " +
+                            throw new IgniteCheckedException("Remote node does not observe current node " +
                                 "in topology : " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
-                            //check that failure timeout will be reached after sleep(outOfTopDelay).
-                            if (connTimeoutStgy.checkTimeout(DFLT_NEED_WAIT_DELAY)) {
-                                U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
-                                    "[node=" + node.id() +
-                                    ", connTimeoutStgy=" + connTimeoutStgy +
-                                    ", addr=" + addr +
-                                    ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
-                                    ", timeout=" + timeout + ']');
+                            // Should wait for discovery lag without applying connTimeoutStgy, otherwise cache operations
+                            // may hang on waiting inexistent topology, see IgniteClientConnectTest for test
+                            // scenarios with delayed client node join.
+                            if (log.isDebugEnabled())
+                                log.debug("NEED_WAIT received, handshake after delay [node = "
+                                    + node + ", outOfTopologyDelay = " + DFLT_NEED_WAIT_DELAY + "ms]");
 
-                                throw new ClusterTopologyCheckedException("Failed to connect to node " +
-                                    "(current or target node is out of topology on target node within timeout). " +
-                                        "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                                        "in order to prevent parties from waiting forever in case of network issues " +
-                                        "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
-                            }
-                            else {
-                                if (log.isDebugEnabled())
-                                    log.debug("NEED_WAIT received, handshake after delay [node = "
-                                        + node + ", outOfTopologyDelay = " + DFLT_NEED_WAIT_DELAY + "ms]");
+                            U.sleep(DFLT_NEED_WAIT_DELAY);
 
-                                U.sleep(DFLT_NEED_WAIT_DELAY);
-
-                                continue;
-                            }
+                            continue;
                         }
                         else if (rcvCnt < 0)
                             throw new IgniteCheckedException("Unsupported negative receivedCount [rcvCnt=" + rcvCnt +
