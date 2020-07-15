@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import java.security.AccessControlException;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -47,11 +49,18 @@ public class SecurityAwarePredicate<E> extends AbstractSecurityAwareExternalizab
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(E e) {
+    @Override public boolean apply(E evt) {
         IgniteSecurity security = ignite.context().security();
 
         try (OperationSecurityContext c = security.withContext(subjectId)) {
-            return original.apply(e);
+            IgniteSandbox sandbox = security.sandbox();
+
+            return sandbox.enabled() ? sandbox.execute(() -> original.apply(evt)) : original.apply(evt);
+        }
+        catch (AccessControlException e) {
+            logAccessDeniedMessage(e);
+
+            throw e;
         }
     }
 }
