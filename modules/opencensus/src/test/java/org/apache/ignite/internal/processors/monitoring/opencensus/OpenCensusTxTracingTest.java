@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
-import io.opencensus.trace.SpanId;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.tracing.Scope;
-import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.transactions.Transaction;
+import io.opencensus.trace.SpanId;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX;
@@ -45,8 +45,8 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_PRE
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_FINISH_REQ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_PREPARE_REQ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_PREPARE_RESP;
-import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_ROLLBACK;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
