@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -51,6 +52,8 @@ public class Config {
         igniteCfg.setCacheConfiguration(dfltCacheCfg);
 
         igniteCfg.setIgniteInstanceName(UUID.randomUUID().toString());
+
+        igniteCfg.setFailureHandler(new NoOpFailureHandler());
 
         return igniteCfg;
     }
