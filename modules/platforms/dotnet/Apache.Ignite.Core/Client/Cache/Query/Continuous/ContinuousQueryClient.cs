@@ -23,6 +23,17 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     using Apache.Ignite.Core.Interop;
 
     /// <summary>
+    /// Thin client continuous query base class, see <see cref="ContinuousQueryClient{K, V}"/>.
+    /// </summary>
+    public abstract class ContinuousQueryClient
+    {
+        /// <summary>
+        /// Default buffer size.
+        /// </summary>
+        public const int DefaultBufferSize = 1;
+    }
+
+    /// <summary>
     /// API for configuring continuous cache queries in thin client.
     /// <para />
     /// Continuous queries allow to register a remote filter and a listener for cache update events.
@@ -31,13 +42,8 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     /// To execute the query use method
     /// <see cref="ICacheClient{K,V}.QueryContinuous"/>.
     /// </summary>
-    public class ContinuousQueryClient<TK, TV>
+    public class ContinuousQueryClient<TK, TV> : ContinuousQueryClient
     {
-        /// <summary>
-        /// Default buffer size.
-        /// </summary>
-        public const int DefaultBufferSize = 1;
-
         /// <summary>
         /// Initializes a new instance of <see cref="ContinuousQueryClient{TK,TV}"/> class.
         /// </summary>

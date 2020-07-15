@@ -110,6 +110,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that default settings have correct values.
+        /// </summary>
+        [Test]
+        public void TestDefaultSettings()
+        {
+            var qry = new ContinuousQueryClient<int, int>();
+
+            Assert.AreEqual(ContinuousQueryClient.DefaultBufferSize, qry.BufferSize);
+            Assert.AreEqual(TimeSpan.Zero, qry.TimeInterval);
+        }
+
+        /// <summary>
         /// Tests that Compute notifications and Continuous Query notifications work together correctly.
         /// </summary>
         [Test]
