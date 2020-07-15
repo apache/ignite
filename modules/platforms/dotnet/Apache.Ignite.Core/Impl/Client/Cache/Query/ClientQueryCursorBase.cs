@@ -37,9 +37,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** Page op code. */
         private readonly ClientOp _getPageOp;
 
-        /** Whether to invoke <see cref="ClientOp.ResourceClose"/> when this cursor is disposed. */
-        private readonly bool _closeCursorOnDispose;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursorBase{T}" /> class.
         /// </summary>
@@ -49,26 +46,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="readFunc">Read func.</param>
-        /// <param name="closeCursorOnDispose">Whether to invoke <see cref="ClientOp.ResourceClose"/>
-        /// when this cursor is disposed.</param>
-        public ClientQueryCursorBase(
-            ClientSocket socket,
-            long cursorId,
-            bool keepBinary,
-            IBinaryStream initialBatchStream,
-            ClientOp getPageOp,
-            Func<BinaryReader, T> readFunc,
-            bool closeCursorOnDispose)
-            : base(
-                socket.Marshaller,
-                keepBinary,
-                readFunc,
-                initialBatchStream)
+        public ClientQueryCursorBase(ClientSocket socket, long cursorId, bool keepBinary,
+            IBinaryStream initialBatchStream, ClientOp getPageOp, Func<BinaryReader, T> readFunc)
+            : base(socket.Marshaller, keepBinary, readFunc, initialBatchStream)
         {
             _socket = socket;
             _cursorId = cursorId;
             _getPageOp = getPageOp;
-            _closeCursorOnDispose = closeCursorOnDispose;
         }
 
         /** <inheritdoc /> */
@@ -95,11 +79,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         {
             try
             {
-                if (_closeCursorOnDispose)
-                {
-                    _socket.DoOutInOp<object>(ClientOp.ResourceClose,
-                        ctx => ctx.Writer.WriteLong(_cursorId), null);
-                }
+                _socket.DoOutInOp<object>(ClientOp.ResourceClose,
+                    ctx => ctx.Writer.WriteLong(_cursorId), null);
             }
             finally
             {

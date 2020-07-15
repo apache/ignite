@@ -35,23 +35,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
-        /// <param name="closeCursorOnDispose">Whether to invoke <see cref="ClientOp.ResourceClose"/>
-        /// when this cursor is disposed.</param>
-        public ClientQueryCursor(
-            ClientSocket socket,
-            long cursorId,
-            bool keepBinary,
-            IBinaryStream initialBatchStream,
-            ClientOp getPageOp,
-            bool closeCursorOnDispose)
-            : base(
-                socket,
-                cursorId,
-                keepBinary,
-                initialBatchStream,
-                getPageOp,
-                r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()),
-                closeCursorOnDispose)
+        public ClientQueryCursor(ClientSocket socket, long cursorId, bool keepBinary,
+            IBinaryStream initialBatchStream, ClientOp getPageOp)
+            : base(socket, cursorId, keepBinary, initialBatchStream, getPageOp,
+                r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()))
         {
             // No-op.
         }
