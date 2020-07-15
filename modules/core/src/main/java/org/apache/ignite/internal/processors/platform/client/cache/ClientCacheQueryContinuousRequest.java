@@ -39,7 +39,6 @@ import javax.cache.event.CacheEntryEventFilter;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
-
     /** Query. */
     private final ContinuousQuery qry;
 

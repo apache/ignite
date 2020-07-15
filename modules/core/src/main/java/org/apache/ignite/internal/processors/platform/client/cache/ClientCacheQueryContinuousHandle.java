@@ -75,7 +75,7 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
         this.cur = cur;
     }
 
-    /** <inheritdoc /> */
+    /** {@inheritDoc} */
     @Override public void close() {
         QueryCursor<?> cur0 = cur;
 
