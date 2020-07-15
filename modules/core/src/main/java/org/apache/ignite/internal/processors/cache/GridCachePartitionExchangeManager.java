@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,13 +57,17 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.BaselineChangedEvent;
 import org.apache.ignite.events.ClusterActivationEvent;
 import org.apache.ignite.events.ClusterStateChangeEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -111,6 +116,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
@@ -284,6 +290,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Metric that shows whether cluster is in fully rebalanced state. */
     private volatile BooleanMetricImpl rebalanced;
+
+    /** */
+    private final ReentrantLock dumpLongRunningOpsLock = new ReentrantLock();
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -581,7 +590,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
 
-                    exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions));
+                    boolean baselineChanging;
+                    if (stateChangeMsg.forceChangeBaselineTopology())
+                        baselineChanging = true;
+                    else {
+                        DiscoveryDataClusterState state = cctx.kernalContext().state().clusterState();
+
+                        assert state.transition() : state;
+
+                        baselineChanging = exchActions.changedBaseline()
+                            // Or it is the first activation.
+                            || state.state() != ClusterState.INACTIVE && !state.previouslyActive() && state.previousBaselineTopology() == null;
+                    }
+
+                    exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions, baselineChanging));
                 }
             }
             else if (customMsg instanceof DynamicCacheChangeBatch) {
@@ -664,7 +686,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** */
-    private void onClusterStateChangeFinish(IgniteInternalFuture<AffinityTopologyVersion> fut, ExchangeActions exchActions) {
+    private void onClusterStateChangeFinish(IgniteInternalFuture<AffinityTopologyVersion> fut,
+        ExchangeActions exchActions, boolean baselineChanging) {
         A.notNull(exchActions, "exchActions");
 
         GridEventStorageManager evtMngr = cctx.kernalContext().event();
@@ -710,6 +733,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             cctx.kernalContext().getSystemExecutorService()
                 .submit(() -> evts.forEach(e -> cctx.kernalContext().event().record(e)));
+        }
+
+        GridKernalContext ctx = cctx.kernalContext();
+        DiscoveryDataClusterState state = ctx.state().clusterState();
+
+        if (baselineChanging) {
+            ctx.getStripedExecutorService().execute(new Runnable() {
+                @Override public void run() {
+                    if (ctx.event().isRecordable(EventType.EVT_BASELINE_CHANGED)) {
+                        ctx.event().record(new BaselineChangedEvent(
+                            ctx.discovery().localNode(),
+                            "Baseline changed.",
+                            EventType.EVT_BASELINE_CHANGED,
+                            ctx.cluster().get().currentBaselineTopology()
+                        ));
+                    }
+                }
+            });
         }
     }
 
@@ -2339,29 +2380,38 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (lastFut != null && !lastFut.isDone())
                 return;
 
-            if (U.currentTimeMillis() < nextLongRunningOpsDumpTime)
+            if (!dumpLongRunningOpsLock.tryLock())
                 return;
 
-            if (dumpLongRunningOperations0(timeout)) {
-                nextLongRunningOpsDumpTime = U.currentTimeMillis() + nextDumpTimeout(longRunningOpsDumpStep++, timeout);
+            try {
+                if (U.currentTimeMillis() < nextLongRunningOpsDumpTime)
+                    return;
 
-                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
-                    U.warn(diagnosticLog, "Found long running cache operations, dump threads.");
+                if (dumpLongRunningOperations0(timeout)) {
+                    nextLongRunningOpsDumpTime = U.currentTimeMillis() +
+                        nextDumpTimeout(longRunningOpsDumpStep++, timeout);
 
-                    U.dumpThreads(diagnosticLog);
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
+                        U.warn(diagnosticLog, "Found long running cache operations, dump threads.");
+
+                        U.dumpThreads(diagnosticLog);
+                    }
+
+                    if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
+                        U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
+
+                        // Dump IO manager statistics.
+                        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
+                            cctx.gridIO().dumpStats();
+                    }
                 }
-
-                if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
-                    U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
-
-                    // Dump IO manager statistics.
-                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
-                        cctx.gridIO().dumpStats();
+                else {
+                    nextLongRunningOpsDumpTime = 0;
+                    longRunningOpsDumpStep = 0;
                 }
             }
-            else {
-                nextLongRunningOpsDumpTime = 0;
-                longRunningOpsDumpStep = 0;
+            finally {
+                dumpLongRunningOpsLock.unlock();
             }
         }
         catch (Exception e) {
