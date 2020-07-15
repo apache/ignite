@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
     /// <summary>
@@ -246,18 +245,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 c2.Dispose();
                 c3.Dispose();
             }
-        }
-
-        /// <summary>
-        /// Tests scan query with Java-based filter.
-        /// </summary>
-        [Test]
-        public void TestWithJavaFilter()
-        {
-            // TODO: What's the advantage of JavaObject against a BinaryObject?
-            // 1. Registration - is it handled better for Java objects? Does the dynamic registration work?
-            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter");
-
         }
 
         /// <summary>

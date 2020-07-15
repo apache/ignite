@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
