@@ -142,23 +142,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
             }, cts.Token);
 
-            const int count = 10000;
+            var keys = Enumerable.Range(1, 10000).ToArray();
 
             using (cache.QueryContinuous(qry1))
             using (cache.QueryContinuous(qry2))
             {
-                for (var i = 0; i < count; i++)
+                foreach (var key in keys)
                 {
-                    cache[i] = i;
+                    cache[key] = key;
                 }
             }
 
             cts.Cancel();
             computeRunnerTask.Wait();
 
-            // TODO: Check actual keys.
-            TestUtils.WaitForTrueCondition(() => receivedKeysAll.Count == count);
-            Assert.AreEqual(count / 2, receivedKeysOdd.Count);
+            TestUtils.WaitForTrueCondition(() => receivedKeysAll.Count == keys.Length);
+            Assert.AreEqual(keys.Length / 2, receivedKeysOdd.Count);
+
+            CollectionAssert.AreEquivalent(keys, receivedKeysAll);
+            CollectionAssert.AreEquivalent(keys.Where(k => k % 2 == 1), receivedKeysOdd);
         }
 
         /// <summary>

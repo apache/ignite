@@ -37,13 +37,13 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     private final ClientConnectionContext ctx;
 
     /** */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
+
+    /** */
     private volatile Long id;
 
     /** */
     private volatile QueryCursor<?> cur;
-
-    /** Close guard. */
-    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /**
      * Ctor.
