@@ -107,7 +107,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command. usage(
+        Command.usage(
             log,
             "Set new tracing configuration. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +

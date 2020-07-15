@@ -19,9 +19,9 @@ package org.apache.ignite.internal.commandline.tracing.configuration;
 
 import java.util.Collections;
 import java.util.Set;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationItem;
+import org.apache.ignite.spi.tracing.Scope;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

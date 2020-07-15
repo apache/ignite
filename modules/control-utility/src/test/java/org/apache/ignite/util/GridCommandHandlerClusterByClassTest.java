@@ -99,8 +99,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
-import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandList.METADATA;
+import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;

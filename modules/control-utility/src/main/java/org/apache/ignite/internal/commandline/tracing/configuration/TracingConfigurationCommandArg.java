@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.commandline.tracing.configuration;
 
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.spi.tracing.Scope;
-import org.apache.ignite.internal.processors.tracing.Span;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.spi.tracing.Scope;
 
 /**
  * {@link CommandList#TRACING_CONFIGURATION} command arguments.
