@@ -28,13 +28,13 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.commandline.cache.argument.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationArguments;
+import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskArg;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
+import org.apache.ignite.spi.tracing.Scope;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
@@ -107,7 +107,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command.usage(
+        Command. usage(
             log,
             "Set new tracing configuration. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
