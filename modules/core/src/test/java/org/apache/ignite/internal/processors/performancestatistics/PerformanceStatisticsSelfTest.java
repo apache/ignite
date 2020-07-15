@@ -131,7 +131,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         stopCollectStatisticsAndRead(new TestHandler() {
             @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
                 int affPartId) {
-                sessions.compute(sesId, (uuid, val) -> val == null ? 1 : ++val);
+                sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
                 tasks.incrementAndGet();
 
@@ -144,7 +144,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
             @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
                 boolean timedOut) {
-                sessions.compute(sesId, (uuid, val) -> val == null ? 1 : ++val);
+                sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
                 jobs.incrementAndGet();
 
