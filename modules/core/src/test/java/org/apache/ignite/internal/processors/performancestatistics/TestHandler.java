@@ -30,29 +30,28 @@ public class TestHandler implements PerformanceStatisticsHandler {
         // No-op.
     }
 
-    @Override
-    public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration, boolean commited) {
+    @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+        boolean commited) {
         // No-op.
     }
 
-    @Override
-    public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime, long duration,
-        boolean success) {
+    @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+        long duration, boolean success) {
         // No-op.
     }
 
-    @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
-        long physicalReads) {
+    @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+        long logicalReads, long physicalReads) {
         // No-op.
     }
 
-    @Override
-    public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+    @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+        int affPartId) {
         // No-op.
     }
 
-    @Override
-    public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+    @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+        boolean timedOut) {
         // No-op.
     }
 }
