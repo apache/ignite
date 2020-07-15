@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// continuous query listener receives binary objects.
         /// </summary>
         [Test]
-        public void TestContinuousQueryWithKeepBinaryInvokesListenerInBinaryMode()
+        public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToListener()
         {
             var cache = Client.GetOrCreateCache<int, Person>(TestUtils.TestName);
             var binCache = cache.WithKeepBinary<int, IBinaryObject>();
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// continuous query filter receives binary objects.
         /// </summary>
         [Test]
-        public void TestContinuousQueryWithFilterInBinaryMode()
+        public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToFilter()
         {
             // TODO: filter operates on binary objects.
         }
