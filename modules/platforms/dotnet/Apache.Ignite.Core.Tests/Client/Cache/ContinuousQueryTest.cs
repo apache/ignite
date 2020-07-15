@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Cache.Event;
@@ -253,12 +254,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        /// <summary>
+        /// Tests that when cache is in binary mode (<see cref="ICacheClient{TK,TV}.WithKeepBinary{K1,V1}"/>,
+        /// continuous query listener receives binary objects.
+        /// </summary>
         [Test]
         public void TestContinuousQueryInBinaryMode()
         {
             // TODO
         }
 
+        /// <summary>
+        /// Tests that when cache is in binary mode (<see cref="ICacheClient{TK,TV}.WithKeepBinary{K1,V1}"/>,
+        /// continuous query filter receives binary objects.
+        /// </summary>
         [Test]
         public void TestContinuousQueryWithFilterInBinaryMode()
         {
