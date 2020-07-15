@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class ContinuousQueryTest : ClientTestBase
     {
+        /** */
+        private const int MaxCursors = 20;
+
         /// <summary>
         /// Initializes a new instance of <see cref="ContinuousQueryTest"/>.
         /// </summary>
@@ -376,19 +379,41 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/> controls
+        /// maximum continuous query count.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryCountIsLimitedByMaxCursors()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            var qry = new ContinuousQueryClient<int, int>( new DelegateListener<int, int>());
+
+            var queries = Enumerable.Range(1, MaxCursors).Select(_ => cache.QueryContinuous(qry)).ToList();
+
+            var ex = Assert.Throws<IgniteClientException>(() => cache.QueryContinuous(qry));
+
+            queries.ForEach(q => q.Dispose());
+
+            StringAssert.StartsWith("Too many open cursors", ex.Message);
+            Assert.AreEqual(ClientStatusCode.TooManyCursors, ex.StatusCode);
+        }
+
+        /// <summary>
         /// Tests that multiple queries can be started from multiple threads.
         /// </summary>
         [Test]
         public void TestMultipleQueriesMultithreaded()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
-            var cts = new CancellationTokenSource();
+            cache.Put(1, 0);
 
+            var cts = new CancellationTokenSource();
             var updaterThread = Task.Factory.StartNew(() =>
             {
-                for (int i = 0; i < int.MaxValue && !cts.IsCancellationRequested; i++)
+                for (long i = 0; i < long.MaxValue && !cts.IsCancellationRequested; i++)
                 {
-                    cache.Put(i, i);
+                    cache.Put(1, (int) i);
                 }
             });
 
@@ -400,10 +425,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 var qry = new ContinuousQueryClient<int, int>
                 {
-                    Listener = new DelegateListener<int, int>(_ => evt.Set())
+                    Listener = new DelegateListener<int, int>(e =>
+                    {
+                        Assert.AreEqual(1, e.Key);
+                        Assert.AreEqual(CacheEntryEventType.Updated, e.EventType);
+                        evt.Set();
+                    })
                 };
 
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 200; i++)
                 {
                     evt.Reset();
                     using (clientCache.QueryContinuous(qry))
@@ -412,7 +442,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     }
 
                 }
-            }, Environment.ProcessorCount);
+            }, 16);
 
             cts.Cancel();
             updaterThread.Wait();
@@ -502,9 +532,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
+                    MaxOpenCursorsPerConnection = MaxCursors,
                     ThinClientConfiguration = new ThinClientConfiguration
                     {
-                        MaxActiveComputeTasksPerConnection = 100
+                        MaxActiveComputeTasksPerConnection = 100,
                     }
                 }
             };
