@@ -21,14 +21,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for {@link CheckIndexInlineSizes} command.
+ * Task for check secondary indexes inline size on the different nodes.
  */
 @GridInternal
 public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<Void, CheckIndexInlineSizesResult, CheckIndexInlineSizesResult> {
@@ -71,7 +70,7 @@ public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<Void, CheckInd
     }
 
     /**
-     * Job for {@link CheckIndexInlineSizes} command.
+     * Job for check secondary indexes inline size on the different nodes.
      */
     private static class CheckIndexInlineSizesJob extends VisorJob<Void, CheckIndexInlineSizesResult> {
         /** */
