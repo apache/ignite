@@ -83,11 +83,6 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
         {
             cur0.close();
             cur = null;
-
-            ClientNotification endNotification = new ClientNotification(
-                    ClientMessageParser.OP_QUERY_CONTINUOUS_END_NOTIFICATION, id);
-
-            ctx.notifyClient(endNotification);
         }
     }
 }

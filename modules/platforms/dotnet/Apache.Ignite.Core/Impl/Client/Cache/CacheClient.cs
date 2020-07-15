@@ -1147,13 +1147,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 return;
             }
 
-            if (opCode == ClientOp.QueryContinuousEndNotification)
-            {
-                qryHandle.RemoveNotificationHandler();
-
-                return;
-            }
-
             GetLogger().Error("Error while handling Continuous Query notification: unexpected op '{0}'", opCode);
         }
 

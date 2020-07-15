@@ -63,18 +63,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 {
                     _socket.DoOutInOp<object>(ClientOp.ResourceClose,
                         ctx => ctx.Writer.WriteLong(_queryId), null);
+
+                    _socket.RemoveNotificationHandler(_queryId);
                 }
 
                 _disposed = true;
             }
-        }
-
-        /// <summary>
-        /// Removes the notification handler for the corresponding query.
-        /// </summary>
-        internal void RemoveNotificationHandler()
-        {
-            _socket.RemoveNotificationHandler(_queryId);
         }
 
         /// <summary>

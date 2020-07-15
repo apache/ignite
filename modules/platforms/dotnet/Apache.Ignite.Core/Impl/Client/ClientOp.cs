@@ -65,7 +65,6 @@ namespace Apache.Ignite.Core.Impl.Client
         QuerySqlFieldsCursorGetPage = 2005,
         QueryContinuous = 2006,
         QueryContinuousEventNotification = 2007,
-        QueryContinuousEndNotification = 2008,
 
         // Metadata.
         BinaryTypeNameGet = 3000,
