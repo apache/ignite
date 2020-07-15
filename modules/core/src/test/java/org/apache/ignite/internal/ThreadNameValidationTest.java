@@ -21,9 +21,11 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -70,6 +72,9 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
     /** */
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
+    /** */
+    private Set<Long> externalAnonymousThreads;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
 
@@ -92,8 +97,6 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
 
         System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
 
-        super.beforeTest();
-
         // MBean used LogManager with anonymous shutdown hook Thread,
         // init here if required for same behavior in runs in suite and test only
         if (!U.IGNITE_MBEANS_DISABLED) {
@@ -103,6 +106,11 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         anonymousThreadCountBeforeTest = getAnonymousThreadCount();
 
         super.beforeTest();
+        externalAnonymousThreads = Arrays
+            .stream(threadMXBean.dumpAllThreads(false, false))
+            .filter(t -> t.getThreadName().startsWith("Thread-"))
+            .map(thread -> thread.getThreadId())
+            .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
@@ -162,18 +170,20 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
      */
     private void validateThreadNames() {
         Arrays.stream(threadMXBean.dumpAllThreads(false, false))
-            .filter(t -> t.getThreadName().startsWith("Thread-")).forEach(threadInfo -> {
+            .filter(t -> t.getThreadName().startsWith("Thread-")
+                && !externalAnonymousThreads.contains(t.getThreadId()))
+            .forEach(threadInfo ->
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Thread with default name detected. StackTrace: ");
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("Thread with default name detected. StackTrace: ");
+                for (StackTraceElement element : threadInfo.getStackTrace()) {
+                    sb.append(System.lineSeparator())
+                        .append(element.toString());
+                }
 
-            for (StackTraceElement element : threadInfo.getStackTrace()) {
-                sb.append(System.lineSeparator())
-                    .append(element.toString());
-            }
-
-            fail(sb.toString());
-        });
+                fail(sb.toString());
+            });
     }
 
     /**
