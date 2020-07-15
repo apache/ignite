@@ -872,6 +872,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         for (;;) {
             try {
+                if (ctx.kernalContext().isStopping())
+                    throw new NodeStoppingException("Node is stopping");
+
+                if (!rent.isDone())
+                    ctx.evict().evictPartitionAsync(grp, this, EVICTION);
+
                 rent.get(timeout);
 
                 break;
