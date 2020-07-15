@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>

@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** Read func. */
         private readonly Func<BinaryReader, T> _readFunc;
-        
+
         /** Lock object. */
         private readonly object _syncRoot = new object();
 
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             lock (_syncRoot)
             {
                 ThrowIfDisposed();
-                
+
                 _batch = _hasNext ? GetBatch() : null;
 
                 _batchPos = 0;

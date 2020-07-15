@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Client.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
@@ -439,10 +438,10 @@ namespace Apache.Ignite.Core.Client.Cache
         ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc);
 
         /// <summary>
-        /// Start continuous query execution.
+        /// Starts the continuous query execution.
         /// </summary>
         /// <param name="continuousQuery">Continuous query.</param>
-        /// <returns>Handle to stop query execution.</returns>
+        /// <returns>Handle to stop the query execution.</returns>
         IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery);
     }
 }
