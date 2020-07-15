@@ -143,7 +143,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             }
 
             @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
-            boolean timedOut) {
+                boolean timedOut) {
                 sessions.compute(sesId, (uuid, val) -> val == null ? 1 : ++val);
 
                 jobs.incrementAndGet();

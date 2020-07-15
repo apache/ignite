@@ -21,11 +21,13 @@ import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -87,12 +89,9 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
-            for (Ignite grid : grids) {
-                GridKernalContext ctx = ((IgniteEx)grid).context();
-
-                if (performanceStatsEnabled != ctx.performanceStatistics().enabled())
+            for (Ignite grid : grids)
+                if (performanceStatsEnabled != statisticsMBean(grid.name()).started())
                     return false;
-            }
 
             // Make sure that writer flushed data and stopped.
             if (!performanceStatsEnabled) {
@@ -116,5 +115,43 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     protected static PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
         return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
             PerformanceStatisticsMBean.class);
+    }
+
+    /** Test performance statistics handler. */
+    public class TestHandler implements PerformanceStatisticsHandler {
+        /** {@inheritDoc} */
+        @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+            boolean commited) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+            long duration, boolean success) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+            long logicalReads, long physicalReads) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+            int affPartId) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+            boolean timedOut) {
+            // No-op.
+        }
     }
 }

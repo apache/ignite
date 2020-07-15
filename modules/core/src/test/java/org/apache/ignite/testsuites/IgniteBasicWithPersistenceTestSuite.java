@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersist
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMBeanSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -86,7 +85,6 @@ import org.junit.runners.Suite;
     IgniteClusterIdTagTest.class,
 
     PerformanceStatisticsSelfTest.class,
-    PerformanceStatisticsMBeanSelfTest.class,
     TopologyChangesTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
