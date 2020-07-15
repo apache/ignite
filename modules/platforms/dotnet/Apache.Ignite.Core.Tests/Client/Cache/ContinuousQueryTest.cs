@@ -396,7 +396,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             TestUtils.RunMultiThreaded(() =>
             {
-                var qry = new ContinuousQueryClient<int, int>();
+                var qry = new ContinuousQueryClient<int, int>
+                {
+
+                };
 
                 using (clientCache.QueryContinuous(qry))
                 {

@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     /// If an update event passes the filter, it will be sent to the client.
     /// <para />
     /// To execute the query use method
-    /// <see cref="ICacheClient{K,V}.QueryContinuous(ContinuousQuery{K,V})"/>.
+    /// <see cref="ICacheClient{K,V}.QueryContinuous"/>.
     /// </summary>
     public class ContinuousQueryClient<TK, TV>
     {
@@ -51,22 +51,22 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
         public ContinuousQueryClient(ICacheEntryEventListener<TK, TV> listener) : this()
         {
             IgniteArgumentCheck.NotNull(listener, "listener");
-            
+
             Listener = listener;
         }
 
         /// <summary>
-        /// Cache entry event listener. Invoked on the node where continuous query execution
-        /// has been started.
+        /// Cache entry event listener. Invoked locally.
         /// </summary>
         public ICacheEntryEventListener<TK, TV> Listener { get; set; }
 
         /// <summary>
-        /// Optional cache entry filter. Invoked on a node where cache event occurred. If filter
-        /// returns <c>false</c>, then cache entry event will not be sent to a node where
+        /// Optional cache entry filter. Invoked on a node where cache event occurred. If the filter
+        /// returns <c>false</c>, then cache entry event will not be sent to a node where the
         /// continuous query has been started.
         /// <para />
-        /// Must be either binary or serializable in case query is not local.
+        /// This filter will be serialized and sent to the server nodes.
+        ///
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
