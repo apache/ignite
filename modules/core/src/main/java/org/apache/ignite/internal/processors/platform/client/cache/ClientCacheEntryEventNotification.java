@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
-
-import javax.cache.event.CacheEntryEvent;
 
 /**
  * Continuous query notification.

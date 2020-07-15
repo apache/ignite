@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -24,8 +25,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Continuous query handle.
