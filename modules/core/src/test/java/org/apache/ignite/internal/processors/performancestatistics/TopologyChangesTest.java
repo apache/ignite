@@ -17,19 +17,31 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests topology changes during collecting performance statistics.
  */
+@RunWith(Parameterized.class)
 public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
-    /** */
-    private boolean persistence;
+    /** Persistence anebled flag. */
+    @Parameterized.Parameter
+    public boolean persistence;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "persistence={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{false}, {true}});
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -78,11 +90,10 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
     public void testClusterRestartWithPersistence() throws Exception {
-        persistence = true;
-
         startGrids(2);
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        if (persistence)
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
         startCollectStatistics();
 
@@ -90,27 +101,15 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
 
         startGrids(2);
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        if (persistence)
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
-        waitForStatisticsEnabled(true);
+        waitForStatisticsEnabled(persistence);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testClientReconnected() throws Exception {
-        checkClientReconnect(false);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testClientReconnectedWithPersistence() throws Exception {
-        persistence = true;
-
-        checkClientReconnect(true);
-    }
-
-    /** @throws Exception If failed. */
-    private void checkClientReconnect(boolean persistence) throws Exception {
         IgniteEx grid = startGrid(0);
 
         if (persistence)
