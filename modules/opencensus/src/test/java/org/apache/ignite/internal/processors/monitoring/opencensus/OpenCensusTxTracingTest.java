@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
+import io.opencensus.trace.SpanId;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
@@ -26,7 +27,6 @@ import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.transactions.Transaction;
-import io.opencensus.trace.SpanId;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX;

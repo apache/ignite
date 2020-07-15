@@ -27,6 +27,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import io.opencensus.common.Functions;
+import io.opencensus.trace.AttributeValue;
+import io.opencensus.trace.Span;
+import io.opencensus.trace.SpanId;
+import io.opencensus.trace.Tracing;
+import io.opencensus.trace.export.SpanData;
+import io.opencensus.trace.export.SpanExporter;
+import io.opencensus.trace.samplers.Samplers;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,22 +48,14 @@ import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTraceExporter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import io.opencensus.common.Functions;
-import io.opencensus.trace.AttributeValue;
-import io.opencensus.trace.Span;
-import io.opencensus.trace.SpanId;
-import io.opencensus.trace.Tracing;
-import io.opencensus.trace.export.SpanData;
-import io.opencensus.trace.export.SpanExporter;
-import io.opencensus.trace.samplers.Samplers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
 import static org.apache.ignite.spi.tracing.Scope.EXCHANGE;
 import static org.apache.ignite.spi.tracing.Scope.TX;
-import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 
 /**
  * Abstract class for open census tracing tests.

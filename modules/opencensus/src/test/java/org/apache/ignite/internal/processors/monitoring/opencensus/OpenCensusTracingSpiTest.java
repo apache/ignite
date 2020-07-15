@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.monitoring.opencensus;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import io.opencensus.trace.AttributeValue;
+import io.opencensus.trace.Status;
+import io.opencensus.trace.export.SpanData;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -32,10 +35,8 @@ import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.junit.Assert;
 import org.junit.Test;
-import io.opencensus.trace.AttributeValue;
-import io.opencensus.trace.Status;
-import io.opencensus.trace.export.SpanData;
 
+import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_JOB_EXECUTE_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_JOB_EXECUTE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
@@ -49,7 +50,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_N
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_LEFT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 
 /**
  * Tests to check correctness of OpenCensus Tracing SPI implementation.
