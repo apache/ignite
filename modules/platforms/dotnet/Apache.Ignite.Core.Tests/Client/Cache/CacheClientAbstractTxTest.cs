@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
@@ -28,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
+    using NUnit.Framework.Constraints;
 
     /// <summary>
     /// Transactional cache client tests.
@@ -122,6 +124,54 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests that transaction can't be committed/rollback after being already completed.
+        /// </summary>
+        [Test]
+        public void TestThrowsIfEndAlreadyCompletedTransaction()
+        {
+            var tx = Client.GetTransactions().TxStart();
+            tx.Commit();
+
+            var constraint = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
+               .And.Message.Contains("Transaction")
+               .And.Message.Contains("is closed"));
+
+            Assert.Throws(constraint, () => tx.Commit());
+            Assert.Throws(constraint, () => tx.Rollback());
+
+            using (tx = Client.GetTransactions().TxStart())
+            {
+            }
+
+            Assert.Throws(constraint, () => tx.Commit());
+            Assert.Throws(constraint, () => tx.Rollback());
+        }
+
+
+        /// <summary>
+        /// Tests that transaction throws if timeout elapsed.
+        /// </summary>
+        [Test]
+        public void TestTimeout()
+        {
+            var timeout = TimeSpan.FromMilliseconds(200);
+            var cache = GetTransactionalCache();
+            cache.Put(1, 1);
+            using (var tx = Client.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
+                TransactionIsolation.ReadCommitted,
+                timeout))
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(300));
+                var constraint = new ReusableConstraint(Is.TypeOf<IgniteClientException>()
+                   .And.Message.Contains("Cache transaction timed out"));
+                Assert.Throws(constraint, () => cache.Put(1, 10));
+                Assert.Throws(constraint, () => tx.Commit());
+            }
+
+            Assert.AreEqual(1, cache.Get(1));
         }
 
         /// <summary>
@@ -658,15 +708,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// </summary>
         private void TestThrowsIfMultipleStarted(Func<IDisposable> outer, Func<IDisposable> inner)
         {
-            Assert.Throws<IgniteClientException>(() =>
+
+            Assert.Throws(
+                Is.TypeOf<IgniteClientException>()
+                   .And.Message.Contains("A transaction has already been started by the current thread."),
+                () =>
                 {
                     using (outer())
                     using (inner())
                     {
                         // No-op.
                     }
-                },
-                "A transaction has already been started by the current thread.");
+                });
         }
 
         /// <summary>

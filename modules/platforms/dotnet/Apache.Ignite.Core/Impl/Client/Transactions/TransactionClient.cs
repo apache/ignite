@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
-    using System.Threading;
+    using System.Globalization;
 
     /// <summary>
     /// Ignite Thin Client transaction facade.
@@ -53,12 +53,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** <inheritdoc /> */
         public void Commit()
         {
+            ThrowIfClosed();
             Close(true);
         }
 
         /** <inheritdoc /> */
         public void Rollback()
         {
+            ThrowIfClosed();
             Close(false);
         }
 
@@ -115,6 +117,19 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 {
                     _closed = true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Throws and exception if transaction is closed.
+        /// </summary>
+        private void ThrowIfClosed()
+        {
+            if (_closed)
+            {
+                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
+                    "Transaction {0} is closed",
+                    Id));
             }
         }
 
