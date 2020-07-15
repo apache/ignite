@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Interop;
 
     /// <summary>
     /// API for configuring continuous cache queries in thin client.
@@ -65,8 +66,9 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
         /// returns <c>false</c>, then cache entry event will not be sent to a node where the
         /// continuous query has been started.
         /// <para />
-        /// This filter will be serialized and sent to the server nodes.
-        ///
+        /// This filter will be serialized and sent to the server nodes. .NET filters require all
+        /// server nodes to be .NET-based. Java filters can be used with <see cref="JavaObject"/>
+        /// and <see cref="ContinuousQueryExtensions.ToCacheEntryEventFilter{K, V}"/>.
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
