@@ -58,7 +58,7 @@ public class IoStatisticsQueryHelper {
      *
      * @return Gathered statistics.
      */
-    public static IoStatisticsHolderQuery finishGatheringQueryStatistics() {
+    public static IoStatisticsHolder finishGatheringQueryStatistics() {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder != null;
