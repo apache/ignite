@@ -27,9 +27,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result for {@link VisorTracingConfigurationTask}.

@@ -59,9 +59,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import static java.util.Objects.isNull;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_FINISH;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
  *

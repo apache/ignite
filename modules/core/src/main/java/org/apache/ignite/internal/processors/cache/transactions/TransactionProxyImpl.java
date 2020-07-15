@@ -46,13 +46,13 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_COMMIT;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_ROLLBACK;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_CLOSE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_SUSPEND;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_RESUME;
-import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_CLOSE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_COMMIT;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_RESUME;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_ROLLBACK;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_SUSPEND;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  * Cache transaction proxy.

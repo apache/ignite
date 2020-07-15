@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.tracing;
 
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

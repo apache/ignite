@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 
 /**
