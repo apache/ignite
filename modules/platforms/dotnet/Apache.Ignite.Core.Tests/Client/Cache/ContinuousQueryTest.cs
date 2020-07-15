@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests batching behavior.
         /// </summary>
         private void TestBatches(int keyCount, int bufferSize, TimeSpan interval,
-            Action<List<int>, ICollection<List<int>>> assert)
+            Action<List<int>, ConcurrentQueue<List<int>>> assert)
         {
             var res = new ConcurrentQueue<List<int>>();
 
@@ -552,7 +552,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 keys.ForEach(k => serverCache.Put(k, k));
 
-                assert(keys, res.ToArray());
+                assert(keys, res);
             }
         }
 
