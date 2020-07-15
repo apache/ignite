@@ -1766,6 +1766,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param msg Error message.
      */
     private void cancelFutures(String msg) {
+        assert Thread.holdsLock(opsMux);
+
         for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
             fut.onDone(new IgniteFutureCancelledException(msg));
 
@@ -1940,9 +1942,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
          * @return {@code True} if operation is not finished.
          */
         public boolean finished() {
-            GroupKeyChangeFuture fut = grpKeyChangeFut;
+            assert Thread.holdsLock(opsMux);
 
-            return fut == null || fut.isDone();
+            return grpKeyChangeFut == null || grpKeyChangeFut.isDone();
         }
 
         /**
@@ -2002,64 +2004,34 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 return new GridFinishedFuture<>();
 
             try {
-                int[] grpIds = req.groupIds();
-                byte[] keyIds = req.keyIds();
-
-                for (int i = 0; i < grpIds.length; i++) {
-                    int grpId = grpIds[i];
+                for (int i = 0; i < req.groupIds().length; i++) {
+                    int grpId = req.groupIds()[i];
+                    int keyId = req.keyIds()[i] & 0xff;
 
                     if (reencryptGroups.containsKey(grpId)) {
                         return new GridFinishedFuture<>(
                             new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
                     }
 
-                    int newKeyId = keyIds[i] & 0xff;
+                    for (GroupKey grpKey : grpEncKeys.get(grpId)) {
+                        if (grpKey.unsignedId() == keyId) {
+                            Set<Long> walSegments = new TreeSet<>();
 
-                    // If the previous rotation has failed during the preparation phase, we may have another unused key.
-                    GroupKey existingGrpKey = null;
+                            for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : awaitWalSegments.entrySet()) {
+                                Set<Integer> keys = entry.getValue().get(grpId);
 
-                    for (GroupKey k : grpEncKeys.get(grpId)) {
-                        if (k.unsignedId() == keyIds[i]) {
-                            existingGrpKey = k;
+                                if (keys != null && keys.contains(keyId))
+                                    walSegments.add(entry.getKey());
+                            }
 
-                            break;
+                            if (walSegments.isEmpty())
+                                break;
+
+                            return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier, it's " +
+                                "already present. There existing WAL segments that encrypted with this key [" +
+                                "grpId=" + grpId + ", newId=" + keyId + ", currId=" + groupKey(grpId).unsignedId() +
+                                ", walSegments=" + walSegments + "]."));
                         }
-                    }
-
-                    if (existingGrpKey == null || (byte)(groupKey(grpId).unsignedId() + 1) == keyIds[i])
-                        continue;
-
-                    Set<Long> walSegments = new TreeSet<>();
-
-                    for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : awaitWalSegments.entrySet()) {
-                        Set<Integer> keys = entry.getValue().get(grpId);
-
-                        if (keys != null && keys.contains(newKeyId))
-                            walSegments.add(entry.getKey());
-                    }
-
-                    return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier - it's " +
-                        "already present, probably there existing WAL segments that encrypted with this key [" +
-                        "grpId=" + grpId + ", newKeyId=" + newKeyId + ", activeId=" + groupKey(grpId).unsignedId() +
-                        ", walSegments=" + walSegments + "]."));
-                }
-
-                for (int i = 0; i < grpIds.length; i++) {
-                    int grpId = grpIds[i];
-                    int newKeyId = keyIds[i] & 0xff;
-
-                    Serializable newKey = getSpi().decryptKey(req.keys()[i]);
-
-                    synchronized (metaStorageMux) {
-                        grpEncKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>())
-                            .add(new GroupKey(newKeyId, newKey));
-
-                        writeToMetaStore(grpId, true, false);
-                    }
-
-                    if (log.isInfoEnabled()) {
-                        log.info("New encryption key for cache group added [" +
-                            "grpId=" + grpId + ", id=" + newKeyId + "]");
                     }
                 }
             }
@@ -2145,10 +2117,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 for (int i = 0; i < grpIds.length; i++) {
                     int grpId = grpIds[i];
                     int keyId = req.keyIds()[i] & 0xff;
+                    Serializable newKey = getSpi().decryptKey(req.keys()[i]);
 
                     synchronized (metaStorageMux) {
-                        GroupKey newGrpKey = groupKey(grpId, keyId);
-                        GroupKey prevGrpKey = replaceActiveKey(grpEncKeys.get(grpId), newGrpKey);
+                        GroupKey prevGrpKey = replaceActiveKey(grpEncKeys.get(grpId), new GroupKey(keyId, newKey));
 
                         assert prevGrpKey != null && prevGrpKey.id() != keyId : "prev=" + prevGrpKey + ", curr=" + keyId;
 
@@ -2161,7 +2133,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     }
 
                     if (log.isInfoEnabled()) {
-                        log.info("New encryption key for cache group was set [" +
+                        log.info("New encryption key for cache group was added [" +
                             "grpId=" + grpId + ", keyId=" + keyId + "]");
                     }
                 }
