@@ -257,10 +257,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that when cache is in binary mode (<see cref="ICacheClient{TK,TV}.WithKeepBinary{K1,V1}"/>,
-        /// continuous query listener receives binary objects.
+        /// continuous query listener and filter receive binary objects.
         /// </summary>
         [Test]
-        public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToListener()
+        public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToListenerAndFilter()
         {
             var cache = Client.GetOrCreateCache<int, Person>(TestUtils.TestName);
             var binCache = cache.WithKeepBinary<int, IBinaryObject>();
@@ -269,29 +269,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var qry = new ContinuousQueryClient<int, IBinaryObject>
             {
-                Listener = new DelegateListener<int, IBinaryObject>(e => evts.Add(e.Value))
+                Listener = new DelegateListener<int, IBinaryObject>(e => evts.Add(e.Value)),
+                Filter = new EvenIdBinaryFilter()
             };
 
             using (binCache.QueryContinuous(qry))
             {
-                cache[1] = new Person(1);
+                cache[2] = new Person(2);
+                cache[3] = new Person(3);
 
                 TestUtils.WaitForTrueCondition(() => !evts.IsEmpty);
             }
 
+            // Listener should receive one event with an even id.
             var binObj = evts.Single();
-            Assert.AreEqual(1, binObj.GetField<int>("Id"));
-            Assert.AreEqual("Person 1", binObj.GetField<string>("Name"));
-        }
+            Assert.IsNotNull(binObj);
+            Assert.AreEqual(2, binObj.GetField<int>("Id"));
+            Assert.AreEqual("Person 2", binObj.GetField<string>("Name"));
 
-        /// <summary>
-        /// Tests that when cache is in binary mode (<see cref="ICacheClient{TK,TV}.WithKeepBinary{K1,V1}"/>,
-        /// continuous query filter receives binary objects.
-        /// </summary>
-        [Test]
-        public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToFilter()
-        {
-            // TODO: filter operates on binary objects.
+            // Filter has received both events, last one was filtered out.
+            binObj = EvenIdBinaryFilter.LastValue;
+            Assert.IsNotNull(binObj);
+            Assert.AreEqual(3, binObj.GetField<int>("Id"));
+            Assert.AreEqual("Person 3", binObj.GetField<string>("Name"));
         }
 
         /// <summary>
@@ -644,6 +644,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             public bool Invoke(ICacheEntry<int, int> entry)
             {
                 throw new Exception(Error);
+            }
+        }
+
+        private class EvenIdBinaryFilter : ICacheEntryEventFilter<int, IBinaryObject>
+        {
+            public static IBinaryObject LastValue { get; set; }
+
+            public bool Evaluate(ICacheEntryEvent<int, IBinaryObject> evt)
+            {
+                LastValue = evt.Value;
+
+                return evt.Value.GetField<int>("Id") % 2 == 0;
             }
         }
     }
