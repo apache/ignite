@@ -182,7 +182,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /**
      * @return Logger.
      */
-    private Logger createTestLogger() {
+    protected Logger createTestLogger() {
         Logger log = CommandHandler.initLogger(null);
 
         // Adding logging to console.

@@ -1489,15 +1489,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture exchangeFut) {
+        rebuildIndexes(cctx.cacheContexts(), (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void forceRebuildIndexes(Collection<GridCacheContext> contexts) {
+        contexts.forEach(ctx -> cctx.kernalContext().query().prepareIndexRebuildFuture(ctx.cacheId()));
+
+        rebuildIndexes(contexts, (cacheCtx) -> true);
+    }
+
+    /**
+     * @param contexts Collection of cache contexts for which indexes should be rebuilt.
+     * @param rebuildCond Condition that should be met for indexes to be rebuilt for specific cache.
+     */
+    private void rebuildIndexes(Collection<GridCacheContext> contexts, Predicate<GridCacheContext> rebuildCond) {
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (!qryProc.moduleEnabled())
             return;
 
-        Collection<GridCacheContext> cacheContexts = cctx.cacheContexts();
-
         GridCountDownCallback rebuildIndexesCompleteCntr = new GridCountDownCallback(
-            cacheContexts.size(),
+            contexts.size(),
             () -> {
                 if (log.isInfoEnabled())
                     log.info("Indexes rebuilding completed for all caches.");
@@ -1505,8 +1518,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             1  //need at least 1 index rebuilded to print message about rebuilding completion
         );
 
-        for (GridCacheContext cacheCtx : cacheContexts) {
-            if (!cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()))
+        for (GridCacheContext cacheCtx : contexts) {
+            if (!rebuildCond.test(cacheCtx))
                 continue;
 
             IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);

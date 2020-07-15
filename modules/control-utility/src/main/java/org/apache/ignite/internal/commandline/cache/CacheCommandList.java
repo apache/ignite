@@ -67,7 +67,22 @@ public enum CacheCommandList {
     /**
      * Find and remove garbage.
      */
-    FIND_AND_DELETE_GARBAGE("find_garbage", new FindAndDeleteGarbage());
+    FIND_AND_DELETE_GARBAGE("find_garbage", new FindAndDeleteGarbage()),
+
+    /**
+     * Index list.
+     */
+    INDEX_LIST("indexes_list", new CacheIndexesList()),
+
+    /**
+     * Index rebuild status.
+     */
+    INDEX_REBUILD_STATUS("indexes_rebuild_status", new CacheIndexesRebuildStatus()),
+
+    /**
+     * Index force rebuild.
+     */
+    INDEX_FORCE_REBUILD("indexes_force_rebuild", new CacheIndexesForceRebuild());
 
     /** Enumerated values. */
     private static final CacheCommandList[] VALS = values();

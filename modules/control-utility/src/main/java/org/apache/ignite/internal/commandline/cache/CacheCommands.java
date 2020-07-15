@@ -43,6 +43,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALI
  * High-level "cache" command implementation.
  */
 public class CacheCommands implements Command<CacheSubcommands> {
+    /** Empty group name. */
+    public static final String EMPTY_GROUP_NAME = "no_group";
+
     /** */
     protected static final String NODE_ID = "nodeId";
 
@@ -89,30 +92,13 @@ public class CacheCommands implements Command<CacheSubcommands> {
         if (cmd == null)
             cmd = CacheSubcommands.HELP;
 
-        switch (cmd) {
-            case HELP:
-                break;
-
-            case RESET_LOST_PARTITIONS:
-            case LIST:
-            case IDLE_VERIFY:
-            case VALIDATE_INDEXES:
-            case FIND_AND_DELETE_GARBAGE:
-            case CONTENTION:
-            case DISTRIBUTION:
-            case CHECK_INDEX_INLINE_SIZES:
-                cmd.subcommand().parseArguments(argIter);
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
-        }
+        if (cmd != HELP)
+            cmd.subcommand().parseArguments(argIter);
 
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
 
-        this.subcommand = cmd;
+        subcommand = cmd;
     }
 
     /** */

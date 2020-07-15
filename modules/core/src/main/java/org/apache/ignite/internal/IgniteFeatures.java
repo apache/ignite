@@ -111,7 +111,11 @@ public enum IgniteFeatures {
     REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40);
+    SHUTDOWN_POLICY(40),
+
+    /** Force rebuild, list or request indexes rebuild status from control script. */
+    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42);
+
     /**
      * Unique feature identifier.
      */

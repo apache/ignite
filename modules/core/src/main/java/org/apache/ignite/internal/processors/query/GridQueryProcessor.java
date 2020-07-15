@@ -464,7 +464,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cacheId Cache ID.
      */
-    private void prepareIndexRebuildFuture(int cacheId) {
+    public void prepareIndexRebuildFuture(int cacheId) {
         GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
 
         if (old != null)

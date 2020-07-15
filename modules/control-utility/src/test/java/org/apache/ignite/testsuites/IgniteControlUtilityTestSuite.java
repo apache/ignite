@@ -25,6 +25,9 @@ import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest;
+import org.apache.ignite.util.GridCommandHandlerIndexListTest;
+import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
@@ -66,6 +69,10 @@ import org.junit.runners.Suite;
 
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
+
+    GridCommandHandlerIndexForceRebuildTest.class,
+    GridCommandHandlerIndexListTest.class,
+    GridCommandHandlerIndexRebuildStatusTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }
