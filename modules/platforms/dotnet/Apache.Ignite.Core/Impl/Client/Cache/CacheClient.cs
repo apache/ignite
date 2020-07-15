@@ -80,16 +80,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             WithExpiryPolicy = 1 << 2
         }
 
-        /// <summary>
-        /// Initial query type.
-        /// </summary>
-        private enum InitialQueryType : byte
-        {
-            None = 0,
-            Scan = 1,
-            Sql = 2
-        }
-
         /** Query filter platform code: Java filter. */
         private const byte FilterPlatformJava = 1;
 
@@ -925,25 +915,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Lazy);
             writer.WriteTimeSpanAsLong(qry.Timeout);
             writer.WriteBoolean(includeColumns);
-        }
-
-        /// <summary>
-        /// Writes the SQL fields query.
-        /// </summary>
-        private static void WriteSqlFieldsInitialQuery(IBinaryRawWriter writer, SqlFieldsQuery qry)
-        {
-            Debug.Assert(qry != null);
-
-            writer.WriteString(qry.Schema);
-            writer.WriteInt(qry.PageSize);
-            writer.WriteString(qry.Sql);
-            QueryBase.WriteQueryArgs(writer, qry.Arguments);
-            writer.WriteBoolean(qry.EnableDistributedJoins);
-            writer.WriteBoolean(qry.Local);
-            writer.WriteBoolean(qry.EnforceJoinOrder);
-            writer.WriteBoolean(qry.Colocated);
-            writer.WriteBoolean(qry.Lazy);
-            writer.WriteTimeSpanAsLong(qry.Timeout);
         }
 
         /// <summary>
