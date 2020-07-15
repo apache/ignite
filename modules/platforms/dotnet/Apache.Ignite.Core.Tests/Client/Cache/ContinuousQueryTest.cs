@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Cache.Event;
@@ -372,6 +373,52 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Check that socket has no dangling notifications.
             Assert.IsEmpty(Client.GetActiveNotificationListeners());
+        }
+
+        /// <summary>
+        /// Tests that multiple queries can be started from multiple threads.
+        /// </summary>
+        [Test]
+        public void TestMultipleQueriesMultithreaded()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
+            var cts = new CancellationTokenSource();
+
+            var updaterThread = Task.Factory.StartNew(() =>
+            {
+                for (int i = 0; i < int.MaxValue && !cts.IsCancellationRequested; i++)
+                {
+                    cache.Put(i, i);
+                }
+            });
+
+            var clientCache = Client.GetCache<int, int>(cache.Name);
+
+            TestUtils.RunMultiThreaded(() =>
+            {
+                var qry = new ContinuousQueryClient<int, int>();
+
+                using (clientCache.QueryContinuous(qry))
+                {
+
+                }
+
+            }, Environment.ProcessorCount);
+
+            cts.Cancel();
+            updaterThread.Wait();
+        }
+
+        /// <summary>
+        /// Tests that Listener presence is validated before starting the continuous query.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryWithoutListenerThrowsException()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            var ex = Assert.Throws<ArgumentNullException>(() => cache.QueryContinuous(new ContinuousQueryClient<int, int>()));
+            Assert.AreEqual("continuousQuery.Listener", ex.ParamName);
         }
 
         /// <summary>
