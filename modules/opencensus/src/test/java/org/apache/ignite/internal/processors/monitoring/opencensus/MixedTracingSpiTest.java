@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
@@ -24,8 +25,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.ArrayList;
 
 /**
  * Tests for mixed tracing spi instances.

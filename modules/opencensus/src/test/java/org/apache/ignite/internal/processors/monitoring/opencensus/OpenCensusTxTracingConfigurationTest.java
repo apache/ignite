@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
+import io.opencensus.trace.SpanId;
+import io.opencensus.trace.export.SpanData;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import io.opencensus.trace.SpanId;
-import io.opencensus.trace.export.SpanData;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;

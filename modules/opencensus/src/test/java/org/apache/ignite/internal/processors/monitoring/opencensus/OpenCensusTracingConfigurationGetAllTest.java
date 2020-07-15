@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.monitoring.opencensus;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.spi.tracing.TracingSpi;
-import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
-import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
-import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.spi.tracing.Scope.TX;
