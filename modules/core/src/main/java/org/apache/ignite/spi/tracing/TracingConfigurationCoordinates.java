@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.tracing;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
 
 /**
  * Specifies to which traces, specific configuration will be applied. In other words it's a sort of tracing

@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.tracing.Scope;
 
 /**
  * Data transfer object that contains scope, label, sampling rate and set of included scopes.
