@@ -396,16 +396,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             TestUtils.RunMultiThreaded(() =>
             {
+                var evt = new ManualResetEventSlim();
+
                 var qry = new ContinuousQueryClient<int, int>
                 {
-
+                    Listener = new DelegateListener<int, int>(_ => evt.Set())
                 };
 
-                using (clientCache.QueryContinuous(qry))
+                for (int i = 0; i < 100; i++)
                 {
+                    evt.Reset();
+                    using (clientCache.QueryContinuous(qry))
+                    {
+                        evt.Wait();
+                    }
 
                 }
-
             }, Environment.ProcessorCount);
 
             cts.Cancel();
