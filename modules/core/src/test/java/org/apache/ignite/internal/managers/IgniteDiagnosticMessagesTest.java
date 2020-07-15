@@ -22,6 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -67,6 +69,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -419,6 +422,59 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         }
         finally {
             GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", oldLog);
+        }
+    }
+
+    /**
+     * Ensure that dumpLongRunningTransaction doesn't block scheduler.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDumpLongRunningOperationDoesntBlockTimeoutWorker() throws Exception {
+        long longOpsDumpTimeout = 100;
+
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(new CacheConfiguration<>("txCache").
+            setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        ignite.transactions().txStart(PESSIMISTIC, SERIALIZABLE);
+
+        cache.put(1, 1);
+
+        // Wait for some time for transaction to be considered as long running.
+        Thread.sleep(longOpsDumpTimeout * 2);
+
+        // That will allow to block dumpLongRunningTransaction on line
+        // {@code ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);}
+        ignite.context().gateway().writeLock();
+
+        try {
+            ignite.context().cache().context().tm().longOperationsDumpTimeout(100);
+
+            // Wait for some time to guarantee start dumping long running transaction.
+            Thread.sleep(longOpsDumpTimeout * 2);
+
+            AtomicBoolean schedulerAssertionFlag = new AtomicBoolean(false);
+
+            CountDownLatch scheduleLatch = new CountDownLatch(1);
+
+            ignite.context().timeout().schedule(
+                () -> {
+                    schedulerAssertionFlag.set(true);
+                    scheduleLatch.countDown();
+                },
+                0,
+                -1);
+
+            scheduleLatch.await(5_000, TimeUnit.MILLISECONDS);
+
+            // Ensure that dumpLongRunning transaction doesn't block scheduler.
+            assertTrue(schedulerAssertionFlag.get());
+        }
+        finally {
+            ignite.context().gateway().writeUnlock();
         }
     }
 
