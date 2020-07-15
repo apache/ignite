@@ -215,7 +215,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private volatile boolean recoveryMasterKeyName;
 
     /** Master key change future. Not {@code null} on request initiator. */
-    private volatile KeyChangeFuture masterKeyChangeFut;
+    private KeyChangeFuture masterKeyChangeFut;
 
     /** Pending master key request or {@code null} if there is no ongoing master key change process. */
     private volatile MasterKeyChangeRequest masterKeyChangeRequest;
@@ -872,7 +872,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             grpIds[n] = grp.groupId();
             keyIds[n] = (byte)(groupKey(grp.groupId()).unsignedId() + 1);
-            keys[n] = getSpi().encryptKey(getSpi().create());
+            keys[n] = withMasterKeyChangeReadLock(() -> getSpi().encryptKey(getSpi().create()));
 
             n += 1;
         }
@@ -1397,11 +1397,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ArrayList<T2<Integer, byte[]>> keysEncrypted = null;
 
         if (updateKeys) {
-            List<GroupKey> keys = grpEncKeys.get(grpId);
-            keysEncrypted = new ArrayList<>(keys.size());
+            keysEncrypted = withMasterKeyChangeReadLock(() -> {
+                List<GroupKey> keys = grpEncKeys.get(grpId);
+                ArrayList<T2<Integer, byte[]>> encrKeys = new ArrayList<>(keys.size());
 
-            for (GroupKey grpKey : keys)
-                keysEncrypted.add(new T2<>(grpKey.unsignedId(), getSpi().encryptKey(grpKey.key())));
+                for (GroupKey grpKey : keys)
+                    encrKeys.add(new T2<>(grpKey.unsignedId(), getSpi().encryptKey(grpKey.key())));
+
+                return encrKeys;
+            });
         }
 
         ctx.cache().context().database().checkpointReadLock();
@@ -1453,11 +1457,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         for (Map.Entry<Integer, List<GroupKey>> entry : grpEncKeys.entrySet()) {
             int grpId = entry.getKey();
-            List<GroupKey> grpKeys = entry.getValue();
-            GroupKey grpKey = grpKeys.get(0);
-//            int activeId = grpKeyIds.get(grpId);
-            // todo remove grpKeyIds
-//            assert grpKey.id() == activeId;
+            GroupKey grpKey = entry.getValue().get(0);
 
             knownKeys.put(grpId, new T2<>(grpKey.unsignedId(), getSpi().encryptKey(grpKey.key())));
         }
@@ -1915,7 +1915,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private class GroupKeyChangeProcess {
         /** Group key change future. */
-        private volatile GroupKeyChangeFuture grpKeyChangeFut;
+        private GroupKeyChangeFuture grpKeyChangeFut;
 
         /** Group key change request. */
         private volatile ChangeCacheEncryptionRequest grpKeyChangeReq;
@@ -2015,13 +2015,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     int newKeyId = keyIds[i] & 0xff;
 
-                    // todo recheck
                     // If the previous rotation has failed during the preparation phase, we may have another unused key.
                     GroupKey existingGrpKey = null;
 
-                    List<GroupKey> list = grpEncKeys.get(grpId);
-
-                    for (GroupKey k : list) {
+                    for (GroupKey k : grpEncKeys.get(grpId)) {
                         if (k.unsignedId() == keyIds[i]) {
                             existingGrpKey = k;
 
@@ -2029,13 +2026,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                         }
                     }
 
-                    // todo checkWal
-                    if (existingGrpKey == null || (byte)(groupKey(grpId).unsignedId() + 1) == keyIds[i]) {
-
-//                        list.remove(existingGrpKey);
-
+                    if (existingGrpKey == null || (byte)(groupKey(grpId).unsignedId() + 1) == keyIds[i])
                         continue;
-                    }
 
                     Set<Long> walSegments = new TreeSet<>();
 
@@ -2048,7 +2040,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier - it's " +
                         "already present, probably there existing WAL segments that encrypted with this key [" +
-                        "grpId=" + grpId + ", newKeyId=" + newKeyId + ", activeId=" + groupKey(grpId).id() +
+                        "grpId=" + grpId + ", newKeyId=" + newKeyId + ", activeId=" + groupKey(grpId).unsignedId() +
                         ", walSegments=" + walSegments + "]."));
                 }
 
@@ -2059,7 +2051,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     Serializable newKey = getSpi().decryptKey(req.keys()[i]);
 
                     synchronized (metaStorageMux) {
-                        grpEncKeys.computeIfAbsent(grpId, l -> new CopyOnWriteArrayList<>()).add(new GroupKey(newKeyId, newKey));
+                        grpEncKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>())
+                            .add(new GroupKey(newKeyId, newKey));
 
                         writeToMetaStore(grpId, true, false);
                     }
