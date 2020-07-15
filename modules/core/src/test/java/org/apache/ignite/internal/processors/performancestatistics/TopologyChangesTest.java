@@ -63,7 +63,8 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
 
         stopAllGrids();
 
-        cleanPersistenceDir();
+        if (persistence)
+            cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -72,7 +73,8 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
 
         stopAllGrids();
 
-        cleanPersistenceDir();
+        if (persistence)
+            cleanPersistenceDir();
     }
 
     /** @throws Exception If failed. */
