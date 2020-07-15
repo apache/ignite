@@ -2156,7 +2156,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         scheduleDumpTask(
             IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
-            () -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout),
+            () -> cctx.kernalContext().closure().runLocalSafe(
+                () -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
             longOpsDumpTimeout);
     }
 
