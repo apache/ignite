@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -110,39 +110,44 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
         final AtomicLong lastUpdateTs = new AtomicLong(System.currentTimeMillis());
 
+        final AtomicBoolean doRestarts = new AtomicBoolean(true);
+
+        IgniteInternalFuture<Object> fut = null;
+
         try {
             Set<Integer> keys = new LinkedHashSet<>();
 
             for (int i = 0; i < ENTRY_COUNT; i++)
                 keys.add(i);
 
-            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    for (int i = 0; i < 50; i++) {
-                        stopGrid(0);
+            fut = GridTestUtils.runAsync(() -> {
+                for (int i = 0; i < 50; i++) {
+                    stopGrid(0);
 
-                        startGrid(0);
+                    startGrid(0);
 
-                        stopGrid(1);
+                    stopGrid(1);
 
-                        startGrid(1);
+                    startGrid(1);
 
-                        stopGrid(2);
+                    stopGrid(2);
 
-                        startGrid(2);
+                    startGrid(2);
 
-                        synchronized (lastUpdateTs) {
-                            while (System.currentTimeMillis() - lastUpdateTs.get() > 1_000) {
-                                info("Will wait for an update operation to finish.");
+                    synchronized (lastUpdateTs) {
+                        while (System.currentTimeMillis() - lastUpdateTs.get() > 1_000) {
+                            if (!doRestarts.get())
+                                return null;
 
-                                lastUpdateTs.wait(1_000);
-                            }
+                            info("Will wait for an update operation to finish.");
+
+                            lastUpdateTs.wait(1_000);
                         }
                     }
-
-                    return null;
                 }
-            });
+
+                return null;
+            }, "async-restarter-thread");
 
             int currVal = 0;
             boolean invoke = false;
@@ -165,14 +170,14 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
                 catch (Throwable e) {
                     log.error("Update failed: " + e, e);
 
+                    doRestarts.set(false);
+
                     throw e;
                 }
             }
-
-            fut.get();
         }
         finally {
-            stopAllGrids();
+            fut.get();
         }
     }
 
@@ -253,6 +258,13 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
             cache.putAll(entries);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /**

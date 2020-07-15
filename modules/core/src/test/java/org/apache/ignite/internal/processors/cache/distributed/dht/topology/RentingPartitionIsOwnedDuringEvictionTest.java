@@ -18,17 +18,24 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.List;
+import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
@@ -71,63 +78,106 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOwnedAfterEviction() throws Exception {
-        testOwnedAfterEviction(false);
+        testOwnedAfterEviction(false, 0);
     }
 
     /** */
     @Test
     public void testOwnedAfterEvictionWithPersistence() throws Exception {
-        testOwnedAfterEviction(true);
+        testOwnedAfterEviction(true, 0);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEviction_2() throws Exception {
+        testOwnedAfterEviction(false, 1);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEvictionWithPersistence_2() throws Exception {
+        testOwnedAfterEviction(true, 1);
     }
 
     /**
+     * @param persistence Persistence.
+     * @param backups Backups.
+     *
      * @throws Exception If failed.
      */
-    private void testOwnedAfterEviction(boolean persistence) throws Exception {
+    private void testOwnedAfterEviction(boolean persistence, int backups) throws Exception {
         this.persistence = persistence;
 
         try {
-            IgniteEx g0 = startGrid(0);
+            IgniteEx g0 = startGrids(backups + 1);
 
             if (persistence)
                 g0.cluster().state(ClusterState.ACTIVE);
 
-            IgniteCache<Object, Object> cache = g0.getOrCreateCache(DEFAULT_CACHE_NAME);
+            awaitPartitionMapExchange();
 
-            int p0 = movingKeysAfterJoin(g0, DEFAULT_CACHE_NAME, 1).get(0);
+            IgniteCache<Object, Object> cache = g0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).
+                setCacheMode(CacheMode.PARTITIONED).
+                setBackups(backups).
+                setAffinity(new RendezvousAffinityFunction(false, 64)));
 
-            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), p0, 20_000, 0);
+            int p0 = evictingPartitionsAfterJoin(g0, cache, 1).get(0);
+
+            final int cnt = 50_000;
+            final int cnt2 = backups == 0 && persistence ? 0 : 1_000; // Handle partition loss.
+
+            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), p0, cnt, 0);
+            List<Integer> keys2 = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), p0, cnt2, cnt);
 
             try (IgniteDataStreamer<Object, Object> ds = g0.dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (Integer key : keys)
                     ds.addData(key, key);
             }
 
-            IgniteEx g1 = startGrid(1);
+            IgniteEx joining = startGrid(backups + 1);
 
             if (persistence)
                 resetBaselineTopology();
 
-            awaitPartitionMapExchange();
+            GridDhtLocalPartition evicting = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
 
-            GridDhtPartitionState state = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0).state();
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return evicting.state() == RENTING;
+                }
+            }, 5_000));
 
-            assertTrue(state == RENTING || state == EVICTED);
+            GridDhtPartitionState state = evicting.state();
 
-            g1.close();
+            assertTrue(state.toString(), state == RENTING || state == EVICTED);
+
+            // These updates should not be lost.
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    Random r = new Random();
+
+                    for (Integer k : keys2)
+                        grid(r.nextInt(backups + 1)).cache(DEFAULT_CACHE_NAME).put(k, k);
+                }
+            });
+
+            joining.close();
 
             if (persistence)
                 resetBaselineTopology();
 
-            GridDhtTopologyFuture fut = g0.cachex(DEFAULT_CACHE_NAME).context().topology().topologyVersionFuture();
-
-            assertEquals(3, fut.initialVersion().topologyVersion());
-
-            fut.get();
+            awaitPartitionMapExchange(true, true, null);
 
             GridDhtLocalPartition part = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
 
-            assertEquals(OWNING, part.state());
+            assertEquals(backups == 0 && persistence ? LOST : OWNING, part.state());
+
+            fut.get();
+
+            assertPartitionsSame(idleVerify(g0, DEFAULT_CACHE_NAME));
+
+            if (backups > 0)
+                assertEquals(cnt + cnt2, part.dataStore().fullSize());
         }
         finally {
             stopAllGrids();

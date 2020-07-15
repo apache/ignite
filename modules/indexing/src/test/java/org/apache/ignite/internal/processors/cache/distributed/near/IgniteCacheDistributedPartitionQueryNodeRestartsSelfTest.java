@@ -88,6 +88,8 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
                             startGrid(grid);
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
+
+                            awaitPartitionMapExchange();
                         } finally {
                             states.set(grid, 0);
                         }

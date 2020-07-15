@@ -847,6 +847,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         assert reservations() == 0;
         assert evictGuard.get() == -1;
 
+        if (ctx.kernalContext().isStopping())
+            return;
+
         grp.onPartitionEvicted(id);
 
         destroyCacheDataStore();

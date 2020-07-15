@@ -538,8 +538,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     GridDhtLocalPartition locPart = locParts.get(p);
 
                     if (locPart != null) {
-                        if (locPart.state() == RENTING)
-                            locPart.moving();
+                        if (locPart.state() == RENTING) {
+                            if (lostPartitions().contains(locPart.id()))
+                                locPart.markLost(); // Preserve LOST state.
+                            else
+                                locPart.moving();
+                        }
 
                         if (locPart.state() == EVICTED)
                             locPart = getOrCreatePartition(p);

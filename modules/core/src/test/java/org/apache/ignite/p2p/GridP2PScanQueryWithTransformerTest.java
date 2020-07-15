@@ -280,6 +280,9 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
             requestingNode = startGrid(1);
         }
 
+        // Scan query doesn't work on unstable topology.
+        awaitPartitionMapExchange();
+
         IgniteCache<Object, Object> reqNodeCache = requestingNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
