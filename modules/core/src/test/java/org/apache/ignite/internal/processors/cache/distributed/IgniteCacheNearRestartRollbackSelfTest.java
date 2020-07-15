@@ -209,6 +209,9 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
                         topEx.retryReadyFuture().get();
                     }
+                    else if (e.getCause() instanceof TransactionRollbackException) {
+                        // Safe to retry right away.
+                    }
                     else
                         throw e;
                 }
