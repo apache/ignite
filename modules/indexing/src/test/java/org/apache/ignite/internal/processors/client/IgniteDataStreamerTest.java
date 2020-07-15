@@ -46,6 +46,8 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
         startGrids(2);
         startClientGrid("client");
+
+        awaitPartitionMapExchange();
     }
 
     @Override protected void afterTest() throws Exception {
