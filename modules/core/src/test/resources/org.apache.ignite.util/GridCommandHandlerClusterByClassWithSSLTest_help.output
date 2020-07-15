@@ -125,6 +125,9 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Change cluster tag to new value:
+    control.(sh|bat) --change-tag newTagValue [--yes]
+
   Print metadata command help:
     control.(sh|bat) --meta help
 
@@ -140,6 +143,9 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   Update cluster metadata from specified file (file name is required)
     control.(sh|bat) --meta update --in <fileName>
+
+  Set or display shutdown policy:
+    control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
 
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration
