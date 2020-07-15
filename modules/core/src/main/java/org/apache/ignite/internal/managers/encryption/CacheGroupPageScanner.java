@@ -510,15 +510,15 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 long metaPageId = pageMem.partitionMetaPageId(grpId, partId);
                 long state = ctx.encryption().getEncryptionState(grpId, partId);
 
-                int pageIdx = (int)(state >> 32);
+                int off = (int)(state >> 32);
                 int cnt = (int)state;
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition reencryption is started [grpId=" + grpId +
-                        ", p=" + partId + ", remain=" + (cnt - pageIdx) + ", total=" + cnt + "]");
+                        ", p=" + partId + ", remain=" + (cnt - off) + ", total=" + cnt + "]");
                 }
 
-                while (pageIdx < cnt) {
+                while (off < cnt) {
                     synchronized (this) {
                         ctx.cache().context().database().checkpointReadLock();
 
@@ -526,35 +526,14 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                             if (isDone() || ctx.encryption().getEncryptionState(grpId, partId) == 0)
                                 break;
 
-                            int end = Math.min(pageIdx + batchSize, cnt);
-
-                            do {
-                                long pageId = metaPageId + pageIdx;
-
-                                pageIdx += 1;
-
-                                long page = pageMem.acquirePage(grpId, pageId);
-
-                                try {
-                                    // Can skip rewriting a dirty page if the checkpoint has been completed.
-                                    if (scanCtx.skipDirty() && pageMem.isDirty(grpId, pageId, page))
-                                        continue;
-
-                                    pageMem.writeLock(grpId, pageId, page, true);
-                                    pageMem.writeUnlock(grpId, pageId, page, null, true);
-                                }
-                                finally {
-                                    pageMem.releasePage(grpId, pageId, page);
-                                }
-                            }
-                            while (pageIdx < end);
+                            off += scanPages(pageMem, metaPageId + off, Math.min(batchSize, cnt - off));
                         }
                         finally {
                             ctx.cache().context().database().checkpointReadUnlock();
                         }
                     }
 
-                    ctx.encryption().setEncryptionState(grpId, partId, pageIdx, cnt);
+                    ctx.encryption().setEncryptionState(grpId, partId, off, cnt);
 
                     if (timeoutBetweenBatches != 0 && !isDone())
                         U.sleep(timeoutBetweenBatches);
@@ -564,7 +543,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                     log.debug("Partition reencryption is finished " +
                         "[grpId=" + grpId +
                         ", p=" + partId +
-                        ", remain=" + (cnt - pageIdx) +
+                        ", remain=" + (cnt - off) +
                         ", total=" + cnt +
                         ", cancelled=" + isCancelled() +
                         ", failed=" + isFailed() + "]");
@@ -578,6 +557,33 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 else
                     onDone(t);
             }
+        }
+
+        /**
+         * @param pageMem Page memory.
+         * @param startPageId Start page ID.
+         * @param cnt Count of pages to scan.
+         * @return Count of scanned pages.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int scanPages(PageMemoryEx pageMem, long startPageId, int cnt) throws IgniteCheckedException {
+            for (long pageId = startPageId; pageId < startPageId + cnt; pageId++) {
+                long page = pageMem.acquirePage(scanCtx.groupId(), pageId);
+
+                try {
+                    // Can skip rewriting a dirty page if the checkpoint has been completed.
+                    if (scanCtx.skipDirty() && pageMem.isDirty(scanCtx.groupId(), pageId, page))
+                        continue;
+
+                    pageMem.writeLock(scanCtx.groupId(), pageId, page, true);
+                    pageMem.writeUnlock(scanCtx.groupId(), pageId, page, null, true);
+                }
+                finally {
+                    pageMem.releasePage(scanCtx.groupId(), pageId, page);
+                }
+            }
+
+            return cnt;
         }
     }
 }
