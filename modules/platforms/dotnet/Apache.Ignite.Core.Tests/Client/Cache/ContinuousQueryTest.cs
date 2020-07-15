@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Client;
@@ -259,9 +260,28 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// continuous query listener receives binary objects.
         /// </summary>
         [Test]
-        public void TestContinuousQueryInBinaryMode()
+        public void TestContinuousQueryWithKeepBinaryInvokesListenerInBinaryMode()
         {
-            // TODO
+            var cache = Client.GetOrCreateCache<int, Person>(TestUtils.TestName);
+            var binCache = cache.WithKeepBinary<int, IBinaryObject>();
+
+            var evts = new ConcurrentBag<IBinaryObject>();
+
+            var qry = new ContinuousQueryClient<int, IBinaryObject>
+            {
+                Listener = new DelegateListener<int, IBinaryObject>(e => evts.Add(e.Value))
+            };
+
+            using (binCache.QueryContinuous(qry))
+            {
+                cache[1] = new Person(1);
+
+                TestUtils.WaitForTrueCondition(() => !evts.IsEmpty);
+            }
+
+            var binObj = evts.Single();
+            Assert.AreEqual(1, binObj.GetField<int>("Id"));
+            Assert.AreEqual("Person 1", binObj.GetField<string>("Name"));
         }
 
         /// <summary>
