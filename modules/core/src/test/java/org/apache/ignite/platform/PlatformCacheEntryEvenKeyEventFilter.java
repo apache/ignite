@@ -19,7 +19,6 @@ package org.apache.ignite.platform;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
-
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 /**

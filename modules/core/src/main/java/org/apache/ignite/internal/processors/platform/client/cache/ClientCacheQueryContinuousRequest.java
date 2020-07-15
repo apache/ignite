@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -27,12 +30,12 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.processors.platform.client.*;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.event.CacheEntryEventFilter;
 
 /**
  * Continuous query request.

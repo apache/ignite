@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
-import org.apache.ignite.internal.processors.platform.client.ClientNotification;
-
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
 
 /**
  * Continuous query handle.
