@@ -247,8 +247,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Recovered partitions pages count to be reencrypted. */
     private final Map<Integer, Map<Integer, Integer>> recoveredPartPagesCnt = new ConcurrentHashMap<>();
 
-    /** Cache group reencryption manager. */
-    private CacheGroupReencryption reencryption;
+    /** Cache group page stores scanner. */
+    private CacheGroupPageScanner pageScan;
 
     /**
      * @param ctx Kernel context.
@@ -335,7 +335,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         performMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::performMasterKeyChange,
             this::finishPerformMasterKeyChange);
 
-        reencryption = new CacheGroupReencryption(ctx);
+        pageScan = new CacheGroupPageScanner(ctx);
 
         grpKeyChangeProc = new GroupKeyChangeProcess();
     }
@@ -344,7 +344,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
-        reencryption.stop();
+        pageScan.stop();
     }
 
     /** {@inheritDoc} */
@@ -887,10 +887,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Future that will be completed when reencryption of the specified group is finished.
      */
     public IgniteInternalFuture<Void> reencryptionFuture(int grpId) {
-        if (reencryption.disabled() && reencryptGroups.containsKey(grpId))
+        if (pageScan.disabled() && reencryptGroups.containsKey(grpId))
             return new GridFutureAdapter<>();
 
-        return reencryption.statusFuture(grpId);
+        return pageScan.statusFuture(grpId);
     }
 
     /**
@@ -968,7 +968,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void onDestroyPartitionStore(int grpId, int partId) {
         try {
-            reencryption.cancel(grpId, partId);
+            pageScan.cancel(grpId, partId);
 
             setEncryptionState(grpId, partId, 0, 0);
         }
@@ -1173,7 +1173,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (grp == null)
                 continue;
 
-            Map<Integer, Long> offsets = reencryption.storePagesCount(grp);
+            Map<Integer, Long> offsets = pageScan.pagesCount(grp);
 
             reencryptGroups.put(grpId, new ConcurrentHashMap<>(offsets));
         }
@@ -1286,11 +1286,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void startReencryption(Collection<Integer> grpIds, boolean skipDirty) throws IgniteCheckedException {
-        if (reencryption.disabled())
+        if (pageScan.disabled())
             return;
 
         for (int grpId : grpIds) {
-            IgniteInternalFuture<?> fut = reencryption.schedule(grpId, skipDirty);
+            IgniteInternalFuture<?> fut = pageScan.schedule(grpId, skipDirty);
 
             fut.listen(f -> {
                 try {
@@ -2134,11 +2134,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                         if (grp == null)
                             continue;
 
-                        Map<Integer, Long> offsets = reencryption.storePagesCount(grp);
+                        Map<Integer, Long> partStates = pageScan.pagesCount(grp);
 
-                        encryptionStatus.put(grpId, offsets);
+                        encryptionStatus.put(grpId, partStates);
 
-                        reencryptGroups.put(grpId, new ConcurrentHashMap<>(offsets));
+                        reencryptGroups.put(grpId, new ConcurrentHashMap<>(partStates));
                     }
 
                     WALPointer ptr = ctx.cache().context().wal().log(new EncryptionStatusRecord(encryptionStatus));
