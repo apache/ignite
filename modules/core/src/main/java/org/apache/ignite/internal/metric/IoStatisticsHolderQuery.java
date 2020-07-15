@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
@@ -64,5 +65,25 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public String metricRegistryName() {
         return null;
+    }
+
+    /**
+     * Add given given statistics into this.
+     * Merge query statistics.
+     *
+     * @param logicalReads Logical reads which will be added to current query statistics.
+     * @param physicalReads Physical reads which will be added to current query statistics,
+     */
+    public void merge(long logicalReads, long physicalReads) {
+        logicalReadCtr.add(logicalReads);
+
+        physicalReadCtr.add(physicalReads);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IoStatisticsHolderQuery.class, this,
+            "logicalReadCtr", logicalReadCtr,
+            "physicalReadCtr", physicalReadCtr);
     }
 }

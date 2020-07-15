@@ -38,6 +38,21 @@ public class IoStatisticsQueryHelper {
     }
 
     /**
+     * Merge query statistics.
+     *
+     * @param qryStat Statistics which will be merged to current query statistics.
+     */
+    public static void mergeQueryStatistics(IoStatisticsHolderQuery qryStat) {
+        assert qryStat != null;
+
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
+
+        assert currQryStatisticsHolder != null;
+
+        currQryStatisticsHolder.merge(qryStat.logicalReads(), qryStat.physicalReads());
+    }
+
+    /**
      * Finish gathering IO statistics for query. Should be used together with {@code startGatheringQueryStatistics}
      * method.
      *
