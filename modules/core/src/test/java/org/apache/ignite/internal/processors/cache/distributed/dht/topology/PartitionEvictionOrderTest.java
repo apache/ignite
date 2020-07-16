@@ -37,7 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -55,17 +54,27 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
     /** */
     private ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-    /** */
+    /**
+     * Flag for condition that async partition eviction is not happened during sync partitions eviction
+     */
     private Boolean asyncCacheEvicted = false;
 
     /** */
     boolean sysCacheEvictStarted;
 
     /** */
+    boolean sysCacheEvictQueued;
+
+    /** */
     boolean sysCacheEvictEnded;
 
     /** */
     boolean logParsed = true;
+
+    /**
+     * Flag for condition that first sync partition has been polled from eviction queue at first.
+     */
+    boolean firstSysPartEvictedAtFirst;
 
     /**
      * {@inheritDoc}
@@ -130,6 +139,8 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
 
         withSystemProperty("SHOW_EVICTION_PROGRESS_FREQ", "0");
 
+        setRootLoggerDebugLevel();
+
         IgniteEx node0 = startGrid(0);
 
         node0.cluster().active(true);
@@ -179,6 +190,8 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
 
         assertTrue(sysCacheEvictStarted);
 
+        assertTrue(firstSysPartEvictedAtFirst);
+
         assertTrue(sysCacheEvictEnded);
 
         assertFalse(asyncCacheEvicted);
@@ -190,6 +203,8 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
     class TestLogListener extends LogListener {
         /** */
         EvictionLogParams lastDfltGroupParams;
+
+        int sysEvictProgressMessages;
 
         /** {@inheritDoc} */
         @Override public boolean check() {
@@ -203,13 +218,31 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void accept(String s) {
+            if (s.contains("Partition has been scheduled for eviction [grp=" + CU.UTILITY_CACHE_NAME))
+                sysCacheEvictQueued = true;
+
+
             if (s.contains("Group eviction in progress [grpName=" + CU.UTILITY_CACHE_NAME)) {
                 EvictionLogParams sysCacheParam = new EvictionLogParams(s);
+
+                sysEvictProgressMessages++;
 
                 if (sysCacheParam.partsEvictInProgress > 0)
                     sysCacheEvictStarted = true;
 
-                if (sysCacheEvictStarted && sysCacheParam.remainingPartsToEvict == 0)
+                //Here we check that the next polled partition from the eviction queue after the first sync partition is scheduled
+                // is sync partition
+                if (sysCacheEvictQueued) {
+                    if (sysEvictProgressMessages == 1)
+                        return;
+                    else
+                        if (sysEvictProgressMessages == 2 && sysCacheParam.partsEvictInProgress > 0)
+                            firstSysPartEvictedAtFirst = true;
+                }
+
+                if (sysCacheEvictStarted &&
+                    (sysCacheParam.remainingPartsToEvict == 0 ||
+                        (sysCacheParam.remainingPartsToEvict == 1 && sysCacheParam.partsEvictInProgress == 1)))
                     sysCacheEvictEnded = true;
             }
 
