@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
@@ -186,7 +187,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityTopologyVersion topVer = top.readyTopologyVersion();
 
-        assert exchFut == null || exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) :
+        assert exchFut == null ||
+            exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) ||
+            exchFut.context().events().topologyVersion().equals(ctx.exchange().lastAffinityChangedTopologyVersion(top.readyTopologyVersion())) :
             "Topology version mismatch [exchId=" + exchId +
                 ", grp=" + grp.name() +
                 ", topVer=" + top.readyTopologyVersion() + ']';
@@ -275,7 +278,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
-                    List<ClusterNode> picked = remoteOwners(p, topVer);
+                    int partId = p;
+                    List<ClusterNode> picked = remoteOwners(p, topVer, node -> {
+                        if (exchFut != null && !exchFut.isNodeApplicableForFullRebalance(node.id(), grp.groupId(), partId))
+                            return false;
+
+                        return true;
+                    });
 
                     if (!picked.isEmpty()) {
                         ClusterNode n = picked.get(p % picked.size());
@@ -319,12 +328,24 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Nodes owning this partition.
      */
     private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
+        return remoteOwners(p, topVer, node -> true);
+    }
+
+    /**
+     * Returns remote owners (excluding local node) for specified partition {@code p}
+     * which is additionally filtered by the specified predicate.
+     *
+     * @param p Partition.
+     * @param topVer Topology version.
+     * @return Nodes owning this partition.
+     */
+    private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer, IgnitePredicate<ClusterNode> pred) {
         List<ClusterNode> owners = grp.topology().owners(p, topVer);
 
         List<ClusterNode> res = new ArrayList<>(owners.size());
 
         for (ClusterNode owner : owners) {
-            if (!owner.id().equals(ctx.localNodeId()))
+            if (!owner.id().equals(ctx.localNodeId()) && pred.apply(owner))
                 res.add(owner);
         }
 
@@ -544,5 +565,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void resume() {
         busyLock.writeLock().unlock();
+    }
+
+    /**
+     * Returns supplier.
+     *
+     * @return Supplier.
+     * */
+    public GridDhtPartitionSupplier supplier() {
+        return supplier;
     }
 }

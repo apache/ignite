@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -51,7 +52,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
- * File page store.
+ * FilePageStore is a PageStore implementation that uses regular files to store pages.
+ * <p>
+ * Actual read and write operations are performed with {@link FileIO} abstract interface,
+ * list of its implementations is a good source of information about functionality in Ignite Native Persistence.
+ * </p>
+ * <p>
+ * On a physical level each instance of FilePageStore corresponds to a partition file assigned to the local node or
+ * to index file of a particular cache if any secondary indexes were created.
+ * </p>
+ * <p>
+ * Instances of FilePageStore are managed by {@link FilePageStoreManager} for regular cache operations like assignment
+ * of new partition to the local node or checkpoint event and by {@link IgniteSnapshotManager} during snapshot creation.
+ * </p>
  */
 public class FilePageStore implements PageStore {
     /** Page store file signature. */

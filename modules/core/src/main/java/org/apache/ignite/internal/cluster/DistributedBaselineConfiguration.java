@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cluster;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
@@ -76,7 +77,8 @@ public class DistributedBaselineConfiguration {
     public DistributedBaselineConfiguration(
         GridInternalSubscriptionProcessor isp,
         GridKernalContext ctx,
-        IgniteLogger log) {
+        IgniteLogger log
+    ) {
         this.log = log;
 
         boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
@@ -99,6 +101,16 @@ public class DistributedBaselineConfiguration {
                 }
             }
         );
+    }
+
+    /** */
+    public void listenAutoAdjustEnabled(DistributePropertyListener<? super Boolean> lsnr) {
+        baselineAutoAdjustEnabled.addListener(lsnr);
+    }
+
+    /** */
+    public void listenAutoAdjustTimeout(DistributePropertyListener<? super Long> lsnr) {
+        baselineAutoAdjustTimeout.addListener(lsnr);
     }
 
     /**
