@@ -20,7 +20,7 @@ MAINTAINER Apache Ignite dev@ignite.apache.org
 VOLUME ["/opt/ignite-dev"]
 
 # Set the timezone.
-ENV TZ="/usr/share/zoneinfo/America/Los_Angeles"
+ENV TZ="/usr/share/zoneinfo/Europe/Moscow"
 
 # Do not ask for confirmations when running apt-get, etc.
 ENV DEBIAN_FRONTEND noninteractive
@@ -42,28 +42,22 @@ COPY ./ssh-config /root/.ssh/config
 RUN ssh-keygen -m PEM -q -t rsa -N '' -f /root/.ssh/id_rsa && cp -f /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 
-RUN chmod a+wr /opt
-
 ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-ARG IGNITE_VERSION="2.8.0"
-ARG IGNITE_NAME="ignite-$IGNITE_VERSION"
-ARG IGNITE_RELEASE_NAME="apache-ignite-$IGNITE_VERSION-bin"
+RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.7.6/apache-ignite-2.7.6-bin.zip && unzip apache-ignite-2.7.6-bin.zip && mv /opt/apache-ignite-2.7.6-bin /opt/ignite-2.7.6
+RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.0/apache-ignite-2.8.0-bin.zip && unzip apache-ignite-2.8.0-bin.zip && mv /opt/apache-ignite-2.8.0-bin /opt/ignite-2.8.0
+RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.1/apache-ignite-2.8.1-bin.zip && unzip apache-ignite-2.8.1-bin.zip && mv /opt/apache-ignite-2.8.1-bin /opt/ignite-2.8.1
 
-ADD $APACHE_ARCHIVE/ignite/$IGNITE_VERSION/$IGNITE_RELEASE_NAME.zip /opt/
-RUN cd /opt && unzip $IGNITE_RELEASE_NAME.zip && rm $IGNITE_RELEASE_NAME.zip
-RUN mv /opt/$IGNITE_RELEASE_NAME /opt/$IGNITE_NAME
-RUN chmod a+wr /opt/$IGNITE_NAME -R
+RUN rm /opt/apache-ignite-*-bin.zip
 
 # Install spark
 ARG SPARK_VERSION="2.3.4"
 ARG SPARK_NAME="spark-$SPARK_VERSION"
 ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
 
-ADD $APACHE_MIRROR/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz /opt/
-RUN cd /opt && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
+RUN cd /opt && curl -O $APACHE_MIRROR/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
 RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
 RUN chmod a+wr /opt/$SPARK_NAME -R
 

@@ -15,7 +15,7 @@
 
 import os
 
-from ignitetest.version import get_version, IgniteVersion, DEV_BRANCH
+from ignitetest.version import get_version, IgniteVersion
 
 """
 This module provides Ignite path methods
@@ -37,7 +37,7 @@ class IgnitePath:
     def __init__(self, project="ignite"):
         self.project = project
 
-    def home(self, node_or_version=DEV_BRANCH, project=None):
+    def home(self, node_or_version, project=None):
         version = self._version(node_or_version)
         home_dir = project or self.project
         if version is not None:
@@ -45,7 +45,7 @@ class IgnitePath:
 
         return os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
 
-    def script(self, script_name, node_or_version=DEV_BRANCH, project=None):
+    def script(self, script_name, node_or_version, project=None):
         version = self._version(node_or_version)
         return os.path.join(self.home(version, project=project), "bin", script_name)
 

@@ -197,7 +197,7 @@ must_do() {
 # Ask the user a yes/no question.
 #
 # $1: The prompt to use
-# $_return: 0 if the user answered no; 1 if the user anМинус - создаст дополнительную нагрузку на core team.swered yes.
+# $_return: 0 if the user answered no; 1 if the user answered yes.
 ask_yes_no() {
     local prompt="${1}"
     while true; do
@@ -258,7 +258,7 @@ docker_run() {
     must_do -v docker run --privileged \
         -d -t -h "${node}" --network ducknet "${expose_ports}" \
         --memory=${docker_run_memory_limit} --memory-swappiness=1 \
-        -v "${ignite_dir}:/opt/ignite-dev" --name "${node}" -- "${image_name}"
+        -v "${ignite_dir}:/opt/ignite-dev:delegated" --name "${node}" -- "${image_name}"
 }
 
 setup_custom_ducktape() {

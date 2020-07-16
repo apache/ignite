@@ -18,22 +18,23 @@ import os.path
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_config import IgniteConfig
-from ignitetest.services.ignite_client_app import IgniteClientApp, create_client_configs
+from ignitetest.version import DEV_BRANCH
 
 
-class SparkService(Service):
+class SparkService(IgniteAwareService):
     INSTALL_DIR = "/opt/spark-{version}".format(version="2.3.4")
-    PERSISTENT_ROOT = "/mnt/spark"
+    SPARK_PERSISTENT_ROOT = "/mnt/spark"
 
     logs = {}
 
-    def __init__(self, context, num_nodes=3):
+    def __init__(self, context, version=DEV_BRANCH, num_nodes=3, properties=""):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        Service.__init__(self, context, num_nodes)
+        IgniteAwareService.__init__(self, context, num_nodes, version, properties)
 
         self.log_level = "DEBUG"
         self.ignite_config = IgniteConfig()
@@ -61,14 +62,14 @@ class SparkService(Service):
 
         start_script = os.path.join(SparkService.INSTALL_DIR, "sbin", script)
 
-        cmd = "export SPARK_LOG_DIR={spark_dir}; ".format(spark_dir=SparkService.PERSISTENT_ROOT)
-        cmd += "export SPARK_WORKER_DIR={spark_dir}; ".format(spark_dir=SparkService.PERSISTENT_ROOT)
+        cmd = "export SPARK_LOG_DIR={spark_dir}; ".format(spark_dir=SparkService.SPARK_PERSISTENT_ROOT)
+        cmd += "export SPARK_WORKER_DIR={spark_dir}; ".format(spark_dir=SparkService.SPARK_PERSISTENT_ROOT)
         cmd += "{start_script} &".format(start_script=start_script)
 
         return cmd
 
     def start_node(self, node, timeout_sec=30):
-        create_client_configs(node, self.ignite_config)
+        self.init_persistent(node)
 
         cmd = self.start_cmd(node)
         self.logger.debug("Attempting to start SparkService on %s with command: %s" % (str(node.account), cmd))
@@ -99,7 +100,7 @@ class SparkService(Service):
     def clean_node(self, node):
         node.account.kill_java_processes(self.java_class_name(node),
                                          clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % SparkService.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("sudo rm -rf -- %s" % SparkService.SPARK_PERSISTENT_ROOT, allow_fail=False)
 
     def pids(self, node):
         """Return process ids associated with running processes on the given node."""
@@ -116,19 +117,16 @@ class SparkService(Service):
         else:
             return "org.apache.spark.deploy.worker.Worker"
 
-    def alive(self, node):
-        return len(self.pids(node)) > 0
-
     def master_log_path(self, node):
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.master.Master-{instance}-{host}.out".format(
-            SPARK_LOG_DIR=SparkService.PERSISTENT_ROOT,
+            SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
 
     def slave_log_path(self, node):
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.worker.Worker-{instance}-{host}.out".format(
-            SPARK_LOG_DIR=SparkService.PERSISTENT_ROOT,
+            SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)

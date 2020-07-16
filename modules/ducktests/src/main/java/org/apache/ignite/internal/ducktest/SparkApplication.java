@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.test;
+package org.apache.ignite.internal.ducktest;
 
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.spark.IgniteDataFrameSettings;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.ignite.IgniteSparkSession;
 
-import static org.apache.ignite.internal.test.IgniteApplication.CONFIG_PATH;
-
 /**
  *
  */
-public class SparkApplication {
+public class SparkApplication extends IgniteAwareApplication {
     /** Home. */
     public static final String HOME = "/opt/ignite-dev";
 
@@ -39,24 +38,9 @@ public class SparkApplication {
     public static final String SPRING_VER = "4.3.26.RELEASE";
 
     /**
-     * @param args Args.
-     */
-    public static void main(String[] args) {
-        System.out.println("SparkApplication.main - args");
-        for (String arg : args)
-            System.out.println("SparkApplication.main - " + arg);
-
-        sparkSession(args[0]);
-
-        igniteSession(args[0]);
-
-        System.out.println("Ignite Client Finish.");
-    }
-
-    /**
      * @param masterUrl Master url.
      */
-    private static void sparkSession(String masterUrl) {
+    private static void sparkSession(String cfgPath, String masterUrl) {
         //Creating spark session.
         try (SparkSession spark = SparkSession.builder()
             .appName("SparkApplication")
@@ -74,18 +58,19 @@ public class SparkApplication {
             spark.sparkContext().addJar(HOME + "/modules/core/target/libs/cache-api-1.0.0.jar");
             spark.sparkContext().addJar(HOME + "/modules/indexing/target/libs/h2-1.4.197.jar");
 
-            sparkDSLExample(spark);
+            sparkDSLExample(cfgPath, spark);
         }
     }
 
     /**
      * @param masterUrl Master url.
+     * @param cfgPath Config path.
      */
-    private static void igniteSession(String masterUrl) {
+    private static void igniteSession(String cfgPath, String masterUrl) {
         //Creating spark session.
         try (IgniteSparkSession spark = IgniteSparkSession.builder()
             .appName("SparkApplication")
-            .igniteConfig(CONFIG_PATH)
+            .igniteConfig(cfgPath)
             .master(masterUrl)
             .getOrCreate()) {
             spark.sparkContext().addJar(HOME + "/modules/core/target/ignite-core-" + VER + ".jar");
@@ -102,20 +87,21 @@ public class SparkApplication {
 
             spark.catalog().listTables().show();
 
-            sparkDSLExample(spark);
+            sparkDSLExample(cfgPath, spark);
         }
     }
 
     /**
      * @param spark Spark.
+     * @param cfgPath Config path.
      */
-    private static void sparkDSLExample(SparkSession spark) {
+    private static void sparkDSLExample(String cfgPath, SparkSession spark) {
         System.out.println("Querying using Spark DSL.");
 
         Dataset<Row> igniteDF = spark.read()
             .format(IgniteDataFrameSettings.FORMAT_IGNITE()) //Data source type.
             .option(IgniteDataFrameSettings.OPTION_TABLE(), "person") //Table to read.
-            .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE(), CONFIG_PATH) //Ignite config.
+            .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE(), cfgPath) //Ignite config.
             .load();
 
         System.out.println("Data frame schema:");
@@ -125,5 +111,19 @@ public class SparkApplication {
         System.out.println("Data frame content:");
 
         igniteDF.show(); //Printing query results to console.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void run(String[] args) throws Exception {
+        System.out.println("SparkApplication.main - args");
+
+        for (String arg : args)
+            System.out.println("SparkApplication.main - " + arg);
+
+        sparkSession(args[0], args[1]);
+
+        igniteSession(args[0], args[1]);
+
+        markSyncExecutionComplete();
     }
 }

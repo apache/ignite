@@ -22,7 +22,7 @@ class IgniteConfig:
     def __init__(self, project="ignite"):
         self.project = project
 
-    def render(self, config_dir, work_dir, client_mode="false"):
+    def render(self, config_dir, work_dir, properties=""):
         return """<?xml version="1.0" encoding="UTF-8"?>
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -36,12 +36,12 @@ class IgniteConfig:
                 <constructor-arg type="java.lang.String" value="{config_dir}/ignite-log4j.xml"/>
             </bean>
         </property>
-        <property name="clientMode" value="{client_mode}" />
+        {properties}
     </bean>
 </beans>
         """.format(config_dir=config_dir,
                    work_dir=work_dir,
-                   client_mode=client_mode)
+                   properties=properties)
 
     def render_log4j(self, work_dir):
         return """<?xml version="1.0" encoding="UTF-8"?>

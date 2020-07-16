@@ -12,3 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+The Ignite-Spark application service.
+"""
+from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
+from ignitetest.version import DEV_BRANCH
+
+
+class SparkIgniteApplicationService(IgniteAwareApplicationService):
+    def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
+        IgniteAwareApplicationService.__init__(
+            self, context, java_class_name, version, properties, params, timeout_sec)
+
+    def env(self):
+        return IgniteAwareApplicationService.env(self) + \
+               "export EXCLUDE_MODULES=\"kubernetes,aws,gce,mesos,rest-http,web-agent,zookeeper,serializers,store," \
+               "rocketmq\"; "
