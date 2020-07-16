@@ -68,10 +68,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -378,9 +378,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 totalTblSize += segments[i].tableSize();
             }
 
-            this.segments = segments;
-
             initWriteThrottle();
+
+            this.segments = segments;
 
             if (log.isInfoEnabled())
                 log.info("Started page memory [memoryAllocated=" + U.readableSize(totalAllocated, false) +
@@ -1167,8 +1167,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (segments == null)
             return;
 
-        for (Segment seg : segments)
-            seg.checkpointPages = null;
+        synchronized (segmentsLock) {
+            for (Segment seg : segments)
+                seg.checkpointPages = null;
+        }
 
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onFinishCheckpoint();
@@ -2316,7 +2318,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     boolean skip = ignored != null && ignored.contains(rndAddr);
 
-                    if (relRmvAddr == rndAddr || pinned || skip) {
+                    final boolean dirty = isDirty(absPageAddr);
+
+                    CheckpointPages checkpointPages = this.checkpointPages;
+
+                    if (relRmvAddr == rndAddr || pinned || skip ||
+                        fullId.pageId() == storeMgr.metaPageId(fullId.groupId()) ||
+                        (dirty && (checkpointPages == null || !checkpointPages.contains(fullId)))
+                    ) {
                         i--;
 
                         continue;
@@ -2324,7 +2333,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
-                    final boolean dirty = isDirty(absPageAddr);
                     final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
                     if (pageTs < cleanTs && !dirty && !storMeta) {

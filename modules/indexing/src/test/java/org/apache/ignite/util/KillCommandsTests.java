@@ -54,9 +54,9 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -72,6 +72,9 @@ class KillCommandsTests {
 
     /** Page size. */
     public static final int PAGE_SZ = 5;
+
+    /** Number of pages to insert. */
+    public static final int PAGES_CNT = 1000;
 
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
@@ -211,7 +214,8 @@ class KillCommandsTests {
     public static void doTestCancelTx(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> txCanceler) {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
-        int testKey = 42;
+        // See e.g. KillCommandsMxBeanTest
+        int testKey = (PAGES_CNT * PAGE_SZ) + 42;
 
         try (Transaction tx = cli.transactions().txStart()) {
             cache.put(testKey, 1);

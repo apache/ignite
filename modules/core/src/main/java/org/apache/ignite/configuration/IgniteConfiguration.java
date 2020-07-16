@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -246,6 +247,9 @@ public class IgniteConfiguration {
     /** Default failure detection timeout for client nodes in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
+
+    /** Default policy for node shutdown. */
+    public static final ShutdownPolicy DFLT_SHUTDOWN_POLICY = ShutdownPolicy.IMMEDIATE;
 
     /**
      *  Default timeout after which long query warning will be printed.
@@ -608,6 +612,9 @@ public class IgniteConfiguration {
     /** SQL configuration. */
     private SqlConfiguration sqlCfg = new SqlConfiguration();
 
+    /** Shutdown policy for cluster. */
+    public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -737,6 +744,7 @@ public class IgniteConfiguration {
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
         sqlCfg = cfg.getSqlConfiguration();
+        shutdown = cfg.getShutdownPolicy();
     }
 
     /**
@@ -1147,6 +1155,29 @@ public class IgniteConfiguration {
     @Deprecated
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
         sqlCfg.setSqlQueryHistorySize(size);
+
+        return this;
+    }
+
+    /**
+     * Gets shutdown policy.
+     * If policy was not set default policy will be return {@code IgniteCluster.DEFAULT_SHUTDOWN_POLICY}.
+     *
+     * @return Shutdown policy.
+     */
+    public ShutdownPolicy getShutdownPolicy() {
+        return shutdown;
+    }
+
+    /**
+     * Sets shutdown policy.
+     * If {@code null} is passed as a parameter, policy will be set as default.
+     *
+     * @param shutdownPolicy Shutdown policy.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setShutdownPolicy(ShutdownPolicy shutdownPolicy) {
+        this.shutdown = shutdownPolicy != null ? shutdownPolicy : DFLT_SHUTDOWN_POLICY;
 
         return this;
     }
@@ -2833,7 +2864,7 @@ public class IgniteConfiguration {
      *
      * @param state New cluster state on start.
      * @return {@code this} for chaining.
-     * @see #getClusterStateOnStart() 
+     * @see #getClusterStateOnStart()
      */
     public IgniteConfiguration setClusterStateOnStart(ClusterState state) {
         this.clusterStateOnStart = state;

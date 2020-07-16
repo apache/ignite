@@ -17,9 +17,9 @@
 
 package org.apache.ignite.examples.ml.dataset;
 
-import com.github.fommil.netlib.BLAS;
 import java.io.Serializable;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;

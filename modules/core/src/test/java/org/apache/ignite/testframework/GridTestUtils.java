@@ -34,10 +34,8 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -66,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -1622,27 +1621,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Change static final fields.
-     * @param field Need to be changed.
-     * @param newVal New value.
-     * @throws Exception If failed.
-     */
-    public static void setFieldValue(Field field, Object newVal) throws Exception {
-        field.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-        AccessController.doPrivileged(new PrivilegedAction() {
-            @Override public Object run() {
-                modifiersField.setAccessible(true);
-                return null;
-            }
-        });
-
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(null, newVal);
-    }
-
-    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -1673,6 +1651,18 @@ public final class GridTestUtils {
             Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
             Field field = cls.getDeclaredField(fieldName);
+
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             boolean accessible = field.isAccessible();
 
@@ -1707,6 +1697,16 @@ public final class GridTestUtils {
                 field.setAccessible(true);
 
             boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
@@ -1904,19 +1904,24 @@ public final class GridTestUtils {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
-        long curTime = U.currentTimeMillis();
-        long endTime = curTime + timeout;
+        long endTime = U.currentTimeMillis() + timeout;
+        long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        if (endTime < 0)
-            endTime = Long.MAX_VALUE;
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
+    }
 
-        while (curTime < endTime) {
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
+        while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
             U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
-
-            curTime = U.currentTimeMillis();
         }
 
         return false;
@@ -2253,20 +2258,20 @@ public final class GridTestUtils {
      * Checks that {@code state} is active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertActive(ClusterState state) {
-        assertTrue(state + " isn't active state", ClusterState.active(state));
+        assertTrue(state + " isn't active state", state.active());
     }
 
     /**
      * Checks that {@code state} isn't active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertInactive(ClusterState state) {
-        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+        assertFalse(state + " isn't inactive state", state.active());
     }
 
     /** Test parameters scale factor util. */

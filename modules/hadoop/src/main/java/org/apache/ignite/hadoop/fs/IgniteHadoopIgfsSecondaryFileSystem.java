@@ -17,6 +17,10 @@
 
 package org.apache.ignite.hadoop.fs;
 
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -36,11 +40,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * Secondary file system which delegates calls to Hadoop {@code org.apache.hadoop.fs.FileSystem}.
