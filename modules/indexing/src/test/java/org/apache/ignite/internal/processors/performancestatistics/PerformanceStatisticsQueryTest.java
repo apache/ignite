@@ -104,6 +104,26 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
     /** @throws Exception If failed. */
     @Test
+    public void testDdlAndDmlQueries() throws Exception {
+        String sql = "create table test (id int, val varchar, primary key (id))";
+
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
+
+        sql = "insert into test (id) values (1)";
+
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
+
+        sql = "update test set val='abc' where id=1";
+
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
+
+        sql = "drop table test";
+
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testScanQuery() throws Exception {
         checkQuery(SCAN, new ScanQuery<>(), DEFAULT_CACHE_NAME);
     }
