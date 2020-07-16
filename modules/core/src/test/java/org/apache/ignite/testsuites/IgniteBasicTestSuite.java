@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.DropCacheContextDuringEvictionTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictionTaskFailureHandlerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
@@ -193,6 +194,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(TransactionsMXBeanImplTest.class);
         suite.addTestSuite(SetTxTimeoutOnPartitionMapExchangeTest.class);
         suite.addTestSuite(EvictPartitionInLogTest.class);
+        suite.addTestSuite(PartitionEvictionOrderTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
