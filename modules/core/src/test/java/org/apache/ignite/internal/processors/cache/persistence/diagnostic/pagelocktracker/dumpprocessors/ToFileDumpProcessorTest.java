@@ -39,8 +39,7 @@ public class ToFileDumpProcessorTest extends GridCommonAbstractTest {
     private File file;
 
     /** {@inheritDoc} */
-    @Override
-    public void beforeTest() throws Exception {
+    @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanFile();
