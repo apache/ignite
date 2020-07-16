@@ -22,11 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
@@ -130,35 +126,6 @@ public abstract class GridClientUtils {
     }
 
     /**
-     * Shutdowns given {@code ExecutorService} and wait for executor service to stop.
-     *
-     * @param owner The ExecutorService owner.
-     * @param exec ExecutorService to shutdown.
-     * @param log The logger to possible exceptions and warnings.
-     */
-    public static void shutdownNow(Class<?> owner, ExecutorService exec, Logger log) {
-        if (exec != null) {
-            List<Runnable> tasks = exec.shutdownNow();
-
-            if (!tasks.isEmpty())
-                log.warning("Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
-                    ", tasks=" + tasks + ']');
-
-            try {
-                exec.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException ignored) {
-                log.warning("Got interrupted while waiting for executor service to stop.");
-
-                exec.shutdownNow();
-
-                // Preserve interrupt status.
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
      * Gets simple class name taking care of empty names.
      *
      * @param cls Class to get the name for.
@@ -166,18 +133,6 @@ public abstract class GridClientUtils {
      */
     public static String getSimpleName(Class<?> cls) {
         return cls.getSimpleName().isEmpty() ? cls.getName() : cls.getSimpleName();
-    }
-
-    /**
-     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
-     *
-     * @param i Integer.
-     * @return Absolute value.
-     */
-    public static int safeAbs(int i) {
-        i = Math.abs(i);
-
-        return i < 0 ? 0 : i;
     }
 
     /**

@@ -32,6 +32,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
@@ -40,10 +41,10 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
 import org.apache.ignite.internal.client.impl.GridClientThreadFactory;
-import org.apache.ignite.internal.client.util.GridClientUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -53,7 +54,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  */
 public class GridClientTopology {
     /** Logger. */
-    private static final Logger log = Logger.getLogger(GridClientTopology.class.getName());
+    private static final IgniteLogger log = new JavaLogger(Logger.getLogger(GridClientTopology.class.getName()));
 
     /** Topology cache */
     private Map<UUID, GridClientNodeImpl> nodes = Collections.emptyMap();
@@ -412,7 +413,7 @@ public class GridClientTopology {
      * Shutdowns executor service that performs listener notification.
      */
     public void shutdown() {
-        GridClientUtils.shutdownNow(GridClientTopology.class, exec, log);
+        U.shutdownNow(GridClientTopology.class, exec, log);
     }
 
     /**
