@@ -125,7 +125,7 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
     }
 
     /** {@inheritDoc} */
-    @Override public void addListener(DistributePropertyListener<T> listener) {
+    @Override public void addListener(DistributePropertyListener<? super T> listener) {
         internal.addListener(new DistributePropertyListener<Integer>() {
             @Override public void onUpdate(String name, Integer oldVal, Integer newVal) {
                 listener.onUpdate(name, fromOrdinalOrNull(oldVal), fromOrdinalOrNull(newVal));

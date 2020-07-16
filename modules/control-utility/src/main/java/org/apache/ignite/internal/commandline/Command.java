@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -51,8 +52,18 @@ public interface Command<T> {
         GridClient client = GridClientFactory.start(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected())
-            client.throwLastError();
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
 
         return client;
     }

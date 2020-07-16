@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -111,13 +110,11 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1860,7 +1857,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     visitor = new SchemaIndexCacheVisitorImpl(
                         cacheInfo.cacheContext(),
-                        new TableCacheFilter(cctx, op0.tableName()),
                         cancelTok,
                         createIdxFut
                     ) {
@@ -3743,45 +3739,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             assert this.mgr == null;
 
             this.mgr = mgr;
-        }
-    }
-
-    /** */
-    private static class TableCacheFilter implements SchemaIndexCacheFilter {
-        /** */
-        @GridToStringExclude
-        private final GridCacheContext cctx;
-
-        /** */
-        @GridToStringExclude
-        private final GridQueryProcessor query;
-
-        /** */
-        private final String cacheName;
-
-        /** */
-        private final String tableName;
-
-        /**
-         * @param cctx Cache context.
-         * @param tableName Target table name.
-         */
-        TableCacheFilter(GridCacheContext cctx, String tableName) {
-            this.cctx = cctx;
-            this.tableName = tableName;
-
-            cacheName = cctx.name();
-            query = cctx.kernalContext().query();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(CacheDataRow row) throws IgniteCheckedException {
-            return query.belongsToTable(cctx, cacheName, tableName, row.key(), row.value());
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TableCacheFilter.class, this);
         }
     }
 

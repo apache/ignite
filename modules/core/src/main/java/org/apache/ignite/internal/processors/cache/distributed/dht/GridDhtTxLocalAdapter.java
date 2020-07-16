@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -117,6 +119,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected GridDhtTxLocalAdapter() {
         // No-op.
     }
+
+    /** Tracing span. */
+    private Span span = NoopSpan.INSTANCE;
 
     /**
      * @param xidVer Transaction version.
@@ -934,6 +939,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
 
         return prepFut;
+    }
+
+    /**
+     * @return Tracing span.
+     */
+    public Span span() {
+        return span;
+    }
+
+    /**
+     * @param span New tracing span.
+     */
+    public void span(Span span) {
+        this.span = span;
     }
 
     /** {@inheritDoc} */
