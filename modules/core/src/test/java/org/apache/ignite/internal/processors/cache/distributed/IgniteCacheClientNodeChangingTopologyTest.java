@@ -186,8 +186,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ccfg.setNearConfiguration(nearCfg);
 
-        ccfg.setNearConfiguration(null);
-
         Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
@@ -562,6 +560,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertFalse(putFut.isDone());
 
         IgniteEx ignite3 = startGrid(3);
+
+        awaitPartitionMapExchange();
 
         log.info("Stop block1.");
 
