@@ -42,6 +42,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
     public PageLockTrackerManagerTest() {
         super(false);
     }
+
     /**
      *
      */
