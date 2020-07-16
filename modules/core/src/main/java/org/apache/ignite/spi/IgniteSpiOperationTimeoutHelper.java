@@ -30,9 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  */
 public class IgniteSpiOperationTimeoutHelper {
-    // https://issues.apache.org/jira/browse/IGNITE-11221
-    // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
-
     /** Flag whether to use timeout. */
     private final boolean timeoutEnabled;
 
