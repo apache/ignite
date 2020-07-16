@@ -1325,7 +1325,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             boolean rmv = partDataStores.remove(p, store);
 
-            assert rmv;
+            if (!rmv)
+                return; // Already destroyed.
 
             destroyCacheDataStore0(store);
         }
