@@ -579,9 +579,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
-
         Collection<Integer> lostParts = cache.lostPartitions();
 
         Set<Integer> keys = new TreeSet<>();
