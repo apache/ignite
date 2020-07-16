@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  * Abstract command handler.
  */
 public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHandler {
-    /** Used cache name in case the name was not defined in a request. */
-    protected static final String DFLT_CACHE_NAME = "default";
 
     /** Kernal context. */
     protected final GridKernalContext ctx;
