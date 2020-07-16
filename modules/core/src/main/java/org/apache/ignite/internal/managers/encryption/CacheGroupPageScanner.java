@@ -179,15 +179,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context cpCtx) {
-        for (GroupScanContext scanCtx : grps.values()) {
-            if (scanCtx.skipDirty())
-                return;
-
-            cpCtx.finishedStateFut().listen(f -> {
-                if (f.error() == null && !f.isCancelled())
-                    scanCtx.skipDirty(true);
-            });
-        }
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -204,9 +196,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
     /**
      * @param grpId Cache group ID.
-     * @param skipDirty Dirty page skip flag.
      */
-    public IgniteInternalFuture schedule(int grpId, boolean skipDirty) throws IgniteCheckedException {
+    public IgniteInternalFuture schedule(int grpId) throws IgniteCheckedException {
         if (disabled)
             throw new IgniteCheckedException("Reencryption is disabled.");
 
@@ -237,7 +228,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 return prevState.finishFuture();
             }
 
-            GroupScanContext ctx0 = new GroupScanContext(grpId, skipDirty);
+            GroupScanContext ctx0 = new GroupScanContext(grpId);
 
             forEachPageStore(grp, new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
@@ -370,9 +361,6 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
         /** Cache group ID. */
         private final int grpId;
 
-        /** Dirty page skip flag. */
-        private volatile boolean skipDirty;
-
         /** Future that ends after all partitions are done and a checkpoint is finished. */
         private final GridFutureAdapter<Void> cpFut = new GridFutureAdapter<Void>() {
             @Override public boolean cancel() throws IgniteCheckedException {
@@ -384,11 +372,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         /**
          * @param grpId Cache group ID.
-         * @param skipDirty Dirty page skip flag.
          */
-        public GroupScanContext(int grpId, boolean skipDirty) {
+        public GroupScanContext(int grpId) {
             this.grpId = grpId;
-            this.skipDirty = skipDirty;
         }
 
         /**
@@ -396,20 +382,6 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
          */
         public int groupId() {
             return grpId;
-        }
-
-        /**
-         * @return Dirty page skip flag.
-         */
-        public boolean skipDirty() {
-            return skipDirty;
-        }
-
-        /**
-         * @param skipDirty Dirty page skip flag.
-         */
-        public void skipDirty(boolean skipDirty) {
-            this.skipDirty = skipDirty;
         }
 
         /**
@@ -520,12 +492,12 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
                 while (off < cnt) {
                     synchronized (this) {
+                        if (isDone())
+                            break;
+
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
-                            if (isDone() || ctx.encryption().getEncryptionState(grpId, partId) == 0)
-                                break;
-
                             off += scanPages(pageMem, metaPageId + off, Math.min(batchSize, cnt - off));
                         }
                         finally {
@@ -571,8 +543,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 long page = pageMem.acquirePage(scanCtx.groupId(), pageId);
 
                 try {
-                    // Can skip rewriting a dirty page if the checkpoint has been completed.
-                    if (scanCtx.skipDirty() && pageMem.isDirty(scanCtx.groupId(), pageId, page))
+                    if (pageMem.isDirty(scanCtx.groupId(), pageId, page))
                         continue;
 
                     pageMem.writeLock(scanCtx.groupId(), pageId, page, true);

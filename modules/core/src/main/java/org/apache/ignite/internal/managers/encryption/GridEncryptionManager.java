@@ -1160,7 +1160,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             recoveryMasterKeyName = false;
         }
 
-        // Key ID for specified groups was changed manually, we need schedule reencryption with the new key.
+        // Key ID for specified groups was changed during node join, we need schedule reencryption with the new key.
         Iterator<Integer> itr = reencryptGroupsForced.iterator();
 
         while (itr.hasNext()) {
@@ -1178,7 +1178,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reencryptGroups.put(grpId, new ConcurrentHashMap<>(offsets));
         }
 
-        startReencryption(reencryptGroups.keySet(), true);
+        startReencryption(reencryptGroups.keySet());
     }
 
     /** {@inheritDoc} */
@@ -1282,15 +1282,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * @param grpIds Cache group IDs.
-     * @param skipDirty Dirty page skip flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void startReencryption(Collection<Integer> grpIds, boolean skipDirty) throws IgniteCheckedException {
+    private void startReencryption(Collection<Integer> grpIds) throws IgniteCheckedException {
         if (pageScan.disabled())
             return;
 
         for (int grpId : grpIds) {
-            IgniteInternalFuture<?> fut = pageScan.schedule(grpId, skipDirty);
+            IgniteInternalFuture<?> fut = pageScan.schedule(grpId);
 
             fut.listen(f -> {
                 try {
@@ -2138,7 +2137,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     }
                 }
 
-                startReencryption(Arrays.stream(grpIds).boxed().collect(Collectors.toList()), false);
+                startReencryption(Arrays.stream(grpIds).boxed().collect(Collectors.toList()));
 
                 return new GridFinishedFuture<>(new EmptyResult());
             } catch (IgniteCheckedException e) {
