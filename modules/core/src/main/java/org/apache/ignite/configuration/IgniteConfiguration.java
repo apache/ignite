@@ -83,6 +83,7 @@ import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -431,6 +432,9 @@ public class IgniteConfiguration {
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
 
+    /** Tracing SPI. */
+    private TracingSpi tracingSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -637,6 +641,7 @@ public class IgniteConfiguration {
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
         sysViewExporterSpi = cfg.getSystemViewExporterSpi();
+        tracingSpi = cfg.getTracingSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2489,6 +2494,27 @@ public class IgniteConfiguration {
      */
     public SystemViewExporterSpi[] getSystemViewExporterSpi() {
         return sysViewExporterSpi;
+    }
+
+    /**
+     * Set fully configured instance of {@link TracingSpi}.
+     *
+     * @param tracingSpi Fully configured instance of {@link TracingSpi}.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setTracingSpi(TracingSpi tracingSpi) {
+        this.tracingSpi = tracingSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured tracing SPI implementation.
+     *
+     * @return Tracing SPI implementation.
+     */
+    public TracingSpi getTracingSpi() {
+        return tracingSpi;
     }
 
     /**
