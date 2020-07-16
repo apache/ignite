@@ -22,11 +22,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.junit.Assert.assertEquals;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
-public abstract class AbstractPageLockTest {
+public abstract class AbstractPageLockTest extends GridCommonAbstractTest {
+
+    /** */
+    protected AbstractPageLockTest() {
+        super(false);
+    }
+
     /** */
     protected void doRunnable(int deep, Runnable r) {
         for (int i = 0; i < deep; i++)

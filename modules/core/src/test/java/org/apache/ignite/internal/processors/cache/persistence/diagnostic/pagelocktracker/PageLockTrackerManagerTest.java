@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,7 +36,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 /**
  *
  */
-public class PageLockTrackerManagerTest {
+public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
+
+    /** */
+    public PageLockTrackerManagerTest() {
+        super(false);
+    }
     /**
      *
      */
