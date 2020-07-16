@@ -82,7 +82,9 @@ packages
 #NodeJs files
 /modules/platforms/nodejs/node_modules
 
+#Ducktape
 /results
 .ducktape
 *.pyc
 /tests/venv
+modules/ducktests/tests/docker/build/**
