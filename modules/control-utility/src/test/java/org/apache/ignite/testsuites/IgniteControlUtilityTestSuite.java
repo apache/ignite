@@ -33,6 +33,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
+import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.KillCommandsCommandShTest;
 import org.junit.runner.RunWith;
@@ -66,6 +67,8 @@ import org.junit.runners.Suite;
 
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
+
+    GridCommandHandlerTracingConfigurationTest.class,
 })
 public class IgniteControlUtilityTestSuite {
 }

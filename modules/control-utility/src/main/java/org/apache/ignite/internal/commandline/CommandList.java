@@ -71,7 +71,10 @@ public enum CommandList {
     METADATA("--meta", new MetadataCommand()),
 
     /** */
-    SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand());
+    SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
+
+    /** */
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
