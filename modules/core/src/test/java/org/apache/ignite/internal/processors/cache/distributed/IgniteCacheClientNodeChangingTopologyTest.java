@@ -612,6 +612,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
+        awaitPartitionMapExchange();
+
         checkData(map, null, cache, 4);
 
         for (int i = 0; i < 100; i++)
