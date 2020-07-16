@@ -294,7 +294,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-29798")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13264")
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
