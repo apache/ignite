@@ -32,6 +32,7 @@ ARG ducker_creator=default
 LABEL ducker.creator=$ducker_creator
 
 # Update Linux and install necessary utilities.
+RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python-pip python-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
 RUN python -m pip install -U pip==9.0.3;
 RUN pip install --upgrade cffi virtualenv pyasn1 boto3 pycrypto pywinrm ipaddress enum34 && pip install --upgrade ducktape==0.7.7
@@ -57,7 +58,7 @@ ARG SPARK_VERSION="2.3.4"
 ARG SPARK_NAME="spark-$SPARK_VERSION"
 ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
 
-RUN cd /opt && curl -O $APACHE_MIRROR/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
+RUN cd /opt && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
 RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
 RUN chmod a+wr /opt/$SPARK_NAME -R
 
