@@ -28,12 +28,12 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.configuration.VisorTracingConfigurationTask;
+import org.apache.ignite.internal.commandline.configuration.VisorTracingConfigurationTaskArg;
+import org.apache.ignite.internal.commandline.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationArguments;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskArg;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -43,8 +43,11 @@ import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.GET;
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.GET_ALL;
+import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.RESET;
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.RESET_ALL;
+import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.SET;
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.of;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
@@ -70,7 +73,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             log,
             "Print tracing configuration: ",
             TRACING_CONFIGURATION,
-            TracingConfigurationSubcommand.GET_ALL.text(),
+            GET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
 
         Command.usage(
@@ -79,9 +82,9 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
                 TracingConfigurationCommandArg.LABEL.argName() + ": ",
             TRACING_CONFIGURATION,
-            TracingConfigurationSubcommand.GET.text(),
+            GET.text(),
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
-            optional(TracingConfigurationCommandArg.LABEL.argName()));
+            CommandLogger.optional(TracingConfigurationCommandArg.LABEL.argName()));
 
         Command.usage(
             log,
@@ -103,9 +106,9 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
                 " is specified then reset given configuration to the default." +
                 " Print reseted configuration.",
             TRACING_CONFIGURATION,
-            TracingConfigurationSubcommand.RESET.text(),
+            RESET.text(),
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
-            optional(TracingConfigurationCommandArg.LABEL.argName()));
+            CommandLogger.optional(TracingConfigurationCommandArg.LABEL.argName()));
 
         Command.usage(
             log,
@@ -115,9 +118,9 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
                 " specific configuration, if only " + TracingConfigurationCommandArg.SCOPE.argName() +
                 " is specified, then override scope specific configuration. Print applied configuration.",
             TRACING_CONFIGURATION,
-            TracingConfigurationSubcommand.SET.text(),
+            SET.text(),
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values()),
-            optional(TracingConfigurationCommandArg.LABEL.argName()),
+            CommandLogger.optional(TracingConfigurationCommandArg.LABEL.argName()),
             optional(TracingConfigurationCommandArg.SAMPLING_RATE.argName(),
                 "Decimal value between 0 and 1, " +
                 "where 0 means never and 1 means always. " +
@@ -173,7 +176,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
     @Override public void parseArguments(CommandArgIterator argIter) {
         // If there is no arguments, use list command.
         if (!argIter.hasNextSubArg()) {
-            args = new TracingConfigurationArguments.Builder(TracingConfigurationSubcommand.GET_ALL).build();
+            args = new TracingConfigurationArguments.Builder(GET_ALL).build();
 
             return;
         }

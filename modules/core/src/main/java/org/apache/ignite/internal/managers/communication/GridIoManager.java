@@ -2135,6 +2135,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
+    public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
+        throws IgniteCheckedException {
+        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
     public void sendToCustomTopic(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
         send(node, topic, -1, msg, plc, false, 0, false, null, false);

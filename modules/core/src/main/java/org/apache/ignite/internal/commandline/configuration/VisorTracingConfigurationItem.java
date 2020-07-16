@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tracing.configuration;
+package org.apache.ignite.internal.commandline.configuration;
 
 import java.io.IOException;
 import java.io.ObjectInput;

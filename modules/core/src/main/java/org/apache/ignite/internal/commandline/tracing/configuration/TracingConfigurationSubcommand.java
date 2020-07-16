@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.a;
+package org.apache.ignite.internal.commandline.tracing.configuration;
 
 import org.apache.ignite.internal.commandline.configuration.VisorTracingConfigurationOperation;
 import org.jetbrains.annotations.Nullable;

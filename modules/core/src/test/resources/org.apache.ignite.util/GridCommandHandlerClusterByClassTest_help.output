@@ -144,9 +144,6 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Update cluster metadata from specified file (file name is required)
     control.(sh|bat) --meta update --in <fileName>
 
-  Set or display shutdown policy:
-    control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
-
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration
 
