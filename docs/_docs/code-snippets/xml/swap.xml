@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd         http://www.springframework.org/schema/util         http://www.springframework.org/schema/util/spring-util.xsd">
+    <!-- tag::swap[] -->
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- Durable memory configuration. -->
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="dataRegionConfigurations">
+                    <list>
+                        <!--
+                        Defining a data region that will consume up to 500 MB of RAM 
+                        with swap enabled.
+                        -->
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                            <!-- Custom region name. -->
+                            <property name="name" value="500MB_Region"/>
+                            <!-- 100 MB initial size. -->
+                            <property name="initialSize" value="#{100L * 1024 * 1024}"/>
+                            <!-- Setting region max size equal to physical RAM size(5 GB). -->
+                            <property name="maxSize" value="#{5L * 1024 * 1024 * 1024}"/>
+                            <!-- Enabling swap space for the region. -->
+                            <property name="swapPath" value="/path/to/some/directory"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!-- Other configurations. -->
+    </bean>
+    <!-- end::swap[] -->
+</beans>

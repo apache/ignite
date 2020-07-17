@@ -1,0 +1,19 @@
+There are two types of nodes:  servers and clients.
+
+A _server node_ is the base computational and data storage unit. Typically, you start a single server
+node per machine or container and it will scale vertically by utilizing all of the CPU, RAM, and other resources
+available unless specified differently. Those resources are pooled and become available to Ignite applications
+once the server node joins a cluster of other server nodes.
+
+image::images/ignite_clustering.png[Ignite Deployment]
+
+A _cluster_ is a group of server nodes interconnected together in order to provide shared resources like RAM and
+CPU to your applications.
+
+Operations executed by applications (key-value queries, SQL, computations, etc.) are directed to and performed by
+server nodes. If you need more computational power or data storage, scale out your cluster by adding more server
+nodes to it.
+
+_Client nodes_ are your connection endpoints and gateways from the application layer to the cluster of
+server nodes. You always embed a client into your application code and execute required APIs. The clients shield all
+the complexity of Ignite's distributed nature from application developers who will see the cluster as a single unit. It's as simple as connecting to an RDBMS via a JDBC driver or Spring Data framework.

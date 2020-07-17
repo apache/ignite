@@ -1,0 +1,168 @@
+= On-Heap Caching
+
+Ignite uses off-heap memory to allocate memory regions outside of Java heap. However, you can enable on-heap caching  by setting `CacheConfiguration.setOnheapCacheEnabled(true)`.
+
+On-heap caching is useful in scenarios when you do a lot of cache reads on server nodes that work with cache entries in link:developers-guide/data-modeling/data-modeling#binary-object-format[binary form] or invoke cache entries' deserialization. For instance, this might happen when a distributed computation or deployed service gets some data from caches for further processing.
+
+
+[tabs]
+--
+tab:XML[]
+
+[source,xml]
+----
+include::code-snippets/xml/on-heap-cache.xml[tags=ignite-config;!discovery,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/OnHeapCaching.java[tag=onHeap,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/OnHeapCaching.cs[tag=onheap,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+== Configuring Eviction Policy
+
+When on-heap caching is enabled, you can use one of the on-heap eviction policies to manage the growing on-heap cache.
+
+Eviction policies control the maximum number of elements that can be stored in a cache's on-heap memory. Whenever the maximum on-heap cache size is reached, entries are evicted from Java heap.
+
+NOTE: The on-heap eviction policies remove the cache entries from Java heap only. The entries stored in the off-heap region of the memory are not affected.
+
+Some eviction policies support batch eviction and eviction by memory size limit. If batch eviction is enabled, then eviction starts when cache size becomes `batchSize` elements greater than the maximum cache size. In this case, `batchSize` entries are evicted. If eviction by memory size limit is enabled, then eviction starts when the size of cache entries in bytes becomes greater than the maximum memory size.
+
+NOTE: Batch eviction is supported only if maximum memory limit isn't set.
+
+Eviction policies are pluggable and are controlled via the `EvictionPolicy` interface. The implementation of eviction policy is notified of every cache change and defines the algorithm of choosing the entries to evict from the on-heap cache.
+
+=== Least Recently Used (LRU)
+
+LRU eviction policy, based on the link:http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[Least Recently Used (LRU)] algorithm, ensures that the least recently used entry (i.e. the entry that has not been touched for the longest time) gets evicted first.
+
+NOTE: LRU eviction policy nicely fits most of the use cases for on-heap caching. Use it whenever in doubt.
+
+This eviction policy can be enabled in the cache configuration as shown in the example below. It supports batch eviction and eviction by memory size limit.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.cache.CacheConfiguration">
+  <property name="name" value="myCache"/>
+
+  <!-- Enabling on-heap caching for this distributed cache. -->
+  <property name="onheapCacheEnabled" value="true"/>
+
+  <property name="evictionPolicy">
+    <!-- LRU eviction policy. -->
+    <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
+        <!-- Set the maximum cache size to 1 million (default is 100,000). -->
+      <property name="maxSize" value="1000000"/>
+    </bean>
+  </property>
+
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/EvictionPolicies.java[tag=LRU,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/EvictionPolicies.cs[tag=LRU,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+=== First In First Out (FIFO)
+
+FIFO eviction policy, based on the https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)[First-In-First-Out (FIFO)] algorithm, ensures that the entry that has been in the on-heap cache for the longest time is evicted first.
+It is different from `LruEvictionPolicy` because it ignores the order in which the entries are accessed.
+
+This eviction policy can be enabled in the cache configuration as shown in the example below.
+It supports batch eviction and eviction by memory size limit.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.cache.CacheConfiguration">
+  <property name="name" value="myCache"/>
+
+  <!-- Enabling on-heap caching for this distributed cache. -->
+  <property name="onheapCacheEnabled" value="true"/>
+
+  <property name="evictionPolicy">
+    <!-- FIFO eviction policy. -->
+    <bean class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
+        <!-- Set the maximum cache size to 1 million (default is 100,000). -->
+      <property name="maxSize" value="1000000"/>
+    </bean>
+  </property>
+
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/EvictionPolicies.java[tag=FIFO,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/EvictionPolicies.cs[tag=FIFO,indent=0]
+----
+tab:C++[unsupported]
+--
+
+=== Sorted
+
+Sorted eviction policy is similar to FIFO eviction policy with the difference that entries' order is defined by default or by a user defined comparator and ensures that the minimal entry (i.e. the entry that has an integer key with the smallest value) gets evicted first.
+
+The default comparator uses cache entries' keys for comparison that imposes a requirement for keys to implement the `Comparable` interface. You can provide your own comparator implementation which can use keys, values, or both for entries comparison.
+
+Enable sorted eviction policy in the cache configuration as shown below. It supports batch eviction and eviction by memory size limit.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.cache.CacheConfiguration">
+  <property name="name" value="myCache"/>
+
+  <!-- Enabling on-heap caching for this distributed cache. -->
+  <property name="onheapCacheEnabled" value="true"/>
+
+  <property name="evictionPolicy">
+    <!-- Sorted eviction policy. -->
+    <bean class="org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy">
+      <!--
+      Set the maximum cache size to 1 million (default is 100,000)
+      and use default comparator.
+      -->
+      <property name="maxSize" value="1000000"/>
+    </bean>
+  </property>
+
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/EvictionPolicies.java[tag=sorted,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--

@@ -1,0 +1,223 @@
+= Setting Up
+
+== System Requirements
+
+Ignite was tested on:
+
+include::includes/prereqs.adoc[]
+
+
+== Running Ignite with Java 11 or later
+
+include::includes/java9.adoc[]
+
+
+== Using Binary Distribution
+
+* Download the appropriate binary package from  TODO.
+* Unzip the archive into a directory.
+* (Optional) Set the `IGNITE_HOME` environment variable to point to the
+installation folder and make sure there is no trailing `/` in the path.
+
+== Using Maven
+
+The easiest way to start developing with Ignite is to use Maven.
+
+*TODO*
+
+== Using Docker
+
+If you want to run Ignite in Docker, refer to the link:installation-guide/on-premises-deployment#installing-using-docker[Docker Deployment] section.
+
+== Configuring Work Directory
+
+Ignite uses a work directory to store your application data (if you use the link:persistence/native-persistence[Native Persistence] feature), index files, metadata information, logs, and other files. The default work directory is as follows:
+
+* `$IGNITE_HOME/work`, if the `IGNITE_HOME` system property is defined. This is the case when you start Ignite using the `bin/ignite.sh` script from the distribution package.
+* `./ignite/work`, this path is relative to the directory where you launch your application.
+
+There are several ways you can change the default work directory:
+
+. As an environmental variable:
++
+[source, shell]
+----
+export IGNITE_WORK_DIR=/path/to/work/directory
+----
+
+. In the node configuration:
++
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="workDirectory" value="/path/to/work/directory"/>
+    <!-- other properties -->
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/UnderstandingConfiguration.java[tag=dir,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/UnderstandingConfiguration.cs[tag=SettingWorkDir,indent=0]
+----
+
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/setting_work_directory.cpp[tag=setting-work-directory,indent=0]
+----
+--
+
+
+
+== Enabling Modules
+
+Ignite ships with a number of modules that provide various
+functionality. You can enable modules one by one, as required.
+
+All modules are included in the binary distribution, but by default they
+are disabled (except for the `ignite-core`, `ignite-spring`, and
+`ignite-indexing` modules). Modules can be found in the `lib/optional`
+directory of the distribution package (each module is located in a
+separate sub-directory).
+
+Depending on how you use Ignite, you can enable modules using one of
+the following methods:
+
+* If you use the binary distribution, move the
+`lib/optional/{module-dir}` to the `lib` directory before starting the
+node.
+* Add libraries from `lib/optional/{module-dir}` to the classpath of
+your application.
+* Add a module as a Maven dependency to your project.
++
+[source, xml]
+----
+TODO
+----
++
+
+
+The following modules are available:
+
+[width="100%",cols="1,2",options="header",]
+|=======================================================================
+|Module’s artifactId |Description
+|ignite-aop | Ignite AOP module provides capability to turn any Java method to a distributed closure by
+adding @Gridify annotation to it.
+
+|ignite-aws |Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
+
+
+|ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
+
+|ignite-cassandra-store | Ignite Cassandra Store provides a CacheStore implementation backed by the  Cassandra database.
+
+|ignite-cloud | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
+
+
+|ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
+
+|ignite-gce | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
+
+|ignite-hibernate-core |
+
+|ignite-hibernate_4.2 | Ignite Hibernate provides Hibernate L2 cache implementation.
+
+|ignite-hibernate_5.1 | Ignite Hibernate provides Hibernate L2 cache implementation.
+
+|ignite-indexing | link:SQL/indexes[SQL querying and indexing]
+
+|ignite-jcl |Support for the Jakarta Common Logging (JCL) framework.
+
+|ignite-jta |Integration of Ignite transactions with JTA.
+
+|ignite-kafka | Ignite Kafka Streamer provides capability to stream data from Kafka to Ignite caches.
+
+|ignite-kubernetes | Ignite Kubernetes module provides a TCP Discovery IP Finder that uses a dedicated Kubernetes service for IP addresses lookup of Ignite pods containerized by Kubernetes.
+
+|ignite-log4j |Support for Log4j
+
+|ignite-log4j2 |Support for Log4j2
+
+
+|ignite-ml | Ignite ML Grid provides machine learning features and relevant data structures and methods of linear algebra, including on heap and off heap, dense and sparse, local and distributed implementations.
+Refer to the link:machine-learning/ml[Machine Learning] documentation for details.
+
+|ignite-osgi | This module provides bridging components to make Ignite run seamlessly inside an OSGi container such as Apache Karaf.
+
+|ignite-osgi-karaf | This module contains a feature repository to facilitate installing Ignite into an Apache Karaf container.
+
+|ignite-osgi-paxlogging a|
+This module is an OSGi fragment that exposes the following packages from the Pax Logging API bundle:
+
+- org.apache.log4j.varia
+- org.apache.log4j.xml
+
+These packages are required when installing the ignite-log4j bundle, and are not exposed by default
+by the Pax Logging API - the logging framework used by Apache Karaf.
+
+|ignite-rest-http | Ignite REST-HTTP starts a Jetty-based server within a node that can be used to execute tasks and/or cache commands in grid using HTTP-based link:restapi[RESTful APIs].
+
+|ignite-scalar | The Ignite Scalar module provides Scala-based DSL with extensions and shortcuts for Ignite API.
+
+|ignite-scalar_2.10 | Ignite Scalar module that supports Scala 2.10
+
+|ignite-schedule | This  module provides functionality for scheduling jobs locally using UNIX cron-based syntax.
+
+|ignite-slf4j | Support for link:logging#using-slf4j[SLF4J logging framework].
+
+|ignite-spark | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
+
+|ignite-spring-data | Ignite Spring Data provides an integration with Spring Data framework.
+
+|ignite-spring-data_2.0 | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
+
+|ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
+
+|ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
+
+|ignite-urideploy | Ignite URI Deploy module provides capabilities to deploy tasks from different sources such as File System, HTTP, or even Email.
+
+|ignite-visor-console |Open source command line management and monitoring tool
+
+|ignite-web | Ignite Web allows you to start nodes inside any web container based on servlet and servlet context listener. In addition, this module provides capabilities to cache web sessions in an Ignite cache.
+
+|ignite-zookeeper | Ignite ZooKeeper provides a TCP Discovery IP Finder that uses a ZooKeeper
+directory to discover other Ignite nodes.
+
+|=======================================================================
+
+
+== Configuration Recommendations
+
+Below are some recommended configuration tips aimed at making it easier for
+you to operate an Ignite cluster or develop applications with Ignite.
+
+=== Setting Work Directory
+
+If you are going to use either binary distribution or Maven, you are
+encouraged to set up the work directory for Ignite.
+The work directory is used to store metadata information, index files, your application data (if you use the link:persistence/native-persistence[Native Persistence] feature), logs, and other files.
+We recommend you always set up the work directory.
+
+
+=== Recommended Logging Configuration
+
+Logs play an important role when it comes to troubleshooting and finding what went wrong. Here are a few general tips on how to manage your log files:
+
+* Start Ignite in verbose mode:
+   - If you use `ignite.sh`, specify the `-v` option.
+   - If you start Ignite from Java code, set the following system variable: `IGNITE_QUIET=false`.
+* Do not store log files in the `/tmp` folder. This folder is cleared up every time the server is restarted.
+* Make sure that there is enough space available on the storage where the log files are stored.
+* Archive old log files periodically to save on storage space.

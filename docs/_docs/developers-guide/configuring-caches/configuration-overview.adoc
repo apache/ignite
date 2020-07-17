@@ -1,0 +1,135 @@
+= Overview
+
+This chapter explains how you can set cache configuration parameters.
+Once a cache is created, you cannot change its configuration parameters.
+////
+*TODO: add introductory words*
+////
+
+
+== Configuration Example
+Below is an example of a cache configuration.
+
+[tabs]
+--
+
+tab:XML[]
+
+[source,xml]
+----
+include::code-snippets/xml/cache-configuration.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+//tag::params[]
+For the full list of parameters, refer to the link:{javadoc_base_url}/org/apache/ignite/configuration/CacheConfiguration.html[CacheConfiguration,window=_blank] javadoc.
+
+[cols="1,3,1",options="header",separator=|]
+|===
+|Parameter|Description|Default Value
+
+| `name` | The cache name. | None.
+
+|`cacheMode`
+a| The `cacheMode` parameter defines the way data is distributed in the cluster.
+
+In the `PARTITIONED` mode (default), the overall data set is divided into partitions and all partitions are split between participating nodes in a balanced manner.
+
+In the `REPLICATED` mode, all the data is replicated to every node in the cluster.
+
+See the link:developers-guide/data-modeling/data-partitioning#partitionedreplicated-mode[Partitioned/Replicated Mode] section for more details.
+| `PARTITIONED`
+
+| `writeSynchronizationMode` | Write synchronization mode. Refer to the link:developers-guide/configuring-caches/configuring-backups[Configuring Partition Backups] section. | `PRIMARY_SYNC`
+
+|`rebalanceMode`
+a| This parameter controls the way the rebalancing process is performed. Possible values include:
+
+* `SYNC` -- Any requests to the cache's API are blocked until rebalancing is completed.
+* `ASYNC` (default) -- Rebalancing is performed in the background.
+* `NONE` -- Rebalancing is not triggered.
+| `ASYNC`
+
+|`backups`
+|The number of link:developers-guide/data-modeling/data-partitioning#backup-partitions[backup partitions] for the cache.
+| `0`
+
+|`partitionLossPolicy`
+| link:developers-guide/partition-loss-policy[Partition loss policy].
+| `IGNORE`
+
+|`readFromBackup`
+| [[readfrombackup]] Read requested cache entry from the backup partition if it is available on the local node instead of making a request to the primary partition (which can be located on the remote nodes).
+|  `true`
+
+|`queryPrallelism` | The number of threads in a single node to process a SQL query executed on the cache. Refer to the link:perf-troubleshooting-guide/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.
+| 1
+|===
+
+//end::params[]
+
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ConfiguringCaches.java[tag=cfg,indent=0]
+----
+
+include::developers-guide/configuring-caches/configuration-overview.adoc[tag=params]
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DataModellingConfiguringCaches.cs[tag=cfg,indent=0]
+----
+tab:SQL[]
+[source, sql]
+----
+CREATE TABLE IF NOT EXISTS Person (
+  id int,
+  city_id int,
+  name varchar,
+  age int,
+  company varchar,
+  PRIMARY KEY (id, city_id)
+) WITH "cache_name=myCache,template=partitioned,backups=2";
+----
+
+
+For the full list of parameters, refer to the link:sql-reference/ddl#create-table[CREATE TABLE] section.
+tab:C++[unsupported]
+--
+
+
+== Cache Templates
+A cache template is an instance of `CacheConfiguration` that can be registered in the cluster and used later as a basis for creating new caches or SQL tables. A cache or table created from a template inherits all the properties of the template.
+
+Templates are useful when creating a table using the link:sql-reference/ddl#create-table[CREATE TABLE] command, because the command does not support all available cache parameters.
+
+NOTE: Currently, templates are supported for the CREATE TABLE and REST commands.
+
+To create a template, define a cache configuration and add it to the `Ignite` instance, as shown below. If you want do define a cache template in the XML configuration file, you must add an asterisk to the template's name. This is required to indicate that the configuration is a template and not an actual cache.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/cache-template.xml[tags=ignite-config;!discovery, indent=0]
+
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ConfiguringCaches.java[tag=template,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DataModellingConfiguringCaches.cs[tag=template,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Once the cache template is registered in the cluster, as shown in the code snippet above, you can use it to create another cache with the same configuration.
+
+
+

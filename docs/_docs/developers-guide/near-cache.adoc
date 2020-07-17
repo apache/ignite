@@ -1,0 +1,88 @@
+= Near Caches
+
+A near cache is a local cache that stores the most recently or most frequently accessed data on the local node. Let's say your application launches a client node and regularly queries reference data, such as country codes. Because client nodes do not store data, these queries always fetch data from the remote nodes. You can configure a near cache to keep the country codes on the local node while your application is running.
+
+A near cache is configured for a specific regular cache and holds data for that cache only.
+
+Near caches store data in the on-heap memory. You can configure the maximum size of the cache and eviction policy for near cache entries.
+
+[NOTE]
+====
+Near caches are fully transactional and get updated or invalidated automatically whenever the data changes on the server nodes.
+====
+
+== Configuring Near Cache
+
+You can configure a near cache for a particular cache in the cache configuration.
+
+:javaCodeFile: {javaCodeDir}/NearCache.java
+:xmlFile: code-snippets/xml/near-cache-config.xml
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tag=cache-with-near-cache,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeFile}[tag=nearCacheConfiguration,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/NearCaches.cs[tag=nearCacheConf,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Once configured in this way, the near cache is created on any node that requests data from the underlying cache, including both server nodes and client nodes. 
+When you get an instance of the cache, as shown in the following example, the data requests go through the near cache.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+IgniteCache<Integer, Integer> cache = ignite.cache("myCache");
+
+int value = cache.get(1);
+----
+--
+
+Most configuration parameters available in the cache configuration that make sense for the near cache are inherited from the underlying cache configuration. 
+For example, if the underlying cache has an link:developers-guide/configuring-caches/expiry-policies[expiry policy] configured, entries in the near cache are expired based on the same policy.
+
+The parameters listed in the table below are not inherited from the underlying cache configuration.
+
+[cols="1,3,1",opts="autowidth.stretch,header"]
+|===
+|Parameter | Description | Default Value
+|nearEvictionPolicy| The eviction policy for the near cache. See the link:developers-guide/memory-configuration/eviction-policies[Eviction policies] page for details. | none
+|nearStartSize| The initial capacity of the near cache (the number of entries it can hold). | 375,000
+|===
+
+== Creating Near Cache Dynamically On Client Nodes
+When making request from a client node to a cache that hasn't been configured to use a near cache, you can create a near cache for that cache dynamically. 
+This increases performance by storing "hot" data locally on the client side. 
+This cache is operable only on the node where it was created.
+
+To do this, create a near cache configuration and pass it as an argument to the method that gets the instance of the cache.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeFile}[tag=createNearCacheDynamically,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/NearCaches.cs[tag=nearCacheClientNode,indent=0]
+----
+tab:C++[unsupported]
+--
+

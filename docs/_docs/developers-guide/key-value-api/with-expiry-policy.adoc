@@ -1,0 +1,29 @@
+---
+published: false
+---
+
+= Expiry Policy for Individual Entries
+
+You can have expiry policy
+
+If you have a cache without an expiry policy, you can get an instance of the
+
+Every new entries added via this instance of the cache will expire based on the given policy.
+
+The expiry policy will apply only if the cache does not have an entry with the given key.
+
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/ExpiryPolicies.java[tag=expiry2,indent=0]
+----
+
+
+tab:C#/.NET[]
+tab:C++[]
+--
+

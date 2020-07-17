@@ -1,0 +1,160 @@
+= Starting and Stopping Nodes
+
+
+This chapter explains how to start server nodes and client nodes.
+
+//You can start a node by running the `ignite.sh` script.
+
+:javaFile: {javaCodeDir}/IgniteLifecycle.java
+
+== Starting Server Nodes
+
+To start a regular server node, use the following command or code snippet:
+
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+ignite.sh path/to/configuration.xml
+----
+
+tab:Java[]
+
+[source,java]
+----
+include::{javaFile}[tag=start,indent=0]
+----
+
+`Ignite` is an `AutoCloseable` object. You can use the _try-with-resource_ statement to automatically close it:
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{javaFile}[tags=autoclose,indent=0]
+-------------------------------------------------------------------------------
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Starting Client Nodes
+
+To start a client node, simply enable the client mode in the node's configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/client-node.xml[tags=!*;ignite-config,indent=0]
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=client-node,indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Shutting Down Nodes
+
+When you perform a hard (forced) shutdown on a node, it can lead to data loss or data inconsistency and can even prevent the node from restarting.
+Non-graceful shutdowns should be used as a last resort when the node is not responding and it cannot be shut down gracefully.
+
+A graceful shutdown allows the node to finish critical operations and correctly complete its lifecycle.
+The proper procedure to perform a graceful shutdown is as follows:
+//is to use one of the following ways to stop the node and remove it from the link:developers-guide/baseline-topology[baseline topology]:
+//to remove the node from the link:developers-guide/baseline-topology[baseline topology] and
+
+. Stop the node using one of the following methods:
+//tag::stop-commands[]
+* programmatically call `Ignite.close()`
+* programmatically call `System.exit()`
+* send a user interrupt signal. Ignite uses a JVM shutdown hook to execute custom logic before the JVM stops.
+If you start the node by running `ignite.sh` and don't detach it from the terminal, you can stop the node by hitting `Ctrl+C`.
+//end::stop-commands[]
+. Remove the node from the link:developers-guide/baseline-topology[baseline topology]. This step may not be necessary if link:developers-guide/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment] is enabled.
+
+////
+If you use these commands on a node that _is_ in the baseline topology,
+the node shuts down without waiting for the completion of the rebalancing process.
+You can set the `IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN` system property to `true` if you want to wait for backup partitions to be moved to other nodes before the shutdown.
+See the <<Preventing Partition Loss on Shutdown,next section>> for details.
+////
+
+Removing the node from the baseline topology starts the rebalancing process on the remaining nodes.
+If you plan to restart the node shortly after shutdown, you don't have to do the rebalancing.
+In this case, do not remove the nodes from the baseline topology.
+
+
+
+
+////
+
+=== Preventing Partition Loss on Shutdown
+
+TODO: is this section valid for ignite?
+
+WARNING: This feature is experimental.
+
+When you simultaneously stop more nodes than the number of partition backups, some partitions may become unavailable to the remaining nodes (because both the primary and backup copies of the partition happen to be on the nodes that were shut down).
+For example, if the number of backups for a cache is set to 1 and you stop 2 nodes, there is a chance that both the primary and backup copy of a partition becomes unavailable to the rest of the cluster.
+The proper way of dealing with this situation is to stop one node, rebalance the data, and then wait until the rebalancing is finished before stopping the next node, and so on.
+However, when the shutdown is triggered automatically (for example, when you do rolling upgrades or scaling the cluster in Kubernetes), you have no mechanism to wait for the completion of the rebalancing process and so you may lose data.
+
+To prevent this situation, you can define a system property (`IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN`) that delays the shutdown of a node until the shutdown does not lead to a partition loss.
+The node checks if all the partitions are available to the remaining nodes and only then exits the process.
+
+In other words, when the property is set, you won't be able to stop more than `min(CacheConfiguration.backups) + 1` nodes at a time without waiting until the data is rebalanced.
+This is only applicable if you have at least one cache with partition backups and the node is stopped properly, i.e. using the commands described in the previous section:
+
+include::{docfile}[tag=stop-commands]
+
+A non-graceful shutdown (`kill -9`) cannot be prevented.
+
+To enable partition loss prevention, set the `IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN` system property to `true`.
+
+[source, shell]
+----
+./ignite.sh -J-DIGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN=true
+----
+
+CAUTION: If you have a cache without partition backups and you stop a node (even with this property set), you will lose the portion of the cache that was kept on this node.
+
+//The behavior of the node depend on whether the baseline topology is configured to be link:developers-guide/baseline-topology#baseline-topology-autoadjustment[adjusted automatically].
+
+When this property is set, the last node in the cluster will not stop gracefully.
+You will have to terminate the process by sending the `kill -9` signal.
+If you want to shut down the entire cluster, link:administrators-guide/control-script#deactivating-cluster[deactivate] it and then stop all the nodes.
+Alternatively, you can stop all the nodes non-gracefully (by sending `kill -9`).
+However, the latter option is not recommended for clusters with persistence.
+////
+
+== Setting JVM Options
+
+There are several ways you can set JVM options when starting a node with the `ignite.sh` script.
+These ways are described in the following sections.
+
+=== JVM_OPTS System Variable
+
+You can set the `JVM_OPTS` environment variable:
+
+[source, shell]
+----
+export JVM_OPTS="$JVM_OPTS -Xmx6G -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false"; $IGNITE_HOME/bin/ignite.sh
+----
+
+
+
+=== Command Line Arguments
+
+You can also pass JVM options by using the `-J` prefix:
+
+[source, shell]
+----
+./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
+----

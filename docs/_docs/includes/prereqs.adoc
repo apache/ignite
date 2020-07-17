@@ -1,0 +1,9 @@
+[width="100%",cols="1,3"]
+|===
+|JDK |Oracle JDK 8 and later, Open JDK 8 and later, IBM JDK 8 and later
+|OS |Linux (any flavor), Mac OSX (10.6 and up), Windows (XP and up),
+Windows Server (2008 and up), Oracle Solaris, z/OS
+|ISA |x86, x64, SPARC, PowerPC
+
+|Network |No restrictions (10G recommended)
+|===

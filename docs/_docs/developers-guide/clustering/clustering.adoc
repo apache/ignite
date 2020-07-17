@@ -1,0 +1,155 @@
+= Clustering
+
+== Overview
+
+In this chapter, we discuss different roles nodes can play in a cluster and the different ways nodes can discover each other to form a cluster.
+
+On start-up, a node is assigned either one of the two roles: _server node_ or _client node_. Server nodes are the workhorses of the cluster; they cache data, execute compute tasks, etc.
+Client nodes join the topology as regular nodes but they do not store data. Client nodes are used to stream data into the cluster and execute user queries.
+
+To form a cluster, each node must be able to connect to all other nodes. To ensure that, a proper <<Discovery Mechanisms,discovery mechanism>> must be configured.
+
+
+NOTE: In addition to client nodes, you can use Thin Clients to define and manipulate data in the cluster.
+Learn more about the thin clients in the link:developers-guide/thin-clients/getting-started-with-thin-clients[Thin Clients] section.
+
+
+image::images/ignite_clustering.png[Ignite Cluster]
+
+== Servers and Clients
+There are two types of nodes: _server nodes_ and _client nodes_. Server nodes participate in caching, compute execution, stream processing, etc. Native client nodes provide the ability to connect to the
+servers remotely.
+Ignite native clients allow using the whole set of `Ignite APIs`, including near caching, transactions, compute, streaming, services, etc. from the client side.
+
+By default, all Ignite nodes are started as server nodes, and you should explicitly enable the client mode.
+
+IMPORTANT: Once a distributed cache is created, it is automatically deployed on all the existing and future _server_ nodes.
+
+You can configure a node to be either a client or a server via the `IgniteConfiguration.setClientMode(...)` property.
+
+[tabs]
+--
+tab:XML[]
+
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!-- Enable client mode. -->
+    <property name="clientMode" value="true"/>
+
+</bean>
+----
+tab:Java[]
+
+[source,java]
+----
+include::{javaCodeDir}/ClusteringOverview.java[tag=clientCfg,indent=0]
+----
+
+tab:C#/.NET[]
+
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringOverview.cs[tag=ClientCfg,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Alternatively, for convenience, you can also enable or disable the
+client mode though the `Ignition` class to allow clients and servers to
+reuse the same configuration.
+
+[tabs]
+--
+tab:Java[]
+
+[source,java]
+----
+include::{javaCodeDir}/ClusteringOverview.java[tag=clientModeIgnition,indent=0]
+----
+
+tab:C#/.NET[]
+
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringOverview.cs[tag=ClientsAndServers,indent=0]
+----
+
+tab:C++[unsupported]
+
+--
+
+== Discovery Mechanisms
+
+Nodes can automatically discover each other and form a cluster.
+This allows you to scale out when needed without having to restart the whole cluster.
+Developers can also leverage Ignite's hybrid cloud support that allows establishing connection between private and public clouds such as Amazon Web Services, providing them with the best of both worlds.
+
+The discovery mechanism goes with two implementations intended for different usage scenarios:
+
+* link:developers-guide/clustering/tcp-ip-discovery[TCP/IP Discovery] is designed and optimized for 100s of nodes.
+* link:developers-guide/clustering/zookeeper-discovery[ZooKeeper Discovery] that allows scaling Ignite clusters to 100s and 1000s of nodes preserving linear scalability and performance.
+
+== Communication SPI
+
+`CommunicationSpi` provides basic plumbing to send and receive messages and is utilized for all distributed operations, such as task execution, monitoring data exchange, distributed event querying, and others.
+Ignite provides `TcpCommunicationSpi` as the default implementation of `CommunicationSpi`, that uses the TCP/IP to communicate with other nodes.
+
+To enable communication with other nodes, `TcpCommunicationSpi` adds `TcpCommunicationSpi.ATTR_ADDRS` and `TcpCommunicationSpi.ATTR_PORT` local node attributes.
+On start-up, this SPI tries to start listening to the local port specified by the `TcpCommunicationSpi.setLocalPort(int)` method.
+If the local port is occupied, then the SPI automatically increments the port number until it can successfully bind it.
+The `TcpCommunicationSpi.setLocalPortRange(int)` configuration parameter controls the maximum number of ports that the SPI tries before it fails.
+
+[TIP]
+====
+[discrete]
+=== Local port range
+
+Port range comes in very handy when starting multiple nodes on the
+same machine or even in the same VM. In this case, all nodes can be
+brought up without a single change in the configuration.
+====
+
+[TIP]
+====
+[discrete]
+=== IPv4 vs IPv6
+
+Ignite tries to support IPv4 and IPv6 but this can sometimes lead to issues where the cluster becomes detached. A possible solution — unless you require IPv6 — is to restrict Ignite to IPv4 via the `-Djava.net.preferIPv4Stack=true` JVM parameter.
+====
+
+Below is an example of `TcpCommunicationSpi` configuration. Refer to the
+link:{javadoc_base_url}/org/apache/ignite/spi/communication/tcp/TcpCommunicationSpi.html[TcpCommunicationSpi javadoc,window=_blank] for the complete list of parameters.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="communicationSpi">
+    <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+      <!-- Override local port. -->
+      <property name="localPort" value="4321"/>
+    </bean>
+  </property>
+
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ClusteringOverview.java[tag=commSpi,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringOverview.cs[tag=CommunicationSPI,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+
+

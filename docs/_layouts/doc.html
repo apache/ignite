@@ -1,0 +1,15 @@
+---
+layout: default
+---
+	 <link rel="stylesheet" href="{{'assets/css/docs.css'|relative_url}}">
+<section class='page-docs'>
+    {% include left-nav.html %}
+    <article data-swiftype-index='true'>
+        {% if page.path contains ".adoc" %}
+            <h1>{{page.title}}</h1>
+        {% endif %}
+        {{content}}
+    </article>
+    {% include right-nav.html %}    
+</section>
+<script type='module' src='{{"assets/js/code-copy-to-clipboard.js"|relative_url}}' async></script>

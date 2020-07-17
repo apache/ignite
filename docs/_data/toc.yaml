@@ -1,0 +1,312 @@
+#- title: Quick Start Guide
+#  items:
+#  - title: Quick Start Overview
+#    url: /getting-started/quickstart
+#  - title: Java
+#    url: /getting-started/quick-start/java
+#  - title: .NET/C#
+#    url: /getting-started/quick-start/dotnet
+#  - title: C++
+#    url: /getting-started/quick-start/cpp
+#  - title: Python
+#    url: /getting-started/quick-start/python
+#  - title: Node.JS
+#    url: /getting-started/quick-start/nodejs
+#  - title: SQL
+#    url: /getting-started/quick-start/sql
+#  - title: PHP
+#    url: /getting-started/quick-start/php
+#  - title: REST API
+#    url: /getting-started/quick-start/restapi
+#- title: Installation and Upgrade
+#  url: /installation-guide
+#  items:
+#    - title: Deployment Modes
+#      url: /installation-guide/deployment-modes
+#    - title: Installing Using ZIP Archive 
+#      url: /installation-guide/installing-using-zip
+#    - title: Installing Using Docker
+#      url: /installation-guide/installing-using-docker
+#    - title: AWS
+#      items: 
+#        - title: Manual Install on Amazon EC2 
+#          url:  /installation-guide/aws/manual-install-on-ec2
+#        - title: Amazon EKS Deployment
+#          url: /installation-guide/kubernetes/amazon-eks-deployment
+#    - title: Microsoft Azure
+#      items:
+#        - title: Azure Kubernetes Service Deployment
+#          url: /installation-guide/kubernetes/azure-deployment
+#    - title: Google Kubernetes Engine
+#      url: /installation-guide/kubernetes/gke-deployment
+- title: Developer's Guide
+  url: /developers-guide
+  items:
+    - title: Preface 
+      url: /developers-guide/preface
+    - title: Setting Up
+      url: /developers-guide/setup
+    - title: Understanding Configuration
+      url: /developers-guide/understanding-configuration
+    - title: Configuring Logging
+      url: /developers-guide/logging
+    - title: Starting and Stopping Nodes
+      url: /developers-guide/starting-nodes
+    - title: Clustering
+      items:
+        - title: Overview
+          url: /developers-guide/clustering/clustering
+        - title: TCP/IP Discovery
+          url: /developers-guide/clustering/tcp-ip-discovery
+        - title: ZooKeeper Discovery
+          url: /developers-guide/clustering/zookeeper-discovery
+        - title: Discovery in the Cloud
+          url: /developers-guide/clustering/discovery-in-the-cloud
+    - title: Data Modeling 
+      items: 
+        - title: Introduction
+          url: /developers-guide/data-modeling/data-modeling
+        - title: Data Partitioning
+          url: /developers-guide/data-modeling/data-partitioning
+        - title: Affinity Colocation 
+          url: /developers-guide/data-modeling/affinity-collocation
+    - title: Configuring Memory 
+      items:
+        - title: Memory Architecture
+          url: /developers-guide/memory-architecture
+        - title: Configuring Data Regions
+          url: /developers-guide/memory-configuration/data-regions
+        - title: Eviction Policies
+          url: /developers-guide/memory-configuration/eviction-policies        
+    - title: Configuring Caches
+      items:
+        - title: Cache Configuration 
+          url: /developers-guide/configuring-caches/configuration-overview 
+        - title: Configuring Partition Backups
+          url: /developers-guide/configuring-caches/configuring-backups
+        - title: Atomicity Modes
+          url: /developers-guide/configuring-caches/atomicity-modes
+        - title: Expiry Policy
+          url: /developers-guide/configuring-caches/expiry-policies
+        - title: On-Heap Caching
+          url: /developers-guide/configuring-caches/on-heap-caching
+        - title: Cache Groups 
+          url: /developers-guide/configuring-caches/cache-groups
+    - title: Persistence
+      items:
+        - title: Ignite Persistence
+          url: /developers-guide/persistence/native-persistence
+        - title: External Storage
+          url: /developers-guide/persistence/external-storage
+        - title: Swapping
+          url: /developers-guide/persistence/swap 
+        - title: Implementing Custom Cache Store
+          url: /developers-guide/persistence/custom-cache-store
+    - title: Baseline Topology
+      url: /developers-guide/baseline-topology
+    - title: Data Rebalancing
+      url: /developers-guide/data-rebalancing 
+    - title: Partition Loss Policy
+      url: /developers-guide/partition-loss-policy
+    - title: Data Streaming
+      url: /developers-guide/data-streaming
+    - title: Using Key-Value Cache API
+      items:
+        - title: Basic Cache Operations 
+          url: /developers-guide/key-value-api/basic-cache-operations
+        - title: Working with Binary Objects
+          url: /developers-guide/key-value-api/binary-objects
+        - title: Using Scan Queries
+          url: /developers-guide/key-value-api/using-scan-queries
+    - title: Using Continuous Queries
+      url: /developers-guide/key-value-api/continuous-queries
+    - title: Performing Transactions
+      url: /developers-guide/key-value-api/transactions
+    - title: Working with SQL
+#      items:
+#        - title: Introduction
+#          url: /developers-guide/SQL/sql-introduction
+#        - title: Understanding Schemas
+#          url: /developers-guide/SQL/schemas
+#        - title: Defining Indexes
+#          url: /developers-guide/SQL/indexes          
+#        - title: Using SQL API
+#          url: /developers-guide/SQL/sql-api          
+#        - title: Distributed Joins
+#          url: /developers-guide/SQL/distributed-joins
+#        - title: SQL Transactions
+#          url: /developers-guide/SQL/sql-transactions
+#        - title: Custom SQL Functions
+#          url: /developers-guide/SQL/custom-sql-func
+#        - title: JDBC Driver
+#          url: /developers-guide/SQL/JDBC/jdbc-driver
+#        - title: JDBC Client Driver
+#          url: /developers-guide/SQL/JDBC/jdbc-client-driver
+#        - title: Multiversion Concurrency Control
+#          url: /developers-guide/transactions/mvcc
+    - title: SQL and Key-Value Usage
+      url: /developers-guide/SQL/sql-key-value-storage
+    - title: Distributed Computing 
+      items:
+        - title: Distributed Computing API 
+          url: /developers-guide/distributed-computing/distributed-computing
+        - title: Cluster Groups
+          url: /developers-guide/distributed-computing/cluster-groups
+        - title: Executor Service
+          url: /developers-guide/distributed-computing/executor-service
+        - title: MapReduce API
+          url: /developers-guide/distributed-computing/map-reduce
+        - title: Load Balancing 
+          url: /developers-guide/distributed-computing/load-balancing
+        - title: Fault Tolerance
+          url: /developers-guide/distributed-computing/fault-tolerance
+        - title: Job Scheduling
+          url: /developers-guide/distributed-computing/job-scheduling
+    - title: Colocating Computations with Data
+      url: /developers-guide/collocated-computations
+    - title: Working with Events
+      items:
+        - title: Enabling and Listenting to Events 
+          url: /developers-guide/events/listening-to-events
+#        - title: Events 
+#          url: /developers-guide/events/events
+    - title: Near Caches
+      url: /developers-guide/near-cache
+#    - title: .NET Platform Cache
+#      url: /developers-guide/platform-cache
+    - title: Peer Class Loading
+      url: /developers-guide/peer-class-loading
+#    - title: Handling Exceptions
+#      url: /developers-guide/handling-exceptions
+#
+#    - title: Thin Clients
+#      items: 
+#        - title: Thin Clients Overview 
+#          url: /developers-guide/thin-clients/getting-started-with-thin-clients
+#        - title: Java Thin Client
+#          url: /developers-guide/thin-clients/java-thin-client
+#        - title: .NET Thin Client
+#          url: /developers-guide/thin-clients/dotnet-thin-client
+#        - title: C++ Thin Client
+#          url: /developers-guide/thin-clients/cpp-thin-client
+#        - title: Python Thin Client
+#          url: /developers-guide/thin-clients/python-thin-client
+#        - title: PHP Thin Client
+#          url: /developers-guide/thin-clients/php-thin-client
+#        - title: Node.js Thin Client
+#          url: /developers-guide/thin-clients/nodejs-thin-client
+#    - title: ODBC Driver
+#      items: 
+#        - title: ODBC Driver
+#          url: /developers-guide/SQL/ODBC/odbc-driver 
+#        - title: Connection String and DSN
+#          url:  /developers-guide/SQL/ODBC/connection-string-dsn 
+#        - title: Querying and Modifying Data 
+#          url: /developers-guide/SQL/ODBC/querying-modifying-data 
+#        - title: Specification
+#          url: /developers-guide/SQL/ODBC/specification  
+#        - title: Data Types
+#          url: /developers-guide/SQL/ODBC/data-types 
+#        - title: Error Codes
+#          url: /developers-guide/SQL/ODBC/error-codes
+#    - title: REST API
+#      url: /developers-guide/restapi
+#
+#    - title: Machine Learning
+#      items:
+#        - title: Machine Learning
+#          url: /developers-guide/machine-learning/ml
+#        - title: Preprocessing
+#          url: /developers-guide/machine-learning/preprocessing
+#        - title: Partition Based Dataset
+#          url: /developers-guide/machine-learning/part-based-dataset
+#        - title: Linear Regression
+#          url: /developers-guide/machine-learning/line-reg
+#        - title: K-Means Clustering
+#          url: /developers-guide/machine-learning/k-means
+#        - title: Genetic Algorithms
+#          url: /developers-guide/machine-learning/genetic-alg
+#        - title: Multilayer Perceptron
+#          url: /developers-guide/machine-learning/ml-percep
+#        - title: Decision Trees
+#          url: /developers-guide/machine-learning/decision-trees
+#        - title: k-NN Classification
+#          url: /developers-guide/machine-learning/knn-class
+#        - title: k-NN Regression
+#          url: /developers-guide/machine-learning/knn-reg
+#        - title: SVM Binary Classification
+#          url: /developers-guide/machine-learning/svm-binary
+#        - title: SVM Multi-class Classification
+#          url: /developers-guide/machine-learning/svm-multi
+#        - title: Model Cross Validation
+#          url: /developers-guide/machine-learning/model-cross
+#        - title: Logistic Regression
+#          url: /developers-guide/machine-learning/log-reg
+#        - title: Random Forest
+#          url: /developers-guide/machine-learning/random-forest
+#        - title: Gradient Boosting
+#          url: /developers-guide/machine-learning/grad-boost
+#        - title: ANN (Approximate Nearest Neighbor)
+#          url: /developers-guide/machine-learning/ann
+#        - title: Model updating
+#          url: /developers-guide/machine-learning/model-updating
+#        - title: Model Importing
+#          url: /developers-guide/machine-learning/model-importing
+#    - title: Metrics and Monitoring
+#      items:
+#      - title: Introduction
+#        url: /administrators-guide/monitoring-metrics/intro
+#      - title: Configuring Metrics
+#        url: /administrators-guide/monitoring-metrics/configuring-metrics
+#      - title: JMX Metrics 
+#        url: /administrators-guide/monitoring-metrics/metrics
+#      - title: System Views
+#        url: /administrators-guide/monitoring-metrics/system-views
+#    - title: Capacity Planning
+#      url: /administrators-guide/capacity-planning
+#    - title: Control Script
+#      url: /administrators-guide/control-script
+#    - title: Performance and Troubleshooting Guide
+#      url: /perf-troubleshooting-guide/general-perf-tips
+#      items:
+#        - title: General Performance Tips
+#          url: /perf-troubleshooting-guide/general-perf-tips
+#        - title: Memory and JVM Tuning
+#          url: /perf-troubleshooting-guide/memory-tuning
+#        - title: Persistence Tuning
+#          url: /perf-troubleshooting-guide/persistence-tuning
+#        - title: SQL Tuning
+#          url: /perf-troubleshooting-guide/sql-tuning
+#        - title: Thread Pools Tuning
+#          url: /perf-troubleshooting-guide/thread-pools-tuning
+#        - title: Troubleshooting and Debugging
+#          url: /perf-troubleshooting-guide/troubleshooting
+#
+#- title: SQL Reference
+#  url: /sql-reference/sql-reference-overview
+#  descripiton: SQL reference information
+#  items:
+#    - title: SQL Reference Overview
+#      url: /sql-reference/sql-reference-overview
+#    - title: SQL Conformance
+#      url: /sql-reference/sql-conformance
+#    - title: Data Definition Language (DDL)
+#      url: /sql-reference/ddl
+#    - title: Data Manipulation Language (DML)
+#      url: /sql-reference/dml
+#    - title: Transactions
+#      url: /sql-reference/transactions
+#    - title: Operational Commands
+#      url: /sql-reference/operational-commands
+#    - title: Aggregate functions
+#      url: /sql-reference/aggregate-functions
+#    - title: Numeric Functions
+#      url: /sql-reference/numeric-functions
+#    - title: String Functions
+#      url: /sql-reference/string-functions
+#    - title: Data and Time Functions
+#      url: /sql-reference/date-time-functions
+#    - title: System Functions
+#      url: /sql-reference/system-functions
+#    - title: Data Types
+#      url: /sql-reference/data-types

@@ -1,0 +1,34 @@
+body > footer {
+    border-top: 2px solid #dddddd;
+    height: var(--footer-height);
+    font-size: 16px;
+    color: #393939;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+
+    @media (max-width: 570px) {
+        .copyright__extra {
+            display: none;
+        }
+    }
+}
+.right-nav footer {
+    font-size: 12px;
+    padding: calc(var(--footer-gap) * 0.3) 0 5px;;
+    text-align: left;
+    margin: auto 0 0;
+
+    a {
+        margin: 0;
+    }
+
+    img {
+        width: 70px;
+    }
+
+    .copyright {
+        display: none;
+    }
+}

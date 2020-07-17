@@ -1,0 +1,76 @@
+= Expiry Policies
+
+== Overview
+Expiry Policy specifies the amount of time that must pass before an entry is considered expired. Time can be counted from creation, last access, or modification time.
+
+Depending on the memory configuration, the expiration policies remove entries from either RAM or disk:
+
+* *In-Memory Mode* (data is stored solely in RAM): expired entries are purged from RAM.
+* *In-Memory + Native persistence*: expired entries are removed from both memory and disk. Note that expiry policies  remove entries from the partition files on disk without freeing up space. The space is reused to write subsequent entries.
+* *In-Memory + External Storage*: expired entries are removed from memory only (in Ignite) and left untouched in the external storage (RDBMS, NoSQL, and other databases).
+* *In-Memory + Swap*: expired entries are removed from both RAM and swap files.
+
+To set up an expiration policy, you can use any of the standard implementations of `javax.cache.expiry.ExpiryPolicy` or implement your own.
+
+== Configuration
+Below is an example expiry policy configuration.
+
+
+[tabs]
+--
+tab:XML[]
+
+[source,xml]
+----
+include::code-snippets/xml/expiry.xml[tags=cache-with-expiry, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ExpiryPolicies.java[tag=cfg,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ExpiryPolicies.cs[tag=cfg,indent=0]
+----
+tab:C++[unsupported]
+--
+
+You can also change or set Expiry Policy for individual cache operations. This policy is used for each operation invoked on the returned cache instance.
+
+[source,java]
+----
+include::{javaCodeDir}/ExpiryPolicies.java[tag=withExpiry,indent=0]
+----
+
+== Eager TTL
+
+Entries that are expired can be removed from the cache either eagerly or when they are accessed by a cache operation. If there is at least one cache configured with eager TTL enabled, Ignite creates a single thread to clean up expired entries in the background.
+
+If the property is set to `false`, expired entries are not removed immediately. Instead, they are removed when they are requested in a cache operation by the thread that executes the operation.
+
+Eager TTL can be enabled or disabled via the `CacheConfiguration.eagerTtl` property (the default value is `true`):
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.CacheConfiguration">
+    <property name="eagerTtl" value="true"/>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ExpiryPolicies.java[tag=eagerTtl,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ExpiryPolicies.cs[tag=eagerTTL,indent=0]
+----
+tab:C++[unsupported]
+--

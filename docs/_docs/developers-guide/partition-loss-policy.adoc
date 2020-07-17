@@ -1,0 +1,182 @@
+= Partition Loss Policy
+:javaFile:  {javaCodeDir}/PartitionLossPolicyExample.java
+
+Throughout the cluster’s lifecycle, it may happen that some data partitions are lost due to the failure of the primary and backup nodes for the partitions.
+Such a situation leads to a partial data loss and needs to be addressed according to your use case.
+
+A partition is lost when both the primary copy and all backup copies of the partition are not available to the cluster, i.e. when the primary and backup nodes for the partition become unavailable. It means that for a given cache, you cannot afford to lose more than `number_of_backups` nodes.
+You can set the number of backup partitions for a cache in the link:developers-guide/configuring-caches/configuring-backups[cache configuration].
+
+When the cluster topology changes, Ignite checks if the change resulted in a partition loss, and, depending on the configured partition loss policy and baseline autoadjustment settings, allows or prohibits operations on caches.
+See the description of each policy in the next section.
+
+For pure in-memory caches, when a partition is lost, the data from the partition cannot be recovered unless you load it into the cluster again.
+For persistent caches, the data is not physically lost, because it has been persisted to disk.
+When the nodes that failed or disconnected return to the cluster (after a restart), the data is loaded from the disk.
+In this case, you need to reset the state of the lost partitions in order to continue to use the data. See <<Handling Partition Loss>>.
+
+
+== Configuring Partition Loss Policy
+Ignite supports the following partition loss policies:
+
+[cols="1,5",opts="header",stripes=none]
+|===
+| Policy | Description
+| `IGNORE` | Partition loss is ignored.  The cluster treats lost partitions as if they are empty. When you request data from such partitions, the cluster returns empty values as if the data was never there.
+
+This policy can only be used in pure in-memory clusters where baseline autoadjustment is enabled with a 0 timeout, and is the default value for such configurations.
+//This policy is the default behavior for pure in-memory clusters where baseline auto-adjustment is enabled with a zero timeout.
+In all other configurations (the clusters where there is at least one data region with persistence), the `IGNORE` policy is replaced with `READ_WRITE_SAFE` even if you explicitly set `IGNORE` in the cache configuration.
+
+| `READ_WRITE_SAFE` | Any attempt to read from or write to a lost partition of the cache results in an exception. However, you can read/write to the available partitions.
+| `READ_ONLY_SAFE` | The cache is available in read-only mode. Write operations to the cache result in an exception. Read operations from the lost partitions result in an exception as well. See the <<Handling Partition Loss>> section below.
+|===
+
+
+Partition loss policy is configured per cache.
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/partition-loss-policy.xml[tags=ignite-config;!discovery,indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tag=cfg,indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+== Listening to Partition Loss Events
+
+You can listen to the `EVT_CACHE_REBALANCE_PART_DATA_LOST` event to be notified when a partition loss occurs.
+This event is fired for every partition that is lost and contains the number of the lost partition and ID of the node that held the partition.
+Partition loss events are triggered only when either `READ_WRITE_SAFE` or `READ_ONLY_SAFE` policy is used.
+
+Enable the event in the cluster configuration first.
+See link:developers-guide/events/listening-to-events#enabling-events[Enabling Events].
+
+[tabs]
+--
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=events,indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+See link:developers-guide/events/events#cache-rebalancing-events[Cache Rebalancing Events] for the information about other events related to rebalancing of partitions.
+
+== Handling Partition Loss
+
+If data is not physically lost, you can return the nodes that left the cluster and reset the state of the lost partitions so that you can continue to work with the data.
+You can reset the state of lost partition by calling `Ignite.resetLostPartitions(cacheNames)` for specific caches or via the control script.
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=reset, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+The control script command:
+
+
+[source, shell]
+----
+control.sh --cache reset_lost_partitions myCache
+----
+
+
+If you don't reset lost partitions, read and write operations (depending on the policy configured for the cache) from the lost partitions will throw a `CacheException`.
+You can check if the exception is due to the state of the partitions by analyzing its root cause, like so:
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=exception,indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+//You can reset the state of the lost partitions even if the nodes with the partitions are still anavailable.
+
+You can get the list of lost partitions for a cache via `IgniteCache.lostPartitions()`.
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=lost-partitions,indent=0]
+----
+
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Recovering From a Partition Loss
+
+The following sections explain how you can recover from a partition loss in different cluster configurations.
+
+=== Pure In-memory Cluster with IGNORE policy
+
+In this configuration, the `IGNORE` policy is only applicable when baseline autoadjustment is enabled with a 0 timeout, which is the default setting for in-memory clusters.
+For such configurations, partition loss is ignored.
+The cache continues to be operational with the lost partitions treated as empty.
+
+When baseline autoadjustment is disabled or when the timeout is greater than 0, the `IGNORE` policy is replaced with `READ_WRITE_SAFE`.
+
+=== Pure In-memory Cluster with READ_WRITE_SAFE or READ_ONLY_SAFE policy
+
+User operations are blocked until you reset the lost partitions.
+After the reset, continue using the cache but the data will be lost.
+
+When baseline autoadjustment is disabled or when the timeout is greater than 0, you must return the nodes (at least one partition owner for each partition) to the baseline topology before resetting the lost partitions.
+Otherwise, `Ignite.resetLostPartitions(cacheNames)` throws a `ClusterTopologyCheckedException` with a message `Cannot reset lost partitions because no baseline nodes are online [cache=someCahe, partition=someLostPart]` indicating that safe recovery is not possible.
+If you cannot return the nodes for some reason (e.g. hardware failure), exclude them from the baseline topology manually before attempting to reset the lost partitions.
+
+=== Clusters with Persistence
+
+In clusters where all data regions are configured to persist data on disk (there is no in-memory regions), there are two ways to recover from a partition loss (provided the data is not damaged physically):
+
+. Return _all_ nodes to the baseline topology,
+. Reset lost partitions (call `Ignite.resetLostPartitions(...)` for all caches).
+
+or
+
+. Stop all nodes,
+. Start all nodes including those that failed and activate the cluster.
+
+If some nodes cannot be returned, exclude them from the baseline topology before attempting to reset the state of lost partitions.
+
+=== Clusters with Both In-memory and Persistent Caches
+
+In clusters where there are both in-memory regions and persistent regions, in-memory caches are treated the same way as in pure in-memory clusters with partition loss policy set to `READ_WRITE_SAFE`, and persistent caches are treated the same way as in persistent clusters.

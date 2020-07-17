@@ -1,0 +1,78 @@
+= Configuring Partition Backups
+
+include::developers-guide/data-modeling/data-partitioning.adoc[tag=partition-backups]
+
+== Configuring Backups
+
+To configure the number of backup copies, set the `backups` property in the cache configuration.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/configure-backups.xml[tags=ignite-config;!discovery;!sync-mode, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ConfiguringCaches.java[tag=backups,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DataModellingConfiguringCaches.cs[tag=backups,indent=0]
+----
+tab:C++[unsupported]
+
+--
+
+== Synchronous and Asynchronous Backups
+////
+TODO: explain this better
+////
+
+You can configure whether updates of primary and backup copies should be synchronous or asynchronous by specifying a write synchronization mode.
+Write synchronization mode can be set in the cache configuration:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/configure-backups.xml[tags=ignite-config;!discovery;!cache-mode, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ConfiguringCaches.java[tag=synchronization-mode,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DataModellingConfiguringCaches.cs[tag=synchronization-mode,indent=0]
+----
+tab:C++[unsupported]
+--
+
+The write synchronization mode can be set to the following values:
+
+[cols="1,5",opts="stretch,header"]
+|===
+| Value |  Description
+| FULL_SYNC
+| Client node will wait for write or commit to complete on all participating remote nodes (primary and backup).
+
+|FULL_ASYNC
+|Client node does not wait for responses from participating nodes, in which case remote nodes may get their state updated slightly after any of the cache write methods complete or after the Transaction.commit() method completes.
+
+|PRIMARY_SYNC
+|This is the default mode. Client node will wait for write or commit to complete on primary node, but will not wait for backups to be updated.
+
+|===
+
+
+//NOTE: Regardless of write synchronization mode, cache data will always remain fully consistent across all participating nodes when using transactions.
+
+

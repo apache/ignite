@@ -1,0 +1,25 @@
+= Executor Service
+
+:javaFile: {javaCodeDir}/IgniteExecutorService.java
+
+Ignite provides a distributed implementation of `java.util.concurrent.ExecutorService` that submits tasks to a cluster's server nodes for execution. 
+The tasks are load balanced across the cluster nodes and are guaranteed to be executed as long as there is at least one node in the cluster.
+
+////
+TODO: C# unsupported?
+////
+An executor service can be obtained from an instance of `Ignite`:
+
+[source, java]
+----
+include::{javaFile}[tag=execute,indent=0]
+----
+
+You can also limit the set of nodes available for the executor service by specifying a link:developers-guide/distributed-computing/cluster-groups[cluster group]:
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{javaFile}[tag=cluster-group,indent=0]
+-------------------------------------------------------------------------------
+
+

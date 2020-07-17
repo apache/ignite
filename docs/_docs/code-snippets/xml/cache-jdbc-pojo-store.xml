@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans              http://www.springframework.org/schema/beans/spring-beans.xsd              http://www.springframework.org/schema/util              http://www.springframework.org/schema/util/spring-util.xsd">
+    <!-- Data source bean -->
+    <bean class="com.mysql.cj.jdbc.MysqlDataSource" id="mysqlDataSource">
+        <property name="URL" value="jdbc:mysql://[host]:[port]/[database]"/>
+        <property name="user" value="YOUR_USER_NAME"/>
+        <property name="password" value="YOUR_PASSWORD"/>
+    </bean>
+    <!-- Ignite Configuration -->
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="cacheConfiguration">
+            <list>
+                <!-- Configuration for PersonCache -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="PersonCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="mysqlDataSource"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect"/>
+                            </property>
+                            <property name="types">
+                                <list>
+                                    <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
+                                        <property name="cacheName" value="PersonCache"/>
+                                        <property name="keyType" value="java.lang.Integer"/>
+                                        <property name="valueType" value="org.apache.ignite.snippets.Person"/>
+                                        <!--Specify the schema if applicable -->
+                                        <!--property name="databaseSchema" value="MY_DB_SCHEMA"/-->
+                                        <property name="databaseTable" value="PERSON"/>
+                                        <property name="keyFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="id"/>
+                                                    <constructor-arg value="int"/>
+                                                    <constructor-arg value="id"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+                                        <property name="valueFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="id"/>
+                                                    <constructor-arg value="int"/>
+                                                    <constructor-arg value="id"/>
+                                                </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="name"/>
+                                                    <constructor-arg value="java.lang.String"/>
+                                                    <constructor-arg value="name"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <!-- Configure query entities if you want to use SQL queries -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="org.apache.ignite.snippets.Person"/>
+                                <property name="keyFieldName" value="id"/>
+                                <property name="keyFields">
+                                    <list>
+                                        <value>id</value>
+                                    </list>
+                                </property>
+                                <property name="fields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                        <entry key="id" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+                <!-- Provide similar configurations for other caches/tables -->
+            </list>
+        </property>
+    </bean>
+</beans>

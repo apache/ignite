@@ -1,0 +1,407 @@
+= Basic Cache Operations
+
+:javaFile: {javaCodeDir}/BasicCacheOperations.java
+
+== Getting an Instance of a Cache
+
+All operations on a cache are performed through an instance of `IgniteCache`.
+You can obtain `IgniteCache` for an existing cache, or you can create a cache dynamically.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=getCache,indent=0]
+
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+IIgnite ignite = Ignition.Start();
+
+// Obtain an instance of cache named "myCache".
+// Note that generic arguments are only for your convenience.
+// You can work with any cache in terms of any generic arguments.
+// However, attempt to retrieve an entry of incompatible type
+// will result in exception.
+ICache<int, string> cache = ignite.GetCache<int, string>("myCache");
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/cache_getting_instance.cpp[tag=cache-getting-instance,indent=0]
+----
+--
+
+== Creating Caches Dynamically
+
+You can also create a cache dynamically:
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=createCache,indent=0]
+----
+
+Refer to the link:developers-guide/configuring-caches/configuration-overview[Cache Configuration] section for the list of cache parameters.
+tab:C#/.NET[]
+[source,csharp]
+----
+IIgnite ignite = Ignition.Start();
+
+// Create cache with given name, if it does not exist.
+var cache = ignite.GetOrCreateCache<int, string>("myNewCache");
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/cache_creating_dynamically.cpp[tag=cache-creating-dynamically,indent=0]
+----
+--
+
+
+The methods that create a cache throw an `org.apache.ignite.IgniteCheckedException` exception when called while the baseline topology is being changed.
+
+
+[source, shell]
+----
+javax.cache.CacheException: class org.apache.ignite.IgniteCheckedException: Failed to start/stop cache, cluster state change is in progress.
+        at org.apache.ignite.internal.processors.cache.GridCacheUtils.convertToCacheException(GridCacheUtils.java:1323)
+        at org.apache.ignite.internal.IgniteKernal.createCache(IgniteKernal.java:3001)
+        at org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCreateWithNameRequest.process(ClientCacheCreateWithNameRequest.java:48)
+        at org.apache.ignite.internal.processors.platform.client.ClientRequestHandler.handle(ClientRequestHandler.java:51)
+        at org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.onMessage(ClientListenerNioListener.java:173)
+        at org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.onMessage(ClientListenerNioListener.java:47)
+        at org.apache.ignite.internal.util.nio.GridNioFilterChain$TailFilter.onMessageReceived(GridNioFilterChain.java:278)
+        at org.apache.ignite.internal.util.nio.GridNioFilterAdapter.proceedMessageReceived(GridNioFilterAdapter.java:108)
+        at org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter$3.body(GridNioAsyncNotifyFilter.java:96)
+        at org.apache.ignite.internal.util.worker.GridWorker.run(GridWorker.java:119)
+
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+        at java.base/java.lang.Thread.run(Thread.java:834)
+----
+
+You may want to retry the operation if you catch this exception.
+
+
+== Destroying Caches
+To delete a cache from all cluster nodes, call the `destroy()` method.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=destroyCache,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+== Atomic Operations
+Once you get the instance of a cache, you can start performing get/put operations on it.
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=atomic1,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/BasicCacheOperations.cs[tag=atomicOperations1,indent=0]
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/cache_get_put.cpp[tag=cache-get-put,indent=0]
+----
+--
+
+[NOTE]
+====
+Bulk operations such as `putAll()` or `removeAll()` are executed as a sequence of atomic operations and can partially fail. 
+If this happens, a `CachePartialUpdateException` is thrown and contains a list of keys for which the update failed.
+
+To update a collection of entries within a single operation, consider using link:developers-guide/key-value-api/transactions[transactions].
+====
+
+Below are more examples of basic atomic operations:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=atomic2,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/BasicCacheOperations.cs[tag=atomicOperations2,indent=0]
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/cache_atomic_operations.cpp[tag=cache-atomic-operations,indent=0]
+----
+--
+
+////
+*TODO: a note about a deadlock on readme.io?*
+////
+
+== Asynchronous Execution
+Most of the cache operations have asynchronous counterparts that have the "Async" suffix in their names.
+
+[tabs]
+--
+tab:Java[]
+
+[source,java]
+----
+// a synchronous get
+V get(K key);
+
+// an asynchronous get
+IgniteFuture<V> getAsync(K key);
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+// a synchronous get
+TV Get(TK key);
+
+// an asynchronous get
+Task<TV> GetAsync(TK key);
+
+----
+tab:C++[]
+[source,cpp]
+----
+// a synchronous get
+V Get(K key);
+
+// an asynchronous get
+Future<V> GetAsync(K key);
+----
+--
+
+The asynchronous operations return an object that represents the result of the operation. You can wait for the completion of the operation in either blocking or non-blocking manner.
+
+////
+*TODO - Artem, should we explain what blocking means? Also, you explain how to wait in non-blocking fashion, but don't show how to do so in a blocking manner. Is that important enough to show?*
+
+*ALSO, do we need to explain what a "closure" is?*
+
+Blocking and closure are basic notions a java developer should know. We also expect that users know/can learn themselves how to use the Feature class. We can elaborate on this if we get relevant feedback.
+////
+
+To wait for the results in a non-blocking fashion, register a closure using the `IgniteFuture.listen()` or `IgniteFuture.chain()` method. The closure is called when the operation is completed.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=async,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/BasicCacheOperations.cs[tag=asyncExec,indent=0]
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/cache_asynchronous_execution.cpp[tag=cache-asynchronous-execution,indent=0]
+----
+--
+
+
+[NOTE]
+====
+[discrete]
+=== Closures Execution and Thread Pools
+
+////////////////////////////////////////////////////////////////////////////////
+This is java specific
+////////////////////////////////////////////////////////////////////////////////
+
+
+If an asynchronous operation is completed by the time the closure is passed to either the `IgniteFuture.listen()` or `IgniteFuture.chain()` method, then the closure is executed synchronously by the calling thread. Otherwise, the closure is executed asynchronously when the operation is completed.
+
+Depending on the type of operation, the closure might be called by a thread from the system pool (asynchronous cache operations) or by a thread from the public pool (asynchronous compute operations). Therefore, you should avoid calling synchronous cache and compute operations from inside the closure, because it may lead to a deadlock due to pools starvation.
+
+To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-troubleshooting-guide/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
+====
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+== Resource Injection
+
+Ignite allows dependency injection of pre-defined Ignite resources, and supports field-based as well as method-based injection. Resources with proper annotations will be injected into the corresponding task, job, closure, or SPI before it is initialized.
+
+
+You can inject resources by annotating either a field or a method. When you annotate a field, Ignite simply sets the value of the field at injection time (disregarding an access modifier of the field). If you annotate a method with a resource annotation, it should accept an input parameter of the type corresponding to the injected resource. If it does, then the method is invoked at injection time with the appropriate resource passed as an input argument.
+
+Below is an example of a field injection.
+
+++++
+<code-tabs>
+<code-tab data-tab="Java">
+++++
+[source,java]
+----
+Ignite ignite = Ignition.ignite();
+
+Collection<String> res = ignite.compute().broadcast(new IgniteCallable<String>() {
+    // Inject Ignite instance.
+    @IgniteInstanceResource
+    private Ignite ignite;
+
+    @Override
+    public String call() throws Exception {
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+        // Do some stuff with the cache.
+    }
+});
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+
+And this is an example of a method-based injection:
+
+++++
+<code-tabs>
+<code-tab data-tab="Java">
+++++
+[source,java]
+----
+public class MyClusterJob implements ComputeJob {
+
+    private Ignite ignite;
+
+    // Inject an Ignite instance.
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+    }
+
+}
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+
+There are a number of pre-defined resources that you can inject:
+
+[width="100%",cols="30%,70%",options="header",]
+|===
+|Resource | Description
+
+|`CacheNameResource`
+
+|Injects the cache name provided via `CacheConfiguration.getName()`.
+
+|`CacheStoreSessionResource`
+
+|Injects the current `CacheStoreSession` instance.
+
+|`IgniteInstanceResource`
+
+|Injects the current instance of `Ignite`.
+
+|`JobContextResource`
+
+|Injects an instance of `ComputeJobContext`. A job context holds useful information about a particular job execution. For example, you can get the name of the cache containing the entry for which a job was colocated.
+
+|`LoadBalancerResource`
+
+|Injects an instance of `ComputeLoadBalancer` that can be used by a task to do the load balancing.
+
+|`ServiceResource`
+
+|Injects the service specified by the given name.
+
+|`SpringApplicationContextResource`
+
+|Injects Spring's `ApplicationContext` resource.
+
+|`SpringResource`
+
+|Injects resource from Spring's `ApplicationContext`. Use it whenever you would like to access a bean specified in Spring's application context XML configuration.
+
+|`TaskContinuousMapperResource`
+
+|Injects an instance of `ComputeTaskContinuousMapper`. Continuous mapping allows emitting jobs from the task at any point, even after the initial map phase.
+
+|`TaskSessionResource`
+
+|Injects an instance of the `ComputeTaskSession` resource, which defines a distributed session for a particular task execution.
+|===
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+////
+
+TODO: the importance of this section is questionable
+
+== Cache Interceptor
+
+Ignite lets you execute custom logic before or after specific operations on a cache. You can:
+
+- change the returned value of the `get` operation;
+- process an entry before or after any `put`/`remove` operation.
+
+++++
+<code-tabs>
+<code-tab data-tab="Java">
+++++
+[source,java]
+----
+
+----
+++++
+</code-tab>
+<code-tab data-tab="C#/.NET">
+++++
+[source,csharp]
+----
+TODO
+----
+++++
+</code-tab>
+<code-tab data-tab="C++">
+++++
+[source,cpp]
+----
+TODO
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+////

@@ -1,0 +1,48 @@
+= Cluster Groups
+
+:javaFile: {javaCodeDir}/ClusterGroups.java
+
+The `ClusterGroup` interface represents a logical group of nodes, which can be used in many of Ignite's APIs when you want to limit the scope of specific operations to a subset of nodes (instead of the whole cluster). For example, you may wish to deploy a service only on remote nodes or execute a job only on the set of nodes that have a specific attribute.
+////
+TODO: explain attributes
+////
+TIP: Note that the `IgniteCluster` interface is also a cluster group which includes all the nodes in the cluster.
+
+You can limit job execution, service deployment, messaging, events, and
+other tasks to run only on a specific set of node. For example, here is
+how to broadcast a job only to remote nodes (excluding the local node).
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=remote-nodes,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusterGroups.cs[tag=broadcastAction,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+For convenience, Ignite comes with a number of predefined cluster groups.
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=examples,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusterGroups.cs[tag=clusterGroups,indent=0]
+----
+tab:C++[unsupported]
+--
+

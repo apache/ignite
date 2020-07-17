@@ -1,0 +1,32 @@
+Partition awareness allows the thin client to send query requests directly to the node that owns the queried data.
+
+[WARNING]
+====
+[discrete]
+Partition awareness is an experimental feature whose API or design architecture might change before a GA version is released.
+====
+
+Without partition awareness, an application that is connected to the cluster via a thin client executes all queries and operations via a single server node that acts as a proxy for the incoming requests.
+These operations are then re-routed to the node that stores the data that is being requested.
+This results in a bottleneck that could prevent the application from scaling linearly.
+
+image::images/partitionawareness01.png[Without Partition Awareness]
+
+Notice how queries must pass through the proxy server node, where they are routed to the correct node.
+
+With partition awareness in place, the thin client can directly route queries and operations to the primary nodes that own the data required for the queries.
+This eliminates the bottleneck, allowing the application to scale more easily.
+
+image::images/partitionawareness02.png[With Partition Awareness]
+
+[WARNING]
+====
+[discrete]
+Note that presently you need to provide addresses of all the server nodes in the connection properties.
+This also means that if a new server node joins the cluster, you should add the server's address to the connection properties and reconnect the thin client.
+Otherwise, the thin client will not be able to send direct requests to this server.
+This limitation is planned to be addressed before the GA release of the feature.
+====
+
+
+

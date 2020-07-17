@@ -1,0 +1,89 @@
+= Implementing Custom Cache Store
+
+You can implement your own custom `CacheStore` and use it as an underlying data storage for the cache. The methods of `IgniteCache` that read or modify the data will call the corresponding methods of the `CacheStore` implementation.
+
+The following table describes the methods of the `CacheStore` interface.
+
+[cols="1,3",opts="header"]
+|===
+|Method | Description
+
+|`loadCache()` | The `loadCache(...)` method is called whenever `IgniteCache.loadCache(...)` is called and is usually used to preload data from the underlying database into memory. This method loads data on all nodes on which the cache is present.
+
+To load the data on a single node, call `IgniteCache.localLoadCache()` on that node.
+
+|`load()`, `write()`, `delete()` | The `load()`, `write()`, and `delete()` methods are called whenever the `get()`, `put()`, and `remove()` methods are called on the `IgniteCache` interface. These methods are used to enable the _read-through_ and _write-through_ behavior when working with individual cache entries.
+
+|`loadAll()`, `writeAll()`, `deleteAll()` | `loadAll()`, `writeAll()`, and `deleteAll()` in the `CacheStore` are called whenever methods `getAll()`, `putAll()`, and `removeAll()` are called on the `IgniteCache` interface. These methods are used to enable the read-through and write-through behavior when working with multiple cache entries and should generally be implemented using batch operations to provide better performance.
+|===
+
+
+== CacheStoreAdapter
+`CacheStoreAdapter` is an extension of `CacheStore` that provides default implementations for bulk operations, such as `loadAll(Iterable)`, `writeAll(Collection)`, and `deleteAll(Collection)`, by iterating through all entries and calling corresponding `load()`, `write()`, and `delete()` operations on individual entries.
+
+== CacheStoreSession
+Cache store sessions are used to hold the context between multiple operations on the store and mainly employed to provide transactional support. The operations within one transaction are executed using the same database connection, and the connection is committed when the transaction commits.
+Cache store session is represented by an object of the `CacheStoreSession` class, which can be injected into your `CacheStore` implementation via the `@GridCacheStoreSessionResource` annotation.
+
+An example of how to implement a transactional cache store can be found on https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/store/jdbc/CacheJdbcPersonStore.java[GitHub].
+
+== Example
+
+Below is an example of a non-transactional implementation of `CacheStore`. For an example of the implementation with support for transactions, please refer to the https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/store/jdbc/CacheJdbcPersonStore.java[CacheJdbcPersonStore.java] file on GitHub.
+
+
+
+
+.JDBC non-transactional
+[source, java]
+----
+include::{javaCodeDir}/CacheJdbcPersonStore.java[tags=class, indent=0]
+
+----
+
+
+////
+== Cache Store and Binary Objects
+*TODO*
+////
+
+////
+The need for this section is questionable
+
+=== Partition-Aware Data Loading
+
+When you call `IgniteCache.loadCache()`, it delegates to the underlying `CacheStore.loadCache()`, which is called on all server nodes. The default implementation of that method simply iterates over all records and skips those keys that do not link:developers-guide/data-modeling/data-partitioning[belong to the node]. This is not very efficient because every node loads *TODO*
+
+
+
+To improve loading speed, you can take advantage of partitioning. Each node holds a subset of partitions and only needs to load the data for these partitions.
+
+You can use the <<affinity function>> to find how keys are assigned to partitions.
+
+
+Let's extend the example given above to make it partition aware. We add a field that will indicate the partition ID the key belongs to.
+
+[source,java]
+----
+IgniteCache cache = ignite.cache(cacheName);
+Affinity aff = ignite.affinity(cacheName);
+
+for (int personId = 0; personId < PERSONS_COUNT; personId++) {
+    // Get partition ID for the key under which person is stored in cache.
+    int partId = aff.partition(personId);
+
+    Person person = new Person(personId);
+    person.setPartitionId(partId);
+    // Fill other fields.
+
+    cache.put(personId, person);
+}
+----
+
+NOTE: If you alread have a database with large amount of data and want to use CacheStore as a caching layer, you can accelerate data loading
+
+
+////
+
+
+

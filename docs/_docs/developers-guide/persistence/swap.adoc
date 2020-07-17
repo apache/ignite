@@ -1,0 +1,52 @@
+= Swapping
+
+== Overview
+
+When using a pure in-memory storage, it is possible that the size of data loaded into a node exceeds the physical RAM size, leading to out of memory errors (OOMEs). 
+If you do not want to use the native persistence or an external storage, you can enable swapping, in which case the in-memory data is moved to the swap space located on disk. 
+Please note that Ignite does not provide its own implementation of swap space. 
+Instead, it takes advantage of the swapping functionality provided by the operating system (OS).
+
+When swap space is enabled, Ignite stores data in memory-mapped files (MMF) whose content is swapped to disk by the OS according to the current RAM consumption; 
+however, in that scenario the data access time is longer. 
+Moreover, there are no data durability guarantees. 
+Which means that the data from the swap space is available only as long as the node is alive. 
+Once the node where the swap space exists shuts down, the data is lost. 
+Therefore, you should use swap space as an extension to RAM only to give yourself enough time to add more nodes to the cluster in order to re-distribute data and avoid OOMEs which might happen if the cluster is not scaled in time.
+
+[CAUTION]
+====
+Since swap space is located on disk, it should not be considered as a replacement to native persistence.
+Data from the swap space is available as long as the node is active. Once the node shuts down, the data lost.
+To ensure that data is available at all times, you should either enable link:developers-guide/persistence/native-persistence/[native persistence] or use an link:developers-guide/persistence/external-storage[external storage].
+====
+
+== Enabling Swapping
+
+Data Region `maxSize` defines the total `maxSize` of the region. 
+You will get out of memory errors if your data size exceeds `maxSize` and neither native persistence nor an external database is used. 
+To avoid this situation with the swapping capabilities, you need to:
+
+* Set `maxSize` to a value that is bigger than the total RAM size. In this case, the OS takes care of the swapping.
+* Enable swapping in the data region configuration, as shown below.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/swap.xml[tag=swap,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/Swap.java[tag=swap,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/PersistenceIgnitePersistence.cs[tag=cfg-swap,indent=0]
+----
+tab:C++[unsupported]
+--
+

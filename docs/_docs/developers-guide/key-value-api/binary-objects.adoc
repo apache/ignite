@@ -1,0 +1,222 @@
+= Working with Binary Objects
+
+== Overview
+In Ignite, data is stored in link:developers-guide/data-modeling/data-modeling#binary-object-format[binary format] and is deserialized into objects every time you call cache methods. However, you can work directly with the binary objects avoiding deserialization.
+
+////
+*TODO* ARTEM, should we explain why we'd want to avoid deserialization?
+////
+
+A binary object is a wrapper over the binary representation of an entry stored in a cache. Each binary object has the `field(name)` method which returns the value of the given field and the `type()` method that extracts the <<Binary Type and Binary Fields,information about the type of the object>>.
+Binary objects are useful when you want to work only with some fields of the objects and do not need to deserialize the entire object.
+
+
+
+You do not need to have the class definition to work with binary objects and can <<Creating and Modifying Binary Objects,change the structure of objects dynamically>> without restarting the cluster.
+
+The binary object format is universal for all supported platforms, i.e. Java, .NET, and {cpp}. You can start a Java cluster, then connect to it from .NET or {cpp} clients and use binary objects in those platforms with no need to define classes on the client side.
+
+[IMPORTANT]
+====
+[discrete]
+=== Restrictions
+
+There are several restrictions that are implied by the binary object format implementation:
+
+ * Internally, the type and fields of a binary object are identified by their IDs. The IDs are calculated as the hash codes of the corresponding string names. Consequently, fields or types with the identical name hash are not allowed. However, you can <<Configuring Binary Objects,provide your own implementation of ID generation>> via the configuration.
+ * For the same reason, the binary object format does not allow identical field names on different levels of class hierarchy.
+ * If a class implements the `Externalizable` interface, Ignite uses `OptimizedMarshaller` instead of the binary one. `OptimizedMarshaller` uses the `writeExternal()` and `readExternal()` methods to serialize and deserialize objects; therefore, the class must be added to the classpath of the server nodes.
+====
+
+== Enabling Binary Mode for Caches
+
+By default, when you request entries from a cache, they are returned in the deserialized format.
+To work with the binary format, obtain an instance of the cache using the `withKeepBinary()` method.
+This instance returns objects in the binary format (when possible).
+//and also passes binary objects to link:developers-guide/collocated-computations#entry-processor[entry processors], if any are used.
+// and cache interceptors.
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=enablingBinary,indent=0]
+----
+
+Note that not all objects are converted to the binary object format.
+The following classes are never converted (e.g., the `toBinary(Object)` method returns the original object, and instances of these classes are stored without changes):
+
+* All primitives (`byte`, `int`, etc) and their wrapper classes (`Byte`, `Integer`, etc)
+* Arrays of primitives (byte[], int[], ...)
+* `String` and array of `Strings`
+* `UUID` and array of `UUIDs`
+* `Date` and array of `Dates`
+* `Timestamp` and array of `Timestamps`
+* `Enums` and array of enums
+* Maps, collections and arrays of objects (but the objects inside them are reconverted if they are binary)
+
+tab:.NET/C#[]
+[source,csharp]
+----
+ICache<int, IBinaryObject> binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
+IBinaryObject binaryPerson = binaryCache[1];
+string name = binaryPerson.GetField<string>("Name");
+
+IBinaryObjectBuilder builder = binaryPerson.ToBuilder();
+builder.SetField("Name", name + " - Copy");
+
+IBinaryObject binaryPerson2 = builder.Build();
+binaryCache[2] = binaryPerson2;
+----
+
+Note that not all types can be represented as `IBinaryObject`. Primitive types, `string`, `Guid`, `DateTime`, collections and arrays of these types are always returned as is.
+
+tab:C++[unsupported]
+--
+
+== Creating and Modifying Binary Objects
+
+Instances of binary objects are immutable. To update fields or create a new binary object, use a binary object builder. A binary object builder is a utility class that allows you to modify the fields of binary objects without having the class definition of the objects.
+
+
+[NOTE]
+====
+[discrete]
+=== Limitations
+
+* You cannot change the types of existing fields.
+* You cannot change the order of enum values or add new constants at the beginning or in the middle of the list of enum's values. You can add new constants to the end of the list though.
+
+====
+
+You can obtain an instance of the binary object builder for a specific type as follows:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=binaryBuilder,indent=0]
+----
+
+tab:.NET/C#[]
+[source,csharp]
+----
+IIgnite ignite = Ignition.Start();
+
+IBinaryObjectBuilder builder = ignite.GetBinary().GetBuilder("Book");
+
+IBinaryObject book = builder
+  .SetField("ISBN", "xyz")
+  .SetField("Title", "War and Peace")
+  .Build();
+----
+tab:C++[unsupported]
+--
+
+Builders created in this way contain no fields.
+You can add fields by calling the `setField(...)` method.
+
+You can also obtain a binary object builder from an existing binary object by calling the `toBuilder()` method.
+In this case, all field values are copied from the binary object to the builder.
+
+
+In the following example, we use an entry processor to update an object on the server node without having the object's class deployed on that node and without full object deserialization.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=cacheEntryProc,indent=0]
+----
+
+tab:.NET/C#[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithBinaryObjects.cs[tag=entryProcessor,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Binary Type and Binary Fields
+
+Binary objects hold the information about the type of objects they represent. The type information includes the field names, field types and the affinity field name.
+
+The type of each field is represented by a `BinaryField` object.
+Once obtained, a `BinaryField` object can be reused multiple times if you need to read the same field from each object in a collection.
+Reusing a `BinaryField` object is faster than reading the field value directly from each binary object.
+Below is an example of using a binary field.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=binaryField,indent=0]
+----
+
+tab:C#/.NET[unsupported]
+
+tab:C++[unsupported]
+--
+
+
+== Recommendations on Binary Objects Tuning
+
+Ignite keeps a _schema_ for every  Binary Object of a given type, which specifies the fields present in the object as well as their order and types.
+Schemas are replicated to all cluster nodes.
+Binary objects that have the same fields but in different order are considered to have different schemas.
+We strongly recommend you should always add fields to binary objects in the same order.
+
+A null field would normally take five bytes to store — four bytes for the field ID plus one byte for the field length.
+Memory-wise, it's preferable to not include a field, rather than include a null field.
+However, if you do not include a field, Ignite creates a new schema for this object, and that schema is different from the schema of the objects that do include the field. 
+If you have multiple fields that are set to `null` in random combinations, Ignite maintains a different Binary Object schema for each combination, and your heap may be exhausted by the total size of the Binary Object schemas.
+It is better to have a few schemas for your Binary Objects, with the same set of fields of same types, set in the same order. 
+Choose one of them when creating Binary Object by supplying the same set of fields, even with null value. 
+This is also the reason you need to supply field type for null field.
+
+You can also nest your Binary Objects if you have a subset of fields which are optional but either all absent or all present.
+You can put them in a separate BinaryObject, which is either stored under a field in the parent object or set as null.
+
+If you have a large number of fields which are all optional in any combinations, and very often null, you can store them in a map field.
+You will have several fixed fields in your value object, and one map for extra properties.
+
+
+== Configuring Binary Objects
+
+In the vast majority of use cases, there is no need to configure binary objects. However, if you need to change the type and field IDs generation or plug in a custom serializer, you can do this via the configuration.
+
+The type and fields of a binary object are identified by their IDs. The IDs are calculated as the hash codes of the corresponding string names and are stored in each binary object. You can define your own implementation of ID generation in the configuration.
+
+The name-to-ID conversion is done in two steps.
+First, the type name (class name) or a field name is transformed by a name mapper, then an ID mapper calculates the IDs.
+You can specify a global name mapper, a global ID mapper, and a global binary serializer as well as per-type mappers and serializers.
+Wildcards are supported for per-type configuration, in which case the provided configuration is applied to all types that match the type name template.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/binary-objects.xml[tags=ignite-config;!discovery, indent=0]
+
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=cfg,indent=0]
+----
+
+tab:.NET/C#[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithBinaryObjects.cs[tag=binaryCfg,indent=0]
+----
+tab:C++[unsupported]
+--
+

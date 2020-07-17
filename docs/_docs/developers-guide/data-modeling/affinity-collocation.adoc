@@ -1,0 +1,109 @@
+= Affinity Colocation
+
+In many cases it is beneficial to colocate different entries if they are often accessed together. 
+In this way, multi-entry queries are executed on one node (where the objects are stored). 
+This concept is known as _affinity colocation_.
+
+Entries are assigned to partitions by the affinity function. 
+The objects that have the same affinity keys go to the same partitions. 
+This allows you to design your data model in such a way that related entries are stored together. 
+"Related" here refers to the objects that are in a parent-child relationship or objects that are often queried together.
+
+For example, let's say you have `Person` and `Company` objects, and each person has the `companyId` field that indicates the company the person works for. 
+By specifying the `Person.companyId` and `Company.ID` as affinity keys, you ensure that all the persons working for the same company are stored on the same node, where the company object is stored as well. 
+Queries that request persons working for a specific company are processed on a single node.
+
+////
+The following image shows how data is distributed with the default affinity configuration:
+
+*TODO*
+
+And here is how data is distributed when you colocate persons with the companies:
+
+*TODO image*
+////
+
+You can also colocate a computation task with the data. See link:developers-guide/collocated-computations[Colocating Computations With Data].
+////
+*TODO: add examples and use cases*
+////
+== Configuring Affinity Key
+
+If you do not specify the affinity key explicitly, the cache key is used as the default affinity key. 
+If you create your caches as SQL tables using SQL statements, the PRIMARY KEY is the default affinity key.
+
+If you want to colocate data from two caches by a different field, you have to use a complex object as the key. That object usually contains a field that uniquely identifies the object in that cache and a field that you want to use for colocation.
+
+There are several ways to configure a custom affinity field within the custom key, which are described below.
+
+The following example illustrates how you can colocate the person objects with the company objects using a custom key class and the `@AffinityKeyMapped` annotation.
+
+:javaSourceFile: {javaCodeDir}/AffinityCollocationExample.java
+:dotnetSourceFile: code-snippets/dotnet/AffinityCollocation.cs
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaSourceFile}[tags=collocation;!config-with-key-configuration;!affinity-key-class,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetSourceFile}[tag=affinityCollocation,indent=0]
+----
+tab:C++[unsupported]
+----
+tab:SQL[]
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS Person (
+  id int,
+  city_id int,
+  name varchar,
+  company_id varchar,
+  PRIMARY KEY (id, city_id)
+) WITH "template=partitioned,backups=1,affinity_key=company_id";
+
+CREATE TABLE IF NOT EXISTS Company (
+  id int,
+  name varchar,
+  PRIMARY KEY (id)
+) WITH "template=partitioned,backups=1";
+----
+--
+
+You can also configure the affinity key field in the cache configuration by using the `CacheKeyConfiguration` class.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaSourceFile}[tag=config-with-key-configuration,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetSourceFile}[tag=config-with-key-configuration,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Instead of defining a custom key class, you can use the `AffinityKey` class, which is designed specifically for the purpose of using custom affinity mapping.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaSourceFile}[tag=affinity-key-class,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetSourceFile}[tag=affinity-key-class,indent=0]
+----
+tab:C++[unsupported]
+--

@@ -1,0 +1,28 @@
+To run Ignite with Java 11 or later, follow these steps:
+
+1.  Set the `JAVA_HOME` environment variable to point to the Java installation
+directory.
+2.  Ignite uses proprietary SDK APIs that are not available by
+default. You need to pass specific flags to JVM to make these APIs
+available. If you use the start-up script `ignite.sh` (or `ignite.bat` for Windows), you do not need
+to do anything because these flags are already set up in the script.
+Otherwise, provide the following parameters to the JVM of your
+application:
++
+[source,shell]
+----
+--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+--add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+--illegal-access=permit
+----
+
+3.  TLSv1.3, which is available in Java 11, is not supported at the
+moment. Consider adding `‑Djdk.tls.client.protocols=TLSv1.2` if SSL
+between nodes is used.
+
+
+

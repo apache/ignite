@@ -1,0 +1,88 @@
+
+= Understanding Configuration
+
+This chapter explains different ways of configuring an Ignite cluster.
+
+== Overview
+
+When you start a node, you need to provide configuration parameters to the node.
+Basically, all configuration parameters are defined in an instance of the link:{javadoc_base_url}/org/apache/ignite/configuration/IgniteConfiguration.html[IgniteConfiguration]
+class.
+You can set the parameters either programmatically or via an XML configuration file.
+These 2 ways are fully interchangeable.
+
+The XML configuration file is a Spring Bean definition file that must contain the `IgniteConfiguration` bean.
+When starting a node from the command line, pass the configuration file as a parameter to the `ignite.sh|bat` script, as follows:
+
+[source,shell]
+----
+ignite.sh ignite-config.xml
+----
+
+If you don't specify a configuration file, the default file `{IGNITE_HOME}/config/default-config.xml` is used.
+
+== Spring XML Configuration
+
+To create a configuration in a Spring XML format, you need to define the
+`IgniteConfiguration` bean and set the parameters that you want to be different from the default. For detailed information on how to use XML Schema-based configuration, see the
+https://docs.spring.io/spring/docs/4.2.x/spring-framework-reference/html/xsd-configuration.html[official
+Spring documentation].
+
+In the example below, we create an `IgniteConfiguration` bean, set the `workDirectory` property, and configure a link:developers-guide/data-modeling/data-partitioning#partitioned[partitioned cache].
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="workDirectory" value="/path/to/work/directory"/>
+
+        <property name="cacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <!-- Set the cache name. -->
+                <property name="name" value="myCache"/>
+                <!-- Set the cache mode. -->
+                <property name="cacheMode" value="PARTITIONED"/>
+                <!-- Other cache parameters. -->
+            </bean>
+        </property>
+    </bean>
+</beans>
+----
+
+== Programmatic Configuration
+
+Create an instance of the `IgniteConfiguration` class and set the required
+parameters, as shown in the example below.
+
+[tabs]
+--
+
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/UnderstandingConfiguration.java[tag=cfg,indent=0]
+----
+
+See the link:{javadoc_base_url}/org/apache/ignite/configuration/IgniteConfiguration.html[IgniteConfiguration,window=_blank] javadoc for the complete list of parameters.
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/UnderstandingConfiguration.cs[tag=UnderstandingConfigurationProgrammatic,indent=0]
+----
+
+See the https://ignite.apache.org/releases/{version}/dotnetdoc/api/Apache.Ignite.Core.IgniteConfiguration.html[API docs,window=_blank] for details.
+
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/setting_work_directory.cpp[tag=setting-work-directory,indent=0]
+----
+--

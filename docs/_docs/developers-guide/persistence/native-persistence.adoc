@@ -1,0 +1,322 @@
+= Ignite Persistence
+
+:javaFile: {javaCodeDir}/IgnitePersistence.java
+
+== Overview
+
+Ignite Persistence, or Native Persistence, is a set of features designed to provide persistent storage. 
+When it is enabled, Ignite always stores all the data on disk, and loads as much data as it can into RAM for processing. 
+For example, if there are 100 entries and RAM has the capacity to store only 20, then all 100 are stored on disk and only 20 are cached in RAM for better performance.
+
+When Native persistence is turned off and no external storage is used, Ignite behaves as a pure in-memory store.
+
+When persistence is enabled, every server node persists a subset of the data that only includes the partitions that are assigned to that node (including link:developers-guide/data-modeling/data-partitioning#backup-partitions[backup partitions] if backups are enabled).
+
+The Native Persistence functionality is based on the following features:
+
+* Storing data partitions on disk
+* Write-ahead logging
+* Checkpointing
+* Usage of OS swap
+////
+*TODO: diagram: update operation + wal + checkpointing*
+////
+
+When persistence is enabled, Ignite stores each partition in a separate file on disk. 
+The data format of the partition files is the same as that of the data when it is kept in memory. 
+If partition backups are enabled, they are also saved on disk.
+In addition to data partitions, Ignite stores indexes and metadata.
+
+image::images/persistent_store_structure.png[]
+
+You can change the default location of data files in the <<Configuration Properties,configuration>>.
+
+////
+If your data set is very large and you use persistence, data rebalancing may take a long time.
+To avoid unnecessary data transfer, you can decide when you want to start rebalancing by changing the baseline topology manually.
+////
+
+////
+
+Because persistence is configured per link:developers-guide/memory-configuration/data-regions[data region], in-memory data regions differ from regions with persistence with respect to data rebalancing:
+
+[cols="1,1",options="header"]
+|===
+| In-memory data region | Data region with persistence
+| When a node joins/leaves the cluster, PME is triggered and followed by data rebalancing. | PME is performed. Data rebalancing is triggered when the baseline topology is changed.
+|===
+////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+* When you start the cluster for the first time, the baseline topology is empty and the cluster is inactive. Any CRUD operations with data are prohibited.
+* When you activate the cluster for the first time, all server nodes that are in the cluster at the moment will be added to the baseline topology.
+* When you restart the cluster with persistence, it is activated automatically as soon as all nodes that are registered in the baseline topology join in.
+////////////////////////////////////////////////////////////////////////////////
+
+
+== Enabling Persistent Storage
+
+Native Persistence is configured per link:developers-guide/memory-configuration/data-regions[data region].
+To enable persistent storage, set the `persisteceEnabled` property to `true` in the data region configuration.
+You can have in-memory data regions and data regions with persistence at the same time.
+
+The following example shows how to enable persistent storage for the default data region.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/persistence.xml[tags=ignite-config;!storage-path;!discovery,indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=cfg;!storage-path,indent=0]
+----
+
+tab:.NET/C#[]
+[source,csharp]
+----
+include::code-snippets/dotnet/PersistenceIgnitePersistence.cs[tags=cfg;!storage-path,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Configuring Persistent Storage Directory
+
+When persistence is enabled, the node stores user data, indexes and WAL files in the `{IGNITE_WORK_DIR}/db` directory. 
+This directory is referred to as the storage directory.
+You can change the storage directory by setting the `storagePath` property of the `DataStorageConfiguration` object, as shown below.
+
+Each node maintains the following sub-directories under the storage directory meant to store cache data, WAL files, and WAL archive files:
+
+
+[cols="3,4",opts="header"]
+|===
+|Subdirectory name | Description
+|{WORK_DIR}/db/{nodeId}  | This directory contains cache data and indexes.
+|{WORK_DIR}/db/wal/{nodeId} | This directory contains WAL files.
+|{WORK_DIR}/db/wal/archive/{nodeId}|  This directory contains WAL archive files.
+|===
+
+
+`nodeId` here is either the consistent node ID (if it's defined in the node configuration) or https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-SubfoldersGeneration[auto-generated node id,window=_blank]. It is used to ensure uniqueness of the directories for the node.
+If multiple nodes share the same work directory, they uses different sub-directories.
+
+If the work directory contains persistence files for multiple nodes (there are multiple {nodeId} subdirectories with different nodeIds), the node picks up the first subdirectory that is not being used.
+To make sure a node always uses a specific subdirectory and, thus, specific data partitions even after restarts, set `IgniteConfiguration.setConsistentId` to a cluster-wide unique value in the node configuration.
+
+You can change the storage directory as follows:
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/persistence.xml[tags=ignite-config;!discovery,indent=0]
+----
+
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=cfg,indent=0]
+----
+
+tab:.NET/C#[]
+[source,csharp]
+----
+include::code-snippets/dotnet/PersistenceIgnitePersistence.cs[tags=cfg,indent=0]
+----
+
+tab:C++[unsupported]
+--
+
+You can also change the WAL and WAL archive paths to point to directories outside of the storage directory. Refer to the next section for details.
+
+== Write-Ahead Log
+
+The write-ahead log is a log of all data modifying operations (including deletes) that happen on a node. When a page is updated in RAM, the update is not directly written to the partition file but is appended to the tail of the WAL.
+
+The purpose of the write-ahead log is to provide a recovery mechanism for scenarios where a single node or the whole cluster goes down. In case of a crash or restart, the cluster can always be recovered to the latest successfully committed transaction by relying on the content of the WAL.
+
+The WAL consists of several files (called active segments) and an archive. The active segments are filled out sequentially and are overwritten in a cyclical order. Once the 1st segment is full, its content is copied to the WAL archive (see the <<WAL Archive>> section below). While the 1st segment is being copied, the 2nd segment is treated as an active WAL file and accepts all the updates coming from the application side. By default, there are 10 active segments.
+
+////////////////////////////////////////////////////////////////////////////////
+
+*TODO - Do we need this here? I think not. Move to the javadoc. (Garrett agrees, let's move this out)*
+Each update is written to a buffer before being written to the WAL file. The size of the buffer is specified by the `DataStorageConfiguration.walBuffSize` parameter. By default, the WAL buffer size equals the WAL segment size if the memory mapped file is enabled, and `(WAL segment size) / 4` if the memory-mapped file is disabled. Note that the memory mapped file is enabled by default. It can be turned off using the `IGNITE_WAL_MMAP` system property that can be passed to JVM as follows:  `-DIGNITE_WAL_MMAP=false`.
+
+////////////////////////////////////////////////////////////////////////////////
+
+=== WAL Modes
+There are three WAL modes. Each mode differs in how it affects performance and provides different consistency guarantees.
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Mode |Description | Consistency Guarantees
+|`FSYNC` | The changes are guaranteed to be persisted to disk for every atomic write or transactional commit.
+| Data updates are never lost surviving any OS or process crashes, or power failure.
+
+|`LOG_ONLY` | The default mode.
+
+The changes are guaranteed to be flushed to either the OS buffer cache or a memory-mapped file for every atomic write or transactional commit.
+
+The memory-mapped file approach is used by default and can be switched off by setting the `IGNITE_WAL_MMAP` system property to `false`.
+
+| Data updates survive a process crash.
+
+| `BACKGROUND` | When the `IGNITE_WAL_MMAP` property is enabled (default), this mode behaves like the `LOG_ONLY` mode.
+
+If the memory-mapped file approach is disabled then the changes stay in node's internal buffer and are periodically flushed to disk. The frequency of flushing is specified via the `walFlushFrequency` parameter.
+
+| When the `IGNITE_WAL_MMAP` property is enabled (default), the mode provides the same guarantees as `LOG_ONLY` mode.
+
+Otherwise, recent data updates may get lost in case of a process crash or other outages.
+
+| `NONE` | WAL is disabled. The changes are persisted only if you shut down the node gracefully.
+Use `Ignite.active(false)` to deactivate the cluster and shut down the node.
+
+| Data loss might occur.
+
+If a node is terminated abruptly during update operations, it is very likely that the data stored on the disk becomes out-of-sync or corrupted.
+
+|===
+
+
+=== WAL Archive
+The WAL archive is used to store WAL segments that may be needed to recover the node after a crash. The number of segments kept in the archive is such that the total size of all segments does not exceed the specified size of the WAL archive.
+
+By default, the maximum size of the WAL archive (total space it occupies on disk) is defined as 4 times the size of the link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer]. You can change that value in the <<Configuration Properties,configuration>>.
+
+CAUTION: Setting the WAL archive size to a value lower than the default may impact performance and should be tested before being used in production.
+
+:walXmlFile: code-snippets/xml/wal.xml
+
+=== Changing WAL Segment Size
+
+The default WAL segment size (64 MB) may be inefficient in high load scenarios because it causes WAL to switch between segments too frequently and switching/rotation is a costly operation.
+A larger size of WAL segments can help increase performance under high loads at the cost of increasing the total size of the WAL files and WAL archive.
+
+You can change the size of the WAL segment files in the data storage configuration. The value must be between 512KB and 2GB.
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{walXmlFile}[tags=ignite-config;!discovery;segment-size, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tags=segment-size, indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+=== Disabling WAL
+There are situations when it is reasonable to have the WAL disabled to get better performance. For instance, it is useful to disable WAL during initial data loading and enable it after the pre-loading is complete.
+
+////
+todo: add c++ examples
+////
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=wal,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/PersistenceIgnitePersistence.cs[tag=disableWal,indent=0]
+----
+tab:SQL[]
+[source, sql]
+----
+ALTER TABLE Person NOLOGGING
+
+//...
+
+ALTER TABLE Person LOGGING
+----
+tab:C++[unsupported]
+--
+
+WARNING: If WAL is disabled and you restart a node, all data is removed from the persistent storage on that node. This is implemented because without WAL data consistency cannot be guaranteed in case of node crash or restart.
+
+=== WAL Archive Compaction
+You can enable WAL Archive compaction to reduce the space occupied by the WAL Archive. 
+By default, WAL Archive contains segments for the last 20 checkpoints (this number is configurable). 
+If compaction is enabled, all archived segments that are 1 checkpoint old are compressed in ZIP format. 
+If the segments are needed (for example, to re-balance data between nodes), they are uncompressed to RAW format.
+
+See the <<Configuration Properties>> section below to learn how to enable WAL archive compaction.
+
+=== Disabling WAL Archive
+
+In some cases, you may want to disable WAL archiving, for example, to reduce the overhead associated with copying of WAL segments to the archive. There can be a situation where Ignite writes data to WAL segments faster than the segments are copied to the archive. This may create an I/O bottleneck that can freeze the operation of the node. If you experience such problems, try disabling WAL archiving.
+
+////
+It is safe to disable WAL archiving because a cluster without the WAL archive provides the same data retention guarantees as a cluster with a WAL archive. Moreover, disabling WAL archiving can provide better performance.
+////
+
+////
+*TODO: Artem, should we mention why someone would want to use WAL Archiving, if it can impact performance and a cluster without the archive has the same guarantees?*
+////
+
+To disable archiving, set the WAL path and the WAL archive path to the same value. 
+In this case, Ignite does not copy segments to the archive; instead, it creates new segments in the WAL folder. 
+Old segments are deleted as the WAL grows, based on the WAL Archive size setting.
+
+
+== Checkpointing
+
+_Checkpointing_ is the process of copying dirty pages from RAM to partition files on disk. A dirty page is a page that was updated in RAM but was not written to the respective partition file (the update, however, was appended to the WAL).
+
+After a checkpoint is created, all changes are persisted to disk and will be available if the node crashes and is restarted.
+
+Checkpointing and write-ahead logging are designed to ensure durability of data and recovery in case of a node failure.
+
+image:images/checkpointing-persistence.png[]
+
+This process helps to utilize disk space frugally by keeping pages in the most up-to-date state on disk. After a checkpoint is passed, you can delete the WAL segments that were created before that point in time.
+
+See the following related documentation:
+
+* link:administrators-guide/monitoring-metrics/metrics#monitoring-checkpointing-operations[Monitoring Checkpointing Operations].
+* link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size]
+
+== Configuration Properties
+
+The following table describes some properties of link:{javadoc_base_url}/org/apache/ignite/configuration/DataStorageConfiguration.html[DataStorageConfiguration].
+
+[width=100%,cols="1,2,1",options="header"]
+|=======================================================================
+| Property Name |Description |Default Value
+
+|`persistenceEnabled` | Set this property to `true` to enable Native Persistence. | `false`
+
+|`storagePath` | The path where data is stored. |  `${IGNITE_HOME}/work/db/node{IDX}-{UUID}`
+
+| `walPath` | The path to the directory where active WAL segments are stored. | `${IGNITE_HOME}/work/db/wal/`
+| `walArchivePath` | The path to the WAL archive.  | `${IGNITE_HOME}/work/db/wal/archive/`
+| `walCompactionEnabled` | Set to `true` to enable <<WAL Archive Compaction, WAL archive compaction>>. | `false`
+| `walSegmentSize` | The size of a WAL segment file in bytes. | 64MB
+|`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
+
+| `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
+|`maxWalArchiveSize`  | The maximum size (in bytes) the WAL archive can occupy on the file system. | Four times the size of the link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer].
+|=======================================================================

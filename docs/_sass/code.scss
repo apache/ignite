@@ -1,0 +1,95 @@
+pre, pre.rouge {
+    padding: 8px 15px;
+    background: var(--block-code-background) !important;
+    border-radius: 5px;
+    border: 1px solid #e5e5e5;
+    overflow-x: auto;
+    // So code copy button doesn't overflow
+    min-height: 36px;
+	line-height: 18px;
+    color: #545454;
+}
+
+code {
+    color: #545454;
+}
+
+pre.rouge code {
+    background: none !important;
+}
+
+pre.rouge .tok-err {
+  	border: none !important;
+  }
+
+code-tabs.code-tabs__initialized {
+    display: block;
+    margin-bottom: 1.5em;
+
+    nav {
+        border-bottom: 1px solid #e0e0e0
+    }
+
+    nav button {
+        background: white;
+        color: inherit;
+        border: none;
+        padding: 0.7em 1em;
+        cursor: pointer;
+        transform: translateY(1px);
+		font-size: .9em;
+
+        &.active {
+            border-bottom: var(--orange-line-thickness) solid var(--link-color);
+        }
+		&.grey {
+		  color: grey;
+		}
+    }
+
+    code-tab:not([hidden]) {
+        display: block;
+    }
+}
+
+*:not(pre) > code {
+    background: var(--inline-code-background);
+    padding: 0.1em 0.5em;
+    background-clip: padding-box;
+    border-radius: 3px;
+    color: #545454;
+    font-size: 90%
+}
+
+// Required for copy button positioning
+.listingblock .content {
+    position: relative;
+}
+
+.copy-to-clipboard-button {
+    margin: 0;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: url('../images/copy-icon.svg') center center no-repeat;
+
+    &.copy-to-clipboard-button__success {
+        color: green;
+        background: none;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    &:hover:not(.copy-to-clipboard-button__success) {
+        filter: var(--gg-orange-filter);
+    }
+}

@@ -1,0 +1,61 @@
+= Apache Ignite Documentation
+:toc:
+:toc-title:
+
+== Overview
+The Apache Ignite documentation is maintained in the repository with the code base, in the "/docs" subdirectory. The directory contains the source files, HTML templates and css styles.
+
+
+The Apache Ignite documentation is written in link:https://asciidoctor.org/docs/what-is-asciidoc/[asciidoc].
+The Asciidoc files are compiled into HTML pages and published to https://ignite.apache.org/docs.
+
+
+
+.Content of the “docs” directory
+[cols="1,4",opts="stretch"]
+|===
+| _docs  | The directory with .adoc files and code-snippets.
+| _config.yml | Jekyll configuration file.
+|===
+
+
+== Building the Docs Locally
+
+To build the docs locally, you can install `jekyll` and other dependencies on your machine, or you can use Jekyll docker image.
+
+=== Install Jekyll and Asciidoctor
+
+. Install Jekyll by following this instruction:  https://jekyllrb.com/docs/installation/[window=_blank]
+. In the “/docs” directory, run the following command:
++
+[source, shell]
+----
+$ bundle
+----
++
+This should install all dependencies, including `asciidoctor`.
+. Start jekyll:
++
+[source, shell]
+----
+$ bundle exec jekyll s
+----
+The command compiles the Asciidoc files into HTML pages and starts a local webserver.
+
+Open `http://localhost:4000/docs[window=_blank]` in your browser.
+
+=== Run with Docker
+
+The following command starts jekyll in a container and downloads all dependencies. Run the command in the “/docs” directory.
+
+[source, shell]
+----
+$ docker run -v "$PWD:/srv/jekyll" -p 4000:4000 jekyll/jekyll:latest jekyll s
+----
+
+Open `http://localhost:4000/docs[window=_blank]` in your browser.
+
+
+== How to Contribute
+
+TBD

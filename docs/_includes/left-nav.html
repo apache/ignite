@@ -1,0 +1,64 @@
+
+{% assign normalized_path = page.url | replace: ".html","" | remove_first: site.base_url %}
+{% if page.toc != false %}
+<nav class='left-nav' data-swiftype-index='false'>
+
+      {% for guide in site.data.toc %}
+        <li>
+            {% if guide.items %}
+
+            {% assign guide_class = 'collapsed' %}
+
+            {% capture submenu %}
+                {% for chapter in guide.items %}
+
+                    {% assign chapter_class = 'collapsed' %}
+                    {% if normalized_path == chapter.url %}
+                        {% assign guide_class = 'expanded' %}
+                        {% assign chapter_class = 'expanded' %}
+                    {% endif %}
+
+                    <li> 
+                        {% if chapter.items %}
+                            {% assign matching_items_count = chapter.items | where: 'url', normalized_path | size %}
+                            {% if matching_items_count != 0 %}
+                                {% assign chapter_class = 'expanded parent' %}
+                            {% endif %}
+                            <button
+                                type='button'
+                                class='{{chapter_class}} {% if normalized_path == chapter.url %}active{% endif %}'>{{chapter.title}}<img class="state-indicator" src="{{'assets/images/left-nav-arrow.svg' | relative_url}}"></button>
+                            <nav class="sub_pages {{chapter_class}}">
+
+                            {% for subpage in chapter.items %}
+                                  {% if normalized_path == subpage.url %}
+                                     {% assign guide_class = 'expanded' %}
+                                     {% assign chapter_class = 'expanded' %}
+                                  {% endif %}
+
+								  <li><a href="{{site.base_url}}{{subpage.url}}" class='{% if normalized_path == subpage.url %}active{% endif %}'>{{subpage.title}}</a></li>
+                            {% endfor %}
+                            </nav>
+                        {% else %}
+                            <a href="{{site.base_url}}{{chapter.url|relative_url}}"
+
+                                class='{% if normalized_path == chapter.url %}active{% endif %}'
+                            >{{chapter.title}}</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+              
+            {% endcapture %}
+
+			<button type='button' data-guide-url="{{guide.url}}" class='group-toggle {{guide_class}} {% if page.url contains guide.url %}parent{% endif %}'>{{guide.title}}<img class="state-indicator" src="{{'assets/images/left-nav-arrow.svg'|relative_url}}"></button>
+             <nav class='nav-group {{guide_class}}'>
+            {{ submenu }}         
+             </nav>   
+            {% else %}
+
+            <a href="{{site.base_url}}{{guide.url|relative_url}}" class='{% if guide.url == normalized_path %}active{% endif %}' >{{guide.title}}</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</nav>
+<div class="left-nav__overlay"></div>
+{% endif %}

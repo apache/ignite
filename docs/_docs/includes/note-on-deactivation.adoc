@@ -1,0 +1,5 @@
+[WARNING]
+====
+Deactivation deallocates all memory resources, including your application data, on all cluster nodes and disables public cluster API.
+If you have in-memory caches that are not backed up by a persistent storage (neither link:developers-guide/persistence/native-persistence[native persistent storage] nor link:developers-guide/persistence/external-storage[external storage]), you will lose the data and will have to repopulate these caches.
+====

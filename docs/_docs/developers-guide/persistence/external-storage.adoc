@@ -1,0 +1,210 @@
+= External Storage
+:javaFile: {javaCodeDir}/ExternalStorage.java
+
+== Overview
+
+You can use Ignite as a caching layer on top of an existing database such as an RDBMS or NoSQL databases, for example, Apache Cassandra or MongoDB.
+This use case accelerates the underlying database by employing in-memory processing.
+
+Ignite provides an out-of-the-box integration with Apache Cassandra.
+For other NoSQL databases for which integration is not available off-the-shelf, you can provide your own link:developers-guide/persistence/custom-cache-store[implementation of the `CacheStore` interface].
+
+The two main use cases where an external storage can be used include:
+
+* A caching layer to an existing database. In this scenario, you can dramatically improve the processing speed by loading data into memory. You can also bring SQL support to a database that does not have it (when all data is loaded into memory).
+
+* You want to persist the data in an external database (instead of using the link:developers-guide/persistence/native-persistence[native persistence]).
+
+image:images/3rd_party_persistence.png[]
+
+////////////////////////////////////////////////////////////////////////////////
+What follows is a java-specific documentation
+////////////////////////////////////////////////////////////////////////////////
+
+
+The `CacheStore` interface extends both `javax.cache.integration.CacheLoader` and `javax.cache.integration.CacheWriter`, which are used for _read-through_ and _write-through_ features respectively. You can also implement each of the interfaces individually and provide them to the cache configuration separately.
+
+NOTE: In addition to key-value operations, Ignite writes through the results of SQL INSERT, UPDATE, and MERGE queries. However, SELECT queries never read through data from the external database.
+
+=== Read-Through and Write-Through
+
+Read-through means that the data is read from the underlying persistent store if it is not available in the cache.
+Note that this is true only for get operations made through the key-value API; SELECT queries never read through data from the external database.
+To execute select queries, data must be preloaded from the database into the cache by calling the `loadCache()` method.
+
+Write-through means that the data is automatically persisted when it is updated in the cache.
+All read-through and write-through operations participate in cache transactions and are committed or rolled back as a whole.
+
+=== Write-Behind Caching
+
+In a simple write-through mode, each put and remove operation involves a corresponding request to the persistent store; therefore, the overall duration of the update operation might be relatively long. Additionally, an intensive cache update rate can cause an extremely high storage load.
+
+For such cases, you can enable the _write-behind_ mode, in which update operations are performed asynchronously. The key concept of this approach is to accumulate updates and asynchronously flush them to the underlying database as a bulk operation.
+You can trigger flushing of data based on time-based events (the maximum time that data entry can reside in the queue is limited), queue-size events (the queue is flushed when its size reaches some particular point), or both of them (whichever occurs first).
+
+[WARNING]
+====
+[discrete]
+=== Performance vs. Consistency
+
+Enabling write-behind caching increases performance by performing asynchronous updates, but this can lead to a potential drop in consistency as some updates could be lost due to node failures or crashes.
+
+====
+
+
+
+With the write-behind approach, only the last update to an entry is written to the underlying storage.
+If a cache entry with a key named `key1` is sequentially updated with values `value1`, `value2`, and `value3` respectively, then only a single store request for the `(key1, value3)` pair is propagated to the persistent store.
+
+[NOTE]
+====
+[discrete]
+=== Update Performance
+
+Batch operations are usually more efficient than a sequence of individual operations.
+You can exploit this feature by enabling batch operations in the write-behind mode.
+Update sequences of similar types (put or remove) can be grouped to a single batch.
+For example, if you put the pairs `(key1, value1)`, `(key2, value2)`, `(key3, value3)` into the cache sequentially, the three operations are batched into a single `CacheStore.putAll(...)` operation.
+====
+
+
+== RDBMS Integration
+
+To use an RDBMS as an underlying storage, you can use one of the following implementations of `CacheStore`.
+
+* `CacheJdbcPojoStore` -- stores objects as a set of fields using reflection. Use this implementation if you are adding Ignite on top of an existing database and want to use specific fields (or all of them) from the underlying table.
+* `CacheJdbcBlobStore` -- stores objects in the underlying database in the Blob format. This option is useful in scenarios when you use an external database as a persistent storage and want to store your data in a simple format.
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+To configure a `CacheStore`:
+
+. Add the JDBC driver of the database you are using to the classpath of your application.
+. Set the `CacheConfiguration.cacheStoreFactory` property of `CacheConfiguration` to use one of the implementation of `CacheStore`. You will need to provide connection parameters in `cacheStoreFactory`.
+
+Once the configuration is set, you can use the `IgniteCache.loadCache(...)` method to load the data from the database into the respective caches.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+Below are configuration examples for both implementations of `CacheStore`.
+
+
+=== CacheJdbcPojoStore
+
+With `CacheJdbcPojoStore`, you can store objects as a set of fields and can configure the mapping between table columns and objects fields via the configuration.
+
+ . Set the `CacheConfiguration.cacheStoreFactory` property to `org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory` and provide the following properties:
++
+--
+* `dataSourceBean` -- database connection credentials: URL, user, password.
+* `dialect` -- the class that implements the SQL dialect compatible with your database. 
+Ignite provides out-of-the-box implementations for MySQL, Oracle, H2, SQLServer, and DB2 databases. 
+These dialects can be found in the `org.apache.ignite.cache.store.jdbc.dialect` package of the Ignite distribution.
+* `types` -- this property is required to define mappings between the database table and the corresponding POJO (see POJO configuration example below).
+--
+. Optionally, configure link:developers-guide/SQL/sql-api#query-entities[query entities] if you want to execute SQL queries on the cache.
+
+The following example demonstrates how to configure an Ignite cache on top of a MySQL table. 
+The table has 2 columns: `id` (INTEGER) and `name` (VARCHAR), which are mapped to objects of the `Person` class.
+
+
+You can configure `CacheJdbcPojoStore` via both the XML configuration and Java code.
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/cache-jdbc-pojo-store.xml[tags=, indent=0]
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=pojo,indent=0]
+----
+--
+
+.Person Class
+[source,java]
+----
+include::{javaFile}[tag=person,indent=0]
+----
+
+=== CacheJdbcBlobStore
+`CacheJdbcBlobStore` stores objects in the underlying database in the blob format.
+It creates a table named 'ENTRIES', with the 'akey' and 'val' columns (both have the `binary` type).
+
+You can change the default table definition by providing a custom create table query and DML queries used to load, delete, and update the data.
+Refer to link:{javadoc_base_url}/org/apache/ignite/cache/store/jdbc/CacheJdbcBlobStore.html[CacheJdbcBlobStore] for details.
+
+In the example below, the objects of the Person class are stored as an array of bytes in a single column.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean id="mysqlDataSource" class="com.mysql.jdbc.jdbc2.optional.MysqlDataSource">
+  <property name="URL" value="jdbc:mysql://[host]:[port]/[database]"/>
+  <property name="user" value="YOUR_USER_NAME"/>
+  <property name="password" value="YOUR_PASSWORD"/>
+</bean>
+
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+   <property name="cacheConfiguration">
+     <list>
+       <bean class="org.apache.ignite.configuration.CacheConfiguration">
+           <property name="name" value="PersonCache"/>
+           <property name="cacheStoreFactory">
+             <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory">
+               <property name="dataSourceBean" value = "mysqlDataSource" />
+             </bean>
+           </property>
+       </bean>
+      </list>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=blob1,indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Loading Data
+
+After you configure the cache store and start the cluster, load the data from the database into your cluster as follows:
+
+[source,java]
+----
+include::{javaFile}[tag=blob2,indent=0]
+----
+
+== NoSQL Database Integration
+You can integrate Ignite with any NoSQL database by implementing the `CacheStore` interface.
+
+CAUTION: Even though Ignite supports distributed transactions, it doesn't make your NoSQL database transactional, unless the database supports transactions out of the box.
+
+
+=== Cassandra Integration
+
+Ignite provides an out-of-the-box implementation of `CacheStore` that enables you to use Apache Cassandra as a persistent storage. This implementation utilizes Cassandra's link:http://www.datastax.com/dev/blog/java-driver-async-queries[asynchronous queries] to provide high performance batch operations such as `loadAll()`, `writeAll()` and `deleteAll()`, and automatically creates all necessary tables and namespaces in Cassandra.
+
+////
+TODO
+Refer to the dedicated section on Cassandra integration for more information.
+////
+
+////
+== Implementing Custom CacheStore
+
+See link:developers-guide/advanced-topics/custom-cache-store[Implementing Custom Cache Store].
+////

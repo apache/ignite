@@ -1,0 +1,99 @@
+= Atomicity Modes
+
+By default, a cache supports only atomic operations, and bulk operations such as `putAll()` or `removeAll()` are executed as a sequence of individual puts and removes.
+You can enable transactional support and group multiple cache operations, on one or more keys, into a single atomic transaction.
+These operations are executed without any other interleaved operations on the specified keys, and either all succeed or all fail.
+There is no partial execution of the operations.
+
+To enable support for transactions for a cache, set the `atomicityMode` parameter in the cache configuration to `TRANSACTIONAL`.
+
+CAUTION: If you configure multiple caches within one link:developers-guide/configuring-caches/cache-groups[cache group], the caches must be either all atomic, or all transactional. You cannot have both TRANSACTIONAL and ATOMIC caches in one cache group.
+
+Ignite supports 3 atomicity modes, which are described in the following table.
+
+[cols="30%,70%",opts="autowidth"]
+|===
+| Atomicity Mode | Description
+
+| ATOMIC | The default mode. 
+All operations are performed atomically, one at a time. 
+Transactions are not supported. 
+The `ATOMIC` mode provides better performance by avoiding transactional locks, whilst providing data atomicity and consistency for each single operation. 
+Bulk writes, such as the `putAll(...)` and `removeAll(...)` methods, are not executed in one transaction and can partially fail. 
+If this happens, a `CachePartialUpdateException` is thrown and contains a list of keys for which the update failed. 
+| TRANSACTIONAL
+a| Enables support for ACID-compliant transactions executed via the key-value API. 
+SQL transactions are not supported. 
+Transactions in this mode can have different link:developers-guide/key-value-api/transactions#concurrency-modes-and-isolation-levels[concurrency modes and isolation levels]. 
+Enable this mode only if you need support for ACID-compliant operations. 
+For more information about transactions, see link:developers-guide/key-value-api/transactions[Performing Transactions].
+
+[NOTE]
+====
+[discrete]
+=== Performance Considerations
+The `TRANSACTIONAL` mode adds a performance cost to cache operations and should be enabled only if you need transactions.
+====
+
+| TRANSACTIONAL_SNAPSHOT
+
+a| An experimental mode that implements multiversion concurrency control (MVCC) and supports both key-value transactions and SQL transactions. See link:developers-guide/transactions/mvcc[Multiversion Concurrency Control] for details about and limitations of this mode.
+
+[WARNING]
+====
+MVCC implementation is in beta and should not be considered for production.
+====
+
+
+|===
+
+
+You can enable transactions for a cache in the cache configuration.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="cacheConfiguration">
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+            <property name="name" value="myCache"/>
+
+            <property name="atomicityMode" value="TRANSACTIONAL"/>
+        </bean>
+    </property>
+
+    <!-- Optional transaction configuration. -->
+    <property name="transactionConfiguration">
+        <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+            <!-- Configure TM lookup here. -->
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/PerformingTransactions.java[tags=enabling,!exclude,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration
+{
+    CacheConfiguration = new[]
+    {
+        new CacheConfiguration("txCache")
+        {
+            AtomicityMode = CacheAtomicityMode.Transactional
+        }
+    },
+    TransactionConfiguration = new TransactionConfiguration
+    {
+        DefaultTransactionConcurrency = TransactionConcurrency.Optimistic
+    }
+};
+----
+tab:C++[unsupported]
+--

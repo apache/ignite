@@ -1,0 +1,148 @@
+= Using Continuous Queries
+
+:javaFile: {javaCodeDir}/UsingContinuousQueries.java
+
+A continuous query is a query that monitors data modifications occurring in a cache.
+Once a continuous query is started, you get notified of all the data changes that fall into your query filter.
+
+All update events are propagated to the <<Local Listener,local listener>> that must be registered in the query.
+Continuous query implementation guarantees exactly once delivery of an event to the local listener.
+
+You can also specify a remote filter to narrow down the range of entries that are monitored for updates.
+
+[CAUTION]
+====
+[discrete]
+=== Continuous Queries and MVCC
+Continuous queries have a number of link:developers-guide/transactions/mvcc[functional limitations] when used with MVCC-enabled caches.
+====
+
+
+== Local Listener
+
+When a cache gets modified (an entry is inserted, updated, or deleted), an event is sent to the continuous query's local listener so that your application can react accordingly.
+The local listener is executed on the node that initiated the query.
+
+Note that the continuous query throws an exception if started without a local listener.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=localListener,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ContiniuosQueries.cs[tag=localListener,indent=0]
+----
+
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/continuous_query_listener.cpp[tag=continuous-query-listener,indent=0]
+----
+--
+
+== Initial Query
+
+You can specify an initial query that is executed before the continuous query gets registered in the cluster and before you start to receive updates.
+To specify an initial query, use the `ContinuousQuery.setInitialQuery(...)` method.
+
+Just like scan queries, a continuous query is executed via the `query()` method that returns a cursor. When an initial query is set, you can use that cursor to iterate over the results of the initial query.
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=initialQry,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/continuous_query.cpp[tag=continuous-query,indent=0]
+----
+--
+
+
+== Remote Filter
+
+This filter is executed for each updated key and evaluates whether the update should be propagated to the query's local listener.
+If the filter returns `true`, then the local listener is notified about the update.
+
+For redundancy reasons, the filter is executed for both primary and backup versions (if backups are configured) of the key.
+Because of this, a remote filter can be used as a remote listener for update events.
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=remoteFilter,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ContiniuosQueries.cs[tag=remoteFilter,indent=0]
+----
+
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/continuous_query_filter.cpp[tag=continuous-query-filter,indent=0]
+----
+--
+
+
+[NOTE]
+====
+In order to use remote filters, make sure the class definitions of the filters are available on the server nodes.
+You can do this in two ways:
+
+* Add the classes to the classpath of every server node;
+* link:developers-guide/peer-class-loading[Enable peer class loading].
+====
+
+
+== Remote Transformer
+
+By default, continuous queries send the whole updated object to the local listener. This can lead to excessive network usage, especially if the object is very large. Moreover, applications often need only a subset of fields of the object.
+
+To address these cases, you can use a continuous query with a transformer. A transformer is a function that is executed on remote nodes for every updated object and sends back only the results of the transformation.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=transformer,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+[NOTE]
+====
+In order to use transformers, make sure the class definitions of the transformers are available on the server nodes.
+You can do this in two ways:
+
+* Add the classes to the classpath of every server node;
+* link:developers-guide/peer-class-loading[Enable peer class loading].
+====
+
+
+== Examples
+
+The following application examples show typical usage of continuous queries.
+
+{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryExample.java[CacheContinuousQueryExample.java,window=_blank]
+
+{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousAsyncQueryExample.java[CacheContinuousAsyncQueryExample.java,window=_blank]
+
+{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryWithTransformerExample.java[CacheContinuousQueryWithTransformerExample.java,window=_blank]

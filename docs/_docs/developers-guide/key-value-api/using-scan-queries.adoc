@@ -1,0 +1,105 @@
+= Using Scan Queries
+
+:javaFile: {javaCodeDir}/UsingScanQueries.java
+:dotnetFile: code-snippets/dotnet/UsingScanQueries.cs
+// rewrite
+
+== Overview
+`IgniteCache` has several query methods, all of which receive a subclass of the `Query` class and return a `QueryCursor`.
+
+A `Query` represents an abstract paginated query to be executed on a cache.
+The page size is configurable via the `Query.setPageSize(...)` method (default is 1024).
+
+
+`QueryCursor` represents the query result set and allows for transparent page-by-page iteration.
+When a user starts iterating over the last page, `QueryCursos` automatically requests the next page in the background.
+For cases when pagination is not needed, you can use the `QueryCursor.getAll()` method, which fetchs the entries satisfying the query and store them in a collection.
+
+[NOTE]
+====
+[discrete]
+=== Closing Cursors
+Cursors close automatically when you call the `QueryCursor.getAll()` method. If you are iterating over the cursor in a for loop or explicitly getting an `Iterator`, you must close the cursor explicitly or use a  try-with-resources statement.
+====
+
+
+== Executing Scan Queries
+
+A scan query is a simple search query used to retrieve data from a cache in a distributed manner. When executed without parameters, a scan query returns all entries from the cache.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=scanQry,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=scanQry1,indent=0]
+----
+
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/scan_query.cpp[tag=query-cursor,indent=0]
+----
+--
+
+
+Scan queries return entries that match a predicate, if specified. The predicate is applied on the remote nodes.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=predicate,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=scanQry2,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Scan queries also support an optional transformer closure which lets you convert the entry on the server node before sending it back. This is useful, for example, when you want to fetch only several fields of a large object and want to minimize the network traffic. The example below shows how to fetch only the keys without sending the values.
+
+[tabs]
+--
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=transformer,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+== Local Scan Query
+
+By default, a scan query is distributed to all nodes.
+However, you can execute the query locally, in which case the query runs against the data stored on the local node (i.e. the node where the query is executed).
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=localQuery,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=scanQryLocal,indent=0]
+----
+tab:C++[]
+[source,cpp]
+----
+include::code-snippets/cpp/src/scan_query.cpp[tag=set-local,indent=0]
+----
+--

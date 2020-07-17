@@ -1,0 +1,28 @@
+Ignite clients come in several different flavors, each with various capabilities.
+link:developers-guide/SQL/JDBC/jdbc-driver[JDBC] and link:developers-guide/SQL/ODBC/odbc-driver[ODBC] drivers
+are useful for SQL-only applications and SQL-based tools. Thick and thin clients go beyond SQL capabilities and
+support many more APIs. Finally, ORM frameworks like Spring Data or Hibernate are also integrated with Ignite and
+can be used as an access point to your cluster.
+
+Let's review the difference between thick and thin clients by comparing their capabilities.
+
+*Thick* clients (client nodes) join the cluster via an internal protocol, receive all of the cluster-wide
+updates such as topology changes, are aware of data distribution, and can direct a query/operation to a server node
+that owns a required data set. Plus, thick clients support all of the Ignite APIs.
+
+*Thin* clients (aka. lightweight clients) connect to the cluster via binary protocol with a well-defined
+message format. This type of client supports a limited set of APIs (presently, key-value and SQL operations only) but
+in return:
+
+- Makes it easy to enable programming language support for Ignite. Java, .NET, C++, Python, Node.JS, and
+  PHP are supported out of the box.
+
+- Doesn't have any dependencies on JVM. For instance, .NET and C++ _thick_ clients have a richer feature set but
+  start and use JVM internally.
+
+- Requires at least one port opened on the cluster end. Note that more ports need to be opened if
+  partition-awareness is used for a thin client.
+
+TIP: The ODBC driver uses a protocol similar to the thin client's. As for the JDBC driver, it comes in two flavors -
+a thick version of the driver that utilizes a Java thick client internally and a thin counterpart, based on the thin
+client's protocol.

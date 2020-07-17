@@ -1,0 +1,504 @@
+= TCP/IP Discovery
+
+:javaFile: {javaCodeDir}/TcpIpDiscovery.java
+
+In an Ignite  cluster, nodes can discover each other by using `DiscoverySpi`.
+Ignite provides `TcpDiscoverySpi` as a default implementation of `DiscoverySpi` that uses TCP/IP for node discovery.
+Discovery SPI can be configured for Multicast and Static IP based node
+discovery.
+
+== Multicast IP Finder
+
+`TcpDiscoveryMulticastIpFinder` uses Multicast to discover other nodes
+and is the default IP finder. Here is an example of how to configure
+this finder via a Spring XML file or programmatically:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+          <property name="multicastGroup" value="228.10.10.157"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=multicast,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringTcpIpDiscovery.cs[tag=multicast,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Static IP Finder
+
+Static IP Finder, implemented in `TcpDiscoveryVmIpFinder`, allows you to specify a set of IP addresses and ports that will be checked for node discovery.
+
+You are only required to provide at least one IP address of a remote
+node, but usually it is advisable to provide 2 or 3 addresses of
+nodes that you plan to start in the future. Once a
+connection to any of the provided IP addresses is established, Ignite automatically discovers all other nodes.
+
+[TIP]
+====
+Instead of specifying addresses in the configuration, you can specify them in
+the `IGNITE_TCP_DISCOVERY_ADDRESSES` environment variable or in the system property
+with the same name. Addresses should be comma separated and may optionally contain
+a port range.
+====
+
+[TIP]
+====
+By default, the `TcpDiscoveryVmIpFinder` is used in the 'non-shared' mode. If you plan to start a server node, then in this mode the list of IP addresses should contain an address of the local node as well. In this case, the node will not wait until other nodes join the cluster; instead, it will become the first cluster node and start to operate normally.
+====
+
+You can configure the static IP finder via XML configuration or programmatically:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+          <property name="addresses">
+            <list>
+              <!--
+              Explicitly specifying address of a local node to let it start and
+              operate normally even if there is no more nodes in the cluster.
+              You can also optionally specify an individual port or port range.
+              -->
+              <value>1.2.3.4</value>
+
+              <!--
+              IP Address and optional port range of a remote node.
+              You can also optionally specify an individual port.
+              -->
+              <value>1.2.3.5:47500..47509</value>
+            </list>
+          </property>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=static,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringTcpIpDiscovery.cs[tag=static,indent=0]
+----
+
+tab:Shell[]
+[source,shell]
+----
+# The configuration should use TcpDiscoveryVmIpFinder without addresses specified:
+
+IGNITE_TCP_DISCOVERY_ADDRESSES=1.2.3.4,1.2.3.5:47500..47509 bin/ignite.sh -v config/default-config.xml
+----
+--
+
+
+
+
+== Multicast and Static IP Finder
+
+You can use both Multicast and Static IP based discovery together. In
+this case, in addition to any addresses received via multicast,
+`TcpDiscoveryMulticastIpFinder` can also work with a pre-configured list
+of static IP addresses, just like Static IP-Based Discovery described
+above. Here is an example of how to configure Multicast IP finder with
+static IP addresses:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+          <property name="multicastGroup" value="228.10.10.157"/>
+
+          <!-- list of static IP addresses-->
+          <property name="addresses">
+            <list>
+              <value>1.2.3.4</value>
+
+              <!--
+                  IP Address and optional port range.
+                  You can also optionally specify an individual port.
+              -->
+              <value>1.2.3.5:47500..47509</value>
+            </list>
+          </property>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=multicastAndStatic,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringTcpIpDiscovery.cs[tag=multicastAndStatic,indent=0]
+----
+
+tab:C++[unsupported]
+
+--
+
+
+== Isolated Clusters on Same Set of Machines
+
+Ignite allows you to start two isolated clusters on the same set of
+machines. This can be done if nodes from different clusters use non-intersecting local port ranges for `TcpDiscoverySpi` and `TcpCommunicationSpi`.
+
+Let’s say you need to start two isolated clusters on a single machine
+for testing purposes. For the nodes from the first cluster, you
+should use the following `TcpDiscoverySpi` and `TcpCommunicationSpi`
+configurations:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!--
+    Explicitly configure TCP discovery SPI to provide list of
+    initial nodes from the first cluster.
+    -->
+    <property name="discoverySpi">
+        <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <!-- Initial local port to listen to. -->
+            <property name="localPort" value="48500"/>
+
+            <!-- Changing local port range. This is an optional action. -->
+            <property name="localPortRange" value="20"/>
+
+            <!-- Setting up IP finder for this cluster -->
+            <property name="ipFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <property name="addresses">
+                        <list>
+                            <!--
+                            Addresses and port range of nodes from
+                            the first cluster.
+                            127.0.0.1 can be replaced with actual IP addresses
+                            or host names. Port range is optional.
+                            -->
+                            <value>127.0.0.1:48500..48520</value>
+                        </list>
+                    </property>
+                </bean>
+            </property>
+        </bean>
+    </property>
+
+    <!--
+    Explicitly configure TCP communication SPI changing local
+    port number for the nodes from the first cluster.
+    -->
+    <property name="communicationSpi">
+        <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+            <property name="localPort" value="48100"/>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=isolated1,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringTcpIpDiscovery.cs[tag=isolated1,indent=0]
+----
+
+tab:C++[unsupported]
+
+--
+
+
+For the nodes from the second cluster, the configuration might look like
+this:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!--
+    Explicitly configure TCP discovery SPI to provide list of initial
+    nodes from the second cluster.
+    -->
+    <property name="discoverySpi">
+        <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <!-- Initial local port to listen to. -->
+            <property name="localPort" value="49500"/>
+
+            <!-- Changing local port range. This is an optional action. -->
+            <property name="localPortRange" value="20"/>
+
+            <!-- Setting up IP finder for this cluster -->
+            <property name="ipFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <property name="addresses">
+                        <list>
+                            <!--
+                            Addresses and port range of the nodes from the second cluster.
+                            127.0.0.1 can be replaced with actual IP addresses or host names. Port range is optional.
+                            -->
+                            <value>127.0.0.1:49500..49520</value>
+                        </list>
+                    </property>
+                </bean>
+            </property>
+        </bean>
+    </property>
+
+    <!--
+    Explicitly configure TCP communication SPI changing local port number
+    for the nodes from the second cluster.
+    -->
+    <property name="communicationSpi">
+        <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+            <property name="localPort" value="49100"/>
+        </bean>
+    </property>
+</bean>
+
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=isolated2,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringTcpIpDiscovery.cs[tag=isolated2,indent=0]
+----
+
+tab:C++[unsupported]
+
+--
+
+As you can see from the configurations, the difference between them is minor — only port numbers for SPIs and IP finder vary.
+
+[TIP]
+====
+If you want the nodes from different clusters to be able to look for
+each other using the multicast protocol, replace
+`TcpDiscoveryVmIpFinder` with `TcpDiscoveryMulticastIpFinder` and set
+unique `TcpDiscoveryMulticastIpFinder.multicastGroups` in each
+configuration above.
+====
+
+[CAUTION]
+====
+[discrete]
+=== Persistence Files Location
+
+If the isolated clusters use Native Persistence, then every
+cluster has to store its persistence files under different paths in the
+file system. Refer to the link:developers-guide/persistence/native-persistence[Native Persistence documentation] to learn how you can change persistence related directories.
+====
+
+
+== JDBC-Based IP Finder
+NOTE: Not supported in .NET/C#/{cpp}.
+
+You can have your database be a common shared storage of initial IP addresses. With this IP finder, nodes will write their IP addresses to a database on startup. This is done via `TcpDiscoveryJdbcIpFinder`.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder">
+          <property name="dataSource" ref="ds"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- Configured data source instance. -->
+<bean id="ds" class="some.Datasource">
+
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=jdbc,indent=0]
+----
+
+tab:.NET/C#[unsupported]
+
+tab:C++[unsupported]
+
+--
+
+
+== Shared File System IP Finder
+
+NOTE: Not supported in .NET/C#/{cpp}.
+
+A shared file system can be used as a storage for nodes' IP addresses. The nodes will write their IP addresses to the file system on startup. This behavior is supported by `TcpDiscoverySharedFsIpFinder`.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="discoverySpi">
+        <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <property name="ipFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder">
+                  <property name="path" value="/var/ignite/addresses"/>
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=sharedFS,indent=0]
+----
+tab:.NET/C#[unsupported]
+tab:C++[unsupported]
+--
+
+== ZooKeeper IP Finder
+
+NOTE: Not supported in .NET/C#.
+
+To set up ZooKeeper IP finder use `TcpDiscoveryZookeeperIpFinder` (note that `ignite-zookeeper` module has to be enabled).
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <property name="discoverySpi">
+        <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <property name="ipFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder">
+                    <property name="zkConnectionString" value="127.0.0.1:2181"/>
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=zk,indent=0]
+----
+
+--
+
+== Failure Detection Timeout
+
+Failure detection timeout is used to determine how long a cluster node will wait before a connection to another node is considered "failed".
+
+Every node in a cluster is connected to every other node.
+When node A sends heartbeats and other system messages to node B, and node B does not reply in `failureDetectionTimeout` (in milliseconds), then node B will be removed from the cluster.
+This timeout is the easiest way to tune discovery SPI's failure detection feature depending on the network and hardware conditions of your environment.
+
+CAUTION: The timeout automatically controls configuration parameters of `TcpDiscoverySpi`, such as socket timeout, message acknowledgment timeout and others. If any of these parameters is set explicitly, then the failure timeout setting will be ignored.
+
+:ths: &#8239;
+
+The failure detection timeout can be set in the node configuration as shown in the example below.
+The default value is 10{ths}000 ms for server nodes and 30{ths}000 ms for client nodes.
+These values allow the discovery SPI to work reliably on most on-premise and containerized deployments.
+However, in stable low-latency networks, the parameter can be set to {tilde}200 milliseconds in order to detect and react to​ failures more quickly.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/tcp-ip-discovery.xml[tags=ignite-config;!discovery;failure-detection-timeout, indent=0]
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=failure-detection-timeout, indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+not ready yet
+----
+
+tab:C++[]
+[source,cpp]
+----
+not ready yet
+----
+
+--
+
+
+
+

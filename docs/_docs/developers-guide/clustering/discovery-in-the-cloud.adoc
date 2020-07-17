@@ -1,0 +1,256 @@
+= Discovery in the Cloud
+
+:javaFile: {javaCodeDir}/DiscoveryInTheCloud.java
+
+Nodes discovery on a cloud platform is usually proven to be more
+challenging because most virtual environments are subject to the
+following limitations:
+
+* Multicast is disabled;
+* TCP addresses change every time a new image is started.
+
+Although you can use TCP-based discovery in the absence of the
+Multicast, you still have to deal with constantly changing IP addresses.
+This causes a serious inconvenience and makes configurations based on
+static IPs virtually unusable in such environments.
+
+To mitigate the constantly changing IP addresses problem, Ignite supports a number of IP finders designed to work in the cloud:
+
+* Apache jclouds IP Finder
+* Amazon S3 IP Finder
+* Amazon ELB IP Finder
+* Google Cloud Storage IP Finder
+
+
+TIP: Cloud-based IP Finders allow you to create your configuration once and reuse it for all instances.
+
+== Apache jclouds IP Finder
+
+To mitigate the constantly changing IP addresses problem, Ignite supports automatic node discovery by utilizing Apache jclouds multi-cloud toolkit via `TcpDiscoveryCloudIpFinder`. 
+For information about Apache jclouds please refer to https://jclouds.apache.org[jclouds.apache.org].
+
+The IP finder forms nodes addresses by getting the private and public IP addresses of all virtual machines running on the cloud and adding a port number to them. 
+The port is the one that is set with either `TcpDiscoverySpi.setLocalPort(int)` or `TcpDiscoverySpi.DFLT_PORT`. 
+This way all the nodes can try to connect to any formed IP address and initiate automatic grid node discovery.
+
+Refer to https://jclouds.apache.org/reference/providers/#compute[Apache jclouds providers section] to get the list of supported cloud platforms.
+
+CAUTION: All virtual machines must start Ignite instances on the same port, otherwise they will not be able to discover each other using this IP finder.
+
+Here is an example of how to configure Apache jclouds based IP finder:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder">
+            <!-- Configuration for Google Compute Engine. -->
+            <property name="provider" value="google-compute-engine"/>
+            <property name="identity" value="YOUR_SERVICE_ACCOUNT_EMAIL"/>
+            <property name="credentialPath" value="PATH_YOUR_PEM_FILE"/>
+            <property name="zones">
+            <list>
+                <value>us-central1-a</value>
+                <value>asia-east1-a</value>
+            </list>
+            </property>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=jclouds,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+== Amazon S3 IP Finder
+
+Amazon S3-based discovery allows Ignite nodes to register their IP addresses on start-up in an Amazon S3 store. 
+This way other nodes can try to connect to any of the IP addresses stored in S3 and initiate automatic node discovery. 
+To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFindera` type of `ipFinder`.
+
+CAUTION: You must link:developers-guide/setup#enabling-modules[enable the 'ignite-aws' module].
+
+Here is an example of how to configure Amazon S3 based IP finder:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
+          <property name="awsCredentials" ref="aws.creds"/>
+          <property name="bucketName" value="YOUR_BUCKET_NAME"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- AWS credentials. Provide your access key ID and secret access key. -->
+<bean id="aws.creds" class="com.amazonaws.auth.BasicAWSCredentials">
+  <constructor-arg value="YOUR_ACCESS_KEY_ID" />
+  <constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=aws1,indent=0]
+----
+
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+You can also use *Instance Profile* for AWS credentials provider.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
+          <property name="awsCredentialsProvider" ref="aws.creds"/>
+          <property name="bucketName" value="YOUR_BUCKET_NAME"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- Instance Profile based credentials -->
+<bean id="aws.creds" class="com.amazonaws.auth.InstanceProfileCredentialsProvider">
+  <constructor-arg value="false" />
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=aws2,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+== Amazon ELB Based Discovery
+
+AWS ELB-based IP finder does not require nodes to register their IP
+addresses. The IP finder automatically fetches addresses of all the
+nodes connected under an ELB and uses them to connect to the cluster. To
+use ELB based automatic node discovery, you need to configure the
+`TcpDiscoveryElbIpFinder` type of `ipFinder`.
+
+Here is an example of how to configure Amazon ELB based IP finder:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinder">
+          <property name="credentialsProvider">
+              <bean class="com.amazonaws.auth.AWSStaticCredentialsProvider">
+                  <constructor-arg ref="aws.creds"/>
+              </bean>
+          </property>
+          <property name="region" value="YOUR_ELB_REGION_NAME"/>
+          <property name="loadBalancerName" value="YOUR_AWS_ELB_NAME"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- AWS credentials. Provide your access key ID and secret access key. -->
+<bean id="aws.creds" class="com.amazonaws.auth.BasicAWSCredentials">
+  <constructor-arg value="YOUR_ACCESS_KEY_ID" />
+  <constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=awsElb,indent=0]
+----
+
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+== Google Compute Discovery
+
+Ignite supports automatic node discovery by utilizing Google Cloud Storage store. 
+This mechanism is implemented in `TcpDiscoveryGoogleStorageIpFinder`. 
+On start-up, each node registers its IP address in the storage and discovers other nodes by reading the storage.
+
+IMPORTANT: To use `TcpDiscoveryGoogleStorageIpFinder`, enable the `ignite-gce` link:developers-guide/setup#enabling-modules[module] in your application.
+
+Here is an example of how to configure Google Cloud Storage based IP finder:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinder">
+          <property name="projectName" ref="YOUR_GOOGLE_PLATFORM_PROJECT_NAME"/>
+          <property name="bucketName" value="YOUR_BUCKET_NAME"/>
+          <property name="serviceAccountId" value="YOUR_SERVICE_ACCOUNT_ID"/>
+          <property name="serviceAccountP12FilePath" value="PATH_TO_YOUR_PKCS12_KEY"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=google,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
