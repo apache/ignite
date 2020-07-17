@@ -28,7 +28,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,7 +55,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -150,16 +148,18 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testRejectWhenNotAllBltNodesPresent() throws Exception {
+    public void testNotAllBltNodesPresent() throws Exception {
         startTestGrids(true);
 
         createEncryptedCache(grid(GRID_0), grid(GRID_1), cacheName(), null);
 
         stopGrid(GRID_1);
 
-        assertThrowsAnyCause(log, () -> {
-            return grid(GRID_0).encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
-        }, IgniteException.class, "Not all baseline nodes online [total=2, online=1]");
+        grid(GRID_0).encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        startGrid(GRID_1);
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
     }
 
     /** @throws Exception If failed. */
@@ -227,9 +227,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        int keyId = INITIAL_KEY_ID;
-
-        checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID, MAX_AWAIT_MILLIS);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid1);
 
@@ -275,19 +273,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             locHook.stopBlock();
         }
 
-        // If node fails during prepare phase, the cache group key identifier should not be changed.
-        if (prepare)
-            assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, null);
-        else {
-            keyId++;
-
-            fut.get(MAX_AWAIT_MILLIS);
-        }
+        fut.get(MAX_AWAIT_MILLIS);
 
         if (stopFut != null)
             stopFut.get();
 
-        checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         IgniteEx stoppedNode = startGrid(stopped);
 
@@ -295,11 +286,11 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         stoppedNode.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
 
-        checkGroupKey(grpId, keyId + 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 2, MAX_AWAIT_MILLIS);
     }
 
     /**

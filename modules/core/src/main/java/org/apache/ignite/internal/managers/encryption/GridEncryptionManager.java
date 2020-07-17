@@ -45,7 +45,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -54,13 +53,11 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -71,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -833,14 +829,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
 
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        int bltSize = discoCache.baselineNodes().size();
-        int bltOnline = discoCache.aliveBaselineNodes().size();
-
-        if (bltSize != bltOnline)
-            throw new IgniteException("Not all baseline nodes online [total=" + bltSize + ", online=" + bltOnline + "]");
-
         int[] grpIds = new int[cacheOrGrpNames.size()];
         byte[] keyIds = new byte[grpIds.length];
         byte[][] keys = new byte[grpIds.length][];
@@ -877,9 +865,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             n += 1;
         }
 
-        AffinityTopologyVersion curVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-        return grpKeyChangeProc.start(new ChangeCacheEncryptionRequest(grpIds, keys, keyIds, curVer));
+        return grpKeyChangeProc.start(new ChangeCacheEncryptionRequest(grpIds, keys, keyIds));
     }
 
     /**
@@ -1923,8 +1909,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         /** Cache group encyption key change prepare phase. */
         private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> prepareGKChangeProc =
-            new DistributedProcess<>(ctx, CACHE_GROUP_KEY_CHANGE_PREPARE, this::prepare, this::finishPrepare,
-                (id, req) -> new InitMessage<>(id, CACHE_GROUP_KEY_CHANGE_PREPARE, req), true);
+            new DistributedProcess<>(ctx, CACHE_GROUP_KEY_CHANGE_PREPARE, this::prepare, this::finishPrepare);
 
         /** Cache group encyption key change perform phase. */
         private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> performGKChangeProc =
@@ -2156,36 +2141,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
          */
         private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
             synchronized (opsMux) {
-                GroupKeyChangeFuture fut = grpKeyChangeFut;
-
-                if (!completeKeyChangeFuture(id, err, fut))
-                    return;
-
-                grpKeyChangeFut = null;
-
-                ChangeCacheEncryptionRequest req = fut.request();
-
-                AffinityTopologyVersion initVer = req.topologyVersion();
-
-                if (initVer.topologyVersion() == ctx.discovery().topologyVersion())
-                    return;
-
-                DiscoCache discoCache = ctx.discovery().discoCache();
-
-                Set<BaselineNode> bltNodes = new HashSet<>(discoCache.baselineNodes());
-
-                bltNodes.removeAll(discoCache.aliveBaselineNodes());
-
-                int[] keyIds = new int[req.keyIds().length];
-
-                for (int i = 0; i < req.keyIds().length; i++)
-                    keyIds[i] = req.keyIds()[i] & 0xff;
-
-                log.warning("Cache group key rotation may be incomplete on missed baseline nodes, " +
-                    "this node(s) should be preconfigured to re-join the cluster with the existing data [" +
-                    "nodes=" + F.viewReadOnly(bltNodes, BaselineNode::consistentId) +
-                    ", grps=" + Arrays.toString(req.groupIds()) +
-                    ", keyIds=" + Arrays.toString(keyIds) + "]");
+                completeKeyChangeFuture(id, err, grpKeyChangeFut);
             }
         }
     }

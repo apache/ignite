@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.encryption;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  * Change cache group encryption key request.
@@ -42,20 +41,15 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /** Key identifiers. */
     private final byte[] keyIds;
 
-    /** Initial topology version. */
-    private AffinityTopologyVersion topVer;
-
     /**
      * @param grpIds Cache group IDs.
      * @param keys Encryption keys.
      * @param keyIds Key identifiers.
-     * @param topVer Initial topology version.
      */
-    public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds, AffinityTopologyVersion topVer) {
+    public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds) {
         this.grpIds = grpIds;
         this.keys = keys;
         this.keyIds = keyIds;
-        this.topVer = topVer;
     }
 
     /**
@@ -83,13 +77,6 @@ public class ChangeCacheEncryptionRequest implements Serializable {
      * @return Key identifiers.
      */
     public byte[] keyIds() { return keyIds; }
-
-    /**
-     * @return Initial topology version.
-     */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

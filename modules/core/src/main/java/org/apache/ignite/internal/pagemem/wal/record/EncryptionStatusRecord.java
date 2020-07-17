@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

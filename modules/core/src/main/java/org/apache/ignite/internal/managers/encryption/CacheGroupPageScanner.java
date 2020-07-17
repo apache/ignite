@@ -197,7 +197,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     /**
      * @param grpId Cache group ID.
      */
-    public IgniteInternalFuture schedule(int grpId) throws IgniteCheckedException {
+    public IgniteInternalFuture<Void> schedule(int grpId) throws IgniteCheckedException {
         if (disabled)
             throw new IgniteCheckedException("Reencryption is disabled.");
 
@@ -207,7 +207,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
             if (log.isDebugEnabled())
                 log.debug("Skip reencryption, group was destroyed [grp=" + grpId + "]");
 
-            return new GridFinishedFuture();
+            return new GridFinishedFuture<>();
         }
 
         lock.lock();
