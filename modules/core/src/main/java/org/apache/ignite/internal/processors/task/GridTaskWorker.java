@@ -1001,15 +1001,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
 
             if (waitForAffTop && affFut != null) {
-                affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> fut0) {
-                        ctx.closure().runLocalSafe(new Runnable() {
-                            @Override public void run() {
-                                onResponse(failoverRes);
-                            }
-                        }, false);
-                    }
-                });
+                affFut.listen(future -> ctx.closure()
+                    .runLocalSafe(() -> onResponse(failoverRes), false)
+                );
             }
         }
     }

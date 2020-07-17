@@ -233,11 +233,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
                     info("Load keys: " + keys);
 
-                    wrapper.loadAll(keys, new IgniteBiInClosure<Integer, Integer>() {
-                        @Override public void apply(Integer integer, Integer integer2) {
-                            // No-op.
-                        }
-                    });
+                    wrapper.loadAll(keys, ((integer, integer2) -> {}));
                 }
             }
         }, threads, "load-thread");

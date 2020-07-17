@@ -931,11 +931,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
-        return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryType>() {
-            @Override public BinaryType apply(BinaryMetadataHolder metaHolder) {
-                return metaHolder.metadata().wrap(binaryCtx);
-            }
-        });
+        return F.viewReadOnly(metadataLocCache.values(), metaHolder -> metaHolder.metadata().wrap(binaryCtx));
     }
 
     /**
@@ -943,11 +939,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @throws BinaryObjectException on error.
      */
     public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
-        return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryMetadata>() {
-            @Override public BinaryMetadata apply(BinaryMetadataHolder metaHolder) {
-                return metaHolder.metadata();
-            }
-        });
+        return F.viewReadOnly(metadataLocCache.values(), BinaryMetadataHolder::metadata);
     }
 
     /**

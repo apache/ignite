@@ -55,12 +55,10 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    Ignite ignite = ignite(idx);
+            GridTestUtils.runMultiThreaded(idx -> {
+                Ignite ignite = ignite(idx);
 
-                    ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-                }
+                ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
             }, NODES, "cache-thread");
 
             minorVer++;
@@ -73,12 +71,10 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 }
             });
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    Ignite ignite = ignite(idx);
+            GridTestUtils.runMultiThreaded(idx -> {
+                Ignite ignite = ignite(idx);
 
-                    ignite.destroyCache(DEFAULT_CACHE_NAME);
-                }
+                ignite.destroyCache(DEFAULT_CACHE_NAME);
             }, NODES, "cache-thread");
 
             minorVer++;

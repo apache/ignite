@@ -49,7 +49,7 @@ public final class DistributedConfigurationUtils {
         if (property.get() == null) {
             try {
                 property.propagateAsync(null, value)
-                    .listen((IgniteInClosure<IgniteInternalFuture<?>>)future -> {
+                    .listen((IgniteInClosure<IgniteInternalFuture<?>>) future -> {
                         if (future.error() != null)
                             log.error("Cannot set default value of '" + property.getName() + '\'', future.error());
                     });

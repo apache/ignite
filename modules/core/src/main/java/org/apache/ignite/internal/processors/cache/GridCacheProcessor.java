@@ -3619,31 +3619,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 
-        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, byte[]>>>() {
-            @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> fut) {
-                try {
-                    Collection<byte[]> grpKeys = fut.result().get1();
-                    byte[] masterKeyDigest = fut.result().get2();
+        genEncKeyFut.listen(future -> {
+            try {
+                Collection<byte[]> grpKeys = future.result().get1();
+                byte[] masterKeyDigest = future.result().get2();
 
-                    if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
-                        res.onDone(false, fut.error());
+                if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
+                    res.onDone(false, future.error());
 
-                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
+                IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
 
-                    dynStartCacheFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                            try {
-                                res.onDone(fut.get(), fut.error());
-                            }
-                            catch (IgniteCheckedException e) {
-                                res.onDone(false, e);
-                            }
-                        }
-                    });
-                }
-                catch (Exception e) {
-                    res.onDone(false, e);
-                }
+                dynStartCacheFut.listen(fut -> {
+                    try {
+                        res.onDone(fut.get(), fut.error());
+                    }
+                    catch (IgniteCheckedException e) {
+                        res.onDone(false, e);
+                    }
+                });
+            }
+            catch (Exception e) {
+                res.onDone(false, e);
             }
         });
 

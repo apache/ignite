@@ -53,21 +53,18 @@ public class SecurityAwareTransformerFactory<E, R> extends
     @Override public IgniteClosure<E, R> create() {
         final IgniteClosure<E, R> cl = original.create();
 
-        return new IgniteClosure<E, R>() {
-            /** {@inheritDoc} */
-            @Override public R apply(E e) {
-                IgniteSecurity security = ignite.context().security();
+        return e -> {
+            IgniteSecurity security = ignite.context().security();
 
-                try (OperationSecurityContext c = security.withContext(subjectId)) {
-                    IgniteSandbox sandbox = security.sandbox();
+            try (OperationSecurityContext c = security.withContext(subjectId)) {
+                IgniteSandbox sandbox = security.sandbox();
 
-                    return sandbox.enabled() ? sandbox.execute(() -> cl.apply(e)) : cl.apply(e);
-                }
-                catch (AccessControlException ace) {
-                    logAccessDeniedMessage(ace);
+                return sandbox.enabled() ? sandbox.execute(() -> cl.apply(e)) : cl.apply(e);
+            }
+            catch (AccessControlException ace) {
+                logAccessDeniedMessage(ace);
 
-                    throw ace;
-                }
+                throw ace;
             }
         };
     }

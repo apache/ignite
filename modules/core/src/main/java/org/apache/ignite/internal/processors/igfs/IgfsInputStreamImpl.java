@@ -538,17 +538,15 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
                 if (!evictFut.isDone()) {
                     pendingFuts.add(evictFut);
 
-                    evictFut.listen(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
-                        @Override public void apply(IgniteInternalFuture<byte[]> t) {
-                            pendingFuts.remove(evictFut);
+                    evictFut.listen(future -> {
+                        pendingFuts.remove(evictFut);
 
-                            pendingFutsLock.lock();
+                        pendingFutsLock.lock();
 
-                            try {
-                                pendingFutsCond.signalAll();
-                            } finally {
-                                pendingFutsLock.unlock();
-                            }
+                        try {
+                            pendingFutsCond.signalAll();
+                        } finally {
+                            pendingFutsLock.unlock();
                         }
                     });
                 }

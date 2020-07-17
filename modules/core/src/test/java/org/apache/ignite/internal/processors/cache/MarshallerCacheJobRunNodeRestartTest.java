@@ -63,14 +63,12 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
                 }
             });
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer integer) {
-                    Ignite ignite = ignite(integer % 4);
+            GridTestUtils.runMultiThreaded(integer -> {
+                Ignite ignite = ignite(integer % 4);
 
-                    while (!fut.isDone()) {
-                        for (int i = 0; i < 10; i++)
-                            ignite.compute().broadcast(job(i));
-                    }
+                while (!fut.isDone()) {
+                    for (int j = 0; j < 10; j++)
+                        ignite.compute().broadcast(job(j));
                 }
             }, (NODES + 1) * 5, "test");
 

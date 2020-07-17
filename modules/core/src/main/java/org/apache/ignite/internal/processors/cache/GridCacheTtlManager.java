@@ -64,30 +64,28 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** */
     private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
-        new IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion>() {
-            @Override public void applyx(GridCacheEntryEx entry, GridCacheVersion obsoleteVer) {
-                boolean touch = !entry.isNear();
+        (entry, obsoleteVer) -> {
+            boolean touch = !entry.isNear();
 
-                while (true) {
-                    try {
-                        if (log.isTraceEnabled())
-                            log.trace("Trying to remove expired entry from cache: " + entry);
+            while (true) {
+                try {
+                    if (log.isTraceEnabled())
+                        log.trace("Trying to remove expired entry from cache: " + entry);
 
-                        if (entry.onTtlExpired(obsoleteVer))
-                            touch = false;
+                    if (entry.onTtlExpired(obsoleteVer))
+                        touch = false;
 
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        entry = entry.context().cache().entryEx(entry.key());
-
-                        touch = true;
-                    }
+                    break;
                 }
+                catch (GridCacheEntryRemovedException ignore) {
+                    entry = entry.context().cache().entryEx(entry.key());
 
-                if (touch)
-                    entry.touch();
+                    touch = true;
+                }
             }
+
+            if (touch)
+                entry.touch();
         };
 
     /** {@inheritDoc} */

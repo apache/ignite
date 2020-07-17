@@ -372,11 +372,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    synchronized (mux) {
-                        userFuts.remove(opId);
-                    }
+            fut.listen(future -> {
+                synchronized (mux) {
+                    userFuts.remove(opId);
                 }
             });
 
@@ -511,34 +509,32 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         assert cpFut != null;
 
         // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
-        cpFut.futureFor(FINISHED).listen(new IgniteInClosureX<IgniteInternalFuture>() {
-            @Override public void applyx(IgniteInternalFuture future) {
-                if (X.hasCause(future.error(), NodeStoppingException.class))
-                    return;
+        cpFut.futureFor(FINISHED).listen(future -> {
+            if (X.hasCause(future.error(), NodeStoppingException.class))
+                return;
 
-                for (Integer grpId0 : groupsToEnable) {
-                    try {
-                        cctx.database().walEnabled(grpId0, true, true);
-                    }
-                    catch (Exception e) {
-                        if (!X.hasCause(e, NodeStoppingException.class))
-                            throw e;
-                    }
-
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
-
-                    if (grp != null)
-                        grp.topology().ownMoving(lastGroupTop);
-                    else if (log.isDebugEnabled())
-                        log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
+            for (Integer grpId0 : groupsToEnable) {
+                try {
+                    cctx.database().walEnabled(grpId0, true, true);
+                }
+                catch (Exception e) {
+                    if (!X.hasCause(e, NodeStoppingException.class))
+                        throw e;
                 }
 
-                if (log.isDebugEnabled())
-                    log.debug("Refresh partitions due to rebalance finished");
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                // Trigger exchange for switching to ideal assignment when all nodes are ready.
-                cctx.exchange().refreshPartitions();
+                if (grp != null)
+                    grp.topology().ownMoving(lastGroupTop);
+                else if (log.isDebugEnabled())
+                    log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Refresh partitions due to rebalance finished");
+
+            // Trigger exchange for switching to ideal assignment when all nodes are ready.
+            cctx.exchange().refreshPartitions();
         });
     }
 

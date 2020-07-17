@@ -68,22 +68,11 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
         for (int i = 0; i < MAX / 10; i++)
             l.add(i);
 
-        IgniteClosure<Integer, Integer> c = new IgniteClosure<Integer, Integer>() {
-            @Override public Integer apply(Integer e) {
-                return e;
-            }
-        };
+        IgniteClosure<Integer, Integer> c = e -> e;
 
-        IgnitePredicate<Integer> p1 = new IgnitePredicate<Integer>() {
-            @Override public boolean apply(Integer e) {
-                return e % 2 == 0;
-            }
-        };
-        IgnitePredicate<Integer> p2 = new IgnitePredicate<Integer>() {
-            @Override public boolean apply(Integer e) {
-                return e % 2 != 0;
-            }
-        };
+        IgnitePredicate<Integer> p1 = e -> e % 2 == 0;
+
+        IgnitePredicate<Integer> p2 = e -> e % 2 != 0;
 
         GridIterator<Integer> iter = F.iterator(l, c, true, p1, p2);
 

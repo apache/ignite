@@ -428,16 +428,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             }
         }
 
-        curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                try {
-                    fut.get();
+        curFut.listen(future -> {
+            try {
+                future.get();
 
-                    rollbackAsyncSafe(onTimeout);
-                }
-                catch (IgniteCheckedException e) {
-                    doFinish(false, false);
-                }
+                rollbackAsyncSafe(onTimeout);
+            }
+            catch (IgniteCheckedException e) {
+                doFinish(false, false);
             }
         });
     }

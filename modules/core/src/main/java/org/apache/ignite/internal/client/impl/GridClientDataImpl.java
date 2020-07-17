@@ -112,12 +112,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(key, "key");
         A.notNull(val, "val");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cachePut(cacheName, key, val, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cachePut(cacheName, key, val, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -134,12 +130,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
         K key = GridClientUtils.first(entries.keySet());
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cachePutAll(cacheName, entries, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) ->  conn.cachePutAll(cacheName, entries, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -151,12 +143,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     @Override public <K, V> GridClientFuture<V> getAsync(final K key) {
         A.notNull(key, "key");
 
-        return withReconnectHandling(new ClientProjectionClosure<V>() {
-            @Override public GridClientFuture<V> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheGet(cacheName, key, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheGet(cacheName, key, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -173,12 +161,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
         K key = GridClientUtils.first(keys);
 
-        return withReconnectHandling(new ClientProjectionClosure<Map<K, V>>() {
-            @Override public GridClientFuture<Map<K, V>> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheGetAll(cacheName, keys, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheGetAll(cacheName, keys, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -190,12 +174,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     @Override public <K> GridClientFuture<Boolean> removeAsync(final K key) {
         A.notNull(key, "key");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheRemove(cacheName, key, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheRemove(cacheName, key, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -212,12 +192,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
         K key = GridClientUtils.first(keys);
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheRemoveAll(cacheName, keys, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheRemoveAll(cacheName, keys, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -230,12 +206,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(key, "key");
         A.notNull(val, "val");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheReplace(cacheName, key, val, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheReplace(cacheName, key, val, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -247,12 +219,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     @Override public <K, V> GridClientFuture<Boolean> casAsync(final K key, final V val1, final V val2) {
         A.notNull(key, "key");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheCompareAndSet(cacheName, key, val1, val2, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheCompareAndSet(cacheName, key, val1, val2, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -284,24 +252,16 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
     /** {@inheritDoc} */
     @Override public GridClientFuture<GridClientDataMetrics> metricsAsync() {
-        GridClientFuture<GridClientDataMetrics> fut = withReconnectHandling(
-            new ClientProjectionClosure<GridClientDataMetrics>() {
-                @Override public GridClientFuture<GridClientDataMetrics> apply(
-                    GridClientConnection conn, UUID affinityNodeId)
-                    throws GridClientConnectionResetException, GridClientClosedException {
-                    return conn.cacheMetrics(cacheName, affinityNodeId);
-                }
-            });
+        GridClientFuture<GridClientDataMetrics> fut = withReconnectHandling((conn, affinityNodeId) ->
+            conn.cacheMetrics(cacheName, affinityNodeId));
 
         if (cacheMetrics)
-            fut.listen(new GridClientFutureListener<GridClientDataMetrics>() {
-                @Override public void onDone(GridClientFuture<GridClientDataMetrics> fut) {
-                    try {
-                        metrics = fut.get();
-                    }
-                    catch (GridClientException ignored) {
-                        // It's just a cache, so ignore failures.
-                    }
+            fut.listen(future -> {
+                try {
+                    metrics = fut.get();
+                }
+                catch (GridClientException ignored) {
+                    // It's just a cache, so ignore failures.
                 }
             });
 
@@ -323,12 +283,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(key, "key");
         A.notNull(val, "val");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cacheAppend(cacheName, key, val, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cacheAppend(cacheName, key, val, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */
@@ -342,12 +298,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(key, "key");
         A.notNull(val, "val");
 
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn,
-                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.cachePrepend(cacheName, key, val, flags, destNodeId);
-            }
-        }, cacheName, key);
+        return withReconnectHandling((conn, destNodeId) -> conn.cachePrepend(cacheName, key, val, flags, destNodeId),
+            cacheName, key);
     }
 
     /** {@inheritDoc} */

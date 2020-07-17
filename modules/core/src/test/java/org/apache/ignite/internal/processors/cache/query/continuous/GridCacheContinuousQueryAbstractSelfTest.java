@@ -1327,14 +1327,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }));
 
         qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
-            new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, T2<Integer, Integer>>() {
-                @Override public T2<Integer, Integer> apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-                    T2<Integer, Integer> res = new T2<>();
+            event -> {
+                T2<Integer, Integer> res = new T2<>();
 
-                    res.put(evt.getKey(), evt.getValue());
+                res.put(event.getKey(), event.getValue());
 
-                    return res;
-                }
+                return res;
             }));
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {

@@ -1487,11 +1487,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         log.info("Stop nodes.");
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                stopGrid(idx);
-            }
-        }, NODES, "stopThread");
+        GridTestUtils.runMultiThreaded(idx -> stopGrid(idx), NODES, "stopThread");
     }
 
     /**

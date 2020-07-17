@@ -1899,11 +1899,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         Collection<CacheEntryEvent<? extends K, ? extends V>> acc) {
 
         IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent> transformer =
-            new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent>() {
-                @Override public CacheEntryEvent apply(CacheEntryEvent<? extends K, ? extends V> event) {
-                    return event;
-                }
-            };
+            event -> event;
 
         ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry0 =
             (ContinuousQueryWithTransformer<K, V, CacheEntryEvent>)qry;

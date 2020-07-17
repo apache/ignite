@@ -106,81 +106,77 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
                     return PARTITION_ID_2;
                 }
             }, BACKUPS, NODES_CNT,
-            new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
-                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> txTop) {
-                    return new TxCallbackAdapter() {
-                        /** */
-                        private Queue<Integer> prepOrder = new ConcurrentLinkedQueue<Integer>();
+            transactionTop -> new TxCallbackAdapter() {
+                /** */
+                private Queue<Integer> prepOrder = new ConcurrentLinkedQueue<Integer>();
 
-                        {
-                            prepOrder.add(0);
-                            prepOrder.add(1);
-                            prepOrder.add(2);
-                        }
+                {
+                    prepOrder.add(0);
+                    prepOrder.add(1);
+                    prepOrder.add(2);
+                }
 
-                        /** */
-                        private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
+                /** */
+                private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
 
-                        /** {@inheritDoc} */
-                        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
-                            GridFutureAdapter<?> proceedFut) {
-                            if (txTop.get(PARTITION_ID).get1() == primary) { // Order prepare for part1
-                                runAsync(() -> {
-                                    prepFuts.put(nearXidVer, proceedFut);
+                /** {@inheritDoc} */
+                @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
+                    GridFutureAdapter<?> proceedFut) {
+                    if (transactionTop.get(PARTITION_ID).get1() == primary) { // Order prepare for part1
+                        runAsync(() -> {
+                            prepFuts.put(nearXidVer, proceedFut);
 
-                                    // Order prepares.
-                                    if (prepFuts.size() == SIZES.length) { // Wait until all prep requests queued and force prepare order.
-                                        prepFuts.remove(version(prepOrder.poll())).onDone();
-                                    }
-                                });
+                            // Order prepares.
+                            if (prepFuts.size() == SIZES.length) { // Wait until all prep requests queued and force prepare order.
+                                prepFuts.remove(version(prepOrder.poll())).onDone();
+                            }
+                        });
 
-                                return true;
+                        return true;
+                    }
+
+                    return order(nearXidVer) != finishedTxIdx; // Delay txs 0 and 1 preparation for part2, allow tx 2 to finish.
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+                    GridFutureAdapter<?> proceedFut) {
+                    if (transactionTop.get(PARTITION_ID).get1() == primary) {
+                        runAsync(() -> {
+                            log.info("TX: Prepared part1: " + order(nearXidVer));
+
+                            if (prepOrder.isEmpty()) {
+                                log.info("TX: All prepared part1");
+
+                                try {
+                                    assertTrue(U.await(commitLatch, 30, TimeUnit.SECONDS));
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    fail();
+                                }
+
+                                // fail primary for second partition and trigger rollback for prepared transactions on
+                                // when txs for part1 are fully prepared and tx with idx=finishedTxIdx was committed.
+                                stopGrid(skipCheckpoint, transactionTop.get(PARTITION_ID_2).get1().name());
+
+                                TestRecordingCommunicationSpi.stopBlockAll();
+
+                                return;
                             }
 
-                            return order(nearXidVer) != finishedTxIdx; // Delay txs 0 and 1 preparation for part2, allow tx 2 to finish.
-                        }
+                            prepFuts.remove(version(prepOrder.poll())).onDone();
+                        });
+                    }
 
-                        /** {@inheritDoc} */
-                        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
-                            GridFutureAdapter<?> proceedFut) {
-                            if (txTop.get(PARTITION_ID).get1() == primary) {
-                                runAsync(() -> {
-                                    log.info("TX: Prepared part1: " + order(nearXidVer));
+                    return order(nearXidVer) != finishedTxIdx; // Delay final preparation for tx[0] and tx[1]
+                }
 
-                                    if (prepOrder.isEmpty()) {
-                                        log.info("TX: All prepared part1");
+                @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
+                    GridFutureAdapter<?> proceedFut) {
 
-                                        try {
-                                            assertTrue(U.await(commitLatch, 30, TimeUnit.SECONDS));
-                                        }
-                                        catch (IgniteInterruptedCheckedException e) {
-                                            fail();
-                                        }
+                    commitLatch.countDown();
 
-                                        // fail primary for second partition and trigger rollback for prepared transactions on
-                                        // when txs for part1 are fully prepared and tx with idx=finishedTxIdx was committed.
-                                        stopGrid(skipCheckpoint, txTop.get(PARTITION_ID_2).get1().name());
-
-                                        TestRecordingCommunicationSpi.stopBlockAll();
-
-                                        return;
-                                    }
-
-                                    prepFuts.remove(version(prepOrder.poll())).onDone();
-                                });
-                            }
-
-                            return order(nearXidVer) != finishedTxIdx; // Delay final preparation for tx[0] and tx[1]
-                        }
-
-                        @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
-                            GridFutureAdapter<?> proceedFut) {
-
-                            commitLatch.countDown();
-
-                            return super.afterPrimaryFinish(primary, nearXidVer, proceedFut);
-                        }
-                    };
+                    return super.afterPrimaryFinish(primary, nearXidVer, proceedFut);
                 }
             },
             SIZES);

@@ -386,11 +386,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             if (topWaitFut != null) {
                 // Need call 'listen' after topology read lock is released.
-                topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                        localUpdate(nodeId, req, updater, topic);
-                    }
-                });
+                topWaitFut.listen(future -> localUpdate(nodeId, req, updater, topic));
 
                 return;
             }

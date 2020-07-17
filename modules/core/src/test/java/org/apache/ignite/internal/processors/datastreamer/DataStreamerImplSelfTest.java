@@ -309,20 +309,18 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
-        ldr.addData(entries).listen(new IgniteInClosure<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> future) {
-                try {
-                    future.get();
+        ldr.addData(entries).listen((IgniteInClosure<IgniteFuture<?>>) future -> {
+            try {
+                future.get();
 
-                    for (int i = 0; i < 100; i++)
-                        assertEquals("" + i, cache.get(i));
-                }
-                catch (Throwable e) {
-                    ex.set(e);
-                }
-
-                latch.countDown();
+                for (int i = 0; i < 100; i++)
+                    assertEquals("" + i, cache.get(i));
             }
+            catch (Throwable e) {
+                ex.set(e);
+            }
+
+            latch.countDown();
         });
 
         ldr.tryFlush();

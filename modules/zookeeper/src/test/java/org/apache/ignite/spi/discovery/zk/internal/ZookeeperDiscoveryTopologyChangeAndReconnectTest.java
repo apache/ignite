@@ -181,14 +181,12 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
                             idxs.add(startedNodes.get(stopIdx));
                     }
 
-                    GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                        @Override public void apply(Integer threadIdx) {
-                            int stopNodeIdx = idxs.get(threadIdx);
+                    GridTestUtils.runMultiThreaded(threadIdx -> {
+                        int stopNodeIdx = idxs.get(threadIdx);
 
-                            info("Stop node: " + stopNodeIdx);
+                        info("Stop node: " + stopNodeIdx);
 
-                            stopGrid(stopNodeIdx);
-                        }
+                        stopGrid(stopNodeIdx);
                     }, stopNodes, "stop-node");
 
                     startedNodes.removeAll(idxs);

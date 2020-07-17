@@ -315,13 +315,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinitySimpleSequentialStartNoCacheOnCoordinator() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
-                    return null;
+        cacheC = igniteInstanceName -> {
+            if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
+                return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
+            return new CacheConfiguration[]{cacheConfiguration()};
         };
 
         cacheNodeFilter = new TestCacheNodeExcludingFilter(F.asList(getTestIgniteInstanceName(0)));
@@ -336,13 +334,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinitySimpleNoCacheOnCoordinator1() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-                    return null;
+        cacheC = igniteInstanceName -> {
+            if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
+                return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
+            return new CacheConfiguration[]{cacheConfiguration()};
         };
 
         cacheNodeFilter = new TestCacheNodeExcludingFilter(F.asList(getTestIgniteInstanceName(1)));
@@ -379,14 +375,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
         try {
-            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-                @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                    if (igniteInstanceName.equals(getTestIgniteInstanceName(1)) ||
-                        igniteInstanceName.equals(getTestIgniteInstanceName(2)))
-                        return null;
+            cacheC = igniteInstanceName -> {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)) ||
+                    igniteInstanceName.equals(getTestIgniteInstanceName(2)))
+                    return null;
 
-                    return new CacheConfiguration[]{cacheConfiguration()};
-                }
+                return new CacheConfiguration[]{cacheConfiguration()};
             };
 
             cacheNodeFilter = new TestCacheNodeExcludingFilter(F.asList(getTestIgniteInstanceName(1), getTestIgniteInstanceName(2)));
@@ -462,13 +456,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateCloseClientCacheOnCoordinator2() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
-                    return null;
+        cacheC = igniteInstanceName -> {
+            if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
+                return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
+            return new CacheConfiguration[]{cacheConfiguration()};
         };
 
         cacheNodeFilter = new TestCacheNodeExcludingFilter(F.asList(getTestIgniteInstanceName(0)));
@@ -877,11 +869,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(2, 3);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String nodeName) {
-                return null;
-            }
-        };
+        cacheC = nodeName -> null;
 
         Ignite client = startClient(3, 4);
 
@@ -1098,22 +1086,20 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private void testSinglePartitionCacheNodeLeft(boolean ownerLeft) throws Exception {
         String cacheName = "single-partitioned";
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                CacheConfiguration ccfg = new CacheConfiguration();
+        cacheC = igniteInstanceName -> {
+            CacheConfiguration ccfg = new CacheConfiguration();
 
-                AffinityFunction aff;
+            AffinityFunction aff;
 
-                ccfg.setName(cacheName);
-                ccfg.setWriteSynchronizationMode(FULL_SYNC);
-                ccfg.setBackups(0);
+            ccfg.setName(cacheName);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setBackups(0);
 
-                aff = ownerLeft ? affinityFunction(1) : new MapSinglePartitionToSecondNodeAffinityFunction();
+            aff = ownerLeft ? affinityFunction(1) : new MapSinglePartitionToSecondNodeAffinityFunction();
 
-                ccfg.setAffinity(aff);
+            ccfg.setAffinity(aff);
 
-                return new CacheConfiguration[] {ccfg};
-            }
+            return new CacheConfiguration[] {ccfg};
         };
 
         int top = 0;
@@ -1864,11 +1850,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         for (int i = 0; i < clients; i++)
             startClient(topVer, ++topVer);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String nodeName) {
-                return null;
-            }
-        };
+        cacheC = nodeName -> null;
 
         startServer(topVer, ++topVer);
 
@@ -2118,31 +2100,27 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStartStaticCaches(boolean withClients) throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                int caches = getTestIgniteInstanceIndex(igniteInstanceName) + 1;
+        cacheC = igniteInstanceName -> {
+            int caches = getTestIgniteInstanceIndex(igniteInstanceName) + 1;
 
-                CacheConfiguration[] ccfgs = new CacheConfiguration[caches];
+            CacheConfiguration[] ccfgs = new CacheConfiguration[caches];
 
-                for (int i = 0; i < caches; i++) {
-                    CacheConfiguration ccfg = cacheConfiguration();
+            for (int i = 0; i < caches; i++) {
+                CacheConfiguration ccfg = cacheConfiguration();
 
-                    ccfg.setName("cache-" + i);
+                ccfg.setName("cache-" + i);
 
-                    ccfgs[i] = ccfg;
-                }
-
-                return ccfgs;
+                ccfgs[i] = ccfg;
             }
+
+            return ccfgs;
         };
 
         if (withClients) {
-            clientC = new IgniteClosure<String, Boolean>() {
-                @Override public Boolean apply(String igniteInstanceName) {
-                    int idx = getTestIgniteInstanceIndex(igniteInstanceName);
+            clientC = igniteInstanceName -> {
+                int idx = getTestIgniteInstanceIndex(igniteInstanceName);
 
-                    return idx % 3 == 2;
-                }
+                return idx % 3 == 2;
             };
         }
 
@@ -2249,24 +2227,22 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         final AtomicBoolean fail = new AtomicBoolean();
 
-        spiC = new IgniteClosure<String, TestRecordingCommunicationSpi>() {
-            @Override public TestRecordingCommunicationSpi apply(String s) {
-                TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
+        spiC = s -> {
+            TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg instanceof GridDhtForceKeysRequest || msg instanceof GridDhtForceKeysResponse) {
-                            fail.set(true);
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    if (msg instanceof GridDhtForceKeysRequest || msg instanceof GridDhtForceKeysResponse) {
+                        fail.set(true);
 
-                            U.dumpStack(log, "Unexpected message: " + msg);
-                        }
-
-                        return false;
+                        U.dumpStack(log, "Unexpected message: " + msg);
                     }
-                });
 
-                return spi;
-            }
+                    return false;
+                }
+            });
+
+            return spi;
         };
 
         final int SRVS = 3;
@@ -2348,11 +2324,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStreamer1() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return null;
-            }
-        };
+        cacheC = s -> null;
 
         startServer(0, 1);
 
@@ -2504,11 +2476,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (!DEFAULT_CACHE_NAME.equals(cacheName)) {
             final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
-            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-                @Override public CacheConfiguration[] apply(String s) {
-                    return new CacheConfiguration[]{ccfg};
-                }
-            };
+            cacheC = s -> new CacheConfiguration[]{ccfg};
 
             caches.add(cacheName);
         }

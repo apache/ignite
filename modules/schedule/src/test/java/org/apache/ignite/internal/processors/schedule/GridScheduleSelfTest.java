@@ -156,37 +156,23 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             //noinspection ThrowableNotThrown
             assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    fut0.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-                        @Override public void apply(IgniteFuture<?> fut) {
-                            // No-op
-                        }
-                    }, null);
+                    fut0.listenAsync(future -> {}, null);
 
                     return null;
                 }
             }, NullPointerException.class, null);
 
-            fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> fut) {
-                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+            fut.listenAsync(future -> {
+                assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
 
-                    notifyCnt.incrementAndGet();
-                }
+                notifyCnt.incrementAndGet();
             }, exec);
 
             //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    fut0.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
-                        @Override public String apply(IgniteFuture<?> fut) {
-                            // No-op
+            assertThrows(log, () -> {
+                fut0.chainAsync(future -> null, null);
 
-                            return null;
-                        }
-                    }, null);
-
-                    return null;
-                }
+                return null;
             }, NullPointerException.class, null);
 
             IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {

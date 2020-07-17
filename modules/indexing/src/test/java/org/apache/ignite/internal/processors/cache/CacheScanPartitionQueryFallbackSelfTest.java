@@ -505,11 +505,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                 }
             });
 
-        return new HashSet<>(F.transform(owningParts, new IgniteClosure<GridDhtLocalPartition, Integer>() {
-            @Override public Integer apply(GridDhtLocalPartition part) {
-                return part.id();
-            }
-        }));
+        return new HashSet<>(F.transform(owningParts, GridDhtLocalPartition::id));
     }
 
     /**

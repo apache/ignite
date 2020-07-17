@@ -377,11 +377,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
                 final Map<Integer, String> answer = new HashMap<>();
 
-                F.forEach(map.keySet(), new IgniteInClosure<String>() {
-                    @Override public void apply(String s) {
-                        answer.put(Integer.parseInt(s), map.get(s));
-                    }
-                });
+                F.forEach(map.keySet(), s -> answer.put(Integer.parseInt(s), map.get(s)));
 
                 return answer;
             }

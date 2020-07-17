@@ -104,12 +104,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * They are already transformed so we simply return transformed value for event.
      */
     private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
-        new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, Object>() {
-            @Override public Object apply(CacheEntryEvent<? extends K, ? extends V> evt) {
-                assert evt.getKey() == null;
+        event -> {
+            assert event.getKey() == null;
 
-                return evt.getValue();
-            }
+            return event.getValue();
         };
 
     /** Cache name. */

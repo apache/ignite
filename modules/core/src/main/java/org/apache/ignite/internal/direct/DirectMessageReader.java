@@ -59,11 +59,7 @@ public class DirectMessageReader implements MessageReader {
      * @param protoVer Protocol version.
      */
     public DirectMessageReader(final MessageFactory msgFactory, final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-            @Override public StateItem apply() {
-                return new StateItem(msgFactory, protoVer);
-            }
-        });
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(msgFactory, protoVer));
 
         this.protoVer = protoVer;
     }

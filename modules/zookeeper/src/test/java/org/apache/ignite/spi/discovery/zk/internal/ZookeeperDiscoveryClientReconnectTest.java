@@ -155,11 +155,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
             info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
 
             for (int i = 0; i < restarts; i++) {
-                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                    @Override public void apply(Integer threadIdx) {
-                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                    }
-                }, srvs, "stop-server");
+                GridTestUtils.runMultiThreaded(threadIdx -> stopGrid(getTestIgniteInstanceName(threadIdx), true, false), srvs, "stop-server");
 
                 startGridsMultiThreaded(0, srvs);
             }

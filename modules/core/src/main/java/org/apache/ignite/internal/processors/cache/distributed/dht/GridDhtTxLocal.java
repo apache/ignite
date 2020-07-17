@@ -447,11 +447,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                      */
                     final IgniteInternalFuture finalPrepFut = prepFut;
 
-                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> ignored) {
-                            finishTx(false, finalPrepFut, fut);
-                        }
-                    });
+                    lockFut.listen(ignored -> finishTx(false, finalPrepFut, fut));
 
                     return;
                 }

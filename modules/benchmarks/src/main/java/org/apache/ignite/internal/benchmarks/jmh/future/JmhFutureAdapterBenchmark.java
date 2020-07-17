@@ -36,12 +36,7 @@ import org.openjdk.jmh.annotations.Threads;
  */
 public class JmhFutureAdapterBenchmark extends JmhAbstractBenchmark {
     /** */
-    private static final IgniteInClosure<IgniteInternalFuture<Long>> LSNR = new IgniteInClosure<IgniteInternalFuture<Long>>() {
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteInternalFuture<Long> fut) {
-            // No-op
-        }
-    };
+    private static final IgniteInClosure<IgniteInternalFuture<Long>> LSNR = future -> {};
 
     /** */
     private static final Long RES = 0L;

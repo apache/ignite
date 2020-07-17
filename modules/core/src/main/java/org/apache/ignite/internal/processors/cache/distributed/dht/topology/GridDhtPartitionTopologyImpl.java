@@ -2628,25 +2628,23 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!rentingFutures.isEmpty()) {
             final AtomicInteger rentingPartitions = new AtomicInteger(rentingFutures.size());
 
-            IgniteInClosure c = new IgniteInClosure() {
-                @Override public void apply(Object o) {
-                    int remaining = rentingPartitions.decrementAndGet();
+            IgniteInClosure c = o -> {
+                int remaining = rentingPartitions.decrementAndGet();
 
-                    if (remaining == 0) {
-                        lock.writeLock().lock();
+                if (remaining == 0) {
+                    lock.writeLock().lock();
 
-                        try {
-                            GridDhtPartitionTopologyImpl.this.updateSeq.incrementAndGet();
+                    try {
+                        GridDhtPartitionTopologyImpl.this.updateSeq.incrementAndGet();
 
-                            if (log.isDebugEnabled())
-                                log.debug("Partitions have been scheduled to resend [reason=" +
-                                    "Evictions are done [grp=" + grp.cacheOrGroupName() + "]");
+                        if (log.isDebugEnabled())
+                            log.debug("Partitions have been scheduled to resend [reason=" +
+                                "Evictions are done [grp=" + grp.cacheOrGroupName() + "]");
 
-                            ctx.exchange().scheduleResendPartitions();
-                        }
-                        finally {
-                            lock.writeLock().unlock();
-                        }
+                        ctx.exchange().scheduleResendPartitions();
+                    }
+                    finally {
+                        lock.writeLock().unlock();
                     }
                 }
             };

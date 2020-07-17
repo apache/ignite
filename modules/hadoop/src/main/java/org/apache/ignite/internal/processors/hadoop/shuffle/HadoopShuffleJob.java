@@ -757,18 +757,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         }
 
         if (fut != null) {
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        f.get();
+            fut.listen(future -> {
+                try {
+                    future.get();
 
-                        // Clean up the future from map only if there was no exception.
-                        // Otherwise flush() should fail.
-                        sentMsgs.remove(msgId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Failed to send message.", e);
-                    }
+                    // Clean up the future from map only if there was no exception.
+                    // Otherwise flush() should fail.
+                    sentMsgs.remove(msgId);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to send message.", e);
                 }
             });
         }

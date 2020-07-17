@@ -5500,53 +5500,49 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<T>>() {
-                @Override public void apply(IgniteInternalFuture<T> fut) {
-                    try {
-                        T res = fut.get();
+            fut.listen(future -> {
+                try {
+                    T res = fut.get();
 
-                        onDone(res);
-                    }
+                    onDone(res);
+                }
                     catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
-                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+                    if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
+                        ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                            if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
-                                IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
+                        if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                            IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
 
-                                assert tx != null;
+                            assert tx != null;
 
-                                AffinityTopologyVersion topVer = tx.topologyVersion();
+                            AffinityTopologyVersion topVer = tx.topologyVersion();
 
-                                assert topVer != null && topVer.topologyVersion() > 0 : tx;
+                            assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
-                                AffinityTopologyVersion awaitVer = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
+                            AffinityTopologyVersion awaitVer = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
 
-                                IgniteInternalFuture<?> topFut =
-                                    ctx.shared().exchange().affinityReadyFuture(awaitVer);
+                            IgniteInternalFuture<?> topFut =
+                                ctx.shared().exchange().affinityReadyFuture(awaitVer);
 
-                                topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                    @Override public void apply(IgniteInternalFuture<?> topFut) {
-                                        try {
-                                            topFut.get();
+                            topFut.listen(topFuture -> {
+                                try {
+                                    topFuture.get();
 
-                                            execute(/*retry*/true);
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            onDone(e);
-                                        }
-                                        finally {
-                                            ctx.shared().txContextReset();
-                                        }
-                                    }
-                                });
+                                    execute(/*retry*/true);
+                                }
+                                catch (IgniteCheckedException ex) {
+                                    onDone(ex);
+                                }
+                                finally {
+                                    ctx.shared().txContextReset();
+                                }
+                            });
 
-                                return;
-                            }
+                            return;
                         }
-
-                        onDone(e);
                     }
+
+                    onDone(e);
                 }
             });
         }

@@ -1059,33 +1059,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 assert invokeMap != null : invokeMap;
 
                 conflictPutMap = F.viewReadOnly((Map)invokeMap,
-                    new IgniteClosure<EntryProcessor, GridCacheDrInfo>() {
-                        @Override public GridCacheDrInfo apply(EntryProcessor o) {
-                            return new GridCacheDrInfo(o, ctx.versions().next(opCtx.dataCenterId()));
-                        }
-                    });
+                    entryProcessor -> new GridCacheDrInfo((EntryProcessor) entryProcessor, ctx.versions().next(opCtx.dataCenterId())));
 
                 invokeMap = null;
             }
             else if (op == GridCacheOperation.DELETE) {
                 assert map != null : map;
 
-                conflictRmvMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheVersion>() {
-                    @Override public GridCacheVersion apply(V o) {
-                        return ctx.versions().next(opCtx.dataCenterId());
-                    }
-                });
+                conflictRmvMap = F.viewReadOnly((Map)map, o -> ctx.versions().next(opCtx.dataCenterId()));
 
                 map = null;
             }
             else {
                 assert map != null : map;
 
-                conflictPutMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheDrInfo>() {
-                    @Override public GridCacheDrInfo apply(V o) {
-                        return new GridCacheDrInfo(ctx.toCacheObject(o), ctx.versions().next(opCtx.dataCenterId()));
-                    }
-                });
+                conflictPutMap = F.viewReadOnly((Map)map, o ->
+                    new GridCacheDrInfo(ctx.toCacheObject(o), ctx.versions().next(opCtx.dataCenterId())));
 
                 map = null;
             }
@@ -2147,11 +2136,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (tracker instanceof GridNioMessageTracker) {
                     ((GridNioMessageTracker)tracker).onMessageReceived();
 
-                    dhtFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            ((GridNioMessageTracker)tracker).onMessageProcessed();
-                        }
-                    });
+                    dhtFut.listen(future -> ((GridNioMessageTracker) tracker).onMessageProcessed());
                 }
             }
 

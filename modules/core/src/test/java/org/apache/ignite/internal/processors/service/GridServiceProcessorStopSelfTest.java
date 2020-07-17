@@ -178,16 +178,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
         runServiceProcessorStoppingTest(
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onKernalStop(true);
-                }
-            },
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
-                }
-            }
+            serviceProcessor -> serviceProcessor.onKernalStop(true),
+            serviceProcessor -> serviceProcessor.onDisconnected(new IgniteFinishedFutureImpl<>())
         );
     }
 
@@ -199,16 +191,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
         runServiceProcessorStoppingTest(
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
-                }
-            },
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onKernalStop(true);
-                }
-            }
+            serviceProcessor -> serviceProcessor.onDisconnected(new IgniteFinishedFutureImpl<>()),
+            serviceProcessor -> serviceProcessor.onKernalStop(true)
         );
     }
 

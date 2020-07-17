@@ -104,11 +104,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null
         );
 
-        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
         return new PageMemoryImpl(
             provider,

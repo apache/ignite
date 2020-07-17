@@ -347,17 +347,13 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         final CacheEntryListenerConfiguration<Integer, String> cfg =
             createCacheListener(key, promise, id);
 
-        promise.listen(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> fut) {
-                GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.deregisterCacheEntryListener(cfg);
+        promise.listen(future ->
+            GridTestUtils.runAsync(() -> {
+                cache.deregisterCacheEntryListener(cfg);
 
-                        return null;
-                    }
-                });
-            }
-        });
+                return null;
+            })
+        );
 
         // Start listening.
         // Assumption: When the call returns, the listener is guaranteed to have been registered.
@@ -368,15 +364,13 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // Check asynchronously.
         // Complete the promise if the key was inserted concurrently.
         if (!((IgniteCacheProxy)cache).context().mvccEnabled()) {
-            cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> f) {
-                    String val = f.get();
+            cache.getAsync(key).listen(future -> {
+                String val = future.get();
 
-                    if (val != null) {
-                        log.info("Completed by get: " + id);
+                if (val != null) {
+                    log.info("Completed by get: " + id);
 
-                        (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by async get");
-                    }
+                    (((GridFutureAdapter) ((IgniteFutureImpl) promise).internalFuture())).onDone("by async get");
                 }
             });
         }

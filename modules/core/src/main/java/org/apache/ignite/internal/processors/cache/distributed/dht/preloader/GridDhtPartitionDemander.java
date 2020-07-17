@@ -232,14 +232,12 @@ public class GridDhtPartitionDemander {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                     IgniteInternalFuture<Boolean> fut0 = ctx.exchange().forceRebalance(exchFut.exchangeId());
 
-                    fut0.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                        @Override public void apply(IgniteInternalFuture<Boolean> future) {
-                            try {
-                                fut.onDone(future.get());
-                            }
-                            catch (Exception e) {
-                                fut.onDone(e);
-                            }
+                    fut0.listen(future -> {
+                        try {
+                            fut.onDone(future.get());
+                        }
+                        catch (Exception e) {
+                            fut.onDone(e);
                         }
                     });
                 }
@@ -332,11 +330,9 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (!grp.localWalEnabled()) {
-                fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
-                    @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
-                        if (future.get())
-                            ctx.walState().onGroupRebalanceFinished(grp.groupId());
-                    }
+                fut.listen(future -> {
+                    if (future.get())
+                        ctx.walState().onGroupRebalanceFinished(grp.groupId());
                 });
             }
 

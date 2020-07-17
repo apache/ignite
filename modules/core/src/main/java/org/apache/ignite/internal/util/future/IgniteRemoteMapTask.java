@@ -126,11 +126,7 @@ import org.jetbrains.annotations.Nullable;
 
                 jobCtx.holdcc();
 
-                future.listen(new IgniteInClosure<IgniteFuture<R>>() {
-                    @Override public void apply(IgniteFuture<R> future) {
-                        jobCtx.callcc();
-                    }
-                });
+                future.listen(fut -> jobCtx.callcc());
 
                 return null;
             }

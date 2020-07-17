@@ -1836,13 +1836,11 @@ public class IgnitionEx {
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
             WorkersRegistry workerRegistry = new WorkersRegistry(
-                new IgniteBiInClosure<GridWorker, FailureType>() {
-                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
-                    }
+                (deadWorker, failureType) -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(
+                            failureType,
+                            new IgniteException(S.toString(GridWorker.class, deadWorker))));
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
                     cfg.getSystemWorkerBlockedTimeout() != null
@@ -1855,11 +1853,9 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "sys",
                 log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
+                t -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 workerRegistry,
                 cfg.getFailureDetectionTimeout());
@@ -1904,11 +1900,9 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
+                t -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 true,
                 workerRegistry,

@@ -1098,20 +1098,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         failed = !success;
 
                         if (success) {
-                            IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> msgFut) {
-                                    try {
-                                        msgFut.get();
+                            IgniteInClosure<IgniteInternalFuture<?>> lsnr = messageFuture -> {
+                                try {
+                                    messageFuture.get();
 
-                                        connectedNew(recoveryDesc, ses, false);
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Failed to send recovery handshake " +
-                                                "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
+                                    connectedNew(recoveryDesc, ses, false);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send recovery handshake " +
+                                            "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
 
-                                        recoveryDesc.release();
-                                    }
+                                    recoveryDesc.release();
                                 }
                             };
 
@@ -1184,28 +1182,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 @Override public void apply(Boolean success) {
                     if (success) {
                         try {
-                            IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> msgFut) {
-                                    try {
-                                        msgFut.get();
+                            IgniteInClosure<IgniteInternalFuture<?>> lsnr = messageFuture -> {
+                                try {
+                                    messageFuture.get();
 
-                                        GridTcpNioCommunicationClient client =
-                                            connected(recoveryDesc, ses, rmtNode, msg.received(), false, createClient);
+                                    GridTcpNioCommunicationClient client =
+                                        connected(recoveryDesc, ses, rmtNode, msg.received(), false, createClient);
 
-                                        fut.onDone(client);
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Failed to send recovery handshake " +
-                                                "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
+                                    fut.onDone(client);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send recovery handshake " +
+                                            "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
 
-                                        recoveryDesc.release();
+                                    recoveryDesc.release();
 
-                                        fut.onDone();
-                                    }
-                                    finally {
-                                        clientFuts.remove(connKey, fut);
-                                    }
+                                    fut.onDone();
+                                }
+                                finally {
+                                    clientFuts.remove(connKey, fut);
                                 }
                             };
 

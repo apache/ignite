@@ -170,15 +170,13 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
 
         final int INC_BY = 110;
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                Map<Integer, MvccTestSqlIndexValue> vals = new HashMap<>();
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            Map<Integer, MvccTestSqlIndexValue> vals = new HashMap<>();
 
-                for (int i = 0; i < VALS; i++)
-                    vals.put(i, new MvccTestSqlIndexValue(i));
+            for (int i = 0; i < VALS; i++)
+                vals.put(i, new MvccTestSqlIndexValue(i));
 
-                cache.putAll(vals);
-            }
+            cache.putAll(vals);
         };
 
         GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =

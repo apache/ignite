@@ -172,18 +172,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final GridTuple<V> val = new GridTuple<>();
 
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_LOAD);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
-                    writer.writeObject(key);
-                }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    val.set((V)reader.readObjectDetached());
-                }
-            });
+            doInvoke(writer -> {
+                writer.writeByte(OP_LOAD);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
+                writer.writeObject(key);
+            }, reader -> val.set((V) reader.readObjectDetached()));
 
             return val.get();
         }
@@ -199,24 +193,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             final Collection keys0 = (Collection)keys;
 
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_LOAD_ALL);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
+            doInvoke(writer -> {
+                writer.writeByte(OP_LOAD_ALL);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
 
-                    writer.writeInt(keys0.size());
+                writer.writeInt(keys0.size());
 
-                    for (Object o : keys0)
-                        writer.writeObject(o);
-                }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    int cnt = reader.readInt();
+                for (Object o : keys0)
+                    writer.writeObject(o);
+            }, reader -> {
+                int cnt = reader.readInt();
 
-                    for (int i = 0; i < cnt; i++)
-                        loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-                }
+                for (int i = 0; i < cnt; i++)
+                    loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
             });
 
             return loaded;
@@ -229,20 +219,16 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_LOAD_CACHE);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
-                    writer.writeObjectArray(args);
-                }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    int cnt = reader.readInt();
+            doInvoke(writer -> {
+                writer.writeByte(OP_LOAD_CACHE);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
+                writer.writeObjectArray(args);
+            }, reader -> {
+                int cnt = reader.readInt();
 
-                    for (int i = 0; i < cnt; i++)
-                        clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-                }
+                for (int i = 0; i < cnt; i++)
+                    clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
             });
         }
         catch (IgniteCheckedException e) {
@@ -253,14 +239,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void write(final Cache.Entry<? extends K, ? extends V> entry) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_PUT);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
-                    writer.writeObject(entry.getKey());
-                    writer.writeObject(entry.getValue());
-                }
+            doInvoke(writer -> {
+                writer.writeByte(OP_PUT);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
+                writer.writeObject(entry.getKey());
+                writer.writeObject(entry.getValue());
             }, null);
         }
         catch (IgniteCheckedException e) {
@@ -272,18 +256,16 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_PUT_ALL);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
+            doInvoke(writer -> {
+                writer.writeByte(OP_PUT_ALL);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
 
-                    writer.writeInt(entries.size());
+                writer.writeInt(entries.size());
 
-                    for (Cache.Entry<? extends K, ? extends V> e : entries) {
-                        writer.writeObject(e.getKey());
-                        writer.writeObject(e.getValue());
-                    }
+                for (Cache.Entry<? extends K, ? extends V> e : entries) {
+                    writer.writeObject(e.getKey());
+                    writer.writeObject(e.getValue());
                 }
             }, null);
         }
@@ -295,13 +277,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void delete(final Object key) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_RMV);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
-                    writer.writeObject(key);
-                }
+            doInvoke(writer -> {
+                writer.writeByte(OP_RMV);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
+                writer.writeObject(key);
             }, null);
         }
         catch (IgniteCheckedException e) {
@@ -312,17 +292,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void deleteAll(final Collection<?> keys) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_RMV_ALL);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
+            doInvoke(writer -> {
+                writer.writeByte(OP_RMV_ALL);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
 
-                    writer.writeInt(keys.size());
+                writer.writeInt(keys.size());
 
-                    for (Object o : keys)
-                        writer.writeObject(o);
-                }
+                for (Object o : keys)
+                    writer.writeObject(o);
             }, null);
         }
         catch (IgniteCheckedException e) {
@@ -333,29 +311,27 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    writer.writeByte(OP_SES_END);
-                    writer.writeLong(session());
-                    writer.writeString(ses.cacheName());
-                    writer.writeBoolean(commit);
+            doInvoke(writer -> {
+                writer.writeByte(OP_SES_END);
+                writer.writeLong(session());
+                writer.writeString(ses.cacheName());
+                writer.writeBoolean(commit);
 
-                    // When multiple stores (caches) participate in a single transaction,
-                    // they share a single session, but sessionEnd is called on each store.
-                    // Same thing happens on platform side: session is shared; each store must be notified,
-                    // then session should be closed.
-                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
-                    assert stores != null;
+                // When multiple stores (caches) participate in a single transaction,
+                // they share a single session, but sessionEnd is called on each store.
+                // Same thing happens on platform side: session is shared; each store must be notified,
+                // then session should be closed.
+                Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                assert stores != null;
 
-                    stores.remove(ptr);
-                    boolean last = stores.isEmpty();
+                stores.remove(ptr);
+                boolean last = stores.isEmpty();
 
-                    writer.writeBoolean(last);
+                writer.writeBoolean(last);
 
-                    if (last) {
-                        // Session object has been released on platform side, remove marker.
-                        ses.properties().remove(KEY_SES);
-                    }
+                if (last) {
+                    // Session object has been released on platform side, remove marker.
+                    ses.properties().remove(KEY_SES);
                 }
             }, null);
         }

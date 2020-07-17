@@ -117,11 +117,7 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
                 COMPANIES.get(i % COMPANIES.size()),
                 CITIES.get(i % CITIES.size()));
 
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                assertInitPerson(person);
-            }
-        });
+        assertAllPersons(this::assertInitPerson);
 
         long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person");
 
@@ -135,52 +131,46 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
         executeSqlSingle("UPDATE Person SET company = 'GNU', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE " +
             "age + 1 END WHERE company = 'ASF'");
 
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                int id = (Integer)person.get(0);
+        assertAllPersons(person -> {
+            int id = (Integer) person.get(0);
 
-                if (id % COMPANIES.size() == 0) {
-                    int initAge = 20 + id % 10;
+            if (id % COMPANIES.size() == 0) {
+                int initAge = 20 + id % 10;
 
-                    int expAge = (initAge % 2 != 0 ? initAge + 5 : initAge + 1);
+                int expAge = (initAge % 2 != 0 ? initAge + 5 : initAge + 1);
 
-                    assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
-                }
-                else
-                    assertInitPerson(person);
+                assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
             }
+            else
+                assertInitPerson(person);
         });
 
         executeSql("DROP INDEX idx");
 
         // Index drop should not affect data.
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                int id = (Integer)person.get(0);
+        assertAllPersons(person -> {
+            int id = (Integer) person.get(0);
 
-                if (id % COMPANIES.size() == 0) {
-                    int initAge = 20 + id % 10;
+            if (id % COMPANIES.size() == 0) {
+                int initAge = 20 + id % 10;
 
-                    int expAge = initAge % 2 != 0 ? initAge + 5 : initAge + 1;
+                int expAge = initAge % 2 != 0 ? initAge + 5 : initAge + 1;
 
-                    assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
-                }
-                else
-                    assertInitPerson(person);
+                assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
             }
+            else
+                assertInitPerson(person);
         });
 
         // Let's drop all BSD folks living in Berkeley and Boston - this compares ASCII codes of 1st symbols.
         executeSql("DELETE FROM person WHERE ASCII(company) = ASCII(city)");
 
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                String city = city(person);
+        assertAllPersons(person -> {
+            String city = city(person);
 
-                String company = company(person);
+            String company = company(person);
 
-                assertFalse(city.charAt(0) == company.charAt(0));
-            }
+            assertFalse(city.charAt(0) == company.charAt(0));
         });
 
         assertNotNull(node().cache("SQL_PUBLIC_PERSON"));

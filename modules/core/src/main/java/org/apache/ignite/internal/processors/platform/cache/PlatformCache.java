@@ -580,11 +580,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     Map entries = cache.getAll(keys);
 
-                    return writeResult(mem, entries, new PlatformWriterClosure<Map>() {
-                        @Override public void write(BinaryRawWriterEx writer, Map val) {
-                            PlatformUtils.writeNullableMap(writer, val);
-                        }
-                    });
+                    return writeResult(mem, entries, ((writer, val) -> PlatformUtils.writeNullableMap(writer, (Map) val)));
                 }
 
                 case OP_PUT_ASYNC: {
@@ -779,31 +775,19 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     Map results = cache.invokeAll(keys, proc);
 
-                    return writeResult(mem, results, new PlatformWriterClosure<Map>() {
-                        @Override public void write(BinaryRawWriterEx writer, Map val) {
-                            writeInvokeAllResult(writer, val);
-                        }
-                    });
+                    return writeResult(mem, results, ((writer, val) -> writeInvokeAllResult(writer, (Map) val)));
                 }
 
                 case OP_LOCK: {
                     long id = registerLock(cache.lock(reader.readObjectDetached()));
 
-                    return writeResult(mem, id, new PlatformWriterClosure<Long>() {
-                        @Override public void write(BinaryRawWriterEx writer, Long val) {
-                            writer.writeLong(val);
-                        }
-                    });
+                    return writeResult(mem, id, ((writer, val) -> writer.writeLong((Long) val)));
                 }
 
                 case OP_LOCK_ALL: {
                     long id = registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
 
-                    return writeResult(mem, id, new PlatformWriterClosure<Long>() {
-                        @Override public void write(BinaryRawWriterEx writer, Long val) {
-                            writer.writeLong(val);
-                        }
-                    });
+                    return writeResult(mem, id, (writer, val) -> writer.writeLong((Long) val));
                 }
 
                 case OP_EXTENSION:

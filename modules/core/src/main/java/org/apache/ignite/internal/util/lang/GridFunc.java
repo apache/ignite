@@ -174,11 +174,7 @@ public class GridFunc {
 
     /** */
     private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
-        new IgniteClosure<BaselineNode, Object>() {
-            @Override public Object apply(BaselineNode node) {
-                return node.consistentId();
-            }
-        };
+        BaselineNode::consistentId;
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.

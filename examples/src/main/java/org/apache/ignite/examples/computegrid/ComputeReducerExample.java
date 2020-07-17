@@ -51,14 +51,12 @@ public class ComputeReducerExample {
             System.out.println("Compute reducer example started.");
 
             Integer sum = ignite.compute().apply(
-                new IgniteClosure<String, Integer>() {
-                    @Override public Integer apply(String word) {
-                        System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
+                word -> {
+                    System.out.println();
+                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
-                        // Return number of letters in the word.
-                        return word.length();
-                    }
+                    // Return number of letters in the word.
+                    return word.length();
                 },
 
                 // Job parameters. Ignite will create as many jobs as there are parameters.

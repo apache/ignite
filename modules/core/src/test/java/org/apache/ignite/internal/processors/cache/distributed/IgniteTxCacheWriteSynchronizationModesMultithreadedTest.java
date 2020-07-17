@@ -197,118 +197,109 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         try {
             if (restart) {
-                restartFut = GridTestUtils.runAsync(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        while (!stop.get()) {
-                            startGrid(NODES);
+                restartFut = GridTestUtils.runAsync(() -> {
+                    while (!stop.get()) {
+                        startGrid(NODES);
 
-                            U.sleep(100);
+                        U.sleep(100);
 
-                            stopGrid(NODES);
-                        }
-                        return null;
+                        stopGrid(NODES);
                     }
+
+                    return null;
                 }, "restart-thread");
             }
 
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            commitMultithreaded((ig, cache) -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+                Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+
+                while (true) {
+                    try {
+                        cache.put(key, rnd.nextInt());
+
+                        break;
+                    }
+                    catch (CacheException e) {
+                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                    }
+                }
+            });
+
+            commitMultithreaded((ig, cache) -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                Map<Integer, Integer> map = new TreeMap<>();
+
+                for (int i = 0; i < 100; i++) {
                     Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                    while (true) {
-                        try {
-                            cache.put(key, rnd.nextInt());
-
-                            break;
-                        }
-                        catch (CacheException e) {
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
+                    map.put(key, rnd.nextInt());
                 }
-            });
 
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    Map<Integer, Integer> map = new TreeMap<>();
-
-                    for (int i = 0; i < 100; i++) {
-                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
-
-                        map.put(key, rnd.nextInt());
-                    }
-
-                    while (true) {
-                        try {
-                            cache.putAll(map);
-
-                            break;
-                        }
-                        catch (CacheException e) {
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
-                }
-            });
-
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    Map<Integer, Integer> map = new TreeMap<>();
-
-                    for (int i = 0; i < 100; i++) {
-                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
-
-                        map.put(key, rnd.nextInt());
-                    }
-
+                while (true) {
                     try {
-                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                cache.put(e.getKey(), e.getValue());
+                        cache.putAll(map);
 
-                            tx.commit();
-                        }
+                        break;
                     }
-                    catch (CacheException | IgniteException ignored) {
-                        // No-op.
+                    catch (CacheException e) {
+                        MvccFeatureChecker.assertMvccWriteConflict(e);
                     }
+                }
+            });
+
+            commitMultithreaded((ig, cache) -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                Map<Integer, Integer> map = new TreeMap<>();
+
+                for (int i = 0; i < 100; i++) {
+                    Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+
+                    map.put(key, rnd.nextInt());
+                }
+
+                try {
+                    try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        for (Map.Entry<Integer, Integer> e : map.entrySet())
+                            cache.put(e.getKey(), e.getValue());
+
+                        tx.commit();
+                    }
+                }
+                catch (CacheException | IgniteException ignored) {
+                    // No-op.
                 }
             });
 
             if (!MvccFeatureChecker.forcedMvcc()) {
-                commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                    @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                commitMultithreaded((ig, cache) -> {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                        Map<Integer, Integer> map = new LinkedHashMap<>();
+                    Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                        for (int i = 0; i < 10; i++) {
-                            Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+                    for (int i = 0; i < 10; i++) {
+                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                            map.put(key, rnd.nextInt());
+                        map.put(key, rnd.nextInt());
+                    }
+
+                    while (true) {
+                        try (Transaction tx = ig.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            for (Map.Entry<Integer, Integer> e : map.entrySet())
+                                cache.put(e.getKey(), e.getValue());
+
+                            tx.commit();
+
+                            break;
                         }
-
-                        while (true) {
-                            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                    cache.put(e.getKey(), e.getValue());
-
-                                tx.commit();
-
-                                break;
-                            }
-                            catch (TransactionOptimisticException ignored) {
-                                // Retry.
-                            }
-                            catch (CacheException | IgniteException ignored) {
-                                break;
-                            }
+                        catch (TransactionOptimisticException ignored) {
+                            // Retry.
+                        }
+                        catch (CacheException | IgniteException ignored) {
+                            break;
                         }
                     }
                 });
@@ -331,19 +322,17 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
         final long stopTime = System.currentTimeMillis() + 10_000;
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                int nodeIdx = idx % NODES;
+        GridTestUtils.runMultiThreaded(idx -> {
+            int nodeIdx = idx % NODES;
 
-                Thread.currentThread().setName("tx-thread-" + nodeIdx);
+            Thread.currentThread().setName("tx-thread-" + nodeIdx);
 
-                Ignite ignite = ignite(nodeIdx);
+            Ignite ignite = ignite(nodeIdx);
 
-                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                while (System.currentTimeMillis() < stopTime)
-                    c.apply(ignite, cache);
-            }
+            while (System.currentTimeMillis() < stopTime)
+                c.apply(ignite, cache);
         }, NODES * 3, "tx-thread");
 
         final IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);

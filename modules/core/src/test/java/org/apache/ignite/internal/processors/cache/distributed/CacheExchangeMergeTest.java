@@ -538,11 +538,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         mergeExchangeWaitVersion(srv0, nodes + 1);
 
         if (withClients) {
-            clientC = new IgniteClosure<String, Boolean>() {
-                @Override public Boolean apply(String nodeName) {
-                    return getTestIgniteInstanceIndex(nodeName) % 2 == 0;
-                }
-            };
+            clientC = nodeName -> getTestIgniteInstanceIndex(nodeName) % 2 == 0;
         }
 
         cfgCache = true;

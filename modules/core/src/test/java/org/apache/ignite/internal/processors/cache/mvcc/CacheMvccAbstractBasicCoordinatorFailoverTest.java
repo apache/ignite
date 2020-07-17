@@ -222,11 +222,9 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         if (readDelay) {
             for (int i = COORD_NODES; i < COORD_NODES + SRV_NODES + 1; i++) {
-                TestRecordingCommunicationSpi.spi(ignite(i)).closure(new IgniteBiInClosure<ClusterNode, Message>() {
-                    @Override public void apply(ClusterNode node, Message msg) {
-                        if (msg instanceof GridNearGetRequest)
-                            doSleep(ThreadLocalRandom.current().nextLong(50) + 1);
-                    }
+                TestRecordingCommunicationSpi.spi(ignite(i)).closure((node, msg) -> {
+                    if (msg instanceof GridNearGetRequest)
+                        doSleep(ThreadLocalRandom.current().nextLong(50) + 1);
                 });
             }
         }

@@ -227,15 +227,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public Collection<Transaction> localActiveTransactions() {
-        return F.viewReadOnly(cctx.tm().activeTransactions(), new IgniteClosure<IgniteInternalTx, Transaction>() {
-            @Override public Transaction apply(IgniteInternalTx tx) {
-                return ((GridNearTxLocal)tx).rollbackOnlyProxy();
-            }
-        }, new IgnitePredicate<IgniteInternalTx>() {
-            @Override public boolean apply(IgniteInternalTx tx) {
-                return tx.local() && tx.near();
-            }
-        });
+        return F.viewReadOnly(
+            cctx.tm().activeTransactions(),
+            tx -> ((GridNearTxLocal)tx).rollbackOnlyProxy(),
+            tx -> tx.local() && tx.near()
+        );
     }
 
     /** {@inheritDoc} */

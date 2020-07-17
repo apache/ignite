@@ -55,12 +55,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<Integer> cur = fut;
 
         for (int i = 0; i < DFLT_MAX_CONCURRENT_ASYNC_OPS; i++) {
-            cur = new GridEmbeddedFuture<>(cur,
-                new IgniteBiClosure<Integer, Exception, IgniteInternalFuture<Integer>>() {
-                    @Override public IgniteInternalFuture<Integer> apply(Integer o, Exception e) {
-                        return new GridFinishedFuture<>(o);
-                    }
-                });
+            cur = new GridEmbeddedFuture<>(cur, (o, e) -> new GridFinishedFuture<>(o));
         }
 
         fut.onDone(1);

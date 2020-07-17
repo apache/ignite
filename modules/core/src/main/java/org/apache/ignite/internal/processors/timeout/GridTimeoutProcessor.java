@@ -170,23 +170,21 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             final WaitFutureTimeoutObject finalTimeoutObj = timeoutObj;
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    if (finalTimeoutObj != null && !finalTimeoutObj.finishGuard.compareAndSet(false, true))
-                        return;
+            fut.listen(future -> {
+                if (finalTimeoutObj != null && !finalTimeoutObj.finishGuard.compareAndSet(false, true))
+                    return;
 
-                    try {
-                        fut.get();
+                try {
+                    future.get();
 
-                        clo.apply(null, false);
-                    }
-                    catch (IgniteCheckedException e) {
-                        clo.apply(e, false);
-                    }
-                    finally {
-                        if (finalTimeoutObj != null)
-                            removeTimeoutObject(finalTimeoutObj);
-                    }
+                    clo.apply(null, false);
+                }
+                catch (IgniteCheckedException e) {
+                    clo.apply(e, false);
+                }
+                finally {
+                    if (finalTimeoutObj != null)
+                        removeTimeoutObject(finalTimeoutObj);
                 }
             });
         }

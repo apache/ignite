@@ -3661,44 +3661,42 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Operation might be still in progress on client nodes which are not tracked by coordinator,
             // so we chain to operation future instead of doing synchronous unwind.
-            mgr.worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    synchronized (stateMux) {
-                        SchemaOperation op = schemaOps.remove(schemaName);
+            mgr.worker().future().listen(future -> {
+                synchronized (stateMux) {
+                    SchemaOperation op = schemaOps.remove(schemaName);
 
-                        assert op != null;
-                        assert F.eq(op.id(), opId);
+                    assert op != null;
+                    assert F.eq(op.id(), opId);
 
-                        // Complete client future (if any).
-                        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+                    // Complete client future (if any).
+                    SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
 
-                        if (cliFut != null) {
-                            if (finishMsg.hasError())
-                                cliFut.onDone(finishMsg.error());
-                            else
-                                cliFut.onDone();
-                        }
+                    if (cliFut != null) {
+                        if (finishMsg.hasError())
+                            cliFut.onDone(finishMsg.error());
+                        else
+                            cliFut.onDone();
+                    }
 
-                        // Chain to the next operation (if any).
-                        final SchemaOperation nextOp = op.next();
+                    // Chain to the next operation (if any).
+                    final SchemaOperation nextOp = op.next();
 
-                        if (nextOp != null) {
-                            schemaOps.put(schemaName, nextOp);
+                    if (nextOp != null) {
+                        schemaOps.put(schemaName, nextOp);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Next schema change operation started [opId=" + nextOp.id() + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Next schema change operation started [opId=" + nextOp.id() + ']');
 
-                            assert !nextOp.started();
+                        assert !nextOp.started();
 
-                            // Cannot execute operation synchronously because it may cause starvation in exchange
-                            // thread under load. Hence, moving short-lived operation to separate worker.
-                            new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
-                                new Runnable() {
-                                    @Override public void run() {
-                                        onSchemaPropose(nextOp.proposeMessage());
-                                    }
-                                }).start();
-                        }
+                        // Cannot execute operation synchronously because it may cause starvation in exchange
+                        // thread under load. Hence, moving short-lived operation to separate worker.
+                        new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
+                            new Runnable() {
+                                @Override public void run() {
+                                    onSchemaPropose(nextOp.proposeMessage());
+                                }
+                            }).start();
                     }
                 }
             });

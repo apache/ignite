@@ -254,58 +254,56 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                    @Override public void apply(IgniteInternalFuture<Object> taskFut) {
+                taskFut.listen(taskFuture -> {
+                    try {
+                        TaskDescriptor desc;
+
                         try {
-                            TaskDescriptor desc;
-
-                            try {
-                                desc = new TaskDescriptor(true, taskFut.get(), null);
-                            }
-                            catch (IgniteCheckedException e) {
-                                if (e.hasCause(ClusterTopologyCheckedException.class, ClusterGroupEmptyCheckedException.class))
-                                    U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
-                                        "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
-                                        ", err=" + e + ']');
-                                else {
-                                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
-                                        U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
-                                            req.clientId() + ']', e);
-                                }
-
-                                desc = new TaskDescriptor(true, null, e);
-                            }
-
-                            if (async && locExec) {
-                                assert taskFut instanceof ComputeTaskInternalFuture;
-
-                                IgniteUuid tid = ((ComputeTaskInternalFuture)taskFut).getTaskSession().getId();
-
-                                taskDescs.put(tid, desc);
-                            }
-
-                            if (!async) {
-                                if (desc.error() == null) {
-                                    try {
-                                        taskRestRes.setFinished(true);
-                                        taskRestRes.setResult(desc.result());
-
-                                        res.setResponse(taskRestRes);
-                                        fut.onDone(res);
-                                    }
-                                    catch (IgniteException e) {
-                                        fut.onDone(new IgniteCheckedException("Failed to marshal task result: " +
-                                            desc.result(), e));
-                                    }
-                                }
-                                else
-                                    fut.onDone(desc.error());
-                            }
+                            desc = new TaskDescriptor(true, taskFuture.get(), null);
                         }
-                        finally {
-                            if (!async && !fut.isDone())
-                                fut.onDone(new IgniteCheckedException("Failed to execute task (see server logs for details)."));
+                        catch (IgniteCheckedException e) {
+                            if (e.hasCause(ClusterTopologyCheckedException.class, ClusterGroupEmptyCheckedException.class))
+                                U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
+                                    "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
+                                    ", err=" + e + ']');
+                            else {
+                                if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                                    U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
+                                        req.clientId() + ']', e);
+                            }
+
+                            desc = new TaskDescriptor(true, null, e);
                         }
+
+                        if (async && locExec) {
+                            assert taskFut instanceof ComputeTaskInternalFuture;
+
+                            IgniteUuid tid = ((ComputeTaskInternalFuture) taskFuture).getTaskSession().getId();
+
+                            taskDescs.put(tid, desc);
+                        }
+
+                        if (!async) {
+                            if (desc.error() == null) {
+                                try {
+                                    taskRestRes.setFinished(true);
+                                    taskRestRes.setResult(desc.result());
+
+                                    res.setResponse(taskRestRes);
+                                    fut.onDone(res);
+                                }
+                                catch (IgniteException e) {
+                                    fut.onDone(new IgniteCheckedException("Failed to marshal task result: " +
+                                        desc.result(), e));
+                                }
+                            }
+                            else
+                                fut.onDone(desc.error());
+                        }
+                    }
+                    finally {
+                        if (!async && !fut.isDone())
+                            fut.onDone(new IgniteCheckedException("Failed to execute task (see server logs for details)."));
                     }
                 });
 

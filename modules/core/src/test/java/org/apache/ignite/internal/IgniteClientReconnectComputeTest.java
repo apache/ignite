@@ -62,23 +62,17 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 
-        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try {
-                    client.compute().affinityCall("test-cache", 40, new IgniteCallable<Object>() {
-                        @Override public Integer call() throws Exception {
-                            return 42;
-                        }
-                    });
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    checkAndWait(e);
-
-                    return true;
-                }
-
-                return false;
+        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try {
+                client.compute().affinityCall("test-cache", 40, () -> 42);
             }
+            catch (IgniteClientDisconnectedException e) {
+                checkAndWait(e);
+
+                return true;
+            }
+
+            return false;
         });
 
         // Check that client waiting operation.
@@ -162,23 +156,17 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 
-        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try {
-                    client.compute().apply(new IgniteClosure<Integer, Integer>() {
-                        @Override public Integer apply(Integer o) {
-                            return o + 1;
-                        }
-                    }, Arrays.asList(1, 2, 3));
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    checkAndWait(e);
-
-                    return true;
-                }
-
-                return false;
+        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try {
+                client.compute().apply((Integer) o -> o + 1, Arrays.asList(1, 2, 3));
             }
+            catch (IgniteClientDisconnectedException e) {
+                checkAndWait(e);
+
+                return true;
+            }
+
+            return false;
         });
 
         // Check that client waiting operation.

@@ -716,14 +716,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
 
-                    ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
-                        @Override public void apply(IgniteInternalFuture<String> diagFut) {
-                            try {
-                                fut.onDone(diagFut.get());
-                            }
-                            catch (Exception e) {
-                                fut.onDone(e);
-                            }
+                    ctx.send(node.context(), diagnosticFuture -> {
+                        try {
+                            fut.onDone(diagnosticFuture.get());
+                        }
+                        catch (Exception e) {
+                            fut.onDone(e);
                         }
                     });
 

@@ -100,12 +100,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsHandshakeResponse>() {
-            @Override public IgfsHandshakeResponse apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) {
-                return hndResp;
-            }
-        });
+        return withReconnectHandling((hadoop, hndResp) -> hndResp);
     }
 
     /** {@inheritDoc} */
@@ -128,12 +123,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public IgfsFile update(final IgfsPath path, final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsFile>() {
-            @Override public IgfsFile apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.update(path, props);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.update(path, props), path);
     }
 
     /** {@inheritDoc} */
@@ -149,12 +139,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public Boolean rename(final IgfsPath src, final IgfsPath dest) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.rename(src, dest);
-            }
-        }, src);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.rename(src, dest), src);
     }
 
     /** {@inheritDoc} */

@@ -652,11 +652,7 @@ public class ClusterCachesInfo {
                         if (fut == null || fut.isDone())
                             ctx.cache().completeCacheStartFuture(req, false, null);
                         else {
-                            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    ctx.cache().completeCacheStartFuture(req, false, null);
-                                }
-                            });
+                            fut.listen(future -> ctx.cache().completeCacheStartFuture(req, false, null));
                         }
                     }
 

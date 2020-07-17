@@ -269,11 +269,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
         PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
             pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,

@@ -78,11 +78,7 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
                 if (!fut.isDone()) {
                     jobCtx.holdcc();
 
-                    fut.listen(new IgniteInClosure<IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>>>() {
-                        @Override public void apply(IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>> f) {
-                            jobCtx.callcc();
-                        }
-                    });
+                    fut.listen(future -> jobCtx.callcc());
 
                     return null;
                 }

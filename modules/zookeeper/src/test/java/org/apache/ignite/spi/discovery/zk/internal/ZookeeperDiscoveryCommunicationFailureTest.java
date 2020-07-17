@@ -568,20 +568,18 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         final CyclicBarrier b = new CyclicBarrier(breakNodes.length);
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer threadIdx) {
-                try {
-                    b.await();
+        GridTestUtils.runMultiThreaded(threadIdx -> {
+            try {
+                b.await();
 
-                    int nodeIdx = breakNodes[threadIdx];
+                int nodeIdx = breakNodes[threadIdx];
 
-                    info("Close communication: " + nodeIdx);
+                info("Close communication: " + nodeIdx);
 
-                    ((TcpCommunicationSpi)ignite(nodeIdx).configuration().getCommunicationSpi()).simulateNodeFailure();
-                }
-                catch (Exception e) {
-                    fail("Unexpected error: " + e);
-                }
+                ((TcpCommunicationSpi)ignite(nodeIdx).configuration().getCommunicationSpi()).simulateNodeFailure();
+            }
+            catch (Exception e) {
+                fail("Unexpected error: " + e);
             }
         }, breakNodes.length, "break-communication");
 
@@ -596,13 +594,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
         testCommSpi = true;
         sesTimeout = 5000;
 
-        final CacheInfoCommunicationFailureResolver rslvr = new CacheInfoCommunicationFailureResolver();
-
-        commFailureRslvr = new IgniteOutClosure<CommunicationFailureResolver>() {
-            @Override public CommunicationFailureResolver apply() {
-                return rslvr;
-            }
-        };
+        commFailureRslvr = () -> new CacheInfoCommunicationFailureResolver();
 
         startGrids(2);
 
@@ -692,11 +684,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         final CacheInfoCommunicationFailureResolver rslvr = new CacheInfoCommunicationFailureResolver();
 
-        commFailureRslvr = new IgniteOutClosure<CommunicationFailureResolver>() {
-            @Override public CommunicationFailureResolver apply() {
-                return rslvr;
-            }
-        };
+        commFailureRslvr = () -> rslvr;
 
         Ignite srv0 = startGrid(0);
 
@@ -1120,11 +1108,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
          * @return Factory.
          */
         static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders) {
-            return new IgniteOutClosure<CommunicationFailureResolver>() {
-                @Override public CommunicationFailureResolver apply() {
-                    return new TestNodeKillCommunicationFailureResolver(killOrders);
-                }
-            };
+            return () -> new TestNodeKillCommunicationFailureResolver(killOrders);
         }
 
         /** */

@@ -111,20 +111,18 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        clientCache.getAsync("key").listen(new IgniteInClosure<IgniteFuture<Object>>() {
-            @Override public void apply(IgniteFuture<Object> fut) {
-                assertTrue(fut.isDone());
+        clientCache.getAsync("key").listen(future -> {
+            assertTrue(future.isDone());
 
-                try {
-                    fut.get();
+            try {
+                future.get();
 
-                    fail();
-                }
-                catch (CacheException e) {
-                    log.info("Expected error: " + e);
+                fail();
+            }
+            catch (CacheException e) {
+                log.info("Expected error: " + e);
 
-                    futLatch.countDown();
-                }
+                futLatch.countDown();
             }
         });
 

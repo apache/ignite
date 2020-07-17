@@ -26,11 +26,7 @@ public class ScanQueryTestTransformerWrapper {
     private final int scaleFactor;
 
     /** */
-    private final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> clo = new IgniteClosure<Cache.Entry<Integer, Integer>, Integer>() {
-        @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
-            return entry.getValue() * scaleFactor;
-        }
-    };
+    private final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> clo = entry -> entry.getValue() * scaleFactor;
 
     /**
      * @param scaleFactor Scale factor.

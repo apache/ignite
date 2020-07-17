@@ -164,18 +164,16 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
 
             final CyclicBarrier b = new CyclicBarrier(NODES);
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    try {
-                        b.await();
+            GridTestUtils.runMultiThreaded(idx -> {
+                try {
+                    b.await();
 
-                        stopGrid(initNodes + idx);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
+                    stopGrid(initNodes + idx);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
 
-                        fail();
-                    }
+                    fail();
                 }
             }, NODES, "stop-node");
 
@@ -458,11 +456,7 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
 
             waitForTopology(SRVS + THREADS);
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    stopGrid(idx + SRVS);
-                }
-            }, THREADS, "stop-node");
+            GridTestUtils.runMultiThreaded(idx -> stopGrid(idx + SRVS), THREADS, "stop-node");
 
             waitForTopology(SRVS);
 

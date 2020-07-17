@@ -445,11 +445,7 @@ public class GridCacheUtils {
      * @return Factory instance.
      */
     public static <K, V> IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]>() {
-            @Override public IgnitePredicate<Cache.Entry<K, V>>[] apply(Integer len) {
-                return (IgnitePredicate<Cache.Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
-            }
-        };
+        return len -> (IgnitePredicate<Cache.Entry<K, V>>[]) (len == 0 ? EMPTY : new IgnitePredicate[len]);
     }
 
     /**

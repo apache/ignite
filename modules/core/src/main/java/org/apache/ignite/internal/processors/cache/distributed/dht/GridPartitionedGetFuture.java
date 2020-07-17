@@ -193,17 +193,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (fut.initialVersion().after(topVer) || (fut.exchangeActions() != null && fut.exchangeActions().hasStop()))
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                        else {
-                            cctx.closures().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    map(keys, mapped, topVer);
-                                }
-                            }, true);
-                        }
+                fut.listen(future -> {
+                    if (future.error() != null)
+                        onDone(future.error());
+                    else {
+                        cctx.closures().runLocalSafe(new GridPlainRunnable() {
+                            @Override public void run() {
+                                map(keys, mapped, topVer);
+                            }
+                        }, true);
                     }
                 });
 

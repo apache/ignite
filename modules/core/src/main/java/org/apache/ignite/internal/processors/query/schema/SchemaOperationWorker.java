@@ -138,22 +138,20 @@ public class SchemaOperationWorker extends GridWorker {
     private GridFutureAdapter<?> publicFuture(GridFutureAdapter fut) {
         final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>();
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture fut) {
-                Exception err = null;
+        fut.listen(future -> {
+            Exception err = null;
 
-                try {
-                    fut.get();
+            try {
+                future.get();
 
-                    if (cacheRegistered && !nop)
-                        qryProc.onLocalOperationFinished(op, type);
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-                finally {
-                    chainedFut.onDone(null, err);
-                }
+                if (cacheRegistered && !nop)
+                    qryProc.onLocalOperationFinished(op, type);
+            }
+            catch (Exception e) {
+                err = e;
+            }
+            finally {
+                chainedFut.onDone(null, err);
             }
         });
 

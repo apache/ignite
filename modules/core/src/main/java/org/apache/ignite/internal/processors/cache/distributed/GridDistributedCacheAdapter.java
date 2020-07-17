@@ -230,32 +230,30 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
                 new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null);
 
-            rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    try {
-                        boolean retry = !fut.get();
+            rmvAll.listen(fut -> {
+                try {
+                    boolean retry = !fut.get();
 
-                        AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
+                    AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
 
-                        if (topVer0.equals(topVer) && !retry)
-                            opFut.onDone();
-                        else
-                            removeAllAsync(opFut, topVer0, skipStore, keepBinary);
-                    }
-                    catch (ClusterGroupEmptyCheckedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
-
+                    if (topVer0.equals(topVer) && !retry)
                         opFut.onDone();
-                    }
-                    catch (IgniteCheckedException e) {
-                        opFut.onDone(e);
-                    }
-                    catch (Error e) {
-                        opFut.onDone(e);
+                    else
+                        removeAllAsync(opFut, topVer0, skipStore, keepBinary);
+                }
+                catch (ClusterGroupEmptyCheckedException ignore) {
+                    if (log.isDebugEnabled())
+                        log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
 
-                        throw e;
-                    }
+                    opFut.onDone();
+                }
+                catch (IgniteCheckedException e) {
+                    opFut.onDone(e);
+                }
+                catch (Error e) {
+                    opFut.onDone(e);
+
+                    throw e;
                 }
             });
         }

@@ -494,11 +494,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
          * @return Factory.
          */
         static IgniteOutClosure<DiscoverySpiNodeAuthenticator> factory(final String...failAuthNodes) {
-            return new IgniteOutClosure<DiscoverySpiNodeAuthenticator>() {
-                @Override public DiscoverySpiNodeAuthenticator apply() {
-                    return new ZkTestNodeAuthenticator(Arrays.asList(failAuthNodes));
-                }
-            };
+            return () -> new ZkTestNodeAuthenticator(Arrays.asList(failAuthNodes));
         }
 
         /** */

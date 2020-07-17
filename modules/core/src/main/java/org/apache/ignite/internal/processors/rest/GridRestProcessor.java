@@ -178,14 +178,12 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
-                            @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
-                                try {
-                                    fut.onDone(f.get());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    fut.onDone(e);
-                                }
+                        res.listen(future -> {
+                            try {
+                                fut.onDone(future.get());
+                            }
+                            catch (IgniteCheckedException e) {
+                                fut.onDone(e);
                             }
                         });
                     }

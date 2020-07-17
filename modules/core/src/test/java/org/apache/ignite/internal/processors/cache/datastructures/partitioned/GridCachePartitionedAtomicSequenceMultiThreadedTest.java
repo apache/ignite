@@ -158,11 +158,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.incrementAndGet();
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure((IgniteAtomicSequence) t -> t.incrementAndGet(), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -175,11 +171,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.incrementAndGet();
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure(t -> t.incrementAndGet(), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -192,11 +184,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.getAndIncrement();
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure(t -> t.getAndIncrement(), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -226,11 +214,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.addAndGet(5);
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure(t -> t.addAndGet(5), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(5 * ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -243,11 +227,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.getAndAdd(5);
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure(t -> t.getAndAdd(5), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(5 * ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -260,15 +240,13 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.incrementAndGet();
-                t.getAndIncrement();
-                t.incrementAndGet();
-                t.getAndIncrement();
-                t.getAndAdd(3);
-                t.addAndGet(3);
-            }
+        runSequenceClosure(t -> {
+            t.incrementAndGet();
+            t.getAndIncrement();
+            t.incrementAndGet();
+            t.getAndIncrement();
+            t.getAndAdd(3);
+            t.addAndGet(3);
         }, seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(10 * ITERATION_NUM * THREAD_NUM, seq.get());

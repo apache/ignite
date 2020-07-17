@@ -93,11 +93,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static String igniteInstanceName;
 
     /** Closure job. */
-    protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
-        @Override public void apply(String s) {
-            // No-op.
-        }
-    };
+    protected IgniteInClosure<String> c1 = s -> {};
 
     /** Closure job. */
     protected IgniteClosure<String, String> c2 = new IgniteClosure<String, String>() {
@@ -107,11 +103,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     };
 
     /** Argument producer. */
-    protected IgniteOutClosure<String> c3 = new IgniteOutClosure<String>() {
-        @Nullable @Override public String apply() {
-            return null;
-        }
-    };
+    protected IgniteOutClosure<String> c3 = () -> null;
 
     /** Reducer. */
     protected IgniteReducer<String, Object> c4 = new IgniteReducer<String, Object>() {

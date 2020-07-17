@@ -49,12 +49,10 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
     private final ReferenceQueue<E> refQ = new ReferenceQueue<>();
 
     /** Reference factory. */
-    private final IgniteClosure<E, PhantomReferenceElement<E>> fact = new IgniteClosure<E, PhantomReferenceElement<E>>() {
-        @Override public PhantomReferenceElement<E> apply(E e) {
-            assert e != null;
+    private final IgniteClosure<E, PhantomReferenceElement<E>> fact = e -> {
+        assert e != null;
 
-            return new PhantomReferenceElement<>(e, refQ);
-        }
+        return new PhantomReferenceElement<>(e, refQ);
     };
 
     /**

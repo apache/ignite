@@ -61,24 +61,18 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
 
         final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-        cli.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event event) {
-                try {
-                    cli.compute().apply(new IgniteClosure<String, Void>() {
-                        @Override public Void apply(String arg) {
-                            return null;
-                        }
-                    }, "Hello!");
+        cli.events().localListen(event -> {
+            try {
+                cli.compute().apply(arg -> null, "Hello!");
 
-                    fut.onDone(true);
+                fut.onDone(true);
 
-                    return true;
-                }
-                catch (Exception e) {
-                    fut.onDone(e);
+                return true;
+            }
+            catch (Exception e) {
+                fut.onDone(e);
 
-                    return false;
-                }
+                return false;
             }
         }, EventType.EVT_CLIENT_NODE_RECONNECTED);
 

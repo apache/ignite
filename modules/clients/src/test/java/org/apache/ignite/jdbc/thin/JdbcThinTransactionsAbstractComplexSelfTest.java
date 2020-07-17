@@ -57,61 +57,46 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Closure to perform ordinary delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadDel = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-        }
-    };
+    private final IgniteInClosure<Connection> afterReadDel = connection ->
+        execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'");
 
     /**
      * Closure to perform fast delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadFastDel = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-        }
-    };
+    private final IgniteInClosure<Connection> afterReadFastDel = connection ->
+        execute(connection, "DELETE FROM \"Person\".Person where id = 1");
 
     /**
      * Closure to perform ordinary update after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadUpdate = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
-        }
-    };
+    private final IgniteInClosure<Connection> afterReadUpdate = connection ->
+        execute(connection, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");;
 
     /**
      * Closure to perform ordinary delete and rollback after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadDelAndRollback = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+    private final IgniteInClosure<Connection> afterReadDelAndRollback = connection -> {
+        execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'");
 
-            rollback(conn);
-        }
+        rollback(connection);
     };
 
     /**
      * Closure to perform fast delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadFastDelAndRollback = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+    private final IgniteInClosure<Connection> afterReadFastDelAndRollback = connection ->  {
+        execute(connection, "DELETE FROM \"Person\".Person where id = 1");
 
-            rollback(conn);
-        }
+        rollback(connection);
     };
 
     /**
      * Closure to perform ordinary update and rollback after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadUpdateAndRollback = new IgniteInClosure<Connection>() {
-        @Override public void apply(Connection conn) {
-            execute(conn, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
+    private final IgniteInClosure<Connection> afterReadUpdateAndRollback = connection -> {
+        execute(connection, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
 
-            rollback(conn);
-        }
+        rollback(connection);
     };
 
     /** {@inheritDoc} */
@@ -425,11 +410,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadWithConcurrentDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-            }
-        }, null);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'"), null);
     }
 
     /**
@@ -437,11 +418,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadWithConcurrentFastDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-            }
-        }, null);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where id = 1"), null);
     }
 
     /**
@@ -449,11 +426,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadWithConcurrentCacheRemove() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                personCache().remove(1);
-            }
-        }, null);
+        doTestRepeatableRead(connection -> personCache().remove(1), null);
     }
 
     /**
@@ -461,11 +434,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-            }
-        }, afterReadDel);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'"), afterReadDel);
     }
 
     /**
@@ -473,11 +442,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentFastDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-            }
-        }, afterReadDel);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where id = 1"), afterReadDel);
     }
 
     /**
@@ -485,11 +450,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemove() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                personCache().remove(1);
-            }
-        }, afterReadDel);
+        doTestRepeatableRead(connection -> personCache().remove(1), afterReadDel);
     }
 
     /**
@@ -497,11 +458,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-            }
-        }, afterReadFastDel);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'"), afterReadFastDel);
     }
 
     /**
@@ -509,11 +466,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDelete() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-            }
-        }, afterReadFastDel);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where id = 1"), afterReadFastDel);
     }
 
     /**
@@ -521,11 +474,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemove() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                personCache().remove(1);
-            }
-        }, afterReadFastDel);
+        doTestRepeatableRead(connection -> personCache().remove(1), afterReadFastDel);
     }
 
     /**
@@ -533,11 +482,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentDeleteAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-            }
-        }, afterReadDelAndRollback);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'"), afterReadDelAndRollback);
     }
 
     /**
@@ -545,11 +490,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-            }
-        }, afterReadDelAndRollback);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where id = 1"), afterReadDelAndRollback);
     }
 
     /**
@@ -557,11 +498,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                personCache().remove(1);
-            }
-        }, afterReadDelAndRollback);
+        doTestRepeatableRead(connection -> personCache().remove(1), afterReadDelAndRollback);
     }
 
     /**
@@ -569,11 +506,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentDeleteAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
-            }
-        }, afterReadFastDelAndRollback);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where firstname = 'John'"), afterReadFastDelAndRollback);
     }
 
     /**
@@ -581,11 +514,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
-            }
-        }, afterReadFastDelAndRollback);
+        doTestRepeatableRead(connection -> execute(connection, "DELETE FROM \"Person\".Person where id = 1"), afterReadFastDelAndRollback);
     }
 
     /**
@@ -593,11 +522,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                personCache().remove(1);
-            }
-        }, afterReadFastDelAndRollback);
+        doTestRepeatableRead(connection -> personCache().remove(1), afterReadFastDelAndRollback);
     }
 
     /**
@@ -605,11 +530,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadWithConcurrentUpdate() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
-            }
-        }, null);
+        doTestRepeatableRead(connection -> execute(connection, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'"), null);
     }
 
     /**
@@ -617,16 +538,14 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadWithConcurrentCacheReplace() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                Person p = new Person();
+        doTestRepeatableRead(connection -> {
+            Person p = new Person();
 
-                p.id = 1;
-                p.firstName = "Luke";
-                p.lastName = "Maxwell";
+            p.id = 1;
+            p.firstName = "Luke";
+            p.lastName = "Maxwell";
 
-                personCache().replace(1, p);
-            }
+            personCache().replace(1, p);
         }, null);
     }
 
@@ -635,11 +554,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndUpdateWithConcurrentUpdate() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
-            }
-        }, afterReadUpdate);
+        doTestRepeatableRead(connection -> execute(connection, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'"), afterReadUpdate);
     }
 
     /**
@@ -647,16 +562,14 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplace() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                Person p = new Person();
+        doTestRepeatableRead(connection ->  {
+            Person p = new Person();
 
-                p.id = 1;
-                p.firstName = "Luke";
-                p.lastName = "Maxwell";
+            p.id = 1;
+            p.firstName = "Luke";
+            p.lastName = "Maxwell";
 
-                personCache().replace(1, p);
-            }
+            personCache().replace(1, p);
         }, afterReadUpdate);
     }
 
@@ -665,11 +578,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndUpdateWithConcurrentUpdateAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
-            }
-        }, afterReadUpdateAndRollback);
+        doTestRepeatableRead(connection -> execute(connection, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'"), afterReadUpdateAndRollback);
     }
 
     /**
@@ -677,16 +586,14 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplaceAndRollback() throws Exception {
-        doTestRepeatableRead(new IgniteInClosure<Connection>() {
-            @Override public void apply(Connection conn) {
-                Person p = new Person();
+        doTestRepeatableRead(connection -> {
+            Person p = new Person();
 
-                p.id = 1;
-                p.firstName = "Luke";
-                p.lastName = "Maxwell";
+            p.id = 1;
+            p.firstName = "Luke";
+            p.lastName = "Maxwell";
 
-                personCache().replace(1, p);
-            }
+            personCache().replace(1, p);
         }, afterReadUpdateAndRollback);
     }
 

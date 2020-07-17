@@ -102,18 +102,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, 10_000);
 
     /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE_TO_ID = new IgniteClosure<ClusterNode, UUID>() {
-        @Override public UUID apply(ClusterNode node) {
-            return node.id();
-        }
-    };
+    private static final IgniteClosure<ClusterNode, UUID> NODE_TO_ID = ClusterNode::id;
 
     /** */
-    private static final IgniteClosure<ClusterNode, Long> NODE_TO_ORDER = new IgniteClosure<ClusterNode, Long>() {
-        @Override public Long apply(ClusterNode node) {
-            return node.order();
-        }
-    };
+    private static final IgniteClosure<ClusterNode, Long> NODE_TO_ORDER = ClusterNode::order;
 
     /** Affinity information for all started caches (initialized on coordinator). */
     private ConcurrentMap<Integer, CacheGroupHolder> grpHolders = new ConcurrentHashMap<>();
@@ -2351,14 +2343,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (initFut != null && !initFut.isDone()) {
             final GridFutureAdapter<Map<Integer, Map<Integer, List<UUID>>>> resFut = new GridFutureAdapter<>();
 
-            initFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> initFut) {
-                    try {
-                        resFut.onDone(initAffinityBasedOnPartitionsAvailability(fut.initialVersion(), fut, NODE_TO_ID, false));
-                    }
-                    catch (Exception e) {
-                        resFut.onDone(e);
-                    }
+            initFut.listen(initFuture -> {
+                try {
+                    resFut.onDone(initAffinityBasedOnPartitionsAvailability(fut.initialVersion(), fut, NODE_TO_ID, false));
+                }
+                catch (Exception e) {
+                    resFut.onDone(e);
                 }
             });
 

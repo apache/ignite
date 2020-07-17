@@ -88,34 +88,18 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 @Override public boolean apply(ClusterNode node) {
                     return taskArg.getConsistentIds().contains((String)node.consistentId().toString());
                 }
-            }).nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
+            }).nodes(), ClusterNode::id);
         }
 
         if (taskArg.getProjection() == VisorTxProjection.SERVER) {
-            return F.transform(ignite.cluster().forServers().nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
+            return F.transform(ignite.cluster().forServers().nodes(), ClusterNode::id);
         }
 
         if (taskArg.getProjection() == VisorTxProjection.CLIENT) {
-            return F.transform(ignite.cluster().forClients().nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
+            return F.transform(ignite.cluster().forClients().nodes(), ClusterNode::id);
         }
 
-        return F.transform(ignite.cluster().nodes(), new IgniteClosure<ClusterNode, UUID>() {
-            @Override public UUID apply(ClusterNode node) {
-                return node.id();
-            }
-        });
+        return F.transform(ignite.cluster().nodes(), ClusterNode::id);
     }
 
     /** {@inheritDoc} */

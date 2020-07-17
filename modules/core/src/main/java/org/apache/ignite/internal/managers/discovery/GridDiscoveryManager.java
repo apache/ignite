@@ -1411,12 +1411,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double offheap = U.offheapSize(allNodes, 2);
 
         if (log.isQuiet())
-            topologySnapshotMessage(new IgniteClosure<String, Void>() {
-                @Override public Void apply(String msg) {
-                    U.quiet(false, msg);
+            topologySnapshotMessage(msg -> {
+                U.quiet(false, msg);
 
-                    return null;
-                }
+                return null;
             }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
 
         if (log.isDebugEnabled()) {
@@ -1462,12 +1460,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            topologySnapshotMessage(new IgniteClosure<String, Void>() {
-                @Override public Void apply(String msg) {
-                    log.info(msg);
+            topologySnapshotMessage(msg -> {
+                log.info(msg);
 
-                    return null;
-                }
+                return null;
             }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
     }
 

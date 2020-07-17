@@ -640,17 +640,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 GridFutureAdapter<Void> transitionFut = transitionFuts.get(state.transitionRequestId());
 
                 if (stateFut != null && transitionFut != null) {
-                    transitionFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            try {
-                                fut.get();
+                    transitionFut.listen(future -> {
+                        try {
+                            future.get();
 
-                                stateFut.onDone();
-                            }
-                            catch (Exception ex) {
-                                stateFut.onDone(ex);
-                            }
-
+                            stateFut.onDone();
+                        }
+                        catch (Exception ex) {
+                            stateFut.onDone(ex);
                         }
                     });
                 }

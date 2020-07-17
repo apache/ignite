@@ -389,19 +389,17 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private void checkOversize() throws Exception {
         final long maxSize = 32L * 1024 * 1024;
 
-        memIgfsdDataPlcSetter = new IgniteInClosure<IgniteConfiguration>() {
-            @Override public void apply(IgniteConfiguration cfg) {
-                String memPlcName = "igfsDataMemPlc";
+        memIgfsdDataPlcSetter = igniteConfiguration -> {
+            String memPlcName = "igfsDataMemPlc";
 
-                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
-                    new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
+            igniteConfiguration.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
+                new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
 
-                FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];
+            FileSystemConfiguration igfsCfg = igniteConfiguration.getFileSystemConfiguration()[0];
 
-                igfsCfg.getDataCacheConfiguration().setDataRegionName(memPlcName);
+            igfsCfg.getDataCacheConfiguration().setDataRegionName(memPlcName);
 
-                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setDataRegionName(memPlcName));
-            }
+            igniteConfiguration.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setDataRegionName(memPlcName));
         };
 
         startUp();

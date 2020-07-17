@@ -565,21 +565,19 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").futureFor(FINISHED);
 
         // Delete checkpoint END file to emulate node stopped at the middle of checkpoint.
-        cpFinishFut.listen(new IgniteInClosureX<IgniteInternalFuture>() {
-            @Override public void applyx(IgniteInternalFuture fut0) throws IgniteCheckedException {
-                try {
-                    CheckpointEntry cpEntry = dbMgr.checkpointHistory().lastCheckpoint();
+        cpFinishFut.listen(future -> {
+            try {
+                CheckpointEntry cpEntry = dbMgr.checkpointHistory().lastCheckpoint();
 
-                    String cpEndFileName = GridCacheDatabaseSharedManager.checkpointFileName(cpEntry,
-                        CheckpointEntryType.END);
+                String cpEndFileName = GridCacheDatabaseSharedManager.checkpointFileName(cpEntry,
+                    CheckpointEntryType.END);
 
-                    Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+                Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
 
-                    log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
-                }
+                log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException(e);
             }
         });
 

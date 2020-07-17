@@ -43,19 +43,15 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
     public void testRuntimeException() throws Exception {
         Ignite ignite = grid(0);
 
-        ignite.compute().runAsync(new IgniteRunnable() {
-            @Override public void run() {
-                try {
-                    Thread.sleep(500);
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+        ignite.compute().runAsync(() -> {
+            try {
+                Thread.sleep(500);
             }
-        }).listen(new IgniteInClosure<IgniteFuture<Void>>() {
-            @Override public void apply(IgniteFuture<Void> future) {
-                throw new RuntimeException();
+            catch (InterruptedException ignored) {
+                // No-op.
             }
+        }).listen(future -> {
+            throw new RuntimeException();
         });
     }
 }

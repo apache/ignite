@@ -54,11 +54,7 @@ public class DirectMessageWriter implements MessageWriter {
      * @param protoVer Protocol version.
      */
     public DirectMessageWriter(final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-            @Override public StateItem apply() {
-                return new StateItem(protoVer);
-            }
-        });
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(protoVer));
 
         this.protoVer = protoVer;
     }

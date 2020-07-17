@@ -1191,13 +1191,7 @@ public class PlatformUtils {
      * @return Collection of metas.
      */
     public static Collection<BinaryMetadata> readBinaryMetadataCollection(BinaryRawReaderEx reader) {
-        return readCollection(reader,
-                new PlatformReaderClosure<BinaryMetadata>() {
-                    @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
-                        return readBinaryMetadata(reader);
-                    }
-                }
-        );
+        return readCollection(reader, PlatformUtils::readBinaryMetadata);
     }
 
     /**
@@ -1212,15 +1206,13 @@ public class PlatformUtils {
         String affKey = reader.readString();
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
-                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
-                        String name = reader.readString();
-                        int typeId = reader.readInt();
-                        int fieldId = reader.readInt();
+                lambdaReader -> {
+                    String name = lambdaReader.readString();
+                    int typId = lambdaReader.readInt();
+                    int fieldId = lambdaReader.readInt();
 
-                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
-                                new BinaryFieldMetadata(typeId, fieldId));
-                    }
+                    return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                        new BinaryFieldMetadata(typId, fieldId));
                 });
 
         Map<String, Integer> enumMap = null;

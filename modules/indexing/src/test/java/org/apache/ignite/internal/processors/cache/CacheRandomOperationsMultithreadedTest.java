@@ -133,17 +133,15 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
             final boolean indexing = !F.isEmpty(ccfg.getIndexedTypes()) ||
                 !F.isEmpty(ccfg.getQueryEntities());
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    Ignite ignite = ignite(idx % NODES);
+            GridTestUtils.runMultiThreaded(idx -> {
+                Ignite ignite = ignite(idx % NODES);
 
-                    IgniteCache<Object, Object> cache = ignite.cache(ccfg.getName());
+                IgniteCache<Object, Object> cache = ignite.cache(ccfg.getName());
 
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    while (U.currentTimeMillis() < stopTime)
-                        randomOperation(rnd, cache, indexing);
-                }
+                while (U.currentTimeMillis() < stopTime)
+                    randomOperation(rnd, cache, indexing);
             }, 1, "test-thread");
         }
         finally {

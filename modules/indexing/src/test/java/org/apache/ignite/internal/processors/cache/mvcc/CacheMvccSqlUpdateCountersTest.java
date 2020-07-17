@@ -348,149 +348,144 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         for (int i = 0; i < keys; i++)
             tracker.put(i, new AtomicLong(1));
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO MvccTestAccount(_key, val, updateCnt) VALUES " +
-                        "(?, 0, 1)");
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO MvccTestAccount(_key, val, updateCnt) VALUES " +
+                    "(?, 0, 1)");
 
-                    for (int i = 0; i < keys; i++) {
-                        try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
-                            assertEquals(1L, cur.iterator().next().get(0));
+                for (int i = 0; i < keys; i++) {
+                    try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
+                        assertEquals(1L, cur.iterator().next().get(0));
+                    }
+
+                    tx.commit();
+                }
+            }
+        };
+
+        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer = (idx, caches, stop) -> {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            Map<Integer, AtomicLong> acc = new HashMap<>();
+
+            int v = 0;
+
+            while (!stop.get()) {
+                int cnt = rnd.nextInt(keys / 3);
+
+                if (cnt == 0)
+                    cnt = 2;
+
+                // Generate key set to be changed in tx.
+                while (acc.size() < cnt)
+                    acc.put(rnd.nextInt(cnt), new AtomicLong());
+
+                TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                boolean success = true;
+
+                try {
+                    IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
+
+                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        Map<Integer, MvccTestAccount> allVals = readAllByMode(cache.cache, tracker.keySet(), SQL, ACCOUNT_CODEC);
+
+                        boolean rmv = allVals.size() > keys * 2 / 3;
+
+                        for (Map.Entry<Integer, AtomicLong> e : acc.entrySet()) {
+                            int key = e.getKey();
+
+                            AtomicLong accCntr = e.getValue();
+
+                            boolean exists = allVals.containsKey(key);
+
+                            int delta = 0;
+
+                            boolean createdInTx = false;
+
+                            if (rmv && rnd.nextBoolean()) {
+                                if (exists)
+                                    delta = 1;
+
+                                SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM MvccTestAccount WHERE _key=" + key);
+
+                                cache.cache.query(qry).getAll();
+                            }
+                            else {
+                                delta = 1;
+
+                                if (!exists)
+                                    createdInTx = true;
+
+                                SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO MvccTestAccount " +
+                                    "(_key, val, updateCnt) VALUES (" + key + ",  " + rnd.nextInt(100) + ", 1)");
+
+                                cache.cache.query(qry).getAll();
+                            }
+
+                            if (rnd.nextBoolean()) {
+                                if (createdInTx)
+                                    delta = 0; // Do not count cases when key created and removed in the same tx.
+
+                                SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM MvccTestAccount WHERE _key=" + key);
+
+                                cache.cache.query(qry).getAll();
+                            }
+                            else {
+                                delta = 1;
+
+                                SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO MvccTestAccount " +
+                                    "(_key, val, updateCnt) VALUES (" + key + ",  " + rnd.nextInt(100) + ", 1)");
+
+                                cache.cache.query(qry).getAll();
+                            }
+
+                            accCntr.addAndGet(delta);
                         }
 
                         tx.commit();
                     }
                 }
-            }
-        };
+                catch (Exception e) {
+                    handleTxException(e);
 
-        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
-            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    success = false;
 
-                    Map<Integer, AtomicLong> acc = new HashMap<>();
+                    int r = 0;
 
-                    int v = 0;
+                    for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
+                        if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)
+                            r += en.getValue().intValue();
+                    }
+                }
+                finally {
+                    cache.readUnlock();
 
-                    while (!stop.get()) {
-                        int cnt = rnd.nextInt(keys / 3);
+                    if (success) {
+                        v++;
 
-                        if (cnt == 0)
-                            cnt = 2;
+                        for (Map.Entry<Integer, AtomicLong> e : acc.entrySet()) {
+                            int k = e.getKey();
+                            long updCntr = e.getValue().get();
 
-                        // Generate key set to be changed in tx.
-                        while (acc.size() < cnt)
-                            acc.put(rnd.nextInt(cnt), new AtomicLong());
-
-                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-
-                        boolean success = true;
-
-                        try {
-                            IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
-
-                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                Map<Integer, MvccTestAccount> allVals = readAllByMode(cache.cache, tracker.keySet(), SQL, ACCOUNT_CODEC);
-
-                                boolean rmv = allVals.size() > keys * 2 / 3;
-
-                                for (Map.Entry<Integer, AtomicLong> e : acc.entrySet()) {
-                                    int key = e.getKey();
-
-                                    AtomicLong accCntr = e.getValue();
-
-                                    boolean exists = allVals.containsKey(key);
-
-                                    int delta = 0;
-
-                                    boolean createdInTx = false;
-
-                                    if (rmv && rnd.nextBoolean()) {
-                                        if (exists)
-                                            delta = 1;
-
-                                        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM MvccTestAccount WHERE _key=" + key);
-
-                                        cache.cache.query(qry).getAll();
-                                    }
-                                    else {
-                                        delta = 1;
-
-                                        if (!exists)
-                                            createdInTx = true;
-
-                                        SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO MvccTestAccount " +
-                                            "(_key, val, updateCnt) VALUES (" + key + ",  " + rnd.nextInt(100) + ", 1)");
-
-                                        cache.cache.query(qry).getAll();
-                                    }
-
-                                    if (rnd.nextBoolean()) {
-                                        if (createdInTx)
-                                            delta = 0; // Do not count cases when key created and removed in the same tx.
-
-                                        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM MvccTestAccount WHERE _key=" + key);
-
-                                        cache.cache.query(qry).getAll();
-                                    }
-                                    else {
-                                        delta = 1;
-
-                                        SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO MvccTestAccount " +
-                                            "(_key, val, updateCnt) VALUES (" + key + ",  " + rnd.nextInt(100) + ", 1)");
-
-                                        cache.cache.query(qry).getAll();
-                                    }
-
-                                    accCntr.addAndGet(delta);
-                                }
-
-                                tx.commit();
-                            }
+                            tracker.get(k).addAndGet(updCntr);
                         }
-                        catch (Exception e) {
-                            handleTxException(e);
 
-                            success = false;
+                        int r = 0;
 
-                            int r = 0;
-
-                            for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
-                                if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)
-                                    r += en.getValue().intValue();
-                            }
-                        }
-                        finally {
-                            cache.readUnlock();
-
-                            if (success) {
-                                v++;
-
-                                for (Map.Entry<Integer, AtomicLong> e : acc.entrySet()) {
-                                    int k = e.getKey();
-                                    long updCntr = e.getValue().get();
-
-                                    tracker.get(k).addAndGet(updCntr);
-                                }
-
-                                int r = 0;
-
-                                for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
-                                    if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)
-                                        r += en.getValue().intValue();
-                                }
-                            }
-
-                            acc.clear();
+                        for (Map.Entry<Integer, AtomicLong> en : acc.entrySet()) {
+                            if (((IgniteCacheProxy)cache.cache).context().affinity().partition(en.getKey()) == 0)
+                                r += en.getValue().intValue();
                         }
                     }
 
-                    info("Writer done, updates: " + v);
+                    acc.clear();
                 }
-            };
+            }
+
+            info("Writer done, updates: " + v);
+        };
 
         GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader =
             new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {

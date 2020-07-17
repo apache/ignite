@@ -516,20 +516,17 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure
-            <Socket>() {
-            @Override public void apply(Socket sock) {
-                try {
-                    latch.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+        ((TcpDiscoverySpi) srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(socket -> {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         });
 
-        assert ((IgniteEx)client).context().discovery().pingNode(srv0.cluster().localNode().id());
-        assert !((IgniteEx)client).context().discovery().pingNode(srv1.cluster().localNode().id());
+        assert ((IgniteEx) client).context().discovery().pingNode(srv0.cluster().localNode().id());
+        assert !((IgniteEx) client).context().discovery().pingNode(srv1.cluster().localNode().id());
 
         latch.countDown();
     }
@@ -1129,13 +1126,11 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(1, 1);
 
-        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
-            @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                try {
-                    Thread.sleep(1000000);
-                } catch (InterruptedException ignored) {
-                    Thread.interrupted();
-                }
+        ((TcpDiscoverySpi) G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(msg -> {
+            try {
+                Thread.sleep(1000000);
+            } catch (InterruptedException ignored) {
+                Thread.interrupted();
             }
         });
         failClient(1);
@@ -1327,19 +1322,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch cnt = new CountDownLatch(1);
 
-        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(
-            new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
-                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                    try {
-                        cnt.await(10, MINUTES);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+        ((TcpDiscoverySpi) G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(message -> {
+            try {
+                cnt.await(10, MINUTES);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
 
-                        throw new IgniteInterruptedException(e);
-                    }
-                }
-            });
+                throw new IgniteInterruptedException(e);
+            }
+        });
 
         try {
             netTimeout = 500;

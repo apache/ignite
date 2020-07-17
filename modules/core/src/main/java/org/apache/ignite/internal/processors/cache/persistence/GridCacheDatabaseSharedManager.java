@@ -936,21 +936,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Long>() {
-            @Override public Long apply() {
-                long freeSpace = 0L;
+        return () -> {
+            long freeSpace = 0L;
 
-                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
-                        continue;
+            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
+                    continue;
 
-                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+                assert grpCtx.offheap() instanceof GridCacheOffheapManager;
 
-                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
-                }
-
-                return freeSpace;
+                freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
             }
+
+            return freeSpace;
         };
     }
 
@@ -1246,11 +1244,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            new IgniteOutClosure<CheckpointProgress>() {
-                @Override public CheckpointProgress apply() {
-                    return getCheckpointer().currentProgress();
-                }
-            }
+            () -> getCheckpointer().currentProgress()
         );
 
         memMetrics.pageMemory(pageMem);

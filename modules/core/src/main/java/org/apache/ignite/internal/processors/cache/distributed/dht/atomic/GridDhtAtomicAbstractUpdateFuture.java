@@ -580,13 +580,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     @Override public String toString() {
         synchronized (this) {
             Map<UUID, String> dhtRes = F.viewReadOnly(mappings,
-                new IgniteClosure<GridDhtAtomicAbstractUpdateRequest, String>() {
-                    @Override public String apply(GridDhtAtomicAbstractUpdateRequest req) {
-                        return "[res=" + req.hasResponse() +
-                            ", size=" + req.size() +
-                            ", nearSize=" + req.nearSize() + ']';
-                    }
-                }
+                req -> "[res=" + req.hasResponse() +
+                    ", size=" + req.size() +
+                    ", nearSize=" + req.nearSize() + ']'
             );
 
             return S.toString(GridDhtAtomicAbstractUpdateFuture.class, this, "dhtRes", dhtRes);

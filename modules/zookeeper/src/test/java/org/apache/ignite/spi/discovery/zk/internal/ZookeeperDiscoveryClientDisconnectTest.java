@@ -350,11 +350,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
             log.info("Stop all servers.");
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer threadIdx) {
-                    stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                }
-            }, srvs, "stop-server");
+            GridTestUtils.runMultiThreaded(threadIdx -> stopGrid(getTestIgniteInstanceName(threadIdx), true, false), srvs, "stop-server");
 
             ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 

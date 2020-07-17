@@ -167,11 +167,7 @@ public class HadoopExternalProcessStarter {
             logger = new Log4JLogger(true);
         }
 
-        logger.updateFilePath(new IgniteClosure<String, String>() {
-            @Override public String apply(String s) {
-                return new File(outputDir, args.childProcId + ".log").getAbsolutePath();
-            }
-        });
+        logger.updateFilePath(s -> new File(outputDir, args.childProcId + ".log").getAbsolutePath());
 
         return logger;
     }

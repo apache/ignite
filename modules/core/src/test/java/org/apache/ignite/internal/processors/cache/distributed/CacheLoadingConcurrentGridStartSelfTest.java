@@ -149,17 +149,15 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         configured = true;
 
         try {
-            IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
-                @Override public void apply(Ignite grid) {
-                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        dataStreamer.allowOverwrite(allowOverwrite);
+            IgniteInClosure<Ignite> f = grid -> {
+                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
+                    dataStreamer.allowOverwrite(allowOverwrite);
 
-                        for (int i = 0; i < KEYS_CNT; i++)
-                            dataStreamer.addData(i, Integer.toString(i));
-                    }
-
-                    log.info("Data loaded.");
+                    for (int i = 0; i < KEYS_CNT; i++)
+                        dataStreamer.addData(i, Integer.toString(i));
                 }
+
+                log.info("Data loaded.");
             };
 
             loadCache(f);
@@ -175,11 +173,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
     @Test
     public void testLoadCacheFromStore() throws Exception {
-        loadCache(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-        });
+        loadCache(grid -> grid.cache(DEFAULT_CACHE_NAME).loadCache(null));
     }
 
     /**

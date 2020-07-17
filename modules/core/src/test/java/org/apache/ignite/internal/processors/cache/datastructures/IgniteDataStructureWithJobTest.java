@@ -67,12 +67,10 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    ignite.compute().broadcast(new IgniteClosure<IgniteQueue, Integer>() {
-                        @Override public Integer apply(IgniteQueue queue) {
-                            assertNotNull(queue);
+                    ignite.compute().broadcast(queue -> {
+                        assertNotNull(queue);
 
-                            return 1;
-                        }
+                        return 1;
                     }, ignite.queue("queue", 0, new CollectionConfiguration()));
                 }
                 catch (IgniteException ignore) {

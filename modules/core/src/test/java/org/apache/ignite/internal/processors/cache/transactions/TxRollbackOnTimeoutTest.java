@@ -190,39 +190,37 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final int KEYS_PER_THREAD = 10_000;
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                int start = idx * KEYS_PER_THREAD;
-                int end = start + KEYS_PER_THREAD;
+        GridTestUtils.runMultiThreaded(idx -> {
+            int start = idx * KEYS_PER_THREAD;
+            int end = start + KEYS_PER_THREAD;
 
-                int locked = 0;
+            int locked = 0;
 
-                try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
-                        for (int i = start; i < end; i++) {
-                            cache.get(i);
+            try {
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
+                    for (int i = start; i < end; i++) {
+                        cache.get(i);
 
-                            locked++;
-                        }
-
-                        tx.commit();
+                        locked++;
                     }
+
+                    tx.commit();
                 }
-                catch (Exception e) {
-                    info("Expected error: " + e);
-                }
+            }
+            catch (Exception e) {
+                info("Expected error: " + e);
+            }
 
-                info("Done, locked: " + locked);
+            info("Done, locked: " + locked);
 
-                if (retry) {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
-                        for (int i = start; i < end; i++)
-                            cache.get(i);
+            if (retry) {
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
+                    for (int i = start; i < end; i++)
+                        cache.get(i);
 
-                        cache.put(start, 0);
+                    cache.put(start, 0);
 
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
             }
         }, Math.min(4, Runtime.getRuntime().availableProcessors()), "tx-thread");

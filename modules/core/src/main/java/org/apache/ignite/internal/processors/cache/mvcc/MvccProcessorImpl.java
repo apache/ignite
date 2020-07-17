@@ -819,13 +819,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             if (ctx.localNodeId().equals(crd.nodeId())) {
                 if (!initFut.isDone()) {
                     // Wait for the local coordinator init.
-                    initFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture fut) {
-                            if (forRead)
-                                lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
-                            else
-                                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
-                        }
+                    initFut.listen(future -> {
+                        if (forRead)
+                            lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
+                        else
+                            lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
                     });
                 }
                 else if (forRead)
@@ -1262,91 +1260,89 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private void continueRunVacuum(GridFutureAdapter<VacuumMetrics> res, MvccSnapshot snapshot) {
         ackTxCommit(snapshot)
-            .listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    Throwable err;
+            .listen(fut -> {
+                Throwable err;
 
-                    if ((err = fut.error()) != null) {
-                        U.error(log, "Vacuum error.", err);
+                if ((err = fut.error()) != null) {
+                    U.error(log, "Vacuum error.", err);
 
-                        res.onDone(err);
-                    }
-                    else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
-                        res.onDone(new VacuumMetrics());
-                    else {
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Started vacuum with cleanup version=" + snapshot.cleanupVersion() + '.');
+                    res.onDone(err);
+                }
+                else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
+                    res.onDone(new VacuumMetrics());
+                else {
+                    try {
+                        if (log.isDebugEnabled())
+                            log.debug("Started vacuum with cleanup version=" + snapshot.cleanupVersion() + '.');
 
-                            synchronized (mux) {
-                                if (cleanupQueue == null) {
-                                    res.onDone(vacuumCancelledException());
+                        synchronized (mux) {
+                            if (cleanupQueue == null) {
+                                res.onDone(vacuumCancelledException());
 
-                                    return;
-                                }
-
-                                GridCompoundIdentityFuture<VacuumMetrics> res0 =
-                                    new GridCompoundIdentityFuture<VacuumMetrics>(new VacuumMetricsReducer()) {
-                                        /** {@inheritDoc} */
-                                        @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
-                                            // no-op
-                                        }
-
-                                        /** {@inheritDoc} */
-                                        @Override protected void logDebug(IgniteLogger log, String msg) {
-                                            // no-op
-                                        }
-                                    };
-
-                                for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                                    if (grp.mvccEnabled()) {
-                                        grp.topology().readLock();
-
-                                        try {
-                                            for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                                                VacuumTask task = new VacuumTask(snapshot, part);
-
-                                                cleanupQueue.offer(task);
-
-                                                res0.add(task);
-                                            }
-                                        }
-                                        finally {
-                                            grp.topology().readUnlock();
-                                        }
-                                    }
-                                }
-
-                                res0.markInitialized();
-
-                                res0.listen(future -> {
-                                    VacuumMetrics metrics = null; Throwable ex = null;
-
-                                    try {
-                                        metrics = future.get();
-
-                                        txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
-
-                                        if (log.isDebugEnabled())
-                                            log.debug("Vacuum completed. " + metrics);
-                                    } catch (Throwable e) {
-                                        if (X.hasCause(e, NodeStoppingException.class)) {
-                                            if (log.isDebugEnabled())
-                                                log.debug("Cannot complete vacuum (node is stopping).");
-
-                                            metrics = new VacuumMetrics();
-                                        } else
-                                            ex = new GridClosureException(e);
-                                    }
-
-                                    res.onDone(metrics, ex);
-                                });
+                                return;
                             }
 
+                            GridCompoundIdentityFuture<VacuumMetrics> res0 =
+                                new GridCompoundIdentityFuture<VacuumMetrics>(new VacuumMetricsReducer()) {
+                                    /** {@inheritDoc} */
+                                    @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
+                                        // no-op
+                                    }
+
+                                    /** {@inheritDoc} */
+                                    @Override protected void logDebug(IgniteLogger log, String msg) {
+                                        // no-op
+                                    }
+                                };
+
+                            for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
+                                if (grp.mvccEnabled()) {
+                                    grp.topology().readLock();
+
+                                    try {
+                                        for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                                            VacuumTask task = new VacuumTask(snapshot, part);
+
+                                            cleanupQueue.offer(task);
+
+                                            res0.add(task);
+                                        }
+                                    }
+                                    finally {
+                                        grp.topology().readUnlock();
+                                    }
+                                }
+                            }
+
+                            res0.markInitialized();
+
+                            res0.listen(future -> {
+                                VacuumMetrics metrics = null; Throwable ex = null;
+
+                                try {
+                                    metrics = future.get();
+
+                                    txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Vacuum completed. " + metrics);
+                                } catch (Throwable e) {
+                                    if (X.hasCause(e, NodeStoppingException.class)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Cannot complete vacuum (node is stopping).");
+
+                                        metrics = new VacuumMetrics();
+                                    } else
+                                        ex = new GridClosureException(e);
+                                }
+
+                                res.onDone(metrics, ex);
+                            });
                         }
-                        catch (Throwable e) {
-                            completeWithException(res, e);
-                        }
+
+                    }
+                    catch (Throwable e) {
+                        completeWithException(res, e);
                     }
                 }
             });
@@ -1767,12 +1763,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             MvccMessage msg0 = (MvccMessage)msg;
 
             if (msg0.waitForCoordinatorInit() && !initFut.isDone()) {
-                initFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> fut) {
-                        assert curCrd.local();
+                initFut.listen(future -> {
+                    assert curCrd.local();
 
-                        processMessage(nodeId, msg);
-                    }
+                    processMessage(nodeId, msg);
                 });
             }
             else

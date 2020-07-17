@@ -57,14 +57,12 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
         if (err != null)
             onDone(err);
         else {
-            delegate.listen(new IgniteInClosure<IgniteInternalFuture<R>>() {
-                @Override public void apply(IgniteInternalFuture<R> t) {
-                    try {
-                        onDone(t.get());
-                    }
-                    catch (IgniteCheckedException e) {
-                        onDone(e);
-                    }
+            delegate.listen(future -> {
+                try {
+                    onDone(future.get());
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
                 }
             });
         }

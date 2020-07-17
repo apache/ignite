@@ -99,11 +99,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     };
 
     /** Test closure. */
-    private static final IgniteClosure<Object, Object> TEST_CLOSURE = new IgniteClosure<Object, Object>() {
-        @Override public Object apply(Object o) {
-            return null;
-        }
-    };
+    private static final IgniteClosure<Object, Object> TEST_CLOSURE = o -> null;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

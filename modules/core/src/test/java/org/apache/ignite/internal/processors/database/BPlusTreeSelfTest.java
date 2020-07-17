@@ -1363,12 +1363,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        final BPlusTree.TreeRowClosure<Long, Long> rowClosure = new BPlusTree.TreeRowClosure<Long, Long>() {
-            @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
-                throws IgniteCheckedException {
-                return rowMatcher.test(io.getLookupRow(tree, pageAddr, idx));
-            }
-        };
+        final BPlusTree.TreeRowClosure<Long, Long> rowClosure = (tree, io, pageAddr, idx) -> rowMatcher.test(io.getLookupRow(tree, pageAddr, idx));
 
         int correctMatchingRows = 0;
 
@@ -1807,20 +1802,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 final List<Long> treeContents = new ArrayList<>(SLIDING_WINDOW_SIZE * 2);
 
-                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = new BPlusTree.TreeRowClosure<Long, Long>() {
-                    @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
-                        throws IgniteCheckedException {
+                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = (tree, io, pageAddr, idx) -> {
+                    treeContents.add(io.getLookupRow(tree, pageAddr, idx));
 
-                        treeContents.add(io.getLookupRow(tree, pageAddr, idx));
+                    final long endMs = System.currentTimeMillis() + 10;
+                    final long endPutKey = curPutKey.get() + MAX_PER_PAGE;
 
-                        final long endMs = System.currentTimeMillis() + 10;
-                        final long endPutKey = curPutKey.get() + MAX_PER_PAGE;
+                    while (System.currentTimeMillis() < endMs && curPutKey.get() < endPutKey)
+                        Thread.yield();
 
-                        while (System.currentTimeMillis() < endMs && curPutKey.get() < endPutKey)
-                            Thread.yield();
-
-                        return true;
-                    }
+                    return true;
                 };
 
                 while (!stop.get()) {

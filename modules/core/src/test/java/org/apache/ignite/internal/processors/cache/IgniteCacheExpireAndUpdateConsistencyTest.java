@@ -205,58 +205,56 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
         final IgniteCache<TestKey, TestValue> expPlcCache =
             cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(SECONDS, 2)));
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                List<TestKey> keys = new ArrayList<>();
+        GridTestUtils.runMultiThreaded(idx -> {
+            List<TestKey> keys = new ArrayList<>();
 
-                for (int i = 0; i < KEYS_PER_THREAD; i++)
-                    keys.add(new TestKey(keyVal.incrementAndGet()));
+            for (int i = 0; i < KEYS_PER_THREAD; i++)
+                keys.add(new TestKey(keyVal.incrementAndGet()));
+
+            for (TestKey key : keys) {
+                expPlcCache.put(key, new TestValue(0));
+
+                List<T2<TestValue, TestValue>> keyUpdates = new ArrayList<>();
+
+                keyUpdates.add(new T2<>(new TestValue(0), (TestValue)null));
+
+                updates.put(key, keyUpdates);
+            }
+
+            long stopTime = U.currentTimeMillis() + 10_000;
+
+            int val = 0;
+
+            Set<TestKey> expired = new HashSet<>();
+
+            IgniteTransactions txs = node.transactions();
+
+            while (U.currentTimeMillis() < stopTime) {
+                val++;
+
+                TestValue newVal = new TestValue(val);
 
                 for (TestKey key : keys) {
-                    expPlcCache.put(key, new TestValue(0));
+                    Transaction tx = useTx ? txs.txStart(PESSIMISTIC, REPEATABLE_READ) : null;
 
-                    List<T2<TestValue, TestValue>> keyUpdates = new ArrayList<>();
+                    TestValue oldVal = cache.getAndPut(key, newVal);
 
-                    keyUpdates.add(new T2<>(new TestValue(0), (TestValue)null));
+                    if (tx != null)
+                        tx.commit();
 
-                    updates.put(key, keyUpdates);
+                    List<T2<TestValue, TestValue>> keyUpdates = updates.get(key);
+
+                    keyUpdates.add(new T2<>(newVal, oldVal));
+
+                    if (oldVal == null)
+                        expired.add(key);
                 }
 
-                long stopTime = U.currentTimeMillis() + 10_000;
-
-                int val = 0;
-
-                Set<TestKey> expired = new HashSet<>();
-
-                IgniteTransactions txs = node.transactions();
-
-                while (U.currentTimeMillis() < stopTime) {
-                    val++;
-
-                    TestValue newVal = new TestValue(val);
-
-                    for (TestKey key : keys) {
-                        Transaction tx = useTx ? txs.txStart(PESSIMISTIC, REPEATABLE_READ) : null;
-
-                        TestValue oldVal = cache.getAndPut(key, newVal);
-
-                        if (tx != null)
-                            tx.commit();
-
-                        List<T2<TestValue, TestValue>> keyUpdates = updates.get(key);
-
-                        keyUpdates.add(new T2<>(newVal, oldVal));
-
-                        if (oldVal == null)
-                            expired.add(key);
-                    }
-
-                    if (expired.size() == keys.size())
-                        break;
-                }
-
-                assertEquals(keys.size(), expired.size());
+                if (expired.size() == keys.size())
+                    break;
             }
+
+            assertEquals(keys.size(), expired.size());
         }, THREADS, "update-thread");
 
         for (ConcurrentMap<TestKey, List<T2<TestValue, TestValue>>> evts : nodesEvts)

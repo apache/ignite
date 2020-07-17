@@ -117,20 +117,10 @@ public class DmlStatementsProcessor {
     };
 
     /** Remove updater for compatibility with < 2.7.0. Must not be moved around to keep at anonymous position 4. */
-    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD =
-        new IgniteInClosure<MutableEntry<Object, Object>>() {
-            @Override public void apply(MutableEntry<Object, Object> e) {
-                e.remove();
-            }
-        };
+    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD = MutableEntry::remove;
 
     /** Remove updater. Must not be moved around to keep at anonymous position 5. */
-    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
-        new IgniteInClosure<MutableEntry<Object, Object>>() {
-            @Override public void apply(MutableEntry<Object, Object> e) {
-                e.remove();
-            }
-        };
+    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV = MutableEntry::remove;
 
     /**
      * Returns the remove closure based on the version of the primary node.
