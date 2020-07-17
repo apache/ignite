@@ -201,7 +201,8 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Plugin that changes
+     * Plugin that changes partitions factory to create GridDhtLocalPartition with modified tryClear method.
+     * In tryClear method we are waiting for eviction queue to be filled to check that eviction order is as expected.
      */
     public static class TestProvider implements PluginProvider, IgnitePlugin {
         /** */
