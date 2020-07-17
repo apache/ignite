@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -51,6 +52,9 @@ public class EventsRemoteSecurityContextCheckTest extends AbstractRemoteSecurity
     /** Server node to change cache state. */
     private static final String SRV = "srv";
 
+    /** Name of server feature transit node. */
+    private static final String SRV_CHECK_ADDITIONAL = "srv_check_additional";
+
     /** Index to generate a unique topic and the synchronized set value. */
     private static final AtomicInteger INDEX = new AtomicInteger();
 
@@ -71,7 +75,7 @@ public class EventsRemoteSecurityContextCheckTest extends AbstractRemoteSecurity
 
         startGridAllowAll(SRV_CHECK);
 
-        startGridAllowAll(CLNT_CHECK);
+        startGridAllowAll(SRV_CHECK_ADDITIONAL);
 
         awaitPartitionMapExchange();
     }
@@ -113,7 +117,7 @@ public class EventsRemoteSecurityContextCheckTest extends AbstractRemoteSecurity
         runAndCheck(() -> {
             String cacheName = "test_cache_" + INDEX.incrementAndGet();
 
-            SYNC_MAP.put(cacheName, new CountDownLatch(2));
+            SYNC_MAP.put(cacheName, new CountDownLatch(nodesToCheck().size()));
 
             IgniteCache<String, String> cache = grid(SRV).createCache(new CacheConfiguration<String, String>(cacheName)
                 .setCacheMode(CacheMode.REPLICATED));
@@ -156,5 +160,10 @@ public class EventsRemoteSecurityContextCheckTest extends AbstractRemoteSecurity
     /** {@inheritDoc} */
     @Override protected Collection<String> endpoints() {
         return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<String> nodesToCheck() {
+        return Arrays.asList(SRV_CHECK, SRV_CHECK_ADDITIONAL);
     }
 }
