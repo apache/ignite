@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

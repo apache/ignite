@@ -104,11 +104,14 @@ import org.apache.ignite.internal.processors.platform.message.PlatformMessageFil
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -159,6 +162,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.tracing.MTC.support;
+import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
+import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
+import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
@@ -1359,9 +1366,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
-        Runnable c = new Runnable() {
-            @Override public void run() {
+        Runnable c = new TraceRunnable(ctx.tracing(), COMMUNICATION_REGULAR_PROCESS) {
+            @Override public void execute() {
                 try {
+                    MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+
                     threadProcessingMessage(true, msgC);
 
                     processRegularMessage0(msg, nodeId);
@@ -1377,6 +1386,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return "Message closure [msg=" + msg + ']';
             }
         };
+
+        MTC.span().addLog(() -> "Regular process queued");
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
@@ -1779,6 +1790,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
+            MTC.span().addLog(() -> "Ordered process queued");
+
             pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
@@ -1834,6 +1847,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param secSubjId Security subject that will be used to open a security session.
      */
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
+        MTC.span().addLog(() -> "Invoke listener");
+
         Byte oldPlc = CUR_PLC.get();
 
         boolean change = !F.eq(oldPlc, plc);
@@ -2006,29 +2021,33 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
-        GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
+        try (TraceSurroundings ignored = support(null)) {
+            MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
 
-        if (locNodeId.equals(node.id())) {
-            assert plc != P2P_POOL;
+            GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
 
-            CommunicationListener commLsnr = this.commLsnr;
+            if (locNodeId.equals(node.id())) {
 
-            if (commLsnr == null)
-                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
+                assert plc != P2P_POOL;
 
-            if (ordered)
-                processOrderedMessage(locNodeId, ioMsg, plc, null);
-            else if (async)
-                processRegularMessage(locNodeId, ioMsg, plc, NOOP);
-            else
-                processRegularMessage0(ioMsg, locNodeId);
+                CommunicationListener commLsnr = this.commLsnr;
 
-            if (ackC != null)
-                ackC.apply(null);
-        }
-        else {
-            if (topicOrd < 0)
-                ioMsg.topicBytes(U.marshal(marsh, topic));
+                if (commLsnr == null)
+                    throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
+
+                if (ordered)
+                    processOrderedMessage(locNodeId, ioMsg, plc, null);
+                else if (async)
+                    processRegularMessage(locNodeId, ioMsg, plc, NOOP);
+                else
+                    processRegularMessage0(ioMsg, locNodeId);
+
+                if (ackC != null)
+                    ackC.apply(null);
+            }
+            else {
+                if (topicOrd < 0)
+                    ioMsg.topicBytes(U.marshal(marsh, topic));
 
             try {
                 if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
@@ -2040,13 +2059,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (e.getCause() instanceof ClusterTopologyCheckedException)
                     throw (ClusterTopologyCheckedException)e.getCause();
 
-                if (!ctx.discovery().alive(node))
-                    throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+                    if (!ctx.discovery().alive(node))
+                        throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
 
-                throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
-                    "TCP connection cannot be established due to firewall issues) " +
-                    "[node=" + node + ", topic=" + topic +
-                    ", msg=" + msg + ", policy=" + plc + ']', e);
+                    throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
+                        "TCP connection cannot be established due to firewall issues) " +
+                        "[node=" + node + ", topic=" + topic +
+                        ", msg=" + msg + ", policy=" + plc + ']', e);
+                }
             }
         }
     }
@@ -2115,6 +2135,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
+    public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
+        throws IgniteCheckedException {
+        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
     public void sendToCustomTopic(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
         send(node, topic, -1, msg, plc, false, 0, false, null, false);
@@ -2125,9 +2157,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
+     * @param span Current span for tracing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
+    public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc, Span span)
         throws IgniteCheckedException {
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
     }
@@ -2137,7 +2170,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
      * @param msg Message to send.
-     * @param plc Type of processing.
+     * @param plc Type of processing.     *
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void sendGeneric(ClusterNode node, Object topic, int topicOrd, Message msg, byte plc)
@@ -3649,7 +3682,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /** */
         @GridToStringInclude
-        private final Queue<GridTuple3<GridIoMessage, Long, IgniteRunnable>> msgs = new ConcurrentLinkedDeque<>();
+        private final Queue<OrderedMessageContainer> msgs = new ConcurrentLinkedDeque<>();
 
         /** */
         private final AtomicBoolean reserved = new AtomicBoolean();
@@ -3697,7 +3730,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             lastTs = U.currentTimeMillis();
 
-            msgs.add(F.t(msg, lastTs, msgC));
+            msgs.add(new OrderedMessageContainer(msg, lastTs, msgC, MTC.span()));
         }
 
         /** {@inheritDoc} */
@@ -3815,13 +3848,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         void unwind(GridMessageListener lsnr) {
             assert reserved.get();
 
-            for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
-                try {
-                    invokeListener(plc, lsnr, nodeId, t.get1().message(), secSubjId(t.get1()));
-                }
-                finally {
-                    if (t.get3() != null)
-                        t.get3().run();
+            for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
+                try (TraceSurroundings ignore = support(ctx.tracing().create(
+                    COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))) {
+                    try {
+                        OrderedMessageContainer fmc = mc;
+
+                        MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
+
+                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
+                    }
+                    finally {
+                        if (mc.closure != null)
+                            mc.closure.run();
+                    }
                 }
             }
         }
@@ -3834,7 +3874,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             GridIoMessage msg,
             @Nullable IgniteRunnable msgC
         ) {
-            msgs.add(F.t(msg, U.currentTimeMillis(), msgC));
+            msgs.add(new OrderedMessageContainer(msg, U.currentTimeMillis(), msgC, MTC.span()));
         }
 
         /**
@@ -3863,6 +3903,37 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(GridCommunicationMessageSet.class, this);
+        }
+    }
+
+    /**
+     * DTO for handling of communication message.
+     */
+    private static class OrderedMessageContainer {
+        /** */
+        GridIoMessage message;
+
+        /** */
+        long addedTime;
+
+        /** */
+        IgniteRunnable closure;
+
+        /** */
+        Span parentSpan;
+
+        /**
+         *
+         * @param msg Received message.
+         * @param addedTime Time of added to queue.
+         * @param c Message closure.
+         * @param parentSpan Span of process which added this message.
+         */
+        private OrderedMessageContainer(GridIoMessage msg, Long addedTime, IgniteRunnable c, Span parentSpan) {
+            this.message = msg;
+            this.addedTime = addedTime;
+            this.closure = c;
+            this.parentSpan = parentSpan;
         }
     }
 
