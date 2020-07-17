@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -35,9 +32,10 @@ import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
- * Watcher of topology changes. It initiate to set new baseline after some timeout.
+ * Baseline topology updater with ability to watch of topology changes.
+ * It initiates update to set new baseline after some timeout.
  */
-public class ChangeTopologyWatcher implements GridLocalEventListener {
+public class BaselineTopologyUpdater {
     /** @see IgniteSystemProperties#IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL */
     public static final int DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL = 60_000;
 
@@ -77,8 +75,8 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     /**
      * @param ctx Context.
      */
-    public ChangeTopologyWatcher(GridKernalContext ctx) {
-        this.log = ctx.log(ChangeTopologyWatcher.class);
+    public BaselineTopologyUpdater(GridKernalContext ctx) {
+        this.log = ctx.log(BaselineTopologyUpdater.class);
         this.cluster = ctx.cluster().get();
         this.baselineConfiguration = ctx.state().baselineConfiguration();
         this.exchangeManager = ctx.cache().context().exchange();
@@ -94,8 +92,11 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
         this.isPersistenceEnabled = CU.isPersistenceEnabled(cluster.ignite().configuration());
     }
 
-    /** {@inheritDoc} */
-    @Override public void onEvent(Event evt) {
+    /**
+     * Schedule update of the baseline topology
+     * @param topologyVersion version of topology
+     */
+    public void triggerBaselineUpdate(long topologyVersion) {
         if (!isTopologyWatcherEnabled()) {
             synchronized (this) {
                 lastBaselineData = NULL_BASELINE_DATA;
@@ -104,22 +105,19 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             return;
         }
 
-        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-        if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
-            return;
-
         synchronized (this) {
-            lastBaselineData = lastBaselineData.next(discoEvt.topologyVersion());
+            lastBaselineData = lastBaselineData.next(topologyVersion);
+
+            final BaselineAutoAdjustData baselineData = lastBaselineData;
 
             if (isLocalNodeCoordinator(discoveryMgr)) {
-                exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
+                exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(topologyVersion))
                     .listen(future -> {
                         if (future.error() != null)
                             return;
 
                         if (exchangeManager.lastFinishedFuture().hasLostPartitions()) {
-                            log.warning("Baseline won't be changed cause the lost partitions were detected");
+                            log.warning("Baseline won't be changed cause lost partitions were detected");
 
                             return;
                         }
@@ -128,7 +126,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
                         log.warning("Baseline auto-adjust will be executed in '" + timeout + "' ms");
 
-                        baselineAutoAdjustScheduler.schedule(lastBaselineData, timeout);
+                        baselineAutoAdjustScheduler.schedule(baselineData, timeout);
                     });
 
             }
@@ -150,7 +148,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      */
     public BaselineAutoAdjustStatus getStatus() {
         synchronized (this) {
-            if (lastBaselineData.isAdjusted())
+            if (lastBaselineData.isAdjusted() || baselineAutoAdjustScheduler.isExecutionExpired(lastBaselineData))
                 return BaselineAutoAdjustStatus.notScheduled();
 
             long timeToLastTask = baselineAutoAdjustScheduler.lastScheduledTaskTime();
