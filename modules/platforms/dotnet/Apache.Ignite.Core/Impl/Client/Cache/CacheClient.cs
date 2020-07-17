@@ -1107,6 +1107,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private ILogger GetLogger()
         {
             // Don't care about thread safety here, it is ok to initialize multiple times.
+            // ReSharper disable once ConvertIfStatementToNullCoalescingExpression (readability).
             if (_logger == null)
             {
                 _logger = _ignite.Configuration.Logger != null
