@@ -2,3 +2,4 @@ org.apache.ignite.internal.processors.security.impl.TestSecurityProcessorProvide
 org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest$StanByClusterTestProvider
 org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider
 org.apache.ignite.internal.processors.datastreamer.MultipleDataStreamersOnClientTest$TestDataStreamerPluginProvider
+org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest$TestProvider

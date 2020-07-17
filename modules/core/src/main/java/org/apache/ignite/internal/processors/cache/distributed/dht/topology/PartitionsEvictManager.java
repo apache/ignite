@@ -524,7 +524,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    class BucketQueue {
+    static class BucketQueue {
         /** */
         private final long[] bucketSizes;
 

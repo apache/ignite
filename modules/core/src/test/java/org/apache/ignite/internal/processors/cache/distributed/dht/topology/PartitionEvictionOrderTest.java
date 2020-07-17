@@ -17,26 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -51,30 +72,23 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private ListeningTestLogger testLog = new ListeningTestLogger(log);
-
-    /**
-     * Flag for condition that async partition eviction is not happened during sync partitions eviction
-     */
-    private Boolean asyncCacheEvicted = false;
+    /** Condition check. */
+    static volatile boolean condCheck;
 
     /** */
-    boolean sysCacheEvictStarted;
+    static AtomicBoolean check = new AtomicBoolean(false);
 
     /** */
-    boolean sysCacheEvictQueued;
+    static ReentrantLock lock = new ReentrantLock();
 
     /** */
-    boolean sysCacheEvictEnded;
+    static List<Integer> evictionOrder = Collections.synchronizedList(new ArrayList<>());
 
     /** */
-    boolean logParsed = true;
+    static int sysCachePartNum;
 
-    /**
-     * Flag for condition that first sync partition has been polled from eviction queue at first.
-     */
-    boolean firstSysPartEvictedAtFirst;
+    /** */
+    static int asyncCachePartNum;
 
     /**
      * {@inheritDoc}
@@ -95,8 +109,6 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setGridLogger(testLog);
 
         cfg.setCacheConfiguration(atomicCcfg);
 
@@ -127,10 +139,6 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
 
     /**
      * Tests that {@link CacheRebalanceMode#SYNC} caches are evicted at first.
-     *
-     * The main idea is to check logs for special phrase that identifies eviction that has been started.
-     * We check that if eviction of sync cache has started, no async cache eviction is possible until
-     * all sync cache partitions are evicted.
      */
     public void testSyncCachesEvictedAtFirst() throws Exception {
         withSystemProperty(IgniteSystemProperties.IGNITE_EVICTION_PERMITS, "1");
@@ -138,8 +146,6 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
         withSystemProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "500_000");
 
         withSystemProperty("SHOW_EVICTION_PROGRESS_FREQ", "0");
-
-        setRootLoggerDebugLevel();
 
         IgniteEx node0 = startGrid(0);
 
@@ -178,120 +184,157 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
             }
         }
 
-        TestLogListener listener = new TestLogListener();
+        sysCachePartNum = utilCache1.affinity().partitions();
 
-        testLog.registerListener(listener);
+        asyncCachePartNum = cache2.affinity().partitions();
+
+        TestProvider.enabled = true;
 
         startGrid(0);
 
         awaitPartitionMapExchange(true, true, null);
 
-        assertTrue(logParsed);
+        assertTrue(condCheck);
 
-        assertTrue(sysCacheEvictStarted);
-
-        assertTrue(firstSysPartEvictedAtFirst);
-
-        assertTrue(sysCacheEvictEnded);
-
-        assertFalse(asyncCacheEvicted);
+        for (int i : evictionOrder)
+            assertEquals(CU.UTILITY_CACHE_GROUP_ID, i);
     }
 
     /**
-     * Listens to rows that starts with "Group eviction in progress [grpName="
+     * Plugin that changes
      */
-    class TestLogListener extends LogListener {
+    public static class TestProvider implements PluginProvider, IgnitePlugin {
         /** */
-        EvictionLogParams lastDfltGroupParams;
+        private GridKernalContext igniteCtx;
 
-        int sysEvictProgressMessages;
+        /** */
+        public static volatile boolean enabled;
 
         /** {@inheritDoc} */
-        @Override public boolean check() {
-            return false;
+        @Override public String name() {
+            return "PartitionEvictionOrderTestPlugin";
         }
 
         /** {@inheritDoc} */
-        @Override public void reset() {
-            // no-op
+        @Override public String version() {
+            return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(String s) {
-            if (s.contains("Partition has been scheduled for eviction [grp=" + CU.UTILITY_CACHE_NAME))
-                sysCacheEvictQueued = true;
+        @Override public String copyright() {
+            return null;
+        }
 
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            igniteCtx = ((IgniteKernal)ctx.grid()).context();
+        }
 
-            if (s.contains("Group eviction in progress [grpName=" + CU.UTILITY_CACHE_NAME)) {
-                EvictionLogParams sysCacheParam = new EvictionLogParams(s);
+        /** {@inheritDoc} */
+        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+            return null;
+        }
 
-                sysEvictProgressMessages++;
+        /** {@inheritDoc} */
+        @Override public void start(PluginContext pluginContext) throws IgniteCheckedException {
+        }
 
-                if (sysCacheParam.partsEvictInProgress > 0)
-                    sysCacheEvictStarted = true;
+        /** {@inheritDoc} */
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        }
 
-                //Here we check that the next polled partition from the eviction queue after the first sync partition is scheduled
-                // is sync partition
-                if (sysCacheEvictQueued) {
-                    if (sysEvictProgressMessages == 1)
-                        return;
-                    else
-                        if (sysEvictProgressMessages == 2 && sysCacheParam.partsEvictInProgress > 0)
-                            firstSysPartEvictedAtFirst = true;
-                }
+        /** {@inheritDoc} */
+        @Override public void onIgniteStart() throws IgniteCheckedException {
+        }
 
-                if (sysCacheEvictStarted &&
-                    (sysCacheParam.remainingPartsToEvict == 0 ||
-                        (sysCacheParam.remainingPartsToEvict == 1 && sysCacheParam.partsEvictInProgress == 1)))
-                    sysCacheEvictEnded = true;
+        /** {@inheritDoc} */
+        @Override public void onIgniteStop(boolean cancel) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object createComponent(PluginContext pluginContext, Class cls) {
+            if (enabled && CacheConflictResolutionManager.class.equals(cls)) {
+                igniteCtx.cache().cacheGroups().forEach(g -> ((GridDhtPartitionTopologyImpl)g.topology()).partitionFactory(
+                    (ctx, grp, id, recovery) -> new GridDhtLocalPartition(ctx, grp, id, recovery) {
+                        @Override public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
+                            if (!check.get()) {
+                                lock.lock();
+
+                                try {
+                                    if (!check.get()) {
+                                        PriorityBlockingQueue<PartitionsEvictManager.PartitionEvictionTask> queue =
+                                            (PriorityBlockingQueue<PartitionsEvictManager.PartitionEvictionTask>)
+                                                ctx.cache().context().evict().evictionQueue.buckets[0];
+
+                                        // Expected size of partition eviction queue. -1 because the first partition
+                                        // has already been removed from queue.
+                                        int expEvictQueueSize = sysCachePartNum +
+                                            asyncCachePartNum - 1;
+
+                                        condCheck = GridTestUtils.waitForCondition(() ->
+                                            queue.size() == expEvictQueueSize, 100_000);
+
+                                        if (!condCheck) {
+                                            check.set(true);
+
+                                            return super.tryClear(evictionCtx);
+                                        }
+
+                                        PartitionsEvictManager.PartitionEvictionTask[] tasks =
+                                            new PartitionsEvictManager.PartitionEvictionTask[queue.size()];
+
+                                        queue.toArray(tasks);
+
+                                        Arrays.sort(tasks, queue.comparator());
+
+                                        //-1 because the first partition that we evict might be from sys cache.
+                                        // We don't have invariant for partition eviction order for cache types.
+                                        for (int i = 0; i < sysCachePartNum - 1; i++) {
+                                            GridDhtLocalPartition part;
+
+                                            part = U.field(tasks[i], "part");
+
+                                            evictionOrder.add(part.group().groupId());
+                                        }
+
+                                        check.set(true);
+                                    }
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    e.printStackTrace();
+                                }
+                                finally {
+                                    lock.unlock();
+                                }
+                            }
+
+                            return super.tryClear(evictionCtx);
+                        }
+                    }));
             }
 
-            if (s.contains("Group eviction in progress [grpName=" + DEFAULT_CACHE_NAME)) {
-                EvictionLogParams curDfltGroupParams = new EvictionLogParams(s);
-
-                if (lastDfltGroupParams != null && sysCacheEvictStarted && !sysCacheEvictEnded)
-                    // Check that async cache partition has not been evicted during sync cache partitions eviction
-                    if(lastDfltGroupParams.remainingPartsToEvict > curDfltGroupParams.remainingPartsToEvict)
-                        asyncCacheEvicted = true;
-
-                lastDfltGroupParams = curDfltGroupParams;
-            }
+            return null;
         }
-    }
 
-    /**
-     * Class for storing params from eviction log row, that starts with "Group eviction in progress [grpName="
-     */
-    private class EvictionLogParams {
-        /** */
-        int remainingPartsToEvict;
-
-        /** */
-        int partsEvictInProgress;
-
-        /**
-         * Parse params from eviction log row, that starts with "Group eviction in progress [grpName="
-         *
-         * @param s Log row.
-         */
-        EvictionLogParams(String s) {
-            Pattern remPartsPattern = Pattern.compile("remainingPartsToEvict=([0-9]+)");
-
-            Matcher matcher = remPartsPattern.matcher(s);
-
-            if (matcher.find())
-                remainingPartsToEvict = Integer.parseInt(matcher.group(1));
-            else
-                logParsed = false;
-
-            Pattern partsInProgPattern = Pattern.compile("partsEvictInProgress=([0-9]+)");
-
-            matcher = partsInProgPattern.matcher(s);
-
-            if (matcher.find())
-                partsEvictInProgress = Integer.parseInt(matcher.group(1));
-            else
-                logParsed = false;
+        /** {@inheritDoc} */
+        @Override public IgnitePlugin plugin() {
+            return this;
         }
     }
 }
