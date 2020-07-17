@@ -78,13 +78,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     cfg.TransactionConfiguration.DefaultTransactionIsolation = isolation;
                     using (var client = Ignition.StartClient(cfg))
                     {
+                        ITransaction tx;
                         using (client.GetTransactions().TxStart())
                         {
-                            var tx = GetSingleLocalTransaction();
+                            tx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                             Assert.AreEqual(timeout, tx.Timeout);
                         }
+                        tx.Dispose();
                     }
                 }
             }
@@ -108,19 +110,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     foreach (var act in acts)
                     {
+                        ITransaction tx;
                         using (act().TxStart(concurrency, isolation))
                         {
-                            var tx = GetSingleLocalTransaction();
+                            tx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                         }
+                        tx.Dispose();
                         using (act().TxStart(concurrency, isolation, timeout))
                         {
-                            var tx = GetSingleLocalTransaction();
+                            tx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                             Assert.AreEqual(timeout, tx.Timeout);
                         }
+                        tx.Dispose();
                     }
                 }
             }
@@ -282,22 +287,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
+            ITransaction igniteTx;
             using (Client.GetTransactions().WithLabel(label1).TxStart())
             {
-                var igniteTx = GetSingleLocalTransaction();
+                igniteTx = GetSingleLocalTransaction();
 
                 Assert.AreEqual(igniteTx.Label, label1);
 
                 cache.Put(1, 10);
                 cache.Put(2, 20);
             }
+            igniteTx.Dispose();
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
 
             using (var tx = Client.GetTransactions().WithLabel(label1).TxStart())
             {
-                var igniteTx = GetSingleLocalTransaction();
+                igniteTx = GetSingleLocalTransaction();
 
                 Assert.AreEqual(igniteTx.Label, label1);
 
@@ -305,16 +312,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache.Put(2, 20);
                 tx.Commit();
             }
+            igniteTx.Dispose();
 
             Assert.AreEqual(10, cache.Get(1));
             Assert.AreEqual(20, cache.Get(2));
 
             using (Client.GetTransactions().WithLabel(label1).WithLabel(label2).TxStart())
             {
-                var tx = GetSingleLocalTransaction();
+                igniteTx = GetSingleLocalTransaction();
 
-                Assert.AreEqual(tx.Label, label2);
+                Assert.AreEqual(igniteTx.Label, label2);
             }
+            igniteTx.Dispose();
 
             TestThrowsIfMultipleStarted(
                 () => Client.GetTransactions().WithLabel(label1).TxStart(),
@@ -507,6 +516,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             foreach (var mode in modes)
             {
+                ITransaction tx;
                 using (new TransactionScope(TransactionScopeOption.Required, new TransactionOptions
                 {
                     IsolationLevel = mode.Item1
@@ -514,10 +524,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     cache[1] = 1;
 
-                    var tx = GetSingleLocalTransaction();
+                    tx = GetSingleLocalTransaction();
                     Assert.AreEqual(mode.Item2, tx.Isolation);
                     Assert.AreEqual(transactions.DefaultTxConcurrency, tx.Concurrency);
                 }
+                tx.Dispose();
             }
         }
 
