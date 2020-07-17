@@ -10,7 +10,6 @@ The Apache Ignite documentation is written in link:https://asciidoctor.org/docs/
 The Asciidoc files are compiled into HTML pages and published to https://ignite.apache.org/docs.
 
 
-
 .Content of the “docs” directory
 [cols="1,4",opts="stretch"]
 |===

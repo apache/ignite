@@ -1,0 +1,70 @@
+= Configuring Data Regions
+
+== Overview
+Ignite uses the concept of _data regions_ to control the amount of RAM available to a cache or a group of caches. A data region is a logical extendable area in RAM in which cached data resides. You can control the initial size of the region and the maximum size it can occupy. In addition to the size, data regions control link:developers-guide/persistence/native-persistence[persistence settings] for caches.
+
+By default, there is one data region that can take up to 20% of RAM available to the node, and all caches you create are placed in that region; but you can add as many regions as you want. There are a couple of reasons why you may want to have multiple regions:
+
+* Regions allow you to configure the amount of RAM available to a cache or number of caches.
+* Persistence parameters are configured per region. If you want to have both in-memory only caches and the caches that store their content to disk, you need to configure two (or more) data regions with different persistence settings: one for in-memory caches and one for persistent caches.
+* Some memory parameters, such as link:developers-guide/memory-configuration/eviction-policies[eviction policies], are configured per data region.
+
+See the following section to learn how to change the parameters of the default data region or configure multiple data regions.
+
+== Configuring Default Data Region
+
+By default, a new cache is added to the default data region. If you want to change the properties of the default data region, you can do so in the data storage configuration.
+
+
+:xmlFile: code-snippets/xml/data-regions-configuration.xml
+:javaFile: {javaCodeDir}/DataRegionConfigurationExample.java
+
+[tabs]
+--
+tab:XML[]
+
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;default;!discovery,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tags=!*;ignite-config;default,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/MemoryArchitecture.cs[tag=DefaultDataReqion,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Adding Custom Data Regions
+
+In addition to the default data region, you can add more data regions with custom settings.
+In the following example, we configure a data region that can take up to 40 MB and uses the link:developers-guide/memory-configuration/eviction-policies#random-2-lru[Random-2-LRU] eviction policy.
+Note that further below in the configuration, we create a cache that resides in the new data region.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;data-region;default;caches;!discovery,indent=0]
+----
+
+For the full list of properties, refer to the link:{javadoc_base_url}/org/apache/ignite/configuration/DataStorageConfiguration.html[DataStorageConfiguration] javadoc.
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tags=ignite-config,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/MemoryArchitecture.cs[tag=mem,indent=0]
+----
+tab:C++[unsupported]
+--
+

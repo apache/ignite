@@ -123,27 +123,27 @@
     - title: Performing Transactions
       url: /developers-guide/key-value-api/transactions
     - title: Working with SQL
-#      items:
-#        - title: Introduction
-#          url: /developers-guide/SQL/sql-introduction
-#        - title: Understanding Schemas
-#          url: /developers-guide/SQL/schemas
-#        - title: Defining Indexes
-#          url: /developers-guide/SQL/indexes          
-#        - title: Using SQL API
-#          url: /developers-guide/SQL/sql-api          
-#        - title: Distributed Joins
-#          url: /developers-guide/SQL/distributed-joins
-#        - title: SQL Transactions
-#          url: /developers-guide/SQL/sql-transactions
-#        - title: Custom SQL Functions
-#          url: /developers-guide/SQL/custom-sql-func
-#        - title: JDBC Driver
-#          url: /developers-guide/SQL/JDBC/jdbc-driver
-#        - title: JDBC Client Driver
-#          url: /developers-guide/SQL/JDBC/jdbc-client-driver
-#        - title: Multiversion Concurrency Control
-#          url: /developers-guide/transactions/mvcc
+      items:
+        - title: Introduction
+          url: /developers-guide/SQL/sql-introduction
+        - title: Understanding Schemas
+          url: /developers-guide/SQL/schemas
+        - title: Defining Indexes
+          url: /developers-guide/SQL/indexes          
+        - title: Using SQL API
+          url: /developers-guide/SQL/sql-api          
+        - title: Distributed Joins
+          url: /developers-guide/SQL/distributed-joins
+        - title: SQL Transactions
+          url: /developers-guide/SQL/sql-transactions
+        - title: Custom SQL Functions
+          url: /developers-guide/SQL/custom-sql-func
+        - title: JDBC Driver
+          url: /developers-guide/SQL/JDBC/jdbc-driver
+        - title: JDBC Client Driver
+          url: /developers-guide/SQL/JDBC/jdbc-client-driver
+        - title: Multiversion Concurrency Control
+          url: /developers-guide/transactions/mvcc
     - title: SQL and Key-Value Usage
       url: /developers-guide/SQL/sql-key-value-storage
     - title: Distributed Computing 
@@ -168,17 +168,14 @@
       items:
         - title: Enabling and Listenting to Events 
           url: /developers-guide/events/listening-to-events
-#        - title: Events 
-#          url: /developers-guide/events/events
+        - title: Events 
+          url: /developers-guide/events/events
     - title: Near Caches
       url: /developers-guide/near-cache
 #    - title: .NET Platform Cache
 #      url: /developers-guide/platform-cache
     - title: Peer Class Loading
       url: /developers-guide/peer-class-loading
-#    - title: Handling Exceptions
-#      url: /developers-guide/handling-exceptions
-#
 #    - title: Thin Clients
 #      items: 
 #        - title: Thin Clients Overview 
@@ -209,8 +206,8 @@
 #          url: /developers-guide/SQL/ODBC/data-types 
 #        - title: Error Codes
 #          url: /developers-guide/SQL/ODBC/error-codes
-#    - title: REST API
-#      url: /developers-guide/restapi
+    - title: REST API
+      url: /developers-guide/restapi
 #
 #    - title: Machine Learning
 #      items:

@@ -1,0 +1,254 @@
+= Working with Events
+:javaFile: {javaCodeDir}/Events.java
+:xmlFile: code-snippets/xml/events.xml
+
+== Overview
+Ignite can generate events for a variety of operations happening in the cluster and notify your application about those operations. There are many types of events, including cache events, node discovery events, distributed task execution events, and many more.
+
+The list of events is available in the link:developers-guide/events/events[Events] section.
+
+== Enabling Events
+By default, events are disabled, and you have to enable each event type explicitly if you want to use it in your application.
+To enable specific event types, list them in the `includeEventTypes` property of `IgniteConfiguration` as shown below:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=**;!discovery, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=enabling-events,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=enablingEvents,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Getting the Events Interface
+
+The events functionality is available through the events interface, which provides methods for listening to cluster events. The events interface can be obtained from an instance of `Ignite` as follows:
+
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=get-events,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=gettingEventsInterface1,indent=0]
+----
+tab:C++[unsupported]
+--
+
+The events interface can be associated with a link:developers-guide/distributed-computing/cluster-groups[set of nodes]. This means that you can access events that happen on a given set of nodes. In the following example, the events interface is obtained for the set of nodes that host the data for the Person cache.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=get-events-for-cache,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=gettingEventsInterface2,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+== Listening to Events
+
+You can listen to either local or remote events. Local events are events that are generated on the node where the listener is registered. Remote events are events that happen on other nodes.
+
+Note that some events may be fired on multiple nodes even if the corresponding real-world event happens only once. For example, when a node leaves the cluster, the `EVT_NODE_LEFT` event is generated on every remaining node.
+
+Another example is when you put an object into a cache. In this case, the `EVT_CACHE_OBJECT_PUT` event occurs on the node that hosts the link:developers-guide/data-modeling/data-partitioning#backup-partitions[primary partition] into which the object is actually written, which may be different from the node where the `put(...)` method is called. In addition, the event is fired on all nodes that hold the link:developers-guide/data-modeling/data-partitioning#backup-partitions[backup partitions] for the cache if they are configured.
+
+The events interface provides methods for listening to local events only, and for listening to both local and remote events.
+
+=== Listening to Local Events
+
+To listen to local events, use the  `localListen(listener, eventTypes...)` method, as shown below. The method accepts an event listener that is called every time an event of the given type occurs on the local node.
+
+To unregister the local listener, return `false` in its functional method.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=local,indent=0]
+----
+
+The event listener is an object of the `IgnitePredicate<T>` class with a type argument that matches the type of events the listener is going to process.
+For example, cache events (`EVT_CACHE_OBJECT_PUT`, `EVT_CACHE_OBJECT_READ`, etc.) correspond to the link:{javadoc_base_url}/org/apache/ignite/events/CacheEvent.html[CacheEvent] class, discovery events (`EVT_NODE_LEFT`, `EVT_NODE_JOINED`, etc.) correspond to
+the link:{javadoc_base_url}/org/apache/ignite/events/DiscoveryEvent.html[DiscoveryEvent,window=_blank] class, and so on.
+If you want to listen to events of different types, you can use the generic link:{javadoc_base_url}/org/apache/ignite/events/Event.html[Event,window=_blank] interface:
+
+[source, java]
+-------------------------------------------------------------------------------
+IgnitePredicate<Event> localListener = evt -> {
+    // process the event
+    return true;
+};
+-------------------------------------------------------------------------------
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=localListen,indent=0]
+----
+tab:C++[unsupported]
+--
+
+=== Listening to Remote Events
+
+The `IgniteEvents.remoteListen(localListener, filter, types)` method can be used to register a listener that listens for both remote and local events.
+It accepts a local listener, a filter, and a list of event types you want to listen to.
+
+The filter is deployed to all the nodes associated with the events interface, including the local node. The events that pass the filter are sent to the local listener.
+
+The method returns a unique identifier that can be used to unregister the listener and filters. To do this, call `IgniteEvents.stopRemoteListen(uuid)`. Another way to unregister the listener is to return `false` in the `apply()` method.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=remote,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+////////////////////////////////////////////////////////////////////////////////
+TODO
+The `IgniteEvents.remoteListen(...)` has an asynchronous counterpart that will register the given listener asynchronously.
+
+++++
+<code-tabs>
+<code-tab data-tab="Java">
+++++
+[source,java]
+----
+
+----
+++++
+</code-tab>
+<code-tab data-tab="C#/.NET">
+++++
+[source,csharp]
+----
+
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+////////////////////////////////////////////////////////////////////////////////
+
+=== Batching Events
+
+Each activity in a cache can result in an event notification being generated and sent. For systems with high cache activity, getting notified for every event could be network intensive, possibly leading to a decreased performance of cache operations.
+
+Event notifications can be grouped together and sent in batches or timely intervals to mitigate the impact on performance. Here is an example of how this can be done:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=batching,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+== Storing and Querying Events
+
+You can configure an event storage that will keep events on the nodes where they occur. You can then query events in your application.
+
+The event storage can be configured to keep events for a specific period, keep only the most recent events, or keep the events that satisfy a specific filter. See the link:{javadoc_base_url}/org/apache/ignite/spi/eventstorage/memory/MemoryEventStorageSpi.html[MemoryEventStorageSpi,window=_blank] javadoc for details.
+
+Below is an example of event storage configuration:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <property name="eventStorageSpi" >
+        <bean class="org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi">
+            <property name="expireAgeMs" value="600000"/>
+        </bean>
+    </property>
+
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=event-storage,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=storingEvents,indent=0]
+----
+tab:C++[unsupported]
+--
+
+=== Querying Local Events
+
+The following example shows how you can query local `EVT_CACHE_OBJECT_PUT` events stored in the event storage.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=query-local-events,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=queryLocal,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+=== Querying Remote Events
+Here is an example of querying remote events:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=query-remote-events,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/WorkingWithEvents.cs[tag=queryRemote,indent=0]
+----
+tab:C++[unsupported]
+--
+
