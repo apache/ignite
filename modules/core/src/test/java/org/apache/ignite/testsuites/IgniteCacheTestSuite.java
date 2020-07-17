@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTes
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataRegistrationInsideEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheAffinityKeyConfigurationMismatchTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
@@ -242,6 +243,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // GridTestUtils.addTestIfNeeded(suite,GridCacheP2PUndeploySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationValidationSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationConsistencySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheAffinityKeyConfigurationMismatchTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridDataStorageConfigurationConsistencySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStorageConfigurationValidationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheJdbcBlobStoreSelfTest.class, ignoredTests);
