@@ -165,6 +165,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         public void Dispose()
         {
             _currentTx.Dispose();
+            _txManager.Dispose();
         }
 
         /// <summary>

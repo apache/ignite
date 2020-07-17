@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
+    using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Transactions;
     using Apache.Ignite.Core.Impl.Transactions;
@@ -26,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// Cache transaction enlistment manager, 
     /// allows using Ignite transactions via standard <see cref="TransactionScope"/>.
     /// </summary>
-    internal class ClientCacheTransactionManager : ISinglePhaseNotification
+    internal class ClientCacheTransactionManager : ISinglePhaseNotification, IDisposable
     {
         /** */
         private readonly ITransactionsClientInternal _transactions;
@@ -138,6 +140,15 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
 
             enlistment.Committed();
+        }
+
+        /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Usage",
+            "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
+        public void Dispose()
+        {
+            if (_enlistment != null) _enlistment.Dispose();
         }
     }
 }
