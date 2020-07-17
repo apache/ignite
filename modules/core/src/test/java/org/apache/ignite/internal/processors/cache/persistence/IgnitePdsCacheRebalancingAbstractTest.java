@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import com.google.common.collect.Lists;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -95,6 +95,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMetricsLogFrequency(500);
 
         cfg.setConsistentId(gridName);
 
@@ -157,13 +159,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024)
             .setWalSegmentSize(8 * 1024 * 1024) // For faster node restarts with enabled persistence.
+            .setSystemRegionInitialSize(16 * 1024 * 1024)
+            .setSystemRegionMaxSize(32 * 1024 * 1024)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
-                .setMaxSize(256 * 1024 * 1024)
+                .setMaxSize(128 * 1024 * 1024)
             ).setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(IN_MEMORY_REGION)
-                .setMaxSize(256 * 1024 * 1024)
+                .setMaxSize(128 * 1024 * 1024)
             );
 
         cfg.setDataStorageConfiguration(dsCfg);
