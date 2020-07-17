@@ -135,7 +135,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                 String curPlatform = platformCtx.platform();
 
                 if (!PlatformUtils.PLATFORM_DOTNET.equals(curPlatform))
-                    throw new IgniteClientException(ClientStatus.FAILED, "ScanQuery filter platform is " +
+                    throw new IgniteClientException(ClientStatus.FAILED, "ContinuousQuery filter platform is " +
                             PlatformUtils.PLATFORM_DOTNET + ", current platform is " + curPlatform);
 
                 return FactoryBuilder.factoryOf(platformCtx.createContinuousQueryFilter(filter));
