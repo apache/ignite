@@ -753,6 +753,16 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_PREFER_WAL_REBALANCE = "IGNITE_PREFER_WAL_REBALANCE";
 
+    /**
+     * Margin for WAL iterator, that used for historical rebalance on atomic cache.
+     * It is intended for prevent  partition divergence due to reordering in WAL.
+     * <p>
+     * Default is {@code 5}. Iterator starts from 5 updates earlier than expected.
+     *
+     */
+    public static final String WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE =
+        "WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE";
+
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 

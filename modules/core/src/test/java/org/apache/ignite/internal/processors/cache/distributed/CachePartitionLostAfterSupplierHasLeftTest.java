@@ -108,11 +108,11 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
      * {@inheritDoc}
      */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        super.afterTest();
     }
 
     /**
@@ -348,9 +348,23 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
             }
         });
 
-        IgniteEx g1 = startGrid(idx1);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx1));
+
+        ((TestRecordingCommunicationSpi)cfg.getCommunicationSpi()).blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
+
+                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
+            }
+
+            return false;
+        });
+
+        IgniteEx g1 = startGrid(optimize(cfg));
 
         stopGrid(idx0); // Stop supplier in the middle of rebalancing.
+
+        TestRecordingCommunicationSpi.spi(g1).stopBlock();
 
         final GridDhtLocalPartition part = g1.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(partId);
 

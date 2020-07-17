@@ -68,18 +68,17 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -87,7 +86,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         storageCfg.setPageSize(1024).setWalMode(LOG_ONLY).setWalSegmentSize(4 * 1024 * 1024);
 
-        storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)
+        storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
             .setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(storageCfg);
@@ -262,8 +262,9 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         int totalSize = 0;
 
         for (Ignite ignite : IgnitionEx.allGrids()) {
-            for (String cacheName : CACHE_NAMES)
+            for (String cacheName : CACHE_NAMES) {
                 totalSize += ignite.cache(cacheName).size();
+            }
         }
 
         return totalSize / IgnitionEx.allGrids().size();

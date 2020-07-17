@@ -122,6 +122,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
+    /** Margin for historical rebalance on atomic cache. */
+    public final long walAtomicCacheMargin = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE, 5);
+
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
      * if there is nothing to clean yet.
@@ -1024,12 +1028,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(), partsCounters);
+        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+            partsCounters, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
         try {
             WALIterator it = grp.shared().wal().replay(minPtr);
 
-            WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, it);
+            WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, partsCounters, it);
 
             // Add historical partitions which are unabled to reserve to missing set.
             missing.addAll(histIt.missingParts);
@@ -1220,7 +1225,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param grp Cache context.
          * @param walIt WAL iterator.
          */
-        private WALHistoricalIterator(IgniteLogger log, CacheGroupContext grp, CachePartitionPartialCountersMap partMap,
+        private WALHistoricalIterator(
+            IgniteLogger log,
+            CacheGroupContext grp,
+            CachePartitionPartialCountersMap partMap,
+            Map<Integer, Long> updatedPartCntr,
             WALIterator walIt) {
             this.log = log;
             this.grp = grp;
@@ -1231,8 +1240,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             rebalancedCntrs = new long[partMap.size()];
 
-            for (int i = 0; i < rebalancedCntrs.length; i++)
-                rebalancedCntrs[i] = partMap.initialUpdateCounterAt(i);
+            for (int i = 0; i < rebalancedCntrs.length; i++) {
+                int p = partMap.partitionAt(i);
+
+                rebalancedCntrs[i] = updatedPartCntr.get(p);
+
+                partMap.setInitialUpdateCounterAt(i, rebalancedCntrs[i]);
+            }
 
             reservePartitions();
 

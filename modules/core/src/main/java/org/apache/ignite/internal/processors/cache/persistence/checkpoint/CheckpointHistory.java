@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -452,7 +453,11 @@ public class CheckpointHistory {
      * @param partsCounter Partition mapped to update counter.
      * @return Earliest WAL pointer for group specified.
      */
-    @Nullable public WALPointer searchEarliestWalPointer(int grpId, Map<Integer, Long> partsCounter) throws IgniteCheckedException {
+    @Nullable public WALPointer searchEarliestWalPointer(
+        int grpId,
+        Map<Integer, Long> partsCounter,
+        long margin
+    ) throws IgniteCheckedException {
         if (F.isEmpty(partsCounter))
             return null;
 
@@ -460,8 +465,18 @@ public class CheckpointHistory {
 
         FileWALPointer minPtr = null;
 
+        LinkedList<WalPointerCandidate> historyPointerCandidate = new LinkedList<>();
+
         for (Long cpTs : checkpoints(true)) {
             CheckpointEntry cpEntry = entry(cpTs);
+
+            while (!F.isEmpty(historyPointerCandidate)) {
+                FileWALPointer ptr = historyPointerCandidate.poll()
+                    .choose(cpEntry, margin, partsCounter);
+
+                if (minPtr == null || ptr.compareTo(minPtr) < 0)
+                    minPtr = ptr;
+            }
 
             Iterator<Map.Entry<Integer, Long>> iter = modifiedPartsCounter.entrySet().iterator();
 
@@ -480,12 +495,21 @@ public class CheckpointHistory {
                             + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
                     }
 
+                    if (foundCntr + margin > entry.getValue()) {
+                        historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(), entry.getValue(), ptr,
+                            foundCntr));
+
+                        continue;
+                    }
+
+                    partsCounter.put(entry.getKey(), entry.getValue() - margin);
+
                     if (minPtr == null || ptr.compareTo(minPtr) < 0)
                         minPtr = ptr;
                 }
             }
 
-            if (F.isEmpty(modifiedPartsCounter))
+            if (F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate))
                 return minPtr;
         }
 
@@ -496,7 +520,79 @@ public class CheckpointHistory {
                 + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
         }
 
+        while (!F.isEmpty(historyPointerCandidate)) {
+            FileWALPointer ptr = historyPointerCandidate.poll()
+                .choose(null, margin, partsCounter);
+
+            if (minPtr == null || ptr.compareTo(minPtr) < 0)
+                minPtr = ptr;
+        }
+
         return minPtr;
+    }
+
+    /**
+     * The class is used for get a pointer with a specific margin.
+     * This stores the nearest pointer which covering a partition counter.
+     * It is able to choose between other pointer and this.
+     */
+    private class WalPointerCandidate {
+        /** Group id. */
+        private int grpId;
+
+        /** Partition id. */
+        private int part;
+
+        /** Partition counter. */
+        private long partContr;
+
+        /** WAL pointer. */
+        private FileWALPointer walPntr;
+
+        /** Partition counter at the moment of WAL pointer. */
+        private long walPntrCntr;
+
+        /**
+         * @param grpId Group id.
+         * @param part Partition id.
+         * @param partContr Partition counter.
+         * @param walPntr WAL pointer.
+         * @param walPntrCntr Counter of WAL pointer.
+         */
+        public WalPointerCandidate(int grpId, int part, long partContr, FileWALPointer walPntr, long walPntrCntr) {
+            this.grpId = grpId;
+            this.part = part;
+            this.partContr = partContr;
+            this.walPntr = walPntr;
+            this.walPntrCntr = walPntrCntr;
+        }
+
+        /**
+         * Make a choice between stored WAL pointer and other, getting from checkpoint, with a specific margin.
+         * Updates counter in collection from parameters.
+         *
+         * @param cpEntry Checkpoint entry.
+         * @param margin Margin.
+         * @param partCntsForUpdate Collection of partition id by counter.
+         * @return Chosen WAL pointer.
+         */
+        public FileWALPointer choose(
+            CheckpointEntry cpEntry,
+            long margin,
+            Map<Integer, Long> partCntsForUpdate
+        ) {
+            Long foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(cctx, grpId, part);
+
+            if (foundCntr == null || foundCntr == walPntrCntr) {
+                partCntsForUpdate.put(part, walPntrCntr);
+
+                return walPntr;
+            }
+
+            partCntsForUpdate.put(part, Math.max(foundCntr, partContr - margin));
+
+            return (FileWALPointer)cpEntry.checkpointMark();
+        }
     }
 
     /**
