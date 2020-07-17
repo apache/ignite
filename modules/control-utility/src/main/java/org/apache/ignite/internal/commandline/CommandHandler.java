@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -124,6 +125,9 @@ public class CommandHandler {
     /** */
     private Object lastOperationRes;
 
+    /** Date format. */
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
     /**
      * @param args Arguments to parse and apply.
      */
@@ -217,7 +221,7 @@ public class CommandHandler {
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + startTime);
+        logger.info("Time: " + startTime.format(formatter));
 
         String commandName = "";
 
@@ -368,7 +372,7 @@ public class CommandHandler {
             if (nonNull(err))
                 logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
-            logger.info("Control utility has completed execution at: " + endTime);
+            logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
             Arrays.stream(logger.getHandlers())

@@ -153,6 +153,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         super.afterTestsStopped();
 
         cleanIdleVerifyLogFiles();
+
+        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */

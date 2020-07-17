@@ -254,6 +254,10 @@ class VisorConsole {
                 }
             }
         }
+
+        if (visor.isConnected) {
+            visor.close()
+        }
     }
 
     /**

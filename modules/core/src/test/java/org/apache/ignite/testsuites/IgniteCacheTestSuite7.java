@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLos
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLostAfterSupplierHasLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadDelayedWithPersistenceSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GracefulShutdownTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadWaitForBackupsWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheScheduleResendPartitionsAfterEvictionTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.RentingPartitionIsOwnedDuringEvictionTest;
@@ -142,6 +144,8 @@ public class IgniteCacheTestSuite7 {
         GridTestUtils.addTestIfNeeded(suite, AtomicPartitionCounterStateConsistencyHistoryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AtomicVolatilePartitionCounterStateConsistencyTest.class, ignoredTests);
 
+        GridTestUtils.addTestIfNeeded(suite, GridCacheDhtPreloadWaitForBackupsWithPersistenceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GracefulShutdownTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxWithKeyContentionSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheDhtPreloadDelayedWithPersistenceSelfTest.class, ignoredTests);
