@@ -225,8 +225,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             public void StartTxIfNeeded()
             {
                 Debug.Fail("Labeled transactions are not supported for ambient transactions");
-
-                _transactions._txManager.StartTxIfNeeded();
             }
 
             /** <inheritDoc /> */

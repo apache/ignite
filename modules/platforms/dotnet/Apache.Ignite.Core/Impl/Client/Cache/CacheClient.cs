@@ -813,10 +813,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             ctx.Stream.WriteByte((byte) flags);
 
             if ((flags & ClientCacheRequestFlag.WithExpiryPolicy) == ClientCacheRequestFlag.WithExpiryPolicy)
+            {
                 ExpiryPolicySerializer.WritePolicy(ctx.Writer, _expiryPolicy);
+            }
 
             if ((flags & ClientCacheRequestFlag.WithTransactional) == ClientCacheRequestFlag.WithTransactional)
+            {
+                // ReSharper disable once PossibleNullReferenceException flag is set only if tx != null
                 ctx.Writer.WriteInt(tx.Id);
+            }
 
             if (writeAction != null)
             {
