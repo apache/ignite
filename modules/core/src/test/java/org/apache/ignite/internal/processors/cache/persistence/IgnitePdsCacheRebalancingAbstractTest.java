@@ -96,8 +96,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMetricsLogFrequency(500);
-
         cfg.setConsistentId(gridName);
 
         cfg.setRebalanceThreadPoolSize(2);
