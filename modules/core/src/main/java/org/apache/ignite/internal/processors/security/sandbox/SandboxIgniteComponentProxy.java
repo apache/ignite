@@ -39,7 +39,9 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.transactions.Transaction;
 
 /** Create instace of Ignite component proxy to use inside the Ignite Sandbox. */
 public final class SandboxIgniteComponentProxy {
@@ -62,7 +64,9 @@ public final class SandboxIgniteComponentProxy {
         IgniteQueue.class,
         IgniteSet.class,
         IgniteBinary.class,
-        Affinity.class
+        Affinity.class,
+        QueryCursor.class,
+        Transaction.class
     };
 
     /**
