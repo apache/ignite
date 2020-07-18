@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Platform;
-    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Plugin;
