@@ -55,6 +55,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
+        /** Transactions. */
         private readonly ITransactionsClientInternal _transactions;
 
         /** Endpoints with corresponding hosts - from config. */
