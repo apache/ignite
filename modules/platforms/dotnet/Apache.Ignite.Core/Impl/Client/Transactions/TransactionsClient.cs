@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             );
 
             _currentTx.Value = tx;
-            return _currentTx.Value;
+            return tx;
         }
 
         /** <inheritDoc /> */

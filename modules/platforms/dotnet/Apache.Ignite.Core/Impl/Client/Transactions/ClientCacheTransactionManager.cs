@@ -80,11 +80,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
         }
 
+        /** <inheritDoc /> */
         void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
         {
             preparingEnlistment.Prepared();
         }
 
+        /** <inheritDoc /> */
         void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
             Debug.Assert(enlistment != null);
@@ -103,6 +105,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             enlistment.Done();
         }
 
+        /** <inheritDoc /> */
         void IEnlistmentNotification.Rollback(Enlistment enlistment)
         {
             Debug.Assert(enlistment != null);
@@ -119,6 +122,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             enlistment.Done();
         }
 
+        /** <inheritDoc /> */
         void IEnlistmentNotification.InDoubt(Enlistment enlistment)
         {
             Debug.Assert(enlistment != null);
@@ -126,6 +130,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             enlistment.Done();
         }
         
+        /** <inheritDoc /> */
         void ISinglePhaseNotification.SinglePhaseCommit(SinglePhaseEnlistment enlistment)
         {
             Debug.Assert(enlistment != null);

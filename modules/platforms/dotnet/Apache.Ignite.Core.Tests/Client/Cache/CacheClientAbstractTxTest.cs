@@ -155,7 +155,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.Throws(constraint, () => tx.Rollback());
         }
 
-
         /// <summary>
         /// Tests that transaction throws if timeout elapsed.
         /// </summary>
@@ -719,7 +718,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// </summary>
         private void TestThrowsIfMultipleStarted(Func<IDisposable> outer, Func<IDisposable> inner)
         {
-
             Assert.Throws(
                 Is.TypeOf<IgniteClientException>()
                    .And.Message.Contains("A transaction has already been started by the current thread."),
