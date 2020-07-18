@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         private readonly ClientSocket _socket;
 
         /** Transaction is closed. */
-        private volatile bool _closed; 
+        private bool _closed; 
 
         /// <summary>
         /// Constructor.
