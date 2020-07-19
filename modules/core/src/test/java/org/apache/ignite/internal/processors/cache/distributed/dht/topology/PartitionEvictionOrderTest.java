@@ -65,7 +65,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests that {@link CacheRebalanceMode#SYNC} caches are evicted at first.
  *
- * Note that this test is based on logging, for more correct version check the same class in actual master branch.
+ * Note that this test differs from master version, for more correct version check the same class in actual master branch.
  * Correct version could be merged here only when https://ggsystems.atlassian.net/browse/GG-17431 has been backported.
  */
 public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
