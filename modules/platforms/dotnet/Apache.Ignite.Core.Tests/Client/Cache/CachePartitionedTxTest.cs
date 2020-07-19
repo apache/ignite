@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System.Transactions;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Client.Transactions;
     using NUnit.Framework;
+    using NUnit.Framework.Constraints;
 
     /// <summary>
     /// Tests client transactions for multiple nodes with partition awareness.
@@ -87,6 +90,33 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(1, cache.Get(key1));
             Assert.AreEqual(2, cache.Get(key2));
+        }
+
+        /// <summary>
+        /// Tests that transaction handles reconnect.
+        /// </summary>
+        [Test]
+        public void TestDisconnect()
+        {
+            var cache = GetTransactionalCache();
+
+            var constraint = new ReusableConstraint(Is.TypeOf<IgniteClientException>()
+               .And.Message.EqualTo("Transaction context has been lost due to connection errors."));
+            try
+            {
+                using (Client.GetTransactions().TxStart())
+                {
+                    Ignition.Stop(null, true);
+                    Assert.Throws(constraint, () => cache.Put(1, 1));
+                }
+            }
+            catch (IgniteClientException ex)
+            {
+                Assert.That(ex, constraint);
+            }
+
+            Assert.DoesNotThrow(() => cache.Put(1, 1));
+            Assert.IsNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx);
         }
 
         protected override string GetCacheName()

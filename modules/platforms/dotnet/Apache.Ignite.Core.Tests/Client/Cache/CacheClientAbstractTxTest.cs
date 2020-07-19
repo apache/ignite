@@ -336,35 +336,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 () => Client.GetTransactions().WithLabel(label1).TxStart(),
                 () => Client.GetTransactions().WithLabel(label2).TxStart());
         }
-
-        [Test]
-        public void TestDisconnect()
-        {
-            var cache = GetTransactionalCache();
-
-            try
-            {
-                using (Client.GetTransactions().TxStart())
-                {
-                    Ignition.Stop(null, true);
-                    Assert.Throws(
-                        Is.TypeOf<IgniteClientException>()
-                           .And.Message.EqualTo("Transaction context has been lost due to connection errors."),
-                        () => cache.Put(1, 1));
-                }
-            }
-            catch (Exception)
-            {
-                // No-op.
-            }
-           
-            Ignition.Start(GetIgniteConfiguration());
-            cache = GetTransactionalCache();
-
-            Assert.DoesNotThrow(() => cache.Put(1, 1));
-            Assert.IsNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx);
-        }
-
+ 
         /// <summary>
         /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
