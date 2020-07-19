@@ -307,6 +307,43 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that custom key / value objects can be used in Continuous Query filter and listener.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryWithCustomObjects()
+        {
+            var cache = Client.GetOrCreateCache<int, Person>(TestUtils.TestName);
+
+            var evts = new ConcurrentBag<Person>();
+
+            var qry = new ContinuousQueryClient<int, Person>
+            {
+                Listener = new DelegateListener<int, Person>(e => evts.Add(e.Value)),
+                Filter = new EvenIdFilter()
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[2] = new Person(2);
+                cache[3] = new Person(3);
+
+                TestUtils.WaitForTrueCondition(() => !evts.IsEmpty);
+            }
+
+            // Listener should receive one event with an even id.
+            var obj = evts.Single();
+            Assert.IsNotNull(obj);
+            Assert.AreEqual(2, obj.Id);
+            Assert.AreEqual("Person 2", obj.Name);
+
+            // Filter has received both events, last one was filtered out.
+            obj = EvenIdFilter.LastValue;
+            Assert.IsNotNull(obj);
+            Assert.AreEqual(3, obj.Id);
+            Assert.AreEqual("Person 3", obj.Name);
+        }
+
+        /// <summary>
         /// Tests that exception in continuous query remote filter is logged and event is delivered anyway.
         /// </summary>
         [Test]
@@ -664,6 +701,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             public bool Invoke(ICacheEntry<int, int> entry)
             {
                 throw new Exception(Error);
+            }
+        }
+
+        /** */
+        private class EvenIdFilter : ICacheEntryEventFilter<int, Person>
+        {
+            /** */
+            public static Person LastValue { get; set; }
+
+            /** <inheritdoc /> */
+            public bool Evaluate(ICacheEntryEvent<int, Person> evt)
+            {
+                LastValue = evt.Value;
+
+                return evt.Value.Id % 2 == 0;
             }
         }
 
