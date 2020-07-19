@@ -68,14 +68,14 @@ namespace Apache.Ignite.Core.Client.Transactions
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionClientConfiguration" /> class.
         /// </summary>
-        /// <param name="configuration">The configuration to copy.</param>
-        public TransactionClientConfiguration(TransactionClientConfiguration configuration)
+        /// <param name="cfg">The configuration to copy.</param>
+        public TransactionClientConfiguration(TransactionClientConfiguration cfg)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNull(cfg, "configuration");
 
-            DefaultTransactionConcurrency = DefaultDefaultTransactionConcurrency;
-            DefaultTransactionIsolation = DefaultDefaultTransactionIsolation;
-            DefaultTimeout = DefaultDefaultTimeout;
+            DefaultTransactionConcurrency = cfg.DefaultTransactionConcurrency;
+            DefaultTransactionIsolation = cfg.DefaultTransactionIsolation;
+            DefaultTimeout =cfg.DefaultTimeout;
         }
     }
 }
