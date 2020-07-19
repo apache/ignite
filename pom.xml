@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>2.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -76,7 +76,6 @@
         <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
-        <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
         <module>modules/camel</module>
@@ -94,6 +93,7 @@
         <module>modules/ml/xgboost-model-parser</module>
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
+        <module>modules/control-utility</module>
     </modules>
 
     <profiles>
@@ -205,6 +205,27 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <additionalDependencies>
+                                        <!--
+                                        Only the last version of spring data is included to class path, some classes
+                                        required by old spring data modules are absent in this version.
+                                        Add spring-data-2.0 explicitly to be able to find all required classes.
+                                        -->
+                                        <dependency>
+                                            <groupId>org.springframework.data</groupId>
+                                            <artifactId>spring-data-commons</artifactId>
+                                            <version>${spring.data-2.0.version}</version>
+                                        </dependency>
+                                    </additionalDependencies>
+                                    <!--
+                                    For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
+                                    parent configuration to -tagletpath javadoc parameter.
+                                    -->
+                                    <tagletArtifact>
+                                        <groupId>org.apache.ignite</groupId>
+                                        <artifactId>ignite-tools</artifactId>
+                                        <version>${project.version}</version>
+                                    </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
@@ -297,79 +318,7 @@
             <id>release</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>exec-libtoolize</id>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <executable>libtoolize</executable>
-                                    <arguments>
-                                        <argument>--copy</argument>
-                                    </arguments>
-                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
-                                </configuration>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-
-                            <execution>
-                                <id>exec-aclocal</id>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <executable>aclocal</executable>
-                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
-                                </configuration>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-
-                            <execution>
-                                <id>exec-autoheader</id>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <executable>autoheader</executable>
-                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
-                                </configuration>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-
-                            <execution>
-                                <id>exec-automake</id>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <executable>automake</executable>
-                                    <arguments>
-                                        <argument>--add-missing</argument>
-                                        <argument>--copy</argument>
-                                    </arguments>
-                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
-                                </configuration>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-
-                            <execution>
-                                <id>exec-autoreconf</id>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <executable>autoreconf</executable>
-                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
-                                </configuration>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
+                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
@@ -390,8 +339,6 @@
                                 <phase>initialize</phase>
                                 <configuration>
                                     <target>
-                                        <delete dir="${basedir}/target/release-package-${ignite.edition}/platforms/cpp/autom4te.cache" quiet="true"/>
-
                                         <replaceregexp byline="true">
                                             <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
                                             <substitution expression="pushd &quot;%~dp0&quot;/.." />
@@ -756,11 +703,10 @@
 
                                         <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/configure.ac" />
-                                                <include name="**/configure.acrel" />
+                                                <include name="**/CMakeLists.txt" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -815,6 +761,24 @@
                                             <substitution expression="\1${new.bin.version}" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in other resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${new.ignite.version}" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = )'.+'" />
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/build.gradle" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>

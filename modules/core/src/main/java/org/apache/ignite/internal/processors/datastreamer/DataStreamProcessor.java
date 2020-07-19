@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -46,10 +49,6 @@ import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.UUID;
-import java.util.concurrent.DelayQueue;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
