@@ -480,6 +480,10 @@
                                 <title>System view SPI</title>
                                 <packages>org.apache.ignite.spi.systemview*</packages>
                             </group>
+                            <group>
+                                <title>Tracing SPI</title>
+                                <packages>org.apache.ignite.spi.tracing*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
