@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.ThinClient.Cache
+namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Tests.Client;
