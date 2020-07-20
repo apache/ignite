@@ -46,7 +46,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false));
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
     /** {@inheritDoc} */
@@ -55,7 +55,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false));
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
     /** Starts collecting performance statistics. */

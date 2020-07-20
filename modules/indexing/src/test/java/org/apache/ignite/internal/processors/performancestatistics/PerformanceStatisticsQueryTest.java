@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +36,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -41,9 +45,20 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /** Tests query performance statistics. */
+@RunWith(Parameterized.class)
 public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatisticsTest {
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
+
+    /** Page size. */
+    @Parameterized.Parameter
+    public int pageSize;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "pageSize={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{ENTRY_COUNT}, {ENTRY_COUNT / 10}});
+    }
 
     /** Client. */
     private static IgniteEx client;
@@ -97,7 +112,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         String sql = "SELECT * FROM " + DEFAULT_CACHE_NAME;
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql)
-            .setSchema(DEFAULT_CACHE_NAME);
+            .setSchema(DEFAULT_CACHE_NAME)
+            .setPageSize(pageSize);
 
         checkQuery(SQL_FIELDS, qry, sql);
     }
@@ -113,7 +129,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
 
-        sql = "update test set val='abc' where id=1";
+        sql = "update test set val = 'abc'";
 
         runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false);
 
@@ -125,7 +141,9 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testScanQuery() throws Exception {
-        checkQuery(SCAN, new ScanQuery<>(), DEFAULT_CACHE_NAME);
+        ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
+
+        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME);
     }
 
     /** Check query. */
@@ -147,21 +165,11 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         Set<UUID> readsNodes = new HashSet<>();
 
-        readsNodes.add(grid(0).context().localNodeId());
-        readsNodes.add(grid(1).context().localNodeId());
+        client.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         AtomicInteger queryCnt = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
-                long logicalReads, long physicalReads) {
-                assertTrue(readsNodes.remove(nodeId));
-                assertEquals(expType, type);
-                assertEquals(client.localNode().id(), queryNodeId);
-                assertTrue(logicalReads > 0);
-                assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
-            }
-
             @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
                 long duration, boolean success) {
                 queryCnt.incrementAndGet();
@@ -172,6 +180,15 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertTrue(startTime > 0);
                 assertTrue(duration >= 0);
                 assertTrue(success);
+            }
+
+            @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+                long logicalReads, long physicalReads) {
+                assertTrue(readsNodes.contains(nodeId));
+                assertEquals(expType, type);
+                assertEquals(client.localNode().id(), queryNodeId);
+                assertTrue(logicalReads > 0);
+                assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
             }
         });
 

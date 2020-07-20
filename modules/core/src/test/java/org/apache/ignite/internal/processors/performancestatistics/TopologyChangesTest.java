@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
-    /** Persistence anebled flag. */
+    /** Persistence enabled flag. */
     @Parameterized.Parameter
     public boolean persistence;
 

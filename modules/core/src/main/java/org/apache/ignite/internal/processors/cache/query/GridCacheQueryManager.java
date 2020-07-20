@@ -61,6 +61,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -929,6 +931,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (log.isDebugEnabled())
                 log.debug("Running query: " + qryInfo);
 
+            boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
+
+            if (performanceStatsEnabled)
+                IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
             boolean rmvRes = true;
 
             FieldsResult res = null;
@@ -1094,6 +1101,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
                 else if (rmvRes)
                     removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
+
+                if (performanceStatsEnabled) {
+                    IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                    if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+                        cctx.kernalContext().performanceStatistics().queryReads(
+                            SQL_FIELDS,
+                            qryInfo.senderId(),
+                            qryInfo.requestId(),
+                            stat.logicalReads(),
+                            stat.physicalReads());
+                    }
+                }
             }
         }
         finally {
@@ -1119,6 +1139,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         try {
+            boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
+
+            if (performanceStatsEnabled)
+                IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
             boolean loc = qryInfo.local();
 
             QueryResult<K, V> res = null;
@@ -1376,6 +1401,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
                 else if (rmvIter)
                     removeQueryResult(qryInfo.senderId(), qryInfo.requestId());
+
+                if (performanceStatsEnabled) {
+                    IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                    if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+                        cctx.kernalContext().performanceStatistics().queryReads(
+                            res.type(),
+                            qryInfo.senderId(),
+                            qryInfo.requestId(),
+                            stat.logicalReads(),
+                            stat.physicalReads());
+                    }
+                }
             }
         }
         finally {

@@ -36,8 +36,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -201,21 +199,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
+        if (req.cancel()) {
+            cancelIds.add(new CancelMessageId(req.id(), sndId));
 
-        if (performanceStatsEnabled)
-            IoStatisticsQueryHelper.startGatheringQueryStatistics();
-
-        try {
-            if (req.cancel()) {
-                cancelIds.add(new CancelMessageId(req.id(), sndId));
-
-                if (req.fields())
-                    removeFieldsQueryResult(sndId, req.id());
-                else
-                    removeQueryResult(sndId, req.id());
-            }
-            else if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
+            if (req.fields())
+                removeFieldsQueryResult(sndId, req.id());
+            else
+                removeQueryResult(sndId, req.id());
+        }
+        else {
+            if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
                 if (!F.eq(req.cacheName(), cctx.name())) {
                     GridCacheQueryResponse res = new GridCacheQueryResponse(
                         cctx.cacheId(),
@@ -252,20 +245,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     finally {
                         threads.remove(req.id());
                     }
-                }
-            }
-        }
-        finally {
-            if (performanceStatsEnabled) {
-                IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
-
-                if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    cctx.kernalContext().performanceStatistics().queryReads(
-                        req.type(),
-                        sndId,
-                        req.id(),
-                        stat.logicalReads(),
-                        stat.physicalReads());
                 }
             }
         }
