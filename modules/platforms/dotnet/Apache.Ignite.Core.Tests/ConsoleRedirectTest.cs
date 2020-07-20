@@ -115,6 +115,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(_errSb.ToString().Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
 
+#if !NETCOREAPP
         /// <summary>
         /// Tests the disabled redirect.
         /// </summary>
@@ -146,7 +147,6 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-#if !NETCOREAPP
         /// <summary>
         /// Tests multiple appdomains and multiple console handlers.
         /// </summary>

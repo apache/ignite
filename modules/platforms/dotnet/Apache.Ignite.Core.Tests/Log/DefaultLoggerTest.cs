@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestJavaLogger()
         {
             // Run the test in a separate process because log4jlogger has some static state,
-            // and after Ignite has been started once, it is not possible to start a new node 
+            // and after Ignite has been started once, it is not possible to start a new node
             // with a different logger config.
             const string envVar = "DefaultLoggerTest.TestJavaLogger";
 
@@ -112,3 +113,4 @@ namespace Apache.Ignite.Core.Tests.Log
         }
     }
 }
+#endif
