@@ -150,7 +150,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         sendOrderedWith2Node(ignite2, ignite1.message(), msgs, (received, threads) -> {
             assertFalse(threads.contains(Thread.currentThread()));
-            assertTrue(msgs.equals(received))
+            assertTrue(msgs.equals(received));
         });
     }
 

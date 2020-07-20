@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -509,7 +508,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         assert cpFut != null;
 
         // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
-        cpFut.futureFor(FINISHED).listen(future -> {
+        cpFut.futureFor(FINISHED).listen((IgniteInClosure<IgniteInternalFuture<?>>) future -> {
             if (X.hasCause(future.error(), NodeStoppingException.class))
                 return;
 
@@ -522,10 +521,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         throw e;
                 }
 
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
+                CacheGroupContext cacheGroupContext = cctx.cache().cacheGroup(grpId0);
 
-                if (grp != null)
-                    grp.topology().ownMoving(lastGroupTop);
+                if (cacheGroupContext != null)
+                    cacheGroupContext.topology().ownMoving(lastGroupTop);
                 else if (log.isDebugEnabled())
                     log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
             }

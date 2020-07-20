@@ -149,7 +149,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
             return null;
         }, 0);
 
-        comp.apply(o -> {
+        comp.apply((IgniteClosure<Integer, Object>) o -> {
             assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
             return null;
         }, Collections.singletonList(0));

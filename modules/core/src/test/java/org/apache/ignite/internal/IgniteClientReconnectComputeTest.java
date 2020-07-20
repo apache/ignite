@@ -18,12 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -146,7 +144,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
             try {
-                client.compute().apply((Integer) o -> o + 1, Arrays.asList(1, 2, 3));
+                client.compute().apply((IgniteClosure<Integer, Integer>) o -> o + 1, Arrays.asList(1, 2, 3));
             }
             catch (IgniteClientDisconnectedException e) {
                 checkAndWait(e);

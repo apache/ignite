@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -330,9 +329,11 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (!grp.localWalEnabled()) {
-                fut.listen(future -> {
-                    if (future.get())
-                        ctx.walState().onGroupRebalanceFinished(grp.groupId());
+                fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                    @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
+                        if (future.get())
+                            ctx.walState().onGroupRebalanceFinished(grp.groupId());
+                    }
                 });
             }
 

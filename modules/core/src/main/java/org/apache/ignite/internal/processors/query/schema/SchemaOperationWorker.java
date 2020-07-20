@@ -138,7 +138,7 @@ public class SchemaOperationWorker extends GridWorker {
     private GridFutureAdapter<?> publicFuture(GridFutureAdapter fut) {
         final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>();
 
-        fut.listen(future -> {
+        fut.listen((IgniteInClosure<IgniteInternalFuture<?>>) future -> {
             Exception err = null;
 
             try {

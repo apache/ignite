@@ -110,8 +110,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -2483,10 +2481,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                FinishClosure<Map<K, V>> finClos = loaded -> {
-                    retMap.putAll(loaded);
+                FinishClosure<Map<K, V>> finClos = new FinishClosure<Map<K, V>>() {
+                    @Override Map<K, V> finish(Map<K, V> loaded) {
+                        retMap.putAll(loaded);
 
-                    return retMap;
+                        return retMap;
+                    }
                 };
 
                 if (fut.isDone()) {

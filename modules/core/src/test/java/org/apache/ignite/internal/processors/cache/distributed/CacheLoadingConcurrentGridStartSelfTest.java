@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
@@ -40,13 +39,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -117,7 +115,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             cfg.setCacheConfiguration(ccfg);
 
         if (!configured) {
-            ccfg.setNodeFilter(node -> {
+            ccfg.setNodeFilter((IgnitePredicate<ClusterNode>) node -> {
                 String name = node.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
                 return !getTestIgniteInstanceName(0).equals(name);

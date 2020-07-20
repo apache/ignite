@@ -100,7 +100,7 @@ public class SchemaOperationManager {
         worker.start();
 
         synchronized (mux) {
-            worker.future().listen(future -> onLocalNodeFinished(future));
+            worker.future().listen((IgniteInClosure<IgniteInternalFuture<?>>)this::onLocalNodeFinished);
         }
     }
 

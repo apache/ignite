@@ -155,9 +155,9 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
                     assertTrue(ignite.configuration().isClientMode());
 
-                    IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
+                    IgniteCache<String, Integer> igniteCache = ignite.getOrCreateCache(cfg);
 
-                    assertNotNull(cache);
+                    assertNotNull(igniteCache);
 
                     IgniteTransactions txs = ignite.transactions();
 
@@ -178,7 +178,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                         }
 
                         try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
+                            igniteCache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
 
                             tx.commit();
                         }

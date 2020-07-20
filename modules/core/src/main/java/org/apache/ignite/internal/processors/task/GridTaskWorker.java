@@ -81,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -515,7 +514,11 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                () -> task.map(shuffledNodes, arg));
+                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
+                        return task.map(shuffledNodes, arg);
+                    }
+                });
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -1129,7 +1132,11 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         try {
             try {
                 // Reduce results.
-                reduceRes = U.wrapThreadLoader(dep.classLoader(), () -> task.reduce(results));
+                reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
+                    @Nullable @Override public R call() {
+                        return task.reduce(results);
+                    }
+                });
             }
             finally {
                 synchronized (mux) {

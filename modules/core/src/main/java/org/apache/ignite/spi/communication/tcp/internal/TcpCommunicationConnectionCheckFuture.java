@@ -324,10 +324,11 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                 sesMeta.put(TcpCommunicationSpi.CONSISTENT_ID_META, consistentId);
                 sesMeta.put(SES_FUT_META, this);
 
-                nioSrvr.createSession(ch, sesMeta, true, future -> {
-                    if (future.error() != null)
-                        finish(false);
-                });
+                nioSrvr.createSession(ch, sesMeta, true,
+                    (IgniteInClosure<IgniteInternalFuture<GridNioSession>>) future -> {
+                        if (future.error() != null)
+                            finish(false);
+                    });
             }
         }
 

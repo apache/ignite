@@ -219,12 +219,12 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                         }
 
                                         try {
-                                            Event evt = t3.get3();
+                                            Event event = t3.get3();
 
-                                            EventWrapper wrapper = new EventWrapper(evt);
+                                            EventWrapper wrapper = new EventWrapper(event);
 
-                                            if (evt instanceof CacheEvent) {
-                                                String cacheName = ((CacheEvent)evt).cacheName();
+                                            if (event instanceof CacheEvent) {
+                                                String cacheName = ((CacheEvent) event).cacheName();
 
                                                 ClusterNode node = ctx.discovery().node(t3.get1());
 

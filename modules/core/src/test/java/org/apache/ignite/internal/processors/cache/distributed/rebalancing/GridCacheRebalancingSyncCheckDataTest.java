@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -69,11 +68,11 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
             final AtomicInteger idx = new AtomicInteger(1);
 
             GridTestUtils.runMultiThreaded(() -> {
-                try (Ignite ignite = startGrid(idx.getAndIncrement())) {
-                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+                try (Ignite ig = startGrid(idx.getAndIncrement())) {
+                    IgniteCache<Object, Object> igniteCache = ig.cache(DEFAULT_CACHE_NAME);
 
-                    for (int i = 0; i < KEYS; i++)
-                        assertNotNull(cache.localPeek(i));
+                    for (int j = 0; j < KEYS; j++)
+                        assertNotNull(igniteCache.localPeek(j));
                 }
 
                 return null;

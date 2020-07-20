@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -291,7 +290,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(() -> {
             List<CacheDataRow> rows = new ArrayList<>(BATCH_SIZE);
 
-            Random rnd = ThreadLocalRandom.current();
+            Random random = ThreadLocalRandom.current();
 
             for (int i = 0; i < 200_000; i++) {
                 boolean grow0 = grow.get();
@@ -313,11 +312,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                boolean insert = rnd.nextInt(100) < 70 == grow0;
+                boolean insert = random.nextInt(100) < 70 == grow0;
 
                 if (insert) {
-                    int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-                    int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                    int keySize = random.nextInt(pageSize * 3 / 2) + 10;
+                    int valSize = random.nextInt(pageSize * 3 / 2) + 10;
 
                     TestDataRow row = new TestDataRow(keySize, valSize);
 
