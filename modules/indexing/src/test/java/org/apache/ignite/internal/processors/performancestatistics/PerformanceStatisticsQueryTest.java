@@ -21,11 +21,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -35,6 +38,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -168,11 +172,13 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         client.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         AtomicInteger queryCnt = new AtomicInteger();
+        HashSet<Long> qryIds = new HashSet<>();
 
         stopCollectStatisticsAndRead(new TestHandler() {
             @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
                 long duration, boolean success) {
                 queryCnt.incrementAndGet();
+                qryIds.add(id);
 
                 assertEquals(client.localNode().id(), nodeId);
                 assertEquals(expType, type);
@@ -184,6 +190,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
             @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
                 long logicalReads, long physicalReads) {
+                qryIds.add(id);
+
                 assertTrue(readsNodes.contains(nodeId));
                 assertEquals(expType, type);
                 assertEquals(client.localNode().id(), queryNodeId);
@@ -193,5 +201,66 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         });
 
         assertEquals(1, queryCnt.get());
+        assertEquals(1, qryIds.size());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMultipleStatementsSql() throws Exception {
+        LinkedList<String> qrs = new LinkedList<>();
+
+        qrs.add("drop table if exists test");
+        qrs.add("create table test(id int primary key, val varchar)");
+        qrs.add("insert into test (id, val) values (1, 'a')");
+        qrs.add("insert into test (id, val) values (2, 'b'), (3, 'c')");
+
+        LinkedList<String> qrsWithReads = new LinkedList<>();
+
+        qrsWithReads.add("select * from test");
+        qrsWithReads.add("update test set val = 'd' where id = 1");
+
+        Collection<String> expQrs = F.concat(true, qrs, qrsWithReads);
+
+        String qryText = F.concat(expQrs, ";");
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(qryText).setSchema("PUBLIC");
+
+        startCollectStatistics();
+
+        List<FieldsQueryCursor<List<?>>> res = client.context().query().querySqlFields(qry, true, false);
+
+        assertEquals("Unexpected cursors count: " + res.size(), expQrs.size(), res.size());
+
+        res.get(4).getAll();
+
+        HashSet<Long> qryIds = new HashSet<>();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+                long duration, boolean success) {
+                if (qrsWithReads.contains(text))
+                    qryIds.add(id);
+
+                assertEquals(client.localNode().id(), nodeId);
+                assertEquals(SQL_FIELDS, type);
+                assertTrue("Unexpected query: " + text, expQrs.remove(text));
+                assertTrue(startTime > 0);
+                assertTrue(duration >= 0);
+                assertTrue(success);
+            }
+
+            @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+                long logicalReads, long physicalReads) {
+                qryIds.add(id);
+
+                assertEquals(SQL_FIELDS, type);
+                assertEquals(client.localNode().id(), queryNodeId);
+                assertTrue(logicalReads > 0);
+                assertTrue(physicalReads == 0);
+            }
+        });
+
+        assertTrue("Queries was not handled: " + expQrs, expQrs.isEmpty());
+        assertEquals("Unexpected IDs: " + qryIds, qrsWithReads.size(), qryIds.size());
     }
 }

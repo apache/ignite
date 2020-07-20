@@ -92,6 +92,9 @@ public class RunningQueryManager {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
+    /** Current reduce query request ID for a registered query. Value is {@code -1} if there is no request sent. */
+    private final ThreadLocal<Long> reduceQryId = ThreadLocal.withInitial(() -> -1L);
+
     /**
      * Constructor.
      *
@@ -202,11 +205,19 @@ public class RunningQueryManager {
             ctx.performanceStatistics().query(
                 qry.queryType(),
                 qry.query(),
-                qryId,
+                reduceQryId.get(),
                 qry.startTime(),
                 System.nanoTime() - qry.startTimeNanos(),
                 !failed);
         }
+
+        reduceQryId.remove();
+    }
+
+    /** Sets reduce query request ID. */
+    public void reduceQueryId(long reqId) {
+        if (ctx.performanceStatistics().enabled())
+            reduceQryId.set(reqId);
     }
 
     /**
