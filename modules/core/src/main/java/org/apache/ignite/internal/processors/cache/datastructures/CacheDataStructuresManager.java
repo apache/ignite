@@ -396,7 +396,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr), cctx.operationContextPerCall()));
 
                 if (old != null)
                     set = old;

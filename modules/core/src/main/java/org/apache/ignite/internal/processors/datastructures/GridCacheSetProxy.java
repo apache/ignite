@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -40,6 +41,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Cache set proxy.
@@ -68,6 +71,8 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** Busy lock. */
     private GridSpinBusyLock busyLock;
 
+    private CacheOperationContext opCtx;
+
     /** Check removed flag. */
     private boolean rmvCheck;
 
@@ -82,9 +87,10 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      * @param cctx Cache context.
      * @param delegate Delegate set.
      */
-    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate) {
+    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate, CacheOperationContext opCtx) {
         this.cctx = cctx;
         this.delegate = delegate;
+        this.opCtx = opCtx;
 
         gate = cctx.gate();
 
@@ -112,13 +118,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.size();
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -131,13 +137,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.isEmpty();
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -150,13 +156,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.contains(o);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -169,13 +175,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.toArray();
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -188,13 +194,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.toArray(a);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -207,13 +213,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.add(t);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -226,13 +232,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.remove(o);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -245,13 +251,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.containsAll(c);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -264,13 +270,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.addAll(c);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -283,13 +289,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.retainAll(c);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -302,13 +308,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.removeAll(c);
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -321,13 +327,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 delegate.clear();
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -340,13 +346,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         enterBusy();
 
         try {
-            gate.enter();
+            CacheOperationContext prev = gate.enter(opCtx);
 
             try {
                 return delegate.iterator();
             }
             finally {
-                gate.leave();
+                gate.leave(prev);
             }
         }
         finally {
@@ -358,7 +364,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     @Override public void close() {
         IgniteFuture<Boolean> destroyFut = null;
 
-        gate.enter();
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             delegate.close();
@@ -373,7 +379,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
             }
         }
         finally {
-            gate.leave();
+            gate.leave(prev);
         }
 
         if (destroyFut != null)
@@ -403,6 +409,33 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         return delegate.affinityCall(job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <V1> IgniteSet<V1> withKeepBinary() {
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        if (opCtx != null && opCtx.isKeepBinary())
+            return (GridCacheSetProxy<V1>)this;
+
+        opCtx = opCtx == null ? new CacheOperationContext(
+            false,
+            null,
+            true,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX)
+            : opCtx.keepBinary();
+
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return new GridCacheSetProxy<>(cctx, (GridCacheSetImpl<V1>)delegate, opCtx);
+        } finally {
+            gate.leave(prev);
+        }
     }
 
     /**
