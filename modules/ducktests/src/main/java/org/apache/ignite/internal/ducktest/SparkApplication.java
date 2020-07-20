@@ -32,7 +32,7 @@ public class SparkApplication extends IgniteAwareApplication {
     public static final String HOME = "/opt/ignite-dev";
 
     /** Version. */
-    public static final String VER = "2.9.0-SNAPSHOT";
+    public static final String VER = "2.10.0-SNAPSHOT";
 
     /** Spring version. */
     public static final String SPRING_VER = "4.3.26.RELEASE";
