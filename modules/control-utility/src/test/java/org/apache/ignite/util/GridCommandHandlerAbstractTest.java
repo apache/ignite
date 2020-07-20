@@ -172,6 +172,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         testOut.reset();
 
         encriptionEnabled = false;
+
+        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */

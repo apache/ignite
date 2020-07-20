@@ -255,4 +255,9 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nextVersion() {
+        return ctx.versions().next(ctx.shared().kernalContext().discovery().topologyVersion());
+    }
 }
