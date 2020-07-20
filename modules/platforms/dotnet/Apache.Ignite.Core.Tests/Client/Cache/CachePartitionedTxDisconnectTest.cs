@@ -53,10 +53,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 using (Client.GetTransactions().TxStart())
                 {
-                    // Ignition.Stop(null, true);
                     var igniteToStop = new[] {(int?) null, 1, 2}
                        .Select(i => GetIgnite(i))
                        .FirstOrDefault(ign => ign.GetTransactions().GetLocalActiveTransactions().Any());
+
                     Assert.IsNotNull(igniteToStop);
                     Ignition.Stop(igniteToStop.Name, true);
                     

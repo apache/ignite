@@ -93,40 +93,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(2, cache.Get(key2));
         }
 
-        /// <summary>
-        /// Tests that transaction handles reconnect.
-        /// </summary>
-        [Test]
-        public void TestDisconnect()
-        {
-            var cache = GetTransactionalCache();
-
-            var constraint = new ReusableConstraint(Is.TypeOf<IgniteClientException>()
-               .And.Message.EqualTo("Transaction context has been lost due to connection errors."));
-            try
-            {
-                using (Client.GetTransactions().TxStart())
-                {
-                    Ignition.Stop(null, true);
-                    // var igniteToStop = new[] {(int?) null, 1, 2}
-                    //    .Select(i => GetIgnite(i))
-                    //    .FirstOrDefault(ign => ign.GetTransactions().GetLocalActiveTransactions().Any());
-                    // Assert.IsNotNull(igniteToStop);
-                    // Ignition.Stop(igniteToStop.Name, true);
-                    
-                    Assert.Throws(constraint, () => cache.Put(1, 1));
-                }
-            }
-            catch (IgniteClientException ex)
-            {
-                Assert.That(ex, constraint);
-            }
-
-            Assert.DoesNotThrow(() => cache.Put(1, 1));
-            Assert.IsNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx);
-            Ignition.Start(GetIgniteConfiguration());
-        }
-
         protected override string GetCacheName()
         {
             return "partitioned_" + base.GetCacheName();
