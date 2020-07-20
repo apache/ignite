@@ -151,6 +151,7 @@ public class SqlConfiguration {
     }
 
     /**
+     * Is key & value validation enabled.
      *
      * @return {@code true} When key & value shall be validated against SQL schema.
      */
@@ -159,6 +160,7 @@ public class SqlConfiguration {
     }
 
     /**
+     * Enable/disable key & value validation.
      *
      * @param validationEnabled {@code true} When key & value shall be validated against SQL schema.
      * Default value is {@code false}.
