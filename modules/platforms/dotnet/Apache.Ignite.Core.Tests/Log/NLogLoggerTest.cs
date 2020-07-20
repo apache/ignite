@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
@@ -86,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Log
             var nLogger = new IgniteNLogLogger();
 
             // All parameters.
-            nLogger.Log(LogLevel.Trace, "msg{0}", new object[] {1}, CultureInfo.InvariantCulture, "category", 
+            nLogger.Log(LogLevel.Trace, "msg{0}", new object[] {1}, CultureInfo.InvariantCulture, "category",
                 "java-err", new Exception("myException"));
 
             Assert.AreEqual("category|Trace|msg1|myException|nativeErrorInfo=java-err", GetLastLog());
@@ -163,3 +164,4 @@ namespace Apache.Ignite.Core.Tests.Log
 
     }
 }
+#endif

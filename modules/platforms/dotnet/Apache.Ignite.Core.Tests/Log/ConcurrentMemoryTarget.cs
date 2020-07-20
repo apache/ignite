@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System.Collections.Generic;
@@ -71,3 +72,4 @@ namespace Apache.Ignite.Core.Tests.Log
         }
     }
 }
+#endif
