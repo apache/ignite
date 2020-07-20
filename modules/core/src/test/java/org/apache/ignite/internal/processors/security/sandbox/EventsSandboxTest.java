@@ -61,7 +61,7 @@ public class EventsSandboxTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    public void testRemoteFilter(){
+    public void testRemoteFilter() {
         testEvents(new BiFunction<IgniteEvents, String, UUID>() {
             @Override public UUID apply(IgniteEvents evts, String cacheName) {
                 return evts.remoteListen((uuid, e) -> true, remoteFilter(cacheName), EventType.EVT_CACHE_OBJECT_PUT);
@@ -71,7 +71,7 @@ public class EventsSandboxTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    public void testRemoteFilterAsync(){
+    public void testRemoteFilterAsync() {
         testEvents(new BiFunction<IgniteEvents, String, UUID>() {
             @Override public UUID apply(IgniteEvents evts, String cacheName) {
                 return evts.remoteListenAsync((uuid, e) -> true, remoteFilter(cacheName), EventType.EVT_CACHE_OBJECT_PUT)
