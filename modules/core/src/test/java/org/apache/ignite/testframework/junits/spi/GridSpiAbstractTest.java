@@ -208,13 +208,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         spiConfigure(spi);
 
-        Map<String, Object> attrs = spi.getNodeAttributes();
 
         // Set up SPI class name and SPI version.
         Map<String, Serializable> spiAttrs = initSpiClassAndVersionAttributes(spi);
-
-        if (attrs != null)
-            getTestData().getAttributes().putAll(attrs);
 
         if (spiAttrs != null)
             getTestData().getAttributes().putAll(spiAttrs);
@@ -266,6 +262,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         try {
             spiStart(spi);
+
+            Map<String, Object> attrs = spi.getNodeAttributes();
+
+            if (attrs != null)
+                getTestData().getAttributes().putAll(attrs);
         }
         catch (Exception e) {
             spiStop(spi);

@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -99,11 +99,11 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         // Establish connection
         client.compute(srvGrp).run(F.noop());
 
-        ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(clientSpi, "clients");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = U.field(clientSpi, "recoveryDescs");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = U.field(clientSpi, "outRecDescs");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = U.field(clientSpi, "inRecDescs");
-        GridNioServerListener<Message> lsnr = U.field(clientSpi, "srvLsnr");
+        ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(clientSpi, "clientPool", "clients");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "recoveryDescs");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "outRecDescs");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "inRecDescs");
+        GridNioServerListener<Message> lsnr =  GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "srvLsnr");
 
         Iterator<GridNioRecoveryDescriptor> it = F.concat(
             recoveryDescs.values().iterator(),

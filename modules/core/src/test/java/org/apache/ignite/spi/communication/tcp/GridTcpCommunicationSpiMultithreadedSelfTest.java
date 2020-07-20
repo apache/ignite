@@ -41,16 +41,13 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -58,6 +55,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -338,18 +336,16 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (run.get() && !Thread.currentThread().isInterrupted()) {
-                        U.sleep(interval * 3 / 2);
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(() -> {
+            try {
+                while (run.get() && !Thread.currentThread().isInterrupted()) {
+                    U.sleep(interval * 3 / 2);
 
-                        ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.consistentId(), to.id());
-                    }
+                    ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.consistentId(), to.id());
                 }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    Thread.currentThread().interrupt();
-                }
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                Thread.currentThread().interrupt();
             }
         }, 1);
 
@@ -361,7 +357,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         // Wait when all messages are acknowledged to do not break next tests' logic.
         for (CommunicationSpi<Message> spi : spis.values()) {
-            GridNioServer srv = U.field(spi, "nioSrvr");
+            GridNioServer srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
             Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
@@ -369,11 +365,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 final GridNioRecoveryDescriptor snd = ses.outRecoveryDescriptor();
 
                 if (snd != null) {
-                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                        @Override public boolean apply() {
-                            return snd.messagesRequests().isEmpty();
-                        }
-                    }, 10_000);
+                    GridTestUtils.waitForCondition(() -> snd.messagesRequests().isEmpty(), 10_000);
 
                     assertEquals("Unexpected messages: " + snd.messagesRequests(), 0,
                         snd.messagesRequests().size());
@@ -399,26 +391,24 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         long start = System.currentTimeMillis();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    ClusterNode from = nodes.get(0);
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                ClusterNode from = nodes.get(0);
 
-                    ClusterNode to = nodes.get(1);
+                ClusterNode to = nodes.get(1);
 
-                    CommunicationSpi<Message> spi = spis.get(from.id());
+                CommunicationSpi<Message> spi = spis.get(from.id());
 
-                    while (cntr.getAndIncrement() < msgCnt) {
-                        GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
+                while (cntr.getAndIncrement() < msgCnt) {
+                    GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
-                        msg.payload(new byte[10 * 1024]);
+                    msg.payload(new byte[10 * 1024]);
 
-                        spi.sendMessage(to, msg);
-                    }
+                    spi.sendMessage(to, msg);
                 }
-                catch (IgniteException e) {
-                    fail("Unable to send message: " + e.getMessage());
-                }
+            }
+            catch (IgniteException e) {
+                fail("Unable to send message: " + e.getMessage());
             }
         }, 5, "message-sender");
 
@@ -491,11 +481,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             GridSpiTestContext ctx = initSpiContext();
 
-            MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
-                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
-                }
-            };
+            MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
                     new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
@@ -519,12 +505,12 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             info("Lsnrs: " + lsnrs);
 
-            node.setAttributes(spi.getNodeAttributes());
-            node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
+            spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
             nodes.add(node);
 
-            spi.spiStart(getTestIgniteInstanceName() + (i + 1));
+            node.setAttributes(spi.getNodeAttributes());
+            node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
             spis.put(rsrcs.getNodeId(), spi);
 
@@ -554,19 +540,17 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         }
 
         for (CommunicationSpi spi : spis.values()) {
-            final ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(spi, "clients");
+            final ConcurrentMap<UUID, GridCommunicationClient[]> clients =  GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
-            assert GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    for (GridCommunicationClient[] clients0 : clients.values()) {
-                        for (GridCommunicationClient client : clients0) {
-                            if (client != null)
-                                return false;
-                        }
+            assert GridTestUtils.waitForCondition(() -> {
+                for (GridCommunicationClient[] clients0 : clients.values()) {
+                    for (GridCommunicationClient client : clients0) {
+                        if (client != null)
+                            return false;
                     }
-
-                    return true;
                 }
+
+                return true;
             }, getTestTimeout()) : "Clients: " + clients;
         }
     }

@@ -17,10 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.io.IOException;
 import java.net.SocketException;
-import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -29,6 +26,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -47,7 +48,6 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setFailureHandler(new StopNodeFailureHandler())
-            .setCommunicationSpi(new TooManyOpenFilesTcpCommunicationSpi())
             .setConsistentId(igniteInstanceName)
             .setCacheConfiguration(
                 new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -72,8 +72,7 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
     }
 
     /**
-     * Test checks that node will fail in case of error "Too many open files"
-     * in {@link TcpCommunicationSpi}.
+     * Test checks that node will fail in case of error "Too many open files" in {@link TcpCommunicationSpi}.
      *
      * @throws Exception If failed.
      */
@@ -84,8 +83,10 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
 
         IgniteEx stopNode = grid(2);
 
-        TooManyOpenFilesTcpCommunicationSpi stopNodeSpi = (TooManyOpenFilesTcpCommunicationSpi)
-            stopNode.context().config().getCommunicationSpi();
+        CommunicationSpi stopNodeSpi = stopNode.context().config().getCommunicationSpi();
+
+        ConnectionClientPool connPool = U.field(stopNodeSpi, "clientPool");
+        GridNioServerWrapper nioSrvWrapper = U.field(stopNodeSpi, "nioSrvWrapper");
 
         IgniteEx txNode = grid(1);
 
@@ -94,8 +95,10 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
 
             cache.put(0, 1);
 
-            stopNodeSpi.throwException.set(true);
-            stopNodeSpi.closeConnections(txNode.localNode().id());
+            nioSrvWrapper.socketChannelFactory(() -> {
+                throw new SocketException("Too many open files");
+            });
+            connPool.forceCloseConnection(txNode.localNode().id());
 
             cache.put(1, 2);
             cache.put(2, 3);
@@ -109,22 +112,5 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
         }
 
         assertTrue(waitForCondition(((IgniteKernal)stopNode)::isStopping, 60_000));
-    }
-
-    /**
-     * Class for emulating "Too many open files" error in
-     * {@link TcpCommunicationSpi}.
-     */
-    private static class TooManyOpenFilesTcpCommunicationSpi extends TcpCommunicationSpi {
-        /** Flag for throwing an exception "Too many open files". */
-        private final AtomicBoolean throwException = new AtomicBoolean();
-
-        /** {@inheritDoc} */
-        @Override protected SocketChannel openSocketChannel() throws IOException {
-            if (throwException.get())
-                throw new SocketException("Too many open files");
-
-            return super.openSocketChannel();
-        }
     }
 }

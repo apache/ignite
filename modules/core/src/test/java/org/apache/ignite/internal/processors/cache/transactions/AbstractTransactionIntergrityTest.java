@@ -491,6 +491,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
             String cacheName,
             int workerIdx,
             boolean colocatedAccounts) {
+            super("TransferAmountTxThread");
+
             this.firstTransactionLatch = firstTransactionLatch;
             this.ignite = ignite;
             this.cacheName = cacheName;

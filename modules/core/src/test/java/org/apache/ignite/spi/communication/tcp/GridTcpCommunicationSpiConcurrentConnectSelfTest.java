@@ -54,6 +54,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -349,11 +350,11 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
                     assertTrue(latch.await(10, TimeUnit.SECONDS));
 
                     for (CommunicationSpi<?> spi : spis) {
-                        ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
+                        ConcurrentMap<UUID, GridCommunicationClient> clients = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
                         assertEquals(1, clients.size());
 
-                        final GridNioServer<?> srv = U.field(spi, "nioSrvr");
+                        final GridNioServer<?> srv = ((GridNioServerWrapper) U.field(spi, "nioSrvWrapper")).nio();
 
                         final int conns = pairedConnections ? 2 : 1;
 
@@ -465,11 +466,11 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
             spi.setListener(lsnr);
 
-            node.setAttributes(spi.getNodeAttributes());
-
             nodes.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
+
+            node.setAttributes(spi.getNodeAttributes());
 
             spis.add(spi);
 
