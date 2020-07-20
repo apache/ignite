@@ -199,19 +199,19 @@ public class RunningQueryManager {
                 if (QueryUtils.wasCancelled(failReason))
                     canceledQrsCnt.increment();
             }
-        }
 
-        if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
-            ctx.performanceStatistics().query(
-                qry.queryType(),
-                qry.query(),
-                reduceQryId.get(),
-                qry.startTime(),
-                System.nanoTime() - qry.startTimeNanos(),
-                !failed);
-        }
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                ctx.performanceStatistics().query(
+                    qry.queryType(),
+                    qry.query(),
+                    reduceQryId.get(),
+                    qry.startTime(),
+                    System.nanoTime() - qry.startTimeNanos(),
+                    !failed);
+            }
 
-        reduceQryId.remove();
+            reduceQryId.remove();
+        }
     }
 
     /** Sets reduce query request ID. */
