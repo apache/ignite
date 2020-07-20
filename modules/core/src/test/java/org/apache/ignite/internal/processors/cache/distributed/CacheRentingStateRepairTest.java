@@ -258,8 +258,8 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             // Create race between processing of final supply message and partition clearing.
             // Evicted partition will be recreated using supplied factory.
-            top.partitionFactory((ctx, grp, id) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, false) :
-                new GridDhtLocalPartition(ctx, grp, id, false) {
+            top.partitionFactory((ctx, grp, id, recovery) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, recovery) :
+                new GridDhtLocalPartition(ctx, grp, id, recovery) {
                     @Override public void beforeApplyBatch(boolean last) {
                         if (last) {
                             l1.countDown();
