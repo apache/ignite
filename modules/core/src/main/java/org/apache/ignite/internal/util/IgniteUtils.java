@@ -1544,6 +1544,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Stacktrace of current thread as {@link String}.
+     */
+    public static String stackTrace() {
+        GridStringBuilder sb = new GridStringBuilder();
+        long threadId = Thread.currentThread().getId();
+
+        printStackTrace(threadId, sb);
+
+        return sb.toString();
+    }
+
+    /**
      * @return {@code true} if there is java level deadlock.
      */
     public static boolean deadlockPresent() {

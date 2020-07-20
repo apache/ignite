@@ -32,6 +32,11 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     }
 
     /** {@inheritDoc} */
+    @Override protected int partitions() {
+        return 1024;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void configureBaselineAutoAdjust() {
         // No-op, keep the baseline auto-adjust enabled.
     }
@@ -57,10 +62,5 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     /** {@inheritDoc} */
     @Override protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int partitions() {
-        return 1024;
     }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -267,7 +269,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
                     @Override public void run() {
                         U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, true);
+                        IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
                         stopLatch.countDown();
                     }
@@ -295,6 +297,11 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     /** */
     private static class DummyCheckpointContext implements DbCheckpointListener.Context {
         /** {@inheritDoc} */
+        @Override public CheckpointProgress progress() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean nextSnapshot() {
             return false;
         }
@@ -317,11 +324,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public @Nullable Executor executor() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasPages() {
-            return false;
         }
     }
 
