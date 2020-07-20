@@ -51,6 +51,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TransactionIsolation.RepeatableRead
         };
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheClientAbstractTxTest"/> class.
+        /// </summary>
         protected CacheClientAbstractTxTest(int serverCount, bool enablePartitionAwareness) : base(serverCount,
             enablePartitionAwareness: enablePartitionAwareness)
         {
