@@ -17,7 +17,13 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
+
+# Num of containers that ducktape will prepare for tests
+IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-6}
+# Path for tests to start
 TC_PATHS=${TC_PATHS:-./ignitetest/}
+# Docker image name that ducktape will use to prepare containers
+IMAGE_NAME=${IMAGE_NAME}
 
 die() {
     echo $@
@@ -25,6 +31,15 @@ die() {
 }
 
 if ${SCRIPT_DIR}/ducker-ignite ssh | grep -q '(none)'; then
-    ${SCRIPT_DIR}/ducker-ignite up -n "${IGNITE_NUM_CONTAINERS}" || die "ducker-ignite up failed"
+    # If image name is specified that skip build and just pull it
+    if [ "$IMAGE_NAME" != "" ]; then
+      IMAGE_NAME=" --skip-build-image $IMAGE_NAME"
+    fi
+    ${SCRIPT_DIR}/ducker-ignite up -n "${IGNITE_NUM_CONTAINERS}" ${IMAGE_NAME} || die "ducker-ignite up failed"
 fi
+
+if [ "$VERSION" != "" ]; then
+  export _DUCKTAPE_OPTIONS="$_DUCKTAPE_OPTIONS --parameters '{\"version\":\"${VERSION}\"}'"
+fi
+
 ${SCRIPT_DIR}/ducker-ignite test ${TC_PATHS} ${_DUCKTAPE_OPTIONS} || die "ducker-ignite test failed"

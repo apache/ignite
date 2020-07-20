@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
+    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
+        <param name="Target" value="System.err"/>
+
+        <param name="Threshold" value="INFO"/>
+
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{{ISO8601}}][%-5p][%t][%c{{1}}] %m%n"/>
+        </layout>
+    </appender>
+
+    <category name="org.springframework">
+        <level value="WARN"/>
+    </category>
+
+    <category name="org.eclipse.jetty">
+        <level value="WARN"/>
+    </category>
+
+    <category name="org.eclipse.jetty.util.log">
+        <level value="ERROR"/>
+    </category>
+
+    <category name="org.eclipse.jetty.util.component">
+        <level value="ERROR"/>
+    </category>
+
+    <category name="com.amazonaws">
+        <level value="WARN"/>
+    </category>
+
+    <root>
+        <level value="INFO"/>
+        <appender-ref ref="CONSOLE_ERR"/>
+    </root>
+</log4j:configuration>

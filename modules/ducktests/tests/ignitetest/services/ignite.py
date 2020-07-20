@@ -20,6 +20,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_config import IgniteServerConfig, IgniteClientConfig
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 
@@ -37,8 +38,9 @@ class IgniteService(IgniteAwareService):
             "collect_default": False}
     }
 
-    def __init__(self, context, num_nodes, version=DEV_BRANCH, properties=""):
+    def __init__(self, context, num_nodes, client_mode=False, version=DEV_BRANCH, properties=""):
         super(IgniteService, self).__init__(context, num_nodes, version, properties)
+        self.client_mode = client_mode
 
     def start(self, timeout_sec=180):
         super(IgniteService, self).start()
@@ -49,7 +51,8 @@ class IgniteService(IgniteAwareService):
             self.await_node_started(node, timeout_sec)
 
     def start_cmd(self, node):
-        jvm_opts = "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
+        jvm_opts = self.jvm_options + " "
+        jvm_opts += "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
         jvm_opts += "-J-Dlog4j.configDebug=true "
 
         cmd = "export EXCLUDE_TEST_CLASSES=true; "
@@ -62,6 +65,12 @@ class IgniteService(IgniteAwareService):
                 IgniteService.STDOUT_STDERR_CAPTURE,
                 IgniteService.STDOUT_STDERR_CAPTURE)
         return cmd
+
+    def config(self):
+        if self.client_mode:
+            return IgniteClientConfig(self.context)
+        else:
+            return IgniteServerConfig(self.context)
 
     def await_node_started(self, node, timeout_sec):
         self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)

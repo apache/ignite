@@ -18,7 +18,7 @@ from abc import abstractmethod
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.ignite_config import IgniteConfig
+from ignitetest.services.utils.ignite_config import IgniteLoggerConfig
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 
@@ -44,11 +44,20 @@ class IgniteAwareService(BackgroundThreadService):
     def __init__(self, context, num_nodes, version, properties):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
+        if 'project' in context.globals:
+            self.path = IgnitePath(context.globals['project'])
+        else:
+            self.path = IgnitePath()
+
+        if 'jvm_opts' in context.globals:
+            self.jvm_options = context.globals['jvm_opts']
+        else:
+            self.jvm_options = ""
+
         self.log_level = "DEBUG"
-        self.config = IgniteConfig()
-        self.path = IgnitePath()
         self.properties = properties
         self.version = version
+        self.logger_config = IgniteLoggerConfig()
 
         for node in self.nodes:
             node.version = version
@@ -64,9 +73,9 @@ class IgniteAwareService(BackgroundThreadService):
 
     def init_persistent(self, node):
         node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.create_file(self.CONFIG_FILE, self.config.render(
-            self.PERSISTENT_ROOT, self.WORK_DIR, properties=self.properties))
-        node.account.create_file(self.LOG4J_CONFIG_FILE, self.config.render_log4j(self.WORK_DIR))
+        node.account.create_file(self.CONFIG_FILE, self.config().render(
+            config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR, properties=self.properties))
+        node.account.create_file(self.LOG4J_CONFIG_FILE, self.logger_config.render(work_dir=self.WORK_DIR))
 
     @abstractmethod
     def start_cmd(self, node):
@@ -74,6 +83,10 @@ class IgniteAwareService(BackgroundThreadService):
 
     @abstractmethod
     def pids(self, node):
+        raise NotImplementedError
+
+    @abstractmethod
+    def config(self):
         raise NotImplementedError
 
     def _worker(self, idx, node):

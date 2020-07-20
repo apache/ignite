@@ -60,11 +60,18 @@ Usage: ${script_path} [command] [options]
 help|-h|--help
     Display this help message
 
-up [-n|--num-nodes NUM_NODES] [-f|--force] [docker-image]
-        [-C|--custom-ducktape DIR] [-e|--expose-ports ports]
+build [-j|--jdk JDK] [image-name]
+    Build an docker image that ducktape uses to up cluster. Image is tagged with specified ${image_name}.
+
+    If --jdk is specified then we will use this argument as base image for ducker docker images.
+    Otherwise ${default_jdk} is used.
+
+up [-n|--num-nodes NUM_NODES] [-f|--force] [-s|--skip-build-image] [docker-image]
+        [-C|--custom-ducktape DIR] [-e|--expose-ports ports] [-j|--jdk JDK_VERSION]
     Bring up a cluster with the specified amount of nodes (defaults to ${default_num_nodes}).
-    The docker image name defaults to ${default_image_name}.  If --force is specified, we will
-    attempt to bring up an image even some parameters are not valid.
+    The docker image name defaults to ${default_image_name}. If --force is specified, we will
+    attempt to bring up an image even some parameters are not valid. If --skip-build-image is
+    specified, we won't invoke docker build for tests and specified docker-image will be used.
 
     If --custom-ducktape is specified, we will install the provided custom
     ducktape source code directory before bringing up the nodes.  The provided
@@ -74,6 +81,9 @@ up [-n|--num-nodes NUM_NODES] [-f|--force] [docker-image]
     on the host. The argument can be a single port (like 5005), a port range like (5005-5009)
     or a combination of port/port-range separated by comma (like 2181,9092 or 2181,5005-5008).
     By default no port is exposed. See README.md for more detail on this option.
+
+    If --jdk is specified then we will use this argument as base image for ducker docker images.
+    Otherwise ${default_jdk} is used.
 
 test [test-name(s)]
     Run a test or set of tests inside the currently active Ducker nodes.
@@ -215,7 +225,7 @@ ask_yes_no() {
 # Build a docker image.
 #
 # $1: The name of the image to build.
-ducker_build() {
+ducker_build_image() {
     local image_name="${1}"
 
     # Use SECONDS, a builtin bash variable that gets incremented each second, to measure the docker
@@ -239,6 +249,21 @@ $((${duration} % 60))s.  See ${build_log} for details."
 $((${duration} % 60))s.  See ${build_log} for details."
 }
 
+ducker_build() {
+    require_commands docker
+    while [[ $# -ge 1 ]]; do
+        case "${1}" in
+            -j|--jdk) set_once jdk_version "${2}" "the OpenJDK base image"; shift 2;;
+            *) set_once image_name "${1}" "docker image name"; shift;;
+        esac
+    done
+
+    [[ -n "${jdk_version}" ]] || jdk_version="${default_jdk}"
+    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}"
+
+    ducker_build_image "${image_name}"
+}
+
 docker_run() {
     local node=${1}
     local image_name=${2}
@@ -258,7 +283,7 @@ docker_run() {
     must_do -v docker run --privileged \
         -d -t -h "${node}" --network ducknet "${expose_ports}" \
         --memory=${docker_run_memory_limit} --memory-swappiness=1 \
-        -v "${ignite_dir}:/opt/ignite-dev:delegated" --name "${node}" -- "${image_name}"
+        --mount type=bind,source="${ignite_dir}",target=/opt/ignite-dev,consistency=delegated --name "${node}" -- "${image_name}"
 }
 
 setup_custom_ducktape() {
@@ -283,6 +308,7 @@ ducker_up() {
         case "${1}" in
             -C|--custom-ducktape) set_once custom_ducktape "${2}" "the custom ducktape directory"; shift 2;;
             -f|--force) force=1; shift;;
+            -s|--skip-build-image) skip_build=1; shift;;
             -n|--num-nodes) set_once num_nodes "${2}" "number of nodes"; shift 2;;
             -j|--jdk) set_once jdk_version "${2}" "the OpenJDK base image"; shift 2;;
             -e|--expose-ports) set_once expose_ports "${2}" "the ports to expose"; shift 2;;
@@ -306,21 +332,10 @@ use only ${num_nodes}."
 
     docker ps >/dev/null || die "ducker_up: failed to run docker.  Please check that the daemon is started."
 
-    ducker_build "${image_name}"
-
-    docker inspect --format='{{.Config.Labels}}' --type=image "${image_name}" | grep -q 'ducker.type'
-    local docker_status=${PIPESTATUS[0]}
-    local grep_status=${PIPESTATUS[1]}
-    [[ "${docker_status}" -eq 0 ]] || die "ducker_up: failed to inspect image ${image_name}.  \
-Please check that it exists."
-    if [[ "${grep_status}" -ne 0 ]]; then
-        if [[ "${force}" -ne 1 ]]; then
-            echo "ducker_up: ${image_name} does not appear to be a ducker image.  It lacks the \
-ducker.type label.  If you think this is a mistake, you can use --force to attempt to bring \
-it up anyway."
-            exit 1
-        fi
+    if [[ "${skip_build}" -ne 1 ]]; then
+      ducker_build_image "${image_name}"
     fi
+
     local running_containers="$(docker ps -f=network=ducknet -q)"
     local num_running_containers=$(count ${running_containers})
     if [[ ${num_running_containers} -gt 0 ]]; then
@@ -574,7 +589,7 @@ shift
 case "${action}" in
     help) usage 0;;
 
-    up|test|ssh|down|purge)
+    build|up|test|ssh|down|purge)
         ducker_${action} "${@}"; exit 0;;
 
     *)  echo "Unknown command '${action}'.  Type '${script_path} --help' for usage information."
