@@ -314,6 +314,8 @@ public class GridDhtPartitionDemander {
 
                 if (oldFut.isInitial())
                     oldFut.onDone(true);
+                else if (!oldFut.isDone())
+                    oldFut.tryCancel();
 
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
