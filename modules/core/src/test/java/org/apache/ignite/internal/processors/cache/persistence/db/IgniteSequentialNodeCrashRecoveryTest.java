@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -267,7 +268,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
                     @Override public void run() {
                         U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, true);
+                        IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
                         stopLatch.countDown();
                     }

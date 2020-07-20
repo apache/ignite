@@ -267,7 +267,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -989,7 +989,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link OdbcResponse}.
      */
-    private static OdbcResponse exceptionToResult(Exception e) {
+    private static OdbcResponse exceptionToResult(Throwable e) {
         String msg = OdbcUtils.tryRetrieveH2ErrorMessage(e);
 
         if (e instanceof TransactionSerializationException)

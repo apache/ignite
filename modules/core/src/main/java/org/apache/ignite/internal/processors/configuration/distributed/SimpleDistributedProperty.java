@@ -39,7 +39,7 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     private volatile boolean attached = false;
 
     /** Listeners of property update. */
-    private final ConcurrentLinkedQueue<DistributePropertyListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<DistributePropertyListener<? super T>> updateListeners = new ConcurrentLinkedQueue<>();
 
     /**
      * Specific consumer for update value in cluster. It is null when property doesn't ready to update value on cluster
@@ -108,7 +108,7 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     }
 
     /** {@inheritDoc} */
-    @Override public void addListener(DistributePropertyListener<T> listener) {
+    @Override public void addListener(DistributePropertyListener<? super T> listener) {
         updateListeners.add(listener);
     }
 

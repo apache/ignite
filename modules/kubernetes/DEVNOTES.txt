@@ -9,8 +9,7 @@ feed the image to your kubernetes environment.
 Building Apache Ignite
 =========================
 
-Use the command below to assemble an Apache Ignite binary:
-    mvn clean package -Prelease -Dignite.edition=apache-ignite-lgpl -DskipTests
+To assemble an Apache Ignite binary use instructions from DEVNOTES.txt file in the root of the repository.
 
 Note, if you alter the build instruction somehow make sure to update the files under 'config' folder if needed.
 
@@ -23,7 +22,7 @@ Once this is done, make sure that Minikube sees Docker images registered locally
     eval $(minikube docker-env)
 
 Start Minikube:
-    minikube start --vm-driver=xhyve
+    minikube start
 
 Assembling Apache Ignite Docker Image
 =====================================
@@ -39,6 +38,13 @@ Go to the folder and execute a command below to prepare the image:
 
 Creating containerized Ignite pods and Ignite lookup service
 ============================================================
+
+Create the Kuberenetes role that provides access to endpoints of pods to provide communication between Ignite nodes:
+    kubectl apply -f {path_to}/ignite-account-role.yaml
+
+Create the Kubernetes service account to bind the role:
+    kubectl apply -f {path_to}/ignite-service-account.yaml
+    kubectl apply -f {path_to}/ignite-role-binding.yaml
 
 Start the Kubernetes service that is used for IP addresses lookup. Use `ignite-kubernetes/config/ignite-service.yaml`:
 	kubectl create -f {path_to}/ignite-service.yaml

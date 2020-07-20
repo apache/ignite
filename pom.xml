@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>2.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -76,7 +76,6 @@
         <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
-        <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
         <module>modules/camel</module>
@@ -762,6 +761,24 @@
                                             <substitution expression="\1${new.bin.version}" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in other resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${new.ignite.version}" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = )'.+'" />
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/build.gradle" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>
