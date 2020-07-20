@@ -18,7 +18,9 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+#if !NETCOREAPP
     extern alias ExamplesDll;
+#endif
 
     using System;
     using System.Collections;
