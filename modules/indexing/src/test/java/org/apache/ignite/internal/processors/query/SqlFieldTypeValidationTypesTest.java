@@ -16,6 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -32,13 +38,6 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.UUID;
 
 /**
  *
@@ -94,7 +93,7 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
     public static List<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        //  type, ok value, error value, indexed flag
+        // Type, ok value, error value, indexed flag.
         res.add(new Object[] {Integer.class, 1, "1", false});
         res.add(new Object[] {Integer.class, 1, "1", true});
 
@@ -112,6 +111,9 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
 
         res.add(new Object[] {int[].class, new Integer[] {0,1}, new String[] {"0", "1"}, false});
         res.add(new Object[] {int[].class, new Integer[] {0,1}, new String[] {"0", "1"}, true});
+
+        res.add(new Object[] {int[].class, new Object[] {0,1}, new Object[] {"0", "1"}, false});
+        res.add(new Object[] {int[].class, new Object[] {0,1}, new Object[] {"0", "1"}, true});
 
         return res;
     }
@@ -163,7 +165,7 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
     /** */
     public static class Person {
         /** */
-        private Object name;
+        private final Object name;
 
         /** */
         public Person(Object name) {

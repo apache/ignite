@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -31,21 +40,12 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
-import javax.cache.processor.MutableEntry;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -246,19 +246,13 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     }
 
     /** */
-    private void assertThrows(GridTestUtils.RunnableX runx, String message) {
+    private void assertThrows(GridTestUtils.RunnableX runx, String msg) {
         try {
             runx.runx();
         }
         catch (Exception e) {
-            Throwable t = e;
-
-            while (t != null) {
-                if (t.getMessage().contains(message))
-                    return;
-
-                t = t.getCause();
-            }
+            if (X.hasCause(e, msg, Throwable.class))
+                return;
 
             throw new AssertionError("Unexpected exception ", e);
         }
@@ -293,7 +287,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     /** */
     public static class Person {
         /** */
-        private Object name;
+        private final Object name;
 
         /** */
         public Person(Object name) {
@@ -314,7 +308,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     /** */
     public static class TestEntryProcessor implements EntryProcessor<Object, Object, Void> {
         /** */
-        private Object val;
+        private final Object val;
 
         /** */
         public TestEntryProcessor(Object val) {
