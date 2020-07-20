@@ -109,10 +109,11 @@ namespace Apache.Ignite.Core.Tests
                     CommunicationSpi = new TcpCommunicationSpi
                     {
                         IdleConnectionTimeout = TimeSpan.MinValue
-                    }
+                    },
+                    Logger = null
                 }));
 
-            Assert.IsTrue(_errSb.ToString().Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
+            StringAssert.Contains("SPI parameter failed condition check: idleConnTimeout > 0", _errSb.ToString());
         }
 
 #if !NETCOREAPP
