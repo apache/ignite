@@ -255,6 +255,9 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_PART = 32;
 
+    /** */
+    public static final short T_MARKER_PAGE = 33;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
