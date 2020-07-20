@@ -745,7 +745,6 @@ public class CommandHandlerParsingTest {
         );
     }
 
-
     /**
      * @param args Raw arg list.
      * @return Common parameters container object.
