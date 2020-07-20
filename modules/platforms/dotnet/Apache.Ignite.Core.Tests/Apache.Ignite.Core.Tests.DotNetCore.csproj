@@ -33,12 +33,25 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Remove="Deployment\**" />
+    <None Remove="Examples\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Deployment\**" />
+    <Compile Remove="Examples\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Deployment\**" />
+    <EmbeddedResource Remove="Examples\**" />
   </ItemGroup>
 
 </Project>
