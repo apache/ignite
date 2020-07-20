@@ -381,10 +381,10 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                     log.debug("Created hadoop child process metadata for job [job=" + job +
                         ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
 
-                Process proc = startJavaProcess(childProcId, startMeta, job,
+                Process process = startJavaProcess(childProcId, startMeta, job,
                     ctx.kernalContext().config().getWorkDirectory());
 
-                BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                BufferedReader rdr = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
                 String line;
 
@@ -399,7 +399,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                             log.debug("Successfully started child process [childProcId=" + childProcId +
                                 ", meta=" + job + ']');
 
-                        fut.onProcessStarted(proc);
+                        fut.onProcessStarted(process);
 
                         break;
                     }
