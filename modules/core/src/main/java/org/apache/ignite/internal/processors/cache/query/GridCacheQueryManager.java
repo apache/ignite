@@ -920,6 +920,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     protected void runFieldsQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
+        assert false : qryInfo;
+
         if (!enterBusy()) {
             if (cctx.localNodeId().equals(qryInfo.senderId()))
                 throw new IllegalStateException("Failed to process query request (grid is stopping).");
