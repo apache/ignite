@@ -402,7 +402,12 @@ namespace Apache.Ignite.Core.Tests.Client
             const int count = 100000;
             var ops = new Task[count];
 
-            using (var client = StartClient())
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                SocketTimeout = TimeSpan.FromSeconds(30)
+            };
+
+            using (var client = Ignition.StartClient(clientCfg))
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
                 Parallel.For(0, count, new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount},
