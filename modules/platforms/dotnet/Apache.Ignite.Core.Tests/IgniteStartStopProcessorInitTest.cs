@@ -20,9 +20,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Tests.Process;

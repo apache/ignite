@@ -133,7 +133,11 @@ namespace Apache.Ignite.Core.Tests
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
+#if NETCOREAPP
                 TestContext.Progress.WriteLine(text);
+#else
+                Console.WriteLine(text);
+#endif
             }
 
             /** <inheritdoc /> */

@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         public void UnusedMethod()
         {
-            Assert.IsNotNull(typeof(Apache.Ignite.Core.Tests.TestDll.TestClass));
+            Assert.IsNotNull(typeof(TestDll.TestClass));
         }
 #endif
     }
