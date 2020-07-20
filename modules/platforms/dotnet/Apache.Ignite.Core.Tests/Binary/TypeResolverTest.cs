@@ -169,6 +169,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 resolver.ResolveType("TestGenericBinarizable`1[[TypeResolverTest]][]", nameMapper: mapper));
         }
 
+#if !NETCOREAPP
         /// <summary>
         /// Tests loading a type from referenced assembly that is not yet loaded.
         /// </summary>
@@ -197,7 +198,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(AppDomain.CurrentDomain.GetAssemblies().Any(x => x.FullName.StartsWith(dllName)));
         }
 
-#if !NETCOREAPP
         /// <summary>
         /// Unused method that forces C# compiler to include TestDll assembly reference.
         /// Without this, compiler will remove the reference as unused.
