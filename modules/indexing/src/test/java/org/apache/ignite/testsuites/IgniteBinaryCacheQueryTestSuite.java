@@ -219,6 +219,8 @@ import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTe
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationOnKeyValueInsertTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationTypesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
@@ -623,8 +625,10 @@ import org.junit.runners.Suite;
 
     IgniteCacheMergeSqlQuerySelfTest.class,
     SqlMergeTest.class,
-    SqlMergeOnClientNodeTest.class
+    SqlMergeOnClientNodeTest.class,
 
+    SqlFieldTypeValidationTypesTest.class,
+    SqlFieldTypeValidationOnKeyValueInsertTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
