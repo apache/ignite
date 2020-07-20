@@ -68,7 +68,7 @@ class DiscoveryTest(IgniteTest):
             self.servers.stop()
 
     def min_cluster_size(self):
-        return 4
+        return self.NUM_NODES + 3
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
