@@ -445,12 +445,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Test compute.
             var serverNodeCount = ignite1.GetCluster().ForServers().GetNodes().Count;
 
-            var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
-            Assert.AreEqual(serverNodeCount, res.Count);
+            var res0 = ignite1.GetCompute().Broadcast(new CompDateTimeFn());
+            Assert.AreEqual(serverNodeCount, res0.Count);
+
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
+            var res1 = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
+            Assert.AreEqual(serverNodeCount, res1.Count);
 
             // Variable capture.
             var res2 = ignite1.GetCompute().Broadcast(new CompFn<string>(() => bar0.Str));
             Assert.AreEqual(Enumerable.Repeat(bar0.Str, serverNodeCount), res2);
+#endif
         }
 
         /// <summary>
@@ -573,6 +578,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             public T Invoke()
             {
                 return _func();
+            }
+        }
+
+        private class CompDateTimeFn : IComputeFunc<DateTime>
+        {
+            public DateTime Invoke()
+            {
+                return DateTime.UtcNow;
             }
         }
     }
