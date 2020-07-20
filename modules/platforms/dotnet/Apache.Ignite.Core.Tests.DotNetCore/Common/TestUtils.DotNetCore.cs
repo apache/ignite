@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteConfiguration GetTestConfiguration(string name = null)
         {
-            TestLogger.Instance.Info("GetTestConfiguration: " + GetTestName());
+            TestLogger.Instance.Info("GetTestConfiguration: " + TestName);
 
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
             Environment.SetEnvironmentVariable("IGNITE_NET_SUPPRESS_JAVA_ILLEGAL_ACCESS_WARNINGS", "true");
@@ -47,53 +47,6 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = WorkDir,
                 FailureHandler = new NoOpFailureHandler()
             };
-        }
-
-        /// <summary>
-        /// Gets the name of the test.
-        /// </summary>
-        private static string GetTestName()
-        {
-            var st = new StackTrace();
-
-            for (var i = 0; i < st.FrameCount; i++)
-            {
-                var frame = st.GetFrame(i);
-                var method = frame.GetMethod();
-
-                if (method.DeclaringType != typeof(TestUtils) 
-                    && method.DeclaringType != typeof(TestBase))
-                {
-                    return $"{method.DeclaringType.Name}.{method.Name}";
-                }
-            }
-
-            return st.GetFrames().Skip(2).Select(x => x.ToString()).FirstOrDefault() ?? "unknown";
-        }
-
-        /// <summary>
-        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
-        /// </summary>
-        /// <returns>The full path of the temporary directory.</returns>
-        internal static string GetTempDirectoryName()
-        {
-            var baseDir = Path.Combine(Path.GetTempPath(), "IgniteTemp_");
-
-            while (true)
-            {
-                try
-                {
-                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
-                }
-                catch (IOException)
-                {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
-                }
-            }
         }
     }
 }
