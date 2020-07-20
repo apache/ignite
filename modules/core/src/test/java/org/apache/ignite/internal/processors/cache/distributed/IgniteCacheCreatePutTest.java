@@ -98,21 +98,19 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                 try {
                     final AtomicInteger idx = new AtomicInteger();
 
-                    GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            int node = idx.getAndIncrement();
+                    GridTestUtils.runMultiThreaded(() -> {
+                        int node = idx.getAndIncrement();
 
-                            Ignite ignite = startGrid(node);
+                        Ignite ignite = startGrid(node);
 
-                            IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache1");
+                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache1");
 
-                            assertNotNull(cache);
+                        assertNotNull(cache);
 
-                            for (int i = 0; i < 100; i++)
-                                cache.put(i, i);
+                        for (int i = 0; i < 100; i++)
+                            cache.put(i, i);
 
-                            return null;
-                        }
+                        return null;
                     }, GRID_CNT, "start");
                 }
                 finally {
@@ -182,33 +180,31 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
         final AtomicInteger cacheThreadIdx = new AtomicInteger();
 
-        IgniteInternalFuture<?> cacheFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int nodeIdx = cacheThreadIdx.getAndIncrement() % NODES;
+        IgniteInternalFuture<?> cacheFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            int nodeIdx = cacheThreadIdx.getAndIncrement() % NODES;
 
-                Ignite node = ignite(nodeIdx);
+            Ignite node = ignite(nodeIdx);
 
-                int iter = 0;
+            int iter = 0;
 
-                while (System.currentTimeMillis() < stopTime) {
-                    String cacheName = "dynamic-cache-" + nodeIdx;
+            while (System.currentTimeMillis() < stopTime) {
+                String cacheName = "dynamic-cache-" + nodeIdx;
 
-                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-                    ccfg.setName(cacheName);
+                ccfg.setName(cacheName);
 
-                    node.createCache(ccfg);
+                node.createCache(ccfg);
 
-                    node.destroyCache(cacheName);
+                node.destroyCache(cacheName);
 
-                    U.sleep(500);
+                U.sleep(500);
 
-                    if (iter++ % 1000 == 0)
-                        log.info("Cache create iteration: " + iter);
-                }
-
-                return null;
+                if (iter++ % 1000 == 0)
+                    log.info("Cache create iteration: " + iter);
             }
+
+            return null;
         }, NODES, "cache-thread");
 
         while (!fut.isDone()) {

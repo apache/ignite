@@ -200,67 +200,65 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                         notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
                         if (!notificationInProgress) {
-                            ctx.getSystemExecutorService().execute(new Runnable() {
-                                @Override public void run() {
-                                    if (!ctx.continuous().lockStopping())
-                                        return;
+                            ctx.getSystemExecutorService().execute(() -> {
+                                if (!ctx.continuous().lockStopping())
+                                    return;
 
-                                    try {
-                                        while (true) {
-                                            T3<UUID, UUID, Event> t3;
+                                try {
+                                    while (true) {
+                                        T3<UUID, UUID, Event> t3;
 
-                                            synchronized (notificationQueue) {
-                                                t3 = notificationQueue.poll();
+                                        synchronized (notificationQueue) {
+                                            t3 = notificationQueue.poll();
 
-                                                if (t3 == null) {
-                                                    notificationInProgress = false;
+                                            if (t3 == null) {
+                                                notificationInProgress = false;
 
-                                                    return;
-                                                }
-                                            }
-
-                                            try {
-                                                Event evt = t3.get3();
-
-                                                EventWrapper wrapper = new EventWrapper(evt);
-
-                                                if (evt instanceof CacheEvent) {
-                                                    String cacheName = ((CacheEvent)evt).cacheName();
-
-                                                    ClusterNode node = ctx.discovery().node(t3.get1());
-
-                                                    if (node == null)
-                                                        continue;
-
-                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
-                                                        ctx.discovery().cacheNode(node, cacheName)) {
-                                                        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
-
-                                                        if (cache != null && cache.context().deploymentEnabled()) {
-                                                            wrapper.p2pMarshal(ctx.config().getMarshaller());
-
-                                                            wrapper.cacheName = cacheName;
-
-                                                            cache.context().deploy().prepare(wrapper);
-                                                        }
-                                                    }
-                                                }
-
-                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
-                                                    false, false);
-                                            }
-                                            catch (ClusterTopologyCheckedException ignored) {
-                                                // No-op.
-                                            }
-                                            catch (Throwable e) {
-                                                U.error(ctx.log(GridEventConsumeHandler.class),
-                                                    "Failed to send event notification to node: " + nodeId, e);
+                                                return;
                                             }
                                         }
+
+                                        try {
+                                            Event evt = t3.get3();
+
+                                            EventWrapper wrapper = new EventWrapper(evt);
+
+                                            if (evt instanceof CacheEvent) {
+                                                String cacheName = ((CacheEvent)evt).cacheName();
+
+                                                ClusterNode node = ctx.discovery().node(t3.get1());
+
+                                                if (node == null)
+                                                    continue;
+
+                                                if (ctx.config().isPeerClassLoadingEnabled() &&
+                                                    ctx.discovery().cacheNode(node, cacheName)) {
+                                                    GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+
+                                                    if (cache != null && cache.context().deploymentEnabled()) {
+                                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
+
+                                                        wrapper.cacheName = cacheName;
+
+                                                        cache.context().deploy().prepare(wrapper);
+                                                    }
+                                                }
+                                            }
+
+                                            ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
+                                                false, false);
+                                        }
+                                        catch (ClusterTopologyCheckedException ignored) {
+                                            // No-op.
+                                        }
+                                        catch (Throwable e) {
+                                            U.error(ctx.log(GridEventConsumeHandler.class),
+                                                "Failed to send event notification to node: " + nodeId, e);
+                                        }
                                     }
-                                    finally {
-                                        ctx.continuous().unlockStopping();
-                                    }
+                                }
+                                finally {
+                                    ctx.continuous().unlockStopping();
                                 }
                             });
 

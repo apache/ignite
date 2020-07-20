@@ -496,15 +496,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (fut == null)
             fut = new GridFinishedFuture<>(remapTopVer);
 
-        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        mapOnTopology();
-                    }
-                });
-            }
-        });
+        fut.listen(future ->
+            cctx.kernalContext().closure().runLocalSafe(this::mapOnTopology));
     }
 
     /**

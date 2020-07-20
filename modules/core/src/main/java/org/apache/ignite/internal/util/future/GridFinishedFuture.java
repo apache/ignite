@@ -141,19 +141,17 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     @Override public <T1> IgniteInternalFuture<T1> chain(final IgniteClosure<? super IgniteInternalFuture<T>, T1> doneCb, Executor exec) {
         final GridFutureAdapter<T1> fut = new GridFutureAdapter<>();
 
-        exec.execute(new Runnable() {
-            @Override public void run() {
-                try {
-                    fut.onDone(doneCb.apply(GridFinishedFuture.this));
-                }
-                catch (GridClosureException e) {
-                    fut.onDone(e.unwrap());
-                }
-                catch (RuntimeException | Error e) {
-                    fut.onDone(e);
+        exec.execute(() -> {
+            try {
+                fut.onDone(doneCb.apply(GridFinishedFuture.this));
+            }
+            catch (GridClosureException e) {
+                fut.onDone(e.unwrap());
+            }
+            catch (RuntimeException | Error e) {
+                fut.onDone(e);
 
-                    throw e;
-                }
+                throw e;
             }
         });
 

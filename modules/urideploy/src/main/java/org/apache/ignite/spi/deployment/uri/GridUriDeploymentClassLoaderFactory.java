@@ -58,7 +58,7 @@ class GridUriDeploymentClassLoaderFactory {
         try {
             String url = file.toURI().toURL().toString();
 
-            URL mainUrl = url.length() > 0 && url.charAt(url.length() - 1) == '/' ?
+            URL mainUrl = !url.isEmpty() && url.charAt(url.length() - 1) == '/' ?
                 file.toURI().toURL() : new URL(url + '/');
 
             urls.add(mainUrl);
@@ -66,11 +66,7 @@ class GridUriDeploymentClassLoaderFactory {
             File libDir = new File(file, DFLT_LIBS_DIR_PATH);
 
             if (libDir.exists()) {
-                File[] files = libDir.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return name.endsWith(".jar");
-                    }
-                });
+                File[] files = libDir.listFiles(((dir, name) -> name.endsWith(".jar")));
 
                 if (files.length > 0) {
                     for (File jarFile : files) {

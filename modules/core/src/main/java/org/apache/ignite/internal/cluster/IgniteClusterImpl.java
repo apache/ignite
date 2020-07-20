@@ -1007,11 +1007,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         if (cnt.decrementAndGet() == 0)
             comp.markInitialized();
 
-        fut.listen(new CI1<IgniteInternalFuture<ClusterStartNodeResult>>() {
-            @Override public void apply(IgniteInternalFuture<ClusterStartNodeResult> f) {
-                runNextNodeCallable(queue, comp, cnt);
-            }
-        });
+        fut.listen(future -> runNextNodeCallable(queue, comp, cnt));
 
         return true;
     }

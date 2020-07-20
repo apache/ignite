@@ -256,40 +256,24 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 assertEquals(metrics.name(), ms[j].name());
 
             // Dynamic metrics
-            long sumGets = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCacheGets();
-                }
-            }, expectNonZero);
+            long sumGets = sum(ms, CacheMetrics::getCacheGets, expectNonZero);
 
             assertEquals(metrics.getCacheGets(), sumGets);
             assertEquals(cache.mxBean().getCacheGets(), sumGets);
 
-            long sumPuts = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCachePuts();
-                }
-            }, expectNonZero);
+            long sumPuts = sum(ms, CacheMetrics::getCachePuts, expectNonZero);
 
             assertEquals(metrics.getCachePuts(), sumPuts);
             assertEquals(cache.mxBean().getCachePuts(), sumPuts);
 
-            long sumHits = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCacheHits();
-                }
-            }, expectNonZero);
+            long sumHits = sum(ms, CacheMetrics::getCacheHits, expectNonZero);
 
             assertEquals(metrics.getCacheHits(), sumHits);
             assertEquals(cache.mxBean().getCacheHits(), sumHits);
 
             if (expectNonZero) {
-                long sumHeapEntries = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                    @Override public Long apply(CacheMetrics input) {
-                        return input.getHeapEntriesCount();
-                    }
-                    // Currently non-zero even when statistics is off
-                }, true);
+                // Currently non-zero even when statistics is off
+                long sumHeapEntries = sum(ms, CacheMetrics::getHeapEntriesCount, true);
 
                 assertEquals(metrics.getHeapEntriesCount(), sumHeapEntries);
                 assertEquals(cache.mxBean().getHeapEntriesCount(), sumHeapEntries);

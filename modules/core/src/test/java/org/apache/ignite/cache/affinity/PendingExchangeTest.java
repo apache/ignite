@@ -303,11 +303,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion readyTop = exchangeManager1.readyAffinityVersion();
 
-        exchangeManager1.registerExchangeAwareComponent(new PartitionsExchangeAware() {
-            @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-                U.awaitQuiet(exchangeLatch);
-            }
-        });
+        exchangeManager1.registerExchangeAwareComponent(future -> U.awaitQuiet(exchangeLatch));
 
         IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> stopGrid(2));
 

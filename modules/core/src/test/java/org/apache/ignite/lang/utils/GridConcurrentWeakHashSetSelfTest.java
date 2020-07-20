@@ -212,22 +212,20 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         final CountDownLatch start = new CountDownLatch(1);
         final CountDownLatch stop = new CountDownLatch(threadCnt);
 
-        Runnable r = new Runnable() {
-            @Override public void run() {
-                try {
-                    start.await();
+        Runnable r = () -> {
+            try {
+                start.await();
 
-                    for (int i = 0; i < cnt; i++) {
-                        for (int j = 0; j < cnt; j++)
-                            set.add(new SampleBean(i));
-                    }
+                for (int i = 0; i < cnt; i++) {
+                    for (int j = 0; j < cnt; j++)
+                        set.add(new SampleBean(i));
                 }
-                catch (Exception e) {
-                    error(e.getMessage());
-                }
-
-                stop.countDown();
             }
+            catch (Exception e) {
+                error(e.getMessage());
+            }
+
+            stop.countDown();
         };
 
         for (int i = 0; i < threadCnt; i++)

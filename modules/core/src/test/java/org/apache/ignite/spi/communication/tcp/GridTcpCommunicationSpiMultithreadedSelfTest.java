@@ -299,40 +299,37 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         final int interval = 50;
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            /** {@inheritDoc} */
-            @Override public void run() {
-                try {
-                    // Only first thread will print messages.
-                    int id = threadId.getAndIncrement();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                // Only first thread will print messages.
+                int id = threadId.getAndIncrement();
 
-                    for (int i = 0; i < iterationCnt; i++) {
-                        if (id == 0 && (i % 50) == 0)
-                            info(">>> Running iteration " + i);
+                for (int i = 0; i < iterationCnt; i++) {
+                    if (id == 0 && (i % 50) == 0)
+                        info(">>> Running iteration " + i);
 
-                        try {
-                            for (ClusterNode node : nodes) {
-                                Message msg =
-                                    new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
+                    try {
+                        for (ClusterNode node : nodes) {
+                            Message msg =
+                                new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
-                                spis.get(from.id()).sendMessage(node, msg);
-                            }
+                            spis.get(from.id()).sendMessage(node, msg);
                         }
-                        catch (IgniteException e) {
-                            log.warning(">>> Oops, unable to send message (safe to ignore).", e);
-                        }
-
-                        barrier.await();
                     }
-                }
-                catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                }
-                catch (BrokenBarrierException e) {
-                    info("Wait on barrier failed: " + e);
+                    catch (IgniteException e) {
+                        log.warning(">>> Oops, unable to send message (safe to ignore).", e);
+                    }
 
-                    Thread.currentThread().interrupt();
+                    barrier.await();
                 }
+            }
+            catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            catch (BrokenBarrierException e) {
+                info("Wait on barrier failed: " + e);
+
+                Thread.currentThread().interrupt();
             }
         }, THREAD_CNT, "message-sender");
 
@@ -399,26 +396,24 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         long start = System.currentTimeMillis();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    ClusterNode from = nodes.get(0);
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                ClusterNode from = nodes.get(0);
 
-                    ClusterNode to = nodes.get(1);
+                ClusterNode to = nodes.get(1);
 
-                    CommunicationSpi<Message> spi = spis.get(from.id());
+                CommunicationSpi<Message> spi = spis.get(from.id());
 
-                    while (cntr.getAndIncrement() < msgCnt) {
-                        GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
+                while (cntr.getAndIncrement() < msgCnt) {
+                    GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
-                        msg.payload(new byte[10 * 1024]);
+                    msg.payload(new byte[10 * 1024]);
 
-                        spi.sendMessage(to, msg);
-                    }
+                    spi.sendMessage(to, msg);
                 }
-                catch (IgniteException e) {
-                    fail("Unable to send message: " + e.getMessage());
-                }
+            }
+            catch (IgniteException e) {
+                fail("Unable to send message: " + e.getMessage());
             }
         }, 5, "message-sender");
 

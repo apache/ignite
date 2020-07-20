@@ -130,12 +130,10 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         try {
             // Execute 2 times after 2 seconds delay every minute.
             fut = grid(0).scheduler().scheduleLocal(
-                new Runnable() {
-                    @Override public void run() {
-                        latch.countDown();
+                () -> {
+                    latch.countDown();
 
-                        info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
-                    }
+                    info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
                 },
                 "{2, 2} * * * * *");
 
@@ -145,21 +143,15 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listen(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> e) {
-                    notifyCnt.incrementAndGet();
-                }
-            });
+            fut.listen(future -> notifyCnt.incrementAndGet());
 
             final SchedulerFuture<?> fut0 = fut;
 
             //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    fut0.listenAsync(future -> {}, null);
+            assertThrows(log, () -> {
+                fut0.listenAsync(future -> {}, null);
 
-                    return null;
-                }
+                return null;
             }, NullPointerException.class, null);
 
             fut.listenAsync(future -> {
@@ -175,14 +167,12 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 return null;
             }, NullPointerException.class, null);
 
-            IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
-                @Override public String apply(IgniteFuture<?> fut) {
-                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+            IgniteFuture<String> chained1 = fut.chainAsync(future -> {
+                assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
 
-                    fut.get();
+                fut.get();
 
-                    return "done-custom";
-                }
+                return "done-custom";
             }, exec);
 
             long timeTillRun = freq + delay;

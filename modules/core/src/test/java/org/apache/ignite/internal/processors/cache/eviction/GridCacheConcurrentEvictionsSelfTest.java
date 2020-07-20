@@ -175,20 +175,18 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
             long start = System.currentTimeMillis();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
-                new Callable<Object>() {
-                    @Override public Object call() {
-                        for (int i = 0; i < iterCnt; i++) {
-                            int j = idx.incrementAndGet();
+                () -> {
+                    for (int i = 0; i < iterCnt; i++) {
+                        int j = idx.incrementAndGet();
 
-                            cache.put(j, j);
+                        cache.put(j, j);
 
-                            if (i != 0 && i % 1000 == 0)
-                                // info("Puts count: " + i);
-                                info("Stats [putsCnt=" + i + ", size=" + cache.size(CachePeekMode.ONHEAP) + ']');
-                        }
-
-                        return null;
+                        if (i != 0 && i % 1000 == 0)
+                            // info("Puts count: " + i);
+                            info("Stats [putsCnt=" + i + ", size=" + cache.size(CachePeekMode.ONHEAP) + ']');
                     }
+
+                    return null;
                 },
                 threadCnt
             );

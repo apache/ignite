@@ -41,23 +41,21 @@ public class ConcurrentCacheStartTest extends GridCommonAbstractTest {
             for (int k = 0; k < 100; k++) {
                 final String cacheName = "cache" + k;
 
-                GridTestUtils.runMultiThreaded(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            ignite.context().cache().dynamicStartCache(
-                                new CacheConfiguration().setName(cacheName),
-                                cacheName,
-                                null,
-                                false,
-                                false,
-                                false
-                            ).get();
+                GridTestUtils.runMultiThreaded(() -> {
+                    try {
+                        ignite.context().cache().dynamicStartCache(
+                            new CacheConfiguration().setName(cacheName),
+                            cacheName,
+                            null,
+                            false,
+                            false,
+                            false
+                        ).get();
 
-                            assertNotNull(ignite.context().cache().cache(cacheName));
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
-                        }
+                        assertNotNull(ignite.context().cache().cache(cacheName));
+                    }
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
                     }
                 }, 10, "cache-start");
             }

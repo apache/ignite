@@ -29,12 +29,10 @@ public class StopNodeFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
+            () -> {
+                U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                    IgnitionEx.stop(ignite.name(), true, null, true);
-                }
+                IgnitionEx.stop(ignite.name(), true, null, true);
             },
             "node-stopper"
         ).start();

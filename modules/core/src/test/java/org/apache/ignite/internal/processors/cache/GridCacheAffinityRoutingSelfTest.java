@@ -129,12 +129,10 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinityCallRestartFails() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
-                    new FailedCallable("key", MAX_FAILOVER_ATTEMPTS + 1));
-                return null;
-            }
+        GridTestUtils.assertThrows(log, () -> {
+            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
+                new FailedCallable("key", MAX_FAILOVER_ATTEMPTS + 1));
+            return null;
         }, ClusterTopologyException.class, "Failed to failover a job to another node");
     }
 

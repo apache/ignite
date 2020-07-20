@@ -247,13 +247,11 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             final IgniteCache<Integer, Company> co = grid.cache("co");
 
                             try {
-                                runQuery(grid, new Runnable() {
-                                    @Override public void run() {
-                                        if (rnd.nextBoolean())
-                                            co.get(rnd.nextInt(COMPANY_CNT)); // Get lock run test with open transaction.
+                                runQuery(grid, () -> {
+                                    if (rnd.nextBoolean())
+                                        co.get(rnd.nextInt(COMPANY_CNT)); // Get lock run test with open transaction.
 
-                                        assertEquals(pRes, cache.query(qry).getAll());
-                                    }
+                                    assertEquals(pRes, cache.query(qry).getAll());
                                 });
                             } catch (CacheException e) {
                                 // Interruptions are expected here.

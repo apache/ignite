@@ -197,11 +197,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.getAndIncrement();
-            }
-        }, seq, ITERATION_NUM, THREAD_NUM);
+        runSequenceClosure(t -> t.getAndIncrement(), seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(ITERATION_NUM * THREAD_NUM, seq.get());
     }
@@ -260,13 +256,11 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
 
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) {
-                t.getAndAdd(2);
-                t.addAndGet(3);
-                t.addAndGet(5);
-                t.getAndAdd(7);
-            }
+        runSequenceClosure(t -> {
+            t.getAndAdd(2);
+            t.addAndGet(3);
+            t.addAndGet(5);
+            t.getAndAdd(7);
         }, seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(17 * ITERATION_NUM * THREAD_NUM, seq.get());
@@ -314,15 +308,13 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
      */
     protected void runSequenceClosure(final GridInUnsafeClosure<IgniteAtomicSequence> c,
         final IgniteAtomicSequence seq, final int cnt, final int threadCnt) throws Exception {
-        multithreaded(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < cnt; i++)
-                        c.apply(seq);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+        multithreaded(() -> {
+            try {
+                for (int i = 0; i < cnt; i++)
+                    c.apply(seq);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
         }, threadCnt);
     }

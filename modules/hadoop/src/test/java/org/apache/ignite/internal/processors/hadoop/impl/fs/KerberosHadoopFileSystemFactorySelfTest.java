@@ -69,15 +69,13 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
         fac.setKeyTabPrincipal(keyTabPrincipal);
         fac.setReloginInterval(reloginInterval);
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                HadoopFileSystemFactoryDelegate delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(
-                    getClass().getClassLoader(), fac);
+        GridTestUtils.assertThrows(null, () -> {
+            HadoopFileSystemFactoryDelegate delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(
+                getClass().getClassLoader(), fac);
 
-                delegate.start();
+            delegate.start();
 
-                return null;
-            }
+            return null;
         }, IllegalArgumentException.class, null);
     }
 

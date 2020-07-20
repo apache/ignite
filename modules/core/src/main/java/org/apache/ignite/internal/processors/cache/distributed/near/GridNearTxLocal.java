@@ -2483,12 +2483,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                FinishClosure<Map<K, V>> finClos = new FinishClosure<Map<K, V>>() {
-                    @Override Map<K, V> finish(Map<K, V> loaded) {
-                        retMap.putAll(loaded);
+                FinishClosure<Map<K, V>> finClos = loaded -> {
+                    retMap.putAll(loaded);
 
-                        return retMap;
-                    }
+                    return retMap;
                 };
 
                 if (fut.isDone()) {
@@ -5121,15 +5119,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         if (proceed || (state() == MARKED_ROLLBACK)) {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    // Note: if rollback asynchronously on timeout should not clear thread map
-                    // since thread started tx still should be able to see this tx.
-                    rollbackNearTxLocalAsync(false, true);
+            cctx.kernalContext().closure().runLocalSafe(() -> {
+                // Note: if rollback asynchronously on timeout should not clear thread map
+                // since thread started tx still should be able to see this tx.
+                rollbackNearTxLocalAsync(false, true);
 
-                    U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this));
-                }
+                U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
+                    CU.txString(GridNearTxLocal.this));
             });
         }
         else {

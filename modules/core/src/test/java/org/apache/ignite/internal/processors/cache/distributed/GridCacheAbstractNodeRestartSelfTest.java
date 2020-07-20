@@ -600,40 +600,38 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             for (int i = 0; i < putThreads; i++) {
                 final int gridIdx = i;
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                Thread t = new Thread(() -> {
+                    try {
+                        barrier.await();
 
-                            info("Starting put thread: " + gridIdx);
+                        info("Starting put thread: " + gridIdx);
 
-                            Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
+                        Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
 
-                            IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
+                        IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                int key = RAND.nextInt(keyCnt);
+                        while (System.currentTimeMillis() < endTime && err.get() == null) {
+                            int key = RAND.nextInt(keyCnt);
 
-                                try {
-                                    cache.put(key, Integer.toString(key));
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
-
-                                cache.get(key);
-
-                                int c = putCntr.incrementAndGet();
-
-                                if (c % LOG_FREQ == 0)
-                                    info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
+                            try {
+                                cache.put(key, Integer.toString(key));
                             }
-                        }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
+                            catch (IgniteException | CacheException ignored) {
+                                // It is ok if primary node leaves grid.
+                            }
 
-                            error("Unexpected exception in put-worker.", e);
+                            cache.get(key);
+
+                            int c = putCntr.incrementAndGet();
+
+                            if (c % LOG_FREQ == 0)
+                                info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
                         }
+                    }
+                    catch (Exception e) {
+                        err.compareAndSet(null, e);
+
+                        error("Unexpected exception in put-worker.", e);
                     }
                 }, "put-worker-" + i);
 
@@ -728,79 +726,77 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             for (int i = 0; i < putThreads; i++) {
                 final int gridIdx = i;
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                Thread t = new Thread(() -> {
+                    try {
+                        barrier.await();
 
-                            info("Starting put thread: " + gridIdx);
+                        info("Starting put thread: " + gridIdx);
 
-                            Ignite ignite = grid(gridIdx);
+                        Ignite ignite = grid(gridIdx);
 
-                            Thread.currentThread().setName("put-worker-" + ignite.name());
+                        Thread.currentThread().setName("put-worker-" + ignite.name());
 
-                            UUID locNodeId = ignite.cluster().localNode().id();
+                        UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+                        IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
-                            List<Integer> keys = new ArrayList<>(txKeys);
+                        List<Integer> keys = new ArrayList<>(txKeys);
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                keys.clear();
+                        while (System.currentTimeMillis() < endTime && err.get() == null) {
+                            keys.clear();
 
-                                for (int i = 0; i < txKeys; i++)
-                                    keys.add(RAND.nextInt(keyCnt));
+                            for (int i = 0; i < txKeys; i++)
+                                keys.add(RAND.nextInt(keyCnt));
 
-                                // Ensure lock order.
-                                Collections.sort(keys);
+                            // Ensure lock order.
+                            Collections.sort(keys);
 
-                                int c = 0;
+                            int c = 0;
 
-                                try {
-                                    IgniteTransactions txs = ignite.transactions();
+                            try {
+                                IgniteTransactions txs = ignite.transactions();
 
-                                    try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
-                                        c = txCntr.incrementAndGet();
+                                try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                    c = txCntr.incrementAndGet();
 
-                                        if (c % LOG_FREQ == 0) {
-                                            info(">>> Tx iteration started [cnt=" + c +
-                                                ", keys=" + keys +
-                                                ", locNodeId=" + locNodeId + ']');
-                                        }
-
-                                        for (int key : keys) {
-                                            int op = cacheOp();
-
-                                            if (op == 1)
-                                                cache.put(key, Integer.toString(key));
-                                            else if (op == 2)
-                                                cache.remove(key);
-                                            else
-                                                cache.get(key);
-                                        }
-
-                                        tx.commit();
+                                    if (c % LOG_FREQ == 0) {
+                                        info(">>> Tx iteration started [cnt=" + c +
+                                            ", keys=" + keys +
+                                            ", locNodeId=" + locNodeId + ']');
                                     }
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
 
-                                if (c % LOG_FREQ == 0) {
-                                    info(">>> Tx iteration finished [cnt=" + c +
-                                        ", cacheSize=" + cache.localSize() +
-                                        ", keys=" + keys +
-                                        ", locNodeId=" + locNodeId + ']');
+                                    for (int key : keys) {
+                                        int op = cacheOp();
+
+                                        if (op == 1)
+                                            cache.put(key, Integer.toString(key));
+                                        else if (op == 2)
+                                            cache.remove(key);
+                                        else
+                                            cache.get(key);
+                                    }
+
+                                    tx.commit();
                                 }
                             }
+                            catch (IgniteException | CacheException ignored) {
+                                // It is ok if primary node leaves grid.
+                            }
 
-                            info(">>> " + Thread.currentThread().getName() + " finished.");
+                            if (c % LOG_FREQ == 0) {
+                                info(">>> Tx iteration finished [cnt=" + c +
+                                    ", cacheSize=" + cache.localSize() +
+                                    ", keys=" + keys +
+                                    ", locNodeId=" + locNodeId + ']');
+                            }
                         }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
 
-                            error("Unexpected exception in put-worker.", e);
-                        }
+                        info(">>> " + Thread.currentThread().getName() + " finished.");
+                    }
+                    catch (Exception e) {
+                        err.compareAndSet(null, e);
+
+                        error("Unexpected exception in put-worker.", e);
                     }
                 }, "put-worker-" + i);
 
@@ -885,66 +881,64 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             for (int i = 0; i < putThreads; i++) {
                 final int gridIdx = i;
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                Thread t = new Thread(() -> {
+                    try {
+                        barrier.await();
 
-                            info("Starting put thread: " + gridIdx);
+                        info("Starting put thread: " + gridIdx);
 
-                            Ignite ignite = grid(gridIdx);
+                        Ignite ignite = grid(gridIdx);
 
-                            Thread.currentThread().setName("put-worker-" + ignite.name());
+                        Thread.currentThread().setName("put-worker-" + ignite.name());
 
-                            UUID locNodeId = ignite.cluster().localNode().id();
+                        UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+                        IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
-                            List<Integer> keys = new ArrayList<>(txKeys);
+                        List<Integer> keys = new ArrayList<>(txKeys);
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                keys.clear();
+                        while (System.currentTimeMillis() < endTime && err.get() == null) {
+                            keys.clear();
 
-                                for (int i = 0; i < txKeys; i++)
-                                    keys.add(RAND.nextInt(keyCnt));
+                            for (int i = 0; i < txKeys; i++)
+                                keys.add(RAND.nextInt(keyCnt));
 
-                                // Ensure lock order.
-                                Collections.sort(keys);
+                            // Ensure lock order.
+                            Collections.sort(keys);
 
-                                int c = 0;
+                            int c = 0;
 
-                                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    c = txCntr.incrementAndGet();
+                            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                c = txCntr.incrementAndGet();
 
-                                    if (c % LOG_FREQ == 0)
-                                        info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
-                                            "locNodeId=" + locNodeId + ']');
-
-                                    Map<Integer, String> batch = new LinkedHashMap<>();
-
-                                    for (int key : keys)
-                                        batch.put(key, String.valueOf(key));
-
-                                    cache.putAll(batch);
-
-                                    tx.commit();
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
-
-                                if (c % LOG_FREQ == 0) {
-                                    info(">>> Tx iteration finished [cnt=" + c +
-                                        ", keys=" + keys + ", " +
+                                if (c % LOG_FREQ == 0)
+                                    info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
                                         "locNodeId=" + locNodeId + ']');
-                                }
+
+                                Map<Integer, String> batch = new LinkedHashMap<>();
+
+                                for (int key : keys)
+                                    batch.put(key, String.valueOf(key));
+
+                                cache.putAll(batch);
+
+                                tx.commit();
+                            }
+                            catch (IgniteException | CacheException ignored) {
+                                // It is ok if primary node leaves grid.
+                            }
+
+                            if (c % LOG_FREQ == 0) {
+                                info(">>> Tx iteration finished [cnt=" + c +
+                                    ", keys=" + keys + ", " +
+                                    "locNodeId=" + locNodeId + ']');
                             }
                         }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
+                    }
+                    catch (Exception e) {
+                        err.compareAndSet(null, e);
 
-                            error("Unexpected exception in put-worker.", e);
-                        }
+                        error("Unexpected exception in put-worker.", e);
                     }
                 }, "put-worker-" + i);
 

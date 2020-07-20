@@ -84,23 +84,21 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                int iter = 0;
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            int iter = 0;
 
-                while (!stop.get()) {
-                    if (iter % 10 == 0)
-                        log.info("Client start/stop iteration: " + iter);
+            while (!stop.get()) {
+                if (iter % 10 == 0)
+                    log.info("Client start/stop iteration: " + iter);
 
-                    iter++;
+                iter++;
 
-                    try (Ignite ignite = startClientGrid(2)) {
-                        assertTrue(ignite.configuration().isClientMode());
-                    }
+                try (Ignite ignite = startClientGrid(2)) {
+                    assertTrue(ignite.configuration().isClientMode());
                 }
-
-                return null;
             }
+
+            return null;
         }, 1, "client-start-stop");
 
         try {

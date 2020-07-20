@@ -90,13 +90,11 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
                 assert !replay.get() : "Record of message is not allowed after replay";
 
-                Runnable prevValue = rs.putIfAbsent(node.id(), new Runnable() {
-                    @Override public void run() {
-                        if (log.isDebugEnabled())
-                            log.debug("Replay: " + msg);
+                Runnable prevValue = rs.putIfAbsent(node.id(), () -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Replay: " + msg);
 
-                        DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
-                    }
+                    DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                 });
 
                 assert prevValue == null : "Duplicate message registered to [" + node.id() + "]";

@@ -70,37 +70,35 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicInteger keyCnt = new AtomicInteger();
 
-        Thread thread = new Thread(new Runnable() {
-            @Override public void run() {
-                ex1.active(true);
+        Thread thread = new Thread(() -> {
+            ex1.active(true);
 
-                try {
-                    checkTopology(2);
+            try {
+                checkTopology(2);
 
-                    startLatch.countDown();
+                startLatch.countDown();
 
-                    IgniteCache<Object, Object> cache1 = ex1.cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Object, Object> cache1 = ex1.cache(DEFAULT_CACHE_NAME);
 
-                    int key = keyCnt.get();
+                int key = keyCnt.get();
 
-                    while (!stop.get()) {
-                        if (key > 0 && (key % 500 == 0)) {
-                            U.sleep(5);
+                while (!stop.get()) {
+                    if (key > 0 && (key % 500 == 0)) {
+                        U.sleep(5);
 
-                            System.out.println("key = " + key);
-                        }
-
-                        cache1.put(key, -key);
-
-                        key = keyCnt.incrementAndGet();
+                        System.out.println("key = " + key);
                     }
-                }
-                catch (Throwable th) {
-                    th.printStackTrace();
-                }
 
-                doneLatch.countDown();
+                    cache1.put(key, -key);
+
+                    key = keyCnt.incrementAndGet();
+                }
             }
+            catch (Throwable th) {
+                th.printStackTrace();
+            }
+
+            doneLatch.countDown();
         });
 
         thread.setName("Data-Loader");

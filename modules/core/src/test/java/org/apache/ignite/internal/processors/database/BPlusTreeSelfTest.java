@@ -1646,13 +1646,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 final List<Long> treeContents = new ArrayList<>(rmvPutSlidingWindowSize * 2);
 
-                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = new BPlusTree.TreeRowClosure<Long, Long>() {
-                    @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
-                        throws IgniteCheckedException {
+                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = (tree, io, pageAddr, idx) -> {
+                    treeContents.add(io.getLookupRow(tree, pageAddr, idx));
 
-                        treeContents.add(io.getLookupRow(tree, pageAddr, idx));
-                        return true;
-                    }
+                    return true;
                 };
 
                 for (long iter = 0; !stop.get(); ++iter) {

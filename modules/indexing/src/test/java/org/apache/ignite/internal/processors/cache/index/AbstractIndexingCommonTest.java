@@ -108,15 +108,13 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     protected void checkThereAreNotUsedConnections() throws Exception {
-        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (Ignite ign : G.allGrids()) {
-                    if (!usedConnections(ign).isEmpty())
-                        return false;
-                }
-
-                return true;
+        boolean notLeak = GridTestUtils.waitForCondition(() -> {
+            for (Ignite ign : G.allGrids()) {
+                if (!usedConnections(ign).isEmpty())
+                    return false;
             }
+
+            return true;
         }, 5000);
 
         if (!notLeak) {

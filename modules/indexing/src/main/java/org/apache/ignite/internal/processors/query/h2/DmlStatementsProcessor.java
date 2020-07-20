@@ -96,11 +96,7 @@ public class DmlStatementsProcessor {
     }
 
     /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_1 = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final Runnable DUMMY_1 = () -> {};
 
     /** Dummy anonymous class to advance RMV anonymous value to 5. */
     private static final Runnable DUMMY_2 = new Runnable() {
@@ -110,11 +106,7 @@ public class DmlStatementsProcessor {
     };
 
     /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_3 = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final Runnable DUMMY_3 = () -> {};
 
     /** Remove updater for compatibility with < 2.7.0. Must not be moved around to keep at anonymous position 4. */
     private static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD = MutableEntry::remove;

@@ -103,17 +103,15 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
-            GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int val = idx.getAndIncrement();
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                int val = idx.getAndIncrement();
 
-                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
-                    for (int i = 0; i < 100; i++)
-                        cache.put(key, val);
+                for (int i = 0; i < 100; i++)
+                    cache.put(key, val);
 
-                    return null;
-                }
+                return null;
             }, 5, "put-thread").get();
 
             assertEquals(cache0.localPeek(key), cache1.localPeek(key));
@@ -196,15 +194,13 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         final Integer key = 1;
 
-        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
-                for (int i = 0; i < 100; i++)
-                    cache.put(key, 1);
+            for (int i = 0; i < 100; i++)
+                cache.put(key, 1);
 
-                return null;
-            }
+            return null;
         }, 5, "put1-thread");
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {

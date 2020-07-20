@@ -654,30 +654,28 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             TOP_CHANGE_CNT;
 
         try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, permits, failoverSafe, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    IgniteSemaphore sem = ignite.semaphore(STRUCTURE_NAME, permits, failoverSafe, false);
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                IgniteSemaphore sem = ignite.semaphore(STRUCTURE_NAME, permits, failoverSafe, false);
 
-                    while (true) {
-                        try {
-                            sem.acquire(1);
+                while (true) {
+                    try {
+                        sem.acquire(1);
 
+                        break;
+                    }
+                    catch (IgniteInterruptedException e) {
+                        // Exception may happen in non failover safe mode.
+                        if (failoverSafe)
+                            throw e;
+                        else {
+                            // In non-failoverSafe mode semaphore is not safe to be reused,
+                            // and should always be discarded after exception is caught.
                             break;
                         }
-                        catch (IgniteInterruptedException e) {
-                           // Exception may happen in non failover safe mode.
-                            if (failoverSafe)
-                                throw e;
-                            else {
-                                // In non-failoverSafe mode semaphore is not safe to be reused,
-                                // and should always be discarded after exception is caught.
-                                break;
-                            }
-                        }
                     }
-
-                    return null;
                 }
+
+                return null;
             });
 
             while (!fut.isDone()) {
@@ -1018,11 +1016,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             for (int i = 0; i < 1000; i++)
                 q.add(i);
 
-            final IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    return null;
-                }
-            });
+            final IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> null);
 
             IgniteInternalFuture<?> takeFut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1500,75 +1494,71 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             final ConcurrentSkipListSet<String> startedNodes = new ConcurrentSkipListSet<>();
 
-            barrier = new CyclicBarrier(TOP_CHANGE_THREAD_CNT, new Runnable() {
-                @Override public void run() {
-                    try {
-                        assertEquals(TOP_CHANGE_THREAD_CNT * 3, startedNodes.size());
+            barrier = new CyclicBarrier(TOP_CHANGE_THREAD_CNT, () -> {
+                try {
+                    assertEquals(TOP_CHANGE_THREAD_CNT * 3, startedNodes.size());
 
-                        for (String name : startedNodes) {
-                            stopGrid(name, false);
+                    for (String name : startedNodes) {
+                        stopGrid(name, false);
 
-                            awaitPartitionMapExchange();
-                        }
+                        awaitPartitionMapExchange();
+                    }
 
-                        startedNodes.clear();
+                    startedNodes.clear();
 
+                    sem.release(TOP_CHANGE_THREAD_CNT);
+
+                    barrier.reset();
+                }
+                catch (Exception e) {
+                    if (failed.compareAndSet(false, true)) {
                         sem.release(TOP_CHANGE_THREAD_CNT);
 
                         barrier.reset();
-                    }
-                    catch (Exception e) {
-                        if (failed.compareAndSet(false, true)) {
-                            sem.release(TOP_CHANGE_THREAD_CNT);
 
-                            barrier.reset();
-
-                            throw F.wrap(e);
-                        }
+                        throw F.wrap(e);
                     }
                 }
             });
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                @Override public void apply() {
-                    try {
-                        for (int i = 0; i < TOP_CHANGE_CNT; i++) {
-                            sem.acquire();
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    for (int i = 0; i < TOP_CHANGE_CNT; i++) {
+                        sem.acquire();
 
+                        if (failed.get())
+                            return;
+
+                        for (int j = 0; j < 3; j++) {
                             if (failed.get())
                                 return;
 
-                            for (int j = 0; j < 3; j++) {
-                                if (failed.get())
-                                    return;
+                            String name = UUID.randomUUID().toString();
 
-                                String name = UUID.randomUUID().toString();
+                            startedNodes.add(name);
 
-                                startedNodes.add(name);
+                            log.info("Start node: " + name);
 
-                                log.info("Start node: " + name);
+                            Ignite g = startGrid(name);
 
-                                Ignite g = startGrid(name);
+                            cb.apply(g);
+                        }
 
-                                cb.apply(g);
-                            }
-
-                            try {
-                                barrier.await();
-                            }
-                            catch (BrokenBarrierException ignored) {
-                                // No-op.
-                            }
+                        try {
+                            barrier.await();
+                        }
+                        catch (BrokenBarrierException ignored) {
+                            // No-op.
                         }
                     }
-                    catch (Exception e) {
-                        if (failed.compareAndSet(false, true)) {
-                            sem.release(TOP_CHANGE_THREAD_CNT);
+                }
+                catch (Exception e) {
+                    if (failed.compareAndSet(false, true)) {
+                        sem.release(TOP_CHANGE_THREAD_CNT);
 
-                            barrier.reset();
+                        barrier.reset();
 
-                            throw F.wrap(e);
-                        }
+                        throw F.wrap(e);
                     }
                 }
             }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");

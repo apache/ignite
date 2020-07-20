@@ -102,17 +102,15 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                while (!stop.get()) {
-                    stopGrid(1);
+        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(() -> {
+            while (!stop.get()) {
+                stopGrid(1);
 
-                    U.sleep(500);
+                U.sleep(500);
 
-                    startGrid(1);
-                }
-                return null;
+                startGrid(1);
             }
+            return null;
         });
 
         try {

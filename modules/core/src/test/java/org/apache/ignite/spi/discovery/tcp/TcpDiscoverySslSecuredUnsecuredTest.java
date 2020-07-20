@@ -150,12 +150,10 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     private void checkConnection(final String name1, final String name2) throws Exception {
         startGrid(name1);
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                startGrid(name2);
+        GridTestUtils.assertThrows(null, () -> {
+            startGrid(name2);
 
-                return null;
-            }
+            return null;
         }, IgniteCheckedException.class, null);
     }
 

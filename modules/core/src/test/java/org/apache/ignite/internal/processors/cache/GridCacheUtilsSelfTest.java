@@ -188,12 +188,10 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
      * @param key Cache key.
      */
     private void assertThrowsForInvalidKey(final Object key) {
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                CU.validateCacheKey(key);
+        GridTestUtils.assertThrows(log, () -> {
+            CU.validateCacheKey(key);
 
-                return null;
-            }
+            return null;
         }, IllegalArgumentException.class, null);
     }
 }

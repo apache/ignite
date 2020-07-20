@@ -174,39 +174,37 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
             final IgniteCache<Long, TestEntity> cache = g.cache(CACHE_NAME);
 
             for (int i = 0; i < THREADS_CNT; i++) {
-                threadPool.submit(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            ThreadLocalRandom locRandom = ThreadLocalRandom.current();
+                threadPool.submit(() -> {
+                    try {
+                        ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 
-                            cyclicBarrier.await();
+                        cyclicBarrier.await();
 
-                            while (!interrupt.get()) {
-                                long randomKey = locRandom.nextLong(MAX_KEY_COUNT);
+                        while (!interrupt.get()) {
+                            long randomKey = locRandom.nextLong(MAX_KEY_COUNT);
 
-                                TestEntity entity = TestEntity.newTestEntity(locRandom);
+                            TestEntity entity = TestEntity.newTestEntity(locRandom);
 
-                                while (true) {
-                                    try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        cache.put(randomKey, entity);
+                            while (true) {
+                                try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    cache.put(randomKey, entity);
 
-                                        tx.commit();
+                                    tx.commit();
 
-                                        break;
-                                    }
-                                    catch (Exception e) {
-                                        MvccFeatureChecker.assertMvccWriteConflict(e);
-                                    }
+                                    break;
                                 }
-
-                                operationCnt.increment();
+                                catch (Exception e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                                }
                             }
-                        }
-                        catch (Throwable e) {
-                            log.error("Unexpected exception:", e);
 
-                            throw new RuntimeException(e);
+                            operationCnt.increment();
                         }
+                    }
+                    catch (Throwable e) {
+                        log.error("Unexpected exception:", e);
+
+                        throw new RuntimeException(e);
                     }
                 });
             }

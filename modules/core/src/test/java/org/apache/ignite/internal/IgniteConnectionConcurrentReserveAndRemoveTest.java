@@ -107,14 +107,12 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
 
         //spi1.failSend = true;
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                doSleep(1000);
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            doSleep(1000);
 
-                //spi1.failSend = false;
+            //spi1.failSend = false;
 
-                cnt.getAndAdd(c1.compute(c1.cluster().forNodeId(c2.cluster().localNode().id())).call(new TestClosure()));
-            }
+            cnt.getAndAdd(c1.compute(c1.cluster().forNodeId(c2.cluster().localNode().id())).call(new TestClosure()));
         }, 1, "hang-thread");
 
         try {

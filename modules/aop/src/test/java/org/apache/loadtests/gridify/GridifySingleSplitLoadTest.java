@@ -114,27 +114,24 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
 
         final GridLoadTestStatistics stats = new GridLoadTestStatistics();
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                while (end - System.currentTimeMillis() > 0) {
-                    int levels = 3;
+        GridTestUtils.runMultiThreaded(() -> {
+            while (end - System.currentTimeMillis() > 0) {
+                int levels = 3;
 
-                    int exp = factorial(levels);
+                int exp = factorial(levels);
 
-                    long start = System.currentTimeMillis();
+                long start = System.currentTimeMillis();
 
-                    int res = new GridifyLoadTestJobTarget().executeLoadTestJob(exp);
+                int res = new GridifyLoadTestJobTarget().executeLoadTestJob(exp);
 
-                    if (res != exp)
-                        fail("Received wrong result [expected=" + exp + ", actual=" + res + ']');
+                if (res != exp)
+                    fail("Received wrong result [expected=" + exp + ", actual=" + res + ']');
 
-                    long taskCnt = stats.onTaskCompleted(null, exp, System.currentTimeMillis() - start);
+                long taskCnt = stats.onTaskCompleted(null, exp, System.currentTimeMillis() - start);
 
-                    if (taskCnt % 500 == 0)
-                        info(stats.toString());
-                }
+                if (taskCnt % 500 == 0)
+                    info(stats.toString());
             }
-
         }, getThreadCount(), "grid-load-test-thread");
 
         info("Final test statistics: " + stats);

@@ -60,17 +60,13 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
      */
     @Test
     public void testLock() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return jcache().lock("1").tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-        }, CacheException.class, "Locks are not supported");
+        GridTestUtils.assertThrows(log,
+            () -> jcache().lock("1").tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS),
+            CacheException.class, "Locks are not supported");
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return jcache().lockAll(Collections.singleton("1")).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-        }, CacheException.class, "Locks are not supported");
+        GridTestUtils.assertThrows(log,
+            () -> jcache().lockAll(Collections.singleton("1")).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS),
+            CacheException.class, "Locks are not supported");
     }
 
     /**
@@ -81,12 +77,10 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
         jcache().put("key1", 1);
         jcache().put("key2", 2);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                jcache().getAll(null).isEmpty();
+        GridTestUtils.assertThrows(log, () -> {
+            jcache().getAll(null).isEmpty();
 
-                return null;
-            }
+            return null;
         }, NullPointerException.class, null);
 
         assert jcache().getAll(Collections.<String>emptySet()).isEmpty();

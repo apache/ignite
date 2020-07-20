@@ -47,12 +47,10 @@ public class GridUriDeploymentClassLoaderMultiThreadedSelfTest extends GridCommo
                 getClass().getClassLoader());
 
         multithreaded(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    ldr.loadClass("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
+            () -> {
+                ldr.loadClass("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
 
-                    return null;
-                }
+                return null;
             },
             500
         );
@@ -62,12 +60,10 @@ public class GridUriDeploymentClassLoaderMultiThreadedSelfTest extends GridCommo
             getClass().getClassLoader());
 
         multithreaded(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    ldr0.loadClassIsolated("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
+            () -> {
+                ldr0.loadClassIsolated("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
 
-                    return null;
-                }
+                return null;
             },
             500
         );

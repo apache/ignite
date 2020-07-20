@@ -443,60 +443,57 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         final Lock lock1 = cache.lock(1);
 
-        GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Nullable @Override public Object call() throws Exception {
-                info("Before lock for.key 1");
+        GridTestThread t1 = new GridTestThread(() -> {
+            info("Before lock for.key 1");
 
+            lock1.lock();
+
+            info("After lock for key 1");
+
+            try {
+                checkLocked(cache, 1);
+
+                l1.countDown();
+
+                info("Let thread2 proceed.");
+
+                // Reentry.
                 lock1.lock();
 
-                info("After lock for key 1");
+                checkLocked(cache, 1);
 
-                try {
-                    checkLocked(cache, 1);
+                // Nested lock.
+                Lock lock2 = cache.lock(2);
 
-                    l1.countDown();
+                assert lock2.tryLock();
 
-                    info("Let thread2 proceed.");
+                checkLocked(cache, 2);
 
-                    // Reentry.
-                    lock1.lock();
+                // Unlock reentry.
+                lock1.unlock();
 
-                    checkLocked(cache, 1);
+                // Outer should still be owned.
+                checkLocked(cache, 1);
 
-                    // Nested lock.
-                    Lock lock2 = cache.lock(2);
+                // Unlock in reverse order.
+                lock2.unlock();
 
-                    assert lock2.tryLock();
+                checkUnlocked(cache, 2);
 
-                    checkLocked(cache, 2);
+                l2.await();
 
-                    // Unlock reentry.
-                    lock1.unlock();
-
-                    // Outer should still be owned.
-                    checkLocked(cache, 1);
-
-                    // Unlock in reverse order.
-                    lock2.unlock();
-
-                    checkUnlocked(cache, 2);
-
-                    l2.await();
-
-                    info("Waited for latch 2");
-                }
-                finally {
-                    lock1.unlock();
-
-                    info("Unlocked entry for key 1.");
-                }
-
-                assert !cache.isLocalLocked(1, true);
-                assert !cache.isLocalLocked(2, true);
-
-                return null;
+                info("Waited for latch 2");
             }
+            finally {
+                lock1.unlock();
+
+                info("Unlocked entry for key 1.");
+            }
+
+            assert !cache.isLocalLocked(1, true);
+            assert !cache.isLocalLocked(2, true);
+
+            return null;
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {

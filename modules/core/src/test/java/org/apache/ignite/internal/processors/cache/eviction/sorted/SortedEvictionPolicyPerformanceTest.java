@@ -105,13 +105,11 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
 
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (;;) {
-                    U.sleep(1000);
+        multithreadedAsync(() -> {
+            for (;;) {
+                U.sleep(1000);
 
-                    info("Ops/sec: " + cnt.sumThenReset());
-                }
+                info("Ops/sec: " + cnt.sumThenReset());
             }
         }, 1);
 

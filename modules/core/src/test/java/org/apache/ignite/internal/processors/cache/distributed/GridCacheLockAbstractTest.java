@@ -248,73 +248,69 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         final Lock lock = cache1.lock(kv);
 
-        GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                info("Before lock for key: " + kv);
+        GridTestThread t1 = new GridTestThread(() -> {
+            info("Before lock for key: " + kv);
 
-                lock.lock();
+            lock.lock();
 
-                info("After lock for key: " + kv);
+            info("After lock for key: " + kv);
 
-                try {
-                    assert cache1.isLocalLocked(kv, false);
-                    assert cache1.isLocalLocked(kv, true);
+            try {
+                assert cache1.isLocalLocked(kv, false);
+                assert cache1.isLocalLocked(kv, true);
 
-                    l1.countDown();
+                l1.countDown();
 
-                    info("Let thread2 proceed.");
+                info("Let thread2 proceed.");
 
-                    cache1.put(kv, Integer.toString(kv));
+                cache1.put(kv, Integer.toString(kv));
 
-                    info("Put " + kv + '=' + Integer.toString(kv) + " key pair into cache.");
-                }
-                finally {
-                    Thread.sleep(1000);
-
-                    lock.unlock();
-
-                    info("Unlocked key in thread 1: " + kv);
-                }
-
-                l2.await();
-
-                assert !cache1.isLocalLocked(kv, true);
-                assert !locked(kv, 1);
-
-                return null;
+                info("Put " + kv + '=' + Integer.toString(kv) + " key pair into cache.");
             }
-        });
-
-        GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                info("Waiting for latch1...");
-
-                l1.await();
-
-                lock.lock();
-
-                try {
-                    String v = cache2.get(kv);
-
-                    assert v != null : "Value is null for key: " + kv;
-
-                    assertEquals(Integer.toString(kv), v);
-                }
-                finally {
-                    lock.unlock();
-
-                    info("Unlocked key in thread 2: " + kv);
-                }
-
-                assert !locked(kv, 2);
-                assert !cache2.isLocalLocked(kv, true);
-
+            finally {
                 Thread.sleep(1000);
 
-                l2.countDown();
+                lock.unlock();
 
-                return null;
+                info("Unlocked key in thread 1: " + kv);
             }
+
+            l2.await();
+
+            assert !cache1.isLocalLocked(kv, true);
+            assert !locked(kv, 1);
+
+            return null;
+        });
+
+        GridTestThread t2 = new GridTestThread(() -> {
+            info("Waiting for latch1...");
+
+            l1.await();
+
+            lock.lock();
+
+            try {
+                String v = cache2.get(kv);
+
+                assert v != null : "Value is null for key: " + kv;
+
+                assertEquals(Integer.toString(kv), v);
+            }
+            finally {
+                lock.unlock();
+
+                info("Unlocked key in thread 2: " + kv);
+            }
+
+            assert !locked(kv, 2);
+            assert !cache2.isLocalLocked(kv, true);
+
+            Thread.sleep(1000);
+
+            l2.countDown();
+
+            return null;
         });
 
         t1.start();
@@ -335,72 +331,68 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                Lock lock = cache1.lock(1);
+        GridTestThread t1 = new GridTestThread(() -> {
+            Lock lock = cache1.lock(1);
 
-                lock.lock();
+            lock.lock();
 
-                info("Locked cache key: 1");
+            info("Locked cache key: 1");
 
-                try {
-                    assert cache1.isLocalLocked(1, false);
-                    assert cache1.isLocalLocked(1, true);
+            try {
+                assert cache1.isLocalLocked(1, false);
+                assert cache1.isLocalLocked(1, true);
 
-                    info("Verified that cache key is locked: 1");
+                info("Verified that cache key is locked: 1");
 
-                    cache1.put(1, "1");
+                cache1.put(1, "1");
 
-                    info("Put key value pair into cache: 1='1'");
+                info("Put key value pair into cache: 1='1'");
 
-                    l1.countDown();
+                l1.countDown();
 
-                    info("Released latch1");
+                info("Released latch1");
 
-                    // Hold lock for a bit.
-                    Thread.sleep(50);
+                // Hold lock for a bit.
+                Thread.sleep(50);
 
-                    info("Woke up from sleep.");
-                }
-                finally {
-                    lock.unlock();
-
-                    info("Unlocked cache key: 1");
-                }
-
-                l2.await();
-
-                assert !locked(1, 1);
-                assert !cache1.isLocalLocked(1, true);
-
-                return null;
+                info("Woke up from sleep.");
             }
+            finally {
+                lock.unlock();
+
+                info("Unlocked cache key: 1");
+            }
+
+            l2.await();
+
+            assert !locked(1, 1);
+            assert !cache1.isLocalLocked(1, true);
+
+            return null;
         });
 
-        GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                info("Beginning to await on latch 1");
+        GridTestThread t2 = new GridTestThread(() -> {
+            info("Beginning to await on latch 1");
 
-                l1.await();
+            l1.await();
 
-                info("Finished awaiting on latch 1");
+            info("Finished awaiting on latch 1");
 
-                assertEquals("1", cache1.get(1));
+            assertEquals("1", cache1.get(1));
 
-                info("Retrieved value from cache for key: 1");
+            info("Retrieved value from cache for key: 1");
 
-                cache1.put(1, "2");
+            cache1.put(1, "2");
 
-                info("Put key-value pair into cache: 1='2'");
+            info("Put key-value pair into cache: 1='2'");
 
-                assertEquals("2", cache1.getAndRemove(1));
+            assertEquals("2", cache1.getAndRemove(1));
 
-                l2.countDown();
+            l2.countDown();
 
-                info("Removed key from cache: 1");
+            info("Removed key from cache: 1");
 
-                return null;
-            }
+            return null;
         });
 
         t1.start();
@@ -428,82 +420,76 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    info("Before lock for keys.");
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(() -> {
+            info("Before lock for keys.");
 
-                    Lock lock = cache1.lockAll(keys);
+            Lock lock = cache1.lockAll(keys);
 
-                    lock.lock();
+            lock.lock();
 
-                    info("After lock for keys.");
+            info("After lock for keys.");
 
-                    try {
-                        for (Integer key : keys) {
-                            assert cache1.isLocalLocked(key, false);
-                            assert cache1.isLocalLocked(key, true);
-                        }
-
-                        l1.countDown();
-
-                        info("Let thread2 proceed.");
-
-                        for (int i : keys) {
-                            info("Before put key: " + i);
-
-                            cache1.put(i, Integer.toString(i));
-
-                            if (i % 50 == 0)
-                                info("Stored key pairs in cache: " + i);
-                        }
-                    }
-                    finally {
-                        l2.await();
-
-                        info("Before unlock keys in thread 1: " + keys);
-
-                        lock.unlock();
-
-                        info("Unlocked entry for keys.");
-                    }
-
-                    assert !locked(keys, 1);
-
-                    return null;
+            try {
+                for (Integer key : keys) {
+                    assert cache1.isLocalLocked(key, false);
+                    assert cache1.isLocalLocked(key, true);
                 }
-            }, 1, "TEST-THREAD-1");
 
-        IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    info("Waiting for latch1...");
+                l1.countDown();
 
-                    try {
-                        l1.await();
+                info("Let thread2 proceed.");
 
-                        // This call should not acquire the lock since
-                        // other thread is holding it.
-                        assert !cache1.lockAll(keys).tryLock();
+                for (int i : keys) {
+                    info("Before put key: " + i);
 
-                        info("Before unlock keys in thread 2: " + keys);
+                    cache1.put(i, Integer.toString(i));
 
-                        GridTestUtils.assertThrows(null, new Callable<Object>() {
-                            @Override public Object call() throws Exception {
-                                cache1.lockAll(keys).unlock();
-                                return null;
-                            }
-                        }, IllegalStateException.class, null);
-
-                        // The keys should still be locked.
-                        for (Integer key : keys)
-                            assert cache1.isLocalLocked(key, false);
-                    }
-                    finally {
-                        l2.countDown();
-                    }
-
-                    return null;
+                    if (i % 50 == 0)
+                        info("Stored key pairs in cache: " + i);
                 }
-            }, 1, "TEST-THREAD-2");
+            }
+            finally {
+                l2.await();
+
+                info("Before unlock keys in thread 1: " + keys);
+
+                lock.unlock();
+
+                info("Unlocked entry for keys.");
+            }
+
+            assert !locked(keys, 1);
+
+            return null;
+        }, 1, "TEST-THREAD-1");
+
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(() -> {
+            info("Waiting for latch1...");
+
+            try {
+                l1.await();
+
+                // This call should not acquire the lock since
+                // other thread is holding it.
+                assert !cache1.lockAll(keys).tryLock();
+
+                info("Before unlock keys in thread 2: " + keys);
+
+                GridTestUtils.assertThrows(null, () -> {
+                    cache1.lockAll(keys).unlock();
+                    return null;
+                }, IllegalStateException.class, null);
+
+                // The keys should still be locked.
+                for (Integer key : keys)
+                    assert cache1.isLocalLocked(key, false);
+            }
+            finally {
+                l2.countDown();
+            }
+
+            return null;
+        }, 1, "TEST-THREAD-2");
 
         fut1.get();
         fut2.get();
@@ -538,18 +524,16 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             try {
                 final AtomicReference<Throwable> err = new AtomicReference<>();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            assert !lock.tryLock();
-                            assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
+                Thread t = new Thread(() -> {
+                    try {
+                        assert !lock.tryLock();
+                        assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
 
-                            assert !cache1.lock(i0).tryLock();
-                            assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Throwable e) {
-                            err.set(e);
-                        }
+                        assert !cache1.lock(i0).tryLock();
+                        assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Throwable e) {
+                        err.set(e);
                     }
                 });
 
@@ -562,18 +546,16 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 lock.lock();
                 lock.unlock();
 
-                t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            assert !lock.tryLock();
-                            assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
+                t = new Thread(() -> {
+                    try {
+                        assert !lock.tryLock();
+                        assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
 
-                            assert !cache1.lock(i0).tryLock();
-                            assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Throwable e) {
-                            err.set(e);
-                        }
+                        assert !cache1.lock(i0).tryLock();
+                        assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Throwable e) {
+                        err.set(e);
                     }
                 });
 
@@ -587,12 +569,10 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 lock.unlock();
             }
 
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    assertTrue(lock.tryLock());
+            GridTestUtils.runAsync(() -> {
+                assertTrue(lock.tryLock());
 
-                    lock.unlock();
-                }
+                lock.unlock();
             }, "lock-thread");
         }
     }

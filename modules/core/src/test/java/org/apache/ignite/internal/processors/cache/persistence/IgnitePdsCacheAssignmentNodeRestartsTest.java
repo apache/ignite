@@ -151,14 +151,12 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
             final AtomicInteger idx = new AtomicInteger(restartIdxFrom);
 
-            IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int nodeIdx = idx.getAndIncrement();
+            IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                int nodeIdx = idx.getAndIncrement();
 
-                    stopGrid(nodeIdx);
+                stopGrid(nodeIdx);
 
-                    return null;
-                }
+                return null;
             }, gridsCnt - restartIdxFrom, "stop-node");
 
             fut.get();

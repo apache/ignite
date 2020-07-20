@@ -73,13 +73,11 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Integer> clientCache = client.createCache(cacheConfiguration(PARTITIONED, ATOMIC));
 
         try {
-            client.compute(client.cluster().forRemotes().forRandom()).call(new IgniteCallable<Object>() {
-                @Override public Object call() throws Exception {
-                    clientCache.withKeepBinary();
-                    clientCache.withSkipStore();
+            client.compute(client.cluster().forRemotes().forRandom()).call(() -> {
+                clientCache.withKeepBinary();
+                clientCache.withSkipStore();
 
-                    return null;
-                }
+                return null;
             });
         }
         finally {

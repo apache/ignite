@@ -123,19 +123,17 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
         final Ignite node0 = ignite(0);
         Ignite node1 = ignite(1);
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    latch.await();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                latch.await();
 
-                    IgniteConfiguration cfg = node0.configuration();
+                IgniteConfiguration cfg = node0.configuration();
 
-                    ((TestCommunicationSpi)cfg.getCommunicationSpi()).block();
-                    ((IgniteDiscoverySpi)cfg.getDiscoverySpi()).simulateNodeFailure();
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                ((TestCommunicationSpi)cfg.getCommunicationSpi()).block();
+                ((IgniteDiscoverySpi)cfg.getDiscoverySpi()).simulateNodeFailure();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }, 1);
 

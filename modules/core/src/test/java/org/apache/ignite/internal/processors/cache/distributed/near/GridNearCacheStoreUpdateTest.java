@@ -153,13 +153,11 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
         final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         if (tx) {
-            doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    // Read from store.
-                    assertEquals(key, clientCache.get(key));
+            doInTransaction(client, txConc, txIsolation, () -> {
+                // Read from store.
+                assertEquals(key, clientCache.get(key));
 
-                    return null;
-                }
+                return null;
             });
         }
         else
@@ -181,12 +179,10 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             srvCache.put(key, updatedVal);
 
         if (tx) {
-            doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    assertEquals(updatedVal, clientCache.get(key));
+            doInTransaction(client, txConc, txIsolation, () -> {
+                assertEquals(updatedVal, clientCache.get(key));
 
-                    return null;
-                }
+                return null;
             });
         }
         else
@@ -235,14 +231,12 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 //                });
 //            }
 
-            final IgniteInternalFuture<Object> fut3 = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    storeLatch.await();
+            final IgniteInternalFuture<Object> fut3 = GridTestUtils.runAsync(() -> {
+                storeLatch.await();
 
-                    srvCache.put(key, "other");
+                srvCache.put(key, "other");
 
-                    return null;
-                }
+                return null;
             });
 
             storeLatch.countDown();
@@ -295,12 +289,10 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
         // Update value.
         if (tx) {
-            doInTransaction(srv, txConc, txIsolation, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    srvCache.putAll(data2);
+            doInTransaction(srv, txConc, txIsolation, () -> {
+                srvCache.putAll(data2);
 
-                    return null;
-                }
+                return null;
             });
         }
         else
@@ -345,14 +337,12 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    latch.await();
+            final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(() -> {
+                latch.await();
 
-                    clientCache.getAll(data1.keySet());
+                clientCache.getAll(data1.keySet());
 
-                    return null;
-                }
+                return null;
             });
 
             IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {

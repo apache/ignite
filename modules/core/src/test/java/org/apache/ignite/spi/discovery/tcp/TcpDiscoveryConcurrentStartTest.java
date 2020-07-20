@@ -72,12 +72,10 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
 
                 final AtomicInteger gridIdx = new AtomicInteger(1);
 
-                GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                        @Nullable @Override public Object call() throws Exception {
-                            startClientGrid(gridIdx.getAndIncrement());
+                GridTestUtils.runMultiThreaded(() -> {
+                        startClientGrid(gridIdx.getAndIncrement());
 
-                            return null;
-                        }
+                        return null;
                     },
                     TOP_SIZE,
                     "grid-starter-" + getName()

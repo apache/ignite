@@ -64,14 +64,12 @@ public class GridWorkerPool {
         workers.add(w);
 
         try {
-            exec.execute(new Runnable() {
-                @Override public void run() {
-                    try {
-                        w.run();
-                    }
-                    finally {
-                        workers.remove(w);
-                    }
+            exec.execute(() -> {
+                try {
+                    w.run();
+                }
+                finally {
+                    workers.remove(w);
                 }
             });
         }

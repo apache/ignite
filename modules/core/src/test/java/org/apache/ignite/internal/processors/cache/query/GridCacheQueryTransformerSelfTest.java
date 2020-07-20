@@ -170,12 +170,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
             for (int i : keys)
                 cache.put(i, new Value("str" + i, i * 100));
 
-            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
-                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
-                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
-                        return e.getValue().idx;
-                    }
-                };
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer = entry -> entry.getValue().idx;;
 
             List<Integer> res = cache.query(new ScanQuery<Integer, Value>().setPartition(0), transformer).getAll();
 
@@ -307,12 +302,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public List<Integer> call() throws Exception {
-                    IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
-                        new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
-                            @Override public Integer apply(Cache.Entry<Integer, Value> e) {
-                                return e.getValue().idx;
-                            }
-                        };
+                    IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer = entry -> entry.getValue().idx;
 
                     return ignite.cache("test-cache").query(new ScanQuery<Integer, Value>().setLocal(true),
                         transformer).getAll();
@@ -466,22 +456,15 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     public void testUnsupported() throws Exception {
         final IgniteCache<Integer, Integer> cache = grid().createCache("test-cache");
 
-        final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> transformer =
-            new IgniteClosure<Cache.Entry<Integer, Integer>, Integer>() {
-                @Override public Integer apply(Cache.Entry<Integer, Integer> e) {
-                    return null;
-                }
-            };
+        final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> transformer = entry -> null;
 
         try {
             GridTestUtils.assertThrows(
                 log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.query(new SqlQuery<Integer, Integer>(Integer.class, "clause"), transformer);
+                () -> {
+                    cache.query(new SqlQuery<Integer, Integer>(Integer.class, "clause"), transformer);
 
-                        return null;
-                    }
+                    return null;
                 },
                 UnsupportedOperationException.class,
                 "Transformers are supported only for SCAN queries."
@@ -513,12 +496,10 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrows(
                 log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.query(new SpiQuery<Integer, Integer>(), transformer);
+                () -> {
+                    cache.query(new SpiQuery<Integer, Integer>(), transformer);
 
-                        return null;
-                    }
+                    return null;
                 },
                 UnsupportedOperationException.class,
                 "Transformers are supported only for SCAN queries."

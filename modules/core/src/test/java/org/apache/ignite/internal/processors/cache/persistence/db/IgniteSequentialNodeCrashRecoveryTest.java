@@ -264,14 +264,12 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
             new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
+                () -> {
+                    U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
+                    IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
-                        stopLatch.countDown();
-                    }
+                    stopLatch.countDown();
                 },
                 "node-stopper"
             ).start();

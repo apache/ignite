@@ -47,17 +47,9 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
 
         CacheConfiguration[] ccfgs = icfg.getCacheConfiguration();
 
-        TopologyValidator val1 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        };
+        TopologyValidator val1 = nodes -> nodes.size() == 2;
 
-        TopologyValidator val2 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() >= 2;
-            }
-        };
+        TopologyValidator val2 = nodes -> nodes.size() >= 2;
 
         for (CacheConfiguration ccfg : ccfgs) {
             if (CACHE_NAME_1.equals(ccfg.getName()) || CACHE_NAME_2.equals(ccfg.getName()))

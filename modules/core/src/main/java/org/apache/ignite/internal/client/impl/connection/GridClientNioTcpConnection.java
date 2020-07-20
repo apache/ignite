@@ -274,14 +274,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             if (log.isLoggable(Level.INFO))
                 log.info("Client TCP connection established: " + serverAddress());
 
-            pingTask = pingExecutor.scheduleAtFixedRate(new Runnable() {
-                @Override public void run() {
-                    try {
-                        makeRequest(GridClientPingPacket.PING_MESSAGE, (TcpClientFuture)null, false);
-                    }
-                    catch (Exception e) {
-                        log.warning("Failed to send ping message: " + e);
-                    }
+            pingTask = pingExecutor.scheduleAtFixedRate(() -> {
+                try {
+                    makeRequest(GridClientPingPacket.PING_MESSAGE, (TcpClientFuture)null, false);
+                }
+                catch (Exception e) {
+                    log.warning("Failed to send ping message: " + e);
                 }
             }, 500, 500, MILLISECONDS);
 

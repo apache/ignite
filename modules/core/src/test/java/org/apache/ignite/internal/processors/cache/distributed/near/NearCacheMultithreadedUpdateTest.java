@@ -109,24 +109,22 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         final Integer key0 = primaryKey(ignite(SRV_CNT - 1).cache(DEFAULT_CACHE_NAME));
 
         if (restart) {
-            restartFut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    while (!stop.get()) {
-                        Thread.sleep(300);
+            restartFut = GridTestUtils.runAsync(() -> {
+                while (!stop.get()) {
+                    Thread.sleep(300);
 
-                        log.info("Stop node.");
+                    log.info("Stop node.");
 
-                        stopGrid(SRV_CNT - 1);
+                    stopGrid(SRV_CNT - 1);
 
-                        Thread.sleep(300);
+                    Thread.sleep(300);
 
-                        log.info("Start node.");
+                    log.info("Start node.");
 
-                        startGrid(SRV_CNT - 1);
-                    }
-
-                    return null;
+                    startGrid(SRV_CNT - 1);
                 }
+
+                return null;
             }, "restart-thread");
         }
 
@@ -143,15 +141,13 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
 
                 final AtomicInteger val = new AtomicInteger();
 
-                GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        clientCache.put(key0, val.incrementAndGet());
+                GridTestUtils.runMultiThreaded(() -> {
+                    clientCache.put(key0, val.incrementAndGet());
 
-                        for (int i = 0; i < 10; i++)
-                            clientCache.put(key, val.incrementAndGet());
+                    for (int i = 0; i < 10; i++)
+                        clientCache.put(key, val.incrementAndGet());
 
-                        return null;
-                    }
+                    return null;
                 }, 20, "update-thread");
 
                 if (restart) {

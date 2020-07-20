@@ -367,69 +367,67 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         assert old == null;
 
-        ctx.kernalContext().closure().runLocalSafe(new Runnable() {
-            @Override public void run() {
-                if (!busyLock.tryReadLock()) {
-                    fut.onDone(new IgniteCheckedException("Failed to start external process (grid is stopping)."));
+        ctx.kernalContext().closure().runLocalSafe(() -> {
+            if (!busyLock.tryReadLock()) {
+                fut.onDone(new IgniteCheckedException("Failed to start external process (grid is stopping)."));
 
-                    return;
-                }
+                return;
+            }
 
-                try {
-                    HadoopExternalTaskMetadata startMeta = buildTaskMeta();
+            try {
+                HadoopExternalTaskMetadata startMeta = buildTaskMeta();
 
+                if (log.isDebugEnabled())
+                    log.debug("Created hadoop child process metadata for job [job=" + job +
+                        ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
+
+                Process proc = startJavaProcess(childProcId, startMeta, job,
+                    ctx.kernalContext().config().getWorkDirectory());
+
+                BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+                String line;
+
+                // Read up all the process output.
+                while ((line = rdr.readLine()) != null) {
                     if (log.isDebugEnabled())
-                        log.debug("Created hadoop child process metadata for job [job=" + job +
-                            ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
+                        log.debug("Tracing process output: " + line);
 
-                    Process proc = startJavaProcess(childProcId, startMeta, job,
-                        ctx.kernalContext().config().getWorkDirectory());
-
-                    BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-
-                    String line;
-
-                    // Read up all the process output.
-                    while ((line = rdr.readLine()) != null) {
+                    if ("Started".equals(line)) {
+                        // Process started successfully, it should not write anything more to the output stream.
                         if (log.isDebugEnabled())
-                            log.debug("Tracing process output: " + line);
+                            log.debug("Successfully started child process [childProcId=" + childProcId +
+                                ", meta=" + job + ']');
 
-                        if ("Started".equals(line)) {
-                            // Process started successfully, it should not write anything more to the output stream.
-                            if (log.isDebugEnabled())
-                                log.debug("Successfully started child process [childProcId=" + childProcId +
-                                    ", meta=" + job + ']');
+                        fut.onProcessStarted(proc);
 
-                            fut.onProcessStarted(proc);
+                        break;
+                    }
+                    else if ("Failed".equals(line)) {
+                        StringBuilder sb = new StringBuilder("Failed to start child process: " + job + "\n");
 
-                            break;
-                        }
-                        else if ("Failed".equals(line)) {
-                            StringBuilder sb = new StringBuilder("Failed to start child process: " + job + "\n");
+                        while ((line = rdr.readLine()) != null)
+                            sb.append("    ").append(line).append("\n");
 
-                            while ((line = rdr.readLine()) != null)
-                                sb.append("    ").append(line).append("\n");
+                        // Cut last character.
+                        sb.setLength(sb.length() - 1);
 
-                            // Cut last character.
-                            sb.setLength(sb.length() - 1);
+                        log.warning(sb.toString());
 
-                            log.warning(sb.toString());
+                        fut.onDone(new IgniteCheckedException(sb.toString()));
 
-                            fut.onDone(new IgniteCheckedException(sb.toString()));
-
-                            break;
-                        }
+                        break;
                     }
                 }
-                catch (Throwable e) {
-                    fut.onDone(new IgniteCheckedException("Failed to initialize child process: " + job, e));
+            }
+            catch (Throwable e) {
+                fut.onDone(new IgniteCheckedException("Failed to initialize child process: " + job, e));
 
-                    if (e instanceof Error)
-                        throw (Error)e;
-                }
-                finally {
-                    busyLock.readUnlock();
-                }
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
+            finally {
+                busyLock.readUnlock();
             }
         }, true);
 

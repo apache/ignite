@@ -263,54 +263,52 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         boolean failNodesOnBadCntr) throws Exception {
         Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
 
-        Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
-            new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
-                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
-                    T2<Ignite, List<Ignite>> txTop = map.get(PARTITION_ID);
+        Map<Integer, T2<Ignite, List<Ignite>>> transactionTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+            map -> {
+                T2<Ignite, List<Ignite>> txTop = map.get(PARTITION_ID);
 
-                    Map<IgniteEx, int[]> prepares = new HashMap<IgniteEx, int[]>();
+                Map<IgniteEx, int[]> prepares = new HashMap<IgniteEx, int[]>();
 
-                    prepares.put((IgniteEx)txTop.get1(), prepareOrder);
+                prepares.put((IgniteEx) txTop.get1(), prepareOrder);
 
-                    final Ignite backup1 = txTop.get2().get(0);
-                    final Ignite backup2 = txTop.get2().get(1);
+                final Ignite backup1 = txTop.get2().get(0);
+                final Ignite backup2 = txTop.get2().get(1);
 
-                    commits.put((IgniteEx)txTop.get1(), primCommitOrder);
-                    commits.put((IgniteEx)backup1, backup1CommitOrder);
-                    commits.put((IgniteEx)backup2, backup2CommitOrder);
+                commits.put((IgniteEx)txTop.get1(), primCommitOrder);
+                commits.put((IgniteEx)backup1, backup1CommitOrder);
+                commits.put((IgniteEx)backup2, backup2CommitOrder);
 
-                    CountDownLatch l = new CountDownLatch(2);
+                CountDownLatch l = new CountDownLatch(2);
 
-                    return new TwoPhaseCommitTxCallbackAdapter(prepares, commits, sizes.length) {
-                        @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-                            super.onBackupCommitted(backup, idx);
+                return new TwoPhaseCommitTxCallbackAdapter(prepares, commits, sizes.length) {
+                    @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                        super.onBackupCommitted(backup, idx);
 
-                            if (idx == commits.get(backup)[waitCommitIdx[backup == backup1 ? 0 : 1]]) {
-                                l.countDown();
+                        if (idx == commits.get(backup)[waitCommitIdx[backup == backup1 ? 0 : 1]]) {
+                            l.countDown();
 
-                                // Wait until both backups are committed required transactions.
-                                try {
-                                    assertTrue(U.await(l, 30_000, TimeUnit.MILLISECONDS));
-                                }
-                                catch (IgniteInterruptedCheckedException e) {
-                                    fail(e.getMessage());
-                                }
-
-                                if (backup == backup1) {
-                                    blockRecovery();
-
-                                    stopGrid(skipCheckpoint, txTop.get2().get(0).name());
-                                    stopGrid(skipCheckpoint, txTop.get2().get(1).name());
-                                    stopAllGrids(); // Stop all remaining nodes.
-                                }
-
-                                return true;
+                            // Wait until both backups are committed required transactions.
+                            try {
+                                assertTrue(U.await(l, 30_000, TimeUnit.MILLISECONDS));
+                            }
+                            catch (IgniteInterruptedCheckedException e) {
+                                fail(e.getMessage());
                             }
 
-                            return false;
+                            if (backup == backup1) {
+                                blockRecovery();
+
+                                stopGrid(skipCheckpoint, txTop.get2().get(0).name());
+                                stopGrid(skipCheckpoint, txTop.get2().get(1).name());
+                                stopAllGrids(); // Stop all remaining nodes.
+                            }
+
+                            return true;
                         }
-                    };
-                }
+
+                        return false;
+                    }
+                };
             },
             sizes);
 
@@ -322,8 +320,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
         try {
             // Start only backups in given order.
-            startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[0]).name());
-            startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[1]).name());
+            startGrid(transactionTop.get(PARTITION_ID).get2().get(backupsStartOrder[0]).name());
+            startGrid(transactionTop.get(PARTITION_ID).get2().get(backupsStartOrder[1]).name());
 
             try {
                 grid(0).cluster().active(true);

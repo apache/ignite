@@ -200,82 +200,78 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
             final AtomicBoolean done = new AtomicBoolean();
 
             IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
-                new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
-                        Ignite g2 = startGrid(2);
+                () -> {
+                    Ignite g2 = startGrid(2);
 
-                        for (int i = 0; i < ITER_CNT; i++) {
-                            info("Iteration # " + i);
+                    for (int i = 0; i < ITER_CNT; i++) {
+                        info("Iteration # " + i);
 
-                            IgniteCache<Integer, Integer> cache = g2.cache(DEFAULT_CACHE_NAME);
+                        IgniteCache<Integer, Integer> cache = g2.cache(DEFAULT_CACHE_NAME);
 
-                            for (int j = 0; j < KEY_CNT; j++) {
-                                Integer val = cache.get(j);
+                        for (int j = 0; j < KEY_CNT; j++) {
+                            Integer val = cache.get(j);
 
-                                if (j % FREQUENCY == 0)
-                                    info("Read entry: " + j + " -> " + val);
+                            if (j % FREQUENCY == 0)
+                                info("Read entry: " + j + " -> " + val);
 
-                                if (done.get())
-                                    assert val != null && val == j;
-                            }
-
-                            writeLatch.countDown();
-
-                            readLatch.await();
+                            if (done.get())
+                                assert val != null && val == j;
                         }
 
-                        return null;
+                        writeLatch.countDown();
+
+                        readLatch.await();
                     }
+
+                    return null;
                 },
                 1,
                 "reader"
             );
 
             IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
-                new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
-                        try {
-                            writeLatch.await(10, TimeUnit.SECONDS);
+                () -> {
+                    try {
+                        writeLatch.await(10, TimeUnit.SECONDS);
 
-                            Ignite g1 = startGrid(1);
+                        Ignite g1 = startGrid(1);
 
-                            IgniteCache<Integer, Integer> cache = g1.cache(DEFAULT_CACHE_NAME);
+                        IgniteCache<Integer, Integer> cache = g1.cache(DEFAULT_CACHE_NAME);
 
-                            for (int j = 0; j < KEY_CNT; j++) {
-                                cache.put(j, j);
+                        for (int j = 0; j < KEY_CNT; j++) {
+                            cache.put(j, j);
 
-                                if (j % FREQUENCY == 0)
-                                    info("Stored value in cache: " + j);
-                            }
-
-                            done.set(true);
-
-                            for (int j = 0; j < KEY_CNT; j++) {
-                                // Check SingleGetFuture.
-                                Integer val = internalCache(cache).get(j);
-
-                                assert val != null;
-
-                                // Check GetFuture.
-                                Map<Integer, Integer> vals = internalCache(cache).getAll(Arrays.asList(j, j + 1));
-
-                                assert val.equals(vals.get(j));
-
-                                if (j % FREQUENCY == 0)
-                                    info("Read entry: " + j + " -> " + val);
-
-                                assert val != null && val == j;
-                            }
-
-                            if (backups > 0)
-                                stopGrid(1);
-                        }
-                        finally {
-                            readLatch.countDown();
+                            if (j % FREQUENCY == 0)
+                                info("Stored value in cache: " + j);
                         }
 
-                        return null;
+                        done.set(true);
+
+                        for (int j = 0; j < KEY_CNT; j++) {
+                            // Check SingleGetFuture.
+                            Integer val = internalCache(cache).get(j);
+
+                            assert val != null;
+
+                            // Check GetFuture.
+                            Map<Integer, Integer> vals = internalCache(cache).getAll(Arrays.asList(j, j + 1));
+
+                            assert val.equals(vals.get(j));
+
+                            if (j % FREQUENCY == 0)
+                                info("Read entry: " + j + " -> " + val);
+
+                            assert val != null && val == j;
+                        }
+
+                        if (backups > 0)
+                            stopGrid(1);
                     }
+                    finally {
+                        readLatch.countDown();
+                    }
+
+                    return null;
                 },
                 1,
                 "writer"

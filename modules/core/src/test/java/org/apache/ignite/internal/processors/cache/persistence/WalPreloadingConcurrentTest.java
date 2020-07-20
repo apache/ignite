@@ -111,19 +111,17 @@ public class WalPreloadingConcurrentTest extends GridCommonAbstractTest {
         //Millis
         long duration = 5000L;
 
-        IgniteInternalFuture fut1 = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() {
-                int randomPart = ThreadLocalRandom.current().nextInt(cache.configuration().getAffinity().partitions());
+        IgniteInternalFuture fut1 = multithreadedAsync(() -> {
+            int randomPart = ThreadLocalRandom.current().nextInt(cache.configuration().getAffinity().partitions());
 
-                while (!stop.get()) {
-                    db.reserveHistoryForPreloading(Collections.singletonMap(
-                        new T2<Integer, Integer>(cache.context().groupId(), randomPart),
-                        0L
-                    ));
-                }
-
-                return null;
+            while (!stop.get()) {
+                db.reserveHistoryForPreloading(Collections.singletonMap(
+                    new T2<Integer, Integer>(cache.context().groupId(), randomPart),
+                    0L
+                ));
             }
+
+            return null;
         }, THREADS, "reserve-history-thread");
 
         IgniteInternalFuture fut2 = multithreadedAsync(new Callable<Object>() {

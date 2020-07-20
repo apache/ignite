@@ -193,37 +193,29 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                 final int key = i;
 
-                GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return nearOnly.get(key);
-                    }
-                }, ClusterTopologyCheckedException.class);
+                GridTestUtils.assertThrowsWithCause(() -> nearOnly.get(key), ClusterTopologyCheckedException.class);
             }
 
             // Test optimistic transaction.
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Transaction tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                        nearOnly.put("key", "val");
+            GridTestUtils.assertThrowsWithCause(() -> {
+                try (Transaction tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                    nearOnly.put("key", "val");
 
-                        tx.commit();
-                    }
-
-                    return null;
+                    tx.commit();
                 }
+
+                return null;
             }, ClusterTopologyCheckedException.class);
 
             // Test pessimistic transaction.
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Transaction tx = igniteNearOnly.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        nearOnly.put("key", "val");
+            GridTestUtils.assertThrowsWithCause(() -> {
+                try (Transaction tx = igniteNearOnly.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    nearOnly.put("key", "val");
 
-                        tx.commit();
-                    }
-
-                    return null;
+                    tx.commit();
                 }
+
+                return null;
             }, ClusterTopologyCheckedException.class);
 
         }

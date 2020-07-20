@@ -141,11 +141,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
 
-        return F.view(super.affinityNodes(), new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return !F.eq(grid(n).name(), grid(nearIdx).name());
-            }
-        });
+        return F.view(super.affinityNodes(), n -> !F.eq(grid(n).name(), grid(nearIdx).name()));
     }
 
     /**
@@ -565,21 +561,19 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    switch (evt.type()) {
-                        case EVT_CACHE_OBJECT_LOCKED:
-                            lockCnt.countDown();
+            grid(0).events().localListen(event -> {
+                switch (event.type()) {
+                    case EVT_CACHE_OBJECT_LOCKED:
+                        lockCnt.countDown();
 
-                            break;
-                        case EVT_CACHE_OBJECT_UNLOCKED:
-                            unlockCnt.countDown();
+                        break;
+                    case EVT_CACHE_OBJECT_UNLOCKED:
+                        unlockCnt.countDown();
 
-                            break;
-                    }
-
-                    return true;
+                        break;
                 }
+
+                return true;
             }, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
             IgniteCache<String, Integer> nearCache = jcache();

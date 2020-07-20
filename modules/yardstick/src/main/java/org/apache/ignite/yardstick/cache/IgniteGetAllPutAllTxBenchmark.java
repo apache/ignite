@@ -45,24 +45,22 @@ public class IgniteGetAllPutAllTxBenchmark extends IgniteCacheAbstractBenchmark<
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final ThreadRange r = threadRange();
 
-        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                SortedMap<Integer, Integer> vals = new TreeMap<>();
+        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), () -> {
+            SortedMap<Integer, Integer> vals = new TreeMap<>();
 
-                for (int i = 0; i < args.batch(); i++) {
-                    int key = r.nextRandom();
+            for (int i = 0; i < args.batch(); i++) {
+                int key = r.nextRandom();
 
-                    vals.put(key, key);
-                }
-
-                IgniteCache<Integer, Integer> cache = cacheForOperation();
-
-                cache.getAll(vals.keySet());
-
-                cache.putAll(vals);
-
-                return null;
+                vals.put(key, key);
             }
+
+            IgniteCache<Integer, Integer> cache = cacheForOperation();
+
+            cache.getAll(vals.keySet());
+
+            cache.putAll(vals);
+
+            return null;
         });
 
         return true;

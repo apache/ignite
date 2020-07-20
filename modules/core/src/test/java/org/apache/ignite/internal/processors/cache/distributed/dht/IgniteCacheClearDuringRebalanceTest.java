@@ -99,22 +99,20 @@ public class IgniteCacheClearDuringRebalanceTest extends GridCommonAbstractTest 
 
         ThreadLocalRandom.current().nextBytes(data);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                try (IgniteDataStreamer<Object, Object> str = node.dataStreamer(CACHE_NAME)) {
-                    int idx = id.getAndIncrement();
+        GridTestUtils.runMultiThreaded(() -> {
+            try (IgniteDataStreamer<Object, Object> str = node.dataStreamer(CACHE_NAME)) {
+                int idx = id.getAndIncrement();
 
-                    str.autoFlushFrequency(0);
+                str.autoFlushFrequency(0);
 
-                    for (int i = idx; i < 500_000; i += tCnt) {
-                        str.addData(i, data);
+                for (int i = idx; i < 500_000; i += tCnt) {
+                    str.addData(i, data);
 
-                        if (i % (100 * tCnt) == idx)
-                            str.flush();
-                    }
-
-                    str.flush();
+                    if (i % (100 * tCnt) == idx)
+                        str.flush();
                 }
+
+                str.flush();
             }
         }, tCnt, "ldr");
 

@@ -153,16 +153,14 @@ public abstract class GridDeferredAckMessageSender<T> {
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (guard.compareAndSet(false, true)) {
-                c.runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        writeLock().lock();
+                c.runLocalSafe(() -> {
+                    writeLock().lock();
 
-                        try {
-                            finish0();
-                        }
-                        finally {
-                            writeLock().unlock();
-                        }
+                    try {
+                        finish0();
+                    }
+                    finally {
+                        writeLock().unlock();
                     }
                 });
             }

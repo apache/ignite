@@ -227,37 +227,35 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             System.err.println("FINISHED PUTS");
 
             // Start put threads.
-            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Random rnd = new Random();
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                Random rnd = new Random();
 
-                    while (!done.get()) {
-                        try {
-                            int cnt = rnd.nextInt(5);
+                while (!done.get()) {
+                    try {
+                        int cnt = rnd.nextInt(5);
 
-                            if (cnt < 2) {
-                                int key = rnd.nextInt(range);
+                        if (cnt < 2) {
+                            int key = rnd.nextInt(range);
 
-                                int val = rnd.nextInt();
+                            int val = rnd.nextInt();
 
-                                cache.put(key, val);
-                            }
-                            else {
-                                Map<Integer, Integer> upd = new TreeMap<>();
-
-                                for (int i = 0; i < cnt; i++)
-                                    upd.put(rnd.nextInt(range), rnd.nextInt());
-
-                                cache.putAll(upd);
-                            }
+                            cache.put(key, val);
                         }
-                        catch (CachePartialUpdateException ignored) {
-                            // No-op.
+                        else {
+                            Map<Integer, Integer> upd = new TreeMap<>();
+
+                            for (int i = 0; i < cnt; i++)
+                                upd.put(rnd.nextInt(range), rnd.nextInt());
+
+                            cache.putAll(upd);
                         }
                     }
-
-                    return null;
+                    catch (CachePartialUpdateException ignored) {
+                        // No-op.
+                    }
                 }
+
+                return null;
             }, 4, "putAll-thread");
 
             Random rnd = new Random();

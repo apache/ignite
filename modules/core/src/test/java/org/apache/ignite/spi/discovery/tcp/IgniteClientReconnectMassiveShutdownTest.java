@@ -145,56 +145,54 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         final CountDownLatch latch = new CountDownLatch(CLIENT_GRID_CNT);
 
         IgniteInternalFuture<?> clientsFut = multithreadedAsync(
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try {
-                        int idx = clientIdx.take();
+            () -> {
+                try {
+                    int idx = clientIdx.take();
 
-                        Ignite ignite = grid(idx);
+                    Ignite ignite = grid(idx);
 
-                        Thread.currentThread().setName("client-thread-" + ignite.name());
+                    Thread.currentThread().setName("client-thread-" + ignite.name());
 
-                        assertTrue(ignite.configuration().isClientMode());
+                    assertTrue(ignite.configuration().isClientMode());
 
-                        IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
+                    IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
 
-                        assertNotNull(cache);
+                    assertNotNull(cache);
 
-                        IgniteTransactions txs = ignite.transactions();
+                    IgniteTransactions txs = ignite.transactions();
 
-                        Random rand = new Random();
+                    Random rand = new Random();
 
-                        latch.countDown();
+                    latch.countDown();
 
-                        IgniteFuture<?> retryFut = new IgniteFinishedFutureImpl<>();
+                    IgniteFuture<?> retryFut = new IgniteFinishedFutureImpl<>();
 
-                        while (!done.get()) {
-                            try {
-                                retryFut.get();
-                            }
-                            catch (IgniteException | CacheException e) {
-                                retryFut = getRetryFuture(e);
+                    while (!done.get()) {
+                        try {
+                            retryFut.get();
+                        }
+                        catch (IgniteException | CacheException e) {
+                            retryFut = getRetryFuture(e);
 
-                                continue;
-                            }
-
-                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
-
-                                tx.commit();
-                            }
-                            catch (IgniteException | CacheException e) {
-                                retryFut = getRetryFuture(e);
-                            }
+                            continue;
                         }
 
-                        return null;
-                    }
-                    catch (Throwable e) {
-                        log.error("Unexpected error: " + e, e);
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
 
-                        throw e;
+                            tx.commit();
+                        }
+                        catch (IgniteException | CacheException e) {
+                            retryFut = getRetryFuture(e);
+                        }
                     }
+
+                    return null;
+                }
+                catch (Throwable e) {
+                    log.error("Unexpected error: " + e, e);
+
+                    throw e;
                 }
             },
             CLIENT_GRID_CNT, "client-thread");

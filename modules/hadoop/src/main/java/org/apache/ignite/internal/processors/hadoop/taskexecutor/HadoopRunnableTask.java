@@ -111,12 +111,10 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
     @Override public Void call() throws IgniteCheckedException {
         ctx = job.getTaskContext(info);
 
-        return ctx.runAsJobOwner(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                call0();
+        return ctx.runAsJobOwner(() -> {
+            call0();
 
-                return null;
-            }
+            return null;
         });
     }
 

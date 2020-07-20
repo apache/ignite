@@ -410,22 +410,20 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         final CountDownLatch startLatch,
         final AtomicBoolean run)
         throws Exception {
-        return multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    Ignite ignite = startGrid(i);
+        return multithreadedAsync(() -> {
+            try {
+                Ignite ignite = startGrid(i);
 
-                    startLatch.countDown();
+                startLatch.countDown();
 
-                    while (run.get()) {
-                        IgniteAtomicLong cntr = ignite.atomicLong(ATOMIC_LONG_NAME, 0, true);
+                while (run.get()) {
+                    IgniteAtomicLong cntr = ignite.atomicLong(ATOMIC_LONG_NAME, 0, true);
 
-                        queue.add(cntr.getAndIncrement());
-                    }
+                    queue.add(cntr.getAndIncrement());
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }, 1, "grunner-" + i);
     }

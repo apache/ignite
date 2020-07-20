@@ -376,42 +376,40 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
         final AtomicInteger cntr = new AtomicInteger();
 
-        return GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                int startIdx = cntr.getAndAdd(4);
-                int idx = 0;
-                boolean start = true;
+        return GridTestUtils.runMultiThreadedAsync(() -> {
+            int startIdx = cntr.getAndAdd(4);
+            int idx = 0;
+            boolean start = true;
 
-                Set<String> caches = U.newHashSet(4);
+            Set<String> caches = U.newHashSet(4);
 
-                while (System.currentTimeMillis() < deadline) {
-                    try {
-                        if (start) {
-                            caches.add("cache" + (startIdx + idx));
-                            ignite.createCache("cache" + (startIdx + idx));
-                        }
-                        else {
-                            ignite.destroyCache("cache" + (startIdx + idx));
-                            caches.remove("cache" + (startIdx + idx));
-                        }
-
-                        if ((idx = (idx + 1) % 4) == 0)
-                            start = !start;
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    if (start) {
+                        caches.add("cache" + (startIdx + idx));
+                        ignite.createCache("cache" + (startIdx + idx));
                     }
-                    catch (Exception e) {
-                        addException(exHldr, e);
-
-                        break;
+                    else {
+                        ignite.destroyCache("cache" + (startIdx + idx));
+                        caches.remove("cache" + (startIdx + idx));
                     }
+
+                    if ((idx = (idx + 1) % 4) == 0)
+                        start = !start;
                 }
+                catch (Exception e) {
+                    addException(exHldr, e);
 
-                for (String cache : caches) {
-                    try {
-                        ignite.destroyCache(cache);
-                    }
-                    catch (Exception e) {
-                        addException(exHldr, e);
-                    }
+                    break;
+                }
+            }
+
+            for (String cache : caches) {
+                try {
+                    ignite.destroyCache(cache);
+                }
+                catch (Exception e) {
+                    addException(exHldr, e);
                 }
             }
         }, 4, "cache-start-destroy");

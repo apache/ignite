@@ -92,68 +92,64 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
         for (int i = 0; i < updatersNumber(); i++) {
             final int threadIdx = i;
 
-            IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    Thread.currentThread().setName("update-thread-" + threadIdx);
+            IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
+                Thread.currentThread().setName("update-thread-" + threadIdx);
 
-                    assertTrue(cacheCheckedLatch.await(30_000, TimeUnit.MILLISECONDS));
+                assertTrue(cacheCheckedLatch.await(30_000, TimeUnit.MILLISECONDS));
 
-                    int iter = 0;
+                int iter = 0;
 
-                    while (!stop.get()) {
-                        log.info("Start update: " + iter);
+                while (!stop.get()) {
+                    log.info("Start update: " + iter);
 
-                        rwl.readLock().lock();
+                    rwl.readLock().lock();
 
-                        try {
-                            updateCache(grid, cache);
-                        }
-                        finally {
-                            rwl.readLock().unlock();
-                        }
-
-                        log.info("End update: " + iter++);
+                    try {
+                        updateCache(grid, cache);
+                    }
+                    finally {
+                        rwl.readLock().unlock();
                     }
 
-                    log.info("Update iterations: " + iter);
-
-                    return null;
+                    log.info("End update: " + iter++);
                 }
+
+                log.info("Update iterations: " + iter);
+
+                return null;
             });
 
             updaterFuts.add(updateFut);
         }
 
-        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                Thread.currentThread().setName("restart-thread");
+        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(() -> {
+            Thread.currentThread().setName("restart-thread");
 
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                while (!stop.get()) {
-                    assertTrue(cacheCheckedLatch.await(30_000, TimeUnit.MILLISECONDS));
+            while (!stop.get()) {
+                assertTrue(cacheCheckedLatch.await(30_000, TimeUnit.MILLISECONDS));
 
-                    int node = rnd.nextInt(0, gridCount() - 1);
+                int node = rnd.nextInt(0, gridCount() - 1);
 
-                    log.info("Stop node: " + node);
+                log.info("Stop node: " + node);
 
-                    stopGrid(node);
+                stopGrid(node);
 
-                    U.sleep(restartSleep());
+                U.sleep(restartSleep());
 
-                    log.info("Start node: " + node);
+                log.info("Start node: " + node);
 
-                    startGrid(node);
+                startGrid(node);
 
-                    cacheCheckedLatch = new CountDownLatch(1);
+                cacheCheckedLatch = new CountDownLatch(1);
 
-                    U.sleep(restartDelay());
+                U.sleep(restartDelay());
 
-                    awaitPartitionMapExchange();
-                }
-
-                return null;
+                awaitPartitionMapExchange();
             }
+
+            return null;
         });
 
         long endTime = System.currentTimeMillis() + getTestDuration();

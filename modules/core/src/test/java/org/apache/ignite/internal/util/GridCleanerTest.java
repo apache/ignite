@@ -28,11 +28,7 @@ public class GridCleanerTest {
      */
     @Test
     public void testCreate() throws Exception {
-        Object cleaner = GridCleaner.create(this, new Runnable() {
-            @Override public void run() {
-                // no-op
-            }
-        });
+        Object cleaner = GridCleaner.create(this, () -> {});
 
         assert cleaner != null;
 

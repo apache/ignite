@@ -232,62 +232,60 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(THREADS);
 
         try {
-            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    boolean counted = false;
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                boolean counted = false;
 
-                    try {
-                        int nodeIdx = idx.getAndIncrement();
+                try {
+                    int nodeIdx = idx.getAndIncrement();
 
-                        Thread.currentThread().setName("client-thread-node-" + nodeIdx);
+                    Thread.currentThread().setName("client-thread-node-" + nodeIdx);
 
-                        try (Ignite ignite = startClientGrid(nodeIdx)) {
-                            log.info("Started node: " + ignite.name());
+                    try (Ignite ignite = startClientGrid(nodeIdx)) {
+                        log.info("Started node: " + ignite.name());
 
-                            assertTrue(ignite.configuration().isClientMode());
+                        assertTrue(ignite.configuration().isClientMode());
 
-                            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+                        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                            int iter = 0;
+                        int iter = 0;
 
-                            Integer key = rnd.nextInt(0, 1000);
+                        Integer key = rnd.nextInt(0, 1000);
+
+                        cache.put(key, iter++);
+
+                        assertNotNull(cache.get(key));
+
+                        latch.countDown();
+
+                        counted = true;
+
+                        while (!stop.get() && err.get() == null) {
+                            key = rnd.nextInt(0, 1000);
 
                             cache.put(key, iter++);
 
                             assertNotNull(cache.get(key));
 
-                            latch.countDown();
-
-                            counted = true;
-
-                            while (!stop.get() && err.get() == null) {
-                                key = rnd.nextInt(0, 1000);
-
-                                cache.put(key, iter++);
-
-                                assertNotNull(cache.get(key));
-
-                                Thread.sleep(1);
-                            }
-
-                            log.info("Stopping node: " + ignite.name());
+                            Thread.sleep(1);
                         }
 
-                        return null;
+                        log.info("Stopping node: " + ignite.name());
                     }
-                    catch (Throwable e) {
-                        err.compareAndSet(null, e);
 
-                        log.error("Unexpected error in client thread: " + e, e);
+                    return null;
+                }
+                catch (Throwable e) {
+                    err.compareAndSet(null, e);
 
-                        throw e;
-                    }
-                    finally {
-                        if (!counted)
-                            latch.countDown();
-                    }
+                    log.error("Unexpected error in client thread: " + e, e);
+
+                    throw e;
+                }
+                finally {
+                    if (!counted)
+                        latch.countDown();
                 }
             }, THREADS, "client-thread");
 

@@ -430,11 +430,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                return null;
-            }
-        };
+        cacheC = igniteInstanceName -> null;
 
         cacheNodeFilter = new TestCacheNodeExcludingFilter(F.asList(getTestIgniteInstanceName(0)));
 
@@ -1729,13 +1725,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientCacheStartClose() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-                    return null;
+        cacheC = igniteInstanceName -> {
+            if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
+                return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
+            return new CacheConfiguration[]{cacheConfiguration()};
         };
 
         startServer(0, 1);
@@ -2219,11 +2213,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoForceKeysRequests() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return null;
-            }
-        };
+        cacheC = s -> null;
 
         final AtomicBoolean fail = new AtomicBoolean();
 
@@ -2481,11 +2471,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             caches.add(cacheName);
         }
         else {
-            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-                @Override public CacheConfiguration[] apply(String s) {
-                    return null;
-                }
-            };
+            cacheC = s -> null;
         }
     }
 

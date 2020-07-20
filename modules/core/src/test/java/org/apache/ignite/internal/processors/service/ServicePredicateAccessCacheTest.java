@@ -105,16 +105,14 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
             return ret;
         });
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                info("Start deploy service.");
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            info("Start deploy service.");
 
-                ignite0.services(grp).deployNodeSingleton("testService", new TestService());
+            ignite0.services(grp).deployNodeSingleton("testService", new TestService());
 
-                info("Service deployed.");
+            info("Service deployed.");
 
-                return null;
-            }
+            return null;
         }, "deploy-thread");
 
         latch.await();

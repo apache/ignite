@@ -117,50 +117,46 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
             List<IgniteInternalFuture> futs = new ArrayList<>();
 
             for (int i = 0; i < GRID_CNT + 1; i++) {
-                futs.add(multithreadedAsync(new Runnable() {
-                    @Override public void run() {
-                        T2<Ignite, Integer> ignite;
+                futs.add(multithreadedAsync(() -> {
+                    T2<Ignite, Integer> ignite;
 
-                        Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
+                    Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
 
-                        while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
+                    while ((ignite = randomNode()) != null) {
+                        IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
-                            for (int i = 0; i < 100; i++)
-                                cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
+                        for (int j = 0; j < 100; j++)
+                            cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
 
-                            cache.containsKeys(keys);
+                        cache.containsKeys(keys);
 
-                            assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
+                        assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 
-                            try {
-                                Thread.sleep(ThreadLocalRandom.current().nextLong(50));
-                            }
-                            catch (InterruptedException ignored) {
-                                Thread.currentThread().interrupt();
-                            }
+                        try {
+                            Thread.sleep(ThreadLocalRandom.current().nextLong(50));
+                        }
+                        catch (InterruptedException ignored) {
+                            Thread.currentThread().interrupt();
                         }
                     }
                 }, 1, "containsKey-thread-" + i));
 
-                futs.add(multithreadedAsync(new Runnable() {
-                    @Override public void run() {
-                        T2<Ignite, Integer> ignite;
+                futs.add(multithreadedAsync(() -> {
+                    T2<Ignite, Integer> ignite;
 
-                        while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
+                    while ((ignite = randomNode()) != null) {
+                        IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
-                            for (int i = 0; i < 100; i++)
-                                cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());
+                        for (int j = 0; j < 100; j++)
+                            cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());
 
-                            assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
+                        assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 
-                            try {
-                                Thread.sleep(ThreadLocalRandom.current().nextLong(50));
-                            }
-                            catch (InterruptedException ignored) {
-                                Thread.currentThread().interrupt();
-                            }
+                        try {
+                            Thread.sleep(ThreadLocalRandom.current().nextLong(50));
+                        }
+                        catch (InterruptedException ignored) {
+                            Thread.currentThread().interrupt();
                         }
                     }
                 }, 1, "put-thread-" + i));

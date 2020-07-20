@@ -145,12 +145,10 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
             IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
 
-            f.listen(new CIX1<IgniteInternalFuture<GridRedisMessage>>() {
-                @Override public void applyx(IgniteInternalFuture<GridRedisMessage> f) throws IgniteCheckedException {
-                    GridRedisMessage res = f.get();
+            f.listen(future -> {
+                GridRedisMessage res = f.get();
 
-                    sendResponse(ses, res);
-                }
+                sendResponse(ses, res);
             });
         }
     }

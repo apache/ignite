@@ -467,42 +467,40 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      */
     private void doTestPartialCommit_3tx_1(boolean skipCheckpointOnNodeStop) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
-            new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
-                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
-                    Ignite primary = map.get(PARTITION_ID).get1();
-                    Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+            map -> {
+                Ignite primary = map.get(PARTITION_ID).get1();
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
 
-                    return new TwoPhaseCommitTxCallbackAdapter(U.map((IgniteEx)primary, PREPARE_ORDER),
-                        U.map((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
-                        SIZES.length) {
-                        @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-                            super.onBackupCommitted(backup, idx);
+                return new TwoPhaseCommitTxCallbackAdapter(U.map((IgniteEx)primary, PREPARE_ORDER),
+                    U.map((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
+                    SIZES.length) {
+                    @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                        super.onBackupCommitted(backup, idx);
 
-                            if (idx == BACKUP_COMMIT_ORDER[0]) {
-                                PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+                        if (idx == BACKUP_COMMIT_ORDER[0]) {
+                            PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-                                assertNotNull(cntr);
+                            assertNotNull(cntr);
 
-                                assertFalse(cntr.sequential());
+                            assertFalse(cntr.sequential());
 
-                                long[] upd = cntr.iterator().next();
+                            long[] upd = cntr.iterator().next();
 
-                                assertEquals(
-                                    PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]],
-                                    upd[0]);
-                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], upd[1]);
+                            assertEquals(
+                                PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]],
+                                upd[0]);
+                            assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], upd[1]);
 
-                                runAsync(() -> {
-                                    stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.
-                                });
+                            runAsync(() -> {
+                                stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.
+                            });
 
-                                return true;
-                            }
-
-                            throw new IgniteException("Should not commit other transactions");
+                            return true;
                         }
-                    };
-                }
+
+                        throw new IgniteException("Should not commit other transactions");
+                    }
+                };
             },
             SIZES);
 

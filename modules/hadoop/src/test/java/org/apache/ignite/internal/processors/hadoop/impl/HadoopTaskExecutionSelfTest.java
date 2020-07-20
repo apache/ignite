@@ -225,12 +225,10 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         final IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 3),
                 createJobInfo(job.getConfiguration(), null));
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                fut.get();
+        GridTestUtils.assertThrows(log, () -> {
+            fut.get();
 
-                return null;
-            }
+            return null;
         }, IgniteCheckedException.class, null);
     }
 
@@ -392,12 +390,10 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         assertTrue(killRes);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                fut.get();
+        GridTestUtils.assertThrows(log, () -> {
+            fut.get();
 
-                return null;
-            }
+            return null;
         }, IgniteCheckedException.class, null);
 
         assertEquals(executedTasks.get(), cancelledTasks.get());

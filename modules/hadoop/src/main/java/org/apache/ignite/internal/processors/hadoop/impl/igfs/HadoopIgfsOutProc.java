@@ -502,19 +502,17 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      */
     @SuppressWarnings("unchecked")
     private static <T> IgniteClosure<IgniteInternalFuture<IgfsMessage>, T> createClosure() {
-        return new IgniteClosure<IgniteInternalFuture<IgfsMessage>, T>() {
-            @Override public T apply(IgniteInternalFuture<IgfsMessage> fut) {
-                try {
-                    IgfsControlResponse res = (IgfsControlResponse)fut.get();
+        return future -> {
+            try {
+                IgfsControlResponse res = (IgfsControlResponse) future.get();
 
-                    if (res.hasError())
-                        res.throwError();
+                if (res.hasError())
+                    res.throwError();
 
-                    return (T)res.response();
-                }
-                catch (IgfsException | IgniteCheckedException e) {
-                    throw new GridClosureException(e);
-                }
+                return (T)res.response();
+            }
+            catch (IgfsException | IgniteCheckedException e) {
+                throw new GridClosureException(e);
             }
         };
     }

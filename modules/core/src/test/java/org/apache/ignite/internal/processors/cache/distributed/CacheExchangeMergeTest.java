@@ -923,11 +923,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void mergeServersAndClientsFail(boolean waitRebalance) throws Exception {
-        clientC = new IgniteClosure<String, Boolean>() {
-            @Override public Boolean apply(String nodeName) {
-                return nodeName.equals(getTestIgniteInstanceName(2)) || nodeName.equals(getTestIgniteInstanceName(3));
-            }
-        };
+        clientC = nodeName ->
+            nodeName.equals(getTestIgniteInstanceName(2)) || nodeName.equals(getTestIgniteInstanceName(3));
 
         final Ignite srv0 = startGrids(6);
 

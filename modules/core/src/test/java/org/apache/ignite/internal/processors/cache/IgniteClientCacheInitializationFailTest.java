@@ -202,32 +202,30 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"ThrowableNotThrown"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache;
+        GridTestUtils.assertThrows(log, () -> {
+            IgniteCache<Integer, String> cache;
 
-                // Start cache with near enabled.
-                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
-                    NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
-                    CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
-                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>()).setSqlSchema("test");
+            // Start cache with near enabled.
+            if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
+                NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
+                CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
+                    .setNearConfiguration(new NearCacheConfiguration<Integer, String>()).setSqlSchema("test");
 
-                    if (NEAR_TX_CACHE_NAME.equals(cacheName))
-                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-                    else if (NEAR_MVCC_TX_CACHE_NAME.equals(cacheName))
-                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                if (NEAR_TX_CACHE_NAME.equals(cacheName))
+                    ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+                else if (NEAR_MVCC_TX_CACHE_NAME.equals(cacheName))
+                    ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
-                    cache = client.getOrCreateCache(ccfg);
-                }
-                else
-                    cache = client.cache(cacheName);
-
-                cache.put(1, "1");
-
-                assertEquals("1", cache.get(1));
-
-                return null;
+                cache = client.getOrCreateCache(ccfg);
             }
+            else
+                cache = client.cache(cacheName);
+
+            cache.put(1, "1");
+
+            assertEquals("1", cache.get(1));
+
+            return null;
         }, CacheException.class, null);
     }
 

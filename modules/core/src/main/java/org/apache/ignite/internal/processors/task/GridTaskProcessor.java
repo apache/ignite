@@ -1388,18 +1388,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             final UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-            ctx.closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    if (!lock.tryReadLock())
-                        return;
+            ctx.closure().runLocalSafe(() -> {
+                if (!lock.tryReadLock())
+                    return;
 
-                    try {
-                        for (GridTaskWorker<?, ?> task : tasks.values())
-                            task.onNodeLeft(nodeId);
-                    }
-                    finally {
-                        lock.readUnlock();
-                    }
+                try {
+                    for (GridTaskWorker<?, ?> task : tasks.values())
+                        task.onNodeLeft(nodeId);
+                }
+                finally {
+                    lock.readUnlock();
                 }
             }, false);
         }

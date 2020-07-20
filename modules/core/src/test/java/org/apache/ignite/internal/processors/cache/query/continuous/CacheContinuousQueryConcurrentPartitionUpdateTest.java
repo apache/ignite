@@ -179,39 +179,37 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
         for (int i = 0; i < SF.applyLB(15, 5); i++) {
             log.info("Iteration: " + i);
 
-            GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            GridTestUtils.runMultiThreaded(() -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    for (int i = 0; i < UPDATES; i++) {
-                        for (int c = 0; c < srvCaches.size(); c++) {
-                            if (atomicityMode == ATOMIC)
-                                srvCaches.get(c).put(keys.get(rnd.nextInt(KEYS)), i);
-                            else {
-                                IgniteCache<Object, Object> cache0 = srvCaches.get(c);
-                                IgniteTransactions txs = cache0.unwrap(Ignite.class).transactions();
+                for (int j = 0; j < UPDATES; j++) {
+                    for (int c = 0; c < srvCaches.size(); c++) {
+                        if (atomicityMode == ATOMIC)
+                            srvCaches.get(c).put(keys.get(rnd.nextInt(KEYS)), j);
+                        else {
+                            IgniteCache<Object, Object> cache0 = srvCaches.get(c);
+                            IgniteTransactions txs = cache0.unwrap(Ignite.class).transactions();
 
-                                boolean committed = false;
+                            boolean committed = false;
 
-                                while (!committed) {
-                                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        cache0.put(keys.get(rnd.nextInt(KEYS)), i);
+                            while (!committed) {
+                                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    cache0.put(keys.get(rnd.nextInt(KEYS)), j);
 
-                                        tx.commit();
+                                    tx.commit();
 
-                                        committed = true;
-                                    }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
-                                    }
+                                    committed = true;
+                                }
+                                catch (CacheException e) {
+                                    assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                    assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                 }
                             }
                         }
                     }
-
-                    return null;
                 }
+
+                return null;
             }, THREADS, "update");
 
             for (final AtomicInteger evtCnt : cntrs) {
@@ -422,38 +420,36 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                 stop.set(true);
             }
 
-            GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    for (int i = 0; i < UPDATES; i++) {
-                        for (IgniteCache<Object, Object> srvCache : srvCaches) {
-                            if (atomicityMode == ATOMIC)
-                                srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
-                            else {
-                                IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
+                for (int j = 0; j < UPDATES; j++) {
+                    for (IgniteCache<Object, Object> srvCache : srvCaches) {
+                        if (atomicityMode == ATOMIC)
+                            srvCache.put(keys.get(rnd.nextInt(KEYS)), j);
+                        else {
+                            IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
 
-                                boolean committed = false;
+                            boolean committed = false;
 
-                                while (!committed) {
-                                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
+                            while (!committed) {
+                                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    srvCache.put(keys.get(rnd.nextInt(KEYS)), j);
 
-                                        tx.commit();
+                                    tx.commit();
 
-                                        committed = true;
-                                    }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
-                                    }
+                                    committed = true;
+                                }
+                                catch (CacheException e) {
+                                    assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                    assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                 }
                             }
                         }
                     }
-
-                    return null;
                 }
+
+                return null;
             }, THREADS, "update");
 
             for (T2<AtomicInteger, QueryCursor> qry : qrys) {

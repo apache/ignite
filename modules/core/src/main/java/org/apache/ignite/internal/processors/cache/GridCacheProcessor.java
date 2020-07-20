@@ -1564,11 +1564,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> cacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            });
+            desc -> desc.cacheConfiguration().getName());
     }
 
     /**
@@ -1618,16 +1614,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> publicCacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache();
-                }
-            }
+            desc -> desc.cacheConfiguration().getName(),
+            desc -> desc.cacheType().userCache()
         );
     }
 
@@ -1638,16 +1626,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> publicAndDsCacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES;
-                }
-            }
+            desc -> desc.cacheConfiguration().getName(),
+            desc -> desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES
         );
     }
 

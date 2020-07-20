@@ -503,23 +503,21 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testNonStreamedBatch() {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (Connection conn = createOrdinaryConnection()) {
-                    try (Statement s = conn.createStatement()) {
-                        for (int i = 1; i <= 10; i++)
-                            s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i,
-                                nameForId(i)));
+        GridTestUtils.assertThrows(null, () -> {
+            try (Connection conn = createOrdinaryConnection()) {
+                try (Statement s = conn.createStatement()) {
+                    for (int i = 1; i <= 10; i++)
+                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i,
+                            nameForId(i)));
 
-                        execute(conn, "SET STREAMING 1");
+                    execute(conn, "SET STREAMING 1");
 
-                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 11,
-                            nameForId(11)));
-                    }
+                    s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 11,
+                        nameForId(11)));
                 }
-
-                return null;
             }
+
+            return null;
         }, SQLException.class, "Statement has non-empty batch (call executeBatch() or clearBatch() before " +
             "enabling streaming).");
     }
@@ -530,19 +528,17 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testStreamingStatementInTheMiddleOfNonPreparedBatch() {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (Connection conn = createOrdinaryConnection()) {
-                    try (Statement s = conn.createStatement()) {
-                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 1,
-                            nameForId(1)));
+        GridTestUtils.assertThrows(null, () -> {
+            try (Connection conn = createOrdinaryConnection()) {
+                try (Statement s = conn.createStatement()) {
+                    s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 1,
+                        nameForId(1)));
 
-                        s.addBatch("SET STREAMING 1 FLUSH_FREQUENCY 10000");
-                    }
+                    s.addBatch("SET STREAMING 1 FLUSH_FREQUENCY 10000");
                 }
-
-                return null;
             }
+
+            return null;
         }, SQLException.class, "Streaming control commands must be executed explicitly");
     }
 
@@ -552,16 +548,14 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testBatchingSetStreamingStatement() {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (Connection conn = createOrdinaryConnection()) {
-                    try (PreparedStatement s = conn.prepareStatement("SET STREAMING 1 FLUSH_FREQUENCY 10000")) {
-                        s.addBatch();
-                    }
+        GridTestUtils.assertThrows(null, () -> {
+            try (Connection conn = createOrdinaryConnection()) {
+                try (PreparedStatement s = conn.prepareStatement("SET STREAMING 1 FLUSH_FREQUENCY 10000")) {
+                    s.addBatch();
                 }
-
-                return null;
             }
+
+            return null;
         }, SQLException.class, "Streaming control commands must be executed explicitly");
     }
 

@@ -208,15 +208,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                 ", cacheDesc=" + descriptorForMessage(cacheMsg) + ']');
                         }
 
-                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                            @Override public void apply(IgniteInternalFuture<?> fut) {
-                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                                    @Override public void run() {
-                                        handleMessage(nodeId, cacheMsg, plc);
-                                    }
-                                });
-                            }
-                        });
+                        fut.listen(future ->
+                            cctx.kernalContext().closure().runLocalSafe(
+                                () -> handleMessage(nodeId, cacheMsg, plc)));
 
                         return;
                     }

@@ -295,11 +295,7 @@ public class WalStat {
 
         final List<? extends Map.Entry<?, RecordSizeCountStat>> entries = new ArrayList<>(map.entrySet());
 
-        Collections.sort(entries, new Comparator<Map.Entry<?, RecordSizeCountStat>>() {
-            @Override public int compare(Map.Entry<?, RecordSizeCountStat> o1, Map.Entry<?, RecordSizeCountStat> o2) {
-                return -Integer.compare(o1.getValue().getCount(), o2.getValue().getCount());
-            }
-        });
+        entries.sort((o1, o2) -> -Integer.compare(o1.getValue().getCount(), o2.getValue().getCount()));
 
         RecordSizeCountStat others = new RecordSizeCountStat();
         int otherRecords = 0;

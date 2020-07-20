@@ -272,41 +272,38 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         final AtomicBoolean done = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
-                Random rnd = ThreadLocalRandom.current();
+        IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
+            Random rnd = ThreadLocalRandom.current();
 
-                while (!done.get()) {
-                    Map<Integer, Person> map = new TreeMap<>();
+            while (!done.get()) {
+                Map<Integer, Person> map = new TreeMap<>();
 
-                    for (int i = 0; i < batch; i++) {
-                        int key = rnd.nextInt(ENTRIES_COUNT);
+                for (int i = 0; i < batch; i++) {
+                    int key = rnd.nextInt(ENTRIES_COUNT);
 
-                        map.put(key, new Person("fn" + key, "ln" + key));
-                    }
-
-                    while (true) {
-                        try {
-                            cache.putAll(map);
-
-                            break;
-                        }
-                        catch (Exception e) {
-                            if (X.hasCause(e,
-                                TransactionRollbackException.class,
-                                ClusterTopologyException.class,
-                                NodeStoppingException.class))
-                                continue; // Expected types.
-
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
+                    map.put(key, new Person("fn" + key, "ln" + key));
                 }
 
-                return null;
+                while (true) {
+                    try {
+                        cache.putAll(map);
+
+                        break;
+                    }
+                    catch (Exception e) {
+                        if (X.hasCause(e,
+                            TransactionRollbackException.class,
+                            ClusterTopologyException.class,
+                            NodeStoppingException.class))
+                            continue; // Expected types.
+
+                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                    }
+                }
             }
+
+            return null;
         }, threads, "updater");
 
         long end = System.currentTimeMillis() + SF.apply(90000);

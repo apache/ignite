@@ -61,12 +61,10 @@ public class HadoopSplitWrapperSelfTest extends HadoopAbstractSelfTest {
 
         assertEquals("/path/to/file:100+500", HadoopUtils.unwrapSplit(res).toString());
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                res.hosts();
+        GridTestUtils.assertThrows(log, () -> {
+            res.hosts();
 
-                return null;
-            }
+            return null;
         }, AssertionError.class, null);
     }
 }

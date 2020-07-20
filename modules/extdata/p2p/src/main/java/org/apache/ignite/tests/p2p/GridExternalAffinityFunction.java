@@ -89,13 +89,11 @@ public class GridExternalAffinityFunction implements AffinityFunction {
     public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
         List<ClusterNode> sorted = new ArrayList<>(nodes);
 
-        Collections.sort(sorted, new Comparator<ClusterNode>() {
-            @Override public int compare(ClusterNode n1, ClusterNode n2) {
-                int idx1 = n1.<Integer>attribute(IDX_ATTR);
-                int idx2 = n2.<Integer>attribute(IDX_ATTR);
+        sorted.sort((n1, n2) -> {
+            int idx1 = n1.<Integer>attribute(IDX_ATTR);
+            int idx2 = n2.<Integer>attribute(IDX_ATTR);
 
-                return idx1 < idx2 ? -1 : idx1 == idx2 ? 0 : 1;
-            }
+            return Integer.compare(idx1, idx2);
         });
 
         int max = 1 + backups;

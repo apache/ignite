@@ -114,33 +114,31 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture startSeedNodeAsync() throws IgniteCheckedException {
-        return GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Boolean call() throws Exception {
-                Ignite node = startGrid(0);
+        return GridTestUtils.runAsync(() -> {
+            Ignite node = startGrid(0);
 
-                log.info("Creating cache.");
+            log.info("Creating cache.");
 
-                IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheConfig());
+            IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheConfig());
 
-                log.info("Created cache.");
+            log.info("Created cache.");
 
-                Map<Integer, Integer> data = new TreeMap<>();
+            Map<Integer, Integer> data = new TreeMap<>();
 
-                for (int i = 0; i < CACHE_SIZE; i++)
-                    data.put(i, i);
+            for (int i = 0; i < CACHE_SIZE; i++)
+                data.put(i, i);
 
-                log.info("Filling.");
+            log.info("Filling.");
 
-                cache.putAll(data);
+            cache.putAll(data);
 
-                log.info("Filled.");
+            log.info("Filled.");
 
-                FILLED_LATCH.countDown();
+            FILLED_LATCH.countDown();
 
-                checkCacheState(node, cache);
+            checkCacheState(node, cache);
 
-                return true;
-            }
+            return true;
         });
     }
 

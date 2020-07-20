@@ -194,12 +194,10 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         // Await all current available semgment will be archived.
         assertTrue(GridTestUtils.waitForCondition(
-            new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
+            () -> {
+                long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
 
-                    return cut >= awaitAchviedSegments;
-                }
+                return cut >= awaitAchviedSegments;
             }, 10_000));
     }
 }

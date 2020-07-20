@@ -99,12 +99,10 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientStartsFirst() throws Exception {
-        IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
-            @Override public Ignite call() throws Exception {
-                client.set(true);
+        IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(() -> {
+            client.set(true);
 
-                return startGrid(0);
-            }
+            return startGrid(0);
         }, "start-client");
 
         U.sleep(10_000);

@@ -252,11 +252,7 @@ class GridUriDeploymentUnitDescriptor {
             return F.<Class<?>, String>t(cls, rsrcName);
 
         // Find by class name.
-        cls = F.find(rsrcs, null, new P1<Class<?>>() {
-            @Override public boolean apply(Class<?> cls0) {
-                return cls0.getName().equals(rsrcName);
-            }
-        });
+        cls = F.find(rsrcs, null, cls0 -> cls0.getName().equals(rsrcName));
 
         return cls != null ? F.<Class<?>, String>t(cls, null) : null;
     }

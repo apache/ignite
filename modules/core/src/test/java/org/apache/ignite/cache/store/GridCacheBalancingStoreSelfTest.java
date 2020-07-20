@@ -162,20 +162,18 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                for (int i = 0; i < keys; i++) {
-                    try {
-                        beforeBarrier.await();
-                    }
-                    catch (InterruptedException | BrokenBarrierException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    info("Load key: " + i);
-
-                    wrapper.load(i);
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < keys; i++) {
+                try {
+                    beforeBarrier.await();
                 }
+                catch (InterruptedException | BrokenBarrierException e) {
+                    throw new RuntimeException(e);
+                }
+
+                info("Load key: " + i);
+
+                wrapper.load(i);
             }
         }, threads, "load-thread");
     }

@@ -340,14 +340,12 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         }));
 
         qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
-            new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, Integer>() {
-                @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
-                    assertNotNull(evt.getValue());
+            event -> {
+                assertNotNull(event.getValue());
 
-                    assertNotNull(evt.getOldValue());
+                assertNotNull(event.getOldValue());
 
-                    return evt.getKey();
-                }
+                return event.getKey();
             }));
 
         qry.setLocalListener(new EventListener<Integer>() {

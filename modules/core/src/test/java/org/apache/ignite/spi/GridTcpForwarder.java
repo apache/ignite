@@ -59,65 +59,63 @@ public final class GridTcpForwarder implements AutoCloseable {
 
         this.log = log;
 
-        mainThread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    boolean closed = false;
+        mainThread = new Thread(() -> {
+            try {
+                boolean closed = false;
 
-                    while (!closed) {
-                        Socket inputCon = null;
-                        Socket outputCon = null;
+                while (!closed) {
+                    Socket inputCon = null;
+                    Socket outputCon = null;
 
-                        Thread forwardThread1 = null;
-                        Thread forwardThread2 = null;
+                    Thread forwardThread1 = null;
+                    Thread forwardThread2 = null;
 
-                        try {
-                            inputCon = inputSock.accept();
+                    try {
+                        inputCon = inputSock.accept();
 
-                            outputCon = new Socket(toAddr, toPort);
+                        outputCon = new Socket(toAddr, toPort);
 
-                            forwardThread1 = new ForwardThread(
-                                "ForwardThread [" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]",
-                                inputCon.getInputStream(), outputCon.getOutputStream()
-                            );
+                        forwardThread1 = new ForwardThread(
+                            "ForwardThread [" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]",
+                            inputCon.getInputStream(), outputCon.getOutputStream()
+                        );
 
-                            forwardThread2 = new ForwardThread(
-                                "ForwardThread [" + toAddr + ":" + toPort + "->" + fromAddr + ":" + fromPort + "]",
-                                outputCon.getInputStream(), inputCon.getOutputStream()
-                            );
+                        forwardThread2 = new ForwardThread(
+                            "ForwardThread [" + toAddr + ":" + toPort + "->" + fromAddr + ":" + fromPort + "]",
+                            outputCon.getInputStream(), inputCon.getOutputStream()
+                        );
 
-                            //Force closing sibling if one of thread failed.
-                            forwardThread1.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread2));
-                            forwardThread2.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread1));
+                        //Force closing sibling if one of thread failed.
+                        forwardThread1.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread2));
+                        forwardThread2.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread1));
 
-                            forwardThread1.start();
-                            forwardThread2.start();
+                        forwardThread1.start();
+                        forwardThread2.start();
 
-                            U.join(forwardThread1, log);
-                            U.join(forwardThread2, log);
-                        }
-                        catch (IOException ignore) {
-                            if (inputSock.isClosed())
-                                closed = true;
-                        }
-                        catch (Throwable ignored) {
+                        U.join(forwardThread1, log);
+                        U.join(forwardThread2, log);
+                    }
+                    catch (IOException ignore) {
+                        if (inputSock.isClosed())
                             closed = true;
-                        }
-                        finally {
-                            U.closeQuiet(outputCon);
-                            U.closeQuiet(inputCon);
+                    }
+                    catch (Throwable ignored) {
+                        closed = true;
+                    }
+                    finally {
+                        U.closeQuiet(outputCon);
+                        U.closeQuiet(inputCon);
 
-                            U.interrupt(forwardThread1);
-                            U.interrupt(forwardThread2);
+                        U.interrupt(forwardThread1);
+                        U.interrupt(forwardThread2);
 
-                            U.join(forwardThread1, log);
-                            U.join(forwardThread2, log);
-                        }
+                        U.join(forwardThread1, log);
+                        U.join(forwardThread2, log);
                     }
                 }
-                finally {
-                    U.closeQuiet(inputSock);
-                }
+            }
+            finally {
+                U.closeQuiet(inputSock);
             }
         }, "GridTcpForwarder [" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]");
 

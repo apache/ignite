@@ -251,37 +251,35 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             long start = System.currentTimeMillis();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        final Random rnd = new Random();
+                () -> {
+                    final Random rnd = new Random();
 
-                        for (int i = 0; i < ITERATION_CNT; i++) {
+                    for (int i = 0; i < ITERATION_CNT; i++) {
 
-                            int j = rnd.nextInt(keyCnt);
+                        int j = rnd.nextInt(keyCnt);
 
-                            while (true) {
-                                try (Transaction tx = ignite.transactions().txStart()) {
-                                    // Put or remove?
-                                    if (rnd.nextBoolean())
-                                        cache.put(j, j);
-                                    else
-                                        cache.remove(j);
+                        while (true) {
+                            try (Transaction tx = ignite.transactions().txStart()) {
+                                // Put or remove?
+                                if (rnd.nextBoolean())
+                                    cache.put(j, j);
+                                else
+                                    cache.remove(j);
 
-                                    tx.commit();
+                                tx.commit();
 
-                                    break;
-                                }
-                                catch (Exception e) {
-                                    MvccFeatureChecker.assertMvccWriteConflict(e);
-                                }
+                                break;
                             }
-
-                            if (i != 0 && i % 5000 == 0)
-                                info("Stats [iterCnt=" + i + ", size=" + cache.size() + ']');
+                            catch (Exception e) {
+                                MvccFeatureChecker.assertMvccWriteConflict(e);
+                            }
                         }
 
-                        return null;
+                        if (i != 0 && i % 5000 == 0)
+                            info("Stats [iterCnt=" + i + ", size=" + cache.size() + ']');
                     }
+
+                    return null;
                 },
                 threadCnt
             );

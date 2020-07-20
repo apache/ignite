@@ -68,12 +68,10 @@ public class GridServiceProxyNodeStopSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    proxy.hello();
+            () -> {
+                proxy.hello();
 
-                    return null;
-                }
+                return null;
             },
             IllegalStateException.class,
             null

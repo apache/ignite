@@ -94,18 +94,16 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
         final AtomicBoolean failed = new AtomicBoolean(false);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                int num = sNum.get();
+        GridTestUtils.runMultiThreaded(() -> {
+            int num = sNum.get();
 
-                try {
-                    checkTask(num);
-                }
-                catch (Throwable e) {
-                    error("Failed to execute task.", e);
+            try {
+                checkTask(num);
+            }
+            catch (Throwable e) {
+                error("Failed to execute task.", e);
 
-                    failed.set(true);
-                }
+                failed.set(true);
             }
         }, EXEC_COUNT, "grid-session-test");
 

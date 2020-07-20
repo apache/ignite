@@ -89,14 +89,12 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    int idx = gridIdx.getAndIncrement();
+            () -> {
+                int idx = gridIdx.getAndIncrement();
 
-                    startGrid(idx);
+                startGrid(idx);
 
-                    return null;
-                }
+                return null;
             },
             GRID_CNT - 1,
             "grid-starter-" + getName()

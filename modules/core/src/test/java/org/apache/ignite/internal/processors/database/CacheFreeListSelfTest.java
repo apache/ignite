@@ -288,89 +288,87 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean grow = new AtomicBoolean(true);
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                List<CacheDataRow> rows = new ArrayList<>(BATCH_SIZE);
+        GridTestUtils.runMultiThreaded(() -> {
+            List<CacheDataRow> rows = new ArrayList<>(BATCH_SIZE);
 
-                Random rnd = ThreadLocalRandom.current();
+            Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 200_000; i++) {
-                    boolean grow0 = grow.get();
+            for (int i = 0; i < 200_000; i++) {
+                boolean grow0 = grow.get();
 
-                    if (grow0) {
-                        if (stored.size() > 20_000) {
-                            if (grow.compareAndSet(true, false))
-                                info("Shrink... [" + stored.size() + ']');
+                if (grow0) {
+                    if (stored.size() > 20_000) {
+                        if (grow.compareAndSet(true, false))
+                            info("Shrink... [" + stored.size() + ']');
 
-                            grow0 = false;
-                        }
+                        grow0 = false;
                     }
-                    else {
-                        if (stored.size() < 1_000) {
-                            if (grow.compareAndSet(false, true))
-                                info("Grow... [" + stored.size() + ']');
+                }
+                else {
+                    if (stored.size() < 1_000) {
+                        if (grow.compareAndSet(false, true))
+                            info("Grow... [" + stored.size() + ']');
 
-                            grow0 = true;
-                        }
+                        grow0 = true;
                     }
+                }
 
-                    boolean insert = rnd.nextInt(100) < 70 == grow0;
+                boolean insert = rnd.nextInt(100) < 70 == grow0;
 
-                    if (insert) {
-                        int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-                        int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                if (insert) {
+                    int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                    int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
 
-                        TestDataRow row = new TestDataRow(keySize, valSize);
+                    TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        if (batched) {
-                            rows.add(row);
+                    if (batched) {
+                        rows.add(row);
 
-                            if (rows.size() == BATCH_SIZE) {
-                                list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+                        if (rows.size() == BATCH_SIZE) {
+                            list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
 
-                                for (CacheDataRow row0 : rows) {
-                                    assertTrue(row0.link() != 0L);
+                            for (CacheDataRow row0 : rows) {
+                                assertTrue(row0.link() != 0L);
 
-                                    CacheDataRow old = stored.put(row0.link(), row0);
+                                CacheDataRow old = stored.put(row0.link(), row0);
 
-                                    assertNull(old);
-                                }
-
-                                rows.clear();
+                                assertNull(old);
                             }
 
-                            continue;
+                            rows.clear();
                         }
 
-                        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
-
-                        assertTrue(row.link() != 0L);
-
-                        CacheDataRow old = stored.put(row.link(), row);
-
-                        assertNull(old);
+                        continue;
                     }
-                    else {
-                        while (!stored.isEmpty()) {
-                            Iterator<CacheDataRow> it = stored.values().iterator();
 
-                            if (it.hasNext()) {
-                                CacheDataRow row = it.next();
+                    list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-                                CacheDataRow rmvd = stored.remove(row.link());
+                    assertTrue(row.link() != 0L);
 
-                                if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
+                    CacheDataRow old = stored.put(row.link(), row);
 
-                                    break;
-                                }
+                    assertNull(old);
+                }
+                else {
+                    while (!stored.isEmpty()) {
+                        Iterator<CacheDataRow> it = stored.values().iterator();
+
+                        if (it.hasNext()) {
+                            CacheDataRow row = it.next();
+
+                            CacheDataRow rmvd = stored.remove(row.link());
+
+                            if (rmvd != null) {
+                                list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
+
+                                break;
                             }
                         }
                     }
                 }
-
-                return null;
             }
+
+            return null;
         }, 8, "runner");
     }
 

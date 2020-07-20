@@ -91,42 +91,40 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
         final AtomicInteger threadNum = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    int curThreadNum = threadNum.getAndIncrement();
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                int curThreadNum = threadNum.getAndIncrement();
 
-                    if ("file".equals(uri.getScheme()))
-                        FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + curThreadNum));
+                if ("file".equals(uri.getScheme()))
+                    FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + curThreadNum));
 
-                    changeUserPhase.countDown();
-                    changeUserPhase.await();
+                changeUserPhase.countDown();
+                changeUserPhase.await();
 
-                    newUserInitWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                newUserInitWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                    FileSystem.get(uri, cfg).setWorkingDirectory(new Path("folder" + curThreadNum));
+                FileSystem.get(uri, cfg).setWorkingDirectory(new Path("folder" + curThreadNum));
 
-                    changeDirPhase.countDown();
-                    changeDirPhase.await();
+                changeDirPhase.countDown();
+                changeDirPhase.await();
 
-                    newWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                newWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                    FileSystem.get(uri, cfg).setWorkingDirectory(new Path("/folder" + curThreadNum));
+                FileSystem.get(uri, cfg).setWorkingDirectory(new Path("/folder" + curThreadNum));
 
-                    changeAbsDirPhase.countDown();
-                    changeAbsDirPhase.await();
+                changeAbsDirPhase.countDown();
+                changeAbsDirPhase.await();
 
-                    newAbsWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                newAbsWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                    newInstanceWorkDir[curThreadNum] = FileSystem.newInstance(uri, cfg).getWorkingDirectory();
+                newInstanceWorkDir[curThreadNum] = FileSystem.newInstance(uri, cfg).getWorkingDirectory();
 
-                    finishPhase.countDown();
-                }
-                catch (InterruptedException | IOException e) {
-                    error("Failed to execute test thread.", e);
+                finishPhase.countDown();
+            }
+            catch (InterruptedException | IOException e) {
+                error("Failed to execute test thread.", e);
 
-                    fail();
-                }
+                fail();
             }
         }, THREAD_COUNT, "filesystems-test");
 

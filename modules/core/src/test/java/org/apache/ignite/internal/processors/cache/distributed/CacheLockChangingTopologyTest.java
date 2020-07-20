@@ -86,18 +86,16 @@ public class CacheLockChangingTopologyTest extends GridCommonAbstractTest {
 
         IgniteCache<Long, Long> cache = ignite.createCache(ccfg);
 
-        IgniteInternalFuture<?> nodeStart = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < 3; i++) {
-                    Thread.sleep(ThreadLocalRandom.current().nextLong(500) + 1000);
+        IgniteInternalFuture<?> nodeStart = GridTestUtils.runAsync(() -> {
+            for (int i = 0; i < 3; i++) {
+                Thread.sleep(ThreadLocalRandom.current().nextLong(500) + 1000);
 
-                    startGrid(1);
+                startGrid(1);
 
-                    awaitPartitionMapExchange();
-                }
-
-                return null;
+                awaitPartitionMapExchange();
             }
+
+            return null;
         });
 
         long stopTime = System.currentTimeMillis() + 60_000;

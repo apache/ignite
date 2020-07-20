@@ -103,11 +103,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         } else {
             cursor = cache.query(qry);
 
-            ignite.scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    cursor.close();
-                }
-            }, timeoutUnits, timeUnit);
+            ignite.scheduler().runLocal(cursor::close, timeoutUnits, timeUnit);
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {

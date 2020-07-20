@@ -224,32 +224,30 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 pageStore.write(pageId, buf, 0, true);
 
-                threadList.add(new Thread(new Runnable() {
-                    @Override public void run() {
-                        Random random = new Random();
+                threadList.add(new Thread(() -> {
+                    Random random = new Random();
 
-                        while (!stopThreads.get()) {
-                            buf.position(0);
+                    while (!stopThreads.get()) {
+                        buf.position(0);
 
-                            try {
-                                if (random.nextBoolean()) {
-                                    log.info(">>> Read page " + U.hexLong(pageId));
+                        try {
+                            if (random.nextBoolean()) {
+                                log.info(">>> Read page " + U.hexLong(pageId));
 
-                                    pageStore.read(pageId, buf, false);
-                                }
-                                else {
-                                    log.info(">>> Write page " + U.hexLong(pageId));
-
-                                    pageStore.write(pageId, buf, 0, true);
-                                }
-
-                                Thread.interrupted();
+                                pageStore.read(pageId, buf, false);
                             }
-                            catch (Exception e) {
-                                log.error("Error while reading/writing page", e);
+                            else {
+                                log.info(">>> Write page " + U.hexLong(pageId));
 
-                                failure.set(true);
+                                pageStore.write(pageId, buf, 0, true);
                             }
+
+                            Thread.interrupted();
+                        }
+                        catch (Exception e) {
+                            log.error("Error while reading/writing page", e);
+
+                            failure.set(true);
                         }
                     }
                 }));

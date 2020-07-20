@@ -209,102 +209,99 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         AtomicBoolean fail = new AtomicBoolean(false);
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                int loops = 0;
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            int loops = 0;
 
-                while (!stop.get()) {
-                    if (loops % 10 == 0 && loops > 0 && loops < 500 || loops % 500 == 0 && loops >= 500)
-                        log.info("Successfully completed " + loops + " loops");
+            while (!stop.get()) {
+                if (loops % 10 == 0 && loops > 0 && loops < 500 || loops % 500 == 0 && loops >= 500)
+                    log.info("Successfully completed " + loops + " loops");
 
-                    db.checkpointReadLock();
+                db.checkpointReadLock();
 
-                    try {
-                        Set<FullPageId> pickedPagesSet = new HashSet<>();
+                try {
+                    Set<FullPageId> pickedPagesSet = new HashSet<>();
 
-                        PageStore store = pageStoreMgr.getStore(CU.cacheId(cacheName), 0);
+                    PageStore store = pageStoreMgr.getStore(CU.cacheId(cacheName), 0);
 
-                        int pages = store.pages();
+                    int pages = store.pages();
 
-                        DataRegion region = db.dataRegion(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
+                    DataRegion region = db.dataRegion(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
 
-                        PageMemoryImpl pageMem = (PageMemoryImpl)region.pageMemory();
+                    PageMemoryImpl pageMem = (PageMemoryImpl)region.pageMemory();
 
-                        while (pickedPagesSet.size() < PAGES_TOUCHED_UNDER_CP_LOCK) {
-                            int pageIdx = ThreadLocalRandom.current().nextInt(
-                                PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
+                    while (pickedPagesSet.size() < PAGES_TOUCHED_UNDER_CP_LOCK) {
+                        int pageIdx = ThreadLocalRandom.current().nextInt(
+                            PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
 
-                            long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
+                        long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
 
-                            pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
-                        }
-
-                        List<FullPageId> pickedPages = new ArrayList<>(pickedPagesSet);
-
-                        assertEquals(PAGES_TOUCHED_UNDER_CP_LOCK, pickedPages.size());
-
-                        // Sort to avoid deadlocks on pages rw-locks.
-                        pickedPages.sort(new Comparator<FullPageId>() {
-                            @Override public int compare(FullPageId o1, FullPageId o2) {
-                                int cmp = Long.compare(o1.groupId(), o2.groupId());
-
-                                if (cmp != 0)
-                                    return cmp;
-
-                                return Long.compare(o1.effectivePageId(), o2.effectivePageId());
-                            }
-                        });
-
-                        List<Long> readLockedPages = new ArrayList<>();
-
-                        // Read lock many pages at once intentionally.
-                        for (int i = 0; i < PAGES_TOUCHED_UNDER_CP_LOCK / 2; i++) {
-                            FullPageId fpid = pickedPages.get(i);
-
-                            long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
-
-                            long abs = pageMem.readLock(fpid.groupId(), fpid.pageId(), page);
-
-                            assertFalse(fpid.toString(), abs == 0);
-
-                            readLockedPages.add(page);
-                        }
-
-                        // Emulate writes to trigger throttling.
-                        for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK && !stop.get(); i++) {
-                            FullPageId fpid = pickedPages.get(i);
-
-                            long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
-
-                            long abs = pageMem.writeLock(fpid.groupId(), fpid.pageId(), page);
-
-                            assertFalse(fpid.toString(), abs == 0);
-
-                            pageMem.writeUnlock(fpid.groupId(), fpid.pageId(), page, null, true);
-
-                            pageMem.releasePage(fpid.groupId(), fpid.pageId(), page);
-                        }
-
-                        for (int i = 0; i < PAGES_TOUCHED_UNDER_CP_LOCK / 2; i++) {
-                            FullPageId fpid = pickedPages.get(i);
-
-                            pageMem.readUnlock(fpid.groupId(), fpid.pageId(), readLockedPages.get(i));
-
-                            pageMem.releasePage(fpid.groupId(), fpid.pageId(), readLockedPages.get(i));
-                        }
-                    }
-                    catch (Throwable e) {
-                        log.error("Error in loader thread", e);
-
-                        fail.set(true);
-                    }
-                    finally {
-                        db.checkpointReadUnlock();
+                        pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                     }
 
-                    loops++;
+                    List<FullPageId> pickedPages = new ArrayList<>(pickedPagesSet);
+
+                    assertEquals(PAGES_TOUCHED_UNDER_CP_LOCK, pickedPages.size());
+
+                    // Sort to avoid deadlocks on pages rw-locks.
+                    pickedPages.sort(new Comparator<FullPageId>() {
+                        @Override public int compare(FullPageId o1, FullPageId o2) {
+                            int cmp = Long.compare(o1.groupId(), o2.groupId());
+
+                            if (cmp != 0)
+                                return cmp;
+
+                            return Long.compare(o1.effectivePageId(), o2.effectivePageId());
+                        }
+                    });
+
+                    List<Long> readLockedPages = new ArrayList<>();
+
+                    // Read lock many pages at once intentionally.
+                    for (int i = 0; i < PAGES_TOUCHED_UNDER_CP_LOCK / 2; i++) {
+                        FullPageId fpid = pickedPages.get(i);
+
+                        long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
+
+                        long abs = pageMem.readLock(fpid.groupId(), fpid.pageId(), page);
+
+                        assertFalse(fpid.toString(), abs == 0);
+
+                        readLockedPages.add(page);
+                    }
+
+                    // Emulate writes to trigger throttling.
+                    for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK && !stop.get(); i++) {
+                        FullPageId fpid = pickedPages.get(i);
+
+                        long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
+
+                        long abs = pageMem.writeLock(fpid.groupId(), fpid.pageId(), page);
+
+                        assertFalse(fpid.toString(), abs == 0);
+
+                        pageMem.writeUnlock(fpid.groupId(), fpid.pageId(), page, null, true);
+
+                        pageMem.releasePage(fpid.groupId(), fpid.pageId(), page);
+                    }
+
+                    for (int i = 0; i < PAGES_TOUCHED_UNDER_CP_LOCK / 2; i++) {
+                        FullPageId fpid = pickedPages.get(i);
+
+                        pageMem.readUnlock(fpid.groupId(), fpid.pageId(), readLockedPages.get(i));
+
+                        pageMem.releasePage(fpid.groupId(), fpid.pageId(), readLockedPages.get(i));
+                    }
+                }
+                catch (Throwable e) {
+                    log.error("Error in loader thread", e);
+
+                    fail.set(true);
+                }
+                finally {
+                    db.checkpointReadUnlock();
                 }
 
+                loops++;
             }
         }, 10, "load-runner");
 

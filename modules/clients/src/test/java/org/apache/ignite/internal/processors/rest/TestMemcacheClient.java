@@ -112,136 +112,134 @@ final class TestMemcacheClient {
         }
 
         // Start socket reader thread.
-        rdr = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    InputStream in = sock.getInputStream();
+        rdr = new Thread(() -> {
+            try {
+                InputStream in = sock.getInputStream();
 
-                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-                    boolean running = true;
+                boolean running = true;
 
-                    while (running) {
-                        byte opCode = 0;
-                        byte extrasLength = 0;
-                        int keyLength = 0;
-                        boolean success = false;
-                        int totalLength = 0;
-                        int opaque = 0;
-                        short keyFlags = 0;
-                        short valFlags = 0;
-                        Object obj = null;
-                        Object key = null;
+                while (running) {
+                    byte opCode = 0;
+                    byte extrasLength = 0;
+                    int keyLength = 0;
+                    boolean success = false;
+                    int totalLength = 0;
+                    int opaque = 0;
+                    short keyFlags = 0;
+                    short valFlags = 0;
+                    Object obj = null;
+                    Object key = null;
 
-                        int i = 0;
+                    int i = 0;
 
-                        while (true) {
-                            int symbol = in.read();
+                    while (true) {
+                        int symbol = in.read();
 
-                            if (symbol == -1) {
-                                running = false;
+                        if (symbol == -1) {
+                            running = false;
 
-                                break;
+                            break;
+                        }
+
+                        byte b = (byte)symbol;
+
+                        if (i == 1)
+                            opCode = b;
+                        if (i == 2 || i == 3) {
+                            buf.write(b);
+
+                            if (i == 3) {
+                                keyLength = U.bytesToShort(buf.toByteArray(), 0);
+
+                                buf.reset();
                             }
+                        }
+                        else if (i == 4)
+                            extrasLength = b;
+                        else if (i == 6 || i == 7) {
+                            buf.write(b);
 
-                            byte b = (byte)symbol;
+                            if (i == 7) {
+                                success = U.bytesToShort(buf.toByteArray(), 0) == 0;
 
-                            if (i == 1)
-                                opCode = b;
-                            if (i == 2 || i == 3) {
-                                buf.write(b);
-
-                                if (i == 3) {
-                                    keyLength = U.bytesToShort(buf.toByteArray(), 0);
-
-                                    buf.reset();
-                                }
+                                buf.reset();
                             }
-                            else if (i == 4)
-                                extrasLength = b;
-                            else if (i == 6 || i == 7) {
-                                buf.write(b);
+                        }
+                        else if (i >= 8 && i <= 11) {
+                            buf.write(b);
 
-                                if (i == 7) {
-                                    success = U.bytesToShort(buf.toByteArray(), 0) == 0;
+                            if (i == 11) {
+                                totalLength = U.bytesToInt(buf.toByteArray(), 0);
 
-                                    buf.reset();
-                                }
+                                buf.reset();
                             }
-                            else if (i >= 8 && i <= 11) {
-                                buf.write(b);
+                        }
+                        else if (i >= 12 && i <= 15) {
+                            buf.write(b);
 
-                                if (i == 11) {
-                                    totalLength = U.bytesToInt(buf.toByteArray(), 0);
+                            if (i == 15) {
+                                opaque = U.bytesToInt(buf.toByteArray(), 0);
 
-                                    buf.reset();
-                                }
+                                buf.reset();
                             }
-                            else if (i >= 12 && i <= 15) {
-                                buf.write(b);
+                        }
+                        else if (i >= HDR_LEN && i < HDR_LEN + extrasLength) {
+                            buf.write(b);
 
-                                if (i == 15) {
-                                    opaque = U.bytesToInt(buf.toByteArray(), 0);
+                            if (i == HDR_LEN + extrasLength - 1) {
+                                byte[] rawFlags = buf.toByteArray();
 
-                                    buf.reset();
-                                }
+                                keyFlags = U.bytesToShort(rawFlags, 0);
+                                valFlags = U.bytesToShort(rawFlags, 2);
+
+                                buf.reset();
                             }
-                            else if (i >= HDR_LEN && i < HDR_LEN + extrasLength) {
-                                buf.write(b);
+                        }
+                        else if (i >= HDR_LEN + extrasLength && i < HDR_LEN + extrasLength + keyLength) {
+                            buf.write(b);
 
-                                if (i == HDR_LEN + extrasLength - 1) {
-                                    byte[] rawFlags = buf.toByteArray();
+                            if (i == HDR_LEN + extrasLength + keyLength - 1) {
+                                key = decode(buf.toByteArray(), keyFlags);
 
-                                    keyFlags = U.bytesToShort(rawFlags, 0);
-                                    valFlags = U.bytesToShort(rawFlags, 2);
-
-                                    buf.reset();
-                                }
+                                buf.reset();
                             }
-                            else if (i >= HDR_LEN + extrasLength && i < HDR_LEN + extrasLength + keyLength) {
-                                buf.write(b);
+                        }
+                        else if (i >= HDR_LEN + extrasLength + keyLength && i < HDR_LEN + totalLength) {
+                            buf.write(b);
 
-                                if (i == HDR_LEN + extrasLength + keyLength - 1) {
-                                    key = decode(buf.toByteArray(), keyFlags);
-
-                                    buf.reset();
-                                }
-                            }
-                            else if (i >= HDR_LEN + extrasLength + keyLength && i < HDR_LEN + totalLength) {
-                                buf.write(b);
-
-                                if (opCode == 0x05 || opCode == 0x06)
-                                    valFlags = LONG_FLAG;
-
-                                if (i == HDR_LEN + totalLength - 1) {
-                                    obj = decode(buf.toByteArray(), valFlags);
-
-                                    buf.reset();
-                                }
-                            }
+                            if (opCode == 0x05 || opCode == 0x06)
+                                valFlags = LONG_FLAG;
 
                             if (i == HDR_LEN + totalLength - 1) {
-                                queue.add(new Response(opaque, success, key, obj));
+                                obj = decode(buf.toByteArray(), valFlags);
 
-                                break;
+                                buf.reset();
                             }
-
-                            i++;
                         }
+
+                        if (i == HDR_LEN + totalLength - 1) {
+                            queue.add(new Response(opaque, success, key, obj));
+
+                            break;
+                        }
+
+                        i++;
                     }
                 }
-                catch (IOException e) {
-                    if (!Thread.currentThread().isInterrupted())
-                        U.error(log, e);
-                }
-                catch (Exception e) {
+            }
+            catch (IOException e) {
+                if (!Thread.currentThread().isInterrupted())
                     U.error(log, e);
-                }
-                finally {
-                    U.closeQuiet(sock);
+            }
+            catch (Exception e) {
+                U.error(log, e);
+            }
+            finally {
+                U.closeQuiet(sock);
 
-                    queue.add(QUIT_RESP);
-                }
+                queue.add(QUIT_RESP);
             }
         });
 

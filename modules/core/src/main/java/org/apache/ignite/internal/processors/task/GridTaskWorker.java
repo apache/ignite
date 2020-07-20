@@ -515,11 +515,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                        return task.map(shuffledNodes, arg);
-                    }
-                });
+                () -> task.map(shuffledNodes, arg));
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -1014,28 +1010,24 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param resp Job responce.
      */
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
-        ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
-                                mapTopVer);
+        ctx.timeout().schedule(
+            () -> ctx.closure().runLocalSafe(() -> {
+                try {
+                    ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
+                        mapTopVer);
 
-                            if (!checkTargetNode(resp, jRes, newNode))
-                                return;
+                    if (!checkTargetNode(resp, jRes, newNode))
+                        return;
 
-                            sendRequest(jRes);
-                        }
-                        catch (Exception e) {
-                            U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+                    sendRequest(jRes);
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
 
-                            finishTask(null, e);
-                        }
-                    }
-                }, false);
-            }
-        }, waitms, -1);
+                    finishTask(null, e);
+                }
+            }, false),
+            waitms, -1);
     }
 
     /**
@@ -1137,11 +1129,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         try {
             try {
                 // Reduce results.
-                reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Nullable @Override public R call() {
-                        return task.reduce(results);
-                    }
-                });
+                reduceRes = U.wrapThreadLoader(dep.classLoader(), () -> task.reduce(results));
             }
             finally {
                 synchronized (mux) {

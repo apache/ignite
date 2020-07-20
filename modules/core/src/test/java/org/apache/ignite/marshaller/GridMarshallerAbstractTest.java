@@ -96,11 +96,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     protected IgniteInClosure<String> c1 = s -> {};
 
     /** Closure job. */
-    protected IgniteClosure<String, String> c2 = new IgniteClosure<String, String>() {
-        @Override public String apply(String s) {
-            return s;
-        }
-    };
+    protected IgniteClosure<String, String> c2 = s -> s;
 
     /** Argument producer. */
     protected IgniteOutClosure<String> c3 = () -> null;

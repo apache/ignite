@@ -31,11 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrent
 public class HadoopCachingFileSystemFactoryDelegate extends HadoopBasicFileSystemFactoryDelegate {
     /** Per-user file system cache. */
     private final HadoopLazyConcurrentMap<String, FileSystem> cache = new HadoopLazyConcurrentMap<>(
-        new HadoopLazyConcurrentMap.ValueFactory<String, FileSystem>() {
-            @Override public FileSystem createValue(String key) throws IOException {
-                return HadoopCachingFileSystemFactoryDelegate.super.getWithMappedName(key);
-            }
-        }
+        key -> HadoopCachingFileSystemFactoryDelegate.super.getWithMappedName(key)
     );
 
     /**

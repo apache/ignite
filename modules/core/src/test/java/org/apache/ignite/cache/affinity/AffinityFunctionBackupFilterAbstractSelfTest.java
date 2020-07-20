@@ -55,32 +55,28 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
     /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
-        new IgniteBiPredicate<ClusterNode, ClusterNode>() {
-            @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
-                assert primary != null : "primary is null";
-                assert backup != null : "backup is null";
+        (primary, backup) -> {
+            assert primary != null : "primary is null";
+            assert backup != null : "backup is null";
 
-                return !F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME));
-            }
+            return !F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME));
         };
 
     /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter =
-        new IgniteBiPredicate<ClusterNode, List<ClusterNode>>() {
-            @Override public boolean apply(ClusterNode node, List<ClusterNode> assigned) {
-                assert node != null : "primary is null";
-                assert assigned != null : "backup is null";
+        (node, assigned) -> {
+            assert node != null : "primary is null";
+            assert assigned != null : "backup is null";
 
-                Map<String, Integer> backupAssignedAttribute = getAttributeStatistic(assigned);
+            Map<String, Integer> backupAssignedAttribute = getAttributeStatistic(assigned);
 
-                String nodeAttributeVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
+            String nodeAttributeVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
 
-                if (FIRST_NODE_GROUP.equals(nodeAttributeVal)
-                    && backupAssignedAttribute.get(FIRST_NODE_GROUP) < 2)
-                    return true;
+            if (FIRST_NODE_GROUP.equals(nodeAttributeVal)
+                && backupAssignedAttribute.get(FIRST_NODE_GROUP) < 2)
+                return true;
 
-                return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
-            }
+            return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
         };
 
     /**

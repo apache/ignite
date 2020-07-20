@@ -369,14 +369,12 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         readOnlyFile.set(metaStoreFile);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    ignite0.cluster().active(true);
-                }
-                catch (Exception ignore) {
-                    // No-op.
-                }
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                ignite0.cluster().active(true);
+            }
+            catch (Exception ignore) {
+                // No-op.
             }
         });
 
@@ -401,34 +399,32 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         AtomicBoolean fail = new AtomicBoolean(true);
         AtomicReference<FileIO> ref = new AtomicReference<>();
 
-        failingFileIOFactory.createClosure(new IgniteBiClosureX<File, OpenOption[], FileIO>() {
-            @Override public FileIO apply(File file, OpenOption[] options) {
-                if (file.getName().contains("-END.bin")) {
-                    FileIO delegate;
+        failingFileIOFactory.createClosure((file, options) -> {
+            if (file.getName().contains("-END.bin")) {
+                FileIO delegate;
 
-                    try {
-                        delegate = failingFileIOFactory.delegateFactory().create(file, options);
-                    }
-                    catch (IOException ignore) {
-                        return null;
-                    }
-
-                    FileIODecorator dec = new FileIODecorator(delegate) {
-                        @Override public void close() throws IOException {
-                            if (fail.get())
-                                throw new IOException("Checkpoint failed");
-                            else
-                                super.close();
-                        }
-                    };
-
-                    ref.set(dec);
-
-                    return dec;
+                try {
+                    delegate = failingFileIOFactory.delegateFactory().create(file, options);
+                }
+                catch (IOException ignore) {
+                    return null;
                 }
 
-                return null;
+                FileIODecorator dec = new FileIODecorator(delegate) {
+                    @Override public void close() throws IOException {
+                        if (fail.get())
+                            throw new IOException("Checkpoint failed");
+                        else
+                            super.close();
+                    }
+                };
+
+                ref.set(dec);
+
+                return dec;
             }
+
+            return null;
         });
 
         try {

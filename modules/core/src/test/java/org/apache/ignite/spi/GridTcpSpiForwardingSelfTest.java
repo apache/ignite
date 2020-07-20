@@ -199,11 +199,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     public void testBasicResolverErrors() throws Exception {
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return new BasicAddressResolver(null);
-                }
-            },
+            () -> new BasicAddressResolver(null),
             IllegalArgumentException.class,
             "At least one address mapping is required."
         );
@@ -221,14 +217,12 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Map<String, String> map = new HashMap<>();
+            () -> {
+                Map<String, String> map = new HashMap<>();
 
-                    map.put("from", null);
+                map.put("from", null);
 
-                    return new BasicAddressResolver(map);
-                }
+                return new BasicAddressResolver(map);
             },
             IllegalArgumentException.class,
             "Invalid address mapping: from=null"
@@ -251,14 +245,12 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Map<String, String> map = new HashMap<>();
+            () -> {
+                Map<String, String> map = new HashMap<>();
 
-                    map.put(null, "to");
+                map.put(null, "to");
 
-                    return new BasicAddressResolver(map);
-                }
+                return new BasicAddressResolver(map);
             },
             IllegalArgumentException.class,
             "Invalid address mapping: null=to"
@@ -281,14 +273,12 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Map<String, String> map = new HashMap<>();
+            () -> {
+                Map<String, String> map = new HashMap<>();
 
-                    map.put("from", "to:1111");
+                map.put("from", "to:1111");
 
-                    return new BasicAddressResolver(map);
-                }
+                return new BasicAddressResolver(map);
             },
             IllegalArgumentException.class,
             "Invalid address mapping: from=to:1111"
@@ -311,14 +301,12 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(
             log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Map<String, String> map = new HashMap<>();
+            () -> {
+                Map<String, String> map = new HashMap<>();
 
-                    map.put("from:1111:2222", "to:1111");
+                map.put("from:1111:2222", "to:1111");
 
-                    return new BasicAddressResolver(map);
-                }
+                return new BasicAddressResolver(map);
             },
             IllegalArgumentException.class,
             "Invalid address mapping: from:1111:2222=to:1111"

@@ -113,12 +113,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsFile>() {
-            @Override public IgfsFile apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.info(path);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.info(path), path);
     }
 
     /** {@inheritDoc} */
@@ -129,12 +124,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     /** {@inheritDoc} */
     @Override public Boolean setTimes(final IgfsPath path, final long accessTime, final long modificationTime)
         throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.setTimes(path, accessTime, modificationTime);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.setTimes(path, accessTime, modificationTime), path);
     }
 
     /** {@inheritDoc} */
@@ -144,117 +134,62 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public Boolean delete(final IgfsPath path, final boolean recursive) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.delete(path, recursive);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.delete(path, recursive), path);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start,
         final long len) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<IgfsBlockLocation>>() {
-            @Override public Collection<IgfsBlockLocation> apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.affinity(path, start, len);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.affinity(path, start, len), path);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsPathSummary contentSummary(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsPathSummary>() {
-            @Override public IgfsPathSummary apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.contentSummary(path);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.contentSummary(path), path);
     }
 
     /** {@inheritDoc} */
     @Override public Boolean mkdirs(final IgfsPath path, final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.mkdirs(path, props);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.mkdirs(path, props), path);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<IgfsFile>>() {
-            @Override public Collection<IgfsFile> apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.listFiles(path);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.listFiles(path), path);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<Collection<IgfsPath>>() {
-            @Override public Collection<IgfsPath> apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.listPaths(path);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.listPaths(path), path);
     }
 
     /** {@inheritDoc} */
     @Override public IgfsStatus fsStatus() throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsStatus>() {
-            @Override public IgfsStatus apply(HadoopIgfsEx hadoop, IgfsHandshakeResponse hndResp)
-                throws IgniteCheckedException, IOException {
-                return hadoop.fsStatus();
-            }
-        });
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.fsStatus());
     }
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate open(final IgfsPath path) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
-            @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.open(path);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.open(path), path);
     }
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate open(final IgfsPath path, final int seqReadsBeforePrefetch)
         throws IOException {
-        return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
-            @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.open(path, seqReadsBeforePrefetch);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.open(path, seqReadsBeforePrefetch), path);
     }
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate create(final IgfsPath path, final boolean overwrite,
         final boolean colocate, final int replication, final long blockSize, @Nullable final Map<String, String> props)
         throws IOException {
-        return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
-            @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.create(path, overwrite, colocate, replication, blockSize, props);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.create(path, overwrite, colocate, replication, blockSize, props), path);
     }
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate append(final IgfsPath path, final boolean create,
         @Nullable final Map<String, String> props) throws IOException {
-        return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
-            @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.append(path, create, props);
-            }
-        }, path);
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.append(path, create, props), path);
     }
 
     /**
@@ -262,12 +197,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @throws IOException On error.
      */
     public IgfsModeResolver modeResolver() throws IOException {
-        return withReconnectHandling(new FileSystemClosure<IgfsModeResolver>() {
-            @Override public IgfsModeResolver apply(HadoopIgfsEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
-                return hadoop.modeResolver();
-            }
-        });
+        return withReconnectHandling((hadoop, hndResp) -> hadoop.modeResolver());
     }
 
     /**

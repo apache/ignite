@@ -76,11 +76,8 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
         });
 
         // Check that client waiting operation.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return fut.get(200);
-            }
-        }, IgniteFutureTimeoutCheckedException.class, null);
+        GridTestUtils.assertThrows(log, () -> fut.get(200),
+            IgniteFutureTimeoutCheckedException.class, null);
 
         assertNotDone(fut);
 
@@ -106,31 +103,22 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 
-        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try {
-                    client.compute().broadcast(new IgniteCallable<Object>() {
-                        @Override public Object call() throws Exception {
-                            return 42;
-                        }
-                    });
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    checkAndWait(e);
-
-                    return true;
-                }
-
-                return false;
+        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try {
+                client.compute().broadcast(() -> 42);
             }
+            catch (IgniteClientDisconnectedException e) {
+                checkAndWait(e);
+
+                return true;
+            }
+
+            return false;
         });
 
         // Check that client waiting operation.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return fut.get(200);
-            }
-        }, IgniteFutureTimeoutCheckedException.class, null);
+        GridTestUtils.assertThrows(log, () -> fut.get(200),
+            IgniteFutureTimeoutCheckedException.class, null);
 
         assertNotDone(fut);
 
@@ -170,11 +158,8 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
         });
 
         // Check that client waiting operation.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return fut.get(200);
-            }
-        }, IgniteFutureTimeoutCheckedException.class, null);
+        GridTestUtils.assertThrows(log, () -> fut.get(200),
+            IgniteFutureTimeoutCheckedException.class, null);
 
         assertNotDone(fut);
 

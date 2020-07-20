@@ -44,12 +44,10 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      */
     @Test
     public void testConnectionError() throws SQLException {
-        checkErrorState(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://unknown.host");
+        checkErrorState(() -> {
+            DriverManager.getConnection("jdbc:ignite:thin://unknown.host");
 
-                return null;
-            }
+            return null;
         }, "08001", "Failed to connect to server [host=unknown.host");
     }
 
@@ -59,13 +57,11 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      */
     @Test
     public void testInvalidConnectionStringFormat() throws SQLException {
-        checkErrorState(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                // Invalid port number yields an error.
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:1000000");
+        checkErrorState(() -> {
+            // Invalid port number yields an error.
+            DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:1000000");
 
-                return null;
-            }
+            return null;
         }, "08001", "port range contains invalid port 1000000");
     }
 
@@ -76,11 +72,8 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     @SuppressWarnings("MagicConstant")
     @Test
     public void testInvalidIsolationLevel() throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setTransactionIsolation(1000);
-            }
-        }, "0700E", "Invalid transaction isolation level.");
+        checkErrorState(conn -> conn.setTransactionIsolation(1000),
+            "0700E", "Invalid transaction isolation level.");
     }
 
     /**
