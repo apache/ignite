@@ -43,11 +43,11 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests the binary marhsaller.
+        /// Tests the binary marshaller.
         /// Marshaller can be specified explicitly in config.
         /// </summary>
         [Test]
-        public void TestExplicitMarhsaller()
+        public void TestExplicitMarshaller()
         {
             using (var grid = StartIgnite("Config\\marshaller-explicit.xml"))
             {
