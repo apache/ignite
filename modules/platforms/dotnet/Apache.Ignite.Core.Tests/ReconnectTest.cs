@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests
             Ignition.StopAll(true);
 
 #if !NETCOREAPP
-            IgniteProcess.KillAll();
+            Process.IgniteProcess.KillAll();
 #endif
 
             Ignition.ClientMode = false;

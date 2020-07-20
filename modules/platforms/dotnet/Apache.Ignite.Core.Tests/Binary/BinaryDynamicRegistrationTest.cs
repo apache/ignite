@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
 #if !NETCOREAPP
     extern alias ExamplesDll;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
 #endif
 
     using System;
@@ -347,8 +349,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var cache1 = ignite1.CreateCache<int, Apache.Ignite.ExamplesDll.Binary.Account.ExamplesAccount>("acc");
-                cache1[1] = new Apache.Ignite.ExamplesDll.Binary.Account.ExamplesAccount(1, 2.2m);
+                var cache1 = ignite1.CreateCache<int, ExamplesAccount>("acc");
+                cache1[1] = new ExamplesAccount(1, 2.2m);
 
                 using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite2")))
                 {
