@@ -146,6 +146,7 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+#if !NETCOREAPP
         /// <summary>
         /// Tests multiple appdomains and multiple console handlers.
         /// </summary>
@@ -224,6 +225,7 @@ namespace Apache.Ignite.Core.Tests
                 // Will be stopped automatically on domain unload.
             }
         }
+#endif
 
         private class MyStringWriter : StringWriter
         {
