@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
+
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 
 /**
- * Possible checkpoint states. Ordinal is important. Every next state follows the previous one.
+ * Test cases for partitioned cache {@link GridDhtPreloader preloader} and enabled persistence.
  */
-public enum CheckpointState {
-    /** Checkpoint is waiting to execution. **/
-    SCHEDULED,
-
-    /** Checkpoint was awakened and it is preparing to start. **/
-    LOCK_TAKEN,
-
-    /** Dirty pages snapshot has been taken. **/
-    PAGE_SNAPSHOT_TAKEN,
-
-    /** Checkpoint counted the pages and write lock was released. **/
-    LOCK_RELEASED,
-
-    /** Checkpoint marker was stored to disk. **/
-    MARKER_STORED_TO_DISK,
-
-    /** Checkpoint was finished. **/
-    FINISHED
+public class GridCacheDhtPreloadDelayedWithPersistenceSelfTest extends GridCacheDhtPreloadDelayedSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean persistenceEnabled() {
+        return true;
+    }
 }

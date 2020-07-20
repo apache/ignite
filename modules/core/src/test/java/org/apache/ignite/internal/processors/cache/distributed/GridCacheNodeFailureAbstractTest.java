@@ -91,6 +91,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_CNT; i++)
             IGNITEs.add(startGrid(i));
+
+        // Wait for stable topology to avoid deadlocks.
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -115,6 +118,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             assert !jcache(i).isLocalLocked(KEY, false) : "Entry is locked for grid [idx=" + i + ']';
         }
+
+        // Wait for stable topology to avoid deadlocks.
+        awaitPartitionMapExchange();
     }
 
     /**

@@ -22,10 +22,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.junit.Ignore;
 
-/**
- * Test partitions consistency in various scenarios when all rebalance is in-memory.
- */
-public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxPartitionCounterStateConsistencyTest {
+/** */
+public class AtomicVolatilePartitionCounterStateConsistencyTest extends AtomicPartitionCounterStateConsistencyTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
         return false;
@@ -34,11 +32,6 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     /** {@inheritDoc} */
     @Override protected int partitions() {
         return 1024;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void configureBaselineAutoAdjust() {
-        // No-op, keep the baseline auto-adjust enabled.
     }
 
     /** {@inheritDoc} */
