@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -61,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\spring-test.xml",
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
