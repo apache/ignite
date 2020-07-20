@@ -244,7 +244,6 @@
     <Compile Include="IgniteLockTests.cs" />
     <Compile Include="IgniteStartStopProcessorInitTest.cs" />
     <Compile Include="IgniteUtilsTest.cs" />
-    <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />
     <Compile Include="Log\ConsoleLoggerTest.cs" />
     <Compile Include="Log\FixedDateTimeProvider.cs" />
