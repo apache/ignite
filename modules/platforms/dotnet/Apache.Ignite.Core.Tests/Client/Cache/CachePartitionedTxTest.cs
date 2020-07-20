@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.Linq;
     using System.Transactions;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Client.Transactions;
@@ -107,6 +108,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 using (Client.GetTransactions().TxStart())
                 {
                     Ignition.Stop(null, true);
+                    // var igniteToStop = new[] {(int?) null, 1, 2}
+                    //    .Select(i => GetIgnite(i))
+                    //    .FirstOrDefault(ign => ign.GetTransactions().GetLocalActiveTransactions().Any());
+                    // Assert.IsNotNull(igniteToStop);
+                    // Ignition.Stop(igniteToStop.Name, true);
+                    
                     Assert.Throws(constraint, () => cache.Put(1, 1));
                 }
             }
@@ -117,6 +124,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.DoesNotThrow(() => cache.Put(1, 1));
             Assert.IsNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx);
+            Ignition.Start(GetIgniteConfiguration());
         }
 
         protected override string GetCacheName()

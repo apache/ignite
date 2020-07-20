@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
@@ -542,18 +543,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             CheckTxOp((cache, key) => cache.Put(key, -5));
 
-            CheckReadTxOp((cache, key) => cache.Get(key));
-            
-            CheckReadTxOp((cache, key) =>
-            {
-                int value;
-                Assert.IsTrue(cache.TryGet(key, out value));
-            });
-
-            CheckReadTxOp((cache, key) => cache.ContainsKey(key));
-
-            CheckReadTxOp((cache, key) => cache.ContainsKeys(new[] {key}));
-
             CheckTxOp((cache, key) => cache.PutAll(new Dictionary<int, int> {{key, -7}}));
 
             CheckTxOp((cache, key) =>
@@ -621,24 +610,68 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Checks that read cache operation starts ambient transaction.
+        /// Tests that read operations lock keys in Serializable mode.
         /// </summary>
-        private void CheckReadTxOp(Action<ICacheClient<int, int>, int> act)
+        [Test]
+        public void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead()
         {
-            var txOpts = new TransactionOptions {IsolationLevel = IsolationLevel.RepeatableRead};
-            const TransactionScopeOption scope = TransactionScopeOption.Required;
+            Action<Func<ICacheClient<int, int>, int, int>>
+                test = TestTransactionScopeWithSerializableIsolationLocksKeysOnRead;
 
+            test((cache, key) => cache[key]);
+            test((cache, key) => cache.Get(key));
+            test((cache, key) => { int val; return cache.TryGet(key, out val) ? val : 0; });
+            test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
+        }
+
+        /// <summary>
+        /// Tests that async read operations lock keys in Serializable mode.
+        /// </summary>
+        [Test]
+        [Ignore("Async thin client transactional operations not supported.")]
+        public void TestTransactionScopeWithSerializableIsolationLocksKeysOnReadAsync()
+        {
+            Action<Func<ICacheClient<int, int>, int, int>>
+                test = TestTransactionScopeWithSerializableIsolationLocksKeysOnRead;
+
+            test((cache, key) => cache.GetAsync(key).Result);
+            test((cache, key) => cache.TryGetAsync(key).Result.Value);
+            test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
+        }
+        
+        /// <summary>
+        /// Tests that read operations lock keys in Serializable mode.
+        /// </summary>
+        private void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead(
+            Func<ICacheClient<int, int>, int, int> readOp)
+        {
             var cache = GetTransactionalCache();
-            cache[1] = 1;
+            cache.Put(1, 1);
 
-            // Rollback.
-            using (new TransactionScope(scope, txOpts))
+            var options = new TransactionOptions {IsolationLevel = IsolationLevel.Serializable};
+
+            using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
-                act(cache, 1);
+                Assert.AreEqual(1, readOp(cache, 1));
+                Assert.IsNotNull(((ITransactionsClientInternal)Client.GetTransactions()).CurrentTx);
 
-                Assert.IsNotNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx,
-                    "Transaction has not started.");
+                var evt = new ManualResetEventSlim();
+
+                var task = Task.Factory.StartNew(() =>
+                {
+                    cache.PutAsync(1, 2);
+                    evt.Set();
+                });
+
+                evt.Wait();
+
+                Assert.AreEqual(1, readOp(cache, 1));
+
+                scope.Complete();
+                task.Wait();
             }
+
+            TestUtils.WaitForTrueCondition(() => 2 == readOp(cache, 1));
         }
 
         /// <summary>

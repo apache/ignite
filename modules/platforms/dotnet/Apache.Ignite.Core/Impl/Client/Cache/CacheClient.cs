@@ -220,8 +220,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            _ignite.Transactions.StartTxIfNeeded();
-
             return DoOutInOpAffinity(ClientOp.CacheContainsKey, key, ctx => ctx.Stream.ReadBool());
         }
 
@@ -237,8 +235,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
-
-            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOp(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys),
                 ctx => ctx.Stream.ReadBool());
@@ -468,8 +464,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public void Clear()
         {
-            _ignite.Transactions.StartTxIfNeeded();
-
             DoOutOp(ClientOp.CacheClear);
         }
 
@@ -483,8 +477,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public void Clear(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
-
-            _ignite.Transactions.StartTxIfNeeded();
 
             DoOutOpAffinity(ClientOp.CacheClearKey, key);
         }
@@ -501,8 +493,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public void ClearAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
-
-            _ignite.Transactions.StartTxIfNeeded();
 
             DoOutOp(ClientOp.CacheClearKeys, ctx => ctx.Writer.WriteEnumerable(keys));
         }
