@@ -242,6 +242,7 @@
     <Compile Include="FailureHandlerTest.cs" />
     <Compile Include="IgniteLockFailoverTests.cs" />
     <Compile Include="IgniteLockTests.cs" />
+    <Compile Include="IgniteStartStopProcessorInitTest.cs" />
     <Compile Include="IgniteUtilsTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />
