@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.compute;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
