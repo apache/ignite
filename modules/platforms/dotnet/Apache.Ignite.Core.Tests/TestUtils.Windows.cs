@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -73,7 +75,8 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 FailureHandler = new NoOpFailureHandler(),
-                WorkDirectory = WorkDir
+                WorkDirectory = WorkDir,
+                Logger = new TestContextLogger()
             };
         }
 
@@ -109,6 +112,34 @@ namespace Apache.Ignite.Core.Tests
                 {
                     proc.Kill();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Logs to test progress. Produces immediate console output on .NET Core.
+        /// </summary>
+        public class TestContextLogger : ILogger
+        {
+            /** <inheritdoc /> */
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
+                string category, string nativeErrorInfo, Exception ex)
+            {
+                if (!IsEnabled(level))
+                {
+                    return;
+                }
+
+                var text = args != null
+                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
+                    : message;
+
+                TestContext.Progress.WriteLine(text);
+            }
+
+            /** <inheritdoc /> */
+            public bool IsEnabled(LogLevel level)
+            {
+                return level >= LogLevel.Info;
             }
         }
     }
