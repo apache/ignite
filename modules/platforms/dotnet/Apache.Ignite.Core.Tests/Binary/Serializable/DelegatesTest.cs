@@ -160,3 +160,4 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         }
     }
 }
+#endif
