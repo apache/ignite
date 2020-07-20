@@ -3008,6 +3008,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
+            + ", sandbox=" + onOff(ctx.security().sandbox().enabled())
             + ", tls/ssl=" + onOff(ctx.config().getSslContextFactory() != null) + ']');
     }
 

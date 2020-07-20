@@ -151,5 +151,4 @@ public class EventsSandboxTest extends AbstractSandboxTest {
             }
         };
     }
-
 }

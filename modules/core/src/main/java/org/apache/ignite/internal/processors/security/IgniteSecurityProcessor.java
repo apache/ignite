@@ -224,7 +224,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         secPrc.start();
 
         if (hasSecurityManager() && secPrc.sandboxEnabled()) {
-            sandbox = new AccessControllerSandbox(this);
+            sandbox = new AccessControllerSandbox(ctx, this);
 
             updatePackageAccessProperty();
         }
