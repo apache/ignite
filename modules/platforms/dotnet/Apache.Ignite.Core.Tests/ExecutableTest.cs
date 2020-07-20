@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -553,3 +554,4 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+#endif

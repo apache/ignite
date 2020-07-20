@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = File.ReadAllText("Config\\full-config.xml");
+            var xml = File.ReadAllText(Path.Combine("Config", "full-config.xml"));
 
             var cfg = IgniteConfiguration.FromXml(xml);
 
