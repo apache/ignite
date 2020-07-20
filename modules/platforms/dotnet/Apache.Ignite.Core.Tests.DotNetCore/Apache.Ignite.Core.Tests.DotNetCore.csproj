@@ -10,6 +10,7 @@
     <ApplicationIcon />
 
     <OutputType>Exe</OutputType>
+    <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup>
