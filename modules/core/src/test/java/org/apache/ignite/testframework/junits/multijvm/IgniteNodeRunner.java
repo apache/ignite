@@ -201,6 +201,8 @@ public class IgniteNodeRunner {
             catch (Exception e) {
                 // Print stack trace just for information.
                 X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
+
+                e.printStackTrace();
             }
         }
 
