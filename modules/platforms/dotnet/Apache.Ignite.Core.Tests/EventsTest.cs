@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test cases for TestEventTypes: type id + type + event generator.
         /// </summary>
-        public IEnumerable<EventTestCase> TestCases
+        public static IEnumerable<EventTestCase> TestCases
         {
             get
             {
@@ -713,9 +713,17 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Generates the task event.
         /// </summary>
-        private void GenerateTaskEvent(IIgnite grid = null)
+        private void GenerateTaskEvent()
         {
-            (grid ?? _grid1).GetCompute().Broadcast(new ComputeAction());
+            _grid1.GetCompute().Broadcast(new ComputeAction());
+        }
+
+        /// <summary>
+        /// Generates the task event.
+        /// </summary>
+        private static void GenerateTaskEvent(IIgnite grid)
+        {
+            grid.GetCompute().Broadcast(new ComputeAction());
         }
 
         /// <summary>

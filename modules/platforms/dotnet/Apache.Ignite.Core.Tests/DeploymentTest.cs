@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -243,3 +244,4 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+#endif
