@@ -18,6 +18,15 @@ import os.path
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
+
+class ZookeeperSettings:
+    def __init__(self, tick_time=1000, init_limit=10, sync_limit=5, client_port=2181):
+        self.tick_time = tick_time
+        self.init_limit = init_limit
+        self.sync_limit = sync_limit
+        self.client_port = client_port
+
+
 class ZookeeperService(Service):
     PERSISTENT_ROOT = "/mnt/zookeeper"
     CONFIG_ROOT = os.path.join(PERSISTENT_ROOT, "conf")
@@ -34,8 +43,9 @@ class ZookeeperService(Service):
         }
     }
 
-    def __init__(self, context, num_nodes):
+    def __init__(self, context, num_nodes, settings=ZookeeperSettings()):
         super(ZookeeperService, self).__init__(context, num_nodes)
+        self.settings = settings
 
     def start(self, timeout_sec=60):
         Service.start(self)
@@ -55,8 +65,9 @@ class ZookeeperService(Service):
         node.account.ssh("mkdir -p %s" % self.CONFIG_ROOT)
         node.account.ssh("echo %d > %s/myid" % (idx, self.DATA_DIR))
 
-        config_file = self.render('zookeeper.properties.j2')
+        config_file = self.render('zookeeper.properties.j2', settings=self.settings)
         node.account.create_file(self.CONFIG_FILE, config_file)
+        self.logger.info("ZK config %s", config_file)
 
         log_config_file = self.render('log4j.properties.j2')
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
@@ -64,12 +75,16 @@ class ZookeeperService(Service):
         start_cmd = "nohup java -cp %s/*:%s org.apache.zookeeper.server.quorum.QuorumPeerMain %s >/dev/null 2>&1 &" % \
                     (self.ZK_LIB_DIR, self.CONFIG_ROOT, self.CONFIG_FILE)
 
+        node.account.ssh(start_cmd)
+
+    def wait_node(self, node, timeout_sec=20):
+        idx = self.idx(node)
+
         with node.account.monitor_log(self.LOG_FILE) as monitor:
-            node.account.ssh(start_cmd)
+            monitor.offset = 0
             monitor.wait_until(
                 "binding to port",
-                timeout_sec=100,
-                backoff_sec=7,
+                timeout_sec=timeout_sec,
                 err_msg="Zookeeper service didn't finish startup on %s" % node.account.hostname
             )
 
@@ -94,6 +109,9 @@ class ZookeeperService(Service):
 
     def alive(self, node):
         return len(self.pids(node)) > 0
+
+    def connection_string(self):
+        return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
     def stop_node(self, node):
         idx = self.idx(node)
