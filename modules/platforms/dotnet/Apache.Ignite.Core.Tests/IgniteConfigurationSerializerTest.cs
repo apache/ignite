@@ -17,6 +17,7 @@
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable NonReadonlyMemberInGetHashCode
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
@@ -477,8 +478,9 @@ namespace Apache.Ignite.Core.Tests
         public void TestToXml()
         {
             // Empty config
-            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteConfiguration " +
-                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection\" />",
+            Assert.AreEqual(
+                "<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
+                "<igniteConfiguration xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection\" />",
                 new IgniteConfiguration().ToXml());
 
             // Some properties
@@ -593,7 +595,7 @@ namespace Apache.Ignite.Core.Tests
         private static string FixLineEndings(string s)
         {
             return s.Split('\n').Select(x => x.TrimEnd('\r'))
-                .Aggregate((acc, x) => string.Format("{0}\r\n{1}", acc, x));
+                .Aggregate((acc, x) => string.Format("{0}{1}{2}", acc, Environment.NewLine, x));
         }
 
         /// <summary>
