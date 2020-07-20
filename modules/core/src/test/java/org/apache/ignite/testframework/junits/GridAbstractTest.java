@@ -1887,7 +1887,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setMetricsLogFrequency(0);
+        cfg.setMetricsLogFrequency(500);
         cfg.setClientMode(IgnitionEx.isClientMode());
 
         cfg.setConnectorConfiguration(null);

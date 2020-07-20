@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -207,22 +204,5 @@ public class SystemPropertiesRule implements TestRule {
             else
                 System.setProperty(t2.getKey(), t2.getValue());
         }
-
-        MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-
-        printMemoryUsage(memoryMXBean.getHeapMemoryUsage(), "Heap");
-        printMemoryUsage(memoryMXBean.getNonHeapMemoryUsage(), "Offheap");
-    }
-
-    /** */
-    private static void printMemoryUsage(MemoryUsage heapMemoryUsage, String heap) {
-        System.out.printf(
-            "<!> %s (init=%s, max=%s, used=%s, committed=%s)%n",
-            heap,
-            heapMemoryUsage.getInit() / 1024 / 1024,
-            heapMemoryUsage.getMax() / 1024 / 1024,
-            heapMemoryUsage.getUsed() / 1024 / 1024,
-            heapMemoryUsage.getCommitted() / 1024 / 1024
-        );
     }
 }

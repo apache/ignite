@@ -42,6 +42,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import sun.jvmstat.monitor.HostIdentifier;
+import sun.jvmstat.monitor.MonitorException;
 import sun.jvmstat.monitor.MonitoredHost;
 import sun.jvmstat.monitor.MonitoredVm;
 import sun.jvmstat.monitor.MonitoredVmUtil;
@@ -188,24 +189,36 @@ public class IgniteNodeRunner {
             try {
                 MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
 
-                if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
-                    Process killProc = Runtime.getRuntime().exec(U.isWindows() ?
-                        new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"} :
-                        new String[] {"kill", "-9", jvmId.toString()});
+                if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true)))
+                    killProcess(res, jvmId);
+            }
+            catch (MonitorException e) {
+                X.printerrln("Could not resolve monitored vm for pid = " + jvmId +
+                    ". Process will be killed anyway as its existence may lead to undefined behavior.", e);
 
-                    killProc.waitFor();
-
-                    res.add(jvmId);
+                try {
+                    killProcess(res, jvmId);
+                }
+                catch (Exception ex) {
+                    X.printerrln("Could not kill the process with pid = " + jvmId, e);
                 }
             }
             catch (Exception e) {
-                // Print stack trace just for information.
                 X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
-
-                e.printStackTrace();
             }
         }
 
         return res;
+    }
+
+    /** */
+    protected static void killProcess(List<Integer> res, Integer jvmId) throws IOException, InterruptedException {
+        Process killProc = Runtime.getRuntime().exec(U.isWindows() ?
+            new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"} :
+            new String[] {"kill", "-9", jvmId.toString()});
+
+        killProc.waitFor();
+
+        res.add(jvmId);
     }
 }
