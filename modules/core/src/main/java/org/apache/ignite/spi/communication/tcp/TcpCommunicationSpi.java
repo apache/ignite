@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
@@ -57,7 +58,6 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -83,7 +83,6 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectGateway;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.FirstConnectionPolicy;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.internal.InboundConnectionHandler;
@@ -381,9 +380,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** */
     public static final String ATTR_FORCE_CLIENT_SERVER_CONNECTIONS = "comm.force.client.srv.connections";
 
-    /** Connection requestor. */
-    private ConnectionRequestor connectionRequestor;
-
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -653,7 +649,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             createSpiAttributeName(ATTR_ADDRS),
             createSpiAttributeName(ATTR_HOST_NAMES),
             createSpiAttributeName(ATTR_EXT_ADDRS),
-            createSpiAttributeName(ATTR_PORT));
+            createSpiAttributeName(ATTR_PORT),
+            createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
 
         boolean client = Boolean.TRUE.equals(ignite().configuration().isClientMode());
 
@@ -727,7 +724,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getName(),
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
-            this::createTcpClient
+            this::createTcpClient,
+            new CommunicationListener<Message>() {
+                @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
+                    notifyListener(nodeId, msg, msgC);
+                }
+
+                @Override public void onDisconnected(UUID nodeId) {
+                    if (lsnr != null)
+                        lsnr.onDisconnected(nodeId);
+                }
+            }
         );
 
         this.srvLsnr.setNioSrvWrapper(nioSrvWrapper);
@@ -1038,6 +1045,19 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
+     * @param remote Destination cluster node to communicate with.
+     * @param initMsg Configuration channel attributes wrapped into the message.
+     * @return The future, which will be finished on channel ready.
+     * @throws IgniteSpiException If fails.
+     */
+    public IgniteInternalFuture<Channel> openChannel(
+        ClusterNode remote,
+        Message initMsg
+    ) throws IgniteSpiException {
+        return nioSrvWrapper.openChannel(remote, initMsg);
+    }
+
+    /**
      * Checks that node has specified attribute and prints warning if it does not.
      *
      * @param node Node to check.
@@ -1282,12 +1302,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         U.join(commWorker, log);
 
         clientPool.forceClose();
-    }
-
-    /** */
-    @IgniteExperimental
-    public void setConnectionRequestor(ConnectionRequestor connectionRequestor) {
-        this.connectionRequestor = connectionRequestor;
     }
 
     /**

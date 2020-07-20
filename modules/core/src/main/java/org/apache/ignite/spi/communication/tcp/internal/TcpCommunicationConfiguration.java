@@ -147,6 +147,9 @@ public class TcpCommunicationConfiguration implements Serializable {
      */
     private boolean forceClientToSrvConnections;
 
+    /** Connection requestor. */
+    private ConnectionRequestor connectionRequestor;
+
     /** Address resolver. */
     public AddressResolver addrRslvr() {
         return addrRslvr;
@@ -562,7 +565,6 @@ public class TcpCommunicationConfiguration implements Serializable {
 
     /**
      * @return Force client to server connections flag.
-     *
      * @see #forceClientToSrvConnections(boolean)
      */
     public boolean forceClientToSrvConnections() {
@@ -571,11 +573,25 @@ public class TcpCommunicationConfiguration implements Serializable {
 
     /**
      * Applicable for clients only. Sets PSI in the mode when server node cannot open TCP connection to the current
-     * node. Possile reasons for that may be specific network configurations or security rules.
-     * In this mode, when server needs the connection with client, it uses {@link DiscoverySpi} protocol to notify
-     * client about it. After that client opens the required connection from its side.
+     * node. Possile reasons for that may be specific network configurations or security rules. In this mode, when
+     * server needs the connection with client, it uses {@link DiscoverySpi} protocol to notify client about it. After
+     * that client opens the required connection from its side.
      */
     public void forceClientToSrvConnections(boolean forceClientToSrvConnections) {
         this.forceClientToSrvConnections = forceClientToSrvConnections;
+    }
+
+    /**
+     *
+     */
+    public void connectionRequestor(ConnectionRequestor requestor) {
+        connectionRequestor = requestor;
+    }
+
+    /**
+     *
+     */
+    public ConnectionRequestor connectionRequestor() {
+        return connectionRequestor;
     }
 }

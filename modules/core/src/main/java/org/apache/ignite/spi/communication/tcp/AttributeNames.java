@@ -44,6 +44,8 @@ public class AttributeNames {
     /** Port. */
     private final String port;
 
+    private final String forceClientServerConnections;
+
     /**
      * @param pairedConn Paired connection.
      * @param shmemPort Shmem port.
@@ -51,6 +53,7 @@ public class AttributeNames {
      * @param hostNames Host names.
      * @param extAttrs Externalizable attributes.
      * @param port Port.
+     * @param forceClientServerConnections Force client server connections.
      */
     public AttributeNames(
         String pairedConn,
@@ -58,13 +61,15 @@ public class AttributeNames {
         String addrs,
         String hostNames,
         String extAttrs,
-        String port) {
+        String port,
+        String forceClientServerConnections) {
         this.pairedConn = pairedConn;
         this.shmemPort = shmemPort;
         this.addrs = addrs;
         this.hostNames = hostNames;
         this.extAttrs = extAttrs;
         this.port = port;
+        this.forceClientServerConnections = forceClientServerConnections;
     }
 
     /**
@@ -107,5 +112,12 @@ public class AttributeNames {
      */
     public String port() {
         return port;
+    }
+
+    /**
+     * @return Force client server connections.
+     */
+    public String getForceClientServerConnections() {
+        return forceClientServerConnections;
     }
 }

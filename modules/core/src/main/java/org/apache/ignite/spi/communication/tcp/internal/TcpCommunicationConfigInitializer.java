@@ -59,6 +59,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_H
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PAIRED_CONN;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_SHMEM_PORT;
+import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 
 /**
  * Only may implement it TcpCommunicationSpi.
@@ -581,6 +582,12 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
         return (TcpCommunicationSpi) this;
     }
 
+    /** */
+    @IgniteExperimental
+    public void setConnectionRequestor(ConnectionRequestor connectionRequestor) {
+        cfg.connectionRequestor(connectionRequestor);
+    }
+
     /**
      * Sets value for {@code TCP_NODELAY} socket option. Each
      * socket will be opened using provided value.
@@ -822,7 +829,7 @@ cfg.socketSendBuffer(sockSndBuf);
         assertParameter(cfg.shmemPort() > 0 || cfg.shmemPort() == -1, "shmemPort > 0 || shmemPort == -1");
         assertParameter(cfg.selectorsCount() > 0, "selectorsCnt > 0");
         assertParameter(cfg.connectionsPerNode() > 0, "connectionsPerNode > 0");
-        assertParameter(cfg.connectionsPerNode() <= 1024, "connectionsPerNode <= 1024");
+        assertParameter(cfg.connectionsPerNode() <= MAX_CONN_PER_NODE, "connectionsPerNode <= 1024");
 
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(cfg.reconCount() > 0, "reconnectCnt > 0");

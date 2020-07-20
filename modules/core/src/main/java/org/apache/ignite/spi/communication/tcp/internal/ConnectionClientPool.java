@@ -322,7 +322,7 @@ public class ConnectionClientPool {
 
     /**
      * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open
-     * connection. The only possible way of doing this is to use {@link #connectionRequestor}'s trigger and wait.
+     * connection. The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
      * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
      * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
      *
@@ -340,7 +340,7 @@ public class ConnectionClientPool {
         GridFutureAdapter<GridCommunicationClient> fut,
         NodeUnreachableException e
     ) throws IgniteCheckedException {
-        if (connectionRequestor != null) {
+        if (cfg.connectionRequestor() != null) {
             ConnectFuture fut0 = (ConnectFuture)fut;
 
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
@@ -359,7 +359,7 @@ public class ConnectionClientPool {
             fut = triggerFut;
 
             try {
-                connectionRequestor.request(node, connIdx);
+                cfg.connectionRequestor().request(node, connIdx);
 
                 long failTimeout = cfg.failureDetectionTimeoutEnabled()
                     ? cfg.failureDetectionTimeout()

@@ -69,7 +69,7 @@ public class HandshakeTimeoutObject<T> implements IgniteSpiTimeoutObject {
             if (obj instanceof GridCommunicationClient)
                 ((GridCommunicationClient)obj).forceClose();
             else
-                U.closeQuiet((AbstractInterruptibleChannel)obj);
+                U.closeQuiet((AutoCloseable)obj);
         }
     }
 

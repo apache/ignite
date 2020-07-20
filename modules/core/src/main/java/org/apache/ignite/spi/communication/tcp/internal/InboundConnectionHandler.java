@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
+import java.nio.channels.Channel;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -63,6 +65,8 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_I
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
+import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.CHANNEL_FUT_META;
+import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -155,7 +159,8 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         IgniteLogger log,
         TcpCommunicationConfiguration cfg,
         Function<UUID, ClusterNode> nodeGetter,
-        Supplier<ClusterNode> locNodeSupplier, ClusterStateProvider stateProvider,
+        Supplier<ClusterNode> locNodeSupplier,
+        ClusterStateProvider stateProvider,
         ConnectionClientPool clientPool,
         CommunicationWorker commWorker,
         ConnectGateway connectGate,
@@ -282,6 +287,29 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
         }
         else {
+            if (isChannelConnIdx(connKey.connectionIndex())) {
+                if (ses.meta(CHANNEL_FUT_META) == null)
+                    nioSrvWrapper.onChannelCreate((GridSelectorNioSessionImpl)ses, connKey, msg);
+                else {
+                    GridFutureAdapter<Channel> fut = ses.meta(CHANNEL_FUT_META);
+                    GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+                    ses0.closeSocketOnSessionClose(false);
+
+                    ses0.close().listen(f -> {
+                        if (f.error() != null) {
+                            fut.onDone(f.error());
+
+                            return;
+                        }
+
+                        fut.onDone(ses0.key().channel());
+                    });
+                }
+
+                return;
+            }
+
             Object consistentId = ses.meta(CONSISTENT_ID_META);
 
             assert consistentId != null;
@@ -731,6 +759,14 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send message: " + e, e);
         }
+    }
+
+    /**
+     * @param connIdx Connection index to check.
+     * @return {@code true} if connection index is related to the channel create request\response.
+     */
+    private boolean isChannelConnIdx(int connIdx) {
+        return connIdx > MAX_CONN_PER_NODE;
     }
 
     /**
