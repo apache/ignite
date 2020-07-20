@@ -93,17 +93,20 @@
     <None Update="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Remove="Compute\Forked\**" />
 
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Deployment\**" />
     <Compile Remove="Examples\**" />
+    <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Deployment\**" />
     <EmbeddedResource Remove="Examples\**" />
+    <EmbeddedResource Remove="Compute\Forked\**" />
   </ItemGroup>
 
 </Project>

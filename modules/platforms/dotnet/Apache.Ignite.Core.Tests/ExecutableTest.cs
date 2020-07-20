@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
     public class ExecutableTest
     {
         /** Spring configuration path. */
-        private const string SpringCfgPath = "config\\compute\\compute-standalone.xml";
+        private const string SpringCfgPath = "Config/Compute/compute-standalone.xml";
 
         /** Min memory Java task. */
         private const string MinMemTask = "org.apache.ignite.platform.PlatformMinMemoryTask";
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Test assemblies passing through command-line. 
+        /// Test assemblies passing through command-line.
         /// </summary>
         [Test]
         public void TestAssemblyCmd()
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Test JVM options passing through command-line. 
+        /// Test JVM options passing through command-line.
         /// </summary>
         [Test]
         public void TestJvmOptsCmd()
