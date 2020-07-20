@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+
+    <StartupObject>Apache.Ignite.Core.Tests.DotNetCore.Common.TestRunner</StartupObject>
+
+    <ApplicationIcon />
+
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>1701;1702;1705;NU1701</NoWarn>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.DotNetCore.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.5" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
