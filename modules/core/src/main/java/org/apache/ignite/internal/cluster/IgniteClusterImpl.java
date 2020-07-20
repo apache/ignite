@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -101,6 +104,26 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Minimal IgniteProductVersion supporting BaselineTopology */
     private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
+    /** Unique ID of cluster. Generated on start, shared by all nodes. */
+    private volatile UUID id;
+
+    /** User-defined human-readable tag. Generated automatically on start, can be changed later. */
+    private volatile String tag;
+
+    /** Ignite logger. */
+    private IgniteLogger log;
+
+    /** Property for update policy of shutdown. */
+    private DistributedEnumProperty<ShutdownPolicy> shutdown = new DistributedEnumProperty<>(
+        "shutdown.policy",
+        (ordinal) -> {
+            return ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal);
+        },
+        (policy) -> {
+            return policy == null ? null : policy.index();
+        }
+    );
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -117,6 +140,20 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         cfg = ctx.config();
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
+
+        log = ctx.log(getClass());
+    }
+
+    /**
+     * Invoke when metastorage ready to start component.
+     */
+    public void start() {
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
+            shutdown.addListener((name, oldVal, newVal) ->
+                U.log(log, "Shutdown policy was updated [oldVal=" + oldVal + ", newVal=" + newVal + "]"));
+
+            dispatcher.registerProperty(shutdown);
+        });
     }
 
     /** {@inheritDoc} */
@@ -540,6 +577,21 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public ShutdownPolicy shutdownPolicy() {
+        return shutdown.getOrDefault(ctx.config().getShutdownPolicy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void shutdownPolicy(ShutdownPolicy shutdownPolicy) {
+        try {
+            shutdown.propagate(shutdownPolicy);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Context is not initialized, the new policy was ignored: " + shutdownPolicy, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
         guard();
 
@@ -637,6 +689,68 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() {
+        return id;
+    }
+
+    /**
+     * Not part of public API.
+     * Enables ClusterProcessor to set ID in the following cases:
+     * <ol>
+     *     <li>For the first time on node startup.</li>
+     *     <li>Set to null on client disconnect.</li>
+     *     <li>Set to some not-null value on client reconnect.</li>
+     * </ol>
+     *
+     * @param id ID to set.
+     */
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() {
+        return tag;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tag(String tag) throws IgniteCheckedException {
+        if (tag == null)
+            throw new IgniteCheckedException("Tag cannot be null.");
+
+        if (tag.isEmpty())
+            throw new IgniteCheckedException("Tag should not be empty.");
+
+        if (tag.length() > MAX_TAG_LENGTH) {
+            throw new IgniteCheckedException("Maximum tag length is exceeded, max length is " +
+                MAX_TAG_LENGTH +
+                " symbols, provided value has " +
+                tag.length() +
+                " symbols.");
+        }
+
+        if (!ctx.state().publicApiActiveState(true))
+            throw new IgniteCheckedException("Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true).");
+
+        ctx.cluster().updateTag(tag);
+    }
+
+    /**
+     * Not part of public API.
+     * Enables ClusterProcessor to set tag in the following cases:
+     * <ol>
+     *     <li>For the first time on node startup.</li>
+     *     <li>Set to null on client disconnect.</li>
+     *     <li>Set to some not-null value on client reconnect.</li>
+     * </ol>
+     *
+     * @param tag Tag to set.
+     */
+    public void setTag(@Nullable String tag) {
+        this.tag = tag;
     }
 
     /** {@inheritDoc} */

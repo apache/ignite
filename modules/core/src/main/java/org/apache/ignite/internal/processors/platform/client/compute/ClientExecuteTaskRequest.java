@@ -59,7 +59,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
         nodeIds = U.newHashSet(cnt);
 
         for (int i = 0; i < cnt; i++)
-            nodeIds.add(reader.readUuid());
+            nodeIds.add(new UUID(reader.readLong(), reader.readLong()));
 
         flags = reader.readByte();
 

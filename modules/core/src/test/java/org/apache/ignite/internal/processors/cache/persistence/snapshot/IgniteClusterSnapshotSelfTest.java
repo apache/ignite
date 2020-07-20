@@ -1127,6 +1127,25 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInMemoryFail() throws Exception {
+        persistence = false;
+
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteEx clnt = startClientGrid(1);
+
+        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "Snapshots on an in-memory clusters are not allowed.");
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.

@@ -211,6 +211,16 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     * @return Previous "active" flag value during transition.
+     */
+    public boolean previouslyActive() {
+        if (prevState != null)
+            return prevState.state != INACTIVE;
+
+        return state == INACTIVE;
+    }
+
+    /**
      * @return State change exchange version.
      */
     public AffinityTopologyVersion transitionTopologyVersion() {
@@ -223,7 +233,7 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     @Deprecated
     public boolean active() {
-        return ClusterState.active(state);
+        return state.active();
     }
 
     /**

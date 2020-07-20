@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect;
 
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import com.google.common.collect.Sets;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 

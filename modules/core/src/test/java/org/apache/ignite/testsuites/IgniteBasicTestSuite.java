@@ -296,7 +296,7 @@ import org.junit.runners.Suite;
 
     ClusterActivationStartedEventTest.class,
 
-    IgniteThreadGroupNodeRestartTest.class
+    IgniteThreadGroupNodeRestartTest.class,
 })
 public class IgniteBasicTestSuite {
 }

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopExecutorService;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.LongAdder;
 import org.junit.Test;
 
 /**

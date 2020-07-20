@@ -250,10 +250,10 @@ public class JdbcThinConnection implements Connection {
     private final IgniteProductVersion baseEndpointVer;
 
     /** Binary context. */
-    private final BinaryContext ctx;
+    private volatile BinaryContext ctx;
 
     /** Binary metadata handler. */
-    private final JdbcBinaryMetadataHandler metaHnd;
+    private volatile JdbcBinaryMetadataHandler metaHnd;
 
     /** Marshaller context. */
     private final JdbcMarshallerContext marshCtx;
@@ -1333,6 +1333,10 @@ public class JdbcThinConnection implements Connection {
 
             stmts.clear();
         }
+
+        // Clear local metadata cache on disconnect.
+        metaHnd = new JdbcBinaryMetadataHandler();
+        ctx = createBinaryCtx(metaHnd, marshCtx);
     }
 
     /**

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.planner;
 
+import java.util.ArrayList;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.ArrayList;
-import java.util.UUID;
 
 /**
  * Map-reduce plan group of nodes on a single physical machine.

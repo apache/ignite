@@ -17,6 +17,7 @@
 package org.apache.ignite.springdata22.repository.config;
 
 import java.lang.annotation.Annotation;
+
 import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 

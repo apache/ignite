@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -926,7 +928,7 @@ public interface EventType {
      * Built-in event type: page replacement started in one of the data regions. The name of the data region will
      * be indicated in the event.
      * <p>
-     * Fired whan all existing free pages are exhausted and Ignite replaces one of the loaded pages with a
+     * Fired when all existing free pages are exhausted and Ignite replaces one of the loaded pages with a
      * cold page from disk.
      * <p>
      * When started, page replacement negatively affects performance; it is recommended to monitor page replacement
@@ -939,6 +941,21 @@ public interface EventType {
      * @see PageReplacementStartedEvent
      */
     public static final int EVT_PAGE_REPLACEMENT_STARTED = 142;
+
+    /**
+     * Built-in event type: cluster tag has been changed by user request.
+     * Event includes the following information: ID of the cluster, old tag and new tag.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#tag(String)
+     * @see IgniteCluster#id()
+     */
+    public static final int EVT_CLUSTER_TAG_UPDATED = 143;
 
     /**
      * Built-in event type: Cluster state changed.
@@ -963,6 +980,49 @@ public interface EventType {
      * @see ClusterStateChangeStartedEvent
      */
     public static final int EVT_CLUSTER_STATE_CHANGE_STARTED = 145;
+
+    /**
+     * Built-in event type: baseline topology has been changed by either user request or auto-adjust timeout event.
+     * Event includes the following information: new baseline nodes.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#setBaselineTopology(long)
+     * @see IgniteCluster#setBaselineTopology(Collection)
+     */
+    public static final int EVT_BASELINE_CHANGED = 146;
+
+    /**
+     * Built-in event type: baseline auto-adjust "enabled" flag has been changed by user request.
+     * Event includes the following information: auto-adjust enabled flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustEnabled(boolean)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED = 147;
+
+    /**
+     * Built-in event type: baseline auto-adjust timeout has been changed by user request.
+     * Event includes the following information: auto-adjust "enabled" flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustTimeout(long)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
 
     /**
      * All checkpoint events. This array can be directly passed into
