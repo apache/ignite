@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.eviction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;

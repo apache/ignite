@@ -19,7 +19,6 @@ package org.apache.ignite.messaging;
 
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;

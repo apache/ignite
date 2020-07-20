@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.event.CacheEntryListenerException;

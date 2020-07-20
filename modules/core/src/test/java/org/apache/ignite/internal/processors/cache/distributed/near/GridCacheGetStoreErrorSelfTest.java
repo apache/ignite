@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteException;

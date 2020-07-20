@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
