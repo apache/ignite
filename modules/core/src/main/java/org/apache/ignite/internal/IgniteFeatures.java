@@ -98,6 +98,9 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
+    /** Tracing. */
+    TRACING(26),
+
     /** Distributed change timeout for dump long operations. */
     DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 

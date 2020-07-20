@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -417,7 +418,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * {@inheritDoc}
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        opsLock.writeLock().lock();
+        try {
+            opsLock.writeLock().lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException(e);
+        }
 
         try {
             if (log.isDebugEnabled()) {
