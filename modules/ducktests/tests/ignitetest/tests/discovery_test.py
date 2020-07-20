@@ -61,14 +61,11 @@ class DiscoveryTest(IgniteTest):
         pass
 
     def teardown(self):
-        if self.zk is not None:
+        if self.zk:
             self.zk.stop()
 
-        if self.servers is not None:
+        if self.servers:
             self.servers.stop()
-
-    def min_cluster_size(self):
-        return self.NUM_NODES + 3
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
@@ -92,7 +89,7 @@ class DiscoveryTest(IgniteTest):
         else:
             properties = self.properties()
 
-        self.ignite = IgniteService(
+        self.servers = IgniteService(
             self.test_context,
             num_nodes=self.NUM_NODES,
             properties=properties,
@@ -101,26 +98,26 @@ class DiscoveryTest(IgniteTest):
         self.stage("Starting ignite cluster")
 
         start = monotonic()
-        self.ignite.start()
+        self.servers.start()
         data = {'Ignite cluster start time (s)': monotonic() - start }
         self.stage("Topology is ready")
 
         # Node failure detection
-        fail_node, survived_node = self.choose_random_node_to_kill(self.ignite)
-        self.ignite.stop_node(fail_node, clean_shutdown=False)
+        fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
+        self.servers.stop_node(fail_node, clean_shutdown=False)
 
         start = monotonic()
-        self.ignite.await_event_on_node("Node FAILED", random.choice(survived_node), 60)
+        self.servers.await_event_on_node("Node FAILED", random.choice(survived_node), 60, True)
 
-        data = {'Failure of node detected in time (s)': monotonic() - start}
+        data['Failure of node detected in time (s)'] = monotonic() - start
 
         return data
 
-    def choose_random_node_to_kill(self, service):
+    @staticmethod
+    def choose_random_node_to_kill(service):
         idx = random.randint(0, len(service.nodes) - 1)
 
         survive = [node for i, node in enumerate(service.nodes) if i != idx]
         kill = service.nodes[idx]
 
         return kill, survive
-
