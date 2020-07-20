@@ -126,7 +126,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
         K key = GridClientUtils.first(entries.keySet());
 
-        return withReconnectHandling((conn, destNodeId) ->  conn.cachePutAll(cacheName, entries, flags, destNodeId),
+        return withReconnectHandling((conn, destNodeId) -> conn.cachePutAll(cacheName, entries, flags, destNodeId),
             cacheName, key);
     }
 
