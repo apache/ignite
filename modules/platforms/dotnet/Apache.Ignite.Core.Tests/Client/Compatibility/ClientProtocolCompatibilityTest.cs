@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
+namespace Apache.Ignite.Core.Tests.Client.Compatibility
 {
     using System;
     using System.Linq;
@@ -40,13 +40,13 @@ namespace Apache.Ignite.Core.Tests.Client
             [Values(0, 1, 2, 3, 4, 5, 6)] short minor)
         {
             var version = new ClientProtocolVersion(1, minor, 0);
-            
+
             using (var client = GetClient(version, true))
             {
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, -1);
                 cache.PutAll(Enumerable.Range(2, 10).ToDictionary(x => x, x => x));
-                
+
                 Assert.AreEqual(-1, cache.Get(1));
                 Assert.AreEqual(11, cache.Query(new ScanQuery<int, int>()).GetAll().Count);
             }
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Client
             [Values(0, 1, 2, 3, 4)] short minor)
         {
             var version = new ClientProtocolVersion(1, minor, 0);
-            
+
             using (var client = GetClient(version))
             {
                 TestClusterOperationsThrowCorrectExceptionOnVersionsOlderThan150(client, version.ToString());
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Client
             [Values(0, 1, 2, 3, 4, 5, 6)] short minor)
         {
             var version = new ClientProtocolVersion(1, minor, 0);
-            
+
             using (var client = GetClient(version))
             {
                 var compute = client.GetCompute();
@@ -95,11 +95,11 @@ namespace Apache.Ignite.Core.Tests.Client
             [Values(0, 1, 2, 3)] short minor)
         {
             var version = new ClientProtocolVersion(1, minor, 0);
-            
+
             using (var client = GetClient(version, true))
             {
                 Assert.IsFalse(client.GetConfiguration().EnablePartitionAwareness);
-                
+
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
                 Assert.AreEqual(2, cache.Get(1));
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var expectedMessage = string.Format(
                     "Partition awareness has been disabled: server protocol version " +
                     "{0} is lower than required 1.4.0", version);
-                
+
                 Assert.IsNotNull(log);
                 Assert.AreEqual(expectedMessage, log.Message);
                 Assert.AreEqual(LogLevel.Warn, log.Level);
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var lastLog = GetLogs(client).Last(e => e.Level == LogLevel.Debug);
                 var expectedLog = string.Format(
                     "Handshake completed on 127.0.0.1:10800, protocol version = {0}", version);
-                
+
                 Assert.AreEqual(expectedLog, lastLog.Message);
                 Assert.AreEqual(LogLevel.Debug, lastLog.Level);
                 Assert.AreEqual(typeof(ClientSocket).Name, lastLog.Category);
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client
             AssertNotSupportedOperation(() => cluster.EnableWal("c"), version, "ClusterChangeWalState");
             AssertNotSupportedOperation(() => cluster.DisableWal("c"), version, "ClusterChangeWalState");
         }
-        
+
         /// <summary>
         /// Asserts proper exception for non-supported operation.
         /// </summary>
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Client
             string expectedOperationName)
         {
             var ex = Assert.Throws<IgniteClientException>(() => action());
-            
+
             var expectedMessage = string.Format(
                 "Operation {0} is not supported by protocol version {1}. " +
                 "Minimum protocol version required is 1.5.0.",
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Client
         internal static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
         {
             var ex = Assert.Throws<IgniteClientException>(() => action());
-            
+
             var expectedMessage = string.Format(
                 "Operation {0} is not supported by the server. " +
                 "Feature {1} is missing.",
