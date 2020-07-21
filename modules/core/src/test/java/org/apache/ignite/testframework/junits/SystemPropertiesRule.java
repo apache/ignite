@@ -17,10 +17,16 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.junit.ClassRule;
@@ -203,6 +209,35 @@ public class SystemPropertiesRule implements TestRule {
                 System.clearProperty(t2.getKey());
             else
                 System.setProperty(t2.getKey(), t2.getValue());
+        }
+
+        try {
+            Process p = Runtime.getRuntime().exec(new String[] {"ps", "-o", "%mem,pid,user,command", "ax"});
+            InputStream is = p.getInputStream();
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PrintWriter writer = new PrintWriter(out);
+
+            int value;
+            while ((value = is.read()) != -1)
+                writer.print((char)value);
+
+            String str = out.toString("UTF-8");
+
+            Comparator<String> cmp = Comparator.comparingDouble(s -> Double.parseDouble(s.substring(0, s.indexOf(' '))));
+            String res = Stream.of(str.split("\n"))
+                .skip(1)
+                .map(String::trim)
+                .sorted(cmp.reversed())
+                .limit(5)
+                .collect(Collectors.joining("\n"));
+            System.out.println(res);
+
+            int exitCode = p.waitFor();
+            System.out.println("Exited with " + exitCode);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
