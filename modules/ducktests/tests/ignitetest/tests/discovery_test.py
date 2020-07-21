@@ -25,9 +25,6 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 
 from jinja2 import Template
 
-from monotonic import monotonic
-
-
 class DiscoveryTest(IgniteTest):
     NUM_NODES = 7
 
@@ -97,19 +94,19 @@ class DiscoveryTest(IgniteTest):
 
         self.stage("Starting ignite cluster")
 
-        start = monotonic()
+        start = self.monotonic()
         self.servers.start()
-        data = {'Ignite cluster start time (s)': monotonic() - start }
+        data = {'Ignite cluster start time (s)': self.monotonic() - start }
         self.stage("Topology is ready")
 
         # Node failure detection
         fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
         self.servers.stop_node(fail_node, clean_shutdown=False)
 
-        start = monotonic()
+        start = self.monotonic()
         self.servers.await_event_on_node("Node FAILED", random.choice(survived_node), 60, True)
 
-        data['Failure of node detected in time (s)'] = monotonic() - start
+        data['Failure of node detected in time (s)'] = self.monotonic() - start
 
         return data
 

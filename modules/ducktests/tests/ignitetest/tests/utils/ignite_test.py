@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from ducktape.tests.test import Test
+from monotonic import monotonic
 
 
 class IgniteTest(Test):
@@ -22,3 +23,15 @@ class IgniteTest(Test):
 
     def stage(self, msg):
         self.logger.info("[TEST_STAGE] " + msg + "...")
+
+    @staticmethod
+    def monotonic():
+        """
+        monotonic() -> float
+
+        :return:
+            The value (in fractional seconds) of a monotonic clock, i.e. a clock that cannot go backwards.
+            The clock is not affected by system clock updates. The reference point of the returned value is undefined,
+             so that only the difference between the results of consecutive calls is valid.
+        """
+        return monotonic()

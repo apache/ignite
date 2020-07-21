@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import time
 
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
@@ -82,13 +81,13 @@ class AddNodeRebalanceTest(IgniteTest):
 
         ignite.start()
 
-        start = time.time()
+        start = self.monotonic()
 
         ignite.await_event("rebalanced=true, wasRebalanced=false",
                            timeout_sec=AddNodeRebalanceTest.REBALANCE_TIMEOUT,
                            from_the_beginning=True,
                            backoff_sec=1)
 
-        data = {"Rebalanced in (sec)": time.time() - start}
+        data = {"Rebalanced in (sec)": self.monotonic() - start}
 
         return data
