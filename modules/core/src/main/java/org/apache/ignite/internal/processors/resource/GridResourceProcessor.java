@@ -258,6 +258,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         inject(obj, annSet, null, null, params);
+
+        if (obj instanceof GridInternalWrapper) {
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
+
+            if (usrObj != null)
+                inject(usrObj, annSet, null, null, params);
+        }
     }
 
     /**
