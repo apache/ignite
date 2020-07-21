@@ -168,7 +168,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             IgniteFuture<String> chained1 = fut.chainAsync(future -> {
                 assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
 
-                fut.get();
+                future.get();
 
                 return "done-custom";
             }, exec);
