@@ -62,6 +62,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Basic continuous query test.
+        ///
+        /// - Start the query
+        /// - Add cache entry, verify query event
+        /// - Update cache entry, verify query event
+        /// - Remove cache entry, verify query event
         /// </summary>
         [Test]
         public void TestContinuousQueryCallsLocalListenerWithCorrectEvent()
@@ -110,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that default settings have correct values.
+        /// Tests that default query settings have correct values.
         /// </summary>
         [Test]
         public void TestDefaultSettings()
@@ -123,6 +128,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that Compute notifications and Continuous Query notifications work together correctly.
+        /// Compute and Continuous Queries use the same server -> client notification mechanism,
+        /// we ensure that there are no conflicts when both are used in parallel.
+        ///
+        /// - Start a new thread that runs Compute tasks in background
+        /// - Start two continuous queries, with and without filter, using same thin client connection
+        /// - Update cache and verify that continuous query listeners receive correct events
         /// </summary>
         [Test]
         public void TestComputeWorksWhenContinuousQueryIsActive()
