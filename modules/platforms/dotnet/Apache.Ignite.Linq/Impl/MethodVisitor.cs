@@ -67,6 +67,9 @@ namespace Apache.Ignite.Linq.Impl
             GetParameterizedTrimMethod("Trim", "trim"),
             GetParameterizedTrimMethod("TrimStart", "ltrim"),
             GetParameterizedTrimMethod("TrimEnd", "rtrim"),
+            GetCharTrimMethod("Trim", "trim"),
+            GetCharTrimMethod("TrimStart", "ltrim"),
+            GetCharTrimMethod("TrimEnd", "rtrim"),
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
             GetStringMethod("PadLeft", "lpad", typeof (int)),
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
@@ -253,22 +256,30 @@ namespace Apache.Ignite.Linq.Impl
                 if (arg.NodeType == ExpressionType.Constant)
                 {
                     var constant = (ConstantExpression) arg;
-                    var args = constant.Value as IEnumerable<char>;
 
-                    if (args == null)
+                    if (constant.Value is char)
                     {
-                        throw new NotSupportedException("String.Trim function only supports IEnumerable<char>");
+                        visitor.AppendParameter((char) constant.Value);
                     }
-
-                    var enumeratedArgs = args.ToArray();
-
-                    if (enumeratedArgs.Length != 1)
+                    else
                     {
-                        throw new NotSupportedException("String.Trim function only supports a single argument: " +
-                                                        expression);
-                    }
+                        var args = constant.Value as IEnumerable<char>;
 
-                    visitor.AppendParameter(enumeratedArgs[0]);
+                        if (args == null)
+                        {
+                            throw new NotSupportedException("String.Trim function only supports IEnumerable<char>");
+                        }
+
+                        var enumeratedArgs = args.ToArray();
+
+                        if (enumeratedArgs.Length != 1)
+                        {
+                            throw new NotSupportedException("String.Trim function only supports a single argument: " +
+                                                            expression);
+                        }
+
+                        visitor.AppendParameter(enumeratedArgs[0]);
+                    }
                 }
                 else
                 {
@@ -361,6 +372,16 @@ namespace Apache.Ignite.Linq.Impl
             string sqlName)
         {
             return GetMethod(typeof(string), name, new[] {typeof(char[])},
+                (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
+        }
+
+        /// <summary>
+        /// Gets string parameterized Trim(TrimStart, TrimEnd) method.
+        /// </summary>
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetCharTrimMethod(string name,
+            string sqlName)
+        {
+            return GetMethod(typeof(string), name, new[] {typeof(char)},
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 
