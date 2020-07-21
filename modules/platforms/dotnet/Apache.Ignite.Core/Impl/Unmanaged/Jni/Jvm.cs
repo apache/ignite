@@ -305,8 +305,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 fixed (JvmOption* optPtr = &opts[0])
                 {
                     args.options = optPtr;
-                    IntPtr env;
-                    res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+
+                    IntPtr unused;
+                    res = JvmDll.Instance.CreateJvm(out jvm, out unused, &args);
                 }
 
                 if (res != JniResult.Success)
