@@ -114,6 +114,8 @@ public class EventsSandboxTest extends AbstractSandboxTest {
                 runForbiddenOperation(r, AccessControlException.class);
             else
                 runOperation(r);
+
+            assertEquals("value", grid(SRV).cache(cacheName).get("key"));
         }
         finally {
             evts.stopRemoteListen(id);
