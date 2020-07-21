@@ -32,6 +32,6 @@ class IgniteTest(Test):
         :return:
             The value (in fractional seconds) of a monotonic clock, i.e. a clock that cannot go backwards.
             The clock is not affected by system clock updates. The reference point of the returned value is undefined,
-             so that only the difference between the results of consecutive calls is valid.
+            so that only the difference between the results of consecutive calls is valid.
         """
         return monotonic()
