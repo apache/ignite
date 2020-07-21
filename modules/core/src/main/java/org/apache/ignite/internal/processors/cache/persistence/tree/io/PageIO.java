@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageBPlusIO;
@@ -254,6 +255,10 @@ public abstract class PageIO {
 
     /** */
     public static final short T_DATA_PART = 32;
+
+    public static final short LINK_MAPPING_INNER = 33;
+
+    public static final short LINK_MAPPING_LEAF = 34;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
@@ -795,6 +800,12 @@ public abstract class PageIO {
 
             case T_DATA_REF_METASTORAGE_LEAF:
                 return (Q)MetastorageBPlusIO.LEAF_IO_VERSIONS.forVersion(ver);
+
+            case LINK_MAPPING_INNER:
+                return (Q) LinkMap.LinkMappingInnerIO.VERSIONS.forVersion(ver);
+
+            case LINK_MAPPING_LEAF:
+                return (Q) LinkMap.LinkMappingLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

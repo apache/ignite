@@ -17,19 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-
-import java.io.File;
-import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
@@ -73,11 +83,14 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
         }
         catch (IgniteCheckedException e) {
             // No-op for now.
+            e.printStackTrace();
         }
     }
 
     private void createCacheGroupContext(CacheGroupContext grpCtx, Integer p) throws IgniteCheckedException {
         CacheDefragmentationContext defrgCtx = sharedCtx.database().defragmentationContext();
+
+        DataRegion region = defrgCtx.defragmenationDataRegion();
 
         CacheGroupContext newContext = new CacheGroupContext(
             sharedCtx,
@@ -86,7 +99,7 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
             CacheType.USER,
             grpCtx.config(),
             grpCtx.affinityNode(),
-            defrgCtx.defragmenationDataRegion(),
+            region,
             grpCtx.cacheObjectContext(),
             grpCtx.freeList(),
             grpCtx.reuseList(),
@@ -101,6 +114,54 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
         GridCacheDataStore cacheDataStore = new GridCacheDataStore(newContext, p, true, defrgCtx.busyLock(), defrgCtx.log);
 
         cacheDataStore.init();
+
+        PageMemory memory = region.pageMemory();
+
+        FullPageId id = new FullPageId(memory.allocatePage(grpCtx.groupId(), PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX), grpCtx.groupId());
+
+        LinkMap m = new LinkMap(grpCtx, memory, id.pageId());
+
+        Iterable<IgniteCacheOffheapManager.CacheDataStore> stores = grpCtx.offheap().cacheDataStores();
+
+        IgniteCacheOffheapManager.CacheDataStore store = StreamSupport
+            .stream(stores.spliterator(), false)
+            .filter(s -> grpCtx.groupId() == s.tree().groupId())
+            .findFirst()
+            .orElse(null);
+
+        CacheDataTree tree = store.tree();
+
+        CacheDataTree newTree = cacheDataStore.tree();
+
+        CacheDataRow lower = tree.findFirst();
+        CacheDataRow upper = tree.findLast();
+
+        List<GridCacheContext> cacheContexts = grpCtx.caches();
+
+        tree.iterate(lower, upper, (t, io, pageAddr, idx) -> {
+            CacheDataRow row = tree.getRow(io, pageAddr, idx);
+            int cacheId = row.cacheId();
+
+            GridCacheContext context;
+
+            if (cacheId == CU.UNDEFINED_CACHE_ID)
+                context = cacheContexts.get(0);
+            else
+                context = cacheContexts.stream().filter(c -> c.cacheId() == cacheId).findFirst().orElse(null);
+
+            assert context != null;
+
+            CacheDataRow newRow = cacheDataStore.createRow(context, row.key(), row.value(), row.version(), row.expireTime(), null);
+
+            long link = row.link();
+
+            newTree.put(newRow);
+            long newLink = newRow.link();
+
+            m.put(link, newLink);
+
+            return true;
+        });
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -46,6 +52,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
+    public static final String CACHE_2_NAME = "cache2";
+    /** */
     public static final int PARTS = 1;
 
     /** */
@@ -72,6 +80,27 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    private static class PolicyFactory implements Factory<ExpiryPolicy> {
+        @Override
+        public ExpiryPolicy create() {
+            return new ExpiryPolicy() {
+                @Override public Duration getExpiryForCreation() {
+                    return new Duration(TimeUnit.MILLISECONDS, 13000);
+                }
+
+                /** {@inheritDoc} */
+                @Override public Duration getExpiryForAccess() {
+                    return new Duration(TimeUnit.MILLISECONDS, 13000);
+                }
+
+                /** {@inheritDoc} */
+                @Override public Duration getExpiryForUpdate() {
+                    return new Duration(TimeUnit.MILLISECONDS, 13000);
+                }
+            };
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -88,9 +117,18 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
+        CacheConfiguration cache1Config = new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setGroupName("group")
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+
+        CacheConfiguration cache2Config = new CacheConfiguration(CACHE_2_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setGroupName("group")
+                .setExpiryPolicyFactory(new PolicyFactory())
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+
+        cfg.setCacheConfiguration(cache1Config, cache2Config);
 
         return cfg;
     }
@@ -103,6 +141,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         ig.cluster().state(ClusterState.ACTIVE);
 
         fillCache(ig.cache(DEFAULT_CACHE_NAME));
+
+        fillCache(ig.getOrCreateCache(CACHE_2_NAME));
 
         stopGrid(0);
 
@@ -159,16 +199,25 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     private void fillCache(IgniteCache<Integer,Integer> cache) {
         Map kvs = new HashMap(ADDED_KEYS_COUNT);
 
+        List<Integer> addedKeys = new ArrayList<>();
+
         for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
             byte[] val = new byte[8192];
             new Random().nextBytes(val);
 
             kvs.put(i, val);
+
+            addedKeys.add(i);
         }
 
         cache.putAll(kvs);
 
-        for (int i = 0; i < REMOVED_KEYS_COUNT; i++)
-            cache.remove(new Random().nextInt(ADDED_KEYS_COUNT));
+        for (int i = 0; i < 250; i++) {
+            int key = new Random().nextInt(addedKeys.size());
+            addedKeys.remove(key);
+            cache.remove(key);
+        }
+
+        System.out.println("");
     }
 }
