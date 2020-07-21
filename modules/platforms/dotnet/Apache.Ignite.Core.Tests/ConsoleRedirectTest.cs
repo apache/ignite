@@ -78,7 +78,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartupOutput()
         {
-            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = null
+            };
+            
+            using (Ignition.Start(cfg))
             {
                 Assert.AreEqual(1, Regex.Matches(_outSb.ToString(), "ver=1, locNode=[a-fA-F0-9]{8,8}, servers=1, clients=0,").Count);
             }
@@ -128,7 +133,11 @@ namespace Apache.Ignite.Core.Tests
 
             if (Environment.GetEnvironmentVariable(envVar) == bool.TrueString)
             {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false));
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false))
+                {
+                    Logger = null
+                };
+                
                 Assert.IsTrue(cfg.RedirectJavaConsoleOutput);
 
                 cfg.RedirectJavaConsoleOutput = false;
@@ -154,7 +163,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestMultipleDomains()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = null
+            };
+            
+            using (var ignite = Ignition.Start(cfg))
             {
                 Assert.AreEqual(1, Regex.Matches(_outSb.ToString(), "ver=1, locNode=[a-fA-F0-9]{8,8}, servers=1, clients=0,").Count);
 
@@ -220,7 +234,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    IgniteInstanceName = "newDomainGrid"
+                    IgniteInstanceName = "newDomainGrid",
+                    Logger = null
                 });
 
                 // Will be stopped automatically on domain unload.
