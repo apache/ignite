@@ -490,6 +490,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that client does not receive updates for a stopped continuous query.
+        ///
+        /// - Start a continuous query with the TimeInterval set to 1 second and the BufferSize to 10
+        /// - Put 1 entry to the cache
+        /// - Stop the continuous query
+        /// - Check that the client does not receive any continuous query events after the query has been stopped
         /// </summary>
         [Test]
         public void TestDisposedQueryHandleDoesNotReceiveUpdates()
