@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -204,22 +203,6 @@ public class SystemPropertiesRule implements TestRule {
                 System.clearProperty(t2.getKey());
             else
                 System.setProperty(t2.getKey(), t2.getValue());
-        }
-
-        try {
-            Process p = Runtime.getRuntime().exec(new String[] {"top"/*, "-o", "%MEM", "-l", "1"*/});
-            InputStream is = p.getInputStream();
-
-            System.out.println("<!> top result:");
-
-            int value;
-            while ((value = is.read()) != -1)
-                System.out.print(((char)value));
-            int exitCode = p.waitFor();
-            System.out.println("Top exited with " + exitCode);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }
