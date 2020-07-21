@@ -1187,6 +1187,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected void updateMaxMemoryLimits(IgniteConfiguration cfg) {
         DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
 
+        if (dataStorageCfg == null)
+            return;
+
         update(dataStorageCfg.getDefaultDataRegionConfiguration());
 
         if (dataStorageCfg.getDataRegionConfigurations() != null) {
