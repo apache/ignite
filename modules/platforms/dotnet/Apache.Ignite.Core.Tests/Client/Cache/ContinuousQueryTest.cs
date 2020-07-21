@@ -511,6 +511,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests that <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/> controls
         /// maximum continuous query count.
+        ///
+        /// - Set MaxOpenCursorsPerConnection
+        /// - Try to start more queries than that
+        /// - Check that correct exception is returned
         /// </summary>
         [Test]
         public void TestContinuousQueryCountIsLimitedByMaxCursors()
@@ -531,6 +535,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that multiple queries can be started from multiple threads.
+        ///
+        /// - Run multiple continuous queries from different threads using the same thin client connection
+        /// - Versify that results are correct
         /// </summary>
         [Test]
         public void TestMultipleQueriesMultithreaded()
