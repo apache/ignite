@@ -6054,20 +6054,7 @@ public abstract class IgniteUtils {
      * @return Total amount of memory in bytes or -1 if any exception happened.
      */
     public static long getTotalMemoryAvailable() {
-        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        Object attr;
-
-        try {
-            attr = mBeanSrv.getAttribute(
-                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
-                    "TotalPhysicalMemorySize");
-        }
-        catch (Exception e) {
-            return -1;
-        }
-
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return Long.MAX_VALUE / 2;
     }
 
     /**
