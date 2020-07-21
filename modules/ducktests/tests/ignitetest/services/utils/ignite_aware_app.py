@@ -86,8 +86,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
                "-J-Dlog4j.configDebug=true " \
                "-J-Xmx1G " \
                "-J-ea " \
-               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false " \
-               "-J-XX:+UnlockExperimentalVMOptions -J-XX:+UseCGroupMemoryLimitForHeap"  # java8 docker fix
+               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false "
 
     def env(self):
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
