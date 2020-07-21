@@ -1135,6 +1135,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
+        updateMaxMemoryLimits(cfg);
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
@@ -1177,6 +1178,29 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
         else
             return startRemoteGrid(igniteInstanceName, cfg, ctx);
+    }
+
+    /**
+     * Updates max memory limits if they are default.
+     * Required for containerized build servers.
+     */
+    protected void updateMaxMemoryLimits(IgniteConfiguration cfg) {
+        DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
+
+        update(dataStorageCfg.getDefaultDataRegionConfiguration());
+
+        if (dataStorageCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration configuration : dataStorageCfg.getDataRegionConfigurations())
+                update(configuration);
+        }
+
+    }
+
+    /** */
+    private void update(DataRegionConfiguration configuration) {
+        if (configuration.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE) {
+            configuration.setMaxSize(256 * 1024 * 1024);
+        }
     }
 
     /**
