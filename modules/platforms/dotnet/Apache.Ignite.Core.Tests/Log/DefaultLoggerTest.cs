@@ -56,7 +56,8 @@ namespace Apache.Ignite.Core.Tests.Log
                     CacheConfiguration = new[]
                     {
                         new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(ulong)))
-                    }
+                    },
+                    Logger = null
                 };
 
                 // Start Ignite and verify file log
