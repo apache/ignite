@@ -35,7 +35,7 @@ LABEL ducker.creator=$ducker_creator
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python-pip python-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
 RUN python -m pip install -U pip==9.0.3;
-RUN pip install --upgrade cffi virtualenv pyasn1 boto3 pycrypto pywinrm ipaddress enum34 && pip install --upgrade ducktape==0.7.7
+RUN pip install --upgrade cffi virtualenv pyasn1 boto3 pycrypto pywinrm ipaddress enum34 monotonic && pip install --upgrade ducktape==0.7.7
 
 # Set up ssh
 COPY ./ssh-config /root/.ssh/config
@@ -47,11 +47,24 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.7.6/apache-ignite-2.7.6-bin.zip && unzip apache-ignite-2.7.6-bin.zip && mv /opt/apache-ignite-2.7.6-bin /opt/ignite-2.7.6
-RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.0/apache-ignite-2.8.0-bin.zip && unzip apache-ignite-2.8.0-bin.zip && mv /opt/apache-ignite-2.8.0-bin /opt/ignite-2.8.0
-RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.1/apache-ignite-2.8.1-bin.zip && unzip apache-ignite-2.8.1-bin.zip && mv /opt/apache-ignite-2.8.1-bin /opt/ignite-2.8.1
+RUN for v in "2.7.6" "2.8.0" "2.8.1"; \
+    do cd /opt; \
+    curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
+    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
+    cp -r ./ignite-$v/libs/optional/ignite-zookeeper ./ignite-$v/libs; \
+    done
 
 RUN rm /opt/apache-ignite-*-bin.zip
+
+#Install zookeeper.
+ARG ZOOKEEPER_VERSION="3.5.8"
+ARG ZOOKEEPER_NAME="zookeeper-$ZOOKEEPER_VERSION"
+ARG ZOOKEEPER_RELEASE_NAME="apache-$ZOOKEEPER_NAME-bin"
+ARG ZOOKEEPER_RELEASE_ARTIFACT="$ZOOKEEPER_RELEASE_NAME.tar.gz"
+RUN echo $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT
+RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
+ && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
+RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
 # Install spark
 ARG SPARK_VERSION="2.3.4"
@@ -77,4 +90,4 @@ USER ducker
 CMD sudo service ssh start && tail -f /dev/null
 
 # Container port exposure
-EXPOSE 11211 47100 47500 49112 10800 8080
+EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181

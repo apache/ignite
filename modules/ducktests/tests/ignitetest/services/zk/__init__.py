@@ -12,26 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from ducktape.tests.test import Test
-from monotonic import monotonic
-
-
-class IgniteTest(Test):
-    def __init__(self, test_context):
-        super(IgniteTest, self).__init__(test_context=test_context)
-
-    def stage(self, msg):
-        self.logger.info("[TEST_STAGE] " + msg + "...")
-
-    @staticmethod
-    def monotonic():
-        """
-        monotonic() -> float
-
-        :return:
-            The value (in fractional seconds) of a monotonic clock, i.e. a clock that cannot go backwards.
-            The clock is not affected by system clock updates. The reference point of the returned value is undefined,
-            so that only the difference between the results of consecutive calls is valid.
-        """
-        return monotonic()

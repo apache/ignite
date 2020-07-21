@@ -52,6 +52,6 @@ setup(name="ignitetest",
       packages=find_packages(),
       include_package_data=True,
       install_requires=["ducktape==0.7.7", "requests==2.20.0"],
-      tests_require=["pytest", "mock"],
+      tests_require=["pytest", "mock", "monotonic"],
       cmdclass={'test': PyTest}
 )
