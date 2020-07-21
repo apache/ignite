@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
+// ReSharper disable PartialTypeWithSinglePart
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
@@ -32,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// JVM holder. Should exist once per domain.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal sealed unsafe class Jvm
+    internal sealed unsafe partial class Jvm
     {
         /** */
         // ReSharper disable once InconsistentNaming
@@ -117,23 +116,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
 #if !NETCOREAPP
-            // JVM exists once per process, and JVM callbacks exist once per process.
-            // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
-            // Non-default appDomains should delegate this logic to the default one.
-            var defDomain = AppDomains.GetDefaultAppDomain();
-
-            // In some cases default AppDomain is not able to locate Apache.Ignite.Core assembly.
-            // First, use CreateInstanceFrom to set up the AssemblyResolve handler.
-            var resHelpType = typeof(AssemblyResolver);
-            var resHelp = (AssemblyResolver)defDomain.CreateInstanceFrom(resHelpType.Assembly.Location, resHelpType.FullName)
-                .Unwrap();
-            resHelp.TrackResolve(resHelpType.Assembly.FullName, resHelpType.Assembly.Location);
-
-            // Now use CreateInstance to get the domain helper of a properly loaded class.
-            var type = typeof(CallbackAccessor);
-            var helper = (CallbackAccessor)defDomain.CreateInstance(type.Assembly.FullName, type.FullName).Unwrap();
-
-            return helper.GetCallbacks();
+            return GetCallbacksFromDefaultDomainImpl();
 #else
             throw new IgniteException("Multiple domains are not supported on .NET Core.");
 #endif
@@ -347,47 +330,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private static void GetDelegate<T>(IntPtr ptr, out T del)
         {
             del = (T) (object) Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
-        }
-
-
-        /// <summary>
-        /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.
-        /// </summary>
-        private class CallbackAccessor : MarshalByRefObject
-        {
-            /// <summary>
-            /// Gets the callbacks.
-            /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-                Justification = "Only instance methods can be called across AppDomain boundaries.")]
-            public Callbacks GetCallbacks()
-            {
-                return GetOrCreate(null)._callbacks;
-            }
-        }
-
-        /// <summary>
-        /// Resolves Apache.Ignite.Core assembly in the default AppDomain when needed.
-        /// </summary>
-        private class AssemblyResolver : MarshalByRefObject
-        {
-            /// <summary>
-            /// Tracks the AssemblyResolve event.
-            /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-                Justification = "Only instance methods can be called across AppDomain boundaries.")]
-            public void TrackResolve(string name, string path)
-            {
-                AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-                {
-                    if (args.Name == name)
-                    {
-                        return Assembly.LoadFrom(path);
-                    }
-
-                    return null;
-                };
-            }
         }
     }
 }
