@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.S;

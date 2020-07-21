@@ -103,7 +103,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "recoveryDescs");
         ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "outRecDescs");
         ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "inRecDescs");
-        GridNioServerListener<Message> lsnr =  GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "srvLsnr");
+        GridNioServerListener<Message> lsnr = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "srvLsnr");
 
         Iterator<GridNioRecoveryDescriptor> it = F.concat(
             recoveryDescs.values().iterator(),

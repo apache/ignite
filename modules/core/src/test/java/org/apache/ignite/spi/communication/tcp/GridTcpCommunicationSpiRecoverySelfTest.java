@@ -639,7 +639,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
     private boolean waitForSessionsCount(TcpCommunicationSpi spi, int cnt) throws IgniteInterruptedCheckedException {
         return GridTestUtils.waitForCondition(() -> {
             Collection<? extends GridNioSession> sessions =
-                GridTestUtils.getFieldValue(spi, "nioSrvWrapper", "nioSrv" , "sessions");
+                GridTestUtils.getFieldValue(spi, "nioSrvWrapper", "nioSrv", "sessions");
 
             return sessions.size() == cnt;
         }, awaitForSocketWriteTimeout());

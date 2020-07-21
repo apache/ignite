@@ -540,7 +540,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         }
 
         for (CommunicationSpi spi : spis.values()) {
-            final ConcurrentMap<UUID, GridCommunicationClient[]> clients =  GridTestUtils.getFieldValue(spi, "clientPool", "clients");
+            final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
             assert GridTestUtils.waitForCondition(() -> {
                 for (GridCommunicationClient[] clients0 : clients.values()) {

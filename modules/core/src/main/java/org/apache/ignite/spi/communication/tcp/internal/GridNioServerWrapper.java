@@ -149,6 +149,7 @@ public class GridNioServerWrapper {
 
     /** Attribute names. */
     private final AttributeNames attrs;
+
     /** Tracing. */
     private final Tracing tracing;
 
@@ -194,7 +195,9 @@ public class GridNioServerWrapper {
     /** In rec descs. */
     private final ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs = GridConcurrentFactory.newMap();
 
-    /** */
+    /**
+     *
+     */
     private final CommunicationListener<Message> lsnr;
 
     /** Recovery and idle clients handler. */
@@ -658,7 +661,6 @@ public class GridNioServerWrapper {
                     String msg = "Failed to connect to all addresses of node " + node.id() + ": " + failedAddrsSet +
                         "; inverse connection will be requested.";
 
-
                     throw new NodeUnreachableException(msg);
                 }
             }
@@ -688,8 +690,12 @@ public class GridNioServerWrapper {
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCommunicationClient createTcpClient(ClusterNode node, int connIdx, boolean backwardCompatibility) throws IgniteCheckedException {
-        if(backwardCompatibility)
+    public GridCommunicationClient createTcpClient(
+        ClusterNode node,
+        int connIdx,
+        boolean backwardCompatibility
+    ) throws IgniteCheckedException {
+        if (backwardCompatibility)
             return createTcpClientFun.apply(node, connIdx);
         else {
             GridNioSession ses = createNioSession(node, connIdx);

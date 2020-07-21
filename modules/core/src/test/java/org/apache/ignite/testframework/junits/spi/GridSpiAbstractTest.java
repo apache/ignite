@@ -208,7 +208,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         spiConfigure(spi);
 
-
         // Set up SPI class name and SPI version.
         Map<String, Serializable> spiAttrs = initSpiClassAndVersionAttributes(spi);
 
