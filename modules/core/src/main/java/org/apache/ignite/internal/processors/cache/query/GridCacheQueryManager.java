@@ -931,11 +931,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (log.isDebugEnabled())
                 log.debug("Running query: " + qryInfo);
 
-            boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
-
-            if (performanceStatsEnabled)
-                IoStatisticsQueryHelper.startGatheringQueryStatistics();
-
             boolean rmvRes = true;
 
             FieldsResult res = null;
@@ -1101,19 +1096,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
                 else if (rmvRes)
                     removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
-
-                if (performanceStatsEnabled) {
-                    IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
-
-                    if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                        cctx.kernalContext().performanceStatistics().queryReads(
-                            SQL_FIELDS,
-                            qryInfo.senderId(),
-                            qryInfo.requestId(),
-                            stat.logicalReads(),
-                            stat.physicalReads());
-                    }
-                }
             }
         }
         finally {
