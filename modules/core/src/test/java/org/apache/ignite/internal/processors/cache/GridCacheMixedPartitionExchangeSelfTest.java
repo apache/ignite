@@ -27,7 +27,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -139,13 +138,13 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             startGrid(4);
 
-            U.sleep(500);
+            awaitPartitionMapExchange();
 
             finished.set(true);
 
             fut.get();
 
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion(), 1);
 
             assertEquals(29, topVer.topologyVersion());
 
