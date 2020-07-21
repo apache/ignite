@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.transactions.Transaction;
 
 /** Create instace of Ignite component proxy to use inside the Ignite Sandbox. */
@@ -66,6 +67,7 @@ public final class SandboxIgniteComponentProxy {
         IgniteBinary.class,
         Affinity.class,
         QueryCursor.class,
+        GridIterator.class,
         Transaction.class
     };
 

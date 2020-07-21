@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
@@ -181,6 +182,9 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                     cache.invokeAll(singleton("key"), processor());
                     cache.invokeAsync("key", processor()).get();
                     cache.invokeAllAsync(singleton("key"), processor()).get();
+
+                    for (Cache.Entry<String, String> entry : cache)
+                        log.info(entry.toString());
 
                     cache.query(new ScanQuery<String, String>()).getAll();
                 }
