@@ -190,6 +190,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that continuous query with filter receives only matching events.
+        ///
+        /// - Start a continuous query with filter
+        /// - Verify that filter receives all events
+        /// - Verify that listener receives filtered events
         /// </summary>
         [Test]
         public void TestContinuousQueryWithFilterReceivesOnlyMatchingEvents()
