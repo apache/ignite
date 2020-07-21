@@ -70,7 +70,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * Closure to perform ordinary update after repeatable read.
      */
     private final IgniteInClosure<Connection> afterReadUpdate = connection ->
-        execute(connection, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");;
+        execute(connection, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
 
     /**
      * Closure to perform ordinary delete and rollback after repeatable read.
@@ -84,7 +84,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Closure to perform fast delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadFastDelAndRollback = connection ->  {
+    private final IgniteInClosure<Connection> afterReadFastDelAndRollback = connection -> {
         execute(connection, "DELETE FROM \"Person\".Person where id = 1");
 
         rollback(connection);
@@ -562,7 +562,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplace() throws Exception {
-        doTestRepeatableRead(connection ->  {
+        doTestRepeatableRead(connection -> {
             Person p = new Person();
 
             p.id = 1;

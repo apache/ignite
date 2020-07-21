@@ -24,7 +24,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;

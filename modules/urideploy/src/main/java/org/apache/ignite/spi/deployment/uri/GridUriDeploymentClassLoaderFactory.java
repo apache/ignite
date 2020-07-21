@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;

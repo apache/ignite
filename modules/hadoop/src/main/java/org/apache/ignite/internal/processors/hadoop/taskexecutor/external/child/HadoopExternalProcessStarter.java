@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopExternalCommunication;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
