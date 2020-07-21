@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.yardstickframework.BenchmarkConfiguration;
