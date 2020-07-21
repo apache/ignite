@@ -114,7 +114,8 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
     private final AttributeNames attributeNames;
 
     /** Metrics listener. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /** Context initialize latch. */
     private final CountDownLatch ctxInitLatch;
@@ -964,5 +965,12 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
      */
     public void communicationWorker(CommunicationWorker commWorker) {
         this.commWorker = commWorker;
+    }
+
+    /**
+     * @param metricsLsnr New metrics listener.
+     */
+    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
+        this.metricsLsnr = metricsLsnr;
     }
 }

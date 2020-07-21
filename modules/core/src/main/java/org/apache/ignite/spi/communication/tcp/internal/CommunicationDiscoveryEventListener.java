@@ -24,6 +24,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -36,7 +37,8 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     private final ConnectionClientPool clientPool;
 
     /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /**
      * @param clientPool Client pool.
@@ -75,5 +77,12 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
         metricsLsnr.onNodeLeft(consistentId);
 
         clientPool.onNodeLeft(nodeId);
+    }
+
+    /**
+     * @param metricsLsnr New statistics.
+     */
+    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
+        this.metricsLsnr = metricsLsnr;
     }
 }

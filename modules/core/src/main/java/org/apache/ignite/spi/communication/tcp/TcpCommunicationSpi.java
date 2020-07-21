@@ -106,38 +106,30 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
  * TCP/IP protocol and Java NIO to communicate with other nodes.
  * <p>
- * To enable communication with other nodes, this SPI adds {@link #ATTR_ADDRS}
- * and {@link #ATTR_PORT} local node attributes (see {@link ClusterNode#attributes()}.
+ * To enable communication with other nodes, this SPI adds {@link #ATTR_ADDRS} and {@link #ATTR_PORT} local node
+ * attributes (see {@link ClusterNode#attributes()}.
  * <p>
- * At startup, this SPI tries to start listening to local port specified by
- * {@link #setLocalPort(int)} method. If local port is occupied, then SPI will
- * automatically increment the port number until it can successfully bind for
- * listening. {@link #setLocalPortRange(int)} configuration parameter controls
- * maximum number of ports that SPI will try before it fails. Port range comes
- * very handy when starting multiple grid nodes on the same machine or even
- * in the same VM. In this case all nodes can be brought up without a single
- * change in configuration.
+ * At startup, this SPI tries to start listening to local port specified by {@link #setLocalPort(int)} method. If local
+ * port is occupied, then SPI will automatically increment the port number until it can successfully bind for listening.
+ * {@link #setLocalPortRange(int)} configuration parameter controls maximum number of ports that SPI will try before it
+ * fails. Port range comes very handy when starting multiple grid nodes on the same machine or even in the same VM. In
+ * this case all nodes can be brought up without a single change in configuration.
  * <p>
- * This SPI caches connections to remote nodes so it does not have to reconnect every
- * time a message is sent. By default, idle connections are kept active for
- * {@link #DFLT_IDLE_CONN_TIMEOUT} period and then are closed. Use
- * {@link #setIdleConnectionTimeout(long)} configuration parameter to configure
- * you own idle connection timeout.
+ * This SPI caches connections to remote nodes so it does not have to reconnect every time a message is sent. By
+ * default, idle connections are kept active for {@link #DFLT_IDLE_CONN_TIMEOUT} period and then are closed. Use {@link
+ * #setIdleConnectionTimeout(long)} configuration parameter to configure you own idle connection timeout.
  * <h1 class="header">Failure Detection</h1>
- * Configuration defaults (see Configuration section below and
- * {@link IgniteConfiguration#getFailureDetectionTimeout()}) for details) are chosen to make possible for
- * communication SPI work reliably on most of hardware and virtual deployments, but this has made failure detection
- * time worse.
+ * Configuration defaults (see Configuration section below and {@link IgniteConfiguration#getFailureDetectionTimeout()})
+ * for details) are chosen to make possible for communication SPI work reliably on most of hardware and virtual
+ * deployments, but this has made failure detection time worse.
  * <p>
- * If it's needed to tune failure detection then it's highly recommended to do this using
- * {@link IgniteConfiguration#setFailureDetectionTimeout(long)}. This failure timeout automatically controls the
- * following parameters: {@link #getConnectTimeout()}, {@link #getMaxConnectTimeout()},
- * {@link #getReconnectCount()}. If any of those parameters is set explicitly, then the failure timeout setting will be
- * ignored.
+ * If it's needed to tune failure detection then it's highly recommended to do this using {@link
+ * IgniteConfiguration#setFailureDetectionTimeout(long)}. This failure timeout automatically controls the following
+ * parameters: {@link #getConnectTimeout()}, {@link #getMaxConnectTimeout()}, {@link #getReconnectCount()}. If any of
+ * those parameters is set explicitly, then the failure timeout setting will be ignored.
  * <p>
- * If it's required to perform advanced settings of failure detection and
- * {@link IgniteConfiguration#getFailureDetectionTimeout()} is unsuitable then various {@code TcpCommunicationSpi}
- * configuration parameters may be used.
+ * If it's required to perform advanced settings of failure detection and {@link IgniteConfiguration#getFailureDetectionTimeout()}
+ * is unsuitable then various {@code TcpCommunicationSpi} configuration parameters may be used.
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -170,8 +162,8 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * <li>Maximum number of unacknowledged messages (see {@link #setUnacknowledgedMessagesBufferSize(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * TcpCommunicationSpi is used by default and should be explicitly configured
- * only if some SPI configuration parameters need to be overridden.
+ * TcpCommunicationSpi is used by default and should be explicitly configured only if some SPI configuration parameters
+ * need to be overridden.
  * <pre name="code" class="java">
  * TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
  *
@@ -204,6 +196,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ *
  * @see CommunicationSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
@@ -256,8 +249,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     public static final int DFLT_MSG_QUEUE_LIMIT = GridNioServer.DFLT_SEND_QUEUE_LIMIT;
 
     /**
-     * Default count of selectors for TCP server equals to
-     * {@code "Math.max(4, Runtime.getRuntime().availableProcessors()
+     * Default count of selectors for TCP server equals to {@code "Math.max(4, Runtime.getRuntime().availableProcessors()
      * / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
@@ -269,8 +261,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     public static final int CONSISTENT_ID_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
-     * Default local port range (value is <tt>100</tt>).
-     * See {@link #setLocalPortRange(int)} for details.
+     * Default local port range (value is <tt>100</tt>). See {@link #setLocalPortRange(int)} for details.
      */
     public static final int DFLT_PORT_RANGE = 100;
 
@@ -377,7 +368,9 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** State provider. */
     private volatile ClusterStateProvider stateProvider;
 
-    /** */
+    /**
+     *
+     */
     public static final String ATTR_FORCE_CLIENT_SERVER_CONNECTIONS = "comm.force.client.srv.connections";
 
     /** Logger. */
@@ -830,8 +823,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
-
         if (shmemSrv != null) {
 
             MessageFactory msgFactory = new MessageFactory() {
@@ -937,6 +928,15 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ctxInitLatch.countDown();
 
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
+
+        srvLsnr.metricsListener(metricsLsnr);
+        clientPool.metricsListener(metricsLsnr);
+        ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
+
+        if (shmemAcceptWorker != null)
+            shmemAcceptWorker.metricsListener(metricsLsnr);
+
+        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
     }
 
     /** {@inheritDoc} */
@@ -986,7 +986,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             clientPool.stop();
             clientPool.forceClose();
         }
-
 
         // Clear resources.
         if (nioSrvWrapper != null)
@@ -1265,7 +1264,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         return Boolean.TRUE.equals(forceClientToSrvConnections);
     }
-
 
     /**
      * @param sndId Sender ID.

@@ -32,6 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This worker takes request created via shmem.
@@ -50,7 +51,8 @@ public class ShmemAcceptWorker extends GridWorker {
     private final GridNioServerListener<Message> srvLsnr;
 
     /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -140,5 +142,12 @@ public class ShmemAcceptWorker extends GridWorker {
         super.cancel();
 
         srv.close();
+    }
+
+    /**
+     * @param metricsLsnr New statistics.
+     */
+    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
+        this.metricsLsnr = metricsLsnr;
     }
 }

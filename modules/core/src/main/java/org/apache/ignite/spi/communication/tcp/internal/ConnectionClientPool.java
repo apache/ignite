@@ -84,7 +84,8 @@ public class ConnectionClientPool {
     private final IgniteLogger log;
 
     /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /** Local node supplier. */
     private final Supplier<ClusterNode> locNodeSupplier;
@@ -790,5 +791,12 @@ public class ConnectionClientPool {
             else
                 throw handshakeTimeoutException();
         }
+    }
+
+    /**
+     * @param metricsLsnr New statistics.
+     */
+    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
+        this.metricsLsnr = metricsLsnr;
     }
 }
