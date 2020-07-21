@@ -224,14 +224,16 @@ public class SystemPropertiesRule implements TestRule {
 
             String str = out.toString("UTF-8");
 
-            Comparator<String> cmp = Comparator.comparingDouble(s -> Double.parseDouble(s.substring(0, s.indexOf(' '))));
-            String res = Stream.of(str.split("\n"))
-                .skip(1)
-                .map(String::trim)
-                .sorted(cmp.reversed())
-                .limit(5)
-                .collect(Collectors.joining("\n"));
-            System.out.println(res);
+            System.out.println(str);
+
+//            Comparator<String> cmp = Comparator.comparingDouble(s -> Double.parseDouble(s.substring(0, s.indexOf(' '))));
+//            String res = Stream.of(str.split("\n"))
+//                .skip(1)
+//                .map(String::trim)
+//                .sorted(cmp.reversed())
+//                .limit(5)
+//                .collect(Collectors.joining("\n"));
+//            System.out.println(res);
 
             int exitCode = p.waitFor();
             System.out.println("Exited with " + exitCode);
