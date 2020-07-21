@@ -121,6 +121,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             return TxStart(concurrency, isolation, timeout, null);
         }
 
+        /// <summary>
+        /// Starts a new transaction with the specified concurrency, isolation, timeout and label.
+        /// </summary>
         private ITransactionClient TxStart(TransactionConcurrency concurrency,
             TransactionIsolation isolation,
             TimeSpan timeout,

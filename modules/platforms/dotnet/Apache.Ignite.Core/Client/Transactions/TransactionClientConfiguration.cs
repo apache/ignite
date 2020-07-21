@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Client.Transactions
             DefaultTransactionIsolation = DefaultDefaultTransactionIsolation;
             DefaultTimeout = DefaultDefaultTimeout;
         }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionClientConfiguration" /> class.
         /// </summary>
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Client.Transactions
 
             DefaultTransactionConcurrency = cfg.DefaultTransactionConcurrency;
             DefaultTransactionIsolation = cfg.DefaultTransactionIsolation;
-            DefaultTimeout =cfg.DefaultTimeout;
+            DefaultTimeout = cfg.DefaultTimeout;
         }
     }
 }

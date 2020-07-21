@@ -89,6 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(2, cache.Get(key2));
         }
 
+        /** <inheritdoc /> */
         protected override string GetCacheName()
         {
             return "partitioned_" + base.GetCacheName();
