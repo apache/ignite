@@ -622,6 +622,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that when custom <see cref="ContinuousQueryClient{TK,TV}.TimeInterval"/> is set,
         /// and <see cref="ContinuousQueryClient{TK,TV}.BufferSize"/> is greater than 1,
         /// batches are sent out before buffer is full when the time interval passes.
+        ///
+        /// - Start a continuous query with the BufferSize set to 4 and TimeInterval set to 1 second
+        /// - Put 2 entries to the cache
+        /// - Wait and check that clint has received one batch of 2 entries
         /// </summary>
         [Test]
         public void TestCustomTimeIntervalCausesIncompleteBatches()
