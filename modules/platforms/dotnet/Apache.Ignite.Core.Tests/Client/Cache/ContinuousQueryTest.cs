@@ -26,11 +26,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Cache.Event;
+    using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -228,6 +229,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that continuous query with Java filter receives only matching events.
+        ///
+        /// - Start continuous query with Java filter
+        /// - Check that .NET listener receives filtered events
         /// </summary>
         [Test]
         public void TestContinuousQueryWithJavaFilterReceivesOnlyMatchingEvents()
@@ -237,10 +241,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var evts = new ConcurrentBag<int>();
             var listener = new DelegateListener<int, int>(e => evts.Add(e.Key));
 
-            var qry = new ContinuousQueryClient<int,int>(listener)
+            var qry = new ContinuousQueryClient<int, int>(listener)
             {
-                Filter = new JavaCacheEntryEventFilter<int, int>(
-                    "org.apache.ignite.platform.PlatformCacheEntryEvenKeyEventFilter", null)
+                Filter = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEvenKeyEventFilter", null)
+                    .ToCacheEntryEventFilter<int, int>()
             };
 
             using (cache.QueryContinuous(qry))
