@@ -54,9 +54,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
@@ -383,17 +385,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        long msgExchangeTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-            spi.getSocketTimeout() + spi.getAckTimeout();
-
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(msgExchangeTimeout / 4, MAX_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            1,
+            4,
             2000,
             new LinkedBlockingQueue<>());
 
@@ -2006,6 +2005,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
 
         return threads;
+    }
+
+    /** @return Complete timeout of single message exchange operation on established connection. */
+    protected long effectiveExchangeTimeout() {
+        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /** {@inheritDoc} */
@@ -6872,9 +6877,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = System.nanoTime();
+                        long timeThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
 
-                        // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + U.millisToNanos(connCheckInterval) * 2 >= now;
+                        // We got message from previous in less than effective exchange timeout.
+                        boolean ok = timeThreshold > now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -6892,18 +6898,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-                                Collection<InetSocketAddress> nodeAddrs =
-                                    spi.getNodeAddresses(previous, false);
+                                Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                for (InetSocketAddress addr : nodeAddrs) {
-                                    // Connection refused may be got if node doesn't listen
-                                    // (or blocked by firewall, but anyway assume it is dead).
-                                    if (!isConnectionRefused(addr)) {
-                                        liveAddr = addr;
-
-                                        break;
-                                    }
-                                }
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
+                                    (int)U.nanosToMillis(timeThreshold - now));
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7366,22 +7364,61 @@ class ServerImpl extends TcpDiscoveryImpl {
             lastRingMsgReceivedTime = System.nanoTime();
         }
 
-        /**
-         * @param addr Address to check.
-         * @return {@code True} if got connection refused on connect try.
-         */
-        private boolean isConnectionRefused(SocketAddress addr) {
-            try (Socket sock = new Socket()) {
-                sock.connect(addr, 100);
-            }
-            catch (ConnectException e) {
-                return true;
-            }
-            catch (IOException e) {
-                return false;
+        /** @return Alive address if was able to connected to. {@code Null} otherwise. */
+        private InetSocketAddress checkConnection(List<InetSocketAddress> addrs, int timeout) {
+            AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
+
+            CountDownLatch latch = new CountDownLatch(addrs.size());
+
+            int addrLeft = addrs.size();
+
+            int threadsLeft = utilityPool.getMaximumPoolSize();
+
+            AtomicInteger addrIdx = new AtomicInteger();
+
+            while (addrLeft > 0) {
+                int addrPerThread = addrLeft / threadsLeft + (addrLeft % threadsLeft > 0 ? 1 : 0);
+
+                addrLeft -= addrPerThread;
+
+                --threadsLeft;
+
+                utilityPool.execute(new Thread() {
+                    private final int addrsToCheck = addrPerThread;
+
+                    /** */
+                    @Override public void run() {
+                        int perAddrTimeout = timeout / addrsToCheck;
+
+                        for (int i = 0; i < addrsToCheck; ++i) {
+                            InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
+
+                            try (Socket sock = new Socket()) {
+                                if (liveAddrHolder.get() == null) {
+                                    sock.connect(addr, perAddrTimeout);
+
+                                    liveAddrHolder.compareAndSet(null, addr);
+                                }
+                            }
+                            catch (Exception ignored) {
+                                // No-op.
+                            }
+                            finally {
+                                latch.countDown();
+                            }
+                        }
+                    }
+                });
             }
 
-            return false;
+            try {
+                latch.await(timeout, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+
+            return liveAddrHolder.get();
         }
 
         /**
