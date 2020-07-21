@@ -258,6 +258,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that server-side updates are sent to the client.
+        ///
+        /// - Start thin client continuous query
+        /// - Update cache from server node
+        /// - Check that thin client receives events
         /// </summary>
         [Test]
         public void TestClientContinuousQueryReceivesEventsFromServerCache()
@@ -289,6 +293,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests that when cache is in binary mode (<see cref="ICacheClient{TK,TV}.WithKeepBinary{K1,V1}"/>,
         /// continuous query listener and filter receive binary objects.
+        ///
+        /// - Get a cache in binary mode (WithKeepBinary)
+        /// - Start a continuous query
+        /// - Check that both filter and listener receive objects in binary form
         /// </summary>
         [Test]
         public void TestContinuousQueryWithKeepBinaryPassesBinaryObjectsToListenerAndFilter()
@@ -327,6 +335,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that custom key / value objects can be used in Continuous Query filter and listener.
+        ///
+        /// - Create a cache with a custom class value (Person)
+        /// - Run continuous query with filter and listener
         /// </summary>
         [Test]
         public void TestContinuousQueryWithCustomObjects()
