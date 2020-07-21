@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// <summary>
     /// Cross-AppDomain Jvm parts, valid only on .NET Classic.
     /// </summary>
-    internal sealed unsafe partial class Jvm
+    internal sealed partial class Jvm
     {
         /// <summary>
         /// Gets the callbacks.
