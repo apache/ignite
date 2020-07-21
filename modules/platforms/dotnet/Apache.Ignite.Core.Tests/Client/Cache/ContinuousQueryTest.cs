@@ -375,6 +375,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /// <summary>
         /// Tests that exception in continuous query remote filter is logged and event is delivered anyway.
+        ///
+        /// - Run continuous query with a filter that throws an exception
+        /// - Verify that exception is logged
+        /// - Verify that the client receives an event
         /// </summary>
         [Test]
         public void TestExceptionInFilterIsLoggedAndFilterIsIgnored()
@@ -411,7 +415,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that users can subscribe to continuous query disconnected event.
+        /// Tests that continuous query disconnected event (<see cref="IContinuousQueryHandleClient.Disconnected"/>)
+        /// is raised when thin client connection is lost.
+        ///
+        /// - Start continuous query
+        /// - Disconnect the client
+        /// - Verify that Disconnected event is raised
         /// </summary>
         [Test]
         public void TestClientDisconnectRaisesDisconnectedEventOnQueryHandle()
