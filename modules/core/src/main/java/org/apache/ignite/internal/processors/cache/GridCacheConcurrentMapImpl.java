@@ -70,13 +70,22 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, touch);
     }
 
+    /**
+     * @param hld Holder.
+     * @param ctx Context.
+     * @param topVer Topology version.
+     * @param key Key.
+     * @param create Create flag.
+     * @param touch Touch flag.
+     */
     protected final GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         @Nullable CacheMapHolder hld,
         GridCacheContext ctx,
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         final boolean create,
-        final boolean touch) {
+        final boolean touch
+    ) {
         if (hld == null)
             hld = entriesMapIfExists(ctx.cacheIdBoxed());
 
