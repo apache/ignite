@@ -2272,14 +2272,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         try {
             final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", () -> {
-                try {
-                    testRoutine.evaluate();
-                }
-                catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+                @Override public void run() {
+                    try {
+                        testRoutine.evaluate();
+                    }
+                    catch (Throwable e) {
+                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                        ex.set(hnd != null ? hnd.apply(e) : e);
+                    }
                 }
             });
 
