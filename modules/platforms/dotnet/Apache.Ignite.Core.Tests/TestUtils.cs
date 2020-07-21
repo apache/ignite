@@ -22,6 +22,8 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -30,17 +32,22 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
     /// Test utility methods.
     /// </summary>
-    public static partial class TestUtils
+    public static class TestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
@@ -543,6 +550,120 @@ namespace Apache.Ignite.Core.Tests
             var failoverSocket = GetPrivateField<ClientFailoverSocket>(client, "_socket");
             var socket = GetPrivateField<ClientSocket>(failoverSocket, "_socket");
             return GetPrivateField<ICollection>(socket, "_notificationListeners");
+        }
+
+                /// <summary>
+        ///
+        /// </summary>
+        /// <returns></returns>
+        public static string CreateTestClasspath()
+        {
+            var home = IgniteHome.Resolve();
+            return Classpath.CreateClasspath(null, home, forceTestClasspath: true);
+        }
+
+        /// <summary>
+        /// Kill Ignite processes.
+        /// </summary>
+        public static void KillProcesses()
+        {
+            IgniteProcess.KillAll();
+        }
+
+        /// <summary>
+        /// Gets the default code-based test configuration.
+        /// </summary>
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
+        {
+            return new IgniteConfiguration
+            {
+                DiscoverySpi = GetStaticDiscovery(),
+                Localhost = "127.0.0.1",
+                JvmOptions = TestJavaOptions(jvmDebug),
+                JvmClasspath = CreateTestClasspath(),
+                IgniteInstanceName = name,
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                        InitialSize = 128 * 1024 * 1024,
+                        MaxSize = Environment.Is64BitProcess
+                            ? DataRegionConfiguration.DefaultMaxSize
+                            : 256 * 1024 * 1024
+                    }
+                },
+                FailureHandler = new NoOpFailureHandler(),
+                WorkDirectory = WorkDir,
+                Logger = new TestContextLogger()
+            };
+        }
+
+        /// <summary>
+        /// Runs the test in new process.
+        /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        public static void RunTestInNewProcess(string fixtureName, string testName)
+        {
+            var procStart = new ProcessStartInfo
+            {
+                FileName = typeof(TestUtils).Assembly.Location,
+                Arguments = fixtureName + " " + testName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(procStart);
+            Assert.IsNotNull(proc);
+
+            try
+            {
+                proc.AttachProcessConsoleReader();
+
+                Assert.IsTrue(proc.WaitForExit(30000));
+                Assert.AreEqual(0, proc.ExitCode);
+            }
+            finally
+            {
+                if (!proc.HasExited)
+                {
+                    proc.Kill();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Logs to test progress. Produces immediate console output on .NET Core.
+        /// </summary>
+        public class TestContextLogger : ILogger
+        {
+            /** <inheritdoc /> */
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
+                string category, string nativeErrorInfo, Exception ex)
+            {
+                if (!IsEnabled(level))
+                {
+                    return;
+                }
+
+                var text = args != null
+                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
+                    : message;
+
+#if NETCOREAPP
+                TestContext.Progress.WriteLine(text);
+#else
+                Console.WriteLine(text);
+#endif
+            }
+
+            /** <inheritdoc /> */
+            public bool IsEnabled(LogLevel level)
+            {
+                return level >= LogLevel.Info;
+            }
         }
     }
 }
