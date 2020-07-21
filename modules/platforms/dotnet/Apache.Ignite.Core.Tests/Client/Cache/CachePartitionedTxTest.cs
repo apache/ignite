@@ -17,12 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System.Linq;
     using System.Transactions;
-    using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Impl.Client.Transactions;
     using NUnit.Framework;
-    using NUnit.Framework.Constraints;
 
     /// <summary>
     /// Tests client transactions for multiple nodes with partition awareness.
