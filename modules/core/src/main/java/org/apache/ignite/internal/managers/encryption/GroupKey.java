@@ -24,6 +24,9 @@ import java.util.Objects;
  * Cache group encryption key with identifier.
  */
 public class GroupKey implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Encryption key ID. */
     private final int id;
 

@@ -56,6 +56,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THROT
 
 /**
  * Cache group page stores scanner.
+ * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
 public class CacheGroupPageScanner implements DbCheckpointListener {
     /** Thread prefix for scanning tasks. */
@@ -83,7 +84,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
-    /** Mapping of cache group ID to scanning context. */
+    /** Mapping of cache group ID to group scanning context. */
     private final Map<Integer, GroupScanContext> grps = new ConcurrentHashMap<>();
 
     /** Queue of groups waiting for a checkpoint. */
@@ -113,24 +114,6 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
             new OomExceptionHandler(ctx));
 
         execSvc.allowCoreThreadTimeOut(true);
-    }
-
-    /**
-     * Shutdown scanning and disable new tasks scheduling.
-     */
-    public void stop() throws IgniteCheckedException {
-        lock.lock();
-
-        try {
-            stopped = true;
-
-            for (GroupScanContext ctx0 : grps.values())
-                ctx0.finishFuture().cancel();
-
-            execSvc.shutdown();
-        } finally {
-            lock.unlock();
-        }
     }
 
     /** {@inheritDoc} */
@@ -195,6 +178,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     }
 
     /**
+     * Schedule scanning partitions.
+     *
      * @param grpId Cache group ID.
      */
     public IgniteInternalFuture<Void> schedule(int grpId) throws IgniteCheckedException {
@@ -205,7 +190,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         if (grp == null) {
             if (log.isDebugEnabled())
-                log.debug("Skip reencryption, group was destroyed [grp=" + grpId + "]");
+                log.debug("Skip reencryption, cache group was destroyed [grp=" + grpId + "]");
 
             return new GridFinishedFuture<>();
         }
@@ -239,11 +224,11 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                         return;
                     }
 
-                    PageStoreScanTask scan = new PageStoreScanTask(ctx0, partId);
+                    PageStoreScanTask scanTask = new PageStoreScanTask(ctx0, partId);
 
-                    ctx0.add(partId, scan);
+                    ctx0.add(partId, scanTask);
 
-                    execSvc.submit(scan);
+                    execSvc.submit(scanTask);
                 }
             });
 
@@ -277,12 +262,30 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
     /**
      * @param grpId Cache group ID.
-     * @return Future that will be completed when the reencryption of the specified group ends.
+     * @return Future that will be completed when all partitions have been scanned and pages have been written to disk.
      */
     public IgniteInternalFuture<Void> statusFuture(int grpId) {
         GroupScanContext ctx0 = grps.get(grpId);
 
         return ctx0 == null ? new GridFinishedFuture<>() : ctx0.finishFuture();
+    }
+
+    /**
+     * Shutdown scanning and disable new tasks scheduling.
+     */
+    public void stop() throws IgniteCheckedException {
+        lock.lock();
+
+        try {
+            stopped = true;
+
+            for (GroupScanContext ctx0 : grps.values())
+                ctx0.finishFuture().cancel();
+
+            execSvc.shutdown();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -303,7 +306,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     }
 
     /**
-     * Collect current pages count for reencryption.
+     * Collect current number of pages in the specified cache group.
      *
      * @param grp Cache group.
      * @return Map of partitions with current page count.
@@ -330,8 +333,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     }
 
     /**
-     * @param grp Cache group context.
-     * @param hnd Page store handler.
+     * @param grp Cache group.
+     * @param hnd Partition handler.
      */
     private void forEachPageStore(CacheGroupContext grp, IgniteInClosureX<Integer> hnd) throws IgniteCheckedException {
         int parts = grp.affinity().partitions();
@@ -349,7 +352,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     }
 
     /**
-     * Cache group reencryption context.
+     * Cache group scanning context.
      */
     private static class GroupScanContext {
         /** Partition scanning futures. */
@@ -452,7 +455,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
         private final GroupScanContext scanCtx;
 
         /**
-         * @param scanCtx Cache group reencryption context.
+         * @param scanCtx Cache group scanning context.
          * @param partId Partition ID.
          */
         public PageStoreScanTask(GroupScanContext scanCtx, int partId) {
@@ -539,18 +542,20 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
          * @throws IgniteCheckedException If failed.
          */
         private int scanPages(PageMemoryEx pageMem, long startPageId, int cnt) throws IgniteCheckedException {
+            int grpId = scanCtx.groupId();
+
             for (long pageId = startPageId; pageId < startPageId + cnt; pageId++) {
-                long page = pageMem.acquirePage(scanCtx.groupId(), pageId);
+                long page = pageMem.acquirePage(grpId, pageId);
 
                 try {
-                    if (pageMem.isDirty(scanCtx.groupId(), pageId, page))
+                    if (pageMem.isDirty(grpId, pageId, page))
                         continue;
 
-                    pageMem.writeLock(scanCtx.groupId(), pageId, page, true);
-                    pageMem.writeUnlock(scanCtx.groupId(), pageId, page, null, true);
+                    pageMem.writeLock(grpId, pageId, page, true);
+                    pageMem.writeUnlock(grpId, pageId, page, null, true);
                 }
                 finally {
-                    pageMem.releasePage(scanCtx.groupId(), pageId, page);
+                    pageMem.releasePage(grpId, pageId, page);
                 }
             }
 

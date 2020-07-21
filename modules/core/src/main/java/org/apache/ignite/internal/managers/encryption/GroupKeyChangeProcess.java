@@ -1,9 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
@@ -98,7 +114,7 @@ class GroupKeyChangeProcess {
     }
 
     /**
-     * Validates existing keys and adds new encryption key as inactive.
+     * Validates existing keys.
      *
      * @param req Request.
      * @return Result future.
@@ -122,18 +138,25 @@ class GroupKeyChangeProcess {
         try {
             for (int i = 0; i < req.groupIds().length; i++) {
                 int grpId = req.groupIds()[i];
-                int rmtKeyId = req.keyIds()[i] & 0xff;
+                int keyId = req.keyIds()[i] & 0xff;
 
                 if (!ctx.encryption().reencryptionFuture(grpId).isDone()) {
                     return new GridFinishedFuture<>(
                         new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
                 }
 
-                for (int locKeyId : ctx.encryption().groupKeysInfo(grpId).keySet()) {
-                    if (locKeyId != rmtKeyId)
+                Map<Integer, Integer> keysInfo = ctx.encryption().groupKeysInfo(grpId);
+
+                if (keysInfo == null) {
+                    return new GridFinishedFuture<>(
+                        new IgniteException("Encrypted cache group not found [grpId=" + grpId + "]"));
+                }
+
+                for (int locKeyId : keysInfo.keySet()) {
+                    if (locKeyId != keyId)
                         continue;
 
-                    Set<Long> walSegments = ctx.encryption().walSegmentsByKey(grpId, rmtKeyId);
+                    Set<Long> walSegments = ctx.encryption().walSegmentsByKey(grpId, keyId);
 
                     if (walSegments.isEmpty())
                         break;
@@ -142,7 +165,7 @@ class GroupKeyChangeProcess {
 
                     return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier, it's " +
                         "already present. There existing WAL segments that encrypted with this key [" +
-                        "grpId=" + grpId + ", newId=" + rmtKeyId + ", currId=" + currKey.unsignedId() +
+                        "grpId=" + grpId + ", newId=" + keyId + ", currId=" + currKey.unsignedId() +
                         ", walSegments=" + walSegments + "]."));
                 }
             }
@@ -183,25 +206,19 @@ class GroupKeyChangeProcess {
         if (this.req == null || !this.req.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
-        if (ctx.state().clusterState().state() != ClusterState.ACTIVE) {
-            this.req = null;
-
-            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
-                "The cluster is inactive."));
-        }
-
         try {
-            if (ctx.clientNode())
-                return new GridFinishedFuture<>(new EmptyResult());
+            if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+                throw new IgniteException("Cache group key change was rejected. The cluster is inactive.");
 
-            ctx.encryption().changeCacheGroupKeyLocal(req);
-
-            return new GridFinishedFuture<>(new EmptyResult());
-        } catch (IgniteCheckedException e) {
+            if (!ctx.clientNode())
+                ctx.encryption().changeCacheGroupKeyLocal(req);
+        } catch (Exception e) {
             return new GridFinishedFuture<>(e);
         } finally {
             this.req = null;
         }
+
+        return new GridFinishedFuture<>(new EmptyResult());
     }
 
     /**

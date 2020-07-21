@@ -59,7 +59,7 @@ public class EncryptionStatusRecord extends WALRecord {
     public int dataSize() {
         int size = 4;
 
-        for (Map map : grpStates.values())
+        for (Map<Integer, Integer> map : grpStates.values())
             size += /*grpId*/4 + /*length*/4 + (map.size() * (/**partId*/2 + /*pagesCnt*/4));
 
         return size;

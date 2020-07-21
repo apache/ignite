@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;

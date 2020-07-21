@@ -354,8 +354,6 @@ public class FilePageStore implements PageStore {
                 Files.delete(pathProvider.apply());
 
                 fileExists = false;
-
-//                encryptedPageIdx = encryptedPageCnt = 0;
             }
         }
         finally {
@@ -403,8 +401,6 @@ public class FilePageStore implements PageStore {
             Files.delete(filePath);
 
             fileExists = false;
-
-//            encryptedPageIdx = encryptedPageCnt = 0;
         }
         catch (IOException e) {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
