@@ -219,6 +219,8 @@ public class SystemPropertiesRule implements TestRule {
             while ((value = is.read()) != -1)
                 writer.print((char)value);
 
+            writer.flush();
+
             String str = out.toString("UTF-8");
 
             System.out.println(str);
