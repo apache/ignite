@@ -568,6 +568,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
         private class CompFn<T> : IComputeFunc<T>
         {
             private readonly Func<T> _func;
@@ -582,6 +583,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return _func();
             }
         }
+#endif
 
         private class CompDateTimeFn : IComputeFunc<DateTime>
         {
@@ -593,6 +595,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 }
 
+#if !NETCOREAPP
 namespace Apache.Ignite.ExamplesDll.Binary
 {
     /// <summary>
@@ -605,3 +608,4 @@ namespace Apache.Ignite.ExamplesDll.Binary
         public decimal Balance { get; set; }
     }
 }
+#endif

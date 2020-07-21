@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections.Generic;
+#if !NETCOREAPP
     using System.Linq;
     using System.Reflection;
+#endif
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;

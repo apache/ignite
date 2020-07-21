@@ -125,9 +125,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             InitNode(2);
 
             // GridCacheNearEntry does not yet exist on old primary node, so platform cache data is removed on .NET side.
-            Foo foo;
-            Assert.IsFalse(_cache[0].TryLocalPeek(Key3, out foo, CachePeekMode.Platform));
-            Assert.IsFalse(_cache[1].TryLocalPeek(Key3, out foo, CachePeekMode.Platform));
+            Foo unused;
+            Assert.IsFalse(_cache[0].TryLocalPeek(Key3, out unused, CachePeekMode.Platform));
+            Assert.IsFalse(_cache[1].TryLocalPeek(Key3, out unused, CachePeekMode.Platform));
 
             // Check value on the new node: it should be already in platform cache, because key is primary.
             Assert.AreEqual(-1, _cache[2].LocalPeek(Key3, CachePeekMode.Platform).Bar);
