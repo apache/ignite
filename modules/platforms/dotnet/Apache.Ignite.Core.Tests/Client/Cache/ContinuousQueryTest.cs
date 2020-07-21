@@ -600,6 +600,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests that when custom <see cref="ContinuousQueryClient{TK,TV}.BufferSize"/> is set,
         /// events are sent in batches, not 1 by 1.
+        ///
+        /// - Start a continuous query with the BufferSize set to 3
+        /// - Put 8 entries to the cache
+        /// - Check that 2 batches of 3 entries has been received, and last 2 keys has not been received.
         /// </summary>
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
