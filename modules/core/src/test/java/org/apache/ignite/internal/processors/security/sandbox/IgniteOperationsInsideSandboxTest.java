@@ -21,11 +21,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +42,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -110,19 +113,18 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
                 new CacheConfiguration<String, String>(TEST_CACHE)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                     .setCacheStoreFactory(new TestStoreFactory("1", "val"))
             );
     }
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
+        startGrid(SRV, ALLOW_ALL, false);
 
         startGrid("srv_2", ALLOW_ALL, false);
 
         startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, true);
-
-        srv.cluster().active(true);
     }
 
     /** */
@@ -181,7 +183,10 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                     cache.invokeAsync("key", processor()).get();
                     cache.invokeAllAsync(singleton("key"), processor()).get();
 
-                    cache.query(new ScanQuery<String, Integer>()).getAll();
+                    for (Cache.Entry<String, String> entry : cache)
+                        log.info(entry.toString());
+
+                    cache.query(new ScanQuery<String, String>()).getAll();
                 }
             }
         );
@@ -201,6 +206,22 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                         }
                     }
                 });
+    }
+
+    /** */
+    @Test
+    public void testTransaction() {
+        compute().broadcast(
+            new TestRunnable() {
+                @Override public void run() {
+                    try (Transaction tx = ignite.transactions().txStart()) {
+                        ignite.cache(TEST_CACHE).put("key", "transaction_test");
+                        ignite.cache(TEST_CACHE).get("key");
+
+                        tx.commit();
+                    }
+                }
+            });
     }
 
     /** */
