@@ -237,11 +237,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         dbCfg.setPageSize(4 * 1024);
 
+        dbCfg.setSystemRegionInitialSize(16 * 1024 * 1024);
+        dbCfg.setSystemRegionMaxSize(32 * 1024 * 1024);
+
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(256L * 1024 * 1024);
-        memPlcCfg.setMaxSize(256L * 1024 * 1024);
+        memPlcCfg.setInitialSize(128L * 1024 * 1024);
+        memPlcCfg.setMaxSize(128L * 1024 * 1024);
         memPlcCfg.setPersistenceEnabled(true);
 
         dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
