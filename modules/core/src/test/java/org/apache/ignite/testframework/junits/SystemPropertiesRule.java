@@ -210,7 +210,7 @@ public class SystemPropertiesRule implements TestRule {
 
         try {
             Process p = Runtime.getRuntime().exec(new String[] {"ps", "-o", "%mem,pid,user,command", "ax"});
-            InputStream is = p.getInputStream();
+            InputStream is = p.getErrorStream();
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PrintWriter writer = new PrintWriter(out);
