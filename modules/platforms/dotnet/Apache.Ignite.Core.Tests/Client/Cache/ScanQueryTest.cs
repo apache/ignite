@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -156,7 +155,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
-
 #if !NETCOREAPP  // Serializing delegates and exceptions is not supported on this platform.
         /// <summary>
         /// Tests the exception in filter.
@@ -264,6 +262,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             return cache;
         }
 
+#if !NETCOREAPP  // Serializing delegates and exceptions is not supported on this platform.
         /// <summary>
         /// Person filter.
         /// </summary>
@@ -278,8 +277,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             /// <param name="filter">The filter.</param>
             public PersonFilter(Func<Person, bool> filter)
             {
-                Debug.Assert(filter != null);
-
                 _filter = filter;
             }
 
@@ -289,6 +286,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 return _filter(entry.Value);
             }
         }
+#endif
 
         /// <summary>
         /// Person filter.
@@ -299,7 +297,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             private readonly int _key;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="PersonFilter"/> class.
+            /// Initializes a new instance of the <see cref="PersonKeyFilter"/> class.
             /// </summary>
             public PersonKeyFilter(int key)
             {
@@ -322,7 +320,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             private readonly int _id;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="PersonFilter"/> class.
+            /// Initializes a new instance of the <see cref="PersonIdFilterBinary"/> class.
             /// </summary>
             public PersonIdFilterBinary(int id)
             {
