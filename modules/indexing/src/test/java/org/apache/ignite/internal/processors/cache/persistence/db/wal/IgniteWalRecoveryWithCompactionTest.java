@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
 
 /**
  *
@@ -29,5 +30,10 @@ public class IgniteWalRecoveryWithCompactionTest extends IgniteWalRecoveryTest {
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
 
         return cfg;
+    }
+
+    /** */
+    @Ignore @Override public void testWalRolloverMultithreadedLogOnly() throws Exception {
+        // do nothing
     }
 }
