@@ -181,7 +181,7 @@ There are two types of events that are related to cache queries:
 [cols="2,5,3",opts="header"]
 |===
 | Event Type | Event Description | Where Event Is Fired
-| EVT_CACHE_QUERY_OBJECT_READ | An object is read as part of a query execution. This event is generated for every object that matches the query filter. | The primary node of the object that is read.
+| EVT_CACHE_QUERY_OBJECT_READ | An object is read as part of a query execution. This event is generated for every object that matches the link:developers-guide/key-value-api/using-scan-queries#executing-scan-queries[query filter]. | The primary node of the object that is read.
 | EVT_CACHE_QUERY_EXECUTED  |  This event is generated when a query is executed. | All server nodes that host the cache.
 |===
 

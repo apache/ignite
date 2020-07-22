@@ -6,16 +6,16 @@ Ignite memory architecture allows storing and processing data and indexes both i
 
 image::images/durable-memory-overview.png[Memory architecture]
 
-The memory-centric storage operates in a way similar to the virtual memory of operating systems, such as Linux. 
-However, one significant difference between these two types of architecture is that the memory-centric storage always treats the disk as the superset of the data (if persistence is enabled), capable of surviving crashes and restarts, while the traditional virtual memory uses the disk only as a swap extension, which gets erased once the process stops.
+The multi-tiered storage operates in a way similar to the virtual memory of operating systems, such as Linux. 
+However, one significant difference between these two types of architecture is that the multi-tiered storage always treats the disk as the superset of the data (if persistence is enabled), capable of surviving crashes and restarts, while the traditional virtual memory uses the disk only as a swap extension, which gets erased once the process stops.
 
 == Memory Architecture
 
-Memory-centric architecture is a page-based memory architecture that is split into pages of fixed size. The pages are stored in _managed off-heap regions_ in RAM (outside of Java heap) and are organized in a special hierarchy on disk.
+Multi-tiered architecture is a page-based memory architecture that is split into pages of fixed size. The pages are stored in _managed off-heap regions_ in RAM (outside of Java heap) and are organized in a special hierarchy on disk.
 
 Ignite maintains the same binary data representation both in memory and on disk. This removes the need for costly serialization when moving data between memory and disk.
 
-The picture below illustrates the architecture of the memory-centric storage.
+The picture below illustrates the architecture of the multi-tiered storage.
 
 image::images/durable-memory-diagram.png[height=700px]
 
@@ -41,7 +41,7 @@ However, if an entry's total size exceeds the page size configured via the `Data
 If you have many cache entries that do not fit in a single page, then it makes sense to increase the page size configuration parameter.
 ====
 
-If during an update an entry size expands beyond the free space available in its data page, then Ignite searchs for a new data page that has enough room to take the updated entry and moves the entry there.
+If during an update an entry size expands beyond the free space available in its data page, then Ignite searches for a new data page that has enough room to take the updated entry and moves the entry there.
 
 
 === Memory Defragmentation

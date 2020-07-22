@@ -13,10 +13,9 @@ public class Schemas {
 
         SqlConfiguration sqlCfg = new SqlConfiguration();
 
-        sqlCfg.setSqlSchemas("sqlSchemas");
+        sqlCfg.setSqlSchemas("MY_SCHEMA", "MY_SECOND_SCHEMA" );
         
         cfg.setSqlConfiguration(sqlCfg);
-        
         //end::custom-schemas[]
     }
 }

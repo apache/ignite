@@ -33,7 +33,7 @@ TODO: explain this better
 ////
 
 You can configure whether updates of primary and backup copies should be synchronous or asynchronous by specifying a write synchronization mode.
-Write synchronization mode can be set in the cache configuration:
+You can set the write synchronization mode in the cache configuration:
 
 
 [tabs]

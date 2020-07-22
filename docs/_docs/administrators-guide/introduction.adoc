@@ -1,0 +1,18 @@
+= Introduction
+Welcome to the Ignite Administrators Guide.
+
+This guide is designed for people tasked with Ignite cluster administration.
+
+Once you've installed Ignite, you will want or need to perform many different administrative tasks — everything from migration and security, to deploying, monitoring, and upgrading your clusters. Some of the topics listed in the table of contents are useful right away, and others you may not need until later (or not at all, depending on your use case).
+
+== Programming Languages
+
+include::includes/intro-languages.adoc[]
+
+== Related Documentation
+
+If you're looking for information about installing the product or getting started, see the link:getting-started[Getting Started Guide] and the link:installation-guide[Installation Guide].
+
+If you're looking for information on how to build an application, see the link:developers-guide/preface[Developers Guide].
+
+If you're looking to learn more about performance or troubleshooting, see the link:perf-troubleshooting-guide/general-perf-tips[Performance and Troubleshooting Guide].

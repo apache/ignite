@@ -43,7 +43,7 @@ Eviction policies are pluggable and are controlled via the `EvictionPolicy` inte
 
 === Least Recently Used (LRU)
 
-LRU eviction policy, based on the link:http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[Least Recently Used (LRU)] algorithm, ensures that the least recently used entry (i.e. the entry that has not been touched for the longest time) gets evicted first.
+LRU eviction policy, based on the link:http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[Least Recently Used (LRU)] algorithm, ensures that the least recently used entry (i.e. the entry that has not been touched for the longest time) is evicted first.
 
 NOTE: LRU eviction policy nicely fits most of the use cases for on-heap caching. Use it whenever in doubt.
 

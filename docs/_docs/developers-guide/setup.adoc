@@ -102,9 +102,13 @@ your application.
 +
 [source, xml]
 ----
-TODO
+<dependency>
+    <groupId>${groupId}</groupId>
+    <artifactId>ignite-log4j2</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
 ----
-+
+
 
 
 The following modules are available:

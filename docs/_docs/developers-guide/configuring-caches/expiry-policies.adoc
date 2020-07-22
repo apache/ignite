@@ -41,7 +41,7 @@ You can also change or set Expiry Policy for individual cache operations. This p
 
 [source,java]
 ----
-include::{javaCodeDir}/ExpiryPolicies.java[tag=withExpiry,indent=0]
+include::{javaCodeDir}/ExpiryPolicies.java[tag=expiry2,indent=0]
 ----
 
 == Eager TTL

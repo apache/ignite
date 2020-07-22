@@ -13,7 +13,7 @@ The page size is configurable via the `Query.setPageSize(...)` method (default i
 
 `QueryCursor` represents the query result set and allows for transparent page-by-page iteration.
 When a user starts iterating over the last page, `QueryCursos` automatically requests the next page in the background.
-For cases when pagination is not needed, you can use the `QueryCursor.getAll()` method, which fetchs the entries satisfying the query and store them in a collection.
+For cases when pagination is not needed, you can use the `QueryCursor.getAll()` method, which fetches the entries and stores them in a collection.
 
 [NOTE]
 ====
@@ -103,3 +103,8 @@ tab:C++[]
 include::code-snippets/cpp/src/scan_query.cpp[tag=set-local,indent=0]
 ----
 --
+
+== Related Topics
+
+* link:developers-guide/restapi#sql-scan-query-execute[Execute scan query via REST API]
+* link:developers-guide/events/events#cache-query-events[Cache Query Events]

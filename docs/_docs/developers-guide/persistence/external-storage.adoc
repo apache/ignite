@@ -30,7 +30,7 @@ NOTE: In addition to key-value operations, Ignite writes through the results of 
 
 Read-through means that the data is read from the underlying persistent store if it is not available in the cache.
 Note that this is true only for get operations made through the key-value API; SELECT queries never read through data from the external database.
-To execute select queries, data must be preloaded from the database into the cache by calling the `loadCache()` method.
+To execute select queries, the data must be pre-loaded from the database into the cache by calling the `loadCache()` method.
 
 Write-through means that the data is automatically persisted when it is updated in the cache.
 All read-through and write-through operations participate in cache transactions and are committed or rolled back as a whole.

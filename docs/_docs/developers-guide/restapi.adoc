@@ -71,7 +71,7 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Yes
 |`null`
 
-|`setMessageInterceptor(ConnectorMessageInterceptor)`
+|`setMessageInterceptor(...)`
 |The interceptor provides the ability to transform all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes
 |`null`

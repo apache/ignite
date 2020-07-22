@@ -18,15 +18,23 @@
 #    url: /getting-started/quick-start/php
 #  - title: REST API
 #    url: /getting-started/quick-start/restapi
-#- title: Installation and Upgrade
-#  url: /installation-guide
-#  items:
+- title: Installation and Upgrade
+  url: /installation-guide
+  items:
 #    - title: Deployment Modes
 #      url: /installation-guide/deployment-modes
-#    - title: Installing Using ZIP Archive 
-#      url: /installation-guide/installing-using-zip
-#    - title: Installing Using Docker
-#      url: /installation-guide/installing-using-docker
+    - title: Installing Using ZIP Archive 
+      url: /installation-guide/installing-using-zip
+    - title: Installing Using Docker
+      url: /installation-guide/installing-using-docker
+    - title: Kubernetes
+      items: 
+        - title: Amazon EKS 
+          url: /installation-guide/kubernetes/amazon-eks-deployment
+        - title: Azure Kubernetes Service 
+          url: /installation-guide/kubernetes/azure-deployment
+        - title: Google Kubernetes Engine
+          url: /installation-guide/kubernetes/gke-deployment
 #    - title: AWS
 #      items: 
 #        - title: Manual Install on Amazon EC2 
@@ -144,8 +152,6 @@
           url: /developers-guide/SQL/JDBC/jdbc-client-driver
         - title: Multiversion Concurrency Control
           url: /developers-guide/transactions/mvcc
-    - title: SQL and Key-Value Usage
-      url: /developers-guide/SQL/sql-key-value-storage
     - title: Distributed Computing 
       items:
         - title: Distributed Computing API 
@@ -176,36 +182,36 @@
 #      url: /developers-guide/platform-cache
     - title: Peer Class Loading
       url: /developers-guide/peer-class-loading
-#    - title: Thin Clients
-#      items: 
-#        - title: Thin Clients Overview 
-#          url: /developers-guide/thin-clients/getting-started-with-thin-clients
-#        - title: Java Thin Client
-#          url: /developers-guide/thin-clients/java-thin-client
-#        - title: .NET Thin Client
-#          url: /developers-guide/thin-clients/dotnet-thin-client
-#        - title: C++ Thin Client
-#          url: /developers-guide/thin-clients/cpp-thin-client
-#        - title: Python Thin Client
-#          url: /developers-guide/thin-clients/python-thin-client
-#        - title: PHP Thin Client
-#          url: /developers-guide/thin-clients/php-thin-client
-#        - title: Node.js Thin Client
-#          url: /developers-guide/thin-clients/nodejs-thin-client
-#    - title: ODBC Driver
-#      items: 
-#        - title: ODBC Driver
-#          url: /developers-guide/SQL/ODBC/odbc-driver 
-#        - title: Connection String and DSN
-#          url:  /developers-guide/SQL/ODBC/connection-string-dsn 
-#        - title: Querying and Modifying Data 
-#          url: /developers-guide/SQL/ODBC/querying-modifying-data 
-#        - title: Specification
-#          url: /developers-guide/SQL/ODBC/specification  
-#        - title: Data Types
-#          url: /developers-guide/SQL/ODBC/data-types 
-#        - title: Error Codes
-#          url: /developers-guide/SQL/ODBC/error-codes
+    - title: Thin Clients
+      items: 
+        - title: Thin Clients Overview 
+          url: /developers-guide/thin-clients/getting-started-with-thin-clients
+        - title: Java Thin Client
+          url: /developers-guide/thin-clients/java-thin-client
+        - title: .NET Thin Client
+          url: /developers-guide/thin-clients/dotnet-thin-client
+        - title: C++ Thin Client
+          url: /developers-guide/thin-clients/cpp-thin-client
+        - title: Python Thin Client
+          url: /developers-guide/thin-clients/python-thin-client
+        - title: PHP Thin Client
+          url: /developers-guide/thin-clients/php-thin-client
+        - title: Node.js Thin Client
+          url: /developers-guide/thin-clients/nodejs-thin-client
+    - title: ODBC Driver
+      items: 
+        - title: ODBC Driver
+          url: /developers-guide/SQL/ODBC/odbc-driver 
+        - title: Connection String and DSN
+          url:  /developers-guide/SQL/ODBC/connection-string-dsn 
+        - title: Querying and Modifying Data 
+          url: /developers-guide/SQL/ODBC/querying-modifying-data 
+        - title: Specification
+          url: /developers-guide/SQL/ODBC/specification  
+        - title: Data Types
+          url: /developers-guide/SQL/ODBC/data-types 
+        - title: Error Codes
+          url: /developers-guide/SQL/ODBC/error-codes
     - title: REST API
       url: /developers-guide/restapi
 #
@@ -249,20 +255,33 @@
 #          url: /developers-guide/machine-learning/model-updating
 #        - title: Model Importing
 #          url: /developers-guide/machine-learning/model-importing
-#    - title: Metrics and Monitoring
-#      items:
-#      - title: Introduction
-#        url: /administrators-guide/monitoring-metrics/intro
-#      - title: Configuring Metrics
-#        url: /administrators-guide/monitoring-metrics/configuring-metrics
-#      - title: JMX Metrics 
-#        url: /administrators-guide/monitoring-metrics/metrics
-#      - title: System Views
-#        url: /administrators-guide/monitoring-metrics/system-views
+- title: Adminstrator's Guide
+  url: /administrators-guide/
+  items:
+    - title: Control Script
+      url: /administrators-guide/control-script
+    - title: Metrics and Monitoring
+      items:
+        - title: Introduction
+          url: /administrators-guide/monitoring-metrics/intro
+        - title: Configuring Metrics
+          url: /administrators-guide/monitoring-metrics/configuring-metrics
+        - title: JMX Metrics 
+          url: /administrators-guide/monitoring-metrics/metrics
+        - title: System Views
+          url: /administrators-guide/monitoring-metrics/system-views
+    - title: Security
+      url: /administrators-guide/security
+      items: 
+        - title: Authentication
+          url: /administrators-guide/security/authentication
+        - title: SSL/TLS 
+          url: /administrators-guide/security/ssl-tls
+        - title: Transparent Data Encryption
+          url: /administrators-guide/security/tde
+
 #    - title: Capacity Planning
 #      url: /administrators-guide/capacity-planning
-#    - title: Control Script
-#      url: /administrators-guide/control-script
 #    - title: Performance and Troubleshooting Guide
 #      url: /perf-troubleshooting-guide/general-perf-tips
 #      items:

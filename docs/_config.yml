@@ -20,11 +20,11 @@ asciidoctor:
   attributes:
     source-highlighter: rouge
     stylesdir: assets/css
-    version: "latest" 
+    version: "2.8.1" 
     base_url: /docs
     imagesdir: /docs
     table-stripes: even
     javadoc_base_url: https://ignite.apache.org/releases/{version}/javadoc
-    javaCodeDir: code-snippets/java/src/main/java/org/apache/ignite/snippets
+    javaCodeDir: /code-snippets/java/src/main/java/org/apache/ignite/snippets
     githubUrl: https://github.com/apache/ignite/tree/master
 

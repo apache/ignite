@@ -141,8 +141,8 @@ You can do this in two ways:
 
 The following application examples show typical usage of continuous queries.
 
-{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryExample.java[CacheContinuousQueryExample.java,window=_blank]
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryExample.java[CacheContinuousQueryExample.java,window=_blank]
 
-{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousAsyncQueryExample.java[CacheContinuousAsyncQueryExample.java,window=_blank]
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousAsyncQueryExample.java[CacheContinuousAsyncQueryExample.java,window=_blank]
 
-{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryWithTransformerExample.java[CacheContinuousQueryWithTransformerExample.java,window=_blank]
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheContinuousQueryWithTransformerExample.java[CacheContinuousQueryWithTransformerExample.java,window=_blank]

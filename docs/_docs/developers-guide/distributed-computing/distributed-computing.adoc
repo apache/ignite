@@ -72,7 +72,8 @@ You can execute a task once (on one of the nodes) or broadcast it to all nodes.
 
 [IMPORTANT]
 ====
-In order to run tasks on the remote nodes, make sure the class definitions of the tasks are available on the nodes. This can be done in two ways:
+In order to run tasks on the remote nodes, make sure the class definitions of the tasks are available on the nodes.
+You can do this in two ways:
 
 - Add the classes to the classpath of the nodes;
 - Enable link:developers-guide/peer-class-loading[peer class loading].
@@ -239,7 +240,9 @@ tab:C#/.NET[unsupported]
 tab:C++[unsupported]
 --
 
-Node-local values are similar to thread local variables in that these values are not distributed and kept only on the local node. Node-local data can be used by compute jobs to share the state between executions. It can also be used by deployed services.
+Node-local values are similar to thread local variables in that these values are not distributed and kept only on the local node.
+Node-local data can be used to share the state between compute jobs.
+It can also be used by deployed services.
 
 In the following example, a job increments a node-local counter every time it executes on some node. As a result, the node-local counter on each node tells us how many times the job has executed on that node.
 
