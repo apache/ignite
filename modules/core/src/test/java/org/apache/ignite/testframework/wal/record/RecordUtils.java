@@ -127,6 +127,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_REMOVE_PAGE;
@@ -219,6 +220,7 @@ public class RecordUtils {
             put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
             put(CONSISTENT_CUT, RecordUtils::buildConsistentCutRecord);
             put(BTREE_META_PAGE_INIT_ROOT_V3, RecordUtils::buildBtreeMetaPageInitRootV3);
+            put(OUT_OF_ORDER_UPDATE, RecordUtils::buildOutOfOrderRecord);
         }};
 
     /** **/
@@ -570,6 +572,11 @@ public class RecordUtils {
     /** **/
     public static UnsupportedWalRecord buildBtreeMetaPageInitRootV3() {
         return new UnsupportedWalRecord(BTREE_META_PAGE_INIT_ROOT_V3);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildOutOfOrderRecord() {
+        return new UnsupportedWalRecord(OUT_OF_ORDER_UPDATE);
     }
 
     /**
