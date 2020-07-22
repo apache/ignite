@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable MissingSerializationAttribute
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
@@ -117,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Ignition.GetIgnite("grid-" + idx);
         }
 
-        protected ICache<int, int> Cache(int idx, bool async = false) 
+        protected ICache<int, int> Cache(int idx, bool async = false)
         {
             return Cache<int, int>(idx, async);
         }
@@ -238,15 +239,15 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(key1, 1);
 
-            int val;
+            int unused;
 
             Assert.AreEqual(1, cache.LocalPeek(key1));
             Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1));
-            Assert.IsFalse(cache.TryLocalPeek(-1, out val));
+            Assert.IsFalse(cache.TryLocalPeek(-1, out unused));
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
             Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1, CachePeekMode.All));
-            Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
+            Assert.AreEqual(false, cache.TryLocalPeek(-1, out unused, CachePeekMode.All));
         }
 
         [Test]
@@ -993,8 +994,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.LocalClear(key);
 
-                int val;
-                Assert.IsFalse(cache.TryLocalPeek(key, out val));
+                int unused;
+                Assert.IsFalse(cache.TryLocalPeek(key, out unused));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1015,10 +1016,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalClearAll(keys);
 
-            int val;
+            int unused;
 
             foreach (var key in keys)
-                Assert.IsFalse(cache.TryLocalPeek(key, out val));
+                Assert.IsFalse(cache.TryLocalPeek(key, out unused));
 
             cache.Clear();
         }
@@ -1217,7 +1218,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 foreach (var key in keys)
                 {
                     var p = GetIgnite(i).GetAffinity(cache.Name).GetPartition(key);
-                    
+
                     Assert.GreaterOrEqual(cache.GetSizeLong(p, CachePeekMode.Primary), 1);
                 }
             }
@@ -1256,16 +1257,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, cache.GetLocalSizeLong(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
             Assert.AreEqual(localSize, cache.GetLocalSizeLong(CachePeekMode.All));
-            
+
             cache.Put(keys[2], 3);
 
             Assert.AreEqual(localSize + 1, cache.GetLocalSize(CachePeekMode.All));
             Assert.AreEqual(localSize + 1, cache.GetLocalSizeLong(CachePeekMode.All));
-            
+
             foreach (var key in keys)
             {
                 var p = Affinity().GetPartition(key);
-                    
+
                 Assert.GreaterOrEqual(cache.GetLocalSizeLong(p, CachePeekMode.All), 1);
             }
 
