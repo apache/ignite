@@ -20,10 +20,13 @@ package org.apache.ignite.testframework.junits;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -223,6 +226,16 @@ public class SystemPropertiesRule implements TestRule {
                 if (monitor.getUnits() == Units.BYTES && !monitor.getName().contains(".gc."))
                     System.out.println(monitor.getName() + " = " + monitor.getValue() + " " + monitor.getUnits());
             }
+
+            MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+            System.out.printf(
+                "Direct total = %s%nDirect used = %s%nMapped total = %s%nMapped used = %s%n",
+                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=direct"), "TotalCapacity"),
+                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=direct"), "MemoryUsed"),
+                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=mapped"), "TotalCapacity"),
+                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=mapped"), "MemoryUsed")
+            );
 
 //            exec("ps", "-o", "%mem,pid", "ax");
         }
