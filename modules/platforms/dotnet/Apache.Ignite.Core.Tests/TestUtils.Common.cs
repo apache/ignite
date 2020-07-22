@@ -322,8 +322,24 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="message">Assertion message.</param>
         public static void WaitForTrueCondition(Func<bool> cond, int timeout = 1000, string message = null)
         {
+            WaitForTrueCondition(cond, message == null ? (Func<string>) null : () => message, timeout);
+        }
+
+        /// <summary>
+        /// Waits for condition, polling in a busy wait loop, then asserts that condition is true.
+        /// </summary>
+        /// <param name="cond">Condition.</param>
+        /// <param name="messageFunc">Assertion message func.</param>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        public static void WaitForTrueCondition(Func<bool> cond, Func<string> messageFunc, int timeout = 1000)
+        {
             var res = WaitForCondition(cond, timeout);
-            message = message ?? string.Format("Condition not reached within {0} ms", timeout);
+            var message = string.Format("Condition not reached within {0} ms", timeout);
+
+            if (messageFunc != null)
+            {
+                message += string.Format(" ({0})", messageFunc());
+            }
 
             Assert.IsTrue(res, message);
         }

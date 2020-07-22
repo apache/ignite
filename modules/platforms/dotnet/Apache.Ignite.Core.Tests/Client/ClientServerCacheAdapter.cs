@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
     /// Adapts <see cref="ICache{TK,TV}"/> to <see cref="ICacheClient{TK,TV}"/>
@@ -297,6 +298,11 @@ namespace Apache.Ignite.Core.Tests.Client
         public ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
             throw new NotSupportedException();
+        }
+
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery)
+        {
+            throw new NotImplementedException();
         }
     }
 }
