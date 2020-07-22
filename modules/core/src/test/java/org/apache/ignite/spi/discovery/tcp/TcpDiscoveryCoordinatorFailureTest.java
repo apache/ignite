@@ -36,6 +36,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -86,6 +87,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /** */
+    @Override protected long getTestTimeout() {
+        return 70_000;
     }
 
     /**
@@ -281,7 +287,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException {
             if (isDrop(msg))
-                return;
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -293,7 +299,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (isDrop(msg))
-                return;
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
             super.writeToSocket(sock, msg, timeout);
         }
@@ -307,7 +313,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (isDrop(msg))
-                return;
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
             super.writeToSocket(node, sock, out, msg, timeout);
         }
@@ -320,7 +326,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (isDrop(msg))
-                return;
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
             super.writeToSocket(sock, out, msg, timeout);
         }
@@ -333,7 +339,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException {
             if (isDrop(msg))
-                return;
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
             super.writeToSocket(msg, sock, res, timeout);
         }
