@@ -59,6 +59,9 @@
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandleFields.cs" />
     <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryClient.cs" />
+    <Compile Include="Client\Cache\Query\Continuous\ContinuousQueryDisconnectedEventArgs.cs" />
+    <Compile Include="Client\Cache\Query\Continuous\IContinuousQueryHandleClient.cs" />
     <Compile Include="Client\Compute\IComputeClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
@@ -100,6 +103,7 @@
     <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientContinuousQueryHandle.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
     <Compile Include="Impl\Client\ClientConnection.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
