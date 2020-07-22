@@ -21,8 +21,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System.Collections.Generic;
     using System.Data;
     using System.Linq;
+#if !NETCOREAPP  // AppDomains are not supported in .NET Core
     using System.Reflection;
     using System.Reflection.Emit;
+#endif
     using System.Runtime.Serialization;
     using System.Xml;
     using Apache.Ignite.Core.Cluster;

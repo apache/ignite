@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,30 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
+namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Tests.Client;
     using NUnit.Framework;
 
     /// <summary>
-    /// Base test class.
+    /// Tests cache operations with async/await.
     /// </summary>
-    public class TestBase
+    public class CacheTestAsyncAwait : ClientTestBase
     {
         /// <summary>
-        /// Fixture cleanup.
+        /// Tests that async continuations are executed on a ThreadPool thread, not on response handler thread.
         /// </summary>
-        [OneTimeTearDown]
-        public static void ClassCleanup()
+        [Test]
+        public async Task TestAsyncAwaitContinuationIsExecutedOnThreadPool()
         {
-            Ignition.StopAll(true);
-        }
+            var cache = GetClientCache<int>();
+            await cache.PutAsync(1, 1).ConfigureAwait(false);
 
-        /// <summary>
-        /// Starts Ignite.
-        /// </summary>
-        public IIgnite Start(string name = null)
-        {
-            return Ignition.Start(TestUtils.GetTestConfiguration(name));
+            // This causes deadlock if async continuation is executed on response handler thread.
+            cache.PutAsync(2, 2).Wait();
+            Assert.AreEqual(2, cache.Get(2));
         }
     }
 }
