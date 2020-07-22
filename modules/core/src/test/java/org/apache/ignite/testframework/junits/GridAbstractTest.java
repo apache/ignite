@@ -21,6 +21,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -197,6 +198,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** Loggers with changed log level for test's purposes. */
     private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+
+    /** */
+    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -721,6 +725,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         long dur = System.currentTimeMillis() - ts;
 
         U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        System.out.println("COMM_OFFHEAP - " + mem.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024);
+        System.out.println("USED_OFFHEAP - " + mem.getNonHeapMemoryUsage().getUsed() / 1024 / 1024);
+        System.out.println("COMM_HEAP - " + mem.getHeapMemoryUsage().getCommitted() / 1024 / 1024);
+        System.out.println("USED_HEAP - " + mem.getHeapMemoryUsage().getUsed() / 1024 / 1024);
 
         try {
             afterTest();
@@ -2378,6 +2386,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         LT.clear();
 
         U.quietAndInfo(log(), ">>> Starting test: " + testDescription() + " <<<");
+        System.out.println("COMM_OFFHEAP - " + mem.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024);
+        System.out.println("USED_OFFHEAP - " + mem.getNonHeapMemoryUsage().getUsed() / 1024 / 1024);
+        System.out.println("COMM_HEAP - " + mem.getHeapMemoryUsage().getCommitted() / 1024 / 1024);
+        System.out.println("USED_HEAP - " + mem.getHeapMemoryUsage().getUsed() / 1024 / 1024);
 
         try {
             beforeTest();
