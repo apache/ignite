@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
@@ -54,7 +53,4 @@ import org.junit.runners.Suite;
     IgniteClusterSnapshotWithIndexesTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
-    static {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_MMAP, "false");
-    }
 }

@@ -26,11 +26,18 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import sun.jvmstat.monitor.HostIdentifier;
+import sun.jvmstat.monitor.Monitor;
+import sun.jvmstat.monitor.MonitoredHost;
+import sun.jvmstat.monitor.MonitoredVm;
+import sun.jvmstat.monitor.Units;
+import sun.jvmstat.monitor.VmIdentifier;
 
 /**
  * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
@@ -209,15 +216,33 @@ public class SystemPropertiesRule implements TestRule {
         }
 
         try {
-            Process p = Runtime.getRuntime().exec(new String[] {"ps", "-o", "%mem,pid,user,command", "ax"});
-            InputStream is = p.getErrorStream();
+            System.out.println("<!> jvmstat report");
+            MonitoredVm vm = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost")).getMonitoredVm(new VmIdentifier("//" + U.jvmPid()), 0);
+
+            for (Monitor monitor : vm.findByPattern(".*")) {
+                if (monitor.getUnits() == Units.BYTES && !monitor.getName().contains(".gc."))
+                    System.out.println(monitor.getName() + " = " + monitor.getValue() + " " + monitor.getUnits());
+            }
+
+//            exec("ps", "-o", "%mem,pid", "ax");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** */
+    private void exec(String... cmd) {
+        try {
+            Process p = Runtime.getRuntime().exec(cmd);
+            InputStream is = p.getInputStream();
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PrintWriter writer = new PrintWriter(out);
 
-            int value;
-            while ((value = is.read()) != -1)
-                writer.print((char)value);
+            int val;
+            while ((val = is.read()) != -1)
+                writer.print((char)val);
 
             writer.flush();
 

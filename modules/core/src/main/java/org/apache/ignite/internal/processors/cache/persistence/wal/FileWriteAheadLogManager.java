@@ -214,7 +214,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final int BUF_SIZE = 1024 * 1024;
 
     /** Use mapped byte buffer. */
-    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, false);
 
     /**
      * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.

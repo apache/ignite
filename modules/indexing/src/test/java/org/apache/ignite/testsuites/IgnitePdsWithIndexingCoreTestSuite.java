@@ -16,7 +16,6 @@
 */
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinaryMetadataAsyncWritingTest;
@@ -98,7 +97,4 @@ import org.junit.runners.Suite;
     IgniteCacheGroupsWithRestartsTest.class
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
-    static {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_MMAP, "false");
-    }
 }
