@@ -181,8 +181,8 @@ public class SecurityUtils {
     /**
      * @return True if class of {@code target} is a system type.
      */
-    public static boolean isSystemType(GridKernalContext ctx, Object target) {
-        Class cls = target instanceof GridInternalWrapper
+    public static boolean isSystemType(GridKernalContext ctx, Object target, boolean considerWrapperCls) {
+        Class cls = considerWrapperCls && target instanceof GridInternalWrapper
             ? ((GridInternalWrapper)target).userObject().getClass()
             : target.getClass();
 
@@ -217,7 +217,7 @@ public class SecurityUtils {
 
         final IgniteSandbox sandbox = ctx.security().sandbox();
 
-        if (sandbox.enabled() && !isSystemType(ctx, instance)) {
+        if (sandbox.enabled() && !isSystemType(ctx, instance, true)) {
             return (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(),
                 proxyClasses(cls, instance), new SandboxInvocationHandler(sandbox, instance));
         }
