@@ -26,17 +26,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Log;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -76,7 +81,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             WithExpiryPolicy = 1 << 2
         }
 
-        /** Scan query filter platform code: .NET filter. */
+        /** Query filter platform code: Java filter. */
+        private const byte FilterPlatformJava = 1;
+
+        /** Query filter platform code: .NET filter. */
         private const byte FilterPlatformDotnet = 2;
 
         /** Cache name. */
@@ -96,6 +104,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         /** Expiry policy. */
         private readonly IExpiryPolicy _expiryPolicy;
+
+        /** Logger. Lazily initialized. */
+        private ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
@@ -635,6 +646,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery)
+        {
+            IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
+            IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
+
+            return QueryContinuousInternal(continuousQuery);
+        }
+
+        /** <inheritDoc /> */
         [ExcludeFromCodeCoverage]
         public T DoOutInOpExtension<T>(int extensionId, int opCode, Action<IBinaryRawWriter> writeAction,
             Func<IBinaryRawReader, T> readFunc)
@@ -931,7 +951,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Lazy);
             writer.WriteTimeSpanAsLong(qry.Timeout);
             writer.WriteBoolean(includeColumns);
-
         }
 
         /// <summary>
@@ -1027,6 +1046,126 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Starts the continuous query.
+        /// </summary>
+        private ClientContinuousQueryHandle QueryContinuousInternal(
+            ContinuousQueryClient<TK, TV> continuousQuery)
+        {
+            Debug.Assert(continuousQuery != null);
+            Debug.Assert(continuousQuery.Listener != null);
+
+            var listener = continuousQuery.Listener;
+
+            return DoOutInOp(
+                ClientOp.QueryContinuous,
+                ctx => WriteContinuousQuery(ctx, continuousQuery),
+                ctx =>
+                {
+                    var queryId = ctx.Stream.ReadLong();
+
+                    var qryHandle = new ClientContinuousQueryHandle(ctx.Socket, queryId);
+
+                    ctx.Socket.AddNotificationHandler(queryId,
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, listener, qryHandle));
+
+                    return qryHandle;
+                });
+        }
+
+        /// <summary>
+        /// Writes the continuous query.
+        /// </summary>
+        /// <param name="ctx">Request context.</param>
+        /// <param name="continuousQuery">Query.</param>
+        private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQueryClient<TK, TV> continuousQuery)
+        {
+            var w = ctx.Writer;
+            w.WriteInt(continuousQuery.BufferSize);
+            w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
+            w.WriteBoolean(false); // Include expired.
+
+            if (continuousQuery.Filter == null)
+            {
+                w.WriteObject<object>(null);
+            }
+            else
+            {
+                var javaFilter = continuousQuery.Filter as PlatformJavaObjectFactoryProxy;
+
+                if (javaFilter != null)
+                {
+                    w.WriteObject(javaFilter.GetRawProxy());
+                    w.WriteByte(FilterPlatformJava);
+                }
+                else
+                {
+                    var filterHolder = new ContinuousQueryFilterHolder(continuousQuery.Filter, _keepBinary);
+
+                    w.WriteObject(filterHolder);
+                    w.WriteByte(FilterPlatformDotnet);
+                }
+            }
+
+            ctx.Socket.ExpectNotifications();
+        }
+
+        /// <summary>
+        /// Handles continuous query events.
+        /// </summary>
+        private void HandleContinuousQueryEvents(IBinaryStream stream, Exception err,
+            ICacheEntryEventListener<TK, TV> listener, ClientContinuousQueryHandle qryHandle)
+        {
+            if (err != null)
+            {
+                qryHandle.OnError(err);
+                return;
+            }
+
+            var flags = (ClientFlags) stream.ReadShort();
+            var opCode = (ClientOp) stream.ReadShort();
+
+            if ((flags & ClientFlags.Error) == ClientFlags.Error)
+            {
+                var status = (ClientStatusCode) stream.ReadInt();
+                var msg = _marsh.Unmarshal<string>(stream);
+
+                GetLogger().Error("Error while handling Continuous Query notification ({0}): {1}", status, msg);
+
+                qryHandle.OnError(new IgniteClientException(msg, null, status));
+
+                return;
+            }
+
+            if (opCode == ClientOp.QueryContinuousEventNotification)
+            {
+                var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
+
+                listener.OnEvent(evts);
+
+                return;
+            }
+
+            GetLogger().Error("Error while handling Continuous Query notification: unexpected op '{0}'", opCode);
+        }
+
+        /// <summary>
+        /// Gets the logger.
+        /// </summary>
+        private ILogger GetLogger()
+        {
+            // Don't care about thread safety here, it is ok to initialize multiple times.
+            // ReSharper disable once ConvertIfStatementToNullCoalescingExpression (readability).
+            if (_logger == null)
+            {
+                _logger = _ignite.Configuration.Logger != null
+                    ? _ignite.Configuration.Logger.GetLogger(GetType())
+                    : NoopLogger.Instance;
+            }
+
+            return _logger;
         }
     }
 }
