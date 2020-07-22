@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
 
-#if !NETCOREAPP  // AppDomains are not supported in .NET Core
+#if !NETCOREAPP// AppDomains are not supported in .NET Core
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
