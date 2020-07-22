@@ -707,7 +707,8 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration("localhost")
             {
                 UserName = "ignite",
-                Password = "ignite"
+                Password = "ignite",
+                SocketTimeout = TimeSpan.FromSeconds(10)
             };
         }
 
