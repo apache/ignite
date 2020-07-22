@@ -273,15 +273,6 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     }
 
     /** {@inheritDoc} */
-    @Override public void clearCounters() {
-        currCheckpointPagesCnt = 0;
-
-        writtenPagesCntr = null;
-        syncedPagesCntr = null;
-        evictedPagesCntr = null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onStateChanged(CheckpointState state, Runnable clo) {
         GridFutureAdapter<?> fut0 = futureFor(state);
 
