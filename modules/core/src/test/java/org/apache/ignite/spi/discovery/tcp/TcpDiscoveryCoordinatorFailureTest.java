@@ -286,8 +286,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             byte[] data,
             long timeout
         ) throws IOException {
-            if (isDrop(msg))
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -298,8 +301,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, msg, timeout);
         }
@@ -312,8 +318,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(node, sock, out, msg, timeout);
         }
@@ -325,8 +334,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, out, msg, timeout);
         }
@@ -338,8 +350,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             int res,
             long timeout
         ) throws IOException {
-            if (isDrop(msg))
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(msg, sock, res, timeout);
         }
