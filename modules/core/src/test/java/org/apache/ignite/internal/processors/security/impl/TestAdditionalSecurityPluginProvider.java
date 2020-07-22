@@ -31,7 +31,7 @@ public class TestAdditionalSecurityPluginProvider extends TestSecurityPluginProv
     public static final String ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR = "add.sec.cliVer";
 
     /** Security additional attribute value. */
-    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION = "client v1";
+    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION = "client_v1";
 
     /** Check ssl certificates. */
     protected final boolean checkAddPass;
