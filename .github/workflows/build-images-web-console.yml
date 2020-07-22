@@ -1,0 +1,49 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  REGISTRY: "docker.pkg.github.com/${{ github.repository }}"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v1
+
+      - name: Login to Image Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Get current time
+        uses: srfrnk/current-time@master
+        id: current-time
+        with:
+          format: YYYYMMDD-HHmm
+
+      - name: Build
+        env:
+          TIMESTAMP: "${{ steps.current-time.outputs.formattedTime }}"
+        run: |
+          mvn clean package -pl :ignite-web-agent -am -P web-console -DskipTests=true
+          pushd modules/web-console
+          docker build . -f docker/compose/backend/Dockerfile -t ${REGISTRY}/web-console-backend:${TIMESTAMP}
+          docker build . -f docker/compose/frontend/Dockerfile -t ${REGISTRY}/web-console-frontend:${TIMESTAMP}
+          popd
+          pushd docker/web-agent
+          cp -rfv ../../modules/web-console/web-agent/target/ignite-web-agent-*.zip ./
+          unzip ignite-web-agent-*.zip
+          rm -rf ignite-web-agent-*.zip
+          docker build . -t ${REGISTRY}/web-agent:${TIMESTAMP}
+          popd
+
+      - name: Push
+        env:
+          TIMESTAMP: "${{ steps.current-time.outputs.formattedTime }}"
+        run: |
+          docker push ${REGISTRY}/web-console-backend:${TIMESTAMP}
+          docker push ${REGISTRY}/web-console-frontend:${TIMESTAMP}
+          docker push ${REGISTRY}/web-agent:${TIMESTAMP}
