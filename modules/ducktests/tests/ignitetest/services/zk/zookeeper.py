@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os.path
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -99,13 +98,13 @@ class ZookeeperService(Service):
                 err_msg="Zookeeper quorum was not formed on %s" % node.account.hostname
             )
 
+    @staticmethod
+    def java_class_name():
+        """ The class name of the Zookeeper quorum peers. """
+        return "org.apache.zookeeper.server.quorum.QuorumPeerMain"
+
     def pids(self, node):
-        try:
-            cmd = "ps ax | grep -i zookeeper | grep java | grep -v grep | awk '{print $1}'"
-            pid_arr = [pid for pid in node.account.ssh_capture(cmd, allow_fail=True, callback=int)]
-            return pid_arr
-        except (RemoteCommandError, ValueError) as e:
-            return []
+        return node.account.java_pids(self.java_class_name())
 
     def alive(self, node):
         return len(self.pids(node)) > 0

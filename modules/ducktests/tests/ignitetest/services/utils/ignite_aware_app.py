@@ -26,7 +26,7 @@ The base class to build Ignite aware application written on java.
 class IgniteAwareApplicationService(IgniteAwareService):
     def __init__(self, context, java_class_name, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
-        IgniteAwareService.__init__(self, context, 1, version, properties)
+        super(IgniteAwareApplicationService, self).__init__(context, 1, version, properties)
 
         self.servicejava_class_name = service_java_class_name
         self.java_class_name = java_class_name
@@ -35,10 +35,11 @@ class IgniteAwareApplicationService(IgniteAwareService):
         self.params = params
 
     def start(self):
-        Service.start(self)
+        super(IgniteAwareApplicationService, self).start()
 
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
+        self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)
         self.await_event("IGNITE_APPLICATION_INITIALIZED", self.timeout_sec, from_the_beginning=True)
 
     def start_cmd(self, node):

@@ -22,8 +22,8 @@ from ignitetest.version import DEV_BRANCH
 
 class SparkIgniteApplicationService(IgniteAwareApplicationService):
     def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
-        IgniteAwareApplicationService.__init__(
-            self, context, java_class_name, version, properties, params, timeout_sec)
+        super(SparkIgniteApplicationService, self).__init__(context, java_class_name, version, properties, params,
+                                                            timeout_sec)
 
     def env(self):
         return IgniteAwareApplicationService.env(self) + \
