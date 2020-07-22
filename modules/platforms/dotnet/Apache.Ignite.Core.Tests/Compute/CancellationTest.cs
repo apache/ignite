@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int MillisecondsTimeout = 50;
 
         public CancellationTest()
-            : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")
+            : base("Config/Compute/compute-grid1.xml", "Config/Compute/compute-grid2.xml")
         {
             // No-op.
         }
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             TestClosure((c, t) => c.CallAsync(new ComputeFunc(), t));
             TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), t));
-            TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), 
+            TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()),
                 new ComputeReducer(), t));
 
             TestClosure((c, t) => c.AffinityCallAsync("default", 0, new ComputeFunc(), t));
