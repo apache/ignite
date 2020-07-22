@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Client
         protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
             var port = _enableSsl ? 11110 : IgniteClientConfiguration.DefaultPort;
-            
+
             return new IgniteClientConfiguration
             {
                 Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new ListLogger(new ConsoleLogger()),
+                Logger = new ListLogger(new TestUtils.TestContextLogger()),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
             };
         }
@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var listLogger = (ListLogger) logger;
             return listLogger.Entries;
         }
-        
+
         /// <summary>
         /// Gets client request names for a given server node.
         /// </summary>
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var instanceName = serverIndex == 0 ? null : serverIndex.ToString();
             var grid = Ignition.GetIgnite(instanceName);
             var logger = (ListLogger) grid.Logger;
-         
+
             return GetServerRequestNames(logger, prefix);
         }
 

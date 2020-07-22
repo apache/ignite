@@ -1076,9 +1076,10 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid1.xml"));
-            Grid2 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid2.xml"));
-            Grid3 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid3.xml"));
+            var path = Path.Combine("Config", "Compute", "compute-grid");
+            Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
+            Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
+            Grid3 = Ignition.Start(GetConfiguration(path + "3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -1123,12 +1124,10 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
-#if !NETCOREAPP
             if (!CompactFooter)
             {
                 springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
             }
-#endif
 
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {

@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
+#if !NETCOREAPP
+namespace Apache.Ignite.Core.Tests.Client.Compatibility
 {
     using System;
     using System.Threading;
@@ -45,10 +46,10 @@ namespace Apache.Ignite.Core.Tests.Client
     {
         /** */
         private readonly string _groupId;
-        
+
         /** */
         private readonly string _serverVersion;
-        
+
         /** */
         private readonly ClientProtocolVersion _clientProtocolVersion;
 
@@ -107,14 +108,14 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 return;
             }
-            
+
             using (var client = StartClient())
             {
                 ClientProtocolCompatibilityTest.TestClusterOperationsThrowCorrectExceptionOnVersionsOlderThan150(
                     client, _clientProtocolVersion.ToString());
             }
         }
-        
+
         /// <summary>
         /// Tests that cluster group operations throw proper exception on older server versions.
         /// </summary>
@@ -125,12 +126,12 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // ReSharper disable once AccessToDisposedClosure
                 ClientProtocolCompatibilityTest.AssertNotSupportedFeatureOperation(
-                    () => client.GetCluster().ForServers().GetNodes(), 
-                    ClientBitmaskFeature.ClusterGroups, 
+                    () => client.GetCluster().ForServers().GetNodes(),
+                    ClientBitmaskFeature.ClusterGroups,
                     ClientOp.ClusterGroupGetNodeIds);
             }
         }
-        
+
         /// <summary>
         /// Tests that compute operations throw proper exception on older server versions.
         /// </summary>
@@ -141,12 +142,12 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // ReSharper disable once AccessToDisposedClosure
                 ClientProtocolCompatibilityTest.AssertNotSupportedFeatureOperation(
-                    () => client.GetCompute().ExecuteJavaTask<int>("t", null), 
-                    ClientBitmaskFeature.ExecuteTaskByName, 
+                    () => client.GetCompute().ExecuteJavaTask<int>("t", null),
+                    ClientBitmaskFeature.ExecuteTaskByName,
                     ClientOp.ComputeTaskExecute);
             }
         }
-        
+
         /// <summary>
         /// Tests that partition awareness disables automatically on older server versions.
         /// </summary>
@@ -157,13 +158,13 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var expectedPartitionAwareness = _clientProtocolVersion >= ClientSocket.Ver140;
                 Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnablePartitionAwareness);
-                
+
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
                 Assert.AreEqual(2, cache.Get(1));
             }
         }
-        
+
         /// <summary>
         /// Tests that WithExpiryPolicy throws proper exception on older server versions.
         /// </summary>
@@ -174,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 return;
             }
-            
+
             using (var client = StartClient())
             {
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
@@ -194,17 +195,17 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var cache = client.GetCache<int, int>("twoSecondCache");
-                
+
                 cache.Put(1, 2);
                 Assert.True(cache.ContainsKey(1));
-                
+
                 Thread.Sleep(TimeSpan.FromSeconds(2.1));
                 Assert.False(cache.ContainsKey(1));
             }
         }
 
         /// <summary>
-        /// Tests that CreateCache with all config properties customized works on all versions. 
+        /// Tests that CreateCache with all config properties customized works on all versions.
         /// </summary>
         [Test]
         public void TestCreateCacheWithFullConfigWorksOnAllVersions()
@@ -212,9 +213,9 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var cache = client.CreateCache<int, Person>(GetFullCacheConfiguration());
-                
+
                 cache.Put(1, new Person(2));
-                
+
                 Assert.AreEqual(2, cache.Get(1).Id);
                 Assert.AreEqual("Person 2", cache[1].Name);
             }
@@ -230,7 +231,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
                 EnablePartitionAwareness = true
             };
-            
+
             return Ignition.StartClient(cfg);
         }
 
@@ -263,7 +264,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     {
                         Aliases = new[]
                         {
-                            new QueryAlias("Person.Name", "PName") 
+                            new QueryAlias("Person.Name", "PName")
                         }
                     }
                 },
@@ -290,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 SqlIndexMaxInlineSize = 200000
             };
         }
-        
+
         /** */
         private class TestExpiryPolicyFactory : IFactory<IExpiryPolicy>
         {
@@ -302,3 +303,4 @@ namespace Apache.Ignite.Core.Tests.Client
         }
     }
 }
+#endif

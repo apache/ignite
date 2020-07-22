@@ -109,8 +109,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public void ReleaseConsoleWriter(long id)
         {
-            ConsoleWriter writer;
-            var res = _consoleWriters.TryRemove(id, out writer);
+            ConsoleWriter unused;
+            var res = _consoleWriters.TryRemove(id, out unused);
             Debug.Assert(res);
         }
 

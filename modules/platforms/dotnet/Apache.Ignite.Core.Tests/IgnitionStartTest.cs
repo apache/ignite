@@ -15,33 +15,42 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests Ignite startup.
+    /// Tests Ignite startup with Code, XML, and Spring configurations.
     /// </summary>
-    public class IgnitionStartTest : TestBase
+    public class IgnitionStartTest
     {
         /// <summary>
-        /// Tests that Ignite starts with default configuration.
+        /// Tears down the test fixture.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Tests that Ignite starts with the default configuration.
         /// </summary>
         [Test]
         public void TestIgniteStartsWithDefaultConfig()
         {
-            var ignite = Start();
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             Assert.IsNotNull(ignite);
             Assert.AreEqual(ignite, Ignition.GetIgnite());
 
             // Second node.
-            var ignite2 = Start("ignite-2");
+            var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite-2"));
             Assert.AreEqual(2, Ignition.GetAll().Count);
 
             // Stop node.
@@ -54,24 +63,20 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         }
 
         /// <summary>
-        /// Tests the ignite starts from application configuration.
+        /// Tests that Ignite starts from the application configuration.
         /// </summary>
         [Test]
         public void TestIgniteStartsFromAppConfig()
         {
-            // 1) MsTest does not pick up the config file, so we have to provide it manually.
-            // 2) Note that System.Configuration.ConfigurationManager NuGet package has to be installed.
             var configPath = Path.Combine(Path.GetDirectoryName(GetType().Assembly.Location), "app.config");
 
-            // Force test classpath.
-            TestUtils.GetTestConfiguration();
+            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
 
             using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration", configPath))
             {
                 var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
 
-                Assert.AreEqual("cacheFromConfig", cache.Name);
-                Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
+                Assert.AreEqual("cacheName", cache.Name);
             }
         }
 

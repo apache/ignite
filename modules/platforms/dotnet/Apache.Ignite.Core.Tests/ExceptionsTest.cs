@@ -42,15 +42,6 @@ namespace Apache.Ignite.Core.Tests
         private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
 
         /// <summary>
-        /// Before test.
-        /// </summary>
-        [SetUp]
-        public void SetUp()
-        {
-            TestUtils.KillProcesses();
-        }
-
-        /// <summary>
         /// After test.
         /// </summary>
         [TearDown]

@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
-        
+
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AutoGenerateIgniteInstanceName = true
             };
         }
-        
+
         /// <summary>
         /// Asserts client connection count.
         /// </summary>
@@ -116,11 +116,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 }
 
                 return count == client.GetConnections().Count();
-            }, 1000);
+            }, 9000);
 
             if (!res)
             {
-                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}", 
+                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}",
                     count, client.GetConnections().Count());
             }
 
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     .Select(a => a.Split('%').First())  // Trim IPv6 scope.
                     .Select(IPAddress.Parse)
                     .ToArray();
-                
+
                 CollectionAssert.Contains(ipAddresses, remoteEndPoint.Address);
 
                 var localEndPoint = (IPEndPoint) connection.LocalEndPoint;

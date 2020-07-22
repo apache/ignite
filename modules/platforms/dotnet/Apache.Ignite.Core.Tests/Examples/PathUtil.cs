@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public const string DevPrefix = "modules\\";
 
         /** */
-        public static readonly string IgniteHome = Core.Impl.Common.IgniteHome.Resolve();
+        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve();
 
         /// <summary>
         /// Examples source code path.

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -44,19 +45,19 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             CheckValue(ShortEnum.Foo);
             CheckValue(ShortEnum.Bar);
-            
+
             CheckValue(UShortEnum.Foo);
             CheckValue(UShortEnum.Bar);
-            
+
             CheckValue(IntEnum.Foo);
             CheckValue(IntEnum.Bar);
-            
+
             CheckValue(UIntEnum.Foo);
             CheckValue(UIntEnum.Bar);
 
             CheckValue(LongEnum.Foo, false);
             CheckValue(LongEnum.Bar, false);
-            
+
             CheckValue(ULongEnum.Foo, false);
             CheckValue(ULongEnum.Bar, false);
         }
@@ -174,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             // Min values.
             var val = new EnumsBinarizable();
-            
+
             CheckSerializeDeserialize(val);
 
             // Max values.
@@ -201,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             // Null values.
             var val = new EnumsBinaryForm();
-            
+
             CheckSerializeDeserialize(val);
 
             // Max values.
@@ -228,7 +229,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             // Default values.
             var val = new EnumsBinarizableNullable();
-            
+
             CheckSerializeDeserialize(val);
 
             // Max values.
@@ -362,8 +363,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             private bool Equals(EnumsBinarizable other)
             {
-                return Byte == other.Byte && SByte == other.SByte && Short == other.Short 
-                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt 
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short
+                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt
                     && Long == other.Long && ULong == other.ULong;
             }
 
@@ -448,8 +449,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             private bool Equals(EnumsBinarizableNullable other)
             {
-                return Byte == other.Byte && SByte == other.SByte && Short == other.Short 
-                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt 
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short
+                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt
                     && Long == other.Long && ULong == other.ULong;
             }
 

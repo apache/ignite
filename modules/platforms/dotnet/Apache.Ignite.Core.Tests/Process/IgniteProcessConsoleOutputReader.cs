@@ -34,6 +34,11 @@ namespace Apache.Ignite.Core.Tests.Process
         /** <inheritDoc /> */
         public void OnOutput(Process proc, string data, bool err)
         {
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                return;
+            }
+
             Console.WriteLine(err ? ErrFormat : OutFormat, proc.Id, data);
         }
     }

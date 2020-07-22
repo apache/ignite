@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Tests cache store without Spring.
     /// </summary>
+    [TestFixture]
     public class CacheStoreTestCodeConfig : CacheStoreTest
     {
         /// <summary>
@@ -49,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                         ReadThrough = true,
                         KeepBinaryInStore = true,
                         CacheStoreFactory = new StoreFactory()
-                    }, 
+                    },
                     new CacheConfiguration
                     {
                         Name = "object_store",
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                         ReadThrough = true,
                         KeepBinaryInStore = false,
                         CacheStoreFactory = new StoreFactory()
-                    }, 
+                    },
                     new CacheConfiguration
                     {
                         Name = "template_store*",
@@ -69,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                         ReadThrough = true,
                         KeepBinaryInStore = false,
                         CacheStoreFactory = new StoreFactory()
-                    }, 
+                    },
                     new CacheConfiguration
                     {
                         Name = "custom_store",
@@ -78,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                         WriteThrough = true,
                         ReadThrough = true,
                         CacheStoreFactory = new CustomStoreFactory()
-                    }, 
+                    },
                 }
             };
 

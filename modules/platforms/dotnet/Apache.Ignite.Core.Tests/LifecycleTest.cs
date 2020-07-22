@@ -35,10 +35,10 @@ namespace Apache.Ignite.Core.Tests
     public class LifecycleTest
     {
         /** Configuration: without Java beans. */
-        private const string CfgNoBeans = "config//lifecycle//lifecycle-no-beans.xml";
+        private const string CfgNoBeans = "Config/Lifecycle/lifecycle-no-beans.xml";
 
         /** Configuration: with Java beans. */
-        private const string CfgBeans = "config//lifecycle//lifecycle-beans.xml";
+        private const string CfgBeans = "Config/Lifecycle//lifecycle-beans.xml";
 
         /** Whether to throw an error on lifecycle event. */
         internal static bool ThrowErr;
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Test without Java beans.
         /// </summary>

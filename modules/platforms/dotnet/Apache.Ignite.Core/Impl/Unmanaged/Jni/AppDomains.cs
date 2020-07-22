@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
+#if !NETCOREAPP
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
@@ -62,9 +62,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 var prop = typeof(AppDomain).GetProperty(
                     "DefaultDomain", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                
+
                 Debug.Assert(prop != null);
-                
+
                 return (_AppDomain) prop.GetValue(null, null);
             }
 

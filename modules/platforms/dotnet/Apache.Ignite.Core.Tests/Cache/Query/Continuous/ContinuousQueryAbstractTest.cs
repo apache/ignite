@@ -707,30 +707,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test whether timeout works fine.
+        /// Test that TimeInterval causes incomplete buffer to be sent when BufferSize is greater than 1.
         /// </summary>
         [Test]
-        public void TestTimeout()
+        public void TestTimeInterval()
         {
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
-            ContinuousQuery<int, BinarizableEntry> qry =
-                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
-
-            qry.BufferSize = 2;
-            qry.TimeInterval = TimeSpan.FromMilliseconds(500);
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>())
+            {
+                BufferSize = 2,
+                TimeInterval = TimeSpan.FromMilliseconds(500)
+            };
 
             using (cache1.QueryContinuous(qry))
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created, 2000);
 
                 // Put from remote node.
                 cache1.GetAndPut(key2, Entry(key2));
                 CheckNoCallback(100);
-                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created, 2000);
             }
         }
 
