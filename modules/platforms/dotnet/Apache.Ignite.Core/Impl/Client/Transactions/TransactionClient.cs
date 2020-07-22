@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Ignite Thin Client transaction facade.
@@ -43,11 +44,21 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <param name="id">ID.</param>
         /// <param name="ignite"></param>
         /// <param name="socket"></param>
-        public TransactionClient(int id, IgniteClient ignite, ClientSocket socket)
+        public TransactionClient(int id, 
+            IgniteClient ignite,
+            ClientSocket socket,
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            TimeSpan timeout, 
+            string label)
         {
             _id = id;
             _ignite = ignite;
             _socket = socket;
+            Concurrency = concurrency;
+            Isolation = isolation;
+            Timeout = timeout;
+            Label = label;
         }
 
         /** <inheritdoc /> */
@@ -63,6 +74,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             ThrowIfClosed();
             Close(false);
         }
+
+        public TransactionConcurrency Concurrency { get; private set; }
+        public TransactionIsolation Isolation { get; private set; }
+        public TimeSpan Timeout { get; private set; }
+        public string Label { get; private set; }
 
         /** <inheritdoc /> */
         public void Dispose()

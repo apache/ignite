@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Client.Transactions
 {
     using System;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Thin client transaction.
@@ -33,5 +34,13 @@ namespace Apache.Ignite.Core.Client.Transactions
         /// Rolls back this transaction.
         /// </summary>
         void Rollback();
+        
+        TransactionConcurrency Concurrency { get; } 
+        
+        TransactionIsolation Isolation { get; }
+
+        TimeSpan Timeout { get; }
+
+        string Label { get; }
     }
 }

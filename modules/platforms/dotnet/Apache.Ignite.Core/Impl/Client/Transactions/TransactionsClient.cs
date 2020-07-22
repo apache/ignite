@@ -146,7 +146,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 ctx => new TransactionClient(
                     ctx.Reader.ReadInt(),
                     _ignite,
-                    ctx.Socket)
+                    ctx.Socket,
+                    concurrency,
+                    isolation,
+                    timeout,
+                    label)
             );
 
             _currentTx.Value = tx;
