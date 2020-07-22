@@ -85,14 +85,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                         ITransaction igniteTx;
                         using (var tx = client.GetTransactions().TxStart())
                         {
-                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                             Assert.AreEqual(timeout, tx.Timeout);
+
+                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, igniteTx.Concurrency);
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                             Assert.AreEqual(timeout, igniteTx.Timeout);
-
                         }
                         igniteTx.Dispose();
                     }
@@ -121,19 +121,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                         ITransaction igniteTx;
                         using (var tx = act().TxStart(concurrency, isolation))
                         {
-                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
+
+                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, igniteTx.Concurrency);
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                         }
                         igniteTx.Dispose();
                         using (var tx = act().TxStart(concurrency, isolation, timeout))
                         {
-                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                             Assert.AreEqual(timeout, tx.Timeout);
+
+                            igniteTx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, igniteTx.Concurrency);
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                             Assert.AreEqual(timeout, igniteTx.Timeout);
