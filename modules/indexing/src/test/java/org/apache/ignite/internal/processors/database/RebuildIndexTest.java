@@ -109,8 +109,8 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
                 .setSystemRegionMaxSize(32 * 1024 * 1024)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setInitialSize(128 * 1024 * 1024)
-                        .setMaxSize(128 * 1024 * 1024)
+                        .setInitialSize(256 * 1024 * 1024)
+                        .setMaxSize(256 * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );

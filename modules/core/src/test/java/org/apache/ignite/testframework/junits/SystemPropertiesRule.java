@@ -17,30 +17,17 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import sun.jvmstat.monitor.HostIdentifier;
-import sun.jvmstat.monitor.Monitor;
-import sun.jvmstat.monitor.MonitoredHost;
-import sun.jvmstat.monitor.MonitoredVm;
-import sun.jvmstat.monitor.Units;
-import sun.jvmstat.monitor.VmIdentifier;
 
 /**
  * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
@@ -216,67 +203,6 @@ public class SystemPropertiesRule implements TestRule {
                 System.clearProperty(t2.getKey());
             else
                 System.setProperty(t2.getKey(), t2.getValue());
-        }
-
-        try {
-            System.out.println("<!> jvmstat report");
-            MonitoredVm vm = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost")).getMonitoredVm(new VmIdentifier("//" + U.jvmPid()), 0);
-
-            for (Monitor monitor : vm.findByPattern(".*")) {
-                if (monitor.getUnits() == Units.BYTES && !monitor.getName().contains(".gc."))
-                    System.out.println(monitor.getName() + " = " + monitor.getValue() + " " + monitor.getUnits());
-            }
-
-            MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-            System.out.printf(
-                "Direct total = %s%nDirect used = %s%nMapped total = %s%nMapped used = %s%n",
-                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=direct"), "TotalCapacity"),
-                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=direct"), "MemoryUsed"),
-                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=mapped"), "TotalCapacity"),
-                mBeanSrv.getAttribute(ObjectName.getInstance("java.nio:type=BufferPool,name=mapped"), "MemoryUsed")
-            );
-
-//            exec("ps", "-o", "%mem,pid", "ax");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    private void exec(String... cmd) {
-        try {
-            Process p = Runtime.getRuntime().exec(cmd);
-            InputStream is = p.getInputStream();
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PrintWriter writer = new PrintWriter(out);
-
-            int val;
-            while ((val = is.read()) != -1)
-                writer.print((char)val);
-
-            writer.flush();
-
-            String str = out.toString("UTF-8");
-
-            System.out.println(str);
-
-//            Comparator<String> cmp = Comparator.comparingDouble(s -> Double.parseDouble(s.substring(0, s.indexOf(' '))));
-//            String res = Stream.of(str.split("\n"))
-//                .skip(1)
-//                .map(String::trim)
-//                .sorted(cmp.reversed())
-//                .limit(5)
-//                .collect(Collectors.joining("\n"));
-//            System.out.println(res);
-
-            int exitCode = p.waitFor();
-            System.out.println("Exited with " + exitCode);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }
