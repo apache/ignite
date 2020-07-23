@@ -12,9 +12,7 @@
             </bean>
         </property>
 
-        {% if client_mode %}
-        <property name="clientMode" value="true" />
-        {% endif %}
+        <property name="clientMode" value="{{ client_mode or False | lower }}"/>
 
         {{ properties }}
     </bean>

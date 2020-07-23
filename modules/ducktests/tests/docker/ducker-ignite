@@ -61,7 +61,7 @@ help|-h|--help
     Display this help message
 
 build [-j|--jdk JDK] [image-name]
-    Build an docker image that ducktape uses to up cluster. Image is tagged with specified ${image_name}.
+    Build a docker image that represents ducker node. Image is tagged with specified ${image_name}.
 
     If --jdk is specified then we will use this argument as base image for ducker docker images.
     Otherwise ${default_jdk} is used.
@@ -82,7 +82,7 @@ up [-n|--num-nodes NUM_NODES] [-f|--force] [-s|--skip-build-image] [docker-image
     or a combination of port/port-range separated by comma (like 2181,9092 or 2181,5005-5008).
     By default no port is exposed. See README.md for more detail on this option.
 
-    If --jdk is specified then we will use this argument as base image for ducker docker images.
+    If --jdk is specified then we will use this argument as base image for ducktest's docker images.
     Otherwise ${default_jdk} is used.
 
 test [test-name(s)]
