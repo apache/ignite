@@ -32,7 +32,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1988,7 +1987,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         switchSegmentRecordOffset.set((int)segIdx, 0);
 
                         if (offs < origFile.length()) {
-                            GridFileUtils.copy(origFile, dstTmpFile, offs);
+                            GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
 
                             copied = true;
                         }
@@ -2210,7 +2209,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     compressSegmentToFile(segIdx, raw, tmpZip);
 
-                    Files.move(tmpZip.toPath(), zip.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Files.move(tmpZip.toPath(), zip.toPath());
 
                     try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                         f0.force();
