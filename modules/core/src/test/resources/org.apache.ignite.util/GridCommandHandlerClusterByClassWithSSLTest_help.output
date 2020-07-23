@@ -147,6 +147,24 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Set or display shutdown policy:
     control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
 
+  Print tracing configuration:
+    control.(sh|bat) --tracing-configuration
+
+  Print tracing configuration:
+    control.(sh|bat) --tracing-configuration get_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX]
+
+  Print specific tracing configuration based on specified --scope and --label:
+    control.(sh|bat) --tracing-configuration get (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX) [--label]
+
+  Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration.
+    control.(sh|bat) --tracing-configuration reset_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX]
+
+  Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration.
+    control.(sh|bat) --tracing-configuration reset (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX) [--label]
+
+  Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration.
+    control.(sh|bat) --tracing-configuration set (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX [--label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX])
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

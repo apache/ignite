@@ -114,7 +114,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         this.tx = tx;
 
-        ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+        ver = tx == null ? cctx.cache().nextVersion() : tx.xidVersion();
 
         initLogger(GridNearGetFuture.class);
     }
@@ -202,7 +202,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             finally {
                 // Exception has been thrown, must release reserved near entries.
                 if (!success) {
-                    GridCacheVersion obsolete = cctx.versions().next(topVer);
+                    GridCacheVersion obsolete = cctx.versions().next(topVer.topologyVersion());
 
                     if (savedEntries != null) {
                         for (GridNearCacheEntry reserved : savedEntries.values()) {
@@ -635,7 +635,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (!empty) {
             boolean atomic = cctx.atomic();
 
-            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
+            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.cache().nextVersion();
 
             for (GridCacheEntryInfo info : infos) {
                 try {

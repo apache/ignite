@@ -98,6 +98,9 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
+    /** Tracing. */
+    TRACING(26),
+
     /** Distributed change timeout for dump long operations. */
     DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
@@ -113,8 +116,11 @@ public enum IgniteFeatures {
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
 
+    /** Force rebuild, list or request indexes rebuild status from control script. */
+    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
+
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(41);
+    PERFORMANCE_STATISTICS(43);
 
     /**
      * Unique feature identifier.

@@ -504,12 +504,6 @@ public interface IgniteInternalTx {
     @Nullable public IgniteInternalFuture<?> salvageTx();
 
     /**
-     * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public void endVersion(GridCacheVersion endVer);
-
-    /**
      * @return Transaction write version. For all transactions except DHT transactions, will be equal to
      *      {@link #xidVersion()}.
      */

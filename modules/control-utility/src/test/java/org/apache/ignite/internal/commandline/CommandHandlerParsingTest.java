@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +38,8 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +82,9 @@ import static org.junit.Assert.fail;
 public class CommandHandlerParsingTest {
     /** */
     @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+
+    /** */
+    private static final String INVALID_REGEX = "[]";
 
     /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
@@ -595,6 +601,195 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Negative argument validation test for tracing-configuration command.
+     *
+     * validate that following tracing-configuration arguments validated as expected:
+     * <ul>
+     *     <li>
+     *         reset_all, get_all
+     *         <ul>
+     *             <li>
+     *                 --scope
+     *                 <ul>
+     *                     <li>
+     *                         if value is missing:
+     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                     </li>
+     *                     <li>
+     *                         if unsupported value is used:
+     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *         </ul>
+     *     </li>
+     *     <li>
+     *         reset, get:
+     *         <ul>
+     *             <li>
+     *                 --scope
+     *                 <ul>
+     *                     <li>
+     *                         if value is missing:
+     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                     </li>
+     *                     <li>
+     *                         if unsupported value is used:
+     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *             <li>
+     *                 --label
+     *                 <ul>
+     *                     <li>
+     *                         if value is missing:
+     *                          IllegalArgumentException (The label should be specified.)
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *         </ul>
+     *     </li>
+     *     <li>
+     *         set:
+     *         <ul>
+     *             <li>
+     *                 --scope
+     *                 <ul>
+     *                     <li>
+     *                         if value is missing:
+     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                     </li>
+     *                     <li>
+     *                         if unsupported value is used:
+     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *             <li>
+     *                 --label
+     *                 <ul>
+     *                     <li>
+     *                          if value is missing:
+     *                              IllegalArgumentException (The label should be specified.)
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *             <li>
+     *                 --sampling-rate
+     *                 <ul>
+     *                     <li>
+     *                          if value is missing:
+     *                              IllegalArgumentException (The sampling-rate should be specified. Decimal value between 0 and 1 should be used.)
+     *                     </li>
+     *                     <li>
+     *                          if unsupported value is used:
+     *                              IllegalArgumentException (Invalid samling-rate 'aaa'. Decimal value between 0 and 1 should be used.)
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *             <li>
+     *                 --included-scopes
+     *                 <ul>
+     *                     <li>
+     *                          if value is missing:
+     *                              IllegalArgumentException (At least one supported scope should be specified.)
+     *                     </li>
+     *                     <li>
+     *                          if unsupported value is used:
+     *                              IllegalArgumentException (Invalid supported scope: aaa. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].)
+     *                     </li>
+     *                 </ul>
+     *             </li>
+     *         </ul>
+     *     </li>
+     * </ul>
+     */
+    @Test
+    public void testTracingConfigurationArgumentsValidation() {
+        // reset
+        assertParseArgsThrows("The scope should be specified. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope");
+
+        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope", "aaa");
+
+        assertParseArgsThrows("The label should be specified.",
+            "--tracing-configuration", "reset", "--label");
+
+        // reset all
+        assertParseArgsThrows("The scope should be specified. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope");
+
+        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope", "aaa");
+
+        // get
+        assertParseArgsThrows("The scope should be specified. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope");
+
+        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope", "aaa");
+
+        assertParseArgsThrows("The label should be specified.",
+            "--tracing-configuration", "get", "--label");
+
+        // get all
+        assertParseArgsThrows("The scope should be specified. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope");
+
+        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope", "aaa");
+
+        // set
+        assertParseArgsThrows("The scope should be specified. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope");
+
+        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope", "aaa");
+
+        assertParseArgsThrows("The label should be specified.",
+            "--tracing-configuration", "set", "--label");
+
+        assertParseArgsThrows("The sampling rate should be specified. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate");
+
+        assertParseArgsThrows("Invalid sampling-rate 'aaa'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "aaa");
+
+        assertParseArgsThrows("Invalid sampling-rate '-1'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "-1");
+
+        assertParseArgsThrows("Invalid sampling-rate '2'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "2");
+
+        assertParseArgsThrows("At least one supported scope should be specified.",
+            "--tracing-configuration", "set", "--included-scopes");
+
+        assertParseArgsThrows("Invalid supported scope 'aaa'. The following values can be used: "
+                + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
+    }
+
+    /**
+     * Positive argument validation test for tracing-configuration command.
+     */
+    @Test
+    public void testTracingConfigurationArgumentsValidationMandatoryArgumentSet() {
+        parseArgs(asList("--tracing-configuration"));
+
+        parseArgs(asList("--tracing-configuration", "get_all"));
+
+        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset");
+
+        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get");
+
+        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
+            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set");
+    }
+
+    /**
      * Test checks that option {@link CommonArgParser#CMD_VERBOSE} is parsed
      * correctly and if it is not present, it takes the default value
      * {@code false}.
@@ -608,6 +803,137 @@ public class CommandHandlerParsingTest {
             assertFalse(cmd.toString(), parseArgs(singletonList(cmd.text())).verbose());
             assertTrue(cmd.toString(), parseArgs(asList(cmd.text(), CMD_VERBOSE)).verbose());
         }
+    }
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testIndexForceRebuildWrongArgs() {
+        String nodeId = UUID.randomUUID().toString();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id")),
+            IllegalArgumentException.class,
+            "Failed to read node id."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names")),
+            IllegalArgumentException.class,
+            "Expected comma-separated list of cache names."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names")),
+            IllegalArgumentException.class,
+            "Expected comma-separated list of cache group names."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "someNames", "--cache-names", "someNames")),
+            IllegalArgumentException.class,
+            "Either --group-names or --cache-names must be specified."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names", "someNames", "--cache-names", "someMoreNames")),
+            IllegalArgumentException.class,
+            "--cache-names arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "someNames", "--group-names", "someMoreNames")),
+            IllegalArgumentException.class,
+            "--group-names arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "--some-other-arg")),
+            IllegalArgumentException.class,
+            "--group-names not specified."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names", "--some-other-arg")),
+            IllegalArgumentException.class,
+            "--cache-names not specified."
+        );
+    }
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testIndexListWrongArgs() {
+        String nodeId = UUID.randomUUID().toString();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id")),
+            IllegalArgumentException.class,
+            "Failed to read node id."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--group-name")),
+            IllegalArgumentException.class,
+            "Failed to read group name regex."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--group-name", INVALID_REGEX)),
+            IllegalArgumentException.class,
+            "Invalid group name regex: " + INVALID_REGEX
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--cache-name")),
+            IllegalArgumentException.class,
+            "Failed to read cache name regex."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--cache-name", INVALID_REGEX)),
+            IllegalArgumentException.class,
+            "Invalid cache name regex: " + INVALID_REGEX
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--index-name")),
+            IllegalArgumentException.class,
+            "Failed to read index name regex."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--index-name", INVALID_REGEX)),
+            IllegalArgumentException.class,
+            "Invalid index name regex: " + INVALID_REGEX
+        );
+    }
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testIndexRebuildStatusWrongArgs() {
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "indexes_list", "--node-id")),
+            IllegalArgumentException.class,
+            "Failed to read node id."
+        );
     }
 
     /**

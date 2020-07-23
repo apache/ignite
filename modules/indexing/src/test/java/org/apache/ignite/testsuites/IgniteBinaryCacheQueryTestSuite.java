@@ -219,6 +219,8 @@ import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTe
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationOnKeyValueInsertTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationTypesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
@@ -230,8 +232,8 @@ import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelf
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridIndexFullRebuildTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
+import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
@@ -533,7 +535,7 @@ import org.junit.runners.Suite;
     SqlSystemViewsSelfTest.class,
 
     GridIndexRebuildSelfTest.class,
-    GridIndexFullRebuildTest.class,
+    GridIndexRebuildTest.class,
     CheckIndexesInlineSizeOnNodeJoinMultiJvmTest.class,
 
     SqlTransactionCommandsWithMvccDisabledSelfTest.class,
@@ -623,8 +625,10 @@ import org.junit.runners.Suite;
 
     IgniteCacheMergeSqlQuerySelfTest.class,
     SqlMergeTest.class,
-    SqlMergeOnClientNodeTest.class
+    SqlMergeOnClientNodeTest.class,
 
+    SqlFieldTypeValidationTypesTest.class,
+    SqlFieldTypeValidationOnKeyValueInsertTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
