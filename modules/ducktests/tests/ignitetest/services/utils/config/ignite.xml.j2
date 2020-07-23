@@ -11,7 +11,11 @@
                 <constructor-arg type="java.lang.String" value="{{ config_dir }}/ignite-log4j.xml"/>
             </bean>
         </property>
-        <property name="clientMode" value="true"/>
+
+        {% if client_mode %}
+        <property name="clientMode" value="true" />
+        {% endif %}
+
         {{ properties }}
     </bean>
 </beans>

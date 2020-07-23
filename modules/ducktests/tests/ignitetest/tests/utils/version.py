@@ -58,7 +58,7 @@ def get_version(node=None):
     Return the version attached to the given node.
     Default to DEV_BRANCH if node or node.version is undefined (aka None)
     """
-    if isinstance(node, ClusterNode) and hasattr(node, 'version') is not None:
+    if isinstance(node, ClusterNode) and hasattr(node, 'version'):
         return getattr(node, 'version')
 
     if isinstance(node, str) or isinstance(node, unicode):

@@ -22,6 +22,7 @@ from jinja2 import FileSystemLoader, Environment
 import os
 
 DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/config"
+DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
 
 
 class Config(object):
@@ -33,14 +34,17 @@ class Config(object):
         env = Environment(loader=tmpl_loader)
 
         self.template = env.get_template(tmpl_file)
+        self.default_params = {}
 
     def render(self, **kwargs):
-        return self.template.render(**kwargs)
+        kwargs.update(self.default_params)
+        res = self.template.render(**kwargs)
+        return res
 
 
 class IgniteServerConfig(Config):
     def __init__(self, context):
-        path = DEFAULT_CONFIG_PATH + "/ignite-server.xml.tmpl"
+        path = DEFAULT_IGNITE_CONF
         if 'ignite_server_config_path' in context.globals:
             path = context.globals['ignite_server_config_path']
         super(IgniteServerConfig, self).__init__(path)
@@ -48,13 +52,14 @@ class IgniteServerConfig(Config):
 
 class IgniteClientConfig(Config):
     def __init__(self, context):
-        path = DEFAULT_CONFIG_PATH + "/ignite-client.xml.tmpl"
+        path = DEFAULT_IGNITE_CONF
         if 'ignite_client_config_path' in context.globals:
             path = context.globals['ignite_client_config_path']
         super(IgniteClientConfig, self).__init__(path)
+        self.default_params.update(client_mode=True)
 
 
 class IgniteLoggerConfig(Config):
     def __init__(self):
-        super(IgniteLoggerConfig, self).__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.tmpl")
+        super(IgniteLoggerConfig, self).__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
 
