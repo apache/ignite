@@ -27,6 +27,24 @@ namespace Apache.Ignite.Core.Client.Transactions
     /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
     /// <para />
     /// Should not be used with async calls.
+    /// <example>
+    ///     You can use cache transactions as follows:
+    ///     <code>
+    ///     using (var tx = igniteClient.GetTransactions().TxStart())
+    ///     {
+    ///         int v1 = cache&lt;string, int&gt;.Get("k1");
+    ///         
+    ///         // Check if v1 satisfies some condition before doing a put.
+    ///         if (v1 > 0)
+    ///             cache.Put&lt;string, int&gt;("k1", 2);
+    ///             
+    ///         cache.Remove("k2");
+    ///         
+    ///         // Commit the transaction.
+    ///         tx.Commit();
+    ///     } 
+    ///     </code>
+    /// </example>
     /// </summary>
     public interface ITransactionsClient
     {
