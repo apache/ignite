@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstra
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -38,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * Schema operation executor.
  */
 public class SchemaOperationWorker extends GridWorker {
-    /** Kernal context. */
-    protected final GridKernalContext ctx;
-
     /** Query processor */
     private final GridQueryProcessor qryProc;
 
@@ -71,6 +69,9 @@ public class SchemaOperationWorker extends GridWorker {
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancelToken = new SchemaIndexOperationCancellationToken();
 
+    /** Workers registry. */
+    private final WorkersRegistry workersRegistry;
+
     /**
      * Constructor.
      *
@@ -88,13 +89,13 @@ public class SchemaOperationWorker extends GridWorker {
         @Nullable QueryTypeDescriptorImpl type) {
         super(ctx.igniteInstanceName(), workerName(op), ctx.log(SchemaOperationWorker.class));
 
-        this.ctx = ctx;
         this.qryProc = qryProc;
         this.depId = depId;
         this.op = op;
         this.nop = nop;
         this.cacheRegistered = cacheRegistered;
         this.type = type;
+        this.workersRegistry = ctx.workersRegistry();
 
         fut = new GridFutureAdapter();
 
@@ -185,7 +186,7 @@ public class SchemaOperationWorker extends GridWorker {
     @Override public void cancel() {
         if (cancelToken.cancel()) {
             try {
-                fut.get(ctx.workersRegistry().getSystemWorkerBlockedTimeout());
+                fut.get(workersRegistry.getSystemWorkerBlockedTimeout());
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
