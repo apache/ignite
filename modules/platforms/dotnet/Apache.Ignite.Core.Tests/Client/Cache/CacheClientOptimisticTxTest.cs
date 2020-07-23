@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Tests for <see cref="TransactionConcurrency.Optimistic"/> mode.
     /// </summary>
-    public class CacheClientOptimisticTransactionTest : ClientTestBase
+    public class CacheClientOptimisticTxTest : ClientTestBase
     {
         /// <summary>
         /// Tests client explicit optimistic transactions.

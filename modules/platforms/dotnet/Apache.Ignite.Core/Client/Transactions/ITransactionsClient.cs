@@ -22,24 +22,52 @@ namespace Apache.Ignite.Core.Client.Transactions
 
     /// <summary>
     /// Ignite Thin Client transactions facade.
-    /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+    /// <para />
+    /// Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
     /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
-    /// <para /> Should not be used with async calls.
-    /// </summary> 
+    /// <para />
+    /// Should not be used with async calls.
+    /// </summary>
     public interface ITransactionsClient
     {
         /// <summary>
+        /// Gets transaction started by this thread or null if this thread does not have a transaction.
+        /// </summary>
+        /// <value>
+        /// Transaction started by this thread or null if this thread does not have a transaction.
+        /// </value>
+        ITransactionClient Tx { get; }
+
+        /// <summary>
+        /// Gets the default transaction concurrency.
+        /// </summary>
+        TransactionConcurrency DefaultTransactionConcurrency { get; }
+
+        /// <summary>
+        /// Gets the default transaction isolation.
+        /// </summary>
+        TransactionIsolation DefaultTransactionIsolation { get; }
+
+        /// <summary>
+        /// Gets the default transaction timeout.
+        /// </summary>
+        TimeSpan DefaultTimeout { get; }
+
+        /// <summary>
         /// Starts a new transaction with the default isolation level, concurrency and timeout.
-        /// <para /> Default values for transaction isolation level, concurrency and timeout can be configured via
-        /// <see cref="TransactionClientConfiguration"/>.
-        /// <para /> Should not be used with async calls.
+        /// <para />
+        /// Default values for transaction isolation level, concurrency and timeout can be configured via
+        /// <see cref="TransactionClientConfiguration" />.
+        /// <para />
+        /// Should not be used with async calls.
         /// </summary>
         /// <returns>New transaction.</returns>
         ITransactionClient TxStart();
 
         /// <summary>
         /// Starts a new transaction with the specified concurrency and isolation.
-        /// <para /> Should not be used with async calls.
+        /// <para />
+        /// Should not be used with async calls.
         /// </summary>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
@@ -48,23 +76,27 @@ namespace Apache.Ignite.Core.Client.Transactions
 
         /// <summary>
         /// Starts a new transaction with the specified concurrency, isolation and timeout.
-        /// <para /> Should not be used with async calls.
+        /// <para />
+        /// Should not be used with async calls.
         /// </summary>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
         /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
         /// <returns>New transaction.</returns>
-        ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout);
+        ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+            TimeSpan timeout);
 
         /// <summary>
-        /// Returns instance of <see cref="ITransactionsClient"/> to mark a transaction instance with a special label.
+        /// Returns instance of <see cref="ITransactionsClient" /> to mark a transaction instance with a special label.
         /// The label is helpful for diagnostic and exposed to some diagnostic tools like
         /// SYS.TRANSACTIONS system view, control.sh commands, JMX TransactionsMXBean,
         /// long-running transactions dump in logs
         /// and <see cref="ITransaction.Label" /> via <see cref="ITransactions.GetLocalActiveTransactions" />.
         /// </summary>
         /// <param name="label">Label.</param>
-        /// <returns><see cref="T:Apache.Ignite.Core.Client.Transactions.IClientTransactions" /></returns>
+        /// <returns>
+        /// <see cref="T:Apache.Ignite.Core.Client.Transactions.IClientTransactions" />
+        /// </returns>
         ITransactionsClient WithLabel(string label);
     }
 }

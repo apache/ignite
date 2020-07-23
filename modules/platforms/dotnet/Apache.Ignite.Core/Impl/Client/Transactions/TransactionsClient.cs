@@ -32,14 +32,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// </summary>
     internal class TransactionsClient : ITransactionsClientInternal, IDisposable
     {
-        /** Ignite. */
-        private readonly IgniteClient _ignite;
-
         /** Default transaction configuration. */
         private readonly TransactionClientConfiguration _cfg;
 
         /** Transaction for this thread and client. */
         private readonly ThreadLocal<TransactionClient> _currentTx = new ThreadLocal<TransactionClient>();
+
+        /** Ignite. */
+        private readonly IgniteClient _ignite;
 
         /** Transaction manager. */
         private readonly ClientCacheTransactionManager _txManager;
@@ -54,6 +54,15 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _ignite = ignite;
             _cfg = cfg ?? new TransactionClientConfiguration();
             _txManager = new ClientCacheTransactionManager(this);
+        }
+
+        /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
+        public void Dispose()
+        {
+            _currentTx.Dispose();
+            _txManager.Dispose();
         }
 
         /** <inheritdoc /> */
@@ -96,6 +105,39 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
+        public ITransactionClient Tx
+        {
+            get
+            {
+                var tx = _currentTx.Value;
+
+                if (tx == null)
+                    return null;
+
+                if (tx.Closed)
+                {
+                    _currentTx.Value = null;
+
+                    return null;
+                }
+
+                return tx;
+            }
+        }
+
+        /** <inheritDoc /> */
+        public TransactionConcurrency DefaultTransactionConcurrency
+        {
+            get { return _cfg.DefaultTransactionConcurrency; }
+        }
+
+        /** <inheritDoc /> */
+        public TransactionIsolation DefaultTransactionIsolation
+        {
+            get { return _cfg.DefaultTransactionIsolation; }
+        }
+
+        /** <inheritDoc /> */
         public TimeSpan DefaultTimeout
         {
             get { return _cfg.DefaultTimeout; }
@@ -114,11 +156,19 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
-        public ITransactionClient TxStart(TransactionConcurrency concurrency, 
+        public ITransactionClient TxStart(TransactionConcurrency concurrency,
             TransactionIsolation isolation,
             TimeSpan timeout)
         {
             return TxStart(concurrency, isolation, timeout, null);
+        }
+
+        /** <inheritDoc /> */
+        public ITransactionsClient WithLabel(string label)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(label, "label");
+
+            return new TransactionsClientWithLabel(this, label);
         }
 
         /// <summary>
@@ -157,34 +207,16 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             return tx;
         }
 
-        /** <inheritDoc /> */
-        public ITransactionsClient WithLabel(string label)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(label, "label");
-
-            return new TransactionsClientWithLabel(this, label); 
-        }
-
-        /** <inheritDoc /> */
-        [SuppressMessage("Microsoft.Usage",
-            "CA1816:CallGCSuppressFinalizeCorrectly",
-            Justification = "There is no finalizer.")]
-        public void Dispose()
-        {
-            _currentTx.Dispose();
-            _txManager.Dispose();
-        }
-
         /// <summary>
         /// Wrapper for transactions with label.
         /// </summary>
         private class TransactionsClientWithLabel : ITransactionsClientInternal
         {
-            /** Transactions. */
-            private readonly TransactionsClient _transactions;
-
             /** Label. */
             private readonly string _label;
+
+            /** Transactions. */
+            private readonly TransactionsClient _transactions;
 
             /// <summary>
             /// Client transactions wrapper with label.
@@ -209,8 +241,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             /** <inheritDoc /> */
             public ITransactionClient TxStart(
-                TransactionConcurrency concurrency, 
-                TransactionIsolation isolation, 
+                TransactionConcurrency concurrency,
+                TransactionIsolation isolation,
                 TimeSpan timeout)
             {
                 return _transactions.TxStart(concurrency, isolation, timeout, _label);
@@ -242,6 +274,24 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             /** <inheritDoc /> */
             public TransactionIsolation DefaultTxIsolation
+            {
+                get { return _transactions.DefaultTxIsolation; }
+            }
+
+            /** <inheritDoc /> */
+            public ITransactionClient Tx
+            {
+                get { return _transactions.Tx; }
+            }
+
+            /** <inheritDoc /> */
+            public TransactionConcurrency DefaultTransactionConcurrency
+            {
+                get { return _transactions.DefaultTransactionConcurrency; }
+            }
+
+            /** <inheritDoc /> */
+            public TransactionIsolation DefaultTransactionIsolation
             {
                 get { return _transactions.DefaultTxIsolation; }
             }

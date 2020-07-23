@@ -45,10 +45,5 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Default transaction isolation.
         /// </summary>
         TransactionIsolation DefaultTxIsolation { get; }
-
-        /// <summary>
-        /// Default transaction timeout.
-        /// </summary>
-        TimeSpan DefaultTimeout { get; }
     }
 }

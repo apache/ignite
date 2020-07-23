@@ -82,9 +82,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     cfg.TransactionConfiguration.DefaultTransactionIsolation = isolation;
                     using (var client = Ignition.StartClient(cfg))
                     {
+                        var transactions = client.GetTransactions();
+                        Assert.AreEqual(concurrency, transactions.DefaultTransactionConcurrency);
+                        Assert.AreEqual(isolation, transactions.DefaultTransactionIsolation);
+                        Assert.AreEqual(timeout, transactions.DefaultTimeout);
+
                         ITransaction igniteTx;
-                        using (var tx = client.GetTransactions().TxStart())
+                        using (var tx = transactions.TxStart())
                         {
+                            Assert.AreEqual(tx, transactions.Tx);
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
                             Assert.AreEqual(timeout, tx.Timeout);
@@ -118,9 +124,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     foreach (var act in acts)
                     {
+                        var client = act();
+
                         ITransaction igniteTx;
-                        using (var tx = act().TxStart(concurrency, isolation))
+                        using (var tx = client.TxStart(concurrency, isolation))
                         {
+                            Assert.AreEqual(tx, client.Tx);
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
 
@@ -129,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                         }
                         igniteTx.Dispose();
-                        using (var tx = act().TxStart(concurrency, isolation, timeout))
+                        using (var tx = client.TxStart(concurrency, isolation, timeout))
                         {
                             Assert.AreEqual(concurrency, tx.Concurrency);
                             Assert.AreEqual(isolation, tx.Isolation);
@@ -711,8 +720,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     act(cache, 1);
 
-                    Assert.IsNotNull(((ITransactionsClientInternal)Client.GetTransactions()).CurrentTx,
-                        "Transaction has not started.");
+                    Assert.IsNotNull(Client.GetTransactions().Tx, "Transaction has not started.");
                 }
 
                 Assert.AreEqual(1, cache[1]);

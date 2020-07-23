@@ -150,7 +150,7 @@
     <Compile Include="Client\Cache\CachePartitionedTxDisconnectTest.cs" />
     <Compile Include="Client\Cache\CachePartitionedTxTest.cs" />
     <Compile Include="Client\Cache\DynamicFieldSetTest.cs" />
-    <Compile Include="Client\Cache\CacheClientOptimisticTransactionTest.cs" />
+    <Compile Include="Client\Cache\CacheClientOptimisticTxTest.cs" />
     <Compile Include="Client\Cache\SerializableObjectsTest.cs" />
     <Compile Include="Client\Cache\PartitionAwarenessTest.cs" />
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
