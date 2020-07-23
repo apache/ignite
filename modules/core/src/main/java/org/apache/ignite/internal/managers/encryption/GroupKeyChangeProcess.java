@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -53,6 +52,9 @@ class GroupKeyChangeProcess {
     /** Cache group encyption key change perform phase. */
     private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> performGKChangeProc;
 
+    /** Group encryption keys. */
+    private final CacheGroupEncryptionKeys keys;
+
     /** Cache group key change future. */
     private volatile GroupKeyChangeFuture fut;
 
@@ -62,8 +64,9 @@ class GroupKeyChangeProcess {
     /**
      * @param ctx Grid kernal context.
      */
-    GroupKeyChangeProcess(GridKernalContext ctx, Object opsMux) {
+    GroupKeyChangeProcess(GridKernalContext ctx, CacheGroupEncryptionKeys keys) {
         this.ctx = ctx;
+        this.keys = keys;
 
         prepareGKChangeProc =
             new DistributedProcess<>(ctx, CACHE_GROUP_KEY_CHANGE_PREPARE, this::prepare, this::finishPrepare);
@@ -156,9 +159,9 @@ class GroupKeyChangeProcess {
                     if (locKeyId != keyId)
                         continue;
 
-                    Set<Long> walSegments = ctx.encryption().walSegmentsByKey(grpId, keyId);
+                    Long walSegment = keys.reservedSegment(grpId, keyId);
 
-                    if (walSegments.isEmpty())
+                    if (walSegment == null)
                         break;
 
                     GroupKey currKey = ctx.encryption().groupKey(grpId);
@@ -166,7 +169,7 @@ class GroupKeyChangeProcess {
                     return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier, it's " +
                         "already present. There existing WAL segments that encrypted with this key [" +
                         "grpId=" + grpId + ", newId=" + keyId + ", currId=" + currKey.unsignedId() +
-                        ", walSegments=" + walSegments + "]."));
+                        ", walSegment=" + walSegment + "]."));
                 }
             }
         }
@@ -211,7 +214,7 @@ class GroupKeyChangeProcess {
                 throw new IgniteException("Cache group key change was rejected. The cluster is inactive.");
 
             if (!ctx.clientNode())
-                ctx.encryption().changeCacheGroupKeyLocal(req);
+                ctx.encryption().changeCacheGroupKeyLocal(req.groupIds(), req.keyIds(), req.keys());
         } catch (Exception e) {
             return new GridFinishedFuture<>(e);
         } finally {

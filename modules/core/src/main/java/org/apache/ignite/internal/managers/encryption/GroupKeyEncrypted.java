@@ -18,23 +18,25 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
- * Cache group encryption key with identifier.
+ * Cache group encryption key with identifier. Key is encrypted.
  */
-public class GroupKey {
+public class GroupKeyEncrypted implements Serializable {
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
+
     /** Encryption key ID. */
     private final int id;
 
     /** Encryption key. */
-    private final Serializable key;
+    private final byte[] key;
 
     /**
      * @param id Encryption key ID.
      * @param key Encryption key.
      */
-    public GroupKey(int id, Serializable key) {
+    public GroupKeyEncrypted(int id, byte[] key) {
         this.id = id;
         this.key = key;
     }
@@ -42,46 +44,14 @@ public class GroupKey {
     /**
      * @return Encryption key ID.
      */
-    public byte id() {
-        return (byte)id;
-    }
-
-    /**
-     * @return Unsigned encryption key ID.
-     */
-    public int unsignedId() {
-        return id & 0xff;
+    public int id() {
+        return id;
     }
 
     /**
      * @return Encryption key.
      */
-    public Serializable key() {
+    public byte[] key() {
         return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GroupKey grpKey = (GroupKey)o;
-
-        return id == grpKey.id && Objects.equals(key, grpKey.key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(id, key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "GroupKey{" +
-            "id=" + id +
-            '}';
     }
 }

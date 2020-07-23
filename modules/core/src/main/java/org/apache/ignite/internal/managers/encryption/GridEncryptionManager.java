@@ -24,20 +24,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -74,7 +69,6 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -185,8 +179,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Flag to enable/disable write to metastore on cluster state change. */
     private volatile boolean writeToMetaStoreEnabled;
 
-    /** Group encryption keys. */
-    private final Map<Integer, List<GroupKey>> grpEncKeys = new ConcurrentHashMap<>();
+    /** Cache group encryption keys. */
+    private CacheGroupEncryptionKeys grpKeys;
 
     /** Pending generate encryption key futures. */
     private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
@@ -232,9 +226,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** Cache groups for which encryption key was changed on node join. */
     private final Set<Integer> reencryptGroupsForced = new GridConcurrentHashSet<>();
-
-    /** WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key identifiers. */
-    private final Map<Long, Map<Integer, Set<Integer>>> awaitWalSegments = new ConcurrentSkipListMap<>();
 
     /** Recovered partitions pages count to be reencrypted. */
     private final Map<Integer, Map<Integer, Integer>> recoveredPartPagesCnt = new ConcurrentHashMap<>();
@@ -327,9 +318,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         performMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::performMasterKeyChange,
             this::finishPerformMasterKeyChange);
 
+        grpKeys = new CacheGroupEncryptionKeys(getSpi());
         pageScanner = new CacheGroupPageScanner(ctx);
-
-        grpKeyChangeProc = new GroupKeyChangeProcess(ctx, opsMux);
+        grpKeyChangeProc = new GroupKeyChangeProcess(ctx, grpKeys);
     }
 
     /** {@inheritDoc} */
@@ -399,7 +390,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         //And sends that keys to every joining node.
         synchronized (metaStorageMux) {
             //Keys read from meta storage.
-            HashMap<Integer, T2<Integer, byte[]>> knownEncKeys = knownEncryptionKeys();
+            HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
 
             //Generated(not saved!) keys for a new caches.
             //Configured statically in config, but doesn't stored on the disk.
@@ -411,7 +402,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             //We can store keys to the disk, because we are on a coordinator.
             for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
-                addGroupKey(entry.getKey(), entry.getValue(), INITIAL_KEY_ID);
+                addGroupKey(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
 
                 U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
             }
@@ -501,7 +492,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.isJoiningNodeClient())
             return;
 
-        HashMap<Integer, T2<Integer, byte[]>> knownEncKeys = knownEncryptionKeys();
+        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
 
         HashMap<Integer, byte[]> newKeys =
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
@@ -534,7 +525,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 U.quietAndInfo(log, "Store group key received from joining node [node=" +
                         data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
 
-                addGroupKey(entry.getKey(), entry.getValue(), INITIAL_KEY_ID);
+                addGroupKey(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
             }
             else {
                 U.quietAndInfo(log, "Skip group key received from joining node. Already exists. [node=" +
@@ -548,17 +539,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.isJoiningNodeClient() || dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
-        HashMap<Integer, T2<Integer, byte[]>> knownEncKeys = knownEncryptionKeys();
+        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
 
         HashMap<Integer, byte[]> newKeys =
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
         if (newKeys != null) {
-            for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
-                Object prev = knownEncKeys.putIfAbsent(entry.getKey(), new T2<>(INITIAL_KEY_ID, entry.getValue()));
-
-                assert prev == null;
-            }
+            for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet())
+                knownEncKeys.putIfAbsent(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
         }
 
         dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
@@ -579,37 +567,31 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (Map.Entry<Integer, Object> entry : encKeysFromCluster.entrySet()) {
             int grpId = entry.getKey();
 
-            GroupKey rmtKey;
+            GroupKeyEncrypted rmtKey;
 
-            if (entry.getValue() instanceof T2) {
-                T2<Integer, byte[]> pair = (T2<Integer, byte[]>)entry.getValue();
-
-                rmtKey = new GroupKey(pair.get1(), getSpi().decryptKey(pair.get2()));
-            }
+            if (entry.getValue() instanceof GroupKeyEncrypted)
+                rmtKey = (GroupKeyEncrypted)entry.getValue();
             else
-                rmtKey = new GroupKey(INITIAL_KEY_ID, getSpi().decryptKey((byte[])entry.getValue()));
+                rmtKey = new GroupKeyEncrypted(INITIAL_KEY_ID, (byte[])entry.getValue());
 
             GroupKey locGrpKey = groupKey(grpId);
 
-            if (locGrpKey != null && locGrpKey.unsignedId() == rmtKey.unsignedId()) {
+            if (locGrpKey != null && locGrpKey.unsignedId() == rmtKey.id()) {
                 U.quietAndInfo(log, "Skip group key received from coordinator. Already exists. [grp=" +
-                    grpId + ", keyId=" + rmtKey.unsignedId() + "]");
+                    grpId + ", keyId=" + rmtKey.id() + "]");
 
                 continue;
             }
 
             U.quietAndInfo(log, "Store group key received from coordinator [grp=" + grpId +
-                ", keyId=" + rmtKey.unsignedId() + "]");
+                ", keyId=" + rmtKey.id() + "]");
 
-            List<GroupKey> keys = grpEncKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
-
-            GroupKey prevKey = putActiveKey(keys, rmtKey);
+            GroupKey prevKey = grpKeys.put(grpId, rmtKey, true);
 
             if (prevKey == null)
                 continue;
 
-            awaitWalSegments.computeIfAbsent(ctx.cache().context().wal().currentSegment(), map -> new HashMap<>())
-                .computeIfAbsent(grpId, set -> new HashSet<>()).add(prevKey.unsignedId());
+            grpKeys.reserveSegment(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
             reencryptGroupsForced.add(grpId);
         }
@@ -622,12 +604,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key with identifier, that was set for writing.
      */
     @Nullable public GroupKey groupKey(int grpId) {
-        List<GroupKey> keys = grpEncKeys.get(grpId);
-
-        if (F.isEmpty(keys))
-            return null;
-
-        return keys.get(0);
+        return grpKeys.key(grpId);
     }
 
     /**
@@ -638,17 +615,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key.
      */
     @Nullable public GroupKey groupKey(int grpId, int keyId) {
-        List<GroupKey> keys = grpEncKeys.get(grpId);
-
-        if (keys == null)
-            return null;
-
-        for (GroupKey groupKey : keys) {
-            if (groupKey.unsignedId() == keyId)
-                return groupKey;
-        }
-
-        return null;
+        return grpKeys.key(grpId, keyId);
     }
 
     /**
@@ -658,83 +625,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Map of the key identifier with hash code of encryption key.
      */
     @Nullable public Map<Integer, Integer> groupKeysInfo(int grpId) {
-        List<GroupKey> keys = grpEncKeys.get(grpId);
-
-        if (keys == null)
-            return null;
-
-        Map<Integer, Integer> keysInfo = new TreeMap<>();
-
-        for (GroupKey groupKey : keys) {
-            byte[] bytes = U.toBytes(groupKey.key());
-
-            keysInfo.put(groupKey.unsignedId(), Arrays.hashCode(bytes));
-        }
-
-        return keysInfo;
-    }
-
-    /**
-     * @param grpId Cache group ID.
-     * @param keyId Encryption key ID.
-     */
-    Set<Long> walSegmentsByKey(int grpId, int keyId) {
-        Set<Long> walSegments = new TreeSet<>();
-
-        for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : awaitWalSegments.entrySet()) {
-            Set<Integer> keys = entry.getValue().get(grpId);
-
-            if (keys != null && keys.contains(keyId))
-                walSegments.add(entry.getKey());
-        }
-
-        return walSegments;
-    }
-
-    /**
-     * @param keys Encryption keys.
-     * @param newKey New encryption key for writing.
-     * @return Previous encryption key for writing.
-     */
-    private GroupKey putActiveKey(List<GroupKey> keys, GroupKey newKey) {
-        assert newKey != null;
-
-        GroupKey prevKey = F.first(keys);
-
-        keys.add(0, newKey);
-
-        return prevKey;
-    }
-
-    /**
-     * @param keys Encryption keys.
-     * @param ids Key identifiers for deletion.
-     * @return {@code True} if the keys have been deleted.
-     */
-    private boolean removeKeysById(List<GroupKey> keys, Set<Integer> ids) {
-        List<GroupKey> rmvGrpKeys = new ArrayList<>();
-
-        for (GroupKey groupKey : keys) {
-            if (ids.contains(groupKey.unsignedId()))
-                rmvGrpKeys.add(groupKey);
-        }
-
-        return keys.removeAll(rmvGrpKeys);
+        return grpKeys.keysInfo(grpId);
     }
 
     /**
      * Add new cache group encryption key.
      *
      * @param grpId Cache group ID.
-     * @param key Encrypted group key.
-     * @param id Encrypted group key ID.
+     * @param key Encryption key.
      */
-    private void addGroupKey(int grpId, byte[] key, int id) {
+    private void addGroupKey(int grpId, GroupKeyEncrypted key) {
         try {
-            Serializable encKey = withMasterKeyChangeReadLock(() -> getSpi().decryptKey(key));
-
             synchronized (metaStorageMux) {
-                grpEncKeys.put(grpId, new CopyOnWriteArrayList<>(Collections.singleton(new GroupKey(id, encKey))));
+                withMasterKeyChangeReadLock(() -> grpKeys.put(grpId, key, true));
 
                 writeToMetaStore(grpId, true, false);
             }
@@ -882,34 +785,30 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @param req Change cache group encryption key request.
+     * @param grpIds Cache group IDs.
+     * @param keyIds Encryption key IDs.
+     * @param keys Encryption keys.
      * @throws IgniteCheckedException If failed.
      */
-    void changeCacheGroupKeyLocal(ChangeCacheEncryptionRequest req) throws IgniteCheckedException {
-        Map<Integer, Map<Integer, Long>> encryptionStatus = U.newHashMap(req.groupIds().length);
+    void changeCacheGroupKeyLocal(int[] grpIds, byte[] keyIds, byte[][] keys) throws IgniteCheckedException {
+        Map<Integer, Map<Integer, Long>> encryptionStatus = U.newHashMap(grpIds.length);
 
-        for (int i = 0; i < req.groupIds().length; i++) {
-            int grpId = req.groupIds()[i];
-            int keyId = req.keyIds()[i] & 0xff;
-            Serializable newKey = ctx.config().getEncryptionSpi().decryptKey(req.keys()[i]);
+        for (int i = 0; i < grpIds.length; i++) {
+            int grpId = grpIds[i];
 
             CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
             if (grp == null)
                 continue;
 
+            GroupKeyEncrypted key = new GroupKeyEncrypted(keyIds[i] & 0xff, keys[i]);
+
             synchronized (metaStorageMux) {
-                List<GroupKey> keys = grpEncKeys.get(grpId);
+                GroupKey prevGrpKey = grpKeys.put(grpId, key,false);
 
-                if (keys == null)
-                    continue;
+                assert prevGrpKey != null && prevGrpKey.id() != key.id() : "prev=" + prevGrpKey + ", currId=" + key.id();
 
-                GroupKey prevGrpKey = putActiveKey(keys, new GroupKey(keyId, newKey));
-
-                assert prevGrpKey != null && prevGrpKey.id() != keyId : "prev=" + prevGrpKey + ", currId=" + keyId;
-
-                awaitWalSegments.computeIfAbsent(ctx.cache().context().wal().currentSegment(), map -> new HashMap<>())
-                    .computeIfAbsent(grpId, set -> new HashSet<>()).add(prevGrpKey.unsignedId());
+                grpKeys.reserveSegment(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
                 writeToMetaStore(grpId, true, true);
             }
@@ -920,7 +819,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reencryptGroups.put(grpId, new ConcurrentHashMap<>(partStates));
 
             if (log.isInfoEnabled())
-                log.info("New encryption key for cache group was added [grpId=" + grpId + ", keyId=" + keyId + "]");
+                log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + key.id() + "]");
         }
 
         WALPointer ptr = ctx.cache().context().wal().log(new EncryptionStatusRecord(encryptionStatus));
@@ -952,7 +851,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             ctx.cache().context().database().checkpointReadLock();
 
             try {
-                grpEncKeys.remove(grpId);
+                grpKeys.remove(grpId);
 
                 metaStorage.remove(ENCRYPTION_KEYS_PREFIX + grpId);
 
@@ -980,7 +879,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         assert writeToMetaStoreEnabled;
 
-        addGroupKey(grpId, encKey, INITIAL_KEY_ID);
+        addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
     }
 
     /**
@@ -1036,7 +935,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        Map<Integer, Set<Integer>> rmvKeys = removeWalSegments(segmentIdx);
+        Map<Integer, Set<Integer>> rmvKeys = grpKeys.removePreviousWalSegments(segmentIdx);
 
         if (rmvKeys == null)
             return;
@@ -1053,7 +952,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     Set<Integer> keyIds = entry.getValue();
 
-                    boolean rmv = removeKeysById(grpEncKeys.get(grpId), keyIds);
+                    boolean rmv = grpKeys.removeKeysById(grpId, keyIds);
 
                     assert rmv : keyIds;
 
@@ -1071,44 +970,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Remove all of the segments that are not greater than the specified index.
-     *
-     * @param segmentIdx WAL segment index.
-     * @return Map of group IDs with key IDs that were associated with removed WAL segments.
-     */
-    @Nullable private Map<Integer, Set<Integer>> removeWalSegments(long segmentIdx) {
-        Map<Integer, Set<Integer>> rmvKeys = null;
-        Iterator<Map.Entry<Long, Map<Integer, Set<Integer>>>> iter = awaitWalSegments.entrySet().iterator();
-
-        while (iter.hasNext()) {
-            Map.Entry<Long, Map<Integer, Set<Integer>>> entry = iter.next();
-
-            if (entry.getKey() > segmentIdx)
-                break;
-
-            iter.remove();
-
-            Map<Integer, Set<Integer>> grpKeys = entry.getValue();
-
-            if (rmvKeys == null) {
-                rmvKeys = grpKeys;
-
-                continue;
-            }
-
-            for (Map.Entry<Integer, Set<Integer>> e : grpKeys.entrySet()) {
-                rmvKeys.merge(e.getKey(), e.getValue(), (set1, set2) -> {
-                    set1.addAll(set2);
-
-                    return set1;
-                });
-            }
-        }
-
-        return rmvKeys;
-    }
-
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
         try {
@@ -1124,49 +985,34 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
 
             metastorage.iterate(ENCRYPTION_KEYS_PREFIX, (key, val) -> {
-                    Integer grpId = Integer.valueOf(key.replace(ENCRYPTION_KEYS_PREFIX, ""));
+                int grpId = Integer.parseInt(key.replace(ENCRYPTION_KEYS_PREFIX, ""));
 
-                    if (!grpEncKeys.containsKey(grpId)) {
-                        List<T2<Integer, byte[]>> storedKeys = (List<T2<Integer, byte[]>>)val;
+                if (grpKeys.groups().contains(grpId))
+                    return;
 
-                        List<GroupKey> keys = new CopyOnWriteArrayList<>();
-
-                        for (T2<Integer, byte[]> pair : storedKeys)
-                            keys.add(new GroupKey(pair.getKey(), getSpi().decryptKey(pair.getValue())));
-
-                        grpEncKeys.put(grpId, keys);
-                    }
+                grpKeys.putAll(grpId, (List<GroupKeyEncrypted>)val);
             }, true);
 
             // Try to read keys in previous format.
-            if (grpEncKeys.isEmpty()) {
-                final Map<Integer, Serializable> singleGrpEncKeys = new HashMap<>();
-
+            if (grpKeys.groups().isEmpty()) {
                 metastorage.iterate(ENCRYPTION_KEY_PREFIX, (key, val) -> {
-                    Integer grpId = Integer.valueOf(key.replace(ENCRYPTION_KEY_PREFIX, ""));
+                    int grpId = Integer.parseInt(key.replace(ENCRYPTION_KEY_PREFIX, ""));
 
-                    byte[] encGrpKey = (byte[])val;
+                    GroupKeyEncrypted grpKey = new GroupKeyEncrypted(INITIAL_KEY_ID, (byte[])val);
 
-                    singleGrpEncKeys.computeIfAbsent(grpId, k -> getSpi().decryptKey(encGrpKey));
+                    grpKeys.putAll(grpId, Collections.singletonList(grpKey));
                 }, true);
-
-                for (Map.Entry<Integer, Serializable> entry : singleGrpEncKeys.entrySet()) {
-                    List<GroupKey> keys = new CopyOnWriteArrayList<>();
-
-                    keys.add(new GroupKey(INITIAL_KEY_ID, entry.getValue()));
-
-                    grpEncKeys.put(entry.getKey(), keys);
-                }
             }
 
             Serializable savedSegments = metastorage.read(REENCRYPTED_WAL_SEGMENTS);
 
             if (savedSegments != null)
-                awaitWalSegments.putAll(((Map<Long, Map<Integer, Set<Integer>>>)savedSegments));
+                grpKeys.walSegments((Map<Long, Map<Integer, Set<Integer>>>)savedSegments);
 
-            if (!grpEncKeys.isEmpty()) {
-                U.quietAndInfo(log, "Encryption keys loaded from metastore. [grps=" +
-                    F.concat(grpEncKeys.entrySet(), ",") + ", masterKeyName=" + getSpi().getMasterKeyName() + ']');
+            if (grpKeys.groups().isEmpty()) {
+                U.quietAndInfo(log, "Encryption keys loaded from metastore. " +
+                    "[grps=" + F.concat(grpKeys.groups(), ",") +
+                    ", masterKeyName=" + getSpi().getMasterKeyName() + ']');
             }
         }
         catch (IgniteCheckedException e) {
@@ -1369,26 +1215,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void cleanupKeys(int grpId) throws IgniteCheckedException {
-        List<GroupKey> keys = grpEncKeys.get(grpId);
-        Set<Integer> rmvKeyIds = U.newHashSet(keys.size() - 1);
+        Set<Integer> rmvKeyIds = grpKeys.removeUnusedKeys(grpId);
 
-        for (GroupKey groupKey : keys.subList(1, keys.size()))
-            rmvKeyIds.add(groupKey.unsignedId());
-
-        for (Map<Integer, Set<Integer>> map : awaitWalSegments.values()) {
-            Set<Integer> grpKeepKeys = map.get(grpId);
-
-            if (grpKeepKeys != null)
-                rmvKeyIds.removeAll(grpKeepKeys);
-        }
-
-        if (!removeKeysById(keys, rmvKeyIds))
+        if (rmvKeyIds.isEmpty())
             return;
 
         writeToMetaStore(grpId, true, false);
 
         if (log.isInfoEnabled())
-            log.info("Previous encryption keys were removed [grpId=" + grpId + ", KeyIds=" + rmvKeyIds + "]");
+            log.info("Previous encryption keys were removed [grpId=" + grpId + ", keyIds=" + rmvKeyIds + "]");
     }
 
     /**
@@ -1404,7 +1239,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!reencryptGroupsForced.isEmpty())
             writeToMetaStore(0, false, true);
 
-        for (Integer grpId : grpEncKeys.keySet()) {
+        for (Integer grpId : grpKeys.groups()) {
             if (!writeAll && !reencryptGroupsForced.contains(grpId) &&
                 metaStorage.read(ENCRYPTION_KEYS_PREFIX + grpId) != null)
                 continue;
@@ -1448,28 +1283,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
             return;
 
-        ArrayList<T2<Integer, byte[]>> keysEncrypted = null;
+        List<GroupKeyEncrypted> keysEncrypted = null;
 
-        if (updateKeys) {
-            keysEncrypted = withMasterKeyChangeReadLock(() -> {
-                List<GroupKey> keys = grpEncKeys.get(grpId);
-                ArrayList<T2<Integer, byte[]>> encrKeys = new ArrayList<>(keys.size());
-
-                for (GroupKey grpKey : keys)
-                    encrKeys.add(new T2<>(grpKey.unsignedId(), getSpi().encryptKey(grpKey.key())));
-
-                return encrKeys;
-            });
-        }
+        if (updateKeys)
+            keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.keys(grpId));
 
         ctx.cache().context().database().checkpointReadLock();
 
         try {
             if (updateWalIdxs)
-                metaStorage.write(REENCRYPTED_WAL_SEGMENTS, (Serializable)awaitWalSegments);
+                metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.walSegments());
 
             if (updateKeys)
-                metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, keysEncrypted);
+                metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keysEncrypted);
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
@@ -1498,25 +1324,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         return newKeys;
-    }
-
-    /**
-     * @return Local encryption keys.
-     */
-    @Nullable private HashMap<Integer, T2<Integer, byte[]>> knownEncryptionKeys() {
-        if (F.isEmpty(grpEncKeys))
-            return null;
-
-        HashMap<Integer, T2<Integer, byte[]>> knownKeys = new HashMap<>();
-
-        for (Map.Entry<Integer, List<GroupKey>> entry : grpEncKeys.entrySet()) {
-            int grpId = entry.getKey();
-            GroupKey grpKey = entry.getValue().get(0);
-
-            knownKeys.put(grpId, new T2<>(grpKey.unsignedId(), getSpi().encryptKey(grpKey.key())));
-        }
-
-        return knownKeys;
     }
 
     /**
@@ -1581,22 +1388,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** Writes the record with the master key name and all keys to WAL. */
     private void writeKeysToWal() throws IgniteCheckedException {
-        List<T3<Integer, Byte, byte[]>> reencryptedKeys = new ArrayList<>();
-
-        for (Map.Entry<Integer, List<GroupKey>> entry : grpEncKeys.entrySet()) {
-            int grpId = entry.getKey();
-
-            for (GroupKey grpKey : entry.getValue()) {
-                byte keyId = grpKey.id();
-                byte[] encryptedKey = getSpi().encryptKey(grpKey.key());
-
-                reencryptedKeys.add(new T3<>(grpId, keyId, encryptedKey));
-            }
-        }
-
-        MasterKeyChangeRecord rec = new MasterKeyChangeRecord(getSpi().getMasterKeyName(), reencryptedKeys);
-
-        WALPointer ptr = ctx.cache().context().wal().log(rec);
+        WALPointer ptr = ctx.cache().context().wal().log(grpKeys.toMasterKeyChangeRecord());
 
         assert ptr != null;
     }
@@ -1614,14 +1406,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             getSpi().setMasterKeyName(rec.getMasterKeyName());
 
-            for (T3<Integer, Byte, byte[]> entry : rec.getGrpKeys()) {
-                int grpId = entry.get1();
-                int keyId = entry.get2() & 0xff;
-                byte[] key = entry.get3();
-
-                grpEncKeys.computeIfAbsent(grpId, list ->
-                    new CopyOnWriteArrayList<>()).add(new GroupKey(keyId, getSpi().decryptKey(key)));
-            }
+            grpKeys.fromMasterKeyChangeRecord(rec);
 
             restoredFromWAL = true;
         } catch (IgniteSpiException e) {
@@ -1657,8 +1442,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             for (Map.Entry<Integer, Map<Integer, Integer>> entry : recoveredPartPagesCnt.entrySet()) {
                 int grpId = entry.getKey();
-
-                CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
                 Map<Integer, Long> offsets = new ConcurrentHashMap<>(entry.getValue().size());
 
@@ -2012,19 +1795,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** */
-    static class EmptyResult implements Serializable {
+    protected static class EmptyResult implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
     }
 
     /** */
-    public static class NodeEncryptionKeys implements Serializable {
+    protected static class NodeEncryptionKeys implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
         NodeEncryptionKeys(
-            HashMap<Integer, T2<Integer, byte[]>> knownKeysWithIds,
+            HashMap<Integer, GroupKeyEncrypted> knownKeysWithIds,
             Map<Integer, byte[]> newKeys,
             byte[] masterKeyDigest
         ) {
@@ -2038,9 +1821,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             knownKeys = U.newHashMap(knownKeysWithIds.size());
             knownKeyIds = U.newHashMap(knownKeysWithIds.size());
 
-            for (Map.Entry<Integer, T2<Integer, byte[]>> entry : knownKeysWithIds.entrySet()) {
-                knownKeys.put(entry.getKey(), entry.getValue().get2());
-                knownKeyIds.put(entry.getKey(), (byte)entry.getValue().get1().intValue());
+            for (Map.Entry<Integer, GroupKeyEncrypted> entry : knownKeysWithIds.entrySet()) {
+                knownKeys.put(entry.getKey(), entry.getValue().key());
+                knownKeyIds.put(entry.getKey(), (byte)entry.getValue().id());
             }
         }
 
@@ -2115,7 +1898,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** Key change future. */
-    static class KeyChangeFuture extends GridFutureAdapter<Void> {
+    protected static class KeyChangeFuture extends GridFutureAdapter<Void> {
         /** Request ID. */
         private final UUID id;
 
