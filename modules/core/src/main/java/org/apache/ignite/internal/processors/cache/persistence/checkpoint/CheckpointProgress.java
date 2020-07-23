@@ -109,7 +109,7 @@ public interface CheckpointProgress {
      */
     public void updateEvictedPages(int deltha);
 
-    /** Clear cp progress counters */
+    /** Clear cp progress counters. */
     public void clearCounters();
 
     /**
