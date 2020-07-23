@@ -17,25 +17,31 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.EmptyResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.KeyChangeFuture;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 
+import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 
@@ -101,13 +107,62 @@ class GroupKeyChangeProcess {
     }
 
     /**
-     * @param req Request.
+     * Starts cache group encryption key change process.
+     *
+     * @param cacheOrGrpNames Cache or group names.
      */
-    public IgniteFuture<Void> start(ChangeCacheEncryptionRequest req) {
+    public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
+        if (ctx.clientNode())
+            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
+            throw new IllegalStateException("Not all nodes in the cluster support this operation.");
+
+        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+            throw new IgniteException("Operation was rejected. The cluster is inactive.");
+
         if (!finished()) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
                 "The previous change was not completed."));
         }
+
+        int[] grpIds = new int[cacheOrGrpNames.size()];
+        byte[] keyIds = new byte[grpIds.length];
+
+        int n = 0;
+
+        for (String cacheOrGroupName : cacheOrGrpNames) {
+            CacheGroupContext grp = ctx.cache().cacheGroup(CU.cacheId(cacheOrGroupName));
+
+            if (grp == null) {
+                IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheOrGroupName);
+
+                if (cache == null)
+                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
+
+                grp = cache.context().group();
+
+                if (grp.sharedGroup()) {
+                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
+                        grp.name() + ". Provide group name instead of cache name for shared groups.");
+                }
+            }
+
+            if (!grp.config().isEncryptionEnabled())
+                throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+
+            if (!ctx.encryption().reencryptionFuture(grp.groupId()).isDone())
+                throw new IgniteException("Reencryption is in progress [grp=" + cacheOrGroupName + "]");
+
+            grpIds[n] = grp.groupId();
+            keyIds[n] = (byte)(ctx.encryption().groupKey(grp.groupId()).unsignedId() + 1);
+
+            n += 1;
+        }
+
+        byte[][] keys = ctx.encryption().createKeys(grpIds.length).get1().toArray(new byte[grpIds.length][]);
+
+        ChangeCacheEncryptionRequest req = new ChangeCacheEncryptionRequest(grpIds, keys, keyIds);
 
         fut = new GroupKeyChangeFuture(req);
 

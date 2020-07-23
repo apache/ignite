@@ -46,7 +46,7 @@ class CacheGroupEncryptionKeys {
     private final Map<Integer, List<GroupKey>> grpKeys = new ConcurrentHashMap<>();
 
     /** WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key identifiers. */
-    private final Map<Long, Map<Integer, Set<Integer>>> awaitWalSegments = new ConcurrentSkipListMap<>();
+    private final Map<Long, Map<Integer, Set<Integer>>> trackedWalSegments = new ConcurrentSkipListMap<>();
 
     /** Encryption spi. */
     private final EncryptionSpi encSpi;
@@ -278,7 +278,7 @@ class CacheGroupEncryptionKeys {
         for (GroupKey groupKey : keys.subList(1, keys.size()))
             rmvKeyIds.add(groupKey.unsignedId());
 
-        for (Map<Integer, Set<Integer>> map : awaitWalSegments.values()) {
+        for (Map<Integer, Set<Integer>> map : trackedWalSegments.values()) {
             Set<Integer> grpKeepKeys = map.get(grpId);
 
             if (grpKeepKeys != null)
@@ -294,15 +294,15 @@ class CacheGroupEncryptionKeys {
     /**
      * @return WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key identifiers.
      */
-    Serializable walSegments() {
-        return (Serializable)Collections.unmodifiableMap(awaitWalSegments);
+    Serializable trackedWalSegments() {
+        return (Serializable)Collections.unmodifiableMap(trackedWalSegments);
     }
 
     /**
      * @param segments WAL segments, mapped to cache group encryption key identifiers.
      */
-    void walSegments(Map<Long, Map<Integer, Set<Integer>>> segments) {
-        awaitWalSegments.putAll(segments);
+    void trackedWalSegments(Map<Long, Map<Integer, Set<Integer>>> segments) {
+        trackedWalSegments.putAll(segments);
     }
 
     /**
@@ -313,8 +313,8 @@ class CacheGroupEncryptionKeys {
      * @param keyId Encryption key ID.
      * @param walIdx WAL segment index.
      */
-    void reserveSegment(int grpId, int keyId, long walIdx) {
-        awaitWalSegments.computeIfAbsent(walIdx, map -> new HashMap<>())
+    void reserveWalKey(int grpId, int keyId, long walIdx) {
+        trackedWalSegments.computeIfAbsent(walIdx, map -> new HashMap<>())
             .computeIfAbsent(grpId, set -> new HashSet<>()).add(keyId);
     }
 
@@ -324,7 +324,7 @@ class CacheGroupEncryptionKeys {
      * @return Wal segment index or null if there no segment associated with the specified cache group ID and key ID.
      */
     Long reservedSegment(int grpId, int keyId) {
-        for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : awaitWalSegments.entrySet()) {
+        for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : trackedWalSegments.entrySet()) {
             Set<Integer> keys = entry.getValue().get(grpId);
 
             if (keys != null && keys.contains(keyId))
@@ -342,7 +342,7 @@ class CacheGroupEncryptionKeys {
      */
     @Nullable Map<Integer, Set<Integer>> removePreviousWalSegments(long walIdx) {
         Map<Integer, Set<Integer>> rmvKeys = null;
-        Iterator<Map.Entry<Long, Map<Integer, Set<Integer>>>> iter = awaitWalSegments.entrySet().iterator();
+        Iterator<Map.Entry<Long, Map<Integer, Set<Integer>>>> iter = trackedWalSegments.entrySet().iterator();
 
         while (iter.hasNext()) {
             Map.Entry<Long, Map<Integer, Set<Integer>>> entry = iter.next();

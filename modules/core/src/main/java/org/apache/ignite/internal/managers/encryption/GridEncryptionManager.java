@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -70,7 +68,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -545,8 +542,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
         if (newKeys != null) {
-            for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet())
-                knownEncKeys.putIfAbsent(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
+            for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
+                GroupKeyEncrypted old =
+                    knownEncKeys.putIfAbsent(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
+
+                assert old == null;
+            }
         }
 
         dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
@@ -591,7 +592,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (prevKey == null)
                 continue;
 
-            grpKeys.reserveSegment(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+            grpKeys.reserveWalKey(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
             reencryptGroupsForced.add(grpId);
         }
@@ -724,51 +725,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public IgniteFuture<Void> changeCacheGroupKey(Collection<String> cacheOrGrpNames) {
         A.notEmpty(cacheOrGrpNames, "cacheOrGrpNames");
 
-        if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
-
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support this operation.");
-
-        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
-            throw new IgniteException("Operation was rejected. The cluster is inactive.");
-
-        int[] grpIds = new int[cacheOrGrpNames.size()];
-        byte[] keyIds = new byte[grpIds.length];
-        byte[][] keys = new byte[grpIds.length][];
-
-        int n = 0;
-
-        for (String cacheOrGroupName : cacheOrGrpNames) {
-            CacheGroupContext grp = ctx.cache().cacheGroup(CU.cacheId(cacheOrGroupName));
-
-            if (grp == null) {
-                IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheOrGroupName);
-
-                if (cache == null)
-                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
-
-                grp = cache.context().group();
-
-                if (grp.sharedGroup()) {
-                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
-                        grp.name() + ". Provide group name instead of cache name for shared groups.");
-                }
-            }
-
-            if (!grp.config().isEncryptionEnabled())
-                throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
-
-            if (reencryptGroups.containsKey(grp.groupId()))
-                throw new IgniteException("Reencryption is in progress [grp=" + cacheOrGroupName + "]");
-
-            grpIds[n] = grp.groupId();
-            keyIds[n] = (byte)(groupKey(grp.groupId()).unsignedId() + 1);
-            keys[n] = withMasterKeyChangeReadLock(() -> getSpi().encryptKey(getSpi().create()));
-
-            n += 1;
-        }
-
         synchronized (opsMux) {
             if (stopped) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
@@ -780,7 +736,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous master key change was not completed."));
             }
 
-            return grpKeyChangeProc.start(new ChangeCacheEncryptionRequest(grpIds, keys, keyIds));
+            return grpKeyChangeProc.start(cacheOrGrpNames);
         }
     }
 
@@ -790,7 +746,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param keys Encryption keys.
      * @throws IgniteCheckedException If failed.
      */
-    void changeCacheGroupKeyLocal(int[] grpIds, byte[] keyIds, byte[][] keys) throws IgniteCheckedException {
+    protected void changeCacheGroupKeyLocal(int[] grpIds, byte[] keyIds, byte[][] keys) throws IgniteCheckedException {
         Map<Integer, Map<Integer, Long>> encryptionStatus = U.newHashMap(grpIds.length);
 
         for (int i = 0; i < grpIds.length; i++) {
@@ -804,11 +760,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             GroupKeyEncrypted key = new GroupKeyEncrypted(keyIds[i] & 0xff, keys[i]);
 
             synchronized (metaStorageMux) {
-                GroupKey prevGrpKey = grpKeys.put(grpId, key,false);
+                GroupKey prevGrpKey = grpKeys.put(grpId, key, false);
 
                 assert prevGrpKey != null && prevGrpKey.id() != key.id() : "prev=" + prevGrpKey + ", currId=" + key.id();
 
-                grpKeys.reserveSegment(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+                grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
                 writeToMetaStore(grpId, true, true);
             }
@@ -870,14 +826,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * Callback for cache group start event.
      *
-     * @param grpId  Cache group ID.
+     * @param grpId Cache group ID.
      * @param encKey Encryption key
      */
     public void beforeCacheGroupStart(int grpId, @Nullable byte[] encKey) {
         if (encKey == null || ctx.clientNode())
             return;
-
-        assert writeToMetaStoreEnabled;
 
         addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
     }
@@ -1007,7 +961,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             Serializable savedSegments = metastorage.read(REENCRYPTED_WAL_SEGMENTS);
 
             if (savedSegments != null)
-                grpKeys.walSegments((Map<Long, Map<Integer, Set<Integer>>>)savedSegments);
+                grpKeys.trackedWalSegments((Map<Long, Map<Integer, Set<Integer>>>)savedSegments);
 
             if (grpKeys.groups().isEmpty()) {
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. " +
@@ -1042,7 +996,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
-        recoverPartitionPageCount();
+        restoreEncryptionStatus();
 
         synchronized (metaStorageMux) {
             this.metaStorage = metaStorage;
@@ -1292,7 +1246,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         try {
             if (updateWalIdxs)
-                metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.walSegments());
+                metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.trackedWalSegments());
 
             if (updateKeys)
                 metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keysEncrypted);
@@ -1332,7 +1286,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param keyCnt Keys count.
      * @return Tuple of collection with newly generated encryption keys and master key digest.
      */
-    private T2<Collection<byte[]>, byte[]> createKeys(int keyCnt) {
+    T2<Collection<byte[]>, byte[]> createKeys(int keyCnt) {
         return withMasterKeyChangeReadLock(() -> {
             if (keyCnt == 0)
                 return new T2<>(Collections.emptyList(), getSpi().masterKeyDigest());
@@ -1415,7 +1369,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Apply encrypted pages count for partitions during the recovery phase.
+     * Collect encrypted pages count for partitions during the recovery phase.
      *
      * @param rec Encryption status record.
      */
@@ -1427,11 +1381,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Apply encrypted pages count for partitions collected during recovery phase.
+     * Restore encrypted pages count for partitions collected during recovery phase.
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void recoverPartitionPageCount() throws IgniteCheckedException {
+    private void restoreEncryptionStatus() throws IgniteCheckedException {
         if (recoveredPartPagesCnt.isEmpty())
             return;
 
