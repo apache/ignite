@@ -19,7 +19,7 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.version import DEV_BRANCH, IgniteVersion, LATEST
+from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
 class AddNodeRebalanceTest(IgniteTest):
@@ -69,7 +69,7 @@ class AddNodeRebalanceTest(IgniteTest):
 
         # This client just put some data to the cache.
         IgniteApplicationService(self.test_context,
-                                 java_class_name="org.apache.ignite.internal.ducktest.DataGenerationApplication",
+                                 java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
                                  properties=self.properties(client_mode="true"),
                                  version=ignite_version,
                                  params="test-cache,%d" % self.DATA_AMOUNT,

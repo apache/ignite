@@ -20,7 +20,7 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
+from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
 
 class PmeFreeSwitchTest(IgniteTest):
@@ -72,7 +72,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         long_tx_streamer = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.LongTxStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
             properties=self.properties(client_mode="true"),
             params="test-cache",
             version=ignite_version)
@@ -83,7 +83,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.SingleKeyTxStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.SingleKeyTxStreamerApplication",
             properties=self.properties(client_mode="true"),
             params="test-cache,1000",
             version=ignite_version)

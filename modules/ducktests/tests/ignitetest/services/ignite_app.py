@@ -13,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ducktape.services.service import Service
-
 from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
-from ignitetest.version import DEV_BRANCH
+from ignitetest.tests.utils.version import DEV_BRANCH
 
 """
 The Ignite application service allows to perform custom logic writen on java.

@@ -20,7 +20,7 @@ from ducktape.services.service import Service
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_config import IgniteConfig
-from ignitetest.version import DEV_BRANCH
+from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 class SparkService(IgniteAwareService):

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest;
+package org.apache.ignite.internal.ducktest.tests;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;

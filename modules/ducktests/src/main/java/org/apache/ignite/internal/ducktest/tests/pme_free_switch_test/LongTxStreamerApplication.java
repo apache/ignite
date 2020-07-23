@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest;
+package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;

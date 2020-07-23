@@ -16,13 +16,12 @@ import random
 
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
+from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.version import DEV_BRANCH, LATEST_2_7
 from ignitetest.tests.utils.ignite_test import IgniteTest
-
-from jinja2 import Template
+from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 
 
 class DiscoveryTest(IgniteTest):

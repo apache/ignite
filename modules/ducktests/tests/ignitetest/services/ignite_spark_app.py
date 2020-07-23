@@ -17,7 +17,7 @@
 The Ignite-Spark application service.
 """
 from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
-from ignitetest.version import DEV_BRANCH
+from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 class SparkIgniteApplicationService(IgniteAwareApplicationService):

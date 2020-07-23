@@ -15,7 +15,7 @@
 
 import os
 
-from ignitetest.version import get_version, IgniteVersion
+from ignitetest.tests.utils.version import get_version, IgniteVersion
 
 """
 This module provides Ignite path methods
