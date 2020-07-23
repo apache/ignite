@@ -97,6 +97,7 @@ class DiscoveryInfo(object):
 class IgniteJmxMixin(object):
     @memoize
     def jmx_client(self):
+        # noinspection PyTypeChecker
         return JmxClient(self)
 
     @memoize
