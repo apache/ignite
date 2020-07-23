@@ -68,7 +68,6 @@ def get_version(node=None):
 
 
 DEV_BRANCH = IgniteVersion("dev")
-DEV_VERSION = IgniteVersion("2.10.0-SNAPSHOT")
 
 # 2.7.x versions
 V_2_7_6 = IgniteVersion("2.7.6")

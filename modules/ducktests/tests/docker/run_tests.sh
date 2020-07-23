@@ -16,10 +16,9 @@
 # limitations under the License.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
 
 # Num of containers that ducktape will prepare for tests
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-6}
+IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
 # Path for tests to start
 TC_PATHS=${TC_PATHS:-./ignitetest/}
 # Docker image name that ducktape will use to prepare containers

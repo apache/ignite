@@ -7,7 +7,6 @@ the `ducktape` test framework, for information about it check the links:
 
 Structure of the `ignitetest` directory is:
 - `./ignitetest/services` contains basic services functionality;
-- `./ignitetest/version.py` contains utils for versioning;
 - `./ignitetest/tests/utils` contains utils for testing.  
 
 ## Review Checklist
