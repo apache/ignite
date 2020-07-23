@@ -19,13 +19,14 @@ package org.apache.ignite.tools.javadoc;
 
 import java.io.File;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.Element;
-import com.sun.javadoc.Tag;
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.UnknownInlineTagTree;
+import com.sun.source.util.SimpleDocTreeVisitor;
+import jdk.javadoc.doclet.Doclet;
+import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Taglet;
 
 /**
@@ -37,6 +38,14 @@ public class IgniteLinkTaglet implements Taglet {
     /** */
     private static final String NAME = "ignitelink";
 
+    /** */
+    private DocletEnvironment env;
+
+    /** {@inheritDoc} */
+    @Override public void init(DocletEnvironment env, Doclet doclet) {
+        this.env = env;
+    }
+
     /**
      * Return the name of this custom tag.
      */
@@ -44,18 +53,7 @@ public class IgniteLinkTaglet implements Taglet {
         return NAME;
     }
 
-    @Override public String toString(List<? extends DocTree> tags, Element element) {
-        StringBuilder sb = new StringBuilder();
-
-        for (Iterator<? extends DocTree> iter = tags.iterator(); iter.hasNext(); ) {
-            DocTree next = iter.next();
-
-            sb.append(""); //todo IGNITE-11393 Implement toString for Java 9+
-        }
-
-        return sb.toString();
-    }
-
+    /** {@inheritDoc} */
     @Override public Set<Location> getAllowedLocations() {
         return new HashSet<>();
     }
@@ -70,64 +68,59 @@ public class IgniteLinkTaglet implements Taglet {
     }
 
     /**
-     * Register this Taglet.
-     *
-     * @param tagletMap the map to register this tag to.
-     */
-    public static void register(Map<String, IgniteLinkTaglet> tagletMap) {
-        IgniteLinkTaglet tag = new IgniteLinkTaglet();
-
-        Taglet t = tagletMap.get(tag.getName());
-
-        if (t != null)
-            tagletMap.remove(tag.getName());
-
-        tagletMap.put(tag.getName(), tag);
-    }
-
-    /**
-     * Given the <code>Tag</code> representation of this custom tag, return its string representation.
+     * Given the <code>DocTree</code> representation of this custom tag, return its string representation.
      * <p>
      * Input: org.apache.ignite.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])
      * <p>
-     * Output: <a href="../../../../../org/apache/ignite/grid/spi/indexing/h2/GridH2IndexingSpi.html#
-     * setIndexCustomFunctionClasses(java.lang.Class...)">
-     * <code>GridH2IndexingSpi.setIndexCustomFunctionClasses(java.lang.Class[])</code></a>
+     * Output: &lt;a href="../../../../../org/apache/ignite/grid/spi/indexing/h2/GridH2IndexingSpi.html#
+     * setIndexCustomFunctionClasses(java.lang.Class...)"&gt;
+     * &lt;code&gt;GridH2IndexingSpi.setIndexCustomFunctionClasses(java.lang.Class[])&lt;/code&gt;&lt;/a&gt;
      *
-     * @param tag <code>Tag</code> representation of this custom tag.
+     * @param tags <code>DocTree</code> representation of this custom tag.
+     * @param element The element to which the enclosing comment belongs.
      */
-     public String toString(Tag tag) {
-        if (tag.text() == null || tag.text().isEmpty())
-            return "";
+    @Override public String toString(List<? extends DocTree> tags, Element element) {
+        for (DocTree tag : tags) {
+            String text = new SimpleDocTreeVisitor<String, Void>() {
+                @Override public String visitUnknownInlineTag(UnknownInlineTagTree node, Void param) {
+                    return node.getContent().toString();
+                }
+            }.visit(tag, null);
 
-        File f = tag.position().file();
+            if (text == null || text.isEmpty())
+                return "";
 
-        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
+            File f = new File(env.getDocTrees().getPath(element).getCompilationUnit().getSourceFile().toUri());
 
-        String packPref = "src.main.java.";
+            String curCls = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
 
-        int idx = curClass.indexOf(packPref);
+            String packPref = "src.main.java.";
 
-        StringBuilder path = new StringBuilder();
+            int idx = curCls.indexOf(packPref);
 
-        if (idx != -1) {
-            curClass = curClass.substring(idx + packPref.length());
+            StringBuilder path = new StringBuilder();
 
-            for (int i = 0, n = curClass.split("\\.").length - 2; i < n; i++)
-                path.append("../");
+            if (idx != -1) {
+                curCls = curCls.substring(idx + packPref.length());
+
+                for (int i = 0, n = curCls.split("\\.").length - 2; i < n; i++)
+                    path.append("../");
+            }
+
+            String[] tokens = text.split("#");
+
+            int lastIdx = tokens[0].lastIndexOf('.');
+
+            String simpleClsName = lastIdx != -1 && lastIdx + 1 < tokens[0].length() ?
+                tokens[0].substring(lastIdx + 1) : tokens[0];
+
+            String fullyQClsName = tokens[0].replace(".", "/");
+
+            return "<a href=\"" + path + fullyQClsName + ".html" +
+                (tokens.length > 1 ? ("#" + tokens[1].replace("[]", "...")) : "") +
+                "\"><code>" + simpleClsName + (tokens.length > 1 ? ("." + tokens[1]) : "") + "</code></a>";
         }
 
-        String[] tokens = tag.text().split("#");
-
-        int lastIdx = tokens[0].lastIndexOf('.');
-
-        String simpleClsName = lastIdx != -1 && lastIdx + 1 < tokens[0].length() ?
-            tokens[0].substring(lastIdx + 1) : tokens[0];
-
-        String fullyQClsName = tokens[0].replace(".", "/");
-
-        return "<a href=\"" + path.toString() + fullyQClsName + ".html" +
-            (tokens.length > 1 ? ("#" + tokens[1].replace("[]", "...")) : "") +
-            "\"><code>" + simpleClsName + (tokens.length > 1 ? ("." + tokens[1]) : "") + "</code></a>";
+        return "";
     }
 }

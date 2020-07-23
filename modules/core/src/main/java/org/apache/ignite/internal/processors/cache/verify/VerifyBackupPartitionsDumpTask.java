@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,14 +39,13 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.commandline.cache.IdleVerify.logParsedArgs;
 
 /**
  * Task for collection checksums primary and backup partitions of specified caches. <br> Argument: Set of cache names,
@@ -275,5 +275,27 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             return Integer.compare(o1.partitionId(), o2.partitionId());
         };
+    }
+
+    /**
+     * Passes idle_verify parsed arguments to given log consumer.
+     *
+     * @param args idle_verify arguments.
+     * @param logConsumer Logger.
+     */
+    public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
+        SB options = new SB("idle_verify task was executed with the following args: ");
+
+        options
+            .a("caches=[")
+            .a(args.caches() == null ? "" : String.join(", ", args.caches()))
+            .a("], excluded=[")
+            .a(args.excludeCaches() == null ? "" : String.join(", ", args.excludeCaches()))
+            .a("]")
+            .a(", cacheFilter=[")
+            .a(args.cacheFilterEnum().toString())
+            .a("]\n");
+
+        logConsumer.accept(options.toString());
     }
 }

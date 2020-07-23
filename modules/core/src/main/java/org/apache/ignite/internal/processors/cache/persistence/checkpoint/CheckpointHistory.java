@@ -550,19 +550,22 @@ public class CheckpointHistory {
      *
      * @param groupsAndPartitions Groups and partitions to find and reserve earliest valid checkpoint.
      *
-     * @return Map (groupId: Map (partitionId, earliest valid checkpoint to history search)).
+     * @return Map (groupId, Reason (the reason why reservation cannot be made deeper): Map
+     * (partitionId, earliest valid checkpoint to history search)).
      */
-    public Map<Integer, Map<Integer, CheckpointEntry>> searchAndReserveCheckpoints(
+    public Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> searchAndReserveCheckpoints(
         final Map<Integer, Set<Integer>> groupsAndPartitions
     ) {
         if (F.isEmpty(groupsAndPartitions))
             return Collections.emptyMap();
 
-        final Map<Integer, Map<Integer, CheckpointEntry>> res = new HashMap<>();
+        final Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> res = new HashMap<>();
 
         CheckpointEntry oldestCpForReservation = null;
 
         synchronized (earliestCp) {
+            CheckpointEntry oldestHistoryCpEntry = firstCheckpoint();
+
             for (Integer grpId : groupsAndPartitions.keySet()) {
                 CheckpointEntry oldestGrpCpEntry = null;
 
@@ -579,17 +582,23 @@ public class CheckpointHistory {
                         oldestGrpCpEntry = cpEntry;
 
                     res.computeIfAbsent(grpId, partCpMap ->
-                        new HashMap<>())
-                        .put(part, cpEntry);
+                        new T2<>(ReservationReason.NO_MORE_HISTORY, new HashMap<>()))
+                        .get2().put(part, cpEntry);
                 }
+
+                if (oldestGrpCpEntry == null || oldestGrpCpEntry != oldestHistoryCpEntry)
+                    res.computeIfAbsent(grpId, (partCpMap) ->
+                        new T2<>(ReservationReason.CHECKPOINT_NOT_APPLICABLE, null))
+                        .set1(ReservationReason.CHECKPOINT_NOT_APPLICABLE);
             }
+        }
 
-            if (oldestCpForReservation != null) {
-                if (!cctx.wal().reserve(oldestCpForReservation.checkpointMark())) {
-                    log.warning("Could not reserve cp " + oldestCpForReservation.checkpointMark());
+        if (oldestCpForReservation != null) {
+            if (!cctx.wal().reserve(oldestCpForReservation.checkpointMark())) {
+                log.warning("Could not reserve cp " + oldestCpForReservation.checkpointMark());
 
-                    return Collections.emptyMap();
-                }
+                for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : res.entrySet())
+                    entry.setValue(new T2<>(ReservationReason.WAL_RESERVATION_ERROR, null));
             }
         }
 
@@ -604,7 +613,7 @@ public class CheckpointHistory {
      * @param grpId Group ID.
      * @param cp Checkpoint.
      */
-    private boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
+    public boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) cctx.database();
 
         if (dbMgr.isCheckpointInapplicableForWalRebalance(cp.timestamp(), grpId))

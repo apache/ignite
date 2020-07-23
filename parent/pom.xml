@@ -141,12 +141,13 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
+        <commons.lang3.version>3.9</commons.lang3.version>
         <!--Spark 2.4 version support -->
         <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
         <spark24.version>2.4.4</spark24.version>
 
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -289,7 +290,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <additionalparam>${javadoc.opts}</additionalparam>
+                        <additionalOptions>${javadoc.opts}</additionalOptions>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -333,7 +334,7 @@
                             </group>
                             <group>
                                 <title>Streaming APIs</title>
-                                <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
+                                <packages>org.apache.ignite.streamer*:org.apache.ignite.stream*</packages>
                             </group>
                             <group>
                                 <title>Security APIs</title>
@@ -468,16 +469,16 @@
                                 <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
                             <group>
-                                <title>Ignite Web Console</title>
-                                <packages>org.apache.ignite.console*</packages>
-                            </group>
-                            <group>
                                 <title>Metric SPI</title>
                                 <packages>org.apache.ignite.spi.metric*</packages>
                             </group>
                             <group>
                                 <title>System view SPI</title>
                                 <packages>org.apache.ignite.spi.systemview*</packages>
+                            </group>
+                            <group>
+                                <title>Tracing SPI</title>
+                                <packages>org.apache.ignite.spi.tracing*</packages>
                             </group>
                         </groups>
                         <bottom>
@@ -981,18 +982,6 @@
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
-                                        <!--web console-->
-                                        <exclude>**/web-console/**/.eslintrc</exclude>
-                                        <exclude>**/web-console/**/.babelrc</exclude>
-                                        <exclude>**/web-console/**/*.json</exclude>
-                                        <exclude>**/web-console/**/*.json.sample</exclude>
-                                        <exclude>**/web-console/backend/build/**</exclude>
-                                        <exclude>**/web-console/backend/node_modules/**</exclude>
-                                        <exclude>**/web-console/e2e/testcafe/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/build/**</exclude>
-                                        <exclude>**/web-console/frontend/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/**/*.png</exclude>
-                                        <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                     </excludes>
@@ -1061,6 +1050,16 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit</argLine>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
+                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
+                            <detectJavaApiLink>false</detectJavaApiLink>
                         </configuration>
                     </plugin>
                 </plugins>

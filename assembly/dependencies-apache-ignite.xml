@@ -34,6 +34,7 @@
             <includes>
                 <include>org.apache.ignite:ignite-spring</include>
                 <include>org.apache.ignite:ignite-indexing</include>
+                <include>org.apache.ignite:ignite-control-utility</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -138,11 +139,11 @@
                 <exclude>org.apache.ignite:ignite-cassandra</exclude>
                 <exclude>org.apache.ignite:ignite-yardstick</exclude>
                 <exclude>org.apache.ignite:ignite-benchmarks</exclude>
-                <exclude>org.apache.ignite:ignite-web-agent</exclude>
                 <exclude>org.apache.ignite:ignite-dev-utils</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
                 <exclude>org.apache.ignite:ignite-compatibility</exclude>
                 <exclude>org.apache.ignite:ignite-sqlline</exclude>
+                <exclude>org.apache.ignite:ignite-control-utility</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

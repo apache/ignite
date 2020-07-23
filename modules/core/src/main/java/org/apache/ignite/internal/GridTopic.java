@@ -146,7 +146,10 @@ public enum GridTopic {
     TOPIC_DEADLOCK_DETECTION,
 
     /** Message topic for the distributed process. See {@link DistributedProcess}. */
-    TOPIC_DISTRIBUTED_PROCESS;
+    TOPIC_DISTRIBUTED_PROCESS,
+
+    /** */
+    TOPIC_COMM_SYSTEM;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

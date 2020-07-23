@@ -377,6 +377,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong(), true);
 
+                Debug.Assert(t != null);
+
                 return t.Invoke(stream);
             }
         }
