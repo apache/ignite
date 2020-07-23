@@ -32,7 +32,9 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -904,10 +906,17 @@ public class ExecutionTest extends AbstractExecutionTest {
     /** */
     private RowFactory<Object[]> rowFactory() {
         return new RowFactory<Object[]>() {
+            /** */
+            @Override public RowHandler<Object[]> handler() {
+                return ArrayRowHandler.INSTANCE;
+            }
+
+            /** */
             @Override public Object[] create() {
                 throw new AssertionError();
             }
 
+            /** */
             @Override public Object[] create(Object... fields) {
                 return fields;
             }

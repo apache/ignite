@@ -124,7 +124,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSender rel) {
         IgniteDistribution distribution = rel.distribution();
 
-        Destination dest = distribution.function().destination(partSvc, ctx.targetMapping(), distribution.getKeys());
+        Destination<Row> dest = distribution.function().destination(ctx, partSvc, ctx.targetMapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
         Outbox<Row> outbox =
@@ -367,10 +367,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     private Predicate<Row> partitionFilter(IgniteDistribution distr) {
         assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
 
-        ImmutableBitSet filter = ImmutableBitSet.of(ctx.partitions());
+        ImmutableBitSet filter = ImmutableBitSet.of(ctx.localPartitions());
         DistributionFunction function = distr.function();
         ImmutableIntList keys = distr.getKeys();
-        ToIntFunction<Object> partFunction = function.partitionFunction(partSvc, ctx.partitionsCount(), keys);
+        ToIntFunction<Row> partFunction = function.partitionFunction(ctx, partSvc, keys);
 
         return o -> filter.get(partFunction.applyAsInt(o));
     }

@@ -42,7 +42,7 @@ public class FragmentDescription implements MarshalableMessage {
     private long fragmentId;
 
     /** */
-    private int[] partitions;
+    private int[] localPartitions;
 
     /** */
     private int partitionsCount;
@@ -63,11 +63,10 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public FragmentDescription(long fragmentId, int[] partitions, int partitionsCount,
-        NodesMapping targetMapping,
+    public FragmentDescription(long fragmentId, int[] localPartitions, int partitionsCount, NodesMapping targetMapping,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
-        this.partitions = partitions;
+        this.localPartitions = localPartitions;
         this.partitionsCount = partitionsCount;
         this.targetMapping = targetMapping;
         this.remoteSources = remoteSources;
@@ -89,8 +88,8 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public int[] partitions() {
-        return partitions;
+    public int[] localPartitions() {
+        return localPartitions;
     }
 
     /** */
@@ -122,7 +121,7 @@ public class FragmentDescription implements MarshalableMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIntArray("partitions", partitions))
+                if (!writer.writeIntArray("localPartitions", localPartitions))
                     return false;
 
                 writer.incrementState();
@@ -167,7 +166,7 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                partitions = reader.readIntArray("partitions");
+                localPartitions = reader.readIntArray("localPartitions");
 
                 if (!reader.isLastRead())
                     return false;

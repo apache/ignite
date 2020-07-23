@@ -116,8 +116,8 @@ public class ExecutionContext<Row> implements DataContext {
     /**
      * @return Interested partitions.
      */
-    public int[] partitions() {
-        return fragmentDesc.partitions();
+    public int[] localPartitions() {
+        return fragmentDesc.localPartitions();
     }
 
     /** */

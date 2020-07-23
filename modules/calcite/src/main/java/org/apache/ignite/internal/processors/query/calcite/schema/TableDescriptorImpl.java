@@ -57,7 +57,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  *
  */
-@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "rawtypes", "unchecked"})
+@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "rawtypes"})
 public class TableDescriptorImpl extends NullInitializerExpressionFactory
     implements TableDescriptor {
     /** */
@@ -144,8 +144,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             }
         }
 
-        Map<String, ColumnDescriptor> descriptorsMap = U.newHashMap(fields.size() + 2);
-
+        Map<String, ColumnDescriptor> descriptorsMap = U.newHashMap(descriptors.size());
         for (ColumnDescriptor descriptor : descriptors)
             descriptorsMap.put(descriptor.name(), descriptor);
 
@@ -187,12 +186,18 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory) throws IgniteCheckedException {
-        Object[] res = new Object[descriptors.length];
+        RowHandler<Row> handler = factory.handler();
+
+        assert handler == ectx.rowHandler();
+
+        Row res = factory.create();
+
+        assert handler.columnCount(res) == descriptors.length;
 
         for (int i = 0; i < descriptors.length; i++)
-            res[i] = descriptors[i].value(ectx, cctx, row);
+            handler.set(i, res, descriptors[i].value(ectx, cctx, row));
 
-        return factory.create(res);
+        return res;
     }
 
     /** {@inheritDoc} */

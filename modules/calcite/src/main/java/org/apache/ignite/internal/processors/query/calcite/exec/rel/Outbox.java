@@ -52,7 +52,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     private final long targetFragmentId;
 
     /** */
-    private final Destination dest;
+    private final Destination<Row> dest;
 
     /** */
     private final Deque<Row> inBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
@@ -75,10 +75,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         ExecutionContext<Row> ctx,
         ExchangeService exchange,
         MailboxRegistry registry,
-        long exchangeId, long
-        targetFragmentId,
-        Destination dest
-    ) {
+        long exchangeId,
+        long targetFragmentId,
+        Destination<Row> dest) {
         super(ctx);
         this.exchange = exchange;
         this.registry = registry;

@@ -28,6 +28,8 @@ import java.util.function.ToIntFunction;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,22 +54,26 @@ public abstract class DistributionFunction implements Serializable {
     /**
      * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
      *
+     *
+     * @param ctx Execution context.
      * @param partitionService Affinity function source.
      * @param mapping Target mapping.
      * @param keys Distribution keys.
      * @return Destination function.
      */
-    public abstract Destination destination(PartitionService partitionService, NodesMapping mapping, ImmutableIntList keys);
+    public abstract <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+        NodesMapping mapping, ImmutableIntList keys);
 
     /**
      * Creates a partition.
      *
+     * @param ctx Execution context.
      * @param partitionService Affinity function source.
-     * @param partitionsCount Expected partitions count.
      * @param keys Distribution keys.
      * @return Partition function.
      */
-    public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList keys) {
+    public <Row> ToIntFunction<Row> partitionFunction(ExecutionContext<Row> ctx, PartitionService partitionService,
+        ImmutableIntList keys) {
         throw new UnsupportedOperationException();
     }
 
@@ -118,7 +124,8 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             throw new AssertionError();
         }
 
@@ -139,10 +146,11 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
-            return new AllNodes(m.nodes());
+            return new AllNodes<>(m.nodes());
         }
 
         /** */
@@ -162,10 +170,11 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
-            return new RandomNode(m.nodes());
+            return new RandomNode<>(m.nodes());
         }
 
         /** */
@@ -186,11 +195,12 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             if (m == null || m.nodes() == null || m.nodes().size() != 1)
                 throw new AssertionError();
 
-            return new AllNodes(Collections
+            return new AllNodes<>(Collections
                 .singletonList(Objects
                     .requireNonNull(F
                         .first(m.nodes()))));
@@ -212,7 +222,8 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && !k.isEmpty();
 
             List<List<UUID>> assignments = m.assignments();
@@ -222,12 +233,14 @@ public abstract class DistributionFunction implements Serializable {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            return new Partitioned(m.nodes(), assignments, partitionFunction(partitionService, assignments.size(), k));
+            return new Partitioned<>(assignments, partitionFunction(ctx, partitionService, k));
         }
 
         /** {@inheritDoc} */
-        @Override public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList k) {
-            return DistributionFunction.rowToPart(partitionService.partitionFunction(CU.UNDEFINED_CACHE_ID), partitionsCount, k.toIntArray());
+        @Override public <Row> ToIntFunction<Row> partitionFunction(ExecutionContext<Row> ctx,
+            PartitionService partitionService, ImmutableIntList k) {
+            return DistributionFunction.rowToPart(partitionService.partitionFunction(CU.UNDEFINED_CACHE_ID),
+                ctx.partitionsCount(), k.toIntArray(), ctx.rowHandler());
         }
 
         /** */
@@ -264,7 +277,8 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, PartitionService partitionService,
+            NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && k.size() == 1;
 
             List<List<UUID>> assignments = m.assignments();
@@ -274,12 +288,16 @@ public abstract class DistributionFunction implements Serializable {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            return new Partitioned(m.nodes(), assignments, partitionFunction(partitionService, assignments.size(), k));
+            return new Partitioned<>(assignments, partitionFunction(ctx, partitionService, k));
         }
 
         /** {@inheritDoc} */
-        @Override public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList k) {
-            return DistributionFunction.rowToPart(partitionService.partitionFunction(cacheId), partitionsCount, k.toIntArray());
+        @Override public <Row> ToIntFunction<Row> partitionFunction(ExecutionContext<Row> ctx,
+            PartitionService partitionService, ImmutableIntList k) {
+            assert k.size() == 1;
+
+            return DistributionFunction.rowToPart(partitionService.partitionFunction(cacheId),
+                ctx.partitionsCount(), k.toIntArray(), ctx.rowHandler());
         }
 
         /** {@inheritDoc} */
@@ -289,17 +307,15 @@ public abstract class DistributionFunction implements Serializable {
     }
 
     /** */
-    private static ToIntFunction<Object> rowToPart(ToIntFunction<Object> keyToPart, int parts, int[] keys) {
+    private static <Row> ToIntFunction<Row> rowToPart(ToIntFunction<Object> keyToPart, int parts, int[] keys, RowHandler<Row> hndlr) {
         return r -> {
-            Object[] row = (Object[]) r;
-
-            if (F.isEmpty(row))
+            if (F.isEmpty(keys))
                 return 0;
 
-            int hash = keyToPart.applyAsInt(row[keys[0]]);
+            int hash = keyToPart.applyAsInt(hndlr.get(keys[0], r));
 
             for (int i = 1; i < keys.length; i++)
-                hash = 31 * hash + keyToPart.applyAsInt(row[keys[i]]);
+                hash = 31 * hash + keyToPart.applyAsInt(hndlr.get(keys[i], r));
 
             return U.safeAbs(hash) % parts;
         };

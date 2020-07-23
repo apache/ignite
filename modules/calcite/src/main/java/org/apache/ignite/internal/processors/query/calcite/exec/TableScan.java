@@ -222,7 +222,7 @@ public class TableScan<Row> implements Iterable<Row> {
         /** */
         private void reservePartitioned(GridDhtPartitionTopology top) {
             AffinityTopologyVersion topVer = ectx.planningContext().topologyVersion();
-            int[] partitions = ectx.partitions();
+            int[] partitions = ectx.localPartitions();
 
             assert topVer != null && !F.isEmpty(partitions);
 
