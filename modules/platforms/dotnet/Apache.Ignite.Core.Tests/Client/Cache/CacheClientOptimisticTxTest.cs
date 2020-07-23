@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Transactions;
-    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 

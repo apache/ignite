@@ -43,8 +43,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
-        /// <param name="ignite"></param>
-        /// <param name="socket"></param>
+        /// <param name="ignite">Ignite.</param>
+        /// <param name="socket">Socket.</param>
+        /// <param name="concurrency">Concurrency.</param>
+        /// <param name="isolation">Isolation.</param>
+        /// <param name="timeout">Timeout.</param>
+        /// <param name="label">Label.</param>
         public TransactionClient(int id,
             IgniteClient ignite,
             ClientSocket socket,
@@ -76,9 +80,16 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             Close(false);
         }
 
+        /** <inheritdoc /> */
         public TransactionConcurrency Concurrency { get; private set; }
+        
+        /** <inheritdoc /> */
         public TransactionIsolation Isolation { get; private set; }
+
+        /** <inheritdoc /> */
         public TimeSpan Timeout { get; private set; }
+        
+        /** <inheritdoc /> */
         public string Label { get; private set; }
 
         /** <inheritdoc /> */
@@ -94,7 +105,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Transaction Id.
+        /// </summary>
         public int Id
         {
             get { return _id; }

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Client;

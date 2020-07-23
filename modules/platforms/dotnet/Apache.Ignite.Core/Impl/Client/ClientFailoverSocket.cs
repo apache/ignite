@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
