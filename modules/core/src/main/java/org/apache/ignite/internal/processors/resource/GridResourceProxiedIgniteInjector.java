@@ -36,8 +36,8 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
 
     /** */
     private Ignite ignite(Object target) {
-        return !isSystemType(((IgniteEx)getResource()).context(), target)
-            ? proxy(Ignite.class, getResource()) : getResource();
+        return isSystemType(((IgniteEx)getResource()).context(), target, false)
+            ? getResource() : proxy(Ignite.class, getResource());
     }
 
     /** {@inheritDoc} */

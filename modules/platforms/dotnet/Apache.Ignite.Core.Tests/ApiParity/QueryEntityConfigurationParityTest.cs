@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="QueryEntity"/> has all properties from Java configuration APIs.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class QueryEntityConfigurationParityTest
     {
         /** Properties that are not needed on .NET side. */
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         public void TestQueryEntityConfiguration()
         {
             ParityTest.CheckConfigurationParity(
-                @"modules\core\src\main\java\org\apache\ignite\cache\QueryEntity.java", 
+                @"modules\core\src\main\java\org\apache\ignite\cache\QueryEntity.java",
                 typeof(QueryEntity),
                 UnneededProperties);
         }

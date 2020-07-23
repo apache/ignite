@@ -199,7 +199,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         startGrid("binaryGrid3");
         startGrid("binaryGrid4");
 
-        Thread.sleep(10_000);
+        awaitPartitionMapExchange(true, true, null, false);
     }
 
     /**

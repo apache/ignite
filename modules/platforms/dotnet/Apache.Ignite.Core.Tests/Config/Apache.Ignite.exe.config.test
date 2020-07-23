@@ -27,7 +27,7 @@
     </runtime>
 
     <appSettings>
-        <add key="Ignite.SpringConfigUrl" value="config\compute\compute-standalone.xml" />
+        <add key="Ignite.SpringConfigUrl" value="Config/Compute/compute-standalone.xml" />
         <add key="Ignite.Assembly.1" value="test-1.dll" />
         <add key="Ignite.Assembly.2" value="test-2.dll" />
         <add key="Ignite.JvmOption.1" value="-DOPT1" />

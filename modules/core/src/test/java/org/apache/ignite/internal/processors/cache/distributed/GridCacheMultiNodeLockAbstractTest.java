@@ -107,6 +107,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         ignite2 = startGrid(2);
 
         startGrid(3);
+
+        // Make sure topology is stable to avoid topology deadlocks on lock aquisiotion.
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
