@@ -32,6 +32,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -214,7 +215,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final int BUF_SIZE = 1024 * 1024;
 
     /** Use mapped byte buffer. */
-    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, false);
+    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
 
     /**
      * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
@@ -2209,7 +2210,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     compressSegmentToFile(segIdx, raw, tmpZip);
 
-                    Files.move(tmpZip.toPath(), zip.toPath());
+                    Files.move(tmpZip.toPath(), zip.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                     try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                         f0.force();
