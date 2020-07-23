@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -939,20 +940,31 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near,
         ClassLoader clsLdr) throws IgniteCheckedException {
+
+        CacheObjectValueContext coctx;
+
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
             if (cacheCtx == null)
                 throw new CacheInvalidStateException(
                     "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-            
+
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
             else if (!cacheCtx.isNear() && near)
                 cacheCtx = cacheCtx.dht().near().context();
 
+            coctx = cacheCtx.cacheObjectContext();
+
             this.ctx = cacheCtx;
         }
+        else
+            coctx = context().cacheObjectContext();
+
+        if (coctx == null)
+            throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
@@ -967,9 +979,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             }
         }
 
-        key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
+        key.finishUnmarshal(coctx, clsLdr);
 
-        val.unmarshal(this.ctx, clsLdr);
+        val.unmarshal(coctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
