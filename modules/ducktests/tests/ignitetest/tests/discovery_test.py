@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import random
 
 from ducktape.mark import parametrize
@@ -24,6 +23,7 @@ from ignitetest.version import DEV_BRANCH, LATEST_2_7
 from ignitetest.tests.utils.ignite_test import IgniteTest
 
 from jinja2 import Template
+
 
 class DiscoveryTest(IgniteTest):
     NUM_NODES = 7
@@ -101,6 +101,23 @@ class DiscoveryTest(IgniteTest):
 
         # Node failure detection
         fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
+
+        data["nodes"] = [node.id() for node in self.servers.nodes]
+
+        disco_infos = []
+        for node in self.servers.nodes:
+            disco_info = node.discovery_info()
+            disco_infos.append({
+                "id": disco_info.id,
+                "consistent_id": disco_info.consistent_id,
+                "coordinator": disco_info.coordinator,
+                "order": disco_info.order,
+                "int_order": disco_info.int_order,
+                "is_client": disco_info.is_client
+            })
+
+        data["node_disco_info"] = disco_infos
+
         self.servers.stop_node(fail_node, clean_shutdown=False)
 
         start = self.monotonic()

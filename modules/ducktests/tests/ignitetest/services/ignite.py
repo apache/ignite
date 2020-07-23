@@ -17,7 +17,6 @@ import os.path
 import signal
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
@@ -39,15 +38,15 @@ class IgniteService(IgniteAwareService):
     }
 
     def __init__(self, context, num_nodes, version=DEV_BRANCH, properties=""):
-        IgniteAwareService.__init__(self, context, num_nodes, version, properties)
+        super(IgniteService, self).__init__(context, num_nodes, version, properties)
 
     def start(self, timeout_sec=180):
-        Service.start(self)
+        super(IgniteService, self).start()
 
         self.logger.info("Waiting for Ignite(s) to start...")
 
         for node in self.nodes:
-            self.await_node_stated(node, timeout_sec)
+            self.await_node_started(node, timeout_sec)
 
     def start_cmd(self, node):
         jvm_opts = "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
@@ -64,7 +63,7 @@ class IgniteService(IgniteAwareService):
                 IgniteService.STDOUT_STDERR_CAPTURE)
         return cmd
 
-    def await_node_stated(self, node, timeout_sec):
+    def await_node_started(self, node, timeout_sec):
         self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
 
         if len(self.pids(node)) == 0:

@@ -12,20 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from ducktape.services.service import Service
-
-from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
-from ignitetest.version import DEV_BRANCH
-
-"""
-The Ignite application service allows to perform custom logic writen on java.
-"""
+import functools
+from threading import RLock
 
 
-class IgniteApplicationService(IgniteAwareApplicationService):
-    service_java_class_name = "org.apache.ignite.internal.ducktest.utils.IgniteApplicationService"
+def memoize(func):
+    cache = func.cache = {}
+    lock = RLock()
 
-    def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
-        super(IgniteApplicationService, self).__init__(context, java_class_name, version, properties, params,
-                                                       timeout_sec, self.service_java_class_name)
+    @functools.wraps(func)
+    def memoized_func(*args, **kwargs):
+        key = str(args) + str(kwargs)
+        if key not in cache:
+            with lock:
+                if key not in cache:
+                    cache[key] = func(*args, **kwargs)
+        return cache[key]
+
+    return memoized_func

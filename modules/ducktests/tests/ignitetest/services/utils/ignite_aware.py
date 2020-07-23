@@ -12,14 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 from abc import abstractmethod
 
 from ducktape.services.background_thread import BackgroundThreadService
+from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_config import IgniteConfig
 from ignitetest.services.utils.ignite_path import IgnitePath
+from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 
 """
 The base class to build services aware of Ignite.
@@ -41,7 +42,7 @@ class IgniteAwareService(BackgroundThreadService):
     }
 
     def __init__(self, context, num_nodes, version, properties):
-        BackgroundThreadService.__init__(self, context, num_nodes)
+        super(IgniteAwareService, self).__init__(context, num_nodes)
 
         self.log_level = "DEBUG"
         self.config = IgniteConfig()
@@ -55,7 +56,11 @@ class IgniteAwareService(BackgroundThreadService):
     def start_node(self, node):
         self.init_persistent(node)
 
-        BackgroundThreadService.start_node(self, node)
+        super(IgniteAwareService, self).start_node(node)
+
+        wait_until(lambda: len(self.pids(node)) > 0, timeout_sec=10)
+
+        ignite_jmx_mixin(node, self.pids(node))
 
     def init_persistent(self, node):
         node.account.mkdirs(self.PERSISTENT_ROOT)

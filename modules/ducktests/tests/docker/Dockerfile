@@ -83,6 +83,13 @@ ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
 RUN apt-get install fuse
 RUN cd /opt && git clone -q  https://github.com/confluentinc/kibosh.git && cd "/opt/kibosh" && git reset --hard $KIBOSH_VERSION && mkdir "/opt/kibosh/build" && cd "/opt/kibosh/build" && ../configure && make -j 2
 
+#Install jmxterm
+ARG JMXTERM_NAME="jmxterm"
+ARG JMXTERM_VERSION="1.0.1"
+ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
+RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
+       && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
+
 # Set up the ducker user.
 RUN useradd -ms /bin/bash ducker && mkdir -p /home/ducker/ && rsync -aiq /root/.ssh/ /home/ducker/.ssh && chown -R ducker /home/ducker/ /mnt/ /var/log/ && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 USER ducker
