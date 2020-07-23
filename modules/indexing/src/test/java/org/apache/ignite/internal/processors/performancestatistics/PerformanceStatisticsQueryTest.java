@@ -158,7 +158,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testSqlFieldsJoinQuery() throws Exception {
-        String sql = "select * from " + DEFAULT_CACHE_NAME + " a inner join " + CACHE_2 +" b on a._key = b._key";
+        String sql = "select * from " + DEFAULT_CACHE_NAME + " a inner join " + CACHE_2 + " b on a._key = b._key";
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
