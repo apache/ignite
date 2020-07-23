@@ -70,8 +70,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.Throws(constraint, () => tx.Commit());
             }
 
-            igniteTx.Dispose();
             Assert.AreEqual(-1, cache[1]);
+
+            igniteTx.Dispose();
         }
 
         /// <summary>
@@ -111,10 +112,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1");
             Assert.Throws(constraint, () => scope.Dispose());
 
-            igniteTx.Dispose();
-
             Assert.AreEqual(-1, cache[1]);
             Assert.IsNull(transactions.Tx);
+
+            igniteTx.Dispose();
         }
 
         /** <inheritdoc /> */

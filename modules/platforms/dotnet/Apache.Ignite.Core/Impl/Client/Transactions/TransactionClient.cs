@@ -82,13 +82,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         /** <inheritdoc /> */
         public TransactionConcurrency Concurrency { get; private set; }
-        
+
         /** <inheritdoc /> */
         public TransactionIsolation Isolation { get; private set; }
 
         /** <inheritdoc /> */
         public TimeSpan Timeout { get; private set; }
-        
+
         /** <inheritdoc /> */
         public string Label { get; private set; }
 
