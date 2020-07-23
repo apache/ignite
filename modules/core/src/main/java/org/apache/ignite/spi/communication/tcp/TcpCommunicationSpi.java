@@ -74,6 +74,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -2308,7 +2309,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         initFailureDetectionTimeout();
 
-        assertParameter(locPort > 1023, "locPort > 1023");
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode()))
+            assertParameter(locPort > 1023 || locPort == -1, "locPort > 1023 || locPort == -1");
+        else
+            assertParameter(locPort > 1023, "locPort > 1023");
+
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
         assertParameter(locPortRange >= 0, "locPortRange >= 0");
         assertParameter(idleConnTimeout > 0, "idleConnTimeout > 0");
@@ -2375,7 +2380,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             throw new IgniteSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
-        boolean forceClientToSrvConnections = forceClientToServerConnections();
+        boolean forceClientToSrvConnections = forceClientToServerConnections() || locPort == -1;
 
         if (usePairedConnections && forceClientToSrvConnections) {
             throw new IgniteSpiException("Node using paired connections " +
@@ -2397,7 +2402,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
             res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
-            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
+            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort == -1 ? 0 : boundTcpPort);
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), usePairedConnections);
@@ -2495,7 +2500,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} } */
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        spiCtx.registerPort(boundTcpPort, IgnitePortProtocol.TCP);
+        if (boundTcpPort > 0)
+            spiCtx.registerPort(boundTcpPort, IgnitePortProtocol.TCP);
 
         // SPI can start without shmem port.
         if (boundTcpShmemPort > 0)
@@ -2541,7 +2547,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        int lastPort = locPortRange == 0 ? locPort : locPort + locPortRange - 1;
+        int lastPort = locPort == -1 ? -1
+            : locPortRange == 0 ? locPort : locPort + locPortRange - 1;
 
         for (int port = locPort; port <= lastPort; port++) {
             try {
@@ -2983,7 +2990,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             int connIdx;
 
-            if (msg instanceof TcpConnectionIndexAwareMessage) {
+            Message connIdxMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : msg;
+
+            if (connIdxMsg instanceof TcpConnectionIndexAwareMessage) {
                 int msgConnIdx = ((TcpConnectionIndexAwareMessage)msg).connectionIndex();
 
                 connIdx = msgConnIdx == UNDEFINED_CONNECTION_INDEX ? connPlc.connectionIndex() : msgConnIdx;
@@ -3127,6 +3136,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
         assert (connIdx >= 0 && connIdx < connectionsPerNode) || !usePairedConnections(node) : connIdx;
+
+        if (getLocalNode().isClient()) {
+            if (node.isClient()) {
+                if (Integer.valueOf(0).equals(node.attribute(createSpiAttributeName(ATTR_PORT))))
+                    throw new IgniteSpiException("Cannot send message to the client node with no server socket opened.");
+            }
+        }
 
         UUID nodeId = node.id();
 
