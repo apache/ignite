@@ -147,15 +147,12 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setSystemRegionInitialSize(16 * 1024 * 1024)
-                    .setSystemRegionMaxSize(32 * 1024 * 1024)
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                            .setInitialSize(10 * 1024L * 1024L)
-                            .setMaxSize(50 * 1024L * 1024L)
-                    )
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setInitialSize(10 * 1024L * 1024L)
+                        .setMaxSize(50 * 1024L * 1024L)
+                )
                 .setCheckpointFrequency(Long.MAX_VALUE / 2)
             )
             .setCacheConfiguration(

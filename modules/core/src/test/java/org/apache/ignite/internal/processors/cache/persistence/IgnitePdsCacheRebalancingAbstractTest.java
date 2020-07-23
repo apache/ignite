@@ -157,15 +157,13 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024)
             .setWalSegmentSize(8 * 1024 * 1024) // For faster node restarts with enabled persistence.
-            .setSystemRegionInitialSize(16 * 1024 * 1024)
-            .setSystemRegionMaxSize(32 * 1024 * 1024)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
-                .setMaxSize(128 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             ).setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(IN_MEMORY_REGION)
-                .setMaxSize(128 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             );
 
         cfg.setDataStorageConfiguration(dsCfg);

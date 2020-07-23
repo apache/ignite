@@ -102,13 +102,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1024 * 1024 * 1024) // Disable automatic checkpoints.
-            .setSystemRegionInitialSize(16 * 1024 * 1024)
-            .setSystemRegionMaxSize(32 * 1024 * 1024)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setName("dflt")
-                    .setInitialSize(128 * 1024 * 1024)
-                    .setMaxSize(128 * 1024 * 1024)
+                    .setInitialSize(256 * 1024 * 1024)
+                    .setMaxSize(256 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             );
 
