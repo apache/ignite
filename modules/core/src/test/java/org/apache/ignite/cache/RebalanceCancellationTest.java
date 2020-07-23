@@ -74,8 +74,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(persistenceEnabled)
-                .setMaxSize(64 * 1024 * 1024)))
+                    .setPersistenceEnabled(persistenceEnabled)))
             .setCacheConfiguration(
                 new CacheConfiguration(DEFAULT_CACHE_NAME)
                     .setAffinity(new RendezvousAffinityFunction(false, 15))

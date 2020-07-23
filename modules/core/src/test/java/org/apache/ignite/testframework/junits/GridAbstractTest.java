@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -200,7 +201,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
-    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
+    private static final MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
+
+    /** */
+    private static final int BYTES_IN_MEGABYTE = 1024 * 1024;
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -725,10 +729,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         long dur = System.currentTimeMillis() - ts;
 
         U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-        System.out.println("COMM_OFFHEAP - " + mem.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024);
-        System.out.println("USED_OFFHEAP - " + mem.getNonHeapMemoryUsage().getUsed() / 1024 / 1024);
-        System.out.println("COMM_HEAP - " + mem.getHeapMemoryUsage().getCommitted() / 1024 / 1024);
-        System.out.println("USED_HEAP - " + mem.getHeapMemoryUsage().getUsed() / 1024 / 1024);
+        printJvmMemoryStatistic();
 
         try {
             afterTest();
@@ -743,6 +744,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             cleanReferences();
         }
+    }
+
+    /** Prints JVM memory statistic. */
+    private void printJvmMemoryStatistic() {
+        U.quietAndInfo(log(),
+            ">>> Heap: " + createPrettyMemoryString(memoryMxBean.getHeapMemoryUsage()) + " <<<");
+
+        U.quietAndInfo(log(),
+            ">>> Non-Heap: " + createPrettyMemoryString(memoryMxBean.getNonHeapMemoryUsage()) + " <<<");
+    }
+
+    /** */
+    private static String createPrettyMemoryString(MemoryUsage usage) {
+        return usage.getUsed() / BYTES_IN_MEGABYTE + " MB used / "
+            + usage.getCommitted() / BYTES_IN_MEGABYTE + " MB commited / "
+            + usage.getMax() / BYTES_IN_MEGABYTE + " MB max";
     }
 
     /**
@@ -2386,10 +2403,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         LT.clear();
 
         U.quietAndInfo(log(), ">>> Starting test: " + testDescription() + " <<<");
-        System.out.println("COMM_OFFHEAP - " + mem.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024);
-        System.out.println("USED_OFFHEAP - " + mem.getNonHeapMemoryUsage().getUsed() / 1024 / 1024);
-        System.out.println("COMM_HEAP - " + mem.getHeapMemoryUsage().getCommitted() / 1024 / 1024);
-        System.out.println("USED_HEAP - " + mem.getHeapMemoryUsage().getUsed() / 1024 / 1024);
+        printJvmMemoryStatistic();
 
         try {
             beforeTest();
