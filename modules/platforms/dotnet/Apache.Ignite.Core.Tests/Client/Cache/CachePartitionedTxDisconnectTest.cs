@@ -47,18 +47,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = GetTransactionalCache();
 
             var constraint = new ReusableConstraint(Is.TypeOf<IgniteClientException>()
-               .And.Message.EqualTo("Transaction context has been lost due to connection errors."));
+                .And.Message.EqualTo("Transaction context has been lost due to connection errors."));
             try
             {
                 using (Client.GetTransactions().TxStart())
                 {
                     var igniteToStop = new[] {(int?) null, 1, 2}
-                       .Select(i => GetIgnite(i))
-                       .FirstOrDefault(ign => ign.GetTransactions().GetLocalActiveTransactions().Any());
+                        .Select(i => GetIgnite(i))
+                        .FirstOrDefault(ign => ign.GetTransactions().GetLocalActiveTransactions().Any());
 
                     Assert.IsNotNull(igniteToStop);
                     Ignition.Stop(igniteToStop.Name, true);
-                    
+
                     Assert.Throws(constraint, () => cache.Put(1, 1));
                 }
             }

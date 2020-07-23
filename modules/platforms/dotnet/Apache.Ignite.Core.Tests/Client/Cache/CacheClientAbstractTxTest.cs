@@ -40,12 +40,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /** All concurrency controls. */
         private static readonly TransactionConcurrency[] AllConcurrencyControls =
         {
-            TransactionConcurrency.Optimistic, 
+            TransactionConcurrency.Optimistic,
             TransactionConcurrency.Pessimistic
         };
 
         /** All isolation levels*/
-        private static readonly TransactionIsolation[] AllIsolationLevels = 
+        private static readonly TransactionIsolation[] AllIsolationLevels =
         {
             TransactionIsolation.Serializable,
             TransactionIsolation.ReadCommitted,
@@ -100,6 +100,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                             Assert.AreEqual(timeout, igniteTx.Timeout);
                         }
+
                         igniteTx.Dispose();
                     }
                 }
@@ -137,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                             Assert.AreEqual(concurrency, igniteTx.Concurrency);
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                         }
+
                         igniteTx.Dispose();
                         using (var tx = client.TxStart(concurrency, isolation, timeout))
                         {
@@ -149,6 +151,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                             Assert.AreEqual(isolation, igniteTx.Isolation);
                             Assert.AreEqual(timeout, igniteTx.Timeout);
                         }
+
                         igniteTx.Dispose();
                     }
                 }
@@ -165,8 +168,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             tx.Commit();
 
             var constraint = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
-               .And.Message.Contains("Transaction")
-               .And.Message.Contains("is closed"));
+                .And.Message.Contains("Transaction")
+                .And.Message.Contains("is closed"));
 
             Assert.Throws(constraint, () => tx.Commit());
             Assert.Throws(constraint, () => tx.Rollback());
@@ -194,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(300));
                 var constraint = new ReusableConstraint(Is.TypeOf<IgniteClientException>()
-                   .And.Message.Contains("Cache transaction timed out"));
+                    .And.Message.Contains("Cache transaction timed out"));
                 Assert.Throws(constraint, () => cache.Put(1, 10));
                 Assert.Throws(constraint, () => tx.Commit());
             }
@@ -320,6 +323,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache.Put(1, 10);
                 cache.Put(2, 20);
             }
+
             igniteTx.Dispose();
 
             Assert.AreEqual(1, cache.Get(1));
@@ -335,6 +339,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache.Put(2, 20);
                 tx.Commit();
             }
+
             igniteTx.Dispose();
 
             Assert.AreEqual(10, cache.Get(1));
@@ -346,6 +351,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 Assert.AreEqual(igniteTx.Label, label2);
             }
+
             igniteTx.Dispose();
 
             TestThrowsIfMultipleStarted(
@@ -360,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 () => Client.GetTransactions().WithLabel(label1).TxStart(),
                 () => Client.GetTransactions().WithLabel(label2).TxStart());
         }
- 
+
         /// <summary>
         /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
@@ -449,9 +455,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 using (new TransactionScope())
                 {
                     cache[1] = 2;
-                }  // Revert transaction scope.
+                } // Revert transaction scope.
 
-                tx.Commit();  // Commit manual tx.
+                tx.Commit(); // Commit manual tx.
             }
 
             Assert.AreEqual(2, cache[1]);
@@ -551,6 +557,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.AreEqual(mode.Item2, tx.Isolation);
                     Assert.AreEqual(transactions.DefaultTransactionConcurrency, tx.Concurrency);
                 }
+
                 tx.Dispose();
             }
         }
@@ -640,7 +647,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             test((cache, key) => cache[key]);
             test((cache, key) => cache.Get(key));
-            test((cache, key) => { int val; return cache.TryGet(key, out val) ? val : 0; });
+            test((cache, key) =>
+            {
+                int val;
+                return cache.TryGet(key, out val) ? val : 0;
+            });
             test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
         }
 
@@ -658,7 +669,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             test((cache, key) => cache.TryGetAsync(key).Result.Value);
             test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
         }
-        
+
         /// <summary>
         /// Tests that read operations lock keys in Serializable mode.
         /// </summary>
@@ -763,9 +774,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private static ITransaction GetSingleLocalTransaction()
         {
             return GetIgnite()
-               .GetTransactions()
-               .GetLocalActiveTransactions()
-               .Single();
+                .GetTransactions()
+                .GetLocalActiveTransactions()
+                .Single();
         }
 
         /// <summary>
@@ -775,7 +786,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             Assert.Throws(
                 Is.TypeOf<IgniteClientException>()
-                   .And.Message.Contains("A transaction has already been started by the current thread."),
+                    .And.Message.Contains("A transaction has already been started by the current thread."),
                 () =>
                 {
                     using (outer())

@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             enlistment.Done();
         }
-        
+
         /** <inheritDoc /> */
         void ISinglePhaseNotification.SinglePhaseCommit(SinglePhaseEnlistment enlistment)
         {

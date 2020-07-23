@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         private readonly ClientSocket _socket;
 
         /** Transaction is closed. */
-        private bool _closed; 
+        private bool _closed;
 
         /// <summary>
         /// Constructor.
@@ -45,12 +45,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <param name="id">ID.</param>
         /// <param name="ignite"></param>
         /// <param name="socket"></param>
-        public TransactionClient(int id, 
+        public TransactionClient(int id,
             IgniteClient ignite,
             ClientSocket socket,
             TransactionConcurrency concurrency,
             TransactionIsolation isolation,
-            TimeSpan timeout, 
+            TimeSpan timeout,
             string label)
         {
             _id = id;

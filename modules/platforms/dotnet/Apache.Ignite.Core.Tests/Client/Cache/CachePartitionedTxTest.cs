@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(1, cache.Get(key1));
             Assert.AreEqual(2, cache.Get(key2));
         }
-        
+
         /// <summary>
         /// Test transaction scope for partition aware client. 
         /// </summary>

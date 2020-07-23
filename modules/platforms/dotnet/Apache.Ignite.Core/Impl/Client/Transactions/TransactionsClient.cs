@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// Gets transaction started by this thread or null if this thread does not have a transaction.
         /// </summary>
-        internal  TransactionClient Tx
+        internal TransactionClient Tx
         {
             get
             {

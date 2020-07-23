@@ -59,14 +59,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                         Assert.IsNull(transactions.Tx);
                         cache[1] = -1;
                     })
-                   .Wait();
+                    .Wait();
 
                 Assert.AreEqual(old, cache[1]);
                 cache[1] = old + 1;
 
                 var constraint = Is.TypeOf<IgniteClientException>()
-                   .And.Message
-                   .StartsWith(
+                    .And.Message
+                    .StartsWith(
                         "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1");
                 Assert.Throws(constraint, () => tx.Commit());
             }
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.IsNull(transactions.Tx);
                     cache[1] = -1;
                 })
-               .Wait();
+                .Wait();
 
             Assert.AreEqual(old, cache[1]);
             cache[1] = old + 1;
@@ -107,8 +107,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             scope.Complete();
 
             var constraint = Is.TypeOf<IgniteClientException>()
-               .And.Message
-               .StartsWith(
+                .And.Message
+                .StartsWith(
                     "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1");
             Assert.Throws(constraint, () => scope.Dispose());
 
@@ -149,9 +149,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private static ITransaction GetSingleLocalTransaction()
         {
             return GetIgnite()
-               .GetTransactions()
-               .GetLocalActiveTransactions()
-               .Single();
+                .GetTransactions()
+                .GetLocalActiveTransactions()
+                .Single();
         }
     }
 }
