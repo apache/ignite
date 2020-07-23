@@ -19,12 +19,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Ignite Thin Client transaction facade.
     /// </summary>
-    internal class TransactionClient: ITransactionClientInternal
+    internal class TransactionClient : ITransactionClient
     {
         /** Unique  transaction ID.*/
         private readonly int _id;

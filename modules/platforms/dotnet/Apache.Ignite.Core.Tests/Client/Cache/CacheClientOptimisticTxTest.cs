@@ -41,14 +41,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = GetTransactionalCache();
             cache[1] = 1;
-            var transactions = (ITransactionsClientInternal)Client.GetTransactions();
+            var transactions = Client.GetTransactions();
 
             ITransaction igniteTx;
             using (var tx = transactions.TxStart())
             {
                 igniteTx = GetSingleLocalTransaction();
                 Assert.IsNotNull(igniteTx);
-                Assert.IsNotNull(transactions.CurrentTx);
+                Assert.IsNotNull(transactions.Tx);
                 Assert.AreEqual(TransactionConcurrency.Optimistic, igniteTx.Concurrency);
                 Assert.AreEqual(TransactionIsolation.Serializable, igniteTx.Isolation);
 
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 Task.Factory.StartNew(() =>
                     {
-                        Assert.IsNull(transactions.CurrentTx);
+                        Assert.IsNull(transactions.Tx);
                         cache[1] = -1;
                     })
                    .Wait();
@@ -83,11 +83,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = GetTransactionalCache();
             cache[1] = 1;
-            var transactions = (ITransactionsClientInternal) Client.GetTransactions();
+            var transactions = Client.GetTransactions();
 
             var scope = new TransactionScope();
             var old = cache[1];
-            Assert.IsNotNull(transactions.CurrentTx);
+            Assert.IsNotNull(transactions.Tx);
 
             var igniteTx = GetSingleLocalTransaction();
             Assert.AreEqual(TransactionConcurrency.Optimistic, igniteTx.Concurrency);
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Task.Factory.StartNew(() =>
                 {
-                    Assert.IsNull(transactions.CurrentTx);
+                    Assert.IsNull(transactions.Tx);
                     cache[1] = -1;
                 })
                .Wait();
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             igniteTx.Dispose();
 
             Assert.AreEqual(-1, cache[1]);
-            Assert.IsNull(transactions.CurrentTx);
+            Assert.IsNull(transactions.Tx);
         }
 
         /** <inheritdoc /> */

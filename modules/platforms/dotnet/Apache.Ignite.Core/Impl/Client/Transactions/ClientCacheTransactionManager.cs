@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Transactions;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Transactions;
 
     /// <summary>
@@ -31,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     internal class ClientCacheTransactionManager : ISinglePhaseNotification, IDisposable
     {
         /** */
-        private readonly ITransactionsClientInternal _transactions;
+        private readonly ITransactionsClient _transactions;
 
         /** */
         private readonly ThreadLocal<Enlistment> _enlistment = new ThreadLocal<Enlistment>();
@@ -40,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Initializes a new instance of <see cref="ClientCacheTransactionManager"/> class.
         /// </summary>
         /// <param name="transactions">Transactions.</param>
-        public ClientCacheTransactionManager(ITransactionsClientInternal transactions)
+        public ClientCacheTransactionManager(ITransactionsClient transactions)
         {
             _transactions = transactions;
         }
@@ -50,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// </summary>
         public void StartTxIfNeeded()
         {
-            if (_transactions.CurrentTx != null)
+            if (_transactions.Tx != null)
             {
                 // Ignite transaction is already present.
                 // We have either enlisted it already, or it has been started manually and should not be enlisted.
@@ -62,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
             {
-                _transactions.TxStart(_transactions.DefaultTxConcurrency,
+                _transactions.TxStart(_transactions.DefaultTransactionConcurrency,
                     CacheTransactionManager.ConvertTransactionIsolation(ambientTx.IsolationLevel),
                     _transactions.DefaultTimeout);
 
@@ -81,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             Debug.Assert(enlistment != null);
 
-            var igniteTx = _transactions.CurrentTx;
+            var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && _enlistment.Value != null)
             {
@@ -100,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             Debug.Assert(enlistment != null);
 
-            var igniteTx = _transactions.CurrentTx;
+            var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && _enlistment.Value != null)
             {
@@ -125,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             Debug.Assert(enlistment != null);
 
-            var igniteTx = _transactions.CurrentTx;
+            var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && _enlistment.Value != null)
             {

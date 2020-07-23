@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeOptions()
         {
             var cache = GetTransactionalCache();
-            var transactions = (ITransactionsClientInternal) Client.GetTransactions();
+            var transactions = (TransactionsClient) Client.GetTransactions();
 
             var modes = new[]
             {
@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                     tx = GetSingleLocalTransaction();
                     Assert.AreEqual(mode.Item2, tx.Isolation);
-                    Assert.AreEqual(transactions.DefaultTxConcurrency, tx.Concurrency);
+                    Assert.AreEqual(transactions.DefaultTransactionConcurrency, tx.Concurrency);
                 }
                 tx.Dispose();
             }
@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
                 Assert.AreEqual(1, readOp(cache, 1));
-                Assert.IsNotNull(((ITransactionsClientInternal)Client.GetTransactions()).CurrentTx);
+                Assert.IsNotNull(Client.GetTransactions().Tx);
 
                 var evt = new ManualResetEventSlim();
 

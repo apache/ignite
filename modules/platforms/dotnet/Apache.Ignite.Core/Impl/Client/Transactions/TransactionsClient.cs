@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transactions facade.
     /// </summary>
-    internal class TransactionsClient : ITransactionsClientInternal, IDisposable
+    internal class TransactionsClient : ITransactionsClient, IDisposable
     {
         /** Default transaction configuration. */
         private readonly TransactionClientConfiguration _cfg;
@@ -65,47 +65,24 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _txManager.Dispose();
         }
 
-        /** <inheritdoc /> */
-        public ITransactionClientInternal CurrentTx
-        {
-            get
-            {
-                var tx = _currentTx.Value;
-
-                if (tx == null)
-                    return null;
-
-                if (tx.Closed)
-                {
-                    _currentTx.Value = null;
-
-                    return null;
-                }
-
-                return tx;
-            }
-        }
-
-        /** <inheritDoc /> */
-        public void StartTxIfNeeded()
+        /// <summary>
+        /// Starts ambient transaction if needed.
+        /// </summary>
+        internal void StartTxIfNeeded()
         {
             _txManager.StartTxIfNeeded();
         }
 
         /** <inheritDoc /> */
-        public TransactionConcurrency DefaultTxConcurrency
+        ITransactionClient ITransactionsClient.Tx
         {
-            get { return _cfg.DefaultTransactionConcurrency; }
+            get { return Tx; }
         }
 
-        /** <inheritDoc /> */
-        public TransactionIsolation DefaultTxIsolation
-        {
-            get { return _cfg.DefaultTransactionIsolation; }
-        }
-
-        /** <inheritDoc /> */
-        public ITransactionClient Tx
+        /// <summary>
+        /// Gets transaction started by this thread or null if this thread does not have a transaction.
+        /// </summary>
+        internal  TransactionClient Tx
         {
             get
             {
@@ -179,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             TimeSpan timeout,
             string label)
         {
-            if (CurrentTx != null)
+            if (Tx != null)
             {
                 throw new IgniteClientException("A transaction has already been started by the current thread.");
             }
@@ -210,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// Wrapper for transactions with label.
         /// </summary>
-        private class TransactionsClientWithLabel : ITransactionsClientInternal
+        private class TransactionsClientWithLabel : ITransactionsClient
         {
             /** Label. */
             private readonly string _label;
@@ -230,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             /** <inheritDoc /> */
             public ITransactionClient TxStart()
             {
-                return TxStart(DefaultTxConcurrency, DefaultTxIsolation);
+                return TxStart(DefaultTransactionConcurrency, DefaultTransactionIsolation);
             }
 
             /** <inheritDoc /> */
@@ -255,30 +232,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
 
             /** <inheritDoc /> */
-            public ITransactionClientInternal CurrentTx
-            {
-                get { return _transactions.CurrentTx; }
-            }
-
-            /** <inheritDoc /> */
-            public void StartTxIfNeeded()
-            {
-                Debug.Fail("Labeled transactions are not supported for ambient transactions");
-            }
-
-            /** <inheritDoc /> */
-            public TransactionConcurrency DefaultTxConcurrency
-            {
-                get { return _transactions.DefaultTxConcurrency; }
-            }
-
-            /** <inheritDoc /> */
-            public TransactionIsolation DefaultTxIsolation
-            {
-                get { return _transactions.DefaultTxIsolation; }
-            }
-
-            /** <inheritDoc /> */
             public ITransactionClient Tx
             {
                 get { return _transactions.Tx; }
@@ -293,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             /** <inheritDoc /> */
             public TransactionIsolation DefaultTransactionIsolation
             {
-                get { return _transactions.DefaultTxIsolation; }
+                get { return _transactions.DefaultTransactionIsolation; }
             }
 
             /** <inheritDoc /> */

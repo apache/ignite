@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
@@ -56,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly Marshaller _marsh;
 
         /** Transactions. */
-        private readonly ITransactionsClientInternal _transactions;
+        private readonly TransactionsClient _transactions;
 
         /** Endpoints with corresponding hosts - from config. */
         private readonly List<SocketEndpoint> _endPoints;
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public ClientFailoverSocket(
             IgniteClientConfiguration config,
             Marshaller marsh,
-            ITransactionsClientInternal transactions)
+            TransactionsClient transactions)
         {
             Debug.Assert(config != null);
             Debug.Assert(marsh != null);
@@ -257,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientSocket GetSocket()
         {
-            var tx = _transactions.CurrentTx;
+            var tx = _transactions.Tx;
             if (tx != null)
             {
                 if (tx.Socket.IsDisposed)
@@ -290,7 +291,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Transactional operation should be executed on node started the transaction.
-            if (_transactions.CurrentTx != null)
+            if (_transactions.Tx != null)
             {
                 return null;
             }

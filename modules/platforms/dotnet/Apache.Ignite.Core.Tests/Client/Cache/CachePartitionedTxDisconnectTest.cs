@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             Assert.DoesNotThrow(() => cache.Put(1, 1));
-            Assert.IsNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx);
+            Assert.IsNull(Client.GetTransactions().Tx);
         }
 
         /// <summary>
