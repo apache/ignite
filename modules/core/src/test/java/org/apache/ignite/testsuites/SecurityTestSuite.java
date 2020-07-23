@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.security.compute.closure.ExecutorSe
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.CacheCreateDestroyEventsTest;
+import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySan
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
+import org.apache.ignite.internal.processors.security.sandbox.EventsSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
@@ -90,6 +92,7 @@ import org.junit.runners.Suite;
     ThinClientSslPermissionCheckTest.class,
     ThinClientSecurityContextOnRemoteNodeTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
+    EventsRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
@@ -107,6 +110,7 @@ import org.junit.runners.Suite;
     MessagingSandboxTest.class,
     ContinuousQuerySandboxTest.class,
     ContinuousQueryWithTransformerSandboxTest.class,
+    EventsSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
