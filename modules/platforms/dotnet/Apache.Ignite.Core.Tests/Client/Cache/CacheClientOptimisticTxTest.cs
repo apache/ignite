@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System.Linq;
     using System.Threading.Tasks;
     using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -42,14 +41,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache[1] = 1;
             var transactions = Client.GetTransactions();
 
-            ITransaction igniteTx;
             using (var tx = transactions.TxStart())
             {
-                igniteTx = GetSingleLocalTransaction();
-                Assert.IsNotNull(igniteTx);
-                Assert.IsNotNull(transactions.Tx);
-                Assert.AreEqual(TransactionConcurrency.Optimistic, igniteTx.Concurrency);
-                Assert.AreEqual(TransactionIsolation.Serializable, igniteTx.Isolation);
+                var currentTx = transactions.Tx;
+                Assert.IsNotNull(currentTx);
+                Assert.AreEqual(TransactionConcurrency.Optimistic, currentTx.Concurrency);
+                Assert.AreEqual(TransactionIsolation.Serializable, currentTx.Isolation);
 
                 var old = cache[1];
 
@@ -71,8 +68,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             Assert.AreEqual(-1, cache[1]);
-
-            igniteTx.Dispose();
         }
 
         /// <summary>
@@ -87,11 +82,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var scope = new TransactionScope();
             var old = cache[1];
-            Assert.IsNotNull(transactions.Tx);
-
-            var igniteTx = GetSingleLocalTransaction();
-            Assert.AreEqual(TransactionConcurrency.Optimistic, igniteTx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.Serializable, igniteTx.Isolation);
+            var tx = transactions.Tx;
+            Assert.IsNotNull(tx);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.Serializable, tx.Isolation);
 
             Task.Factory.StartNew(() =>
                 {
@@ -114,8 +108,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(-1, cache[1]);
             Assert.IsNull(transactions.Tx);
-
-            igniteTx.Dispose();
         }
 
         /** <inheritdoc /> */
@@ -141,17 +133,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Name = TestUtils.TestName,
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
-        }
-
-        /// <summary>
-        /// Gets single transaction from Ignite.
-        /// </summary>
-        private static ITransaction GetSingleLocalTransaction()
-        {
-            return GetIgnite()
-                .GetTransactions()
-                .GetLocalActiveTransactions()
-                .Single();
         }
     }
 }
