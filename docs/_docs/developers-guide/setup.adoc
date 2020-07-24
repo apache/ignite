@@ -110,6 +110,22 @@ your application.
 ----
 
 
+The following modules have LGPL dependencies and, therefore, can't be deployed on the Maven Central repository:
+
+* ignite-hibernate
+* ignite-geospatial
+* ignite-schedule
+
+To use these modules, you will need to build them from sources and add to your project.
+For example, to install ignite-hibernate into your local repository, run this command in the Ignite source package:
+
+
+[source, shell]
+----
+mvn clean install -DskipTests -Plgpl -pl modules/hibernate -am
+----
+
+
 
 The following modules are available:
 
@@ -132,12 +148,6 @@ adding @Gridify annotation to it.
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
 |ignite-gce | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
-
-|ignite-hibernate-core |
-
-|ignite-hibernate_4.2 | Ignite Hibernate provides Hibernate L2 cache implementation.
-
-|ignite-hibernate_5.1 | Ignite Hibernate provides Hibernate L2 cache implementation.
 
 |ignite-indexing | link:SQL/indexes[SQL querying and indexing]
 

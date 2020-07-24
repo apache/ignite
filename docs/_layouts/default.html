@@ -21,7 +21,7 @@
 
     <meta charset="UTF-8">
     <title>{{page.title}} | Ignite Documentation</title>
-    {% if site.base_url contains "/latest" %}
+    {% if site.attrs.base_url contains "/latest" %}
     <link rel="canonical" href="{{page.id | replace_first: site.version, 'latest' }}" />
     {% else %}
     <link rel="canonical" href="{{page.id}}" />

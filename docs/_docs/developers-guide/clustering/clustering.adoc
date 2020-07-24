@@ -16,68 +16,7 @@ Learn more about the thin clients in the link:developers-guide/thin-clients/gett
 
 image::images/ignite_clustering.png[Ignite Cluster]
 
-== Servers and Clients
-There are two types of nodes: _server nodes_ and _client nodes_. Server nodes participate in caching, compute execution, stream processing, etc. Native client nodes provide the ability to connect to the
-servers remotely.
-Ignite native clients allow using the whole set of `Ignite APIs`, including near caching, transactions, compute, streaming, services, etc. from the client side.
 
-By default, all Ignite nodes are started as server nodes, and you should explicitly enable the client mode.
-
-IMPORTANT: Once a distributed cache is created, it is automatically deployed on all the existing and future _server_ nodes.
-
-You can configure a node to be either a client or a server via the `IgniteConfiguration.setClientMode(...)` property.
-
-[tabs]
---
-tab:XML[]
-
-[source,xml]
-----
-<bean class="org.apache.ignite.configuration.IgniteConfiguration">
-    <!-- Enable client mode. -->
-    <property name="clientMode" value="true"/>
-
-</bean>
-----
-tab:Java[]
-
-[source,java]
-----
-include::{javaCodeDir}/ClusteringOverview.java[tag=clientCfg,indent=0]
-----
-
-tab:C#/.NET[]
-
-[source,csharp]
-----
-include::code-snippets/dotnet/ClusteringOverview.cs[tag=ClientCfg,indent=0]
-----
-tab:C++[unsupported]
---
-
-Alternatively, for convenience, you can also enable or disable the
-client mode though the `Ignition` class to allow clients and servers to
-reuse the same configuration.
-
-[tabs]
---
-tab:Java[]
-
-[source,java]
-----
-include::{javaCodeDir}/ClusteringOverview.java[tag=clientModeIgnition,indent=0]
-----
-
-tab:C#/.NET[]
-
-[source,csharp]
-----
-include::code-snippets/dotnet/ClusteringOverview.cs[tag=ClientsAndServers,indent=0]
-----
-
-tab:C++[unsupported]
-
---
 
 == Discovery Mechanisms
 

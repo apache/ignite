@@ -4,3 +4,10 @@ This guide is targeted at developers and architects who create applications on t
 
 == Programming Languages
 include::includes/intro-languages.adoc[]
+
+
+== Ignite Examples
+
+The Apache Ignite github repository contains a number of runnable examples that illustrate various Ignite functionality.
+Refer to the link:{githubUrl}/examples[Examples] folder in the Ignite code base.
+The examples are also available in the binary distribution.

@@ -1,0 +1,17 @@
+= Installing using DEP and RPM package
+
+Apache Ignite can be installed from the official link:https://www.apache.org/dist/ignite/rpm[RPM] or link:https://www.apache.org/dist/ignite/deb[DEB] repositories.
+
+== Configuring Repositories
+
+Configure Apache Ignite's RPM or DEB repository, as follows (accept ​the ​GPG key import prompt if required), including specific Linux distribution settings:
+
+
+.Debian
+[source, shell]
+----
+# Install dirmngr (if not already installed) for apt-key ability to retrieve remote GPG keys
+sudo apt update
+sudo apt install dirmngr --no-install-recommends
+----
+

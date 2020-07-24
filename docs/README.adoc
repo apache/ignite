@@ -13,8 +13,8 @@ The Asciidoc files are compiled into HTML pages and published to https://ignite.
 .Content of the “docs” directory
 [cols="1,4",opts="stretch"]
 |===
-| _docs  | The directory with .adoc files and code-snippets.
-| _config.yml | Jekyll configuration file.
+| pass:[_]docs  | The directory with .adoc files and code-snippets.
+| pass:[_]config.yml | Jekyll configuration file.
 |===
 
 

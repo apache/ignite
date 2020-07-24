@@ -1,5 +1,6 @@
 
-{% assign normalized_path = page.url | replace: ".html","" | remove_first: site.base_url %}
+{% assign prefix = site.attrs.base_url | append: "/" | append: site.attrs.version %}
+{% assign normalized_path = page.url | replace: ".html","" | remove_first: prefix %}
 {% if page.toc != false %}
 <nav class='left-nav' data-swiftype-index='false'>
 
@@ -35,11 +36,11 @@
                                      {% assign chapter_class = 'expanded' %}
                                   {% endif %}
 
-								  <li><a href="{{site.base_url}}{{subpage.url}}" class='{% if normalized_path == subpage.url %}active{% endif %}'>{{subpage.title}}</a></li>
+								  <li><a href="{{prefix}}/{{subpage.url}}" class='{% if normalized_path == subpage.url %}active{% endif %}'>{{subpage.title}}</a></li>
                             {% endfor %}
                             </nav>
                         {% else %}
-                            <a href="{{site.base_url}}{{chapter.url|relative_url}}"
+                            <a href="{{prefix}}{{chapter.url|relative_url}}"
 
                                 class='{% if normalized_path == chapter.url %}active{% endif %}'
                             >{{chapter.title}}</a>
@@ -55,7 +56,7 @@
              </nav>   
             {% else %}
 
-            <a href="{{site.base_url}}{{guide.url|relative_url}}" class='{% if guide.url == normalized_path %}active{% endif %}' >{{guide.title}}</a>
+            <a href="{{prefix}}{{guide.url|relative_url}}" class='{% if guide.url == normalized_path %}active{% endif %}' >{{guide.title}}</a>
             {% endif %}
         </li>
     {% endfor %}

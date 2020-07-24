@@ -5,7 +5,6 @@ This chapter covers monitoring and metrics for Ignite. We'll start with an overv
 == Overview
 The basic task of monitoring in Ignite involves metrics. You have several approaches for accessing metrics:
 
--  via link:{wc_base_url}/web-console-getting-started[Web Console, window=_blank]
 -  via link:administrators-guide/monitoring-metrics/metrics[JMX]
 -  Programmatically
 -  link:administrators-guide/monitoring-metrics/system-views[System views]

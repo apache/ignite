@@ -2,12 +2,13 @@
 published: false
 ---
 = Generic Kubernetes Instruction
+:safe: unsafe
 :command: kubectl
 :soft_name: Kubernetes
 :serviceName:
-:configDir: /code-snippets/k8s
-:script: /code-snippets/k8s/setup.sh
-javaFile: /{javaCodeDir}/k8s/K8s.java
+//:configDir: /code-snippets/k8s
+//:script: /code-snippets/k8s/setup.sh
+//javaFile: /{javaCodeDir}/k8s/K8s.java
 
 
 //tag::kube-version[]
@@ -35,7 +36,6 @@ CAUTION: This guide focuses on deploying server nodes on Kubernetes. If you want
 * A namespace
 * A cluster role
 * A ConfigMap for the node configuration file
-* A ConfigMap for the license file if you use Enterprise or Ultimate Edition
 * A service to be used for discovery and load balancing when external apps connect to the cluster
 * A configuration for pods running Ignite nodes
 

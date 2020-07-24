@@ -39,11 +39,11 @@ for you because, by default, the baseline topology changes automatically when a 
 
 == Baseline Topology in Persistent Clusters
 
-If your cluster has at least one data region in which persistence is enabled, the cluster is inactive when you start it for the first time. 
-In the inactive state, all operations are prohibited. 
-The cluster must be activated before you can create caches and upload data. 
+If your cluster has at least one data region in which persistence is enabled, the cluster is inactive when you start it for the first time.
+In the inactive state, all operations are prohibited.
+The cluster must be activated before you can create caches and upload data.
 Cluster activation sets the current set of server nodes as the baseline topology.
-When you restart the cluster, it is activated automatically as soon as all nodes that are registered in the baseline topology join in. 
+When you restart the cluster, it is activated automatically as soon as all nodes that are registered in the baseline topology join in.
 However, if some nodes do not join after a restart, you must to activate the cluster manually.
 
 You can activate the cluster using one of the following tools:
@@ -129,5 +129,4 @@ You can use the following tools to monitor and/or manage the baseline topology:
 
 * link:administrators-guide/control-script[Control Script]
 * link:administrators-guide/monitoring-metrics/metrics#monitoring-topology[JMX Beans]
-* link:{wc_base_url}/baseline-topology[Web Console]
 

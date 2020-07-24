@@ -1,11 +1,18 @@
 = Starting and Stopping Nodes
 
+This chapter explains how to start server and client nodes.
 
-This chapter explains how to start server nodes and client nodes.
+There are two types of nodes: _server nodes_ and _client nodes_.
+Server nodes participate in caching, compute execution, stream processing, etc.
+Client nodes provide the ability to connect to the servers remotely.
+Client nodes provide the whole set of Ignite APIs, including near caching, transactions, compute, streaming, services, etc. from the client side.
+
+By default, all Ignite nodes are started as server nodes, and you should explicitly enable the client mode.
 
 //You can start a node by running the `ignite.sh` script.
 
 :javaFile: {javaCodeDir}/IgniteLifecycle.java
+:csharpFile: {csharpCodeDir}/IgniteLifecycle.cs
 
 == Starting Server Nodes
 
@@ -27,7 +34,7 @@ tab:Java[]
 include::{javaFile}[tag=start,indent=0]
 ----
 
-`Ignite` is an `AutoCloseable` object. You can use the _try-with-resource_ statement to automatically close it:
+`Ignite` is an `AutoCloseable` object. You can use the _try-with-resource_ statement to close it automatically:
 
 [source, java]
 -------------------------------------------------------------------------------
@@ -35,12 +42,23 @@ include::{javaFile}[tags=autoclose,indent=0]
 -------------------------------------------------------------------------------
 
 tab:C#/.NET[]
+[source, csharp]
+----
+include::{csharpFile}[tag=start,indent=0]
+----
+
+`Ignite` is an `IDisposable` object. You can use the _using_ statement to close it automatically:
+
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{csharpFile}[tags=disposable,indent=0]
+-------------------------------------------------------------------------------
 tab:C++[]
 --
 
 == Starting Client Nodes
 
-To start a client node, simply enable the client mode in the node's configuration:
+To start a client node, simply enable the client mode in the node configuration:
 
 [tabs]
 --
@@ -57,7 +75,34 @@ include::{javaFile}[tag=client-node,indent=0]
 ----
 
 tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=start-client,indent=0]
+----
 tab:C++[]
+--
+
+Alternatively, for convenience, you can also enable or disable the client mode though the Ignition class to allow clients and servers to reuse the same configuration.
+
+
+[tabs]
+--
+tab:Java[]
+
+[source,java]
+----
+include::{javaCodeDir}/ClusteringOverview.java[tag=clientModeIgnition,indent=0]
+----
+
+tab:C#/.NET[]
+
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringOverview.cs[tag=ClientsAndServers,indent=0]
+----
+
+tab:C++[unsupported]
+
 --
 
 == Shutting Down Nodes
@@ -79,12 +124,7 @@ If you start the node by running `ignite.sh` and don't detach it from the termin
 //end::stop-commands[]
 . Remove the node from the link:developers-guide/baseline-topology[baseline topology]. This step may not be necessary if link:developers-guide/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment] is enabled.
 
-////
-If you use these commands on a node that _is_ in the baseline topology,
-the node shuts down without waiting for the completion of the rebalancing process.
-You can set the `IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN` system property to `true` if you want to wait for backup partitions to be moved to other nodes before the shutdown.
-See the <<Preventing Partition Loss on Shutdown,next section>> for details.
-////
+
 
 Removing the node from the baseline topology starts the rebalancing process on the remaining nodes.
 If you plan to restart the node shortly after shutdown, you don't have to do the rebalancing.
@@ -158,3 +198,50 @@ You can also pass JVM options by using the `-J` prefix:
 ----
 ./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
 ----
+== Node Lifecycle Events
+
+
+Lifecycle events give you an opportunity to execute custom code at different stages of the node lifecycle.
+
+There are 4 lifecycle events:
+
+[cols="1,3",opts="header"]
+|===
+|Event Type |  Description
+|BEFORE_NODE_START |  Invoked before the node's startup routine is initiated.
+|AFTER_NODE_START  |  Invoked right after then node has started.
+|BEFORE_NODE_STOP |    Invoked right before the node's stop routine is initiated.
+|AFTER_NODE_STOP | Invoked right after then node has stopped.
+
+|===
+
+The following steps describe how to add a custom lifecycle event listener.
+
+. Create a custom lifecycle bean by implementing the `LifecycleBean` interface.
+The interface has the `onLifecycleEvent()` method, which is called for any lifecycle event.
++
+[source, java]
+----
+include::{javaFile}[tags=bean, indent=0]
+----
+
+. Register the implementation in the node configuration.
++
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/lifecycle.xml[tags=ignite-config;!discovery, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javafile}[tags=lifecycle, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+

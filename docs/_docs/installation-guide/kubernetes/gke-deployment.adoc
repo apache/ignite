@@ -3,9 +3,9 @@
 :serviceName: GKE
 :soft_name: Kubernetes
 :command: kubectl
-:configDir: /code-snippets/k8s
-:script: /code-snippets/k8s/setup.sh
-:javaFile: {javaCodeDir}/k8s/K8s.java
+:configDir: ../../code-snippets/k8s
+:script: ../../code-snippets/k8s/setup.sh
+:javaFile: ../../{javaCodeDir}/k8s/K8s.java
 
 
 This page explains how to deploy an Ignite  cluster on Google Kubernetes Engine.

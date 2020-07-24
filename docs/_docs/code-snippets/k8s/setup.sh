@@ -26,7 +26,6 @@ kubectl delete clusterrolebinding ignite -n ignite --ignore-not-found
 
 kubectl delete namespace ignite --ignore-not-found
 
-exit 0
 
 # tag::create-namespace[]
 kubectl create namespace ignite

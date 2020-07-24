@@ -3,9 +3,9 @@
 :serviceName: AKS
 :soft_name: Kubernetes
 :command: kubectl
-:configDir: /code-snippets/k8s
-:script: /code-snippets/k8s/setup.sh
-:javaFile: {javaCodeDir}/k8s/K8s.java
+:configDir: ../../code-snippets/k8s
+:script: ../../code-snippets/k8s/setup.sh
+:javaFile: ../../{javaCodeDir}/k8s/K8s.java
 
 This page is a step-by-step guide on how to deploy an Ignite  cluster on Microsoft Azure Kubernetes Service.
 

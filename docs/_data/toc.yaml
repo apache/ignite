@@ -27,6 +27,8 @@
       url: /installation-guide/installing-using-zip
     - title: Installing Using Docker
       url: /installation-guide/installing-using-docker
+    - title:  Installing DEB or RPM package
+      url: /installation-guide/dem-rpm
     - title: Kubernetes
       items: 
         - title: Amazon EKS 
