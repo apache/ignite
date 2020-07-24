@@ -710,8 +710,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
         assert started;
 
-        FullPageId fullId = new FullPageId(pageId, grpId);
-
         int partId = PageIdUtils.partId(pageId);
 
         Segment seg = segment(grpId, pageId);
@@ -745,6 +743,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         DelayedDirtyPageStoreWrite delayedWriter = delayedPageReplacementTracker != null
             ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
+        FullPageId fullId = new FullPageId(pageId, grpId);
+
         seg.writeLock().lock();
 
         long lockedPageAbsPtr = -1;
@@ -754,7 +754,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             // Double-check.
             long relPtr = seg.loadedPages.get(
                 grpId,
-                PageIdUtils.effectivePageId(pageId),
+                fullId.effectivePageId(),
                 seg.partGeneration(grpId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
@@ -785,7 +785,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 seg.loadedPages.put(
                     grpId,
-                    PageIdUtils.effectivePageId(pageId),
+                    fullId.effectivePageId(),
                     relPtr,
                     seg.partGeneration(grpId, partId)
                 );
