@@ -1160,7 +1160,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        updateMaxMemoryLimitsDataStorageConfiguration(cfg);
+        limitMaxMemoryOfDataStorageConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
@@ -1207,25 +1207,26 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Updates max memory limits if they are default.
+     * Limits max memory in data storage if they are default.
+     * By default max memory is 20% of total memory, which is too much for tests.
      * Required for containerized build servers.
      */
-    protected void updateMaxMemoryLimitsDataStorageConfiguration(IgniteConfiguration cfg) {
+    private void limitMaxMemoryOfDataStorageConfiguration(IgniteConfiguration cfg) {
         DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
 
         if (dataStorageCfg == null)
             return;
 
-        updateMaxSizeInRefion(dataStorageCfg.getDefaultDataRegionConfiguration());
+        updateMaxSizeInRegion(dataStorageCfg.getDefaultDataRegionConfiguration());
 
         if (dataStorageCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration configuration : dataStorageCfg.getDataRegionConfigurations())
-                updateMaxSizeInRefion(configuration);
+                updateMaxSizeInRegion(configuration);
         }
     }
 
     /** */
-    private static void updateMaxSizeInRefion(DataRegionConfiguration configuration) {
+    private static void updateMaxSizeInRegion(DataRegionConfiguration configuration) {
         if (configuration.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE) {
             configuration.setMaxSize(256 * 1024 * 1024);
         }
