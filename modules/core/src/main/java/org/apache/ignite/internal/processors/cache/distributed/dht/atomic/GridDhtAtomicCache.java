@@ -1057,7 +1057,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 assert invokeMap != null : invokeMap;
 
                 conflictPutMap = F.viewReadOnly((Map)invokeMap,
-                     entryProcessor -> new GridCacheDrInfo(entryProcessor, nextVersion(opCtx.dataCenterId()));
+                    entryProcessor -> new GridCacheDrInfo((EntryProcessor) entryProcessor, nextVersion(opCtx.dataCenterId())));
 
                 invokeMap = null;
             }

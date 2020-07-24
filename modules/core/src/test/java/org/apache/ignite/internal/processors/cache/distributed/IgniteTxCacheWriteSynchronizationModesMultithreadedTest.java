@@ -242,14 +242,13 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                     try {
                         cache.putAll(map);
 
-                            break;
-                        }
-                        catch (CacheException e) {
-                            if (X.hasCause(e, TransactionRollbackException.class))
-                                return;
+                        break;
+                    }
+                    catch (CacheException e) {
+                        if (X.hasCause(e, TransactionRollbackException.class))
+                            return;
 
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
+                        MvccFeatureChecker.assertMvccWriteConflict(e);
                     }
                 }
             });

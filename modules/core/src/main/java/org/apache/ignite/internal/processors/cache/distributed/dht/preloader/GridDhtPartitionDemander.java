@@ -236,7 +236,7 @@ public class GridDhtPartitionDemander {
 
                         fut0.listen(future -> {
                             try {
-                                fut.onDone(fut1.get());
+                                fut.onDone(future.get());
                             } catch (Exception e) {
                                 fut.onDone(e);
                             }
