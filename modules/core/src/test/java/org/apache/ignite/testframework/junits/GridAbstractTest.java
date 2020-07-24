@@ -1227,9 +1227,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     private static void updateMaxSizeInRegion(DataRegionConfiguration configuration) {
-        if (configuration.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE) {
-            configuration.setMaxSize(256 * 1024 * 1024);
-        }
+        if (configuration.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
+            configuration.setMaxSize(256 * BYTES_IN_MEGABYTE);
     }
 
     /**
