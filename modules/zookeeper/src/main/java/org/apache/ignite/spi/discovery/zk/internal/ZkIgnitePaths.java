@@ -352,7 +352,7 @@ public class ZkIgnitePaths {
 
                 break;
             }
-            else if (c > '\u0000' && c < '\u001f' || c > '\u007f' && c < '\u009F' || c > '\ud800' && c < '\uf8ff'
+            else if (c > '\u0000' && c < '\u001f' || c > '\u007f' && c < '\u009f' || c > '\ud800' && c < '\uf8ff'
                 || c > '\ufff0' && c < '\uffff') {
                 reason = "invalid charater @" + i;
 
