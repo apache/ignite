@@ -18,42 +18,24 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.UnaryOperator;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for communication over discovery feature (inverse communication request).
  */
 public class GridTotallyUnreachableClientTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "cache-0";
-
-    /** */
-    private static final int SRVS_NUM = 2;
-
-    /** */
     private boolean forceClientToSrvConnections;
 
     /** */
     private int locPort;
-
-    /** */
-    private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -83,12 +65,6 @@ public class GridTotallyUnreachableClientTest extends GridCommonAbstractTest {
                 .setForceClientToServerConnections(forceClientToSrvConnections)
                 .setLocalPort(locPort)
         );
-
-        if (ccfg != null) {
-            cfg.setCacheConfiguration(ccfg);
-
-            ccfg = null;
-        }
 
         return cfg;
     }
@@ -121,74 +97,5 @@ public class GridTotallyUnreachableClientTest extends GridCommonAbstractTest {
                 client2.context().io().sendIoTest(clientNode1, new byte[10], false).get()
             ).get(30, TimeUnit.SECONDS);
         }, IgniteSpiException.class, "Cannot send");
-    }
-
-    /**
-     * Executes cache test with "unreachable" client.
-     *
-     * @param forceClientToSrvConnections Flag for the client mode.
-     * @throws Exception If failed.
-     */
-    private void executeCacheTestWithUnreachableClient(boolean forceClientToSrvConnections) throws Exception {
-        LogListener lsnr = LogListener.matches("Failed to send message to remote node").atMost(0).build();
-
-        for (int i = 0; i < SRVS_NUM; i++) {
-            ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
-
-            startGrid(i, (UnaryOperator<IgniteConfiguration>) cfg -> {
-                ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
-
-                log.registerListener(lsnr);
-
-                return cfg.setGridLogger(log);
-            });
-        }
-
-        this.forceClientToSrvConnections = forceClientToSrvConnections;
-
-        startClientGrid(SRVS_NUM);
-
-        putAndCheckKey();
-
-        assertTrue(lsnr.check());
-    }
-
-    /**
-     * @param name Cache name.
-     * @param atomicityMode Atomicity mode.
-     * @return Cache configuration.
-     */
-    protected final CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration(name);
-
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setBackups(1);
-
-        return ccfg;
-    }
-
-    /**
-     * Puts a key to a server that is backup for the key and doesn't have an open communication connection to client.
-     * This forces the server to establish a connection to "unreachable" client.
-     */
-    private void putAndCheckKey() {
-        int key = 0;
-        IgniteEx srv2 = grid(SRVS_NUM - 1);
-
-        for (int i = 0; i < 1_000; i++) {
-            if (srv2.affinity(CACHE_NAME).isBackup(srv2.localNode(), i)) {
-                key = i;
-
-                break;
-            }
-        }
-
-        IgniteEx cl0 = grid(SRVS_NUM);
-
-        IgniteCache<Object, Object> cache = cl0.cache(CACHE_NAME);
-
-        cache.put(key, key);
-        assertEquals(key, cache.get(key));
     }
 }
