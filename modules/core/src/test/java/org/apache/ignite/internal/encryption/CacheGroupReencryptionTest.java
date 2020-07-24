@@ -238,6 +238,52 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
+    /**
+     * Ensures that re-encryption continues after a restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLogicalRecovery() throws Exception {
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null, true);
+
+        loadData(100_000);
+
+        forceCheckpoint();
+
+        enableCheckpoints(G.allGrids(), false);
+
+        int grpId = CU.cacheId(cacheName());
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
+
+        assertEquals(1, node0.context().encryption().groupKey(grpId).id());
+        assertEquals(1, node1.context().encryption().groupKey(grpId).id());
+
+        stopAllGrids();
+
+        info(">>> Start grids (iteration 1)");
+
+        startTestGrids(false);
+
+        enableCheckpoints(G.allGrids(), false);
+
+        stopAllGrids();
+
+        info(">>> Start grids (iteration 2)");
+
+        startTestGrids(false);
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
     /** @throws Exception If failed. */
     @Test
     @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "500")
@@ -475,52 +521,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     }
 
     /**
-     * Ensures that re-encryption continues after a restart.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLogicalRecovery() throws Exception {
-        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
-
-        IgniteEx node0 = nodes.get1();
-        IgniteEx node1 = nodes.get2();
-
-        createEncryptedCache(node0, node1, cacheName(), null, true);
-
-        loadData(100_000);
-
-        forceCheckpoint();
-
-        enableCheckpoints(G.allGrids(), false);
-
-        int grpId = CU.cacheId(cacheName());
-
-        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
-
-        awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
-
-        assertEquals(1, node0.context().encryption().groupKey(grpId).id());
-        assertEquals(1, node1.context().encryption().groupKey(grpId).id());
-
-        stopAllGrids();
-
-        info(">>> Start grids (iteration 1)");
-
-        startTestGrids(false);
-
-        enableCheckpoints(G.allGrids(), false);
-
-        stopAllGrids();
-
-        info(">>> Start grids (iteration 2)");
-
-        startTestGrids(false);
-
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
@@ -616,6 +616,62 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
         checkGroupKey(CU.cacheId(cache2), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "50")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
+    public void testChangeBaseline() throws Exception {
+        backups = 1;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        loadData(100_000);
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
+
+        startGrid(GRID_2);
+
+        resetBaselineTopology();
+
+        startGrid(GRID_3);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        stopGrid(GRID_2);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 2, getTestTimeout());
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        startGrid(GRID_2);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 3, getTestTimeout());
     }
 
     /** @throws Exception If failed. */
