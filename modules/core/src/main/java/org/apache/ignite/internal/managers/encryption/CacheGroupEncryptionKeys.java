@@ -252,7 +252,7 @@ class CacheGroupEncryptionKeys {
     /**
      * @param keys Encryption keys.
      * @param ids Key identifiers for deletion.
-     * @return {@code True} if the keys have been deleted.
+     * @return {@code True} if encryption keys have been modified.
      */
     private boolean removeKeysById(List<GroupKey> keys, Set<Integer> ids) {
         List<GroupKey> rmvGrpKeys = new ArrayList<>();
@@ -275,14 +275,13 @@ class CacheGroupEncryptionKeys {
         List<GroupKey> keys = grpKeys.get(grpId);
         Set<Integer> rmvKeyIds = U.newHashSet(keys.size() - 1);
 
-        for (GroupKey groupKey : keys.subList(1, keys.size()))
-            rmvKeyIds.add(groupKey.unsignedId());
+        rmvKeyIds.addAll(F.viewReadOnly(keys.subList(1, keys.size()), GroupKey::unsignedId));
 
         for (Map<Integer, Set<Integer>> map : trackedWalSegments.values()) {
-            Set<Integer> grpKeepKeys = map.get(grpId);
+            Set<Integer> reservedKeyIds = map.get(grpId);
 
-            if (grpKeepKeys != null)
-                rmvKeyIds.removeAll(grpKeepKeys);
+            if (reservedKeyIds != null)
+                rmvKeyIds.removeAll(reservedKeyIds);
         }
 
         if (removeKeysById(keys, rmvKeyIds))
@@ -340,7 +339,7 @@ class CacheGroupEncryptionKeys {
      * @param walIdx WAL segment index.
      * @return Map of group IDs with key IDs that were associated with removed WAL segments.
      */
-    @Nullable Map<Integer, Set<Integer>> removePreviousWalSegments(long walIdx) {
+    @Nullable Map<Integer, Set<Integer>> releaseWalKeys(long walIdx) {
         Map<Integer, Set<Integer>> rmvKeys = null;
         Iterator<Map.Entry<Long, Map<Integer, Set<Integer>>>> iter = trackedWalSegments.entrySet().iterator();
 

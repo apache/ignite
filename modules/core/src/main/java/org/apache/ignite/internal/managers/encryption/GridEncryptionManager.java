@@ -889,7 +889,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        Map<Integer, Set<Integer>> rmvKeys = grpKeys.removePreviousWalSegments(segmentIdx);
+        Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
 
         if (rmvKeys == null)
             return;
