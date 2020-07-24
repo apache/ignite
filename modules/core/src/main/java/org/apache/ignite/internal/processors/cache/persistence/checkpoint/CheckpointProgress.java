@@ -109,6 +109,9 @@ public interface CheckpointProgress {
      */
     public void updateEvictedPages(int deltha);
 
+    /** Clear cp progress counters. */
+    public void clearCounters();
+
     /**
      * Invokes a callback closure then a checkpoint reaches specific state.
      * The closure will not be called if an error has happened while transitting to the state.
