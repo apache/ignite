@@ -34,8 +34,8 @@ class IgnitePath:
         ...
     """
 
-    def __init__(self, project="ignite"):
-        self.project = project
+    def __init__(self, context):
+        self.project = context.globals.get("project", "ignite")
 
     def home(self, node_or_version, project=None):
         version = self._version(node_or_version)

@@ -44,15 +44,8 @@ class IgniteAwareService(BackgroundThreadService):
     def __init__(self, context, num_nodes, version, properties):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
-        if 'project' in context.globals:
-            self.path = IgnitePath(context.globals['project'])
-        else:
-            self.path = IgnitePath()
-
-        if 'jvm_opts' in context.globals:
-            self.jvm_options = context.globals['jvm_opts']
-        else:
-            self.jvm_options = ""
+        self.path = IgnitePath(context)
+        self.jvm_options = context.globals.get("jvm_opts", "")
 
         self.log_level = "DEBUG"
         self.properties = properties

@@ -60,18 +60,19 @@ Usage: ${script_path} [command] [options]
 help|-h|--help
     Display this help message
 
-build [-j|--jdk JDK] [image-name]
+build [-j|--jdk JDK] [-c|--context] [image-name]
     Build a docker image that represents ducker node. Image is tagged with specified ${image_name}.
 
     If --jdk is specified then we will use this argument as base image for ducker docker images.
     Otherwise ${default_jdk} is used.
 
-up [-n|--num-nodes NUM_NODES] [-f|--force] [-s|--skip-build-image] [docker-image]
+    If --context is specified then build docker image from this path. Context directory must contain Dockerfile.
+
+up [-n|--num-nodes NUM_NODES] [-f|--force] [docker-image]
         [-C|--custom-ducktape DIR] [-e|--expose-ports ports] [-j|--jdk JDK_VERSION]
     Bring up a cluster with the specified amount of nodes (defaults to ${default_num_nodes}).
     The docker image name defaults to ${default_image_name}. If --force is specified, we will
-    attempt to bring up an image even some parameters are not valid. If --skip-build-image is
-    specified, we won't invoke docker build for tests and specified docker-image will be used.
+    attempt to bring up an image even some parameters are not valid.
 
     If --custom-ducktape is specified, we will install the provided custom
     ducktape source code directory before bringing up the nodes.  The provided
@@ -106,6 +107,11 @@ down [-q|--quiet] [-f|--force]
 purge [--f|--force]
     Purge Docker images created by ducker-ignite.  This will free disk space.
     If --force is set, we run 'docker rmi -f'.
+
+compare [docker-image]
+    Compare image id of last run and last build for specified docker-image. If they are different then cluster runs
+    non-actual version of image. Rerun is required.
+
 EOF
     exit "${exit_status}"
 }
@@ -199,9 +205,9 @@ must_do() {
             *) break;;
         esac
     done
-    local cmd="${@}"
-    [[ "${verbose}" -eq 1 ]] && echo "${cmd}"
-    ${cmd} >${output} || die "${1} failed"
+
+    [[ "${verbose}" -eq 1 ]] && echo "${@}"
+    eval "${@}" >${output} || die "${1} failed"
 }
 
 # Ask the user a yes/no question.
@@ -224,9 +230,11 @@ ask_yes_no() {
 
 # Build a docker image.
 #
-# $1: The name of the image to build.
+# $1: The docker build context
+# $2: The name of the image to build.
 ducker_build_image() {
-    local image_name="${1}"
+    local docker_context="${1}"
+    local image_name="${2}"
 
     # Use SECONDS, a builtin bash variable that gets incremented each second, to measure the docker
     # build duration.
@@ -237,31 +245,38 @@ ducker_build_image() {
     # (for example java.lang.NoClassDefFoundError), add --no-cache flag to the build shall give you a clean start.
     must_do -v -o docker build --memory="${docker_build_memory_limit}" \
         --build-arg "ducker_creator=${user_name}" --build-arg "jdk_version=${jdk_version}" -t "${image_name}" \
-        -f "${ducker_dir}/Dockerfile" ${docker_args} -- .
+        -f "${docker_context}/Dockerfile" -- "${docker_context}"
     docker_status=$?
     must_popd
     duration="${SECONDS}"
     if [[ ${docker_status} -ne 0 ]]; then
-        die "** ERROR: Failed to build ${what} image after $((${duration} / 60))m \
-$((${duration} % 60))s.  See ${build_log} for details."
+        die "** ERROR: Failed to build ${what} image after $((duration / 60))m $((duration % 60))s."
     fi
-    echo "** Successfully built ${what} image in $((${duration} / 60))m \
-$((${duration} % 60))s.  See ${build_log} for details."
+
+    # Save docker image id to the file. Then could use this file to find version of docker image built last time.
+    # It could be useful if we don't confident about necessity of stoping the cluster.
+    get_image_id "${image_name}" > "${ducker_dir}/build/image_${image_name}.build"
+
+    echo "** Successfully built ${what} image in $((duration / 60))m $((duration % 60))s."
 }
 
 ducker_build() {
     require_commands docker
+
+    local docker_context=
     while [[ $# -ge 1 ]]; do
         case "${1}" in
             -j|--jdk) set_once jdk_version "${2}" "the OpenJDK base image"; shift 2;;
+            -c|--context) docker_context="${2}"; shift 2;;
             *) set_once image_name "${1}" "docker image name"; shift;;
         esac
     done
 
     [[ -n "${jdk_version}" ]] || jdk_version="${default_jdk}"
     [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}"
+    [[ -n "${docker_context}" ]] || docker_context="${ducker_dir}"
 
-    ducker_build_image "${image_name}"
+    ducker_build_image "${docker_context}" "${image_name}"
 }
 
 docker_run() {
@@ -281,7 +296,7 @@ docker_run() {
     # and mount FUSE filesystems inside the container.  We also need it to
     # run iptables inside the container.
     must_do -v docker run --privileged \
-        -d -t -h "${node}" --network ducknet "${expose_ports}" \
+        -d -t -h "${node}" --network ducknet ${expose_ports} \
         --memory=${docker_run_memory_limit} --memory-swappiness=1 \
         --mount type=bind,source="${ignite_dir}",target=/opt/ignite-dev,consistency=delegated --name "${node}" -- "${image_name}"
 }
@@ -293,7 +308,8 @@ setup_custom_ducktape() {
     [[ -f "${custom_ducktape}/ducktape/__init__.py" ]] || \
         die "You must supply a valid ducktape directory to --custom-ducktape"
     docker_run ducker01 "${image_name}"
-    local running_container="$(docker ps -f=network=ducknet -q)"
+    local running_container
+    running_container=$(docker ps -f=network=ducknet -q)
     must_do -v -o docker cp "${custom_ducktape}" "${running_container}:/opt/ducktape"
     docker exec --user=root ducker01 bash -c 'set -x && cd /opt/ignite-dev/modules/ducktests/tests && sudo python ./setup.py develop install && cd /opt/ducktape && sudo python ./setup.py develop install'
     [[ $? -ne 0 ]] && die "failed to install the new ducktape."
@@ -308,16 +324,13 @@ ducker_up() {
         case "${1}" in
             -C|--custom-ducktape) set_once custom_ducktape "${2}" "the custom ducktape directory"; shift 2;;
             -f|--force) force=1; shift;;
-            -s|--skip-build-image) skip_build=1; shift;;
             -n|--num-nodes) set_once num_nodes "${2}" "number of nodes"; shift 2;;
-            -j|--jdk) set_once jdk_version "${2}" "the OpenJDK base image"; shift 2;;
             -e|--expose-ports) set_once expose_ports "${2}" "the ports to expose"; shift 2;;
             *) set_once image_name "${1}" "docker image name"; shift;;
         esac
     done
     [[ -n "${num_nodes}" ]] || num_nodes="${default_num_nodes}"
-    [[ -n "${jdk_version}" ]] || jdk_version="${default_jdk}"
-    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}"
+    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${default_jdk/:/-}"
     [[ "${num_nodes}" =~ ^-?[0-9]+$ ]] || \
         die "ducker_up: the number of nodes must be an integer."
     [[ "${num_nodes}" -gt 0 ]] || die "ducker_up: the number of nodes must be greater than 0."
@@ -332,10 +345,6 @@ use only ${num_nodes}."
 
     docker ps >/dev/null || die "ducker_up: failed to run docker.  Please check that the daemon is started."
 
-    if [[ "${skip_build}" -ne 1 ]]; then
-      ducker_build_image "${image_name}"
-    fi
-
     local running_containers="$(docker ps -f=network=ducknet -q)"
     local num_running_containers=$(count ${running_containers})
     if [[ ${num_running_containers} -gt 0 ]]; then
@@ -345,6 +354,9 @@ attempting to start new ones."
     fi
 
     echo "ducker_up: Bringing up ${image_name} with ${num_nodes} nodes..."
+    docker image inspect "${image_name}" &>/dev/null || \
+      must_do -v -o docker pull "${image_name}"
+
     if docker network inspect ducknet &>/dev/null; then
         must_do -v docker network rm ducknet
     fi
@@ -374,6 +386,11 @@ attempting to start new ones."
     echo "ducker_up: added the latest entries to /etc/hosts on each node."
     generate_cluster_json_file "${num_nodes}" "${ducker_dir}/build/cluster.json"
     echo "ducker_up: successfully wrote ${ducker_dir}/build/cluster.json"
+
+    # Save docker image id to the file. Then could use this file to find version of docker image that is running.
+    # It could be useful if we don't confident about necessity of rebuilding image.
+    get_image_id "${image_name}" > "${ducker_dir}/build/image_id.up"
+
     echo "** ducker_up: successfully brought up ${num_nodes} nodes."
 }
 
@@ -523,7 +540,8 @@ ducker_down() {
     running_containers="$(docker ps -f=network=ducknet -q)"
     [[ $? -eq 0 ]]  || die "ducker_down: docker command failed.  Is the docker daemon running?"
     running_containers=${running_containers//$'\n'/ }
-    local all_containers="$(docker ps -a -f=network=ducknet -q)"
+    local all_containers
+    all_containers=$(docker ps -a -f=network=ducknet -q)
     all_containers=${all_containers//$'\n'/ }
     if [[ -z "${all_containers}" ]]; then
         maybe_echo "${verbose}" "No ducker containers found."
@@ -534,13 +552,14 @@ ducker_down() {
         verbose_flag="-v"
     fi
     if [[ -n "${running_containers}" ]]; then
-        must_do ${verbose_flag} docker kill "${running_containers}"
+        must_do ${verbose_flag} docker kill "${running_containers[@]}"
     fi
     must_do ${verbose_flag} docker rm ${force_str} "${all_containers}"
     must_do ${verbose_flag} -o rm -f -- "${ducker_dir}/build/node_hosts" "${ducker_dir}/build/cluster.json"
     if docker network inspect ducknet &>/dev/null; then
         must_do -v docker network rm ducknet
     fi
+    rm "${ducker_dir}/build/image_id.up"
     maybe_echo "${verbose}" "ducker_down: removed $(count ${all_containers}) containers."
 }
 
@@ -574,6 +593,38 @@ ducker_purge() {
     must_do -v -o docker rmi ${force_str} ${images}
 }
 
+get_image_id() {
+    require_commands docker
+    local image_name="${1}"
+
+    must_do -o docker image inspect --format "{{.Id}}" "${image_name}"
+}
+
+ducker_compare() {
+    local cmd=""
+
+    local verbose=1
+    local force_str=""
+
+    while [[ $# -ge 1 ]]; do
+        case "${1}" in
+            -q|--quiet) verbose=0; cmd="${cmd} ${1}"; shift;;
+            -f|--force) force_str="-f"; cmd="${cmd} ${1}"; shift;;
+            *) set_once image_name "${1}" "docker image name"; shift;;
+        esac
+    done
+
+    [ -n "${image_name}" ] || image_name="${default_image_name}-${default_jdk/:/-}"
+
+    cmp -s "${ducker_dir}/build/image_${image_name}.build" "${ducker_dir}/build/image_id.up"
+    local ret="$?"
+
+    if [[ $ret != "0" ]]; then
+        echo "Docker image ${image_name} is outdated. Stop the cluster"
+        ducker_down ${cmd}
+    fi
+}
+
 # Parse command-line arguments
 [[ $# -lt 1 ]] && usage 0
 # Display the help text if -h or --help appears in the command line
@@ -589,7 +640,7 @@ shift
 case "${action}" in
     help) usage 0;;
 
-    build|up|test|ssh|down|purge)
+    build|up|test|ssh|down|purge|compare)
         ducker_${action} "${@}"; exit 0;;
 
     *)  echo "Unknown command '${action}'.  Type '${script_path} --help' for usage information."

@@ -53,15 +53,17 @@ class SparkIntegrationTest(IgniteTest):
 
         self.stage("Starting sample data generator")
 
-        IgniteApplicationService(self.test_context,
-                                 java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test.SampleDataStreamerApplication",
-                                 params="cache,1000",
-                                 version=version).run()
+        IgniteApplicationService(
+            self.test_context,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test.SampleDataStreamerApplication",
+            params="cache,1000",
+            version=version).run()
 
         self.stage("Starting Spark application")
 
-        SparkIgniteApplicationService(self.test_context,
-                                      "org.apache.ignite.internal.ducktest.tests.spark_integration_test.SparkApplication",
-                                      params="spark://" + self.spark.nodes[0].account.hostname + ":7077",
-                                      version=version,
-                                      timeout_sec=120).run()
+        SparkIgniteApplicationService(
+            self.test_context,
+            "org.apache.ignite.internal.ducktest.tests.spark_integration_test.SparkApplication",
+            params="spark://" + self.spark.nodes[0].account.hostname + ":7077",
+            version=version,
+            timeout_sec=120).run()
