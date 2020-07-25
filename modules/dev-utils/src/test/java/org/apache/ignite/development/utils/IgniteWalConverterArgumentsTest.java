@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,23 +24,15 @@ import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 /**
  * Test for IgniteWalConverterArguments
  */
 public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
-
-    /**
-     * Verify that your code throws a specific exception.
-     */
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     /**
      *
      */
@@ -87,10 +80,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRequiredWalDir() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("The paths to the WAL files are not specified.");
-
-        IgniteWalConverterArguments.parse(System.out, new String[] {"pageSize=4096"});
+        GridTestUtils.assertThrows(log, () -> {
+            IgniteWalConverterArguments.parse(System.out, new String[] {"pageSize=4096"});
+        }, IllegalArgumentException.class, "The paths to the WAL files are not specified.");
     }
 
     /**
@@ -100,10 +92,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectWalDir() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect path to dir with wal files: non_existing_path");
-
-        IgniteWalConverterArguments.parse(System.out, new String[] {"walDir=non_existing_path"});
+        GridTestUtils.assertThrows(log, () -> {
+            IgniteWalConverterArguments.parse(System.out, new String[] {"walDir=non_existing_path"});
+        }, IllegalArgumentException.class, "Incorrect path to dir with wal files: non_existing_path");
     }
 
     /**
@@ -113,10 +104,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectWalArchiveDir() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect path to dir with archive wal files: non_existing_path");
-
-        IgniteWalConverterArguments.parse(System.out, new String[] {"walArchiveDir=non_existing_path"});
+        GridTestUtils.assertThrows(log, () -> {
+            IgniteWalConverterArguments.parse(System.out, new String[] {"walArchiveDir=non_existing_path"});
+        }, IllegalArgumentException.class, "Incorrect path to dir with archive wal files: non_existing_path");
     }
 
     /**
@@ -126,18 +116,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectPageSize() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect page size. Error parse: not_integer");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "pageSize=not_integer"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "pageSize=not_integer"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect page size. Error parse: not_integer");
     }
 
     /**
@@ -147,18 +136,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectBinaryMetadataFileStoreDir() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect path to dir with binary meta files: non_existing_path");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "binaryMetadataFileStoreDir=non_existing_path"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "binaryMetadataFileStoreDir=non_existing_path"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect path to dir with binary meta files: non_existing_path");
     }
 
     /**
@@ -168,18 +156,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectMarshallerMappingFileStoreDir() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect path to dir with marshaller files: non_existing_path");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "marshallerMappingFileStoreDir=non_existing_path"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "marshallerMappingFileStoreDir=non_existing_path"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect path to dir with marshaller files: non_existing_path");
     }
 
     /**
@@ -189,18 +176,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectKeepBinary() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect flag keepBinary, valid value: true or false. Error parse: not_boolean");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "keepBinary=not_boolean"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "keepBinary=not_boolean"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect flag keepBinary, valid value: true or false. Error parse: not_boolean");
     }
 
     /**
@@ -210,18 +196,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectRecordTypes() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Unknown record types: [not_exist].");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "recordTypes=not_exist"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "recordTypes=not_exist"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Unknown record types: [not_exist].");
     }
 
     /**
@@ -231,18 +216,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectSeveralRecordTypes() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Unknown record types: [not_exist1, not_exist2].");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "recordTypes=not_exist1,not_exist2"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "recordTypes=not_exist1,not_exist2"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Unknown record types: [not_exist1, not_exist2].");
     }
 
     /**
@@ -252,18 +236,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectWalTimeFromMillis() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect walTimeFromMillis. Error parse: not_long");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "walTimeFromMillis=not_long"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "walTimeFromMillis=not_long"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect walTimeFromMillis. Error parse: not_long");
     }
 
     /**
@@ -273,18 +256,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectWalTimeToMillis() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect walTimeToMillis. Error parse: not_long");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "walTimeToMillis=not_long"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "walTimeToMillis=not_long"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect walTimeToMillis. Error parse: not_long");
     }
 
     /**
@@ -294,18 +276,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectProcessSensitiveData() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Unknown processSensitiveData: unknown. Supported: ");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "processSensitiveData=unknown"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "processSensitiveData=unknown"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Unknown processSensitiveData: unknown. Supported: ");
     }
 
     /**
@@ -315,18 +296,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectPrintStat() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect flag printStat, valid value: true or false. Error parse: not_boolean");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "printStat=not_boolean"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "printStat=not_boolean"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect flag printStat, valid value: true or false. Error parse: not_boolean");
     }
 
     /**
@@ -336,18 +316,17 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectSkipCrc() throws Exception {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Incorrect flag skipCrc, valid value: true or false. Error parse: not_boolean");
+        GridTestUtils.assertThrows(log, () -> {
+            final File wal = File.createTempFile("wal", "");
+            wal.deleteOnExit();
 
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+            final String[] args = {
+                "walDir=" + wal.getAbsolutePath(),
+                "skipCrc=not_boolean"
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "skipCrc=not_boolean"
-        };
-
-        IgniteWalConverterArguments.parse(System.out, args);
+            IgniteWalConverterArguments.parse(System.out, args);
+        }, IllegalArgumentException.class, "Incorrect flag skipCrc, valid value: true or false. Error parse: not_boolean");
     }
 
     /**
