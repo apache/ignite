@@ -99,7 +99,6 @@ The following modules are available:
 - ignite-spark (for shared in-memory RDDs and faster SQL for Apache Spark)
 - ignite-spring (for Spring-based configuration support)
 - ignite-ssh (for starting grid nodes on remote machines)
-- ignite-storm (for streaming events from Apache Storm into Ignite)
 - ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
 - ignite-yarn (for integration with Apache Hadoop Yarn)
