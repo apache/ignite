@@ -69,6 +69,9 @@ public final class IgniteNodeAttributes {
     /** Peer classloading enabled flag. */
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
+    /** Shutdown policy attribute name. */
+    public static final String ATTR_SHUTDOWN_POLICY = ATTR_PREFIX + ".shutdown.policy";
+
     /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
