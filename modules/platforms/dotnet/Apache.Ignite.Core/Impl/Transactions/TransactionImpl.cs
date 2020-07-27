@@ -402,6 +402,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 Close();
             }
+            catch
+            {
+                // No-op. Dispose should not throw.
+            }
             finally
             {
                 GC.SuppressFinalize(this);
