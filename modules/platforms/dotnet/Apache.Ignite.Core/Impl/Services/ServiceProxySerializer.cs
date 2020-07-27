@@ -72,19 +72,22 @@ namespace Apache.Ignite.Core.Impl.Services
                     {
                         WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
                     }
-                    
-                    Type[] argTypes = arguments.Where(o => o != null).Select(o => o.GetType()).ToArray();
-                        
-                    MethodInfo methodInfo = method.ReflectedType.GetMethod(methodName, argTypes);
 
-                    // Register return type 
-                    if (methodInfo != null)
+                    if (method != null)
                     {
-                        Type returnType = methodInfo.ReturnType;
+                        Type[] argTypes = arguments.Where(o => o != null).Select(o => o.GetType()).ToArray();
 
-                        if (!(returnType == typeof(void) || JavaTypes.BasicTypes.Contains(returnType)))
+                        MethodInfo methodInfo = method.ReflectedType.GetMethod(methodName, argTypes);
+
+                        // Register return type 
+                        if (methodInfo != null)
                         {
-                            writer.Marshaller.GetDescriptor(methodInfo.ReturnType);
+                            Type returnType = methodInfo.ReturnType;
+
+                            if (!(returnType == typeof(void) || JavaTypes.BasicTypes.Contains(returnType)))
+                            {
+                                writer.Marshaller.GetDescriptor(methodInfo.ReturnType);
+                            }
                         }
                     }
                 }
