@@ -50,7 +50,7 @@ import org.apache.ignite.transactions.Transaction;
 public final class SandboxIgniteComponentProxy {
     /** The array of classes that should be proxied. */
     private static final Class<?>[] PROXIED_CLASSES = new Class[] {
-        // IgniteScheduler should not be proxied, since it's not covered by sandbox.
+        // TODO https://issues.apache.org/jira/browse/IGNITE-13301 IgniteScheduler is not covered by sandbox yet.
         Ignite.class,
         IgniteCache.class,
         IgniteCompute.class,
