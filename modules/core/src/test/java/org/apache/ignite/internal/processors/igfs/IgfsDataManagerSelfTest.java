@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,13 +41,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;

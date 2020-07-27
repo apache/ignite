@@ -527,7 +527,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimization: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && ctx.affinityNode()) {
+        if (!forcePrimary && ctx.config().isReadFromBackup() && ctx.affinityNode() &&
+            ctx.topology().lostPartitions().isEmpty()) {
             ctx.shared().database().checkpointReadLock();
 
             try {
@@ -628,7 +629,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
                                     if (v == null) {
-                                        GridCacheVersion obsoleteVer = context().versions().next();
+                                        GridCacheVersion obsoleteVer = nextVersion();
 
                                         if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
                                             removeEntry(entry);

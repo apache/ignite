@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs.client.meta;
 
+import java.util.List;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManager;
@@ -24,8 +25,6 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCalla
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Get entry info for the given path.

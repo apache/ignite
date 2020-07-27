@@ -151,7 +151,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (args != null) {
             for (Object arg : args)
-                JdbcUtils.writeObject(writer, arg, false, protoCtx);
+                JdbcUtils.writeObject(writer, arg, protoCtx);
         }
 
         if (protoCtx.isAutoCommitSupported())
@@ -180,7 +180,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         args = new Object[argsNum];
 
         for (int i = 0; i < argsNum; ++i)
-            args[i] = JdbcUtils.readObject(reader, false, protoCtx);
+            args[i] = JdbcUtils.readObject(reader, protoCtx);
 
         if (protoCtx.isAutoCommitSupported())
             autoCommit = reader.readBoolean();

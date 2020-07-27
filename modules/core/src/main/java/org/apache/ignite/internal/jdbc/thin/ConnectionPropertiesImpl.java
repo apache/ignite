@@ -254,6 +254,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         }
     });
 
+    /** Keep binary objects in binary form. */
+    private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
+        "Whether to keep binary objects in binary form.", false, false);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -271,7 +275,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
         connTimeout,
-        disabledFeatures
+        disabledFeatures,
+        keepBinary
     };
 
     /** {@inheritDoc} */
@@ -668,6 +673,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void disabledFeatures(String features) {
         disabledFeatures.setValue(features);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isKeepBinary() {
+        return keepBinary.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKeepBinary(boolean keepBinary) {
+        this.keepBinary.setValue(keepBinary);
     }
 
     /**

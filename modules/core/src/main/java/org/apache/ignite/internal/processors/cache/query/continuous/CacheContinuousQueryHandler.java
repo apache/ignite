@@ -392,6 +392,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
+            @Override public void onBeforeRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readLock();
+            }
+
+            @Override public void onAfterRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readUnlock();
+            }
+
             @Override public void onRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -1222,11 +1236,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param part Partition.
      * @return Event buffer.
      */
-    private CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
+    CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
         CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
 
         if (buf == null) {
-            buf = new CacheContinuousQueryEventBuffer(part) {
+            buf = new CacheContinuousQueryEventBuffer(part, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)) {
                 @Override protected long currentPartitionCounter(boolean backup) {
                     GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import java.util.Map;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
@@ -25,8 +26,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * {@code IGFS} configuration. More than one file system can be configured within grid.

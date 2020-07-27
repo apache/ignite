@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -30,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import com.google.common.base.Joiner;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;

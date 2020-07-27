@@ -18,6 +18,7 @@
 
 #include <pthread.h>
 
+#include <algorithm>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -39,10 +40,14 @@ namespace ignite
         const char* JAVA_HOME = "JAVA_HOME";
         const char* JAVA_DLL1 = "/jre/lib/amd64/server/libjvm.so";
         const char* JAVA_DLL2 = "/lib/server/libjvm.so";
+        const char* JAVA_DLL_DARWIN = "libjvm.dylib";
 
         const char* IGNITE_HOME = "IGNITE_HOME";
 
         const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
+
+        /** Excluded modules from test classpath. */
+        const char* TEST_EXCLUDED_MODULES[] = { "rest-http", "spring-data" };
 
         /** Key indicating that the thread is attached. */
         static pthread_key_t attachKey;
@@ -173,6 +178,24 @@ namespace ignite
         }
 
         /**
+         * Check if path corresponds to excluded module.
+         *
+         * @path Path.
+         * @return True if path should be excluded.
+         */
+        bool IsExcludedModule(const std::string& path) {
+            std::string lower_path = path;
+            std::transform(path.begin(), path.end(), lower_path.begin(), ::tolower);
+
+            for (size_t i = 0; i < sizeof(TEST_EXCLUDED_MODULES) / sizeof(char*); i++) {
+                if (lower_path.find(TEST_EXCLUDED_MODULES[i]) != std::string::npos)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
          * Create classpath picking compiled classes from the given path.
          *
          * @path Path.
@@ -182,7 +205,7 @@ namespace ignite
         {
             std::string res;
 
-            if (FileExists(path))
+            if (FileExists(path) && !IsExcludedModule(path))
             {
                 // 1. Append "target\classes".
                 std::string classesPath = path + "/target/classes";
@@ -304,6 +327,9 @@ namespace ignite
 
         std::string FindJvmLibrary(const std::string& path)
         {
+#ifdef __APPLE__
+            return JAVA_DLL_DARWIN;
+#else
             // If path is provided explicitly, then check only it.
             if (!path.empty() && FileExists(path))
                 return path;
@@ -324,13 +350,18 @@ namespace ignite
             }
 
             return std::string();
+#endif
         }
 
         bool LoadJvmLibrary(const std::string& path)
         {
+#ifdef __APPLE__
+            return RTLD_DEFAULT;
+#else
             void* hnd = dlopen(path.c_str(), RTLD_LAZY);
             
             return hnd != NULL;
+#endif
         }
 
         /**

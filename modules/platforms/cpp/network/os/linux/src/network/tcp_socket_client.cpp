@@ -206,8 +206,11 @@ namespace ignite
                 // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
                 return;
             }
-
+#ifdef __APPLE__
+            setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPALIVE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+#else
             setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+#endif
 
             setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
                 reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));

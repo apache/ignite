@@ -39,16 +39,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -2188,7 +2195,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertThrows(null, new Callable<Object>() {
             @SuppressWarnings("ResultOfObjectAllocationIgnored")
             @Override public Object call() throws Exception {
-                new JdbcThinTcpIo(connProps, new InetSocketAddress(LOCALHOST, DFLT_PORT), 0);
+                new JdbcThinTcpIo(connProps, new InetSocketAddress(LOCALHOST, DFLT_PORT), getBinaryContext(), 0);
 
                 return null;
             }
@@ -2281,5 +2288,64 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 return "savepoint";
             }
         };
+    }
+
+    /**
+     * Returns stub for marshaller context.
+     *
+     * @return Marshaller context.
+     */
+    private MarshallerContext getFakeMarshallerCtx() {
+        return new MarshallerContext() {
+            @Override public boolean registerClassName(byte platformId, int typeId,
+                String clsName) throws IgniteCheckedException {
+                return false;
+            }
+
+            @Override public boolean registerClassNameLocally(byte platformId, int typeId,
+                String clsName) throws IgniteCheckedException {
+                return false;
+            }
+
+            @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+                return null;
+            }
+
+            @Override public String getClassName(byte platformId,
+                int typeId) throws ClassNotFoundException, IgniteCheckedException {
+                return null;
+            }
+
+            @Override public boolean isSystemType(String typeName) {
+                return false;
+            }
+
+            @Override public IgnitePredicate<String> classNameFilter() {
+                return null;
+            }
+
+            @Override public JdkMarshaller jdkMarshaller() {
+                return null;
+            }
+        };
+    }
+
+    /**
+     * Returns new binary context.
+     *
+     * @return New binary context.
+     */
+    private BinaryContext getBinaryContext() {
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        marsh.setContext(getFakeMarshallerCtx());
+
+        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(),
+            new IgniteConfiguration(), new NullLogger());
+
+        ctx.configure(marsh);
+        ctx.registerUserTypesSchema();
+
+        return ctx;
     }
 }

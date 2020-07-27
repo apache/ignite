@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
@@ -26,11 +34,6 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Class containing logic of aggregation impurity statistics within learning dataset.

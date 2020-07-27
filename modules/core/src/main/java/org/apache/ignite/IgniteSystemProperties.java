@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamTransformer;
@@ -1311,12 +1312,28 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
 
     /**
+     * When enabled, node will wait until all of its data is backed up before shutting down.
+     * Please note that it will completely prevent last node in cluster from shutting down if any caches exist
+     * that have backups configured.
+     */
+    @IgniteExperimental
+    public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
+
+    /**
      * Enables setting attribute value of {@link
      * TcpCommunicationSpi#ATTR_HOST_NAMES ATTR_HOST_NAMES} when value {@link
      * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
      * compatibility. By default, {@code false}.
      */
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
+
+    /**
+     * When above zero, prints tx key collisions once per interval.
+     * Each transaction besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons
+     * per key lock queue may rise. This property sets the interval during which statistics are collected.
+     * Default is 1000 ms.
+     */
+    public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
     /**
      * Enforces singleton.

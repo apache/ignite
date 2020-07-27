@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.Collection;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
@@ -38,8 +39,6 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManag
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Platform context. Acts as an entry point for platform operations.

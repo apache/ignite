@@ -10,7 +10,7 @@ we ask you to ensure the following steps have been taken:
 - [ ] The pull request body describes changes that have been made. 
 The description explains _WHAT_ and _WHY_ was made instead of _HOW_.
 - [ ] The pull request title is treated as the final commit message. 
-The following pattern must be used: `IGNITE-12407: Add Cluster API support to Java thin client`
+The following pattern must be used: `IGNITE-XXXX Change summary` where `XXXX` - number of JIRA issue.
 - [ ] A reviewer has been mentioned through the JIRA comments 
 (see [the Maintainers list](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Contribute#HowtoContribute-ReviewProcessandMaintainers)) 
 - [ ] The pull request has been checked by the Teamcity Bot and 

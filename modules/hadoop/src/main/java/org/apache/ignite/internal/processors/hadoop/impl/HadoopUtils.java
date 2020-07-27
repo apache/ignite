@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
-import java.io.DataInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -39,18 +50,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Hadoop utility methods.

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
@@ -26,10 +29,6 @@ import org.apache.ignite.internal.igfs.common.IgfsLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * IGFS input stream wrapper for hadoop interfaces.

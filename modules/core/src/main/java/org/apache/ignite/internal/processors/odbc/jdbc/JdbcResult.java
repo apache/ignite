@@ -78,6 +78,15 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** A result of the processing cache partitions distributions request. */
     static final byte CACHE_PARTITIONS = 19;
 
+    /** A result of the successfully updated binary schema.  */
+    static final byte UPDATE_BINARY_SCHEMA_ACK = 20;
+
+    /** Get binary type schema result. */
+    static final byte BINARY_TYPE_GET = 21;
+
+    /** Get binary type name result. */
+    static final byte BINARY_TYPE_NAME_GET = 22;
+
     /** Success status. */
     private byte type;
 
@@ -202,6 +211,21 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case CACHE_PARTITIONS:
                 res = new JdbcCachePartitionsResult();
+
+                break;
+
+            case UPDATE_BINARY_SCHEMA_ACK:
+                res = new JdbcUpdateBinarySchemaResult();
+
+                break;
+
+            case BINARY_TYPE_GET:
+                res = new JdbcBinaryTypeGetResult();
+
+                break;
+
+            case BINARY_TYPE_NAME_GET:
+                res = new JdbcBinaryTypeNameGetResult();
 
                 break;
 

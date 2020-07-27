@@ -17,8 +17,6 @@
 
 package org.apache.ignite.messaging;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +25,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.lang.IgniteBiInClosure;

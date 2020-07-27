@@ -591,12 +591,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevQueries.init(nodes, ctx.discovery()::alive);
         }
         else if (sndQrys) {
-            try {
-                sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
-            }
+            ctx.getSystemExecutorService().submit(() -> {
+                try {
+                    sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
+                }
+            });
         }
     }
 

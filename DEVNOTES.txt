@@ -15,11 +15,17 @@ Apache Ignite Maven Build Instructions
 
         mvn initialize -Pjavadoc
 
-4) Assembly Apache Ignite:
+4) Build Apache Ignite assembly:
 
         mvn initialize -Prelease
 
-Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
+   Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
+
+5) Build Apache Ignite slim edition assembly:
+
+        mvn initialize -Prelease -Dignite.edition=apache-ignite-slim
+
+   Look for apache-ignite-slim-<version>-bin.zip in ./target/bin directory.
 
 
 Apache Ignite with LGPL Maven Build Instructions
@@ -39,7 +45,7 @@ Apache Ignite with LGPL Maven Build Instructions
 
         mvn initialize -Pjavadoc,lgpl
 
-4) Assembly Apache Ignite  with LGPL dependencies:
+4) Build Apache Ignite assembly with LGPL dependencies:
 
         mvn initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
 

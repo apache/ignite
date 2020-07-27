@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.io.IOException;
+import java.util.Iterator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -30,16 +32,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.task.JobContextImpl;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
-
-import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Hadoop context implementation for v2 API. It provides IO operations for hadoop tasks.

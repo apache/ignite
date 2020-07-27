@@ -17,9 +17,8 @@
 
 package org.apache.ignite.hadoop.util;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop file system name mapper. Ensures that correct user name is passed to the underlying Hadoop file system.

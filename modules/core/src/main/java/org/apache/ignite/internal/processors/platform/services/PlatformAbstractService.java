@@ -181,6 +181,12 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** {@inheritDoc} */
     @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
+            throws IgniteCheckedException {
+        return invokeMethod(mthdName, srvKeepBinary, false, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
         throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
@@ -213,7 +219,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawReaderEx reader = platformCtx.reader(in);
 
-            return PlatformUtils.readInvocationResult(platformCtx, reader);
+            return PlatformUtils.readInvocationResult(platformCtx, reader, deserializeResult);
         }
     }
 

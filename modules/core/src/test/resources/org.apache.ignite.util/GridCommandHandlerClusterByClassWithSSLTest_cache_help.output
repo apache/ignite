@@ -53,6 +53,29 @@ Arguments: --cache help --yes
   --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
     Find and optionally delete garbage from shared cache groups which could be left after cache destroy.
 
+  --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+    List all indexes that match specified filters.
+
+    Parameters:
+      --node-id nodeId     - Specify node for job execution. If not specified explicitly, node will be chosen by grid
+      --group-name regExp  - Regular expression allowing filtering by cache group name
+      --cache-name regExp  - Regular expression allowing filtering by cache name
+      --index-name regExp  - Regular expression allowing filtering by index name
+
+  --cache indexes_rebuild_status [--node-id nodeId]
+    List all indexes that have index rebuild in progress.
+
+    Parameters:
+      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes
+
+  --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+    Triggers rebuild of all indexes for specified caches or cache groups.
+
+    Parameters:
+      --node-id      - Specify node for indexes rebuild.
+      --cache-names  - Comma-separated list of cache names for which indexes should be rebuilt.
+      --group-names  - Comma-separated list of cache group names for which indexes should be rebuilt.
+
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>
 Execution time: <!any!>

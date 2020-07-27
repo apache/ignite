@@ -17,15 +17,14 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Properties;
 import java.util.Set;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Prepared statement leaks test.

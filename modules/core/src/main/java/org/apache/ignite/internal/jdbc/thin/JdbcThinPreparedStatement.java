@@ -358,7 +358,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setURL(int paramIdx, URL x) throws SQLException {
-        setArgument(paramIdx, x);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Parameter type is unsupported. [cls=" + URL.class + ']');
     }
 
     /** {@inheritDoc} */
@@ -531,8 +533,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         ensureNotClosed();
 
         if (val != null && !SqlListenerUtils.isPlainType(val.getClass()))
-            throw new SQLException("Parameter type is unsupported. [cls=" + val.getClass() + ']',
-                SqlStateCode.INVALID_PARAMETER_VALUE);
+            ensureCustomObjectsSupported();
 
         if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);
@@ -544,5 +545,15 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             args.add(null);
 
         args.set(paramIdx - 1, val);
+    }
+
+    /**
+     * Ensures that statement support custom objects.
+     *
+     * @throws SQLException If statement don't support custom objects.
+     */
+    private void ensureCustomObjectsSupported() throws SQLException {
+        if (!conn.isCustomObjectSupported())
+            throw new SQLException("Custom objects are not supported");
     }
 }

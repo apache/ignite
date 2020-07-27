@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import com.github.fommil.netlib.BLAS;
 import java.io.Serializable;
+import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 

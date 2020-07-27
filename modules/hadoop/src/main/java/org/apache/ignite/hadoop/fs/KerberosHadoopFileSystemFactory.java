@@ -17,12 +17,11 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Secure Hadoop file system factory that can work with underlying file system protected with Kerberos.

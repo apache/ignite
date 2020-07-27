@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -40,6 +43,9 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
     /** Initial output stream capacity. */
     protected static final int INIT_CAP = 1024;
 
+    /** Binary context. */
+    private BinaryContext binCtx;
+
     /**
      * @param ctx Context.
      * @param protoCtx Protocol context.
@@ -47,6 +53,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
     public JdbcMessageParser(GridKernalContext ctx, JdbcProtocolContext protoCtx) {
         this.ctx = ctx;
         this.protoCtx = protoCtx;
+        this.binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).marshaller().context();
     }
 
     /**
@@ -56,7 +63,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
     protected BinaryReaderExImpl createReader(byte[] msg) {
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        return new BinaryReaderExImpl(null, stream, ctx.config().getClassLoader(), true);
+        return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
     }
 
     /**
@@ -64,7 +71,8 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @return Writer.
      */
     protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+        return new BinaryWriterExImpl(binCtx, new BinaryHeapOutputStream(cap),
+            BinaryThreadLocalContext.get().schemaHolder(), null);
     }
 
     /** {@inheritDoc} */

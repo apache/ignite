@@ -18,7 +18,10 @@
 package org.apache.ignite.platform;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -33,10 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Test task producing result without any arguments.

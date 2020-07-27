@@ -447,6 +447,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Awaits all futures.
+     */
+    public void awaitFinishAll() {
+        evictionGroupsMap.values().forEach(GroupEvictionContext::awaitFinishAll);
+    }
+
+    /**
      * Task for self-scheduled partition eviction / clearing.
      */
     class PartitionEvictionTask implements Runnable {
@@ -508,7 +515,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 finishFut.onDone(ex);
 
                 if (cctx.kernalContext().isStopping()) {
-                    LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
+                    LT.warn(log, ex, "Partition eviction failed (current node is stopping) " +
+                        "[grp=" + grpEvictionCtx.grp.cacheOrGroupName() +
+                        ", readyVer=" + grpEvictionCtx.grp.topology().readyTopologyVersion() + ']',
                         false,
                         true);
                 }

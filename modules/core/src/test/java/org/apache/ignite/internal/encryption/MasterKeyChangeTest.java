@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +43,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
+import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.MASTER_KEY_NAME_PREFIX;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -107,6 +109,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
             assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
+            grid(GRID_0).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+
             checkEncryptedCaches(grids.get1(), ignite);
 
             stopGrid(GRID_1);
@@ -118,6 +122,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         IgniteEx grid1 = startGrid(GRID_1);
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
+
+        grid(GRID_0).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
 
         checkEncryptedCaches(grids.get1(), grid1);
     }
@@ -333,6 +339,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx grid = startGrid(GRID_0);
 
+        grid(GRID_1).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+
         // 8. Check that restarted node recoveries keys from WAL. Check data.
         assertEquals(MASTER_KEY_NAME_2, grid(GRID_0).encryption().getMasterKeyName());
         assertEquals(MASTER_KEY_NAME_2, grid(GRID_1).encryption().getMasterKeyName());
@@ -410,6 +418,48 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         fut.get();
 
         assertEquals(MASTER_KEY_NAME_2, aliveNode.encryption().getMasterKeyName());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMultiByteMasterKeyNameWalRecovery() throws Exception {
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        IgniteEx grid1 = grids.get1();
+
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
+
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
+
+        // Prevent checkpoints to recovery from WAL.
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid1.context()
+            .cache().context().database();
+
+        dbMgr.enableCheckpoints(false).get();
+
+        grid1.encryption().changeMasterKey(MASTER_KEY_NAME_MULTIBYTE_ENCODED).get();
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_MULTIBYTE_ENCODED));
+
+        dbMgr.checkpointReadLock();
+
+        try {
+            // Simulate key name write error to check recovery from WAL.
+            dbMgr.metaStorage().write(MASTER_KEY_NAME_PREFIX, "wrongKeyName");
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
+
+        stopGrid(GRID_0, true);
+
+        grid1 = startGrid(GRID_0);
+
+        grid(GRID_1).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_MULTIBYTE_ENCODED));
+
+        checkEncryptedCaches(grid1, grids.get2());
     }
 
     /** {@inheritDoc} */

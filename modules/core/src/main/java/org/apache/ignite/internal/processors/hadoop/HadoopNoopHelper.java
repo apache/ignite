@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.io.InputStream;
 import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.InputStream;
 
 /**
  * Noop Hadoop Helper implementation.

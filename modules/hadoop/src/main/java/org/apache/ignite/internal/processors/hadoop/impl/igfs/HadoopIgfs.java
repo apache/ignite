@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
@@ -25,10 +28,6 @@ import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Facade for communication with grid.

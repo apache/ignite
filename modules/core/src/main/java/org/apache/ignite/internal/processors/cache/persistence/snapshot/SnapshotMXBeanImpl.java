@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 /**
@@ -30,12 +31,20 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /**
      * @param ctx Kernal context.
      */
-    public SnapshotMXBeanImpl(GridKernalContextImpl ctx) {
+    public SnapshotMXBeanImpl(GridKernalContext ctx) {
         mgr = ctx.cache().context().snapshotMgr();
     }
 
     /** {@inheritDoc} */
     @Override public void createSnapshot(String snpName) {
-        mgr.createSnapshot(snpName);
+        IgniteFuture<Void> fut = mgr.createSnapshot(snpName);
+
+        if (fut.isDone())
+            fut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelSnapshot(String snpName) {
+        mgr.cancelSnapshot(snpName).get();
     }
 }

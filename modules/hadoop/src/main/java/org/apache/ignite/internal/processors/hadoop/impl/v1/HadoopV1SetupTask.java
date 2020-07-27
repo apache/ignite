@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
+import java.io.IOException;
 import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
-
-import java.io.IOException;
 
 /**
  * Hadoop setup task implementation for v1 API.

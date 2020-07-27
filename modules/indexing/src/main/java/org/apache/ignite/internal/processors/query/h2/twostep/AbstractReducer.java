@@ -54,16 +54,16 @@ public abstract class AbstractReducer implements Reducer {
     static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
     /** */
-    static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
+    static int prefetchSize = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
 
     static {
-        if (!U.isPow2(PREFETCH_SIZE)) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+        if (!U.isPow2(prefetchSize)) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
                 ") must be positive and a power of 2.");
         }
 
-        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+        if (prefetchSize >= MAX_FETCH_SIZE) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
                 ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
         }
     }
@@ -102,7 +102,7 @@ public abstract class AbstractReducer implements Reducer {
     AbstractReducer(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        fetched = new ReduceBlockList<>(PREFETCH_SIZE);
+        fetched = new ReduceBlockList<>(prefetchSize);
     }
 
     /** {@inheritDoc} */
@@ -191,7 +191,7 @@ public abstract class AbstractReducer implements Reducer {
      * @param evictedBlock Evicted block.
      */
     protected void onBlockEvict(@NotNull List<Row> evictedBlock) {
-        assert evictedBlock.size() == PREFETCH_SIZE;
+        assert evictedBlock.size() == prefetchSize;
 
         // Remember the last row (it will be max row) from the evicted block.
         lastEvictedRow = requireNonNull(last(evictedBlock));

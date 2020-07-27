@@ -34,7 +34,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -50,8 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
@@ -93,8 +90,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.compareUpdateCounters;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.formatUpdateCountersDiff;
-import static org.apache.ignite.internal.util.IgniteUtils.error;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.getUpdateCountersSnapshot;
+import static org.apache.ignite.internal.util.IgniteUtils.error;
 
 /**
  * Closure that locally validates indexes of given caches.
@@ -414,8 +411,6 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
-        DbCheckpointListener lsnr = null;
-
         try {
             for (Integer grpId: grpIds) {
                 final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
@@ -450,10 +445,6 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                 integrityCheckFutures.get(j).cancel(false);
 
             throw unwrapFutureException(e);
-        }
-        finally {
-            if (db instanceof GridCacheDatabaseSharedManager && lsnr != null)
-                ((GridCacheDatabaseSharedManager)db).removeCheckpointListener(lsnr);
         }
 
         return integrityCheckResults;

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.ignite.lifecycle.LifecycleAware;
-
 import java.io.IOException;
 import java.io.Serializable;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  * Factory for Hadoop {@code FileSystem} used by {@link IgniteHadoopIgfsSecondaryFileSystem}.

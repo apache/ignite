@@ -46,8 +46,8 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 

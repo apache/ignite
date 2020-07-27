@@ -22,30 +22,34 @@ import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonExpressionRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * Test with using repository which is configured by Spring EL
  */
 public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTest {
+    /** Number of entries to store */
+    private static final int CACHE_SIZE = 1000;
+
     /** Repository. */
     private static PersonExpressionRepository repo;
 
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
 
-    /** Number of entries to store */
-    private static int CACHE_SIZE = 1000;
+    /** */
+    @Rule
+    public final ExpectedException expected = ExpectedException.none();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
-
         ctx.register(ApplicationConfiguration.class);
-
         ctx.refresh();
 
         repo = ctx.getBean(PersonExpressionRepository.class);
@@ -69,9 +73,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
-    /**
-     *
-     */
+    /** */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
@@ -86,8 +88,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        ctx.destroy();
+    @Override protected void afterTestsStopped() {
+        ctx.close();
     }
 
     /**
@@ -105,22 +107,31 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
 
         assertEquals(person, repo.findById(id).get());
 
-        try {
-            repo.save(person);
-
-            fail("Managed to save a Person without ID");
-        }
-        catch (UnsupportedOperationException e) {
-            //excepted
-        }
+        expected.expect(UnsupportedOperationException.class);
+        expected.expectMessage("Use IgniteRepository.save(key,value) method instead.");
+        repo.save(person);
     }
 
     /**
-     * Tests SpEL exphression.
+     * Tests SpEL expression.
      */
     @Test
     public void testCacheCount() {
-        Ignite ignite = ctx.getBean(Ignite.class);
+        Ignite ignite = ctx.getBean("igniteInstance", Ignite.class);
+
+        Collection<String> cacheNames = ignite.cacheNames();
+
+        assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
+            cacheNames.contains("#{cacheNames.personCacheName}"));
+
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
+    }
+
+    /** */
+    @Test
+    public void testCacheCountTWO() {
+        Ignite ignite = ctx.getBean("igniteInstanceTWO", Ignite.class);
 
         Collection<String> cacheNames = ignite.cacheNames();
 

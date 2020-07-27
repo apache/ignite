@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.nio.ByteBuffer;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.GridUnsafe;
 

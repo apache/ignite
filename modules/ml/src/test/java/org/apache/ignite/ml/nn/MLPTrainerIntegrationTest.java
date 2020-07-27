@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,12 +33,15 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.*;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.io.Serializable;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.

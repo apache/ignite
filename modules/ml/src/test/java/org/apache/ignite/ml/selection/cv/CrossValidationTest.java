@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -32,11 +34,10 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.apache.ignite.ml.common.TrainerTest.twoLinearlySeparableClasses;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link CrossValidation}.

@@ -20,11 +20,14 @@ namespace Apache.Ignite.Core.Cache.Query
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// SQL fields query.
     /// </summary>
-    public class SqlFieldsQuery
+    public class SqlFieldsQuery : IQueryBaseInternal
     {
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
@@ -58,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// SQL.
         /// </summary>
         public string Sql { get; set; }
-        
+
         /// <summary>
         /// Arguments.
         /// </summary>
@@ -66,7 +69,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public object[] Arguments { get; set; }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.
@@ -166,6 +169,40 @@ namespace Apache.Ignite.Core.Cache.Query
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
 #pragma warning restore 618
                                  Colocated, Schema, Lazy);
+        }
+
+        /** <inheritdoc /> */
+        void IQueryBaseInternal.Write(BinaryWriter writer, bool keepBinary)
+        {
+            Write(writer);
+        }
+
+        /// <summary>
+        /// Writes this query.
+        /// </summary>
+        internal void Write(BinaryWriter writer)
+        {
+            writer.WriteBoolean(Local);
+            writer.WriteString(Sql);
+            writer.WriteInt(PageSize);
+
+            QueryBase.WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteBoolean(EnforceJoinOrder);
+            writer.WriteBoolean(Lazy); // Lazy flag.
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+#pragma warning disable 618
+            writer.WriteBoolean(ReplicatedOnly);
+#pragma warning restore 618
+            writer.WriteBoolean(Colocated);
+            writer.WriteString(Schema); // Schema
+        }
+
+        /** <inheritdoc /> */
+        CacheOp IQueryBaseInternal.OpId
+        {
+            get { return CacheOp.QrySqlFields; }
         }
     }
 }

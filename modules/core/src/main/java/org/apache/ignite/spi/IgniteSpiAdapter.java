@@ -565,11 +565,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         else
             isSpiConsistent = true;
 
-        if (optional && !isSpiConsistent)
-            return;
-
         // It makes no sense to compare inconsistent SPIs attributes.
-        if (isSpiConsistent) {
+        if (!optional && isSpiConsistent) {
             List<String> attrs = getConsistentAttributeNames();
 
             // Process all SPI specific attributes.

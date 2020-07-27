@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Security aware IgniteBiPredicate.
@@ -33,10 +32,6 @@ public class SecurityAwareBiPredicate<E1, E2> extends AbstractSecurityAwareExter
     implements IgniteBiPredicate<E1, E2> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Ignite. */
-    @IgniteInstanceResource
-    private transient IgniteEx ignite;
 
     /**
      * Default constructor.
@@ -63,8 +58,7 @@ public class SecurityAwareBiPredicate<E1, E2> extends AbstractSecurityAwareExter
             return sandbox.enabled() ? sandbox.execute(() -> original.apply(e1, e2)) : original.apply(e1, e2);
         }
         catch (AccessControlException e) {
-            ignite.context().log(getClass()).error("The operation can't be executed because the current subject " +
-                "doesn't have appropriate permission [subjectId=" + subjectId + "].", e);
+            logAccessDeniedMessage(e);
 
             throw e;
         }

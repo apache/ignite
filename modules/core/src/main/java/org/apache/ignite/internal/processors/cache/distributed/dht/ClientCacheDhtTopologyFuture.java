@@ -62,7 +62,10 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
     public void validate(CacheGroupContext grp, Collection<ClusterNode> topNodes) {
         grpValidRes = U.newHashMap(1);
 
-        grpValidRes.put(grp.groupId(), validateCacheGroup(grp,topNodes));
+        CacheGroupValidation valRes = validateCacheGroup(grp, topNodes);
+
+        if (!valRes.isValid() || valRes.hasLostPartitions())
+            grpValidRes.put(grp.groupId(), valRes);
     }
 
     /** {@inheritDoc} */

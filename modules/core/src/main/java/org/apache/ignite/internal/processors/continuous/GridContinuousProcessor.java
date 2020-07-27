@@ -1674,7 +1674,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             err != null);
 
         try {
-            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, null);
+            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())

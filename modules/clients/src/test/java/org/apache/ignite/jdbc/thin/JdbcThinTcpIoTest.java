@@ -44,7 +44,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
         try {
             jdbcThinTcpIo = new JdbcThinTcpIo(new ConnectionPropertiesImpl(),
-                new InetSocketAddress("127.0.0.1", 10800), 500);
+                new InetSocketAddress("127.0.0.1", 10800), null, 500);
         }
         finally {
             if (jdbcThinTcpIo != null)
@@ -63,7 +63,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
             @SuppressWarnings("ResultOfObjectAllocationIgnored")
             @Override public Object call() throws Exception {
                 new JdbcThinTcpIo(new ConnectionPropertiesImpl(),
-                    new InetSocketAddress("123.45.67.89", 10800), 500);
+                    new InetSocketAddress("123.45.67.89", 10800), null, 500);
 
                 return null;
             }

@@ -42,6 +42,7 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -61,7 +62,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final AtomicBoolean stop;
 
     /** Cancellation token between all workers for all caches. */
-    private final SchemaIndexOperationCancellationToken cancel;
+    @Nullable private final SchemaIndexOperationCancellationToken cancel;
 
     /** Index closure. */
     private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
@@ -84,17 +85,15 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @param cancel Cancellation token between all workers for all caches.
      * @param clo Index closure.
      * @param fut Worker future.
-     * @param rowFilter Row filter.
      * @param partsCnt Count of partitions to be processed.
      */
     public SchemaIndexCachePartitionWorker(
         GridCacheContext cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
-        SchemaIndexOperationCancellationToken cancel,
+        @Nullable SchemaIndexOperationCancellationToken cancel,
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<SchemaIndexCacheStat> fut,
-        @Nullable SchemaIndexCacheFilter rowFilter,
         AtomicInteger partsCnt
     ) {
         super(
@@ -113,7 +112,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         assert nonNull(partsCnt);
 
         this.stop = stop;
-        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo, rowFilter);
+        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo);
         this.fut = fut;
         this.partsCnt = partsCnt;
     }
@@ -157,7 +156,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
 
         GridDhtPartitionState partState = locPart.state();
         if (partState != EVICTED)
-            reserved = (partState == OWNING || partState == RENTING || partState == MOVING) && locPart.reserve();
+            reserved = (partState == OWNING || partState == MOVING || partState == LOST) && locPart.reserve();
 
         if (!reserved)
             return;
@@ -278,22 +277,17 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         /** Object for collecting statistics about index update. */
         @Nullable private final SchemaIndexCacheStat indexCacheStat;
 
-        /** Row filter. */
-        @Nullable private final SchemaIndexCacheFilter rowFilter;
-
         /** */
         private SchemaIndexCacheVisitorClosureWrapper(
-            SchemaIndexCacheVisitorClosure clo,
-            @Nullable SchemaIndexCacheFilter filter
+            SchemaIndexCacheVisitorClosure clo
         ) {
             this.clo = clo;
             indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
-            rowFilter = filter;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-            if (row != null && (rowFilter == null || rowFilter.apply(row))) {
+            if (row != null) {
                 clo.apply(row);
 
                 if (indexCacheStat != null) {

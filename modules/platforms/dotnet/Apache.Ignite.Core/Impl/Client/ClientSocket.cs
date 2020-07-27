@@ -252,12 +252,18 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Adds a notification handler.
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
-        /// <param name="handler">Handler delegate.</param>
-        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handler)
+        /// <param name="handlerDelegate">Handler delegate.</param>
+        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handlerDelegate)
         {
-            _notificationListeners.AddOrUpdate(notificationId,
-                _ => new ClientNotificationHandler(_logger, handler),
-                (_, oldHandler) => oldHandler.SetHandler(handler));
+            var handler = _notificationListeners.GetOrAdd(notificationId,
+                _ => new ClientNotificationHandler(_logger, handlerDelegate));
+
+            if (!handler.HasHandler)
+            {
+                // We could use AddOrUpdate, but SetHandler must be called outside of Update call,
+                // because it causes handler execution, which, in turn, may call RemoveNotificationHandler.
+                handler.SetHandler(handlerDelegate);
+            }
 
             _listenerEvent.Set();
         }
@@ -269,9 +275,20 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public void RemoveNotificationHandler(long notificationId)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             ClientNotificationHandler unused;
             var removed = _notificationListeners.TryRemove(notificationId, out unused);
             Debug.Assert(removed);
+
+            var count = Interlocked.Decrement(ref _expectedNotifications);
+            if (count < 0)
+            {
+                throw new IgniteClientException("Negative thin client expected notification count.");
+            }
         }
 
         /// <summary>
@@ -281,7 +298,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             get { return _features; }
         }
-        
+
         /// <summary>
         /// Gets the current remote EndPoint.
         /// </summary>
@@ -335,6 +352,8 @@ namespace Apache.Ignite.Core.Impl.Client
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WaitForMessages()
         {
+            _logger.Trace("Receiver thread #{0} started.", Thread.CurrentThread.ManagedThreadId);
+
             try
             {
                 // Null exception means active socket.
@@ -364,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         }
 
                         var msg = ReceiveMessage();
-                    
+
                         HandleResponse(msg);
                     }
                 }
@@ -376,6 +395,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Note that this does not include request decoding exceptions (failed request, invalid data, etc).
                 _exception = ex;
                 Dispose();
+            }
+            finally
+            {
+                _logger.Trace("Receiver thread #{0} stopped.", Thread.CurrentThread.ManagedThreadId);
             }
         }
 
@@ -419,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 return false;
             }
-            
+
             var flags = (ClientFlags) stream.ReadShort();
             stream.Seek(-2, SeekOrigin.Current);
 
@@ -428,15 +451,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            var count = Interlocked.Decrement(ref _expectedNotifications);
-            if (count < 0)
-            {
-                throw new IgniteClientException("Unexpected thin client notification: " + requestId); 
-            }
-            
             _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger))
                 .Handle(stream, null);
-                    
+
             return true;
         }
 
@@ -472,8 +489,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (statusCode == ClientStatusCode.Success)
             {
-                return readFunc != null 
-                    ? readFunc(new ClientResponseContext(stream, this)) 
+                return readFunc != null
+                    ? readFunc(new ClientResponseContext(stream, this))
                     : default(T);
             }
 
@@ -513,7 +530,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Writing features.
                 if (hasFeatures)
                 {
-                    BinaryUtils.Marshaller.Marshal(stream, 
+                    BinaryUtils.Marshaller.Marshal(stream,
                         w => w.WriteByteArray(ClientFeatures.AllFeatures));
                 }
 
@@ -541,7 +558,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (success)
                 {
                     BitArray featureBits = null;
-                    
+
                     if (hasFeatures)
                     {
                         featureBits = new BitArray(BinaryUtils.Marshaller.Unmarshal<byte[]>(stream));
@@ -553,8 +570,8 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
 
                     ServerVersion = version;
-                    
-                    _logger.Debug("Handshake completed on {0}, protocol version = {1}", 
+
+                    _logger.Debug("Handshake completed on {0}, protocol version = {1}",
                         _socket.RemoteEndPoint, version);
 
                     return new ClientFeatures(version, featureBits);
@@ -589,9 +606,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (retry)
                 {
-                    _logger.Debug("Retrying handshake on {0} with protocol version {1}", 
+                    _logger.Debug("Retrying handshake on {0} with protocol version {1}",
                         _socket.RemoteEndPoint, ServerVersion);
-                    
+
                     return Handshake(clientConfiguration, ServerVersion);
                 }
 
@@ -755,12 +772,12 @@ namespace Apache.Ignite.Core.Impl.Client
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
             _features.ValidateOp(opId);
-            
+
             var requestId = Interlocked.Increment(ref _requestId);
-            
+
             // Potential perf improvements:
             // * ArrayPool<T>
-            // * Write to socket stream directly (not trivial because of unknown size) 
+            // * Write to socket stream directly (not trivial because of unknown size)
             var stream = new BinaryHeapStream(256);
 
             stream.WriteInt(0); // Reserve message size.
@@ -840,7 +857,7 @@ namespace Apache.Ignite.Core.Impl.Client
             logger.Debug("Socket connection attempt: {0}", endPoint);
 
             socket.Connect(endPoint);
-            
+
             logger.Debug("Socket connection established: {0} -> {1}", socket.LocalEndPoint, socket.RemoteEndPoint);
 
             return socket;

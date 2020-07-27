@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import java.util.UUID;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.UUID;
 
 /**
  * Cluster group get nodes identifiers response.

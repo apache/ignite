@@ -92,6 +92,8 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -105,8 +107,6 @@ import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 
 /**
  * Dummy grid kernal context
@@ -166,7 +166,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
@@ -336,6 +336,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Tracing tracing() {
+        return new NoopTracing();
     }
 
     /** {@inheritDoc} */

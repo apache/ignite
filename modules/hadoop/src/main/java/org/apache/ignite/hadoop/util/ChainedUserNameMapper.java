@@ -17,12 +17,11 @@
 
 package org.apache.ignite.hadoop.util;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
 
 /**
  * Chained user name mapper. Delegate name conversion to child mappers.

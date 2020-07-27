@@ -30,14 +30,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
+        /// <param name="socket">Connection that holds the cursor.</param>
         /// <param name="cursorId">The cursor identifier.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
-        public ClientQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary,
+        public ClientQueryCursor(ClientSocket socket, long cursorId, bool keepBinary,
             IBinaryStream initialBatchStream, ClientOp getPageOp)
-            : base(ignite, cursorId, keepBinary, initialBatchStream, getPageOp,
+            : base(socket, cursorId, keepBinary, initialBatchStream, getPageOp,
                 r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()))
         {
             // No-op.
