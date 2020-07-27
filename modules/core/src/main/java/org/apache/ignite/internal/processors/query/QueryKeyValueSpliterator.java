@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 
-import javax.cache.Cache;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+
+import javax.cache.Cache;
 
 /**
  * SqlQuery key-value spliterator.
