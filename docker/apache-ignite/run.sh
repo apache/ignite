@@ -40,7 +40,7 @@ if [ "$IGNITE_QUIET" = "false" ]; then
 fi
 
 if [ -z $CONFIG_URI ]; then
-  $IGNITE_HOME/bin/ignite.sh $QUIET
+  $IGNITE_HOME/bin/ignite.sh $QUIET ${IGNITE_OPTIONS:-}
 else
-  $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
+  $IGNITE_HOME/bin/ignite.sh $QUIET ${IGNITE_OPTIONS:-} $CONFIG_URI
 fi

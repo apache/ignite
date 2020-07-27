@@ -38,16 +38,22 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVTS_CACHE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * High Availability tests.
  */
-public class ReliabilityTest extends GridCommonAbstractTest {
+public class ReliabilityTest extends AbstractThinClientTest {
     /**
      * Thin clint failover.
      */
@@ -300,6 +306,39 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                     return false;
                 }
             }, throttlingPeriod));
+        }
+    }
+
+    /**
+     * Test server-side critical error.
+     */
+    @Test
+    public void testServerCriticalError() throws Exception {
+        AtomicBoolean failure = new AtomicBoolean();
+
+        FailureHandler hnd = (ignite, ctx) -> failure.compareAndSet(false, true);
+
+        try (Ignite ignite = startGrid(getConfiguration().setFailureHandler(hnd)
+            .setIncludeEventTypes(EVTS_CACHE)); IgniteClient client = startClient(ignite)
+        ) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+            cache.put(0, 0);
+
+            String msg = "critical error message";
+
+            ignite.events().localListen(e -> { throw new Error(msg); }, EVT_CACHE_OBJECT_READ);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.get(0), ClientServerError.class, msg);
+
+            assertFalse(failure.get());
+
+            // OutOfMemoryError should also invoke failure handler.
+            ignite.events().localListen(e -> { throw new OutOfMemoryError(msg); }, EVT_CACHE_OBJECT_REMOVED);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
+
+            assertTrue(GridTestUtils.waitForCondition(failure::get, 1_000L));
         }
     }
 

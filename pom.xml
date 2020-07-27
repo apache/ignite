@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>2.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -108,7 +108,6 @@
                 <module>modules/hibernate-5.1</module>
                 <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
-                <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
             </modules>
         </profile>
@@ -129,7 +128,6 @@
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
-                <module>modules/web-console</module>
             </modules>
         </profile>
 
@@ -623,14 +621,6 @@
         </profile>
 
         <profile>
-            <id>web-console</id>
-            <modules>
-                <module>modules/web-console</module>
-                <module>modules/web-console/web-agent</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>update-versions</id>
             <!-- updates dotnet & cpp versions -->
             <build>
@@ -761,6 +751,24 @@
                                             <substitution expression="\1${new.bin.version}" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in other resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${new.ignite.version}" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = )'.+'" />
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/build.gradle" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>
