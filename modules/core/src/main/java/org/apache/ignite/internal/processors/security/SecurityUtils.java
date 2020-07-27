@@ -29,6 +29,7 @@ import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -199,9 +200,9 @@ public class SecurityUtils {
         Boolean isSysType = SYSTEM_TYPES.get(cls);
 
         if (isSysType == null) {
-            CodeSource cs = doPrivileged(() -> cls.getProtectionDomain().getCodeSource());
+            ProtectionDomain pd = doPrivileged(cls::getProtectionDomain);
 
-            SYSTEM_TYPES.put(cls, isSysType = F.eq(CORE_CODE_SOURCE, cs));
+            SYSTEM_TYPES.put(cls, isSysType = (pd == null) || F.eq(CORE_CODE_SOURCE, pd.getCodeSource()));
         }
 
         return isSysType;
