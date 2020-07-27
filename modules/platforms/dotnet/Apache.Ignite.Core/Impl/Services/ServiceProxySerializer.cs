@@ -81,9 +81,11 @@ namespace Apache.Ignite.Core.Impl.Services
                     if (methodInfo != null)
                     {
                         Type returnType = methodInfo.ReturnType;
-                        
+
                         if (!(returnType == typeof(void) || JavaTypes.BasicTypes.Contains(returnType)))
+                        {
                             writer.Marshaller.GetDescriptor(methodInfo.ReturnType);
+                        }
                     }
                 }
             }
