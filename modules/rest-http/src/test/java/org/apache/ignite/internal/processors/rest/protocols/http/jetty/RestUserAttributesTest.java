@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestAuthenticationContextSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -78,11 +80,34 @@ public class RestUserAttributesTest extends GridCommonAbstractTest {
         userAttrs = null;
 
         URLConnection conn = new URL("http://localhost:" + JETTY_PORT +
-            "/ignite?cmd=version&ignite.login=client&userAttributes={\"add.sec.cliVer\":\"client_v1\",\"key\":\"val\"}")
+            "/ignite?cmd=authenticate" +
+            "&ignite.login=client" +
+            "&userAttributes={\"add.sec.cliVer\":\"client_v1\",\"key\":\"val\"}")
             .openConnection();
 
         conn.connect();
 
+        String sesToken = assertSuccesfulConnectionAndGetToken(conn);
+
+        assertEquals(userAttrs.get("add.sec.cliVer"), "client_v1");
+        assertEquals(userAttrs.get("key"), "val");
+
+        String withToken = String.format("http://localhost:%s/ignite?cmd=version&sessionToken=%s", JETTY_PORT,
+            sesToken);
+
+        conn = new URL(withToken).openConnection();
+
+        conn.connect();
+
+        assertSuccesfulConnectionAndGetToken(conn);
+    }
+
+    /**
+     * @param conn Connection.
+     * @return Session token.
+     * @throws IOException if failed.
+     */
+    private String assertSuccesfulConnectionAndGetToken(URLConnection conn) throws IOException {
         try (InputStreamReader streamReader = new InputStreamReader(conn.getInputStream())) {
             ObjectMapper objMapper = new ObjectMapper();
             Map<String, Object> myMap = objMapper.readValue(streamReader,
@@ -93,10 +118,9 @@ public class RestUserAttributesTest extends GridCommonAbstractTest {
 
             assertTrue(myMap.containsKey("response"));
             assertEquals(0, myMap.get("successStatus"));
-        }
 
-        assertEquals(userAttrs.get("add.sec.cliVer"), "client_v1");
-        assertEquals(userAttrs.get("key"), "val");
+            return myMap.get("sessionToken").toString();
+        }
     }
 
     /**
