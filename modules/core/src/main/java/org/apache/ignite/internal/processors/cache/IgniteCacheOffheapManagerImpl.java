@@ -295,9 +295,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (grp.sharedGroup()) {
                 assert cacheId != CU.UNDEFINED_CACHE_ID;
 
-                for (CacheDataStore store : cacheDataStores()) {
+                for (CacheDataStore store : cacheDataStores())
                     store.clear(cacheId);
-                }
 
                 // Clear non-persistent pending tree if needed.
                 if (pendingEntries != null) {
@@ -1397,49 +1396,56 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         GridCursor<PendingRow> cur;
 
-        if (grp.sharedGroup())
-            cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-        else
-            cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-        if (!cur.next())
-            return 0;
-
-        if (!busyLock.enterBusy())
-            return 0;
+        cctx.shared().database().checkpointReadLock();
 
         try {
-            int cleared = 0;
+            if (grp.sharedGroup())
+                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+            else
+                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
 
-            do {
-                if (amount != -1 && cleared > amount)
-                    return cleared;
+            if (!cur.next())
+                return 0;
 
-                PendingRow row = cur.get();
+            if (!busyLock.enterBusy())
+                return 0;
 
-                if (row.key.partition() == -1)
-                    row.key.partition(cctx.affinity().partition(row.key));
+            try {
+                int cleared = 0;
 
-                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                do {
+                    if (amount != -1 && cleared > amount)
+                        return cleared;
 
-                if (pendingEntries.removex(row)) {
-                    if (obsoleteVer == null)
-                        obsoleteVer = ctx.versions().next();
+                    PendingRow row = cur.get();
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    if (row.key.partition() == -1)
+                        row.key.partition(cctx.affinity().partition(row.key));
 
-                    if (entry != null)
-                        c.apply(entry, obsoleteVer);
+                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                    if (pendingEntries.removex(row)) {
+                        if (obsoleteVer == null)
+                            obsoleteVer = ctx.versions().next();
+
+                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+
+                        if (entry != null)
+                            c.apply(entry, obsoleteVer);
+                    }
+
+                    cleared++;
                 }
+                while (cur.next());
 
-                cleared++;
+                return cleared;
             }
-            while (cur.next());
-
-            return cleared;
+            finally {
+                busyLock.leaveBusy();
+            }
         }
         finally {
-            busyLock.leaveBusy();
+            cctx.shared().database().checkpointReadUnlock();
         }
     }
 
