@@ -22,70 +22,115 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// 
+    /// Rollback only view of local active transaction.
     /// </summary>
-    public class LocalTransaction : ITransaction
+    internal class LocalActiveTransaction : ITransaction
     {
-        /** <inheritDoc /> */
-        public void Dispose()
+        /** Transactions facade. */
+        private readonly TransactionsImpl _txs;
+
+        /** Unique transaction view ID.*/
+        private readonly long _id;
+
+        public LocalActiveTransaction(
+            TransactionsImpl txs, 
+            long id,
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            TimeSpan timeout,
+            string label,
+            Guid nodeId)
         {
+            _txs = txs;
+            _id = id;
+            NodeId = nodeId;
+            Isolation = isolation;
+            Concurrency = concurrency;
+            Timeout = timeout;
+            Label = label;
         }
 
         public Guid NodeId { get; private set; }
-        public long ThreadId { get; private set; }
-        public DateTime StartTime { get; private set; }
+
+        public long ThreadId
+        {
+            get { throw GetInvalidOperationException(); }
+        }
+
+        public DateTime StartTime
+        {
+            get { throw  GetInvalidOperationException(); }
+        }
+
         public TransactionIsolation Isolation { get; private set; }
         public TransactionConcurrency Concurrency { get; private set; }
-        public TransactionState State { get; private set; }
+        public TransactionState State 
+        {
+            get { throw  GetInvalidOperationException(); }
+        }
         public TimeSpan Timeout { get; private set; }
         public string Label { get; private set; }
-        public bool IsRollbackOnly { get; private set; }
+        public bool IsRollbackOnly
+        {
+            get { return true; }
+        }
 
         /** <inheritDoc /> */
         public bool SetRollbackonly()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public void Commit()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public Task CommitAsync()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public void Rollback()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public Task RollbackAsync()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public void AddMeta<TV>(string name, TV val)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         public TV Meta<TV>(string name)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public TV RemoveMeta<TV>(string name)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
+        }
+        
+        /** <inheritDoc /> */
+        public void Dispose()
+        {
+            // No-op.
+        }
+
+        private static InvalidOperationException GetInvalidOperationException()
+        {
+            return new InvalidOperationException("Operation is not supported by readonly transaction");
         }
     }
 }

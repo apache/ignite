@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** Metadatas. */
         private object[] _metas;
 
-        /** Unique  transaction ID.*/
+        /** Unique transaction ID.*/
         private readonly long _id;
 
-        /** Cache. */
+        /** Transactions facade. */
         private readonly TransactionsImpl _txs;
 
         /** TX concurrency. */

@@ -209,10 +209,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
                     var label = reader.ReadString();
 
-                    var innerTx = new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
-                        (TransactionIsolation) isolation, timeout, label, _localNodeId, false);
+                    // var innerTxOld= new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
+                    //     (TransactionIsolation) isolation, timeout, label, _localNodeId, false);
 
-                    result.Add(new Transaction(innerTx));
+                    var innerTx = new LocalActiveTransaction(this, id, (TransactionConcurrency) concurrency,
+                        (TransactionIsolation) isolation, timeout, label, _localNodeId);
+
+                    result.Add(innerTx);
                 }
 
                 return new TransactionCollectionImpl(result);
