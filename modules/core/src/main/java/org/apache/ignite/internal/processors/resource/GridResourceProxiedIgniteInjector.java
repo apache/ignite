@@ -23,7 +23,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSystemType;
-import static org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy.proxy;
+import static org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy.igniteProxy;
 
 /** Ignite instance injector. */
 public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector<Ignite> {
@@ -37,7 +37,7 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
     /** */
     private Ignite ignite(Object target) {
         return isSystemType(((IgniteEx)getResource()).context(), target, false)
-            ? getResource() : proxy(Ignite.class, getResource());
+            ? getResource() : igniteProxy(getResource());
     }
 
     /** {@inheritDoc} */
