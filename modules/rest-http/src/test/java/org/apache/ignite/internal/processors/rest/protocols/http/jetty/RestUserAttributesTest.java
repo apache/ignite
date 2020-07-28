@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestAuthenticationContextSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
