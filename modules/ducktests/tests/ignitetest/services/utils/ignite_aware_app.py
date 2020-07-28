@@ -25,9 +25,9 @@ The base class to build Ignite aware application written on java.
 
 
 class IgniteAwareApplicationService(IgniteAwareService):
-    def __init__(self, context, java_class_name, version, properties, params, timeout_sec,
+    def __init__(self, context, java_class_name, client_mode, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
-        super(IgniteAwareApplicationService, self).__init__(context, 1, version, properties)
+        super(IgniteAwareApplicationService, self).__init__(context, 1, client_mode, version, properties)
 
         self.servicejava_class_name = service_java_class_name
         self.java_class_name = java_class_name
@@ -52,9 +52,6 @@ class IgniteAwareApplicationService(IgniteAwareService):
                 self.STDOUT_STDERR_CAPTURE,
                 self.STDOUT_STDERR_CAPTURE)
         return cmd
-
-    def config(self):
-        return IgniteClientConfig(self.context)
 
     def stop_node(self, node, clean_shutdown=True, timeout_sec=20):
         self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))

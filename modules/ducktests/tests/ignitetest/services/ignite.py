@@ -39,8 +39,7 @@ class IgniteService(IgniteAwareService):
     }
 
     def __init__(self, context, num_nodes, client_mode=False, version=DEV_BRANCH, properties=""):
-        super(IgniteService, self).__init__(context, num_nodes, version, properties)
-        self.client_mode = client_mode
+        super(IgniteService, self).__init__(context, num_nodes, client_mode, version, properties)
 
     def start(self, timeout_sec=180):
         super(IgniteService, self).start()
@@ -65,12 +64,6 @@ class IgniteService(IgniteAwareService):
                 IgniteService.STDOUT_STDERR_CAPTURE,
                 IgniteService.STDOUT_STDERR_CAPTURE)
         return cmd
-
-    def config(self):
-        if self.client_mode:
-            return IgniteClientConfig(self.context)
-        else:
-            return IgniteServerConfig(self.context)
 
     def await_node_started(self, node, timeout_sec):
         self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)

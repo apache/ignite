@@ -35,7 +35,7 @@ class SparkService(IgniteAwareService):
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        IgniteAwareService.__init__(self, context, num_nodes, version, properties)
+        IgniteAwareService.__init__(self, context, num_nodes, False, version, properties)
 
         self.log_level = "DEBUG"
 
@@ -67,9 +67,6 @@ class SparkService(IgniteAwareService):
         cmd += "{start_script} &".format(start_script=start_script)
 
         return cmd
-
-    def config(self):
-        return IgniteServerConfig(self.context)
 
     def start_node(self, node, timeout_sec=30):
         self.init_persistent(node)

@@ -24,6 +24,7 @@ The Ignite application service allows to perform custom logic writen on java.
 class IgniteApplicationService(IgniteAwareApplicationService):
     service_java_class_name = "org.apache.ignite.internal.ducktest.utils.IgniteApplicationService"
 
-    def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
-        super(IgniteApplicationService, self).__init__(context, java_class_name, version, properties, params,
-                                                       timeout_sec, self.service_java_class_name)
+    def __init__(self, context, java_class_name, client_mode=True, version=DEV_BRANCH, properties="", params="",
+                 timeout_sec=60):
+        super(IgniteApplicationService, self).__init__(context, java_class_name, client_mode, version, properties,
+                                                       params, timeout_sec, self.service_java_class_name)
