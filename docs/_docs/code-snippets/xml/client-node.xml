@@ -3,10 +3,12 @@
     <!-- tag::ignite-config[] -->
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="clientMode" value="true"/>
-        <!-- other properties -->
+      
         <!-- tag::discovery[] -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <!-- prevent this client from reconnecting on connection loss -->
+                <property name="clientReconnectDisabled" value="true"/>
                 <property name="ipFinder">
 
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
@@ -20,6 +22,13 @@
             </bean>
         </property>
         <!-- end::discovery[] -->
+        <!-- tag::slow-client[] -->
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="slowClientQueueLimit" value="1000"/>
+            </bean>
+        </property>
+        <!-- end::slow-client[] -->
     </bean>
     <!-- end::ignite-config[] -->
 </beans>

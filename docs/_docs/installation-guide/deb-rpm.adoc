@@ -1,4 +1,4 @@
-= Installing using DEP and RPM package
+= Installing Using DEP and RPM Package
 
 Apache Ignite can be installed from the official link:https://www.apache.org/dist/ignite/rpm[RPM] or link:https://www.apache.org/dist/ignite/deb[DEB] repositories.
 
@@ -14,4 +14,11 @@ Configure Apache Ignite's RPM or DEB repository, as follows (accept ​the ​GP
 sudo apt update
 sudo apt install dirmngr --no-install-recommends
 ----
+
+[tabs]
+--
+tab:DEB[]
+
+tab:RPM[]
+--
 

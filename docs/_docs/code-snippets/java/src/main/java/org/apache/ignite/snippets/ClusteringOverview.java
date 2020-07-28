@@ -32,7 +32,7 @@ public class ClusteringOverview {
         // tag::clientModeIgnition[]
         Ignition.setClientMode(true);
 
-        // Start the node in the client mode.
+        // Start the node in client mode.
         Ignite ignite = Ignition.start();
         // end::clientModeIgnition[]
         

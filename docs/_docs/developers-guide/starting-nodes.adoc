@@ -222,7 +222,7 @@ The interface has the `onLifecycleEvent()` method, which is called for any lifec
 +
 [source, java]
 ----
-include::{javaFile}[tags=bean, indent=0]
+include::{javaCodeDir}/MyLifecycleBean.java[tags=bean, indent=0]
 ----
 
 . Register the implementation in the node configuration.

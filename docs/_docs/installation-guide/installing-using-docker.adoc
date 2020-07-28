@@ -13,7 +13,7 @@ It means that the data will be erased when you remove the container. To save the
 *Networking*::
 +
 --
-By default, Ignite docker image exposes the following ports: 11211, 47100, 47500, 49112.
+By default, Ignite Docker image exposes the following ports: 11211, 47100, 47500, 49112.
 You can expose more ports as needed by adding `-p <port>` to the `docker run` command.
 For example, to connect a thin client to the node running inside a docker container, open port 10800:
 
@@ -140,6 +140,26 @@ docker run -d \
   apacheignite/ignite
 ----
 
+== Deploying User Libraries
+
+When starting, a node adds all libraries found in the `{IGNITE_HOME}/libs` directory to the classpath (ignoring the "optional" directory).
+If you want to deploy user libraries, you can mount a directory from your local machine to a path in the `/opt/ignite/apache-ignite/libs/` in the container by using the `-v` option.
+
+The following command mounts a directory on your machine to `libs/user_libs` in the container.
+All files located in the directory are added to the classpath of the node.
+
+[source, shell]
+----
+docker run -v /local_path/to/dir_with_libs/:/opt/ignite/apache-ignite/libs/user_libs apacheignite/ignite
+----
+
+Another option is to use the `EXTERNAL_LIBS` variable if your libraries are available via an URL.
+
+[source, shell]
+----
+docker run -e "EXTERNAL_LIBS=http://url_to_your_jar" apacheignite/ignite
+----
+
 
 == Enabling Modules
 
@@ -165,14 +185,14 @@ The following parameters can be passed as environment variables in the docker co
 [cols="1,2,1", options="header"]
 |===
 | Parameter Name |Description |Default
-| CONFIG_URI | URL to the Ignite configuration file (can also be relative to the META-INF folder on the class path).
-The downloaded config file will be saved to ./ignite-config.xml | N/A
+| `CONFIG_URI` | URL to the Ignite configuration file (can also be relative to the META-INF folder on the class path).
+The downloaded config file is saved to ./ignite-config.xml | N/A
 
-| OPTION_LIBS | A list of link:developers-guide/setup#enabling-modules[modules] that will be enabled for the node. | ignite-log4j, ignite-spring, ignite-indexing
+| `OPTION_LIBS` | A list of link:developers-guide/setup#enabling-modules[modules] that will be enabled for the node. | ignite-log4j, ignite-spring, ignite-indexing
 
-| JVM_OPTS | JVM arguments passed to the Ignite instance.| N/A
+| `JVM_OPTS` | JVM arguments passed to the Ignite instance.| N/A
 
-| EXTERNAL_LIBS | A list of URL's to external libs. | N/A
+| `EXTERNAL_LIBS` | A list of URL's to external libraries. Refer to <<Deploying User Libraries>>.| N/A
 
 |===
 

@@ -2,9 +2,10 @@
 
 == Overview
 
-In this chapter, we discuss different roles nodes can play in a cluster and the different ways nodes can discover each other to form a cluster.
+In this chapter, we discuss different ways nodes can discover each other to form a cluster.
 
-On start-up, a node is assigned either one of the two roles: _server node_ or _client node_. Server nodes are the workhorses of the cluster; they cache data, execute compute tasks, etc.
+On start-up, a node is assigned either one of the two roles: _server node_ or _client node_.
+Server nodes are the workhorses of the cluster; they cache data, execute compute tasks, etc.
 Client nodes join the topology as regular nodes but they do not store data. Client nodes are used to stream data into the cluster and execute user queries.
 
 To form a cluster, each node must be able to connect to all other nodes. To ensure that, a proper <<Discovery Mechanisms,discovery mechanism>> must be configured.

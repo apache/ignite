@@ -72,6 +72,8 @@
           url: /developers-guide/clustering/zookeeper-discovery
         - title: Discovery in the Cloud
           url: /developers-guide/clustering/discovery-in-the-cloud
+        - title: Connecting Client Nodes 
+          url: /developers-guide/clustering/connect-client-nodes
     - title: Data Modeling 
       items: 
         - title: Introduction
