@@ -23,10 +23,20 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -36,6 +46,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
@@ -225,6 +236,89 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     }
 
     /** */
+    @Test
+    public void testDataStructures() {
+        compute().broadcast(
+            new TestRunnable() {
+                @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+                @Override public void run() {
+                    IgniteQueue<Object> queueTx = ignite.queue("test_queue_tx", 1,
+                        new CollectionConfiguration()
+                            .setGroupName("test_queue_tx")
+                            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+                    queueTx.add(new Object());
+                    queueTx.clear();
+
+                    IgniteQueue<Object> queueAtomic = ignite.queue("test_queue_atomic", 1,
+                        new CollectionConfiguration()
+                            .setGroupName("test_queue_atomic")
+                            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+                    queueAtomic.add(new Object());
+                    queueAtomic.clear();
+
+                    IgniteSet<Object> set = ignite.set("test_set", new CollectionConfiguration().setGroupName("test_set"));
+                    set.add(new Object());
+                    set.clear();
+
+                    IgniteAtomicLong atomicLong = ignite.atomicLong("test_atomic_long", 1, true);
+                    atomicLong.incrementAndGet();
+
+                    IgniteAtomicSequence atomicSeq = ignite.atomicSequence("test_atomic_seq", 1,
+                        true);
+                    atomicSeq.incrementAndGet();
+
+                    IgniteAtomicReference<Object> atomicRef = ignite.atomicReference("test_atomic_ref",
+                        null, true);
+                    atomicRef.compareAndSet(null, new Object());
+
+                    IgniteAtomicStamped<Object, Object> atomicStamped = ignite.atomicStamped("test_atomic_stmp",
+                        null, null, true);
+                    atomicStamped.compareAndSet(null, new Object(), null, new Object());
+
+                    IgniteCountDownLatch cntDownLatch = ignite.countDownLatch("test_cnt_down_latch", 1,
+                        true, true);
+                    cntDownLatch.countDown();
+
+                    IgniteSemaphore semaphore = ignite.semaphore("test_semaphore", 1, true,
+                        true);
+                    semaphore.acquire();
+                    semaphore.release();
+
+                    IgniteLock lock = ignite.reentrantLock("test_lock", true, true, true);
+                    lock.lock();
+                    lock.unlock();
+                }
+            });
+    }
+
+    /** */
+    @Test
+    public void testBinary() {
+        compute().broadcast(
+            new TestRunnable() {
+                @Override public void run() {
+                    ignite.binary().toBinary(new Object());
+
+                    // Test binary objects.
+                    ignite.cache(TEST_CACHE).put(0, new Object());
+                    BinaryObject obj = (BinaryObject)ignite.cache(TEST_CACHE).withKeepBinary().get(0);
+                    obj.toString();
+                }
+            });
+    }
+
+    /** */
+    @Test
+    public void testAffinity() {
+        compute().broadcast(
+            new TestRunnable() {
+                @Override public void run() {
+                    ignite.affinity(TEST_CACHE).partition(new Object());
+                }
+            });
+    }
+
+    /** */
     private IgniteCompute compute() {
         Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
 
@@ -249,6 +343,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
 
     /** */
     private abstract static class TestRunnable implements IgniteRunnable {
+        /** Ignite. */
         @IgniteInstanceResource
         protected Ignite ignite;
     }
