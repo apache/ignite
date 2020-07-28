@@ -2695,9 +2695,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cache != null : cctx.name();
 
-            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
+            sharedCtx.io().writeLock();
+            try {
+                completeProxyInitialize(cctx.name());
 
-            completeProxyInitialize(cctx.name());
+                jCacheProxies.remove(cctx.name());
+
+                sharedCtx.removeCacheContext(cctx);
+            }
+            finally {
+                sharedCtx.io().writeUnlock();
+            }
         }
         else {
             cctx.gate().onStopped();
