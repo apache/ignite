@@ -597,16 +597,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return delegate.get().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return delegate.get().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return delegate.get().expiry();
     }
