@@ -121,17 +121,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     private static final int WORKLOAD_THREADS_CNT = 16;
 
     /** Fail. */
-    private volatile boolean fail;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
+    private volatile boolean failureHndTriggered;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -189,7 +179,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return new NoOpFailureHandler() {
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-                fail = true;
+                failureHndTriggered = true;
 
                 return super.handle(ignite, failureCtx);
             }
@@ -340,7 +330,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
                 srv.cache(CACHE_NAME_NEAR_TX)
             );
 
-            while (!end.get() && !fail) {
+            while (!end.get() && !failureHndTriggered) {
                 for (IgniteCache<Object, Object> cache : caches) {
                     for (int i = 0; i < SMALL_ENTRIES; i++)
                         cache.put(i, new byte[1024]);
@@ -360,7 +350,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             loadFut.get(10, TimeUnit.SECONDS);
         }
         catch (Exception e) {
-            assertFalse("Failure handler was called. See log above.", fail);
+            assertFalse("Failure handler was called. See log above.", failureHndTriggered);
 
             assertTrue(X.hasCause(e, IgniteFutureTimeoutCheckedException.class));
         }
@@ -368,7 +358,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             end.set(true);
         }
 
-        assertFalse("Failure handler was called. See log above.", fail);
+        assertFalse("Failure handler was called. See log above.", failureHndTriggered);
     }
 
     /**
@@ -501,7 +491,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        assertFalse("Failure handler should not be triggered.", fail);
+        assertFalse("Failure handler should not be triggered.", failureHndTriggered);
     }
 
     /** */
