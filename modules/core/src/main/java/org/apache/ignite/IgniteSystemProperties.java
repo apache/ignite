@@ -1874,26 +1874,6 @@ public final class IgniteSystemProperties {
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
-     * The number of pages that is scanned during reencryption under checkpoint lock.
-     */
-    public static final String IGNITE_REENCRYPTION_BATCH_SIZE = "IGNITE_REENCRYPTION_BATCH_SIZE";
-
-    /**
-     * The number of threads used to scan partitions when re-encrypting a cache group.
-     */
-    public static final String IGNITE_REENCRYPTION_THREAD_POOL_SIZE = "IGNITE_REENCRYPTION_THREAD_POOL_SIZE";
-
-    /**
-     * Set up this property to disable background reencryption.
-     */
-    public static final String IGNITE_REENCRYPTION_DISABLED = "IGNITE_REENCRYPTION_DISABLED";
-
-    /**
-     * Defines the delay in milliseconds between batches during a partition scanning.
-     */
-    public static final String IGNITE_REENCRYPTION_THROTTLE = "IGNITE_REENCRYPTION_THROTTLE";
-
-    /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.
      * <p/>
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node

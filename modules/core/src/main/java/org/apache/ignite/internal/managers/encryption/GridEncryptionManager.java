@@ -1065,7 +1065,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void setEncryptionState(int grpId, int partId, int idx, int total) {
         reencryptGroups.computeIfAbsent(grpId,
-            v -> new ConcurrentHashMap<>()).put(partId, ((long)idx) << 32 | (total & 0xffffffffL));
+            v -> new ConcurrentHashMap<>()).put(partId, ((long)idx) << Integer.SIZE | (total & 0xffffffffL));
     }
 
     /**
