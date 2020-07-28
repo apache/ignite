@@ -59,9 +59,9 @@
                         instead os static IP based discovery. For information on all options refer
                         to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
+                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">-->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
@@ -72,5 +72,13 @@
                 </property>
             </bean>
         </property>
+
+        <!--
+            Default failure detection timeout is equal to 10 seconds for server nodes and 30 seconds for client nodes.
+            For stable low-latency network you can lower it.
+            Property value is measured in milliseconds.
+        -->
+        <!--<property name="failureDetectionTimeout" value="200"/>-->
+        <!--<property name="clientFailureDetectionTimeout" value="2000"/>-->
     </bean>
 </beans>
