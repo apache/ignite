@@ -24,7 +24,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteTransactions;
@@ -50,14 +49,12 @@ public class IgniteBenchmarkUtils {
      * Scheduler executor.
      */
     private static final ScheduledExecutorService exec =
-        Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-            @Override public Thread newThread(Runnable run) {
-                Thread thread = Executors.defaultThreadFactory().newThread(run);
+        Executors.newSingleThreadScheduledExecutor(run -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(run);
 
-                thread.setDaemon(true);
+            thread.setDaemon(true);
 
-                return thread;
-            }
+            return thread;
         });
 
     /**

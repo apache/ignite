@@ -42,9 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -343,18 +341,14 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(node1);
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(node2);
 
-        spi1.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-            @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxQueryEnlistResponse)
-                    doSleep(100);
-            }
+        spi1.closure((node, msg) -> {
+            if (msg instanceof GridDhtTxQueryEnlistResponse)
+                doSleep(100);
         });
 
-        spi2.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-            @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxQueryEnlistResponse)
-                    doSleep(100);
-            }
+        spi2.closure((node, msg) -> {
+            if (msg instanceof GridDhtTxQueryEnlistResponse)
+                doSleep(100);
         });
 
         qryStr = "DELETE FROM Integer WHERE _key >= " + 10;
@@ -527,24 +521,20 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node1);
 
         // Check for a force key request.
-        spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-            @Override public void apply(ClusterNode node, Message msg) {
-                if (delayRebalance && msg instanceof GridDhtPartitionSupplyMessage)
-                    doSleep(500);
+        spi.closure((node, msg) -> {
+            if (delayRebalance && msg instanceof GridDhtPartitionSupplyMessage)
+                doSleep(500);
 
-                if (msg instanceof GridDhtForceKeysResponse)
-                    fail("Force key request");
-            }
+            if (msg instanceof GridDhtForceKeysResponse)
+                fail("Force key request");
         });
 
         final Ignite node2 = startGrid(1);
 
         TestRecordingCommunicationSpi.spi(node2).closure(
-            new IgniteBiInClosure<ClusterNode, Message>() {
-                @Override public void apply(ClusterNode node, Message msg) {
-                    if (msg instanceof GridDhtForceKeysRequest)
-                        fail("Force key request");
-                }
+            (node, msg) -> {
+                if (msg instanceof GridDhtForceKeysRequest)
+                    fail("Force key request");
             }
         );
 

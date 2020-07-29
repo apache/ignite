@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -350,11 +349,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
             log.info("Stop all servers.");
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer threadIdx) {
-                    stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                }
-            }, srvs, "stop-server");
+            GridTestUtils.runMultiThreaded(threadIdx -> stopGrid(getTestIgniteInstanceName(threadIdx), true, false), srvs, "stop-server");
 
             ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 

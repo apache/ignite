@@ -167,15 +167,13 @@ public final class ComputeFibonacciContinuationExample {
 
                 // If futures are not done, then wait asynchronously for the result
                 if (!fut1.isDone() || !fut2.isDone()) {
-                    IgniteInClosure<IgniteFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteFuture<BigInteger>>() {
-                        @Override public void apply(IgniteFuture<BigInteger> f) {
-                            // If both futures are done, resume the continuation.
-                            if (fut1.isDone() && fut2.isDone())
-                                // CONTINUATION:
-                                // =============
-                                // Resume suspended job execution.
-                                jobCtx.callcc();
-                        }
+                    IgniteInClosure<IgniteFuture<BigInteger>> lsnr = future -> {
+                        // If both futures are done, resume the continuation.
+                        if (fut1.isDone() && fut2.isDone())
+                            // CONTINUATION:
+                            // =============
+                            // Resume suspended job execution.
+                            jobCtx.callcc();
                     };
 
                     // CONTINUATION:

@@ -99,19 +99,17 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
 
             SqlFieldsQuery qry = new SqlFieldsQuery(QUERY);
 
-            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        Thread.sleep(1_500);
-                    }
-                    catch (InterruptedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    for (Ignite g : G.allGrids())
-                        if (!g.configuration().isClientMode())
-                            stopGrid(g.name(), true);
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                try {
+                    Thread.sleep(1_500);
                 }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
+
+                for (Ignite g : G.allGrids())
+                    if (!g.configuration().isClientMode())
+                        stopGrid(g.name(), true);
             }, 1);
 
             try {

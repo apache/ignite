@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -153,35 +152,32 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
 
         IgniteFuture<BitSet> fut = spi.checkConnection(nodes);
 
-        fut.listen(new IgniteInClosure<IgniteFuture<BitSet>>() {
-            @Override public void apply(final IgniteFuture<BitSet> fut) {
-                // Future completed either from NIO thread or timeout worker, save result from another thread.
-                impl.runInWorkerThread(new ZkRunnable(rtState, impl) {
-                    @Override public void run0() throws Exception {
-                        BitSet commState = null;
-                        Exception err = null;
+        fut.listen(future -> {
+            // Future completed either from NIO thread or timeout worker, save result from another thread.
+            impl.runInWorkerThread(new ZkRunnable(rtState, impl) {
+                @Override public void run0() throws Exception {
+                    BitSet commState = null;
+                    Exception err = null;
 
-                        try {
-                            commState = fut.get();
-                        }
-                        catch (Exception e) {
-                            err = e;
-                        }
-
-                        ZkCommunicationErrorNodeState state = new ZkCommunicationErrorNodeState(commState, err);
-
-                        ZkDistributedCollectDataFuture.saveNodeResult(futPath,
-                            rtState.zkClient,
-                            impl.localNode().order(),
-                            impl.marshalZip(state));
+                    try {
+                        commState = fut.get();
+                    }
+                    catch (Exception e) {
+                        err = e;
                     }
 
-                    @Override void onStartFailed() {
-                        onError(rtState.errForClose);
-                    }
-                });
+                    ZkCommunicationErrorNodeState state = new ZkCommunicationErrorNodeState(commState, err);
 
-            }
+                    ZkDistributedCollectDataFuture.saveNodeResult(futPath,
+                        rtState.zkClient,
+                        impl.localNode().order(),
+                        impl.marshalZip(state));
+                }
+
+                @Override void onStartFailed() {
+                    onError(rtState.errForClose);
+                }
+            });
         });
     }
 

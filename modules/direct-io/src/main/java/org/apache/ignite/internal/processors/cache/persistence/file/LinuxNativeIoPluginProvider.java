@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -182,11 +181,8 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
         final IgniteWriteAheadLogManager walMgr = cacheCtx.wal();
 
         if (walMgr != null && walMgr instanceof FileWriteAheadLogManager && IgniteNativeIoLib.isJnaAvailable()) {
-            ((FileWriteAheadLogManager)walMgr).setCreateWalFileListener(new IgniteInClosure<FileIO>() {
-                @Override public void apply(FileIO fileIO) {
-                    adviceFileDontNeed(fileIO, ((FileWriteAheadLogManager)walMgr).maxWalSegmentSize());
-                }
-            });
+            ((FileWriteAheadLogManager) walMgr).setCreateWalFileListener(fileIO ->
+                adviceFileDontNeed(fileIO, ((FileWriteAheadLogManager) walMgr).maxWalSegmentSize()));
         }
 
         if (!factory.isDirectIoAvailable())

@@ -30,9 +30,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -130,12 +128,10 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         try {
             // Execute 2 times after 2 seconds delay every minute.
             fut = grid(0).scheduler().scheduleLocal(
-                new Runnable() {
-                    @Override public void run() {
-                        latch.countDown();
+                () -> {
+                    latch.countDown();
 
-                        info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
-                    }
+                    info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
                 },
                 "{2, 2} * * * * *");
 
@@ -145,58 +141,36 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listen(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> e) {
-                    notifyCnt.incrementAndGet();
-                }
-            });
+            fut.listen(future -> notifyCnt.incrementAndGet());
 
             final SchedulerFuture<?> fut0 = fut;
 
             //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    fut0.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-                        @Override public void apply(IgniteFuture<?> fut) {
-                            // No-op
-                        }
-                    }, null);
+            assertThrows(log, () -> {
+                fut0.listenAsync(future -> {}, null);
 
-                    return null;
-                }
+                return null;
             }, NullPointerException.class, null);
 
-            fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> fut) {
-                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+            fut.listenAsync(future -> {
+                assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
 
-                    notifyCnt.incrementAndGet();
-                }
+                notifyCnt.incrementAndGet();
             }, exec);
 
             //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    fut0.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
-                        @Override public String apply(IgniteFuture<?> fut) {
-                            // No-op
+            assertThrows(log, () -> {
+                fut0.chainAsync(future -> null, null);
 
-                            return null;
-                        }
-                    }, null);
-
-                    return null;
-                }
+                return null;
             }, NullPointerException.class, null);
 
-            IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
-                @Override public String apply(IgniteFuture<?> fut) {
-                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+            IgniteFuture<String> chained1 = fut.chainAsync(future -> {
+                assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
 
-                    fut.get();
+                future.get();
 
-                    return "done-custom";
-                }
+                return "done-custom";
             }, exec);
 
             long timeTillRun = freq + delay;

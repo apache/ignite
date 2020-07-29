@@ -281,14 +281,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private QueryParser parser;
 
     /** */
-    private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
-        @Override public void apply(IgniteInternalFuture<?> fut) {
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, e.getMessage(), e);
-            }
+    private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = future -> {
+        try {
+            future.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, e.getMessage(), e);
         }
     };
 

@@ -173,21 +173,19 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         TestTcpCommunicationSpi commSpi = (TestTcpCommunicationSpi)spi;
 
-        commSpi.filter = new IgniteInClosure<Message>() {
-            @Override public void apply(Message msg) {
-                if (!(msg instanceof GridIoMessage))
-                    return;
+        commSpi.filter = message -> {
+            if (!(message instanceof GridIoMessage))
+                return;
 
-                Message msg0 = ((GridIoMessage)msg).message();
+            Message msg0 = ((GridIoMessage) message).message();
 
-                if (msg0 instanceof GridCacheQueryRequest) {
-                    assertEquals(pageSize, ((GridCacheQueryRequest)msg0).pageSize());
+            if (msg0 instanceof GridCacheQueryRequest) {
+                assertEquals(pageSize, ((GridCacheQueryRequest)msg0).pageSize());
 
-                    pages.incrementAndGet();
-                }
-                else if (msg0 instanceof GridCacheQueryResponse)
-                    assertTrue(((GridCacheQueryResponse)msg0).data().size() <= pageSize);
+                pages.incrementAndGet();
             }
+            else if (msg0 instanceof GridCacheQueryResponse)
+                assertTrue(((GridCacheQueryResponse)msg0).data().size() <= pageSize);
         };
 
         try {

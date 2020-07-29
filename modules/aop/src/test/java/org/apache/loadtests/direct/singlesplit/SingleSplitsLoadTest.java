@@ -95,33 +95,30 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
 
         final GridLoadTestStatistics stats = new GridLoadTestStatistics();
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            /** {@inheritDoc} */
-            @Override public void run() {
-                while (end - System.currentTimeMillis() > 0) {
-                    long start = System.currentTimeMillis();
+        GridTestUtils.runMultiThreaded(() -> {
+            while (end - System.currentTimeMillis() > 0) {
+                long start = System.currentTimeMillis();
 
-                    try {
-                        int levels = 20;
+                try {
+                    int levels = 20;
 
-                        ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
-                            new SingleSplitTestTask(), levels);
+                    ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
+                        new SingleSplitTestTask(), levels);
 
-                        int res = fut.get();
+                    int res = fut.get();
 
-                        if (res != levels)
-                            fail("Received wrong result [expected=" + levels + ", actual=" + res + ']');
+                    if (res != levels)
+                        fail("Received wrong result [expected=" + levels + ", actual=" + res + ']');
 
-                        long taskCnt = stats.onTaskCompleted(fut, levels, System.currentTimeMillis() - start);
+                    long taskCnt = stats.onTaskCompleted(fut, levels, System.currentTimeMillis() - start);
 
-                        if (taskCnt % 500 == 0)
-                            info(stats.toString());
-                    }
-                    catch (IgniteException e) {
-                        error("Failed to execute grid task.", e);
+                    if (taskCnt % 500 == 0)
+                        info(stats.toString());
+                }
+                catch (IgniteException e) {
+                    error("Failed to execute grid task.", e);
 
-                        fail();
-                    }
+                    fail();
                 }
             }
         }, getThreadCount(), "grid-notaop-load-test");

@@ -351,14 +351,12 @@ public class IgniteApplicationMasterSelfTest {
      * @return Thread.
      */
     private static Thread runAppMaster(final ApplicationMaster appMaster) {
-        Thread thread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    appMaster.run();
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+        Thread thread = new Thread(() -> {
+            try {
+                appMaster.run();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
         });
 
