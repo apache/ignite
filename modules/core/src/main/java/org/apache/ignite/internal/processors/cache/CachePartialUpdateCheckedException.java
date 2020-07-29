@@ -45,6 +45,13 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
     }
 
     /**
+     * @param msg Error message.
+     */
+    public CachePartialUpdateCheckedException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
+
+    /**
      * Gets collection of failed keys.
      * @return Collection of failed keys.
      */

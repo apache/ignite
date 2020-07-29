@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -618,6 +620,8 @@ public class GridH2Table extends TableBase {
         if (prevRow0 != null)
             prevRow0.prepareValuesCache();
 
+        IgniteCheckedException err = null;
+
         try {
             lock(false);
 
@@ -641,12 +645,12 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                        err = addToIndex((GridH2IndexBase)idx, row0, prevRow0, err);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row0, prevRow0);
+                        err = addToIndex(idx, row0, prevRow0, err);
                 }
             }
             finally {
@@ -659,6 +663,9 @@ public class GridH2Table extends TableBase {
             if (prevRow0 != null)
                 prevRow0.clearValuesCache();
         }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -703,17 +710,41 @@ public class GridH2Table extends TableBase {
 
     /**
      * Add row to index.
-     *
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
+     * @param prevErr Error on index add.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
-        boolean replaced = idx.putx(row);
+    private IgniteCheckedException addToIndex(
+        GridH2IndexBase idx,
+        GridH2Row row,
+        GridH2Row prevRow,
+        IgniteCheckedException prevErr
+    ) {
+        try {
+            boolean replaced = idx.putx(row);
 
-        // Row was not replaced, need to remove manually.
-        if (!replaced && prevRow != null)
-            idx.removex(prevRow);
+            // Row was not replaced, need to remove manually.
+            if (!replaced && prevRow != null)
+                idx.removex(prevRow);
+
+            return prevErr;
+        }
+        catch (Throwable t) {
+            IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+            if (ex != null && ex.statusCode() == IgniteQueryErrorCode.FIELD_TYPE_MISMATCH) {
+                if (prevErr != null) {
+                    prevErr.addSuppressed(t);
+
+                    return prevErr;
+                }
+                else
+                    return new IgniteCheckedException("Error on add row to index '" + getName() + '\'', t);
+            }
+            else
+                throw t;
+        }
     }
 
     /**
