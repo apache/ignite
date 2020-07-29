@@ -47,6 +47,9 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private transient List<H2Tree> trees;
 
     /** */
+    private transient volatile boolean completed;
+
+    /** */
     private String cacheGrpName;
 
     /** */
@@ -72,6 +75,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     ) {
         this.rootPages = rootPages;
         this.trees = trees;
+        this.completed = false;
         this.cacheGrpName = cacheGrpName;
         this.cacheName = cacheName;
         this.schemaName = schemaName;
@@ -157,6 +161,16 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void complete() {
+        completed = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompleted() {
+        return completed;
     }
 
     /** {@inheritDoc} */

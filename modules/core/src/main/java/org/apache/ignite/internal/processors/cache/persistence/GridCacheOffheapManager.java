@@ -813,7 +813,53 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (log != null && log.isDebugEnabled())
                     log.debug("Save next snapshot before checkpoint start for grId = " + grpId
                         + ", nextSnapshotTag = " + nextSnapshotTag);
+            }
+            finally {
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
 
+                if (!wal.disabled(grpId) && nextSnapshotTag != -1)
+                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, metaPageId, metaPage);
+        }
+
+        // Artifact of GG-29915 merge.
+        addPartitions(ctx);
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    private void addPartitions(Context ctx) throws IgniteCheckedException {
+        int grpId = grp.groupId();
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        long metaPageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
+
+        long metaPage = pageMem.acquirePage(grpId, metaPageId);
+
+        try {
+            long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
+
+            if (metaPageAddr == 0L) {
+                U.warn(log, "Failed to acquire write lock for index meta page [grpId=" + grpId +
+                    ", metaPageId=" + metaPageId + ']');
+
+                return;
+            }
+
+            boolean changed = false;
+
+            try {
+                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+
+                int pageCnt = this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION);
+
+                changed = metaIo.setCandidatePageCount(metaPageAddr, pageCnt);
+
+                // Following method doesn't modify page data, it only reads last allocated page count from it.
                 addPartition(
                     null,
                     ctx.partitionStatMap(),
@@ -821,14 +867,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     metaIo,
                     grpId,
                     PageIdAllocator.INDEX_PARTITION,
-                    this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
+                    pageCnt,
                     -1);
             }
             finally {
-                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
-
-                if (!wal.disabled(grpId) && nextSnapshotTag != -1)
-                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, changed);
             }
         }
         finally {
