@@ -18,22 +18,41 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Diagnostics;
+    using System.Globalization;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// Rollback only view of local active transaction.
+    /// Cache transaction proxy which supports only implicit rollback operations and getters.
+    /// <para/>
+    /// Supports next operations:
+    /// <list type="bullet">
+    ///     <item><description><see cref="Rollback"/>.</description></item>
+    ///     <item><description><see cref="RollbackAsync"/>.</description></item>
+    ///     <item><description><see cref="Dispose"/>.</description></item>
+    ///     <item><description>Get <see cref="NodeId"/>.</description></item>
+    ///     <item><description>Get <see cref="Isolation"/>.</description></item>
+    ///     <item><description>Get <see cref="Concurrency"/>.</description></item>
+    ///     <item><description>Get <see cref="Label"/>.</description></item>
+    ///     <item><description>Get <see cref="IsRollbackOnly"/>.</description></item>
+    ///     <item><description>Get <see cref="Id"/>.</description></item>
+    /// </list>
     /// </summary>
-    internal class LocalActiveTransaction : ITransaction
+    internal class TransactionRollbackOnlyProxy : ITransaction
     {
         /** Transactions facade. */
         private readonly TransactionsImpl _txs;
 
-        /** Unique transaction view ID.*/
+        /** Unique transaction view ID. */
         private readonly long _id;
 
-        public LocalActiveTransaction(
-            TransactionsImpl txs, 
+        /** Is closed. */
+        private volatile bool _isClosed = false;
+
+        public TransactionRollbackOnlyProxy(
+            TransactionsImpl txs,
             long id,
             TransactionConcurrency concurrency,
             TransactionIsolation isolation,
@@ -59,17 +78,20 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         public DateTime StartTime
         {
-            get { throw  GetInvalidOperationException(); }
+            get { throw GetInvalidOperationException(); }
         }
 
         public TransactionIsolation Isolation { get; private set; }
         public TransactionConcurrency Concurrency { get; private set; }
-        public TransactionState State 
+
+        public TransactionState State
         {
-            get { throw  GetInvalidOperationException(); }
+            get { throw GetInvalidOperationException(); }
         }
+
         public TimeSpan Timeout { get; private set; }
         public string Label { get; private set; }
+
         public bool IsRollbackOnly
         {
             get { return true; }
@@ -96,13 +118,23 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void Rollback()
         {
-            throw new InvalidOperationException();
+            lock (this)
+            {
+                ThrowIfClosed();
+
+                _txs.TxRollback(this);
+            }
         }
 
         /** <inheritDoc /> */
         public Task RollbackAsync()
         {
-            throw new InvalidOperationException();
+            lock (this)
+            {
+                ThrowIfClosed();
+
+                return _txs.TxRollbackAsync(this).ContWith(x => _txs.TxClose(this));
+            }
         }
 
         /** <inheritDoc /> */
@@ -121,11 +153,48 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             throw new InvalidOperationException();
         }
-        
+
         /** <inheritDoc /> */
         public void Dispose()
         {
-            // No-op.
+            if (!_isClosed)
+            {
+                try
+                {
+                    _txs.TxRemove(this);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.Message);
+                    // No-op.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Unique transaction view ID.
+        /// </summary>
+        internal long Id
+        {
+            get { return _id; }
+        }
+
+        /// <summary>
+        /// Throws and exception if transaction is closed.
+        /// </summary>
+        private void ThrowIfClosed()
+        {
+            if (_isClosed)
+                throw GetClosedException();
+        }
+
+        /// <summary>
+        /// Gets the closed exception.
+        /// </summary>
+        private InvalidOperationException GetClosedException()
+        {
+            return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
+                "Transaction {0} is closed, state is {1}", Id, State));
         }
 
         private static InvalidOperationException GetInvalidOperationException()

@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Transactions
         /// <param name="timeout">Timeout. TimeSpan.Zero for indefinite timeout.</param>
         /// <param name="txSize">Number of entries participating in transaction (may be approximate).</param>
         /// <returns>New transaction.</returns>
-        ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, 
+        ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize);
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets the default transaction concurrency.
         /// </summary>
         TransactionConcurrency DefaultTransactionConcurrency { get; }
-        
+
         /// <summary>
         /// Gets the default transaction isolation.
         /// </summary>
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets the default transaction timeout.
         /// </summary>
         TimeSpan DefaultTimeout { get; }
-        
+
         /// <summary>
         /// Gets the default transaction timeout on partition map exchange.
         /// </summary>
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Gets the metrics.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
         ITransactionMetrics GetMetrics();
 
@@ -104,6 +104,18 @@ namespace Apache.Ignite.Core.Transactions
 
         /// <summary>
         /// Returns a list of active transactions initiated by this node.
+        ///  <para/>
+        /// Transactions support next operations:
+        /// <list type="bullet">
+        ///     <item><description><see cref="ITransaction.Rollback"/>.</description></item>
+        ///     <item><description><see cref="ITransaction.RollbackAsync"/>.</description></item>
+        ///     <item><description><see cref="ITransaction.Dispose"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.NodeId"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.Isolation"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.Concurrency"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.Label"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.IsRollbackOnly"/>.</description></item>
+        /// </list>
         /// </summary>
         /// <returns>Collection of <see cref="ITransactionCollection"/></returns>
         ITransactionCollection GetLocalActiveTransactions();

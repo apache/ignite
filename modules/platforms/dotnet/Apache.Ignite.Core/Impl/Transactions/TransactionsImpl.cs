@@ -72,6 +72,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private const int OpLocalActiveTransactions = 13;
 
         /** */
+        private const int OpLocalActiveTransactionsRemove = 14;
+
+        /** */
         private readonly TransactionConcurrency _dfltConcurrency;
 
         /** */
@@ -212,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                     // var innerTxOld= new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
                     //     (TransactionIsolation) isolation, timeout, label, _localNodeId, false);
 
-                    var innerTx = new LocalActiveTransaction(this, id, (TransactionConcurrency) concurrency,
+                    TransactionRollbackOnlyProxy innerTx = new TransactionRollbackOnlyProxy(this, id, (TransactionConcurrency) concurrency,
                         (TransactionIsolation) isolation, timeout, label, _localNodeId);
 
                     result.Add(innerTx);
@@ -275,6 +278,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Rollback transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        internal void TxRollback(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpRollback, tx.Id);
+        }
+        
+        /// <summary>
         /// Close transaction.
         /// </summary>
         /// <param name="tx">Transaction.</param>
@@ -282,6 +294,16 @@ namespace Apache.Ignite.Core.Impl.Transactions
         internal int TxClose(TransactionImpl tx)
         {
             return (int) DoOutInOp(OpClose, tx.Id);
+        }
+
+        /// <summary>
+        /// Close transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        /// <returns>Final transaction state.</returns>
+        public void TxClose(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpClose, tx.Id);
         }
 
         /// <summary>
@@ -305,6 +327,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Remove transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        internal void TxRemove(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpLocalActiveTransactionsRemove, tx.Id);
+        }
+
+        /// <summary>
         /// Commits tx in async mode.
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
@@ -316,6 +347,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Rolls tx back in async mode.
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
+        {
+            return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
+        }
+        
+        /// <summary>
+        /// Rolls tx back in async mode.
+        /// </summary>
+        internal Task TxRollbackAsync(TransactionRollbackOnlyProxy tx)
         {
             return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
         }
