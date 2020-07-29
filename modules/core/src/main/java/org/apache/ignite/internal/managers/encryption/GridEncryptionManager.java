@@ -387,7 +387,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         //And sends that keys to every joining node.
         synchronized (metaStorageMux) {
             //Keys read from meta storage.
-            HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
+            HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.getAll();
 
             //Generated(not saved!) keys for a new caches.
             //Configured statically in config, but doesn't stored on the disk.
@@ -489,7 +489,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.isJoiningNodeClient())
             return;
 
-        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
+        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.getAll();
 
         HashMap<Integer, byte[]> newKeys =
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
@@ -536,7 +536,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.isJoiningNodeClient() || dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
-        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.activeKeys();
+        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.getAll();
 
         HashMap<Integer, byte[]> newKeys =
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
@@ -605,7 +605,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key with identifier, that was set for writing.
      */
     @Nullable public GroupKey groupKey(int grpId) {
-        return grpKeys.key(grpId);
+        return grpKeys.get(grpId);
     }
 
     /**
@@ -616,7 +616,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key.
      */
     @Nullable public GroupKey groupKey(int grpId, int keyId) {
-        return grpKeys.key(grpId, keyId);
+        return grpKeys.get(grpId, keyId);
     }
 
     /**
@@ -626,7 +626,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Map of the key identifier with hash code of encryption key.
      */
     @Nullable public Map<Integer, Integer> groupKeysInfo(int grpId) {
-        return grpKeys.keysInfo(grpId);
+        return grpKeys.info(grpId);
     }
 
     /**
@@ -944,7 +944,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 if (grpKeys.groups().contains(grpId))
                     return;
 
-                grpKeys.putAll(grpId, (List<GroupKeyEncrypted>)val);
+                grpKeys.put(grpId, (List<GroupKeyEncrypted>)val);
             }, true);
 
             // Try to read keys in previous format.
@@ -954,7 +954,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     GroupKeyEncrypted grpKey = new GroupKeyEncrypted(INITIAL_KEY_ID, (byte[])val);
 
-                    grpKeys.putAll(grpId, Collections.singletonList(grpKey));
+                    grpKeys.put(grpId, Collections.singletonList(grpKey));
                 }, true);
             }
 
@@ -1240,7 +1240,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         List<GroupKeyEncrypted> keysEncrypted = null;
 
         if (updateKeys)
-            keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.keys(grpId));
+            keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
 
         ctx.cache().context().database().checkpointReadLock();
 

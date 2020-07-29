@@ -24,10 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,7 +64,7 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @return Group encryption key with identifier, that was set for writing.
      */
-    GroupKey key(int grpId) {
+    GroupKey get(int grpId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (F.isEmpty(keys))
@@ -80,7 +80,7 @@ class CacheGroupEncryptionKeys {
      * @param keyId Encryption key ID.
      * @return Group encryption key.
      */
-    GroupKey key(int grpId, int keyId) {
+    GroupKey get(int grpId, int keyId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (keys == null)
@@ -100,19 +100,16 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @return Map of the key identifier with hash code of encryption key.
      */
-    Map<Integer, Integer> keysInfo(int grpId) {
+    Map<Integer, Integer> info(int grpId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (keys == null)
             return null;
 
-        Map<Integer, Integer> keysInfo = new TreeMap<>();
+        Map<Integer, Integer> keysInfo = new LinkedHashMap<>();
 
-        for (GroupKey groupKey : keys) {
-            byte[] bytes = U.toBytes(groupKey.key());
-
-            keysInfo.put(groupKey.unsignedId(), Arrays.hashCode(bytes));
-        }
+        for (GroupKey groupKey : keys)
+            keysInfo.put(groupKey.unsignedId(), Arrays.hashCode(U.toBytes(groupKey.key())));
 
         return keysInfo;
     }
@@ -120,7 +117,7 @@ class CacheGroupEncryptionKeys {
     /**
      * @return Local encryption keys.
      */
-    @Nullable HashMap<Integer, GroupKeyEncrypted> activeKeys() {
+    @Nullable HashMap<Integer, GroupKeyEncrypted> getAll() {
         if (F.isEmpty(grpKeys))
             return null;
 
@@ -141,7 +138,7 @@ class CacheGroupEncryptionKeys {
      *
      * @return Local encryption keys used for specified cache group.
      */
-    List<GroupKeyEncrypted> keys(int grpId) {
+    List<GroupKeyEncrypted> getAll(int grpId) {
         List<GroupKey> grpKeys = this.grpKeys.get(grpId);
 
         if (F.isEmpty(grpKeys))
@@ -179,7 +176,7 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @param encryptedKeys Encrypted keys.
      */
-    void putAll(int grpId, List<GroupKeyEncrypted> encryptedKeys) {
+    void put(int grpId, List<GroupKeyEncrypted> encryptedKeys) {
         List<GroupKey> keys = new CopyOnWriteArrayList<>();
 
         for (GroupKeyEncrypted encrKey : encryptedKeys)
