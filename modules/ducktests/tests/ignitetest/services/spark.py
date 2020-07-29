@@ -23,7 +23,8 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.ignite_config import IgniteConfig
+from ignitetest.services.utils.ignite_config import IgniteServerConfig
+
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 
@@ -41,10 +42,9 @@ class SparkService(IgniteAwareService):
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        IgniteAwareService.__init__(self, context, num_nodes, version, properties)
+        IgniteAwareService.__init__(self, context, num_nodes, False, version, properties)
 
         self.log_level = "DEBUG"
-        self.ignite_config = IgniteConfig()
 
         for node in self.nodes:
             self.logs["master_logs" + node.account.hostname] = {

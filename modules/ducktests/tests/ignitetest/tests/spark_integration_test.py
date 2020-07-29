@@ -17,11 +17,14 @@
 This module contains spark integration test.
 """
 
+from ducktape.mark import parametrize
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_spark_app import SparkIgniteApplicationService
 from ignitetest.services.spark import SparkService
 from ignitetest.tests.utils.ignite_test import IgniteTest
+from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 # pylint: disable=W0223
@@ -33,32 +36,29 @@ class SparkIntegrationTest(IgniteTest):
     3. Checks results of client application.
     """
 
-    @staticmethod
-    def properties(client_mode="false"):
-        """
-        :return: Rendered configuration properties.
-        """
-        return """
-            <property name="clientMode" value="{client_mode}"/>
-        """.format(client_mode=client_mode)
-
     def __init__(self, test_context):
         super(SparkIntegrationTest, self).__init__(test_context=test_context)
-        self.spark = SparkService(test_context, num_nodes=2)
-        self.ignite = IgniteService(test_context, num_nodes=1)
+        self.spark = None
+        self.ignite = None
 
     def setUp(self):
-        self.spark.start()
-        self.ignite.start()
+        pass
 
     def teardown(self):
         self.spark.stop()
         self.ignite.stop()
 
-    def test_spark_client(self):
+    @parametrize(version=str(DEV_BRANCH))
+    def test_spark_client(self, version):
         """
         Performs test scenario.
         """
+        self.spark = SparkService(self.test_context, version=version, num_nodes=2)
+        self.spark.start()
+
+        self.ignite = IgniteService(self.test_context, version=version, num_nodes=1)
+        self.ignite.start()
+
         self.stage("Starting sample data generator")
 
         IgniteApplicationService(
@@ -66,7 +66,7 @@ class SparkIntegrationTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test."
                             "SampleDataStreamerApplication",
             params="cache,1000",
-            properties=self.properties(client_mode="true")).run()
+            version=version).run()
 
         self.stage("Starting Spark application")
 
@@ -74,4 +74,5 @@ class SparkIntegrationTest(IgniteTest):
             self.test_context,
             "org.apache.ignite.internal.ducktest.tests.spark_integration_test.SparkApplication",
             params="spark://" + self.spark.nodes[0].account.hostname + ":7077",
+            version=version,
             timeout_sec=120).run()

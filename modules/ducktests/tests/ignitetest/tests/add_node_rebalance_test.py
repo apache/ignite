@@ -36,19 +36,6 @@ class AddNodeRebalanceTest(IgniteTest):
     DATA_AMOUNT = 1000000
     REBALANCE_TIMEOUT = 60
 
-    """
-    Test performs rebalance tests.
-    """
-
-    @staticmethod
-    def properties(client_mode="false"):
-        """
-        :return: Rendered configuration properties.
-        """
-        return """
-            <property name="clientMode" value="{client_mode}"/>
-        """.format(client_mode=client_mode)
-
     def __init__(self, test_context):
         super(AddNodeRebalanceTest, self).__init__(test_context=test_context)
 
@@ -81,7 +68,6 @@ class AddNodeRebalanceTest(IgniteTest):
         # This client just put some data to the cache.
         IgniteApplicationService(self.test_context,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
-                                 properties=self.properties(client_mode="true"),
                                  version=ignite_version,
                                  params="test-cache,%d" % self.DATA_AMOUNT,
                                  timeout_sec=self.PRELOAD_TIMEOUT).run()

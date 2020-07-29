@@ -25,9 +25,10 @@ class SparkIgniteApplicationService(IgniteAwareApplicationService):
     The Ignite-Spark application service.
     """
     # pylint: disable=R0913
-    def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
-        super(SparkIgniteApplicationService, self).__init__(context, java_class_name, version, properties, params,
-                                                            timeout_sec)
+    def __init__(self, context, java_class_name, client_mode=True, version=DEV_BRANCH, properties="", params="",
+                 timeout_sec=60):
+        super(SparkIgniteApplicationService, self).__init__(context, java_class_name, client_mode, version, properties,
+                                                            params, timeout_sec)
 
     def env(self):
         return IgniteAwareApplicationService.env(self) + \

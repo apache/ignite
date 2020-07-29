@@ -20,6 +20,7 @@ This module contains the base class to build Ignite aware application written on
 import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_config import IgniteClientConfig
 
 
 class IgniteAwareApplicationService(IgniteAwareService):
@@ -97,7 +98,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
                "-J-Dlog4j.configDebug=true " \
                "-J-Xmx1G " \
                "-J-ea " \
-               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false "
+               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false " + self.jvm_options
 
     def env(self):
         """

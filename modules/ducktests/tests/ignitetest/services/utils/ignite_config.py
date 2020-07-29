@@ -14,89 +14,55 @@
 # limitations under the License.
 
 """
-This module contains iggnite config classes and utilities.
+This module contains ignite config classes and utilities.
 """
 
+from jinja2 import FileSystemLoader, Environment
 
-class IgniteConfig:
+import os
+
+DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/config"
+DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
+
+
+class Config(object):
     """
-    Ignite configuration renderer.
+    Basic ignite configuration.
     """
-    def __init__(self, project="ignite"):
-        self.project = project
+    def __init__(self, path):
+        tmpl_dir = os.path.dirname(path)
+        tmpl_file = os.path.basename(path)
 
-    @staticmethod
-    def render(config_dir, work_dir, properties=""):
-        """
-        :param config_dir: Ignite config directory
-        :param work_dir: Ignite working directory.
-        :param properties: Additional xml string of properties.
-        :return: Rendered ignite configuration xml.
-        """
-        return """<?xml version="1.0" encoding="UTF-8"?>
+        tmpl_loader = FileSystemLoader(searchpath=tmpl_dir)
+        env = Environment(loader=tmpl_loader)
 
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-                            http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="workDirectory" value="{work_dir}" />
-        <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
-                <constructor-arg type="java.lang.String" value="{config_dir}/ignite-log4j.xml"/>
-            </bean>
-        </property>
-        {properties}
-    </bean>
-</beans>
-        """.format(config_dir=config_dir,
-                   work_dir=work_dir,
-                   properties=properties)
+        self.template = env.get_template(tmpl_file)
+        self.default_params = {}
 
-    @staticmethod
-    def render_log4j(work_dir):
-        """
-        :param work_dir: Ignite working directory.
-        :return: Rendered log4j configuration xml.
-        """
-        return """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
-    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
+    def render(self, **kwargs):
+        kwargs.update(self.default_params)
+        res = self.template.render(**kwargs)
+        return res
 
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.err"/>
 
-        <param name="Threshold" value="INFO"/>
+class IgniteServerConfig(Config):
+    def __init__(self, context):
+        path = DEFAULT_IGNITE_CONF
+        if 'ignite_server_config_path' in context.globals:
+            path = context.globals['ignite_server_config_path']
+        super(IgniteServerConfig, self).__init__(path)
 
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{{ISO8601}}][%-5p][%t][%c{{1}}] %m%n"/>
-        </layout>
-    </appender>
 
-    <category name="org.springframework">
-        <level value="WARN"/>
-    </category>
+class IgniteClientConfig(Config):
+    def __init__(self, context):
+        path = DEFAULT_IGNITE_CONF
+        if 'ignite_client_config_path' in context.globals:
+            path = context.globals['ignite_client_config_path']
+        super(IgniteClientConfig, self).__init__(path)
+        self.default_params.update(client_mode=True)
 
-    <category name="org.eclipse.jetty">
-        <level value="WARN"/>
-    </category>
 
-    <category name="org.eclipse.jetty.util.log">
-        <level value="ERROR"/>
-    </category>
+class IgniteLoggerConfig(Config):
+    def __init__(self):
+        super(IgniteLoggerConfig, self).__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
 
-    <category name="org.eclipse.jetty.util.component">
-        <level value="ERROR"/>
-    </category>
-
-    <category name="com.amazonaws">
-        <level value="WARN"/>
-    </category>
-
-    <root>
-        <level value="INFO"/>
-        <appender-ref ref="CONSOLE_ERR"/>
-    </root>
-</log4j:configuration>
-                """.format(work_dir=work_dir)

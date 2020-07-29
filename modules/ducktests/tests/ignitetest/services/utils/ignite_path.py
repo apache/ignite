@@ -33,8 +33,8 @@ class IgnitePath:
     SCRATCH_ROOT = "/mnt"
     IGNITE_INSTALL_ROOT = "/opt"
 
-    def __init__(self, project="ignite"):
-        self.project = project
+    def __init__(self, context):
+        self.project = context.globals.get("project", "ignite")
 
     def home(self, node_or_version, project=None):
         """
