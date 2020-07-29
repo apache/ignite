@@ -15,6 +15,8 @@
 
 
 from distutils.version import LooseVersion
+from ducktape.cluster.cluster import ClusterNode
+
 from ignitetest import __version__
 
 
@@ -56,14 +58,16 @@ def get_version(node=None):
     Return the version attached to the given node.
     Default to DEV_BRANCH if node or node.version is undefined (aka None)
     """
-    if node is not None and hasattr(node, "version") and node.version is not None:
-        return node.version
-    else:
-        return DEV_BRANCH
+    if isinstance(node, ClusterNode) and hasattr(node, 'version'):
+        return getattr(node, 'version')
+
+    if isinstance(node, str) or isinstance(node, unicode):
+        return node
+
+    return DEV_BRANCH
 
 
 DEV_BRANCH = IgniteVersion("dev")
-DEV_VERSION = IgniteVersion("2.9.0-SNAPSHOT")
 
 # 2.7.x versions
 V_2_7_6 = IgniteVersion("2.7.6")

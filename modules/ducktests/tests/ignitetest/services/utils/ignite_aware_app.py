@@ -17,6 +17,7 @@ import re
 from ducktape.services.service import Service
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_config import IgniteClientConfig
 
 """
 The base class to build Ignite aware application written on java.
@@ -24,9 +25,9 @@ The base class to build Ignite aware application written on java.
 
 
 class IgniteAwareApplicationService(IgniteAwareService):
-    def __init__(self, context, java_class_name, version, properties, params, timeout_sec,
+    def __init__(self, context, java_class_name, client_mode, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
-        super(IgniteAwareApplicationService, self).__init__(context, 1, version, properties)
+        super(IgniteAwareApplicationService, self).__init__(context, 1, client_mode, version, properties)
 
         self.servicejava_class_name = service_java_class_name
         self.java_class_name = java_class_name
@@ -87,7 +88,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
                "-J-Dlog4j.configDebug=true " \
                "-J-Xmx1G " \
                "-J-ea " \
-               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false "
+               "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false " + self.jvm_options
 
     def env(self):
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \

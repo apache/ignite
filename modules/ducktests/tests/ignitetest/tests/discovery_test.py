@@ -28,7 +28,6 @@ class DiscoveryTest(IgniteTest):
     NUM_NODES = 7
 
     CONFIG_TEMPLATE = """
-        <property name="clientMode" value="{{ client_mode | lower }}"/>
         {% if zookeeper_settings %}
         {% with zk = zookeeper_settings %}
         <property name="discoverySpi">
@@ -49,9 +48,9 @@ class DiscoveryTest(IgniteTest):
         self.servers = None
 
     @staticmethod
-    def properties(client_mode="false", zookeeper_settings=None):
+    def properties(zookeeper_settings=None):
         return Template(DiscoveryTest.CONFIG_TEMPLATE) \
-            .render(client_mode=client_mode, zookeeper_settings=zookeeper_settings)
+            .render(zookeeper_settings=zookeeper_settings)
 
     def setUp(self):
         pass

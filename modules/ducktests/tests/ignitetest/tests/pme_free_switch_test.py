@@ -27,9 +27,8 @@ class PmeFreeSwitchTest(IgniteTest):
     NUM_NODES = 3
 
     @staticmethod
-    def properties(client_mode="false"):
+    def properties():
         return """
-            <property name="clientMode" value="{client_mode}"/>
             <property name="cacheConfiguration">
                 <list>
                     <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -39,7 +38,7 @@ class PmeFreeSwitchTest(IgniteTest):
                     </bean>
                 </list>
             </property>
-        """.format(client_mode=client_mode)
+        """
 
     def __init__(self, test_context):
         super(PmeFreeSwitchTest, self).__init__(test_context=test_context)
@@ -73,7 +72,7 @@ class PmeFreeSwitchTest(IgniteTest):
         long_tx_streamer = IgniteApplicationService(
             self.test_context,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
-            properties=self.properties(client_mode="true"),
+            properties=self.properties(),
             params="test-cache",
             version=ignite_version)
 
@@ -84,7 +83,7 @@ class PmeFreeSwitchTest(IgniteTest):
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.SingleKeyTxStreamerApplication",
-            properties=self.properties(client_mode="true"),
+            properties=self.properties(),
             params="test-cache,1000",
             version=ignite_version)
 
