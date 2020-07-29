@@ -78,9 +78,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Asynchronous rollback marker for lock futures. */
     public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
@@ -112,13 +109,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    protected GridDhtTxLocalAdapter() {
-        // No-op.
-    }
 
     /** Tracing span. */
     private Span span = NoopSpan.INSTANCE;

@@ -147,9 +147,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final ThreadLocal<SimpleDateFormat> TIME_FORMAT =
         ThreadLocal.withInitial(() -> new SimpleDateFormat("HH:mm:ss.SSS"));
 
@@ -253,13 +250,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private long crdVer;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxLocal() {
-        // No-op.
-    }
 
     /**
      * @param ctx Cache registry.
