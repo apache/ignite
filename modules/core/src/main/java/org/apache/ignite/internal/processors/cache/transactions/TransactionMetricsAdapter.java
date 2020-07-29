@@ -328,11 +328,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     private Collection<GridNearTxLocal> nearTxs(long duration) {
         final long start = System.currentTimeMillis();
 
-        IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
-            @Override public GridNearTxLocal apply(IgniteInternalTx tx) {
-                return ((GridNearTxLocal)tx);
-            }
-        };
+        IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = tx -> ((GridNearTxLocal) tx);
 
         IgnitePredicate<IgniteInternalTx> pred = new IgnitePredicate<IgniteInternalTx>() {
             @Override public boolean apply(IgniteInternalTx tx) {

@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
 import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1007,11 +1006,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         if (cnt.decrementAndGet() == 0)
             comp.markInitialized();
 
-        fut.listen(new CI1<IgniteInternalFuture<ClusterStartNodeResult>>() {
-            @Override public void apply(IgniteInternalFuture<ClusterStartNodeResult> f) {
-                runNextNodeCallable(queue, comp, cnt);
-            }
-        });
+        fut.listen(future -> runNextNodeCallable(queue, comp, cnt));
 
         return true;
     }

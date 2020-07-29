@@ -105,7 +105,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -931,11 +930,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
-        return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryType>() {
-            @Override public BinaryType apply(BinaryMetadataHolder metaHolder) {
-                return metaHolder.metadata().wrap(binaryCtx);
-            }
-        });
+        return F.viewReadOnly(metadataLocCache.values(), metaHolder -> metaHolder.metadata().wrap(binaryCtx));
     }
 
     /**
@@ -943,11 +938,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @throws BinaryObjectException on error.
      */
     public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
-        return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryMetadata>() {
-            @Override public BinaryMetadata apply(BinaryMetadataHolder metaHolder) {
-                return metaHolder.metadata();
-            }
-        });
+        return F.viewReadOnly(metadataLocCache.values(), BinaryMetadataHolder::metadata);
     }
 
     /**

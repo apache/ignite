@@ -32,8 +32,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.NotNull;
@@ -126,11 +124,7 @@ import org.jetbrains.annotations.Nullable;
 
                 jobCtx.holdcc();
 
-                future.listen(new IgniteInClosure<IgniteFuture<R>>() {
-                    @Override public void apply(IgniteFuture<R> future) {
-                        jobCtx.callcc();
-                    }
-                });
+                future.listen(fut -> jobCtx.callcc());
 
                 return null;
             }

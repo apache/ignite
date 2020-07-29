@@ -531,52 +531,42 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
         if (rmtTransFactory != null) {
-            clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
-                @Override public CacheContinuousQueryHandler apply() {
-                    return new CacheContinuousQueryHandlerV3(
-                        cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                        locTransLsnr,
-                        securityAwareFilterFactory(rmtFilterFactory),
-                        securityAwareTransformerFactory(rmtTransFactory),
-                        true,
-                        false,
-                        !includeExpired,
-                        false);
-                }
-            };
+            clsr = () -> new CacheContinuousQueryHandlerV3(
+                cctx.name(),
+                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                locTransLsnr,
+                securityAwareFilterFactory(rmtFilterFactory),
+                securityAwareTransformerFactory(rmtTransFactory),
+                true,
+                false,
+                !includeExpired,
+                false);
         }
         else if (rmtFilterFactory != null) {
-            clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
-                @Override public CacheContinuousQueryHandler apply() {
-                    return new CacheContinuousQueryHandlerV2(
-                        cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                        locLsnr,
-                        securityAwareFilterFactory(rmtFilterFactory),
-                        true,
-                        false,
-                        !includeExpired,
-                        false,
-                        null);
-                }
-            };
+            clsr = () -> new CacheContinuousQueryHandlerV2(
+                cctx.name(),
+                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                locLsnr,
+                securityAwareFilterFactory(rmtFilterFactory),
+                true,
+                false,
+                !includeExpired,
+                false,
+                null);;
         }
         else {
-            clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
-                @Override public CacheContinuousQueryHandler apply() {
-                    assert locTransLsnr == null;
+            clsr = () -> {
+                assert locTransLsnr == null;
 
-                    return new CacheContinuousQueryHandler(
-                        cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                        locLsnr,
-                        securityAwareFilter(rmtFilter),
-                        true,
-                        false,
-                        !includeExpired,
-                        false);
-                }
+                return new CacheContinuousQueryHandler(
+                    cctx.name(),
+                    TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                    locLsnr,
+                    securityAwareFilter(rmtFilter),
+                    true,
+                    false,
+                    !includeExpired,
+                    false);
             };
         }
 
@@ -612,19 +602,15 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
     {
         return executeQuery0(
             locLsnr,
-            new IgniteOutClosure<CacheContinuousQueryHandler>() {
-                @Override public CacheContinuousQueryHandler apply() {
-                    return new CacheContinuousQueryHandler(
-                        cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                        locLsnr,
-                        rmtFilter,
-                        true,
-                        sync,
-                        true,
-                        ignoreClassNotFound);
-                }
-            },
+            () -> new CacheContinuousQueryHandler(
+                cctx.name(),
+                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                locLsnr,
+                rmtFilter,
+                true,
+                sync,
+                true,
+                ignoreClassNotFound),
             ContinuousQuery.DFLT_PAGE_SIZE,
             ContinuousQuery.DFLT_TIME_INTERVAL,
             ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
@@ -1111,51 +1097,49 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
             routineId = executeQuery0(
                 locLsnr,
-                new IgniteOutClosure<CacheContinuousQueryHandler>() {
-                    @Override public CacheContinuousQueryHandler apply() {
-                        CacheContinuousQueryHandler hnd;
-                        Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
+                () -> {
+                    CacheContinuousQueryHandler hnd;
+                    Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
 
-                        if (rmtFilterFactory != null)
-                            hnd = new CacheContinuousQueryHandlerV2(
-                                cctx.name(),
-                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                                locLsnr,
-                                securityAwareFilterFactory(rmtFilterFactory),
-                                cfg.isOldValueRequired(),
-                                cfg.isSynchronous(),
-                                false,
-                                false,
-                                types0);
-                        else {
-                            JCacheQueryRemoteFilter jCacheFilter;
+                    if (rmtFilterFactory != null)
+                        hnd = new CacheContinuousQueryHandlerV2(
+                            cctx.name(),
+                            TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                            locLsnr,
+                            securityAwareFilterFactory(rmtFilterFactory),
+                            cfg.isOldValueRequired(),
+                            cfg.isSynchronous(),
+                            false,
+                            false,
+                            types0);
+                    else {
+                        JCacheQueryRemoteFilter jCacheFilter;
 
-                            CacheEntryEventFilter filter = null;
+                        CacheEntryEventFilter filter = null;
 
-                            if (rmtFilterFactory != null) {
-                                filter = rmtFilterFactory.create();
+                        if (rmtFilterFactory != null) {
+                            filter = rmtFilterFactory.create();
 
-                                if (!(filter instanceof Serializable))
-                                    throw new IgniteException("Topology has nodes of the old versions. " +
-                                        "In this case EntryEventFilter must implement java.io.Serializable " +
-                                        "interface. Filter: " + filter);
-                            }
-
-                            jCacheFilter = new JCacheQueryRemoteFilter(filter, types0);
-
-                            hnd = new CacheContinuousQueryHandler(
-                                cctx.name(),
-                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                                locLsnr,
-                                securityAwareFilter(jCacheFilter),
-                                cfg.isOldValueRequired(),
-                                cfg.isSynchronous(),
-                                false,
-                                false);
+                            if (!(filter instanceof Serializable))
+                                throw new IgniteException("Topology has nodes of the old versions. " +
+                                    "In this case EntryEventFilter must implement java.io.Serializable " +
+                                    "interface. Filter: " + filter);
                         }
 
-                        return hnd;
+                        jCacheFilter = new JCacheQueryRemoteFilter(filter, types0);
+
+                        hnd = new CacheContinuousQueryHandler(
+                            cctx.name(),
+                            TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                            locLsnr,
+                            securityAwareFilter(jCacheFilter),
+                            cfg.isOldValueRequired(),
+                            cfg.isSynchronous(),
+                            false,
+                            false);
                     }
+
+                    return hnd;
                 },
                 ContinuousQuery.DFLT_PAGE_SIZE,
                 ContinuousQuery.DFLT_TIME_INTERVAL,

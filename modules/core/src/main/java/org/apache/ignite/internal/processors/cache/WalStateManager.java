@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -368,11 +367,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    synchronized (mux) {
-                        userFuts.remove(opId);
-                    }
+            fut.listen(future -> {
+                synchronized (mux) {
+                    userFuts.remove(opId);
                 }
             });
 
@@ -431,7 +428,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (!locParts.isEmpty() && cnt == locParts.size()) {
                 grp.localWalEnabled(false, true);
-
                 names.add(grp.cacheOrGroupName());
             }
         }

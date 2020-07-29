@@ -1029,11 +1029,9 @@ public class CacheGroupContext {
         final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
         if (procC != null) {
-            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    for (Runnable c : procC)
-                        c.run();
-                }
+            ctx.kernalContext().closure().runLocalSafe(() -> {
+                for (Runnable c : procC)
+                    c.run();
             });
         }
     }

@@ -60,11 +60,7 @@ class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFut
     /** {@inheritDoc} */
     @Override public void apply(final IgniteInternalFuture<T> t) {
         if (cbExec != null) {
-            cbExec.execute(new Runnable() {
-                @Override public void run() {
-                    applyCallback(t);
-                }
-            });
+            cbExec.execute(() -> applyCallback(t));
         }
         else
             applyCallback(t);

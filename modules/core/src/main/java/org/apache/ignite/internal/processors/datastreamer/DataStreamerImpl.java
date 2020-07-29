@@ -216,25 +216,23 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Closure to remove from active futures. */
     @GridToStringExclude
-    private final IgniteInClosure<IgniteInternalFuture<?>> rmvActiveFut = new IgniteInClosure<IgniteInternalFuture<?>>() {
-        @Override public void apply(IgniteInternalFuture<?> t) {
-            boolean rmv = activeFuts.remove(t);
+    private final IgniteInClosure<IgniteInternalFuture<?>> rmvActiveFut = future -> {
+        boolean rmv = activeFuts.remove(future);
 
-            assert rmv;
+        assert rmv;
 
-            Throwable err = t.error();
+        Throwable err = future.error();
 
-            if (err != null && !(err instanceof IgniteClientDisconnectedCheckedException)) {
-                LT.error(log, t.error(), "DataStreamer operation failed.", true);
+        if (err != null && !(err instanceof IgniteClientDisconnectedCheckedException)) {
+            LT.error(log, future.error(), "DataStreamer operation failed.", true);
 
-                failCntr.increment();
+            failCntr.increment();
 
-                synchronized (DataStreamerImpl.this) {
-                    if (cancellationReason == null)
-                        cancellationReason = err;
+            synchronized (DataStreamerImpl.this) {
+                if (cancellationReason == null)
+                    cancellationReason = err;
 
-                    cancelled = true;
-                }
+                cancelled = true;
             }
         }
     };
@@ -940,108 +938,106 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     final Collection<DataStreamerEntry> entriesForNode = e.getValue();
 
-                    IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> t) {
-                            try {
-                                t.get();
+                    IgniteInClosure<IgniteInternalFuture<?>> lsnr = future -> {
+                        try {
+                            future.get();
 
-                                if (activeKeys != null) {
-                                    for (DataStreamerEntry e : entriesForNode)
-                                        activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+                            if (activeKeys != null) {
+                                for (DataStreamerEntry entry : entriesForNode)
+                                    activeKeys.remove(new KeyCacheObjectWrapper(entry.getKey()));
 
-                                    if (activeKeys.isEmpty())
-                                        resFut.onDone();
-                                }
-                                else {
-                                    assert entriesForNode.size() == 1;
-
-                                    // That has been a single key,
-                                    // so complete result future right away.
+                                if (activeKeys.isEmpty())
                                     resFut.onDone();
-                                }
                             }
-                            catch (IgniteClientDisconnectedCheckedException e1) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                            else {
+                                assert entriesForNode.size() == 1;
 
-                                resFut.onDone(e1);
+                                // That has been a single key,
+                                // so complete result future right away.
+                                resFut.onDone();
                             }
-                            catch (IgniteCheckedException e1) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                        }
+                        catch (IgniteClientDisconnectedCheckedException e1) {
+                            if (log.isDebugEnabled())
+                                log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                                if (cancelled) {
-                                    resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
-                                        DataStreamerImpl.this, e1));
-                                }
-                                else if (remaps + 1 > maxRemapCnt) {
-                                    resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
-                                        + remaps, e1));
-                                }
-                                else if (X.hasCause(e1, IgniteClusterReadOnlyException.class)) {
-                                    resFut.onDone(new IgniteClusterReadOnlyException(
-                                        "Failed to finish operation. Cluster in read-only mode!",
-                                        e1
-                                    ));
-                                }
-                                else {
-                                    try {
-                                        remapSem.acquire();
+                            resFut.onDone(e1);
+                        }
+                        catch (IgniteCheckedException e1) {
+                            if (log.isDebugEnabled())
+                                log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                                        final Runnable r = new Runnable() {
-                                            @Override public void run() {
-                                                try {
-                                                    if (cancelled)
-                                                        closedException();
+                            if (cancelled) {
+                                resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
+                                    DataStreamerImpl.this, e1));
+                            }
+                            else if (remaps + 1 > maxRemapCnt) {
+                                resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
+                                    + remaps, e1));
+                            }
+                            else if (X.hasCause(e1, IgniteClusterReadOnlyException.class)) {
+                                resFut.onDone(new IgniteClusterReadOnlyException(
+                                    "Failed to finish operation. Cluster in read-only mode!",
+                                    e1
+                                ));
+                            }
+                            else {
+                                try {
+                                    remapSem.acquire();
 
-                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1, node, topVer);
-                                                }
-                                                catch (Throwable ex) {
-                                                    resFut.onDone(
-                                                        new IgniteCheckedException("DataStreamer remapping failed. ", ex));
-                                                }
-                                                finally {
-                                                    remapSem.release();
-                                                }
+                                    final Runnable r = new Runnable() {
+                                        @Override public void run() {
+                                            try {
+                                                if (cancelled)
+                                                    closedException();
+
+                                                load0(entriesForNode, resFut, activeKeys, remaps + 1, node, topVer);
                                             }
-                                        };
+                                            catch (Throwable ex) {
+                                                resFut.onDone(
+                                                    new IgniteCheckedException("DataStreamer remapping failed. ", ex));
+                                            }
+                                            finally {
+                                                remapSem.release();
+                                            }
+                                        }
+                                    };
 
-                                        dataToRemap.add(r);
+                                    dataToRemap.add(r);
 
-                                        if (!remapOwning.get() && remapOwning.compareAndSet(false, true)) {
-                                            ctx.closure().callLocalSafe(new GPC<Boolean>() {
-                                                @Override public Boolean call() {
-                                                    boolean locked = true;
+                                    if (!remapOwning.get() && remapOwning.compareAndSet(false, true)) {
+                                        ctx.closure().callLocalSafe(new GPC<Boolean>() {
+                                            @Override public Boolean call() {
+                                                boolean locked = true;
 
-                                                    while (locked || !dataToRemap.isEmpty()) {
-                                                        if (!locked && !remapOwning.compareAndSet(false, true))
-                                                            return false;
+                                                while (locked || !dataToRemap.isEmpty()) {
+                                                    if (!locked && !remapOwning.compareAndSet(false, true))
+                                                        return false;
 
-                                                        try {
-                                                            Runnable r = dataToRemap.poll();
+                                                    try {
+                                                        Runnable r = dataToRemap.poll();
 
-                                                            if (r != null)
-                                                                r.run();
-                                                        }
-                                                        finally {
-                                                            if (!dataToRemap.isEmpty())
-                                                                locked = true;
-                                                            else {
-                                                                remapOwning.set(false);
+                                                        if (r != null)
+                                                            r.run();
+                                                    }
+                                                    finally {
+                                                        if (!dataToRemap.isEmpty())
+                                                            locked = true;
+                                                        else {
+                                                            remapOwning.set(false);
 
-                                                                locked = false;
-                                                            }
+                                                            locked = false;
                                                         }
                                                     }
-
-                                                    return true;
                                                 }
-                                            }, true);
-                                        }
+
+                                                return true;
+                                            }
+                                        }, true);
                                     }
-                                    catch (InterruptedException e2) {
-                                        resFut.onDone(e2);
-                                    }
+                                }
+                                catch (InterruptedException e2) {
+                                    resFut.onDone(e2);
                                 }
                             }
                         }
@@ -1561,12 +1557,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC =
-            new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> t) {
-                    signalTaskFinished(t);
-                }
-            };
+        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = future -> signalTaskFinished(future);
 
         /**
          * @param node Node.
@@ -1837,22 +1828,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         final GridFutureAdapter waitFut =
                             lockTop ? cctx.mvcc().addDataStreamerFuture(streamerFutTopVer) : null;
 
-                        callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                            @Override public void apply(IgniteInternalFuture<Object> t) {
-                                try {
-                                    boolean rmv = locFuts.remove(t);
+                        callFut.listen(future -> {
+                            try {
+                                boolean rmv = locFuts.remove(future);
 
-                                    assert rmv;
+                                assert rmv;
 
-                                    curFut.onDone(t.get());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    curFut.onDone(e);
-                                }
-                                finally {
-                                    if (waitFut != null)
-                                        waitFut.onDone();
-                                }
+                                curFut.onDone(future.get());
+                            }
+                            catch (IgniteCheckedException e) {
+                                curFut.onDone(e);
+                            }
+                            finally {
+                                if (waitFut != null)
+                                    waitFut.onDone();
                             }
                         });
                     }
@@ -1864,11 +1853,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 if (topWaitFut != null) {
                     // Need call 'listen' after topology read lock is released.
-                    topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(entries, reqTopVer, curFut, plc);
-                        }
-                    });
+                    topWaitFut.listen(future -> localUpdate(entries, reqTopVer, curFut, plc));
                 }
             }
             catch (Throwable ex) {

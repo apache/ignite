@@ -84,26 +84,24 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
         long idleQryCurCheckFreq = ctx.config().getConnectorConfiguration().getIdleQueryCursorCheckFrequency();
 
-        ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                long time = U.currentTimeMillis();
+        ctx.timeout().schedule(() -> {
+            long time = U.currentTimeMillis();
 
-                for (Map.Entry<Long, QueryCursorIterator> e : qryCurs.entrySet()) {
-                    QueryCursorIterator qryCurIt = e.getValue();
+            for (Map.Entry<Long, QueryCursorIterator> e : qryCurs.entrySet()) {
+                QueryCursorIterator qryCurIt = e.getValue();
 
-                    long createTime = qryCurIt.timestamp();
+                long createTime = qryCurIt.timestamp();
 
-                    if (time > createTime + idleQryCurTimeout && qryCurIt.tryLock()) {
-                        try {
-                            qryCurIt.timestamp(-1);
+                if (time > createTime + idleQryCurTimeout && qryCurIt.tryLock()) {
+                    try {
+                        qryCurIt.timestamp(-1);
 
-                            qryCurs.remove(e.getKey(), qryCurIt);
+                        qryCurs.remove(e.getKey(), qryCurIt);
 
-                            qryCurIt.close();
-                        }
-                        finally {
-                            qryCurIt.unlock();
-                        }
+                        qryCurIt.close();
+                    }
+                    finally {
+                        qryCurIt.unlock();
                     }
                 }
             }

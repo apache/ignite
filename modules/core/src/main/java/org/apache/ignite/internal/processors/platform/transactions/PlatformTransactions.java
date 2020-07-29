@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
@@ -295,18 +294,16 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_LOCAL_ACTIVE_TX:
                 Collection<Transaction> activeTxs = txs.localActiveTransactions();
 
-                PlatformUtils.writeCollection(writer, activeTxs, new PlatformWriterClosure<Transaction>() {
-                    @Override public void write(BinaryRawWriterEx writer, Transaction tx) {
-                        writer.writeLong(registerTx(tx));
+                PlatformUtils.writeCollection(writer, activeTxs, (wr, tx) -> {
+                    wr.writeLong(registerTx(tx));
 
-                        writer.writeInt(tx.concurrency().ordinal());
+                    wr.writeInt(tx.concurrency().ordinal());
 
-                        writer.writeInt(tx.isolation().ordinal());
+                    wr.writeInt(tx.isolation().ordinal());
 
-                        writer.writeLong(tx.timeout());
-                        
-                        writer.writeString(tx.label());
-                    }
+                    wr.writeLong(tx.timeout());
+
+                    wr.writeString(tx.label());
                 });
 
                 break;

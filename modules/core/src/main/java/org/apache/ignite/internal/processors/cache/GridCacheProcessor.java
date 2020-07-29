@@ -165,9 +165,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -1551,11 +1549,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> cacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            });
+            desc -> desc.cacheConfiguration().getName());
     }
 
     /**
@@ -1605,16 +1599,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> publicCacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache();
-                }
-            }
+            desc -> desc.cacheConfiguration().getName(),
+            desc -> desc.cacheType().userCache()
         );
     }
 
@@ -1625,16 +1611,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<String> publicAndDsCacheNames() {
         return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES;
-                }
-            }
+            desc -> desc.cacheConfiguration().getName(),
+            desc -> desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES
         );
     }
 
@@ -3606,31 +3584,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 
-        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, byte[]>>>() {
-            @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> fut) {
-                try {
-                    Collection<byte[]> grpKeys = fut.result().get1();
-                    byte[] masterKeyDigest = fut.result().get2();
+        genEncKeyFut.listen(future -> {
+            try {
+                Collection<byte[]> grpKeys = future.result().get1();
+                byte[] masterKeyDigest = future.result().get2();
 
-                    if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
-                        res.onDone(false, fut.error());
+                if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
+                    res.onDone(false, future.error());
 
-                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
+                IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
 
-                    dynStartCacheFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                            try {
-                                res.onDone(fut.get(), fut.error());
-                            }
-                            catch (IgniteCheckedException e) {
-                                res.onDone(false, e);
-                            }
-                        }
-                    });
-                }
-                catch (Exception e) {
-                    res.onDone(false, e);
-                }
+                dynStartCacheFut.listen(fut -> {
+                    try {
+                        res.onDone(fut.get(), fut.error());
+                    }
+                    catch (IgniteCheckedException e) {
+                        res.onDone(false, e);
+                    }
+                });
+            }
+            catch (Exception e) {
+                res.onDone(false, e);
             }
         });
 

@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCache
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
@@ -136,16 +135,14 @@ public class PlatformConfigurationUtils {
             writer.writeBoolean(true);
 
             PlatformUtils.writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                    @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
-                        writer.writeString(typ.getTypeName());
-                        writer.writeString(typ.getNameMapper());
-                        writer.writeString(typ.getIdMapper());
-                        writer.writeString(typ.getSerializer());
-                        writer.writeString(typ.getAffinityKeyFieldName());
-                        writer.writeObject(typ.getKeepDeserialized());
-                        writer.writeBoolean(typ.isEnum());
-                    }
+                (lambdaWriter, typ) -> {
+                    lambdaWriter.writeString(typ.getTypeName());
+                    lambdaWriter.writeString(typ.getNameMapper());
+                    lambdaWriter.writeString(typ.getIdMapper());
+                    lambdaWriter.writeString(typ.getSerializer());
+                    lambdaWriter.writeString(typ.getAffinityKeyFieldName());
+                    lambdaWriter.writeObject(typ.getKeepDeserialized());
+                    lambdaWriter.writeBoolean(typ.isEnum());
                 });
 
             PlatformUtils.writeNullableCollection(writer, binaryCfg.getTypes());

@@ -48,10 +48,6 @@ public class AsyncFutureListener<V> implements IgniteInClosure<IgniteFuture<V>> 
 
     /** {@inheritDoc} */
     @Override public void apply(final IgniteFuture<V> fut) {
-        exec.execute(new Runnable() {
-            @Override public void run() {
-                lsnr.apply(fut);
-            }
-        });
+        exec.execute(() -> lsnr.apply(fut));
     }
 }

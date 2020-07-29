@@ -31,7 +31,6 @@ import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -59,11 +58,7 @@ public class DirectMessageReader implements MessageReader {
      * @param protoVer Protocol version.
      */
     public DirectMessageReader(final MessageFactory msgFactory, final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-            @Override public StateItem apply() {
-                return new StateItem(msgFactory, protoVer);
-            }
-        });
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(msgFactory, protoVer));
 
         this.protoVer = protoVer;
     }

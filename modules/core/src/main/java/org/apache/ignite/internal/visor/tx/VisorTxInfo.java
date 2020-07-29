@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -290,18 +289,10 @@ public class VisorTxInfo extends VisorDataTransferObject {
             ", timeout=" + getTimeout() +
             ", size=" + getSize() +
             ", dhtNodes=" + (getPrimaryNodes() == null ? "N/A" :
-            F.transform(getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                @Override public String apply(UUID id) {
-                    return U.id8(id);
-                }
-            })) +
+            F.transform(getPrimaryNodes(), U::id8)) +
             ", nearXid=" + getNearXid() +
             ", parentNodeIds=" + (getMasterNodeIds() == null ? "N/A" :
-            F.transform(getMasterNodeIds(), new IgniteClosure<UUID, String>() {
-                @Override public String apply(UUID id) {
-                    return U.id8(id);
-                }
-            })) +
+            F.transform(getMasterNodeIds(), U::id8)) +
             ']';
     }
 
