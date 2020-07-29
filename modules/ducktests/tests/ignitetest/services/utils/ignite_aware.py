@@ -50,9 +50,7 @@ class IgniteAwareService(BackgroundThreadService):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
         self.path = IgnitePath(context)
-        self.jvm_options = ""#context.globals.get("jvm_opts", "")
-        
-        self.logger.info("jvm_opts is %s", context.globals.get("jvm_opts"))
+        self.jvm_options = context.globals.get("jvm_opts", "")
 
         self.log_level = "DEBUG"
         self.properties = properties
