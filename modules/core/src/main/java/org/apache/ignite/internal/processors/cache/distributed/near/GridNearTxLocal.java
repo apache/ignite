@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;

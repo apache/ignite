@@ -337,7 +337,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
-        taskName = needTaskName? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
+        taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
     }
 
     /**
@@ -393,7 +393,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
-        taskName = needTaskName? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
+        taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
     }
 
     /**
