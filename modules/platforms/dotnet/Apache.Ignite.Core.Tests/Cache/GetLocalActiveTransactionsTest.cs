@@ -20,14 +20,43 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
+    using NUnit.Framework.Constraints;
 
     /// <summary>
     /// 
     /// </summary>
-    public class GetLocalActiveTransactionsTest : CacheAbstractTest
+    public class GetLocalActiveTransactionsTest : TestBase
     {
+        private const string IgniteInstanceName = "GetLocalActiveTransactionsTest";
+
+        /// <summary>
+        /// Fixture setup.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void SetUp()
+        {
+            IgniteConfiguration cfg = new IgniteConfiguration(GetConfig())
+            {
+                IgniteInstanceName = IgniteInstanceName
+            };
+
+            Ignition.Start(cfg);
+        }
+
+
+        /// <summary>
+        /// Fixture teardown.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests that transaction properties are applied and propagated properly.
         /// </summary>
@@ -72,7 +101,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test that rollbacks.
         /// </summary>
         [Test]
-        public void TestRollbacks()
+        [TestCase(true)]
+        [TestCase(false)]
+        public void TestRollbacks(bool async)
         {
             var cache = Cache();
             var transactions = cache.Ignite.GetTransactions();
@@ -86,13 +117,20 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache.Put(1, 10);
                 cache.Put(2, 20);
 
-                local.Rollback();
+                if (async)
+                {
+                    local.RollbackAsync().Wait();
+                }
+                else
+                {
+                    local.Rollback();
+                }
 
                 Assert.AreEqual(1, cache.Get(1));
                 Assert.AreEqual(2, cache.Get(2));
             }
         }
-        
+
         /// <summary>
         /// Test that Dispose does not end transaction.
         /// </summary>
@@ -118,9 +156,57 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(10, cache.Get(1));
                 Assert.AreEqual(200, cache.Get(2));
             }
-            
+
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
+        }
+
+        /// <summary>
+        /// Test that operation throws.
+        /// </summary>
+        [Test]
+        public void TestThrows()
+        {
+            var cache = Cache();
+            var transactions = cache.Ignite.GetTransactions();
+
+            Action<object> dummy = obj => { };
+            Action<ITransaction>[] actions =
+            {
+                t => t.Commit(),
+                t => t.CommitAsync(),
+                t => dummy(t.StartTime),
+                t => dummy(t.ThreadId),
+                t => t.AddMeta("test", "test"),
+                t => t.Meta<string>("test"),
+                t => t.RemoveMeta<string>("test"),
+                t => t.SetRollbackonly()
+            };
+
+            using (transactions.TxStart())
+            {
+                var local = transactions.GetLocalActiveTransactions().Single();
+                var constraint = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
+                    .And.Message.EqualTo("Operation is not supported by rollback only transaction."));
+                foreach (var action in actions)
+                {
+                    Assert.Throws(constraint, () => action(local));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets cache.
+        /// </summary>
+        private ICache<int, int> Cache()
+        {
+            var ignite = Ignition.GetIgnite(IgniteInstanceName);
+
+            return ignite.GetOrCreateCache<int, int>(new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                AtomicityMode = CacheAtomicityMode.Transactional
+            });
         }
     }
 }

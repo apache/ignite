@@ -317,6 +317,16 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Get transaction current state.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        /// <returns>Transaction current state.</returns>
+        internal TransactionState TxState(TransactionRollbackOnlyProxy tx)
+        {
+            return (TransactionState) DoOutInOp(OpState, tx.Id);
+        }
+
+        /// <summary>
         /// Set transaction rollback-only flag.
         /// </summary>
         /// <param name="tx">Transaction.</param>

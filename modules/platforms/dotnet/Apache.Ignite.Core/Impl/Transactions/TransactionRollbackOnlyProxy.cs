@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         public TransactionState State
         {
-            get { throw GetInvalidOperationException(); }
+            get { return _txs.TxState(this); }
         }
 
         public TimeSpan Timeout { get; private set; }
@@ -100,19 +100,19 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public bool SetRollbackonly()
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public void Commit()
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public Task CommitAsync()
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         /** <inheritDoc /> */
@@ -140,18 +140,18 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void AddMeta<TV>(string name, TV val)
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         public TV Meta<TV>(string name)
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         /** <inheritDoc /> */
         public TV RemoveMeta<TV>(string name)
         {
-            throw new InvalidOperationException();
+            throw GetInvalidOperationException();
         }
 
         /** <inheritDoc /> */
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         private static InvalidOperationException GetInvalidOperationException()
         {
-            return new InvalidOperationException("Operation is not supported by readonly transaction");
+            return new InvalidOperationException("Operation is not supported by rollback only transaction.");
         }
     }
 }
