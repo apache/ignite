@@ -85,7 +85,7 @@ public class SchedulerRemoteSecurityContextCheckTest extends AbstractRemoteSecur
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeCompute(){
+    @Override protected void beforeCompute() {
         latch = new CountDownLatch(2);
     }
 
