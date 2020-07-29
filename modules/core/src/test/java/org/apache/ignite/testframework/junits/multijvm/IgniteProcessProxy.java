@@ -88,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -188,11 +187,7 @@ public class IgniteProcessProxy implements IgniteEx {
             params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
-            new IgniteInClosure<String>() {
-                @Override public void apply(String s) {
-                    IgniteProcessProxy.this.log.info(s);
-                }
-            },
+            s -> IgniteProcessProxy.this.log.info(s),
             null,
             System.getProperty(TEST_MULTIJVM_JAVA_HOME),
             filteredJvmArgs, // JVM Args.

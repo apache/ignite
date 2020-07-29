@@ -17,12 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -72,12 +70,10 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
 
                 final AtomicInteger gridIdx = new AtomicInteger(1);
 
-                GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                        @Nullable @Override public Object call() throws Exception {
-                            startClientGrid(gridIdx.getAndIncrement());
+                GridTestUtils.runMultiThreaded(() -> {
+                        startClientGrid(gridIdx.getAndIncrement());
 
-                            return null;
-                        }
+                        return null;
                     },
                     TOP_SIZE,
                     "grid-starter-" + getName()

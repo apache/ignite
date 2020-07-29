@@ -92,16 +92,14 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         assertEquals(50, srvCache.localSize());
 
-        reconnectClientNode(client, srv, new Runnable() {
-            @Override public void run() {
-                try {
-                    client.dataStreamer(CACHE_NAME);
+        reconnectClientNode(client, srv, () -> {
+            try {
+                client.dataStreamer(CACHE_NAME);
 
-                    fail();
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    assertNotNull(e.reconnectFuture());
-                }
+                fail();
+            }
+            catch (IgniteClientDisconnectedException e) {
+                assertNotNull(e.reconnectFuture());
             }
         });
 

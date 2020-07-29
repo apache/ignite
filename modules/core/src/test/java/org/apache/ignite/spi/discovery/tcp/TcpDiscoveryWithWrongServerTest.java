@@ -86,22 +86,20 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
         srvSocks.add(srvSock);
 
-        new GridTestThread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Socket clientSock = srvSock.accept();
+        new GridTestThread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Socket clientSock = srvSock.accept();
 
-                        connCnt.getAndIncrement();
+                    connCnt.getAndIncrement();
 
-                        // Create a new thread for socket connection.
-                        new GridTestThread(workerFactory.newWorker(clientSock)).start();
-                    }
+                    // Create a new thread for socket connection.
+                    new GridTestThread(workerFactory.newWorker(clientSock)).start();
                 }
-                catch (Exception e) {
-                    if (!srvSock.isClosed())
-                        log.error("Unexpected error", e);
-                }
+            }
+            catch (Exception e) {
+                if (!srvSock.isClosed())
+                    log.error("Unexpected error", e);
             }
         }).start();
     }

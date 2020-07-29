@@ -62,14 +62,12 @@ public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
             final CountDownLatch latch = new CountDownLatch(1);
 
             new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        U.error(log, "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
+                () -> {
+                    U.error(log, "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, null, true);
+                    IgnitionEx.stop(ignite.name(), true, null, true);
 
-                        latch.countDown();
-                    }
+                    latch.countDown();
                 },
                 "node-stopper"
             ).start();

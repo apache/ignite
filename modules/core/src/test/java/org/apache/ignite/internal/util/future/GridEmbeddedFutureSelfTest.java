@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.C2;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -55,12 +54,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<Integer> cur = fut;
 
         for (int i = 0; i < DFLT_MAX_CONCURRENT_ASYNC_OPS; i++) {
-            cur = new GridEmbeddedFuture<>(cur,
-                new IgniteBiClosure<Integer, Exception, IgniteInternalFuture<Integer>>() {
-                    @Override public IgniteInternalFuture<Integer> apply(Integer o, Exception e) {
-                        return new GridFinishedFuture<>(o);
-                    }
-                });
+            cur = new GridEmbeddedFuture<>(cur, (o, e) -> new GridFinishedFuture<>(o));
         }
 
         fut.onDone(1);

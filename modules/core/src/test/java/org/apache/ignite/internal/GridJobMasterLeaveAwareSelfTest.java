@@ -148,17 +148,15 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         jobLatch.await();
 
         // Count down the latch in a separate thread.
-        new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    U.sleep(500);
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    // No-op.
-                }
-
-                latch.countDown();
+        new Thread(() -> {
+            try {
+                U.sleep(500);
             }
+            catch (IgniteInterruptedCheckedException ignore) {
+                // No-op.
+            }
+
+            latch.countDown();
         }).start();
 
         stopGrid(0, true);

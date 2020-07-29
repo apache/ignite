@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -85,12 +84,10 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final ErrorService svc = ignite.services().serviceProxy(name, ErrorService.class, false);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                svc.go();
+        GridTestUtils.assertThrows(log, () -> {
+            svc.go();
 
-                return null;
-            }
+            return null;
         }, ErrorServiceException.class, "Test exception");
 
     }

@@ -167,20 +167,18 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
 
         long start = System.currentTimeMillis();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (cntr.getAndIncrement() < msgCnt) {
-                        GridTestMessage msg = new GridTestMessage(locNode.id(), msgId.getAndIncrement(), 0);
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                while (cntr.getAndIncrement() < msgCnt) {
+                    GridTestMessage msg = new GridTestMessage(locNode.id(), msgId.getAndIncrement(), 0);
 
-                        msg.payload(new byte[13 * 1024]);
+                    msg.payload(new byte[13 * 1024]);
 
-                        spi.sendMessage(remoteNode, msg);
-                    }
+                    spi.sendMessage(remoteNode, msg);
                 }
-                catch (IgniteException e) {
-                    fail("Unable to send message: " + e.getMessage());
-                }
+            }
+            catch (IgniteException e) {
+                fail("Unable to send message: " + e.getMessage());
             }
         }, THREAD_CNT, "message-sender");
 
