@@ -105,7 +105,12 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointFrequency(10000000)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setInitialSize(256 * 1024 * 1024)
+                        .setMaxSize(256 * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                )
         );
 
         if (srvLog != null)

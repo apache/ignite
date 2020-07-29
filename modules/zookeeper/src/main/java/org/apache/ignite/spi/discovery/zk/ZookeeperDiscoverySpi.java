@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -55,6 +54,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.zk.internal.ZkIgnitePaths;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryStatistics;
@@ -452,7 +452,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             zkRootPath = zkRootPath.substring(0, zkRootPath.length() - 1);
 
         try {
-            PathUtils.validatePath(zkRootPath);
+            ZkIgnitePaths.validatePath(zkRootPath);
         }
         catch (IllegalArgumentException e) {
             throw new IgniteSpiException("zkRootPath is invalid: " + zkRootPath, e);
