@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <list type="bullet">
     ///     <item><description><see cref="Rollback"/>.</description></item>
     ///     <item><description><see cref="RollbackAsync"/>.</description></item>
-    ///     <item><description><see cref="Dispose"/>.</description></item>
+    ///     <item><description><see cref="ITransaction.Dispose"/>.</description></item>
     ///     <item><description>Get <see cref="NodeId"/>.</description></item>
     ///     <item><description>Get <see cref="Isolation"/>.</description></item>
     ///     <item><description>Get <see cref="Concurrency"/>.</description></item>

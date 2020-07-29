@@ -73,13 +73,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                 IgniteInstanceName = TestUtils.TestName
             });
 
-            Assert.DoesNotThrow(() =>
-            {
-                using (ignite.GetTransactions().TxStart())
-                {
-                    Ignition.Stop(ignite.Name, true);
-                }
-            });
+            var tx = ignite.GetTransactions().TxStart();
+            var transactions = ignite.GetTransactions().GetLocalActiveTransactions();
+
+            Ignition.Stop(ignite.Name, true);
+
+            Assert.DoesNotThrow(() => tx.Dispose());
+            Assert.DoesNotThrow(() => transactions.Dispose());
         }
     }
 }
