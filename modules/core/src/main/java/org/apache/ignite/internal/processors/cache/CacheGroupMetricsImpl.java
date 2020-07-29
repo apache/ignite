@@ -521,7 +521,7 @@ public class CacheGroupMetricsImpl {
 
                 long val = encrMgr.getEncryptionState(ctx.groupId(), p);
 
-                int off = (int)(val >> 32);
+                int off = (int)(val >> Integer.SIZE);
                 int cnt = (int)val;
 
                 pagesLeft += cnt - off;
@@ -529,7 +529,7 @@ public class CacheGroupMetricsImpl {
 
             long val = encrMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
 
-            int off = (int)(val >> 32);
+            int off = (int)(val >> Integer.SIZE);
             int cnt = (int)val;
 
             pagesLeft += cnt - off;

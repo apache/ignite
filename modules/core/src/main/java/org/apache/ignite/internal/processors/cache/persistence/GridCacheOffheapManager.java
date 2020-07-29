@@ -496,7 +496,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long reencryptState = encrypt.getEncryptionState(grpId, store.partId());
 
                             if (reencryptState != 0) {
-                                encryptIdx = (int)(reencryptState >> 32);
+                                encryptIdx = (int)(reencryptState >> Integer.SIZE);
                                 encryptCnt = (int)reencryptState;
 
                                 if (encryptIdx == encryptCnt) {
@@ -1331,7 +1331,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
-                int encryptIdx = (int)(encryptState >> 32);
+                int encryptIdx = (int)(encryptState >> Integer.SIZE);
                 int encryptCnt = (int)encryptState;
 
                 if (encryptIdx == encryptCnt)

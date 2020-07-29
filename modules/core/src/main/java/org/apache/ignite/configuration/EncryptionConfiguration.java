@@ -25,7 +25,7 @@ public class EncryptionConfiguration {
     public static final int DFLT_REENCRYPTION_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     /** Default re-encryption rate limit. The value is {@code 0}, which means that scan speed is not limited. */
-    public static final int DFLT_REENCRYPTION_RATE_MBPS = 0;
+    public static final double DFLT_REENCRYPTION_RATE_MBPS = 0.0;
 
     /** Default number of pages that is scanned during reencryption under checkpoint lock. The value is {@code 100}. */
     public static final int DFLT_REENCRYPTION_BATCH_SIZE = 100;
@@ -37,7 +37,7 @@ public class EncryptionConfiguration {
     private int reencryptionThreadCnt = DFLT_REENCRYPTION_THREAD_POOL_SIZE;
 
     /** Re-ncryption rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
-    private int reencryptionRateLimit = DFLT_REENCRYPTION_RATE_MBPS;
+    private double reencryptionRateLimit = DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int reencryptionBatchSize = DFLT_REENCRYPTION_BATCH_SIZE;
@@ -92,7 +92,7 @@ public class EncryptionConfiguration {
      *
      * @return Re-encryption rate limit in megabytes per second.
      */
-    public int getReencryptionRateLimit() {
+    public double getReencryptionRateLimit() {
         return reencryptionRateLimit;
     }
 
@@ -102,7 +102,7 @@ public class EncryptionConfiguration {
      * @param reencryptionRateLimit Re-ncryption rate limit in megabytes per second.
      * @return {@code this} for chaining.
      */
-    public EncryptionConfiguration setReencryptionRateLimit(int reencryptionRateLimit) {
+    public EncryptionConfiguration setReencryptionRateLimit(double reencryptionRateLimit) {
         this.reencryptionRateLimit = reencryptionRateLimit;
 
         return this;

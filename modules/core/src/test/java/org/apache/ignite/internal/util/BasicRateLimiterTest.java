@@ -37,7 +37,7 @@ public class BasicRateLimiterTest {
      */
     @Test
     public void checkLimitMultithreaded() throws Exception {
-        int opsPerSec = 1000;
+        int opsPerSec = 1_000;
         int totalOps = 10_000;
 
         BasicRateLimiter limiter = new BasicRateLimiter(opsPerSec);
@@ -75,11 +75,11 @@ public class BasicRateLimiterTest {
      */
     @Test
     public void checkAcquireWithOverflow() throws IgniteInterruptedCheckedException {
-        int permitsPerSec = 5;
-        int permitsPerOp = permitsPerSec * 2;
+        double permitsPerSec = 0.5;
+        int permitsPerOp = 1;
         int totalOps = 5;
 
-        BasicRateLimiter limiter = new BasicRateLimiter(5);
+        BasicRateLimiter limiter = new BasicRateLimiter(permitsPerSec);
 
         long startTime = System.currentTimeMillis();
 
@@ -88,7 +88,7 @@ public class BasicRateLimiterTest {
 
         long timeSpent = System.currentTimeMillis() - startTime;
 
-        assertEquals(permitsPerOp * totalOps / permitsPerSec, SECONDS.convert(timeSpent, MILLISECONDS));
+        assertEquals((int)(permitsPerOp * totalOps / permitsPerSec), SECONDS.convert(timeSpent, MILLISECONDS));
     }
 
     /**

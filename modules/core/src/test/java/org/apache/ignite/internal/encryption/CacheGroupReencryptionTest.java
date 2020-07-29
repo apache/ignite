@@ -82,7 +82,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     private int backups;
 
     /** Re-ncryption rate limit. */
-    private int pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+    private double pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int pageScanBatchSize = EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
@@ -199,7 +199,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** @throws Exception If failed. */
     @Test
     public void testPhysicalRecoveryWithUpdates() throws Exception {
-        pageScanRate = 1;
+        pageScanRate = 1.5;
         pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);

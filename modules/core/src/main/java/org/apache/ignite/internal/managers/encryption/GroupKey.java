@@ -80,8 +80,6 @@ public class GroupKey {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GroupKey{" +
-            "id=" + id +
-            '}';
+        return "GroupKey [id=" + id + ']';
     }
 }

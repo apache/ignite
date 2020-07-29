@@ -319,7 +319,7 @@ class CacheGroupEncryptionKeys {
      * @param keyId Encryption key ID.
      * @return Wal segment index or null if there no segment associated with the specified cache group ID and key ID.
      */
-    Long reservedSegment(int grpId, int keyId) {
+    @Nullable Long reservedSegment(int grpId, int keyId) {
         for (Map.Entry<Long, Map<Integer, Set<Integer>>> entry : trackedWalSegments.entrySet()) {
             Set<Integer> keys = entry.getValue().get(grpId);
 
