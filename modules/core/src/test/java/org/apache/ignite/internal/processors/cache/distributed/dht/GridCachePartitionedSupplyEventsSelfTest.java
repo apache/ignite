@@ -70,25 +70,21 @@ public class GridCachePartitionedSupplyEventsSelfTest extends GridCommonAbstract
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap();
 
-        lsnrs.put(new IgnitePredicate<CacheRebalancingEvent>() {
-                @Override public boolean apply(CacheRebalancingEvent evt) {
-                    nodesToPartsSupplied.compute(evt.node().id(), (k, v) -> (v == null) ? 1 : (v + 1));
+        lsnrs.put(event -> {
+            nodesToPartsSupplied.compute(event.node().id(), (k, v) -> (v == null) ? 1 : (v + 1));
 
-                    assertEquals(DEFAULT_CACHE_NAME, evt.cacheName());
+            assertEquals(DEFAULT_CACHE_NAME, ((CacheRebalancingEvent) event).cacheName());
 
-                    return true;
-                }
-            }, new int[]{EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED});
+            return true;
+        }, new int[]{EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED});
 
-        lsnrs.put(new IgnitePredicate<CacheRebalancingEvent>() {
-                @Override public boolean apply(CacheRebalancingEvent evt) {
-                    fail("Should not miss any partitions!");
+        lsnrs.put(event -> {
+            fail("Should not miss any partitions!");
 
-                    assertEquals(DEFAULT_CACHE_NAME, evt.cacheName());
+            assertEquals(DEFAULT_CACHE_NAME, ((CacheRebalancingEvent) event).cacheName());
 
-                    return true;
-                }
-            }, new int[]{EventType.EVT_CACHE_REBALANCE_PART_MISSED});
+            return true;
+        }, new int[]{EventType.EVT_CACHE_REBALANCE_PART_MISSED});
 
         cfg.setLocalEventListeners(lsnrs);
 

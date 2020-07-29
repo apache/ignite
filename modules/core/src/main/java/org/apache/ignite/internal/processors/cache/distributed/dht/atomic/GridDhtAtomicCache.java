@@ -111,8 +111,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -1059,33 +1057,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 assert invokeMap != null : invokeMap;
 
                 conflictPutMap = F.viewReadOnly((Map)invokeMap,
-                    new IgniteClosure<EntryProcessor, GridCacheDrInfo>() {
-                        @Override public GridCacheDrInfo apply(EntryProcessor o) {
-                            return new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId()));
-                        }
-                    });
+                    entryProcessor -> new GridCacheDrInfo((EntryProcessor) entryProcessor, nextVersion(opCtx.dataCenterId())));
 
                 invokeMap = null;
             }
             else if (op == GridCacheOperation.DELETE) {
                 assert map != null : map;
 
-                conflictRmvMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheVersion>() {
-                    @Override public GridCacheVersion apply(V o) {
-                        return nextVersion(opCtx.dataCenterId());
-                    }
-                });
+                conflictRmvMap = F.viewReadOnly((Map)map, o -> nextVersion(opCtx.dataCenterId()));
 
                 map = null;
             }
             else {
                 assert map != null : map;
 
-                conflictPutMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheDrInfo>() {
-                    @Override public GridCacheDrInfo apply(V o) {
-                        return new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId()));
-                    }
-                });
+                conflictPutMap = F.viewReadOnly((Map)map, o ->
+                    new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId())));
 
                 map = null;
             }
@@ -2146,11 +2133,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (tracker instanceof GridNioMessageTracker) {
                     ((GridNioMessageTracker)tracker).onMessageReceived();
 
-                    dhtFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            ((GridNioMessageTracker)tracker).onMessageProcessed();
-                        }
-                    });
+                    dhtFut.listen(future -> ((GridNioMessageTracker) tracker).onMessageProcessed());
                 }
             }
 

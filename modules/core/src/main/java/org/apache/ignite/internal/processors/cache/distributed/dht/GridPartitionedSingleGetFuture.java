@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -256,17 +255,15 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             if (fut.initialVersion().after(topVer) || (fut.exchangeActions() != null && fut.exchangeActions().hasStop()))
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                        else {
-                            cctx.closures().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    map(topVer);
-                                }
-                            }, true);
-                        }
+                fut.listen(future -> {
+                    if (future.error() != null)
+                        onDone(future.error());
+                    else {
+                        cctx.closures().runLocalSafe(new GridPlainRunnable() {
+                            @Override public void run() {
+                                map(topVer);
+                            }
+                        }, true);
                     }
                 });
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -85,46 +84,44 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
 
             final int KEYS_PER_THREAD = 5000;
 
-            GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int idx0 = idx.getAndIncrement();
+            GridTestUtils.runMultiThreaded(() -> {
+                int idx0 = idx.getAndIncrement();
 
-                    int startKey = KEYS_PER_THREAD * idx0;
+                int startKey = KEYS_PER_THREAD * idx0;
 
-                    for (int i = startKey; i < startKey + KEYS_PER_THREAD; i++) {
-                        cache.put(i, i);
+                for (int i = startKey; i < startKey + KEYS_PER_THREAD; i++) {
+                    cache.put(i, i);
 
-                        assertEquals(i, (Object)cache.localPeek(i));
+                    assertEquals(i, (Object)cache.localPeek(i));
 
-                        cache.remove(i);
+                    cache.remove(i);
 
-                        assertNull(cache.get(i));
-                    }
-
-                    final int BATCH_SIZE = 50;
-
-                    Map<Integer, Integer> map = new TreeMap<>();
-
-                    for (int i = startKey; i < startKey + KEYS_PER_THREAD; i++) {
-                        map.put(i, i);
-
-                        if (map.size() == BATCH_SIZE) {
-                            cache.putAll(map);
-
-                            for (Integer key : map.keySet())
-                                assertEquals(key, cache.localPeek(key));
-
-                            cache.removeAll(map.keySet());
-
-                            for (Integer key : map.keySet())
-                                assertNull(cache.get(key));
-
-                            map.clear();
-                        }
-                    }
-
-                    return null;
+                    assertNull(cache.get(i));
                 }
+
+                final int BATCH_SIZE = 50;
+
+                Map<Integer, Integer> map = new TreeMap<>();
+
+                for (int i = startKey; i < startKey + KEYS_PER_THREAD; i++) {
+                    map.put(i, i);
+
+                    if (map.size() == BATCH_SIZE) {
+                        cache.putAll(map);
+
+                        for (Integer key : map.keySet())
+                            assertEquals(key, cache.localPeek(key));
+
+                        cache.removeAll(map.keySet());
+
+                        for (Integer key : map.keySet())
+                            assertNull(cache.get(key));
+
+                        map.clear();
+                    }
+                }
+
+                return null;
             }, 10, "update-thread");
         }
         finally {

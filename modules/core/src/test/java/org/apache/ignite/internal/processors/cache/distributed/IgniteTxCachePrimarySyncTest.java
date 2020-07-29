@@ -154,32 +154,26 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+        IgniteCache<Object, Object> igniteCache = ignite.createCache(ccfg);
 
         try {
             for (int i = 0; i < SRVS; i++) {
                 Ignite node = ignite(i);
 
-                singleKeyCommitFromPrimary(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        cache.put(key, key);
-                    }
-                });
+                singleKeyCommitFromPrimary(node, ccfg, (key, cache) -> cache.put(key, key));
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
                             continue;
 
-                        singleKeyCommitFromPrimary(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                        singleKeyCommitFromPrimary(node, ccfg, (key, cache) -> {
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.put(key, key);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, key);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
                     }
@@ -187,7 +181,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cache.getName());
+            ignite.destroyCache(igniteCache.getName());
         }
     }
 
@@ -283,7 +277,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+        IgniteCache<Object, Object> igniteCache = ignite.createCache(ccfg);
 
         try {
             if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
@@ -292,26 +286,20 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             for (int i = 0; i < NODES; i++) {
                 Ignite node = ignite(i);
 
-                singleKeyPrimaryNodeLeft(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        cache.put(key, key);
-                    }
-                });
+                singleKeyPrimaryNodeLeft(node, ccfg, (key, cache) -> cache.put(key, key));
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
                             continue;
 
-                        singleKeyPrimaryNodeLeft(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                        singleKeyPrimaryNodeLeft(node, ccfg, (key, cache) -> {
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.put(key, key);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, key);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
                     }
@@ -319,7 +307,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cache.getName());
+            ignite.destroyCache(igniteCache.getName());
         }
     }
 
@@ -420,7 +408,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+        IgniteCache<Object, Object> igniteCache = ignite.createCache(ccfg);
 
         try {
             if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
@@ -431,26 +419,20 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 log.info("Test node: " + node.name());
 
-                singleKeyCommit(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        cache.put(key, key);
-                    }
-                });
+                singleKeyCommit(node, ccfg, (key, cache) -> cache.put(key, key));
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
                             continue;
 
-                        singleKeyCommit(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                        singleKeyCommit(node, ccfg, (key, cache) -> {
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.put(key, key);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, key);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
                     }
@@ -458,7 +440,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cache.getName());
+            ignite.destroyCache(igniteCache.getName());
         }
     }
 
@@ -577,7 +559,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+        IgniteCache<Object, Object> igniteCache = ignite.createCache(ccfg);
 
         try {
             if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
@@ -588,23 +570,17 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 log.info("Test node: " + node.name());
 
-                checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        cache.put(key, key);
-                    }
-                });
+                checkWaitPrimaryResponse(node, ccfg, (key, cache) -> cache.put(key, key));
 
-                checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        Map<Integer, Integer> map = new HashMap<>();
+                checkWaitPrimaryResponse(node, ccfg, (key, cache) -> {
+                    Map<Integer, Integer> map = new HashMap<>();
 
-                        for (int i = 0; i < 50; i++)
-                            map.put(i, i);
+                    for (int j = 0; j < 50; j++)
+                        map.put(j, j);
 
-                        map.put(key, key);
+                    map.put(key, key);
 
-                        cache.putAll(map);
-                    }
+                    cache.putAll(map);
                 });
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
@@ -612,34 +588,30 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
                         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
                             continue;
 
-                        checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                        checkWaitPrimaryResponse(node, ccfg, (key, cache) -> {
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.put(key, key);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, key);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
 
-                        checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Map<Integer, Integer> map = new HashMap<>();
+                        checkWaitPrimaryResponse(node, ccfg, (key, cache) -> {
+                            Map<Integer, Integer> map = new HashMap<>();
 
-                                for (int i = 0; i < 50; i++)
-                                    map.put(i, i);
+                            for (int j = 0; j < 50; j++)
+                                map.put(j, j);
 
-                                map.put(key, key);
+                            map.put(key, key);
 
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.putAll(map);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.putAll(map);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
                     }
@@ -647,7 +619,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cache.getName());
+            ignite.destroyCache(igniteCache.getName());
         }
     }
 
@@ -717,7 +689,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     private void checkOnePhaseMessages(CacheConfiguration<Object, Object> ccfg) throws Exception {
         Ignite ignite = ignite(0);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+        IgniteCache<Object, Object> igniteCache = ignite.createCache(ccfg);
 
         try {
             for (int i = 1; i < NODES; i++) {
@@ -725,26 +697,20 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 log.info("Test node: " + node.name());
 
-                checkOnePhaseMessages(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                    @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                        cache.put(key, key);
-                    }
-                });
+                checkOnePhaseMessages(node, ccfg, (key, cache) -> cache.put(key, key));
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
                             continue;
 
-                        checkOnePhaseMessages(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
-                            @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
-                                Ignite ignite = cache.unwrap(Ignite.class);
+                        checkOnePhaseMessages(node, ccfg, (key, cache) -> {
+                            Ignite ig = cache.unwrap(Ignite.class);
 
-                                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                                    cache.put(key, key);
+                            try (Transaction tx = ig.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, key);
 
-                                    tx.commit();
-                                }
+                                tx.commit();
                             }
                         });
                     }
@@ -752,7 +718,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cache.getName());
+            ignite.destroyCache(igniteCache.getName());
         }
     }
 

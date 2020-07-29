@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
@@ -40,13 +39,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -117,12 +115,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             cfg.setCacheConfiguration(ccfg);
 
         if (!configured) {
-            ccfg.setNodeFilter(new P1<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-                    String name = node.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
+            ccfg.setNodeFilter((IgnitePredicate<ClusterNode>) node -> {
+                String name = node.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
-                    return !getTestIgniteInstanceName(0).equals(name);
-                }
+                return !getTestIgniteInstanceName(0).equals(name);
             });
         }
 
@@ -149,17 +145,15 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         configured = true;
 
         try {
-            IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
-                @Override public void apply(Ignite grid) {
-                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        dataStreamer.allowOverwrite(allowOverwrite);
+            IgniteInClosure<Ignite> f = grid -> {
+                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
+                    dataStreamer.allowOverwrite(allowOverwrite);
 
-                        for (int i = 0; i < KEYS_CNT; i++)
-                            dataStreamer.addData(i, Integer.toString(i));
-                    }
-
-                    log.info("Data loaded.");
+                    for (int i = 0; i < KEYS_CNT; i++)
+                        dataStreamer.addData(i, Integer.toString(i));
                 }
+
+                log.info("Data loaded.");
             };
 
             loadCache(f);
@@ -175,11 +169,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
     @Test
     public void testLoadCacheFromStore() throws Exception {
-        loadCache(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-        });
+        loadCache(grid -> grid.cache(DEFAULT_CACHE_NAME).loadCache(null));
     }
 
     /**
@@ -262,30 +252,26 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         Ignite g0 = startGrid(0);
 
-        IgniteInternalFuture<Object> restartFut = runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                while (restarts) {
-                    stopGrid(1);
+        IgniteInternalFuture<Object> restartFut = runAsync(() -> {
+            while (restarts) {
+                stopGrid(1);
 
-                    startGrid(1);
+                startGrid(1);
 
-                    U.sleep(100);
-                }
-
-                return null;
+                U.sleep(100);
             }
+
+            return null;
         });
 
         CountDownLatch startNodesLatch = new CountDownLatch(1);
-        IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                startNodesLatch.await();
+        IgniteInternalFuture<Object> fut = runAsync(() -> {
+            startNodesLatch.await();
 
-                for (int i = 2; i < GRIDS_CNT; i++)
-                    startGrid(i);
+            for (int i = 2; i < GRIDS_CNT; i++)
+                startGrid(i);
 
-                return null;
-            }
+            return null;
         });
 
         final HashSet<IgniteFuture> set = new HashSet<>();
@@ -377,11 +363,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     protected void loadCache(IgniteInClosure<Ignite> f) throws Exception {
         Ignite g0 = startGrid(0);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
-            @Override public Ignite call() throws Exception {
-                return startGridsMultiThreaded(1, GRIDS_CNT - 1);
-            }
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> startGridsMultiThreaded(1, GRIDS_CNT - 1));
 
         try {
             f.apply(g0);
@@ -399,23 +381,21 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     private void assertCacheSize(int expectedCacheSize) throws Exception {
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                int size = cache.size(CachePeekMode.PRIMARY);
+        boolean consistentCache = GridTestUtils.waitForCondition(() -> {
+            int size = cache.size(CachePeekMode.PRIMARY);
 
-                if (size != expectedCacheSize)
-                    log.info("Cache size: " + size);
+            if (size != expectedCacheSize)
+                log.info("Cache size: " + size);
 
-                int total = 0;
+            int total = 0;
 
-                for (int i = 0; i < GRIDS_CNT; i++)
-                    total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
+            for (int i = 0; i < GRIDS_CNT; i++)
+                total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
-                if (total != expectedCacheSize)
-                    log.info("Total size: " + size);
+            if (total != expectedCacheSize)
+                log.info("Total size: " + size);
 
-                return size == expectedCacheSize && expectedCacheSize == total;
-            }
+            return size == expectedCacheSize && expectedCacheSize == total;
         }, 2 * 60_000);
 
         assertTrue("Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY), consistentCache);

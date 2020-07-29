@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
@@ -927,13 +926,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
-                                                @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
-                                                    if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
-                                                        return;
+                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
+                                                if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                                    return;
 
-                                                    remap(res);
-                                                }
+                                                remap(res);
                                             });
                                         }
                                         else {

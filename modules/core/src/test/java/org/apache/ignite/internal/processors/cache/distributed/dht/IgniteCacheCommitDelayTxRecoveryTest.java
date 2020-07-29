@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -188,39 +187,37 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         TestEntryProcessor.skipFirst = useStore ? ignite.name() : null;
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                log.info("Start update.");
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            log.info("Start update.");
 
-                if (pessimistic) {
-                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.invoke(key, new TestEntryProcessor(backupNames));
+            if (pessimistic) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.invoke(key, new TestEntryProcessor(backupNames));
 
-                        commit = true;
-
-                        log.info("Start commit.");
-
-                        assertEquals(backupNames.size(), commitStartedLatch.getCount());
-
-                        tx.commit();
-                    }
-                }
-                else {
                     commit = true;
 
-                    cache.invoke(key, new TestEntryProcessor(backupNames));
+                    log.info("Start commit.");
+
+                    assertEquals(backupNames.size(), commitStartedLatch.getCount());
+
+                    tx.commit();
                 }
-
-                log.info("End update, execute get.");
-
-                Integer val = cache.get(key);
-
-                log.info("Get value: " + val);
-
-                assertEquals(1, (Object)val);
-
-                return null;
             }
+            else {
+                commit = true;
+
+                cache.invoke(key, new TestEntryProcessor(backupNames));
+            }
+
+            log.info("End update, execute get.");
+
+            Integer val = cache.get(key);
+
+            log.info("Get value: " + val);
+
+            assertEquals(1, (Object)val);
+
+            return null;
         }, "update-thread");
 
         assertTrue(commitStartedLatch.await(30, SECONDS));
