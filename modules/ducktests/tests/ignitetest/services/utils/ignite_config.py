@@ -16,10 +16,9 @@
 """
 This module contains ignite config classes and utilities.
 """
+import os
 
 from jinja2 import FileSystemLoader, Environment
-
-import os
 
 DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/config"
 DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
@@ -27,7 +26,7 @@ DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
 
 class Config(object):
     """
-    Basic ignite configuration.
+    Basic configuration.
     """
     def __init__(self, path):
         tmpl_dir = os.path.dirname(path)
@@ -40,12 +39,18 @@ class Config(object):
         self.default_params = {}
 
     def render(self, **kwargs):
+        """
+        Render configuration.
+        """
         kwargs.update(self.default_params)
         res = self.template.render(**kwargs)
         return res
 
 
 class IgniteServerConfig(Config):
+    """
+    Ignite server node configuration.
+    """
     def __init__(self, context):
         path = DEFAULT_IGNITE_CONF
         if 'ignite_server_config_path' in context.globals:
@@ -54,6 +59,9 @@ class IgniteServerConfig(Config):
 
 
 class IgniteClientConfig(Config):
+    """
+    Ignite client node configuration.
+    """
     def __init__(self, context):
         path = DEFAULT_IGNITE_CONF
         if 'ignite_client_config_path' in context.globals:
@@ -63,6 +71,8 @@ class IgniteClientConfig(Config):
 
 
 class IgniteLoggerConfig(Config):
+    """
+    Ignite logger configuration.
+    """
     def __init__(self):
         super(IgniteLoggerConfig, self).__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
-

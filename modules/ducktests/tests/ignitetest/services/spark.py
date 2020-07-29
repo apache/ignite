@@ -23,8 +23,6 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.ignite_config import IgniteServerConfig
-
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 

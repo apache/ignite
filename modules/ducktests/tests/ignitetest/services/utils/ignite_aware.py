@@ -45,11 +45,14 @@ class IgniteAwareService(BackgroundThreadService):
             "collect_default": True}
     }
 
+    # pylint: disable=R0913
     def __init__(self, context, num_nodes, client_mode, version, properties):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
         self.path = IgnitePath(context)
-        self.jvm_options = context.globals.get("jvm_opts", "")
+        self.jvm_options = ""#context.globals.get("jvm_opts", "")
+        
+        self.logger.info("jvm_opts is %s", context.globals.get("jvm_opts"))
 
         self.log_level = "DEBUG"
         self.properties = properties
@@ -96,10 +99,13 @@ class IgniteAwareService(BackgroundThreadService):
         raise NotImplementedError
 
     def config(self):
+        """
+        :return: Ignite node configuration.
+        """
         if self.client_mode:
             return IgniteClientConfig(self.context)
-        else:
-            return IgniteServerConfig(self.context)
+
+        return IgniteServerConfig(self.context)
 
     # pylint: disable=W0613
     def _worker(self, idx, node):

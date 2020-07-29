@@ -64,7 +64,8 @@ def get_version(node=None):
     if isinstance(node, ClusterNode) and hasattr(node, 'version'):
         return getattr(node, 'version')
 
-    if isinstance(node, str) or isinstance(node, unicode):
+    # pylint: disable=E0602
+    if isinstance(node, (str, unicode)):
         return node
 
     return DEV_BRANCH

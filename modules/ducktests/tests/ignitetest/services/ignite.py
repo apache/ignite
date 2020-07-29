@@ -24,7 +24,6 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.ignite_config import IgniteServerConfig, IgniteClientConfig
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 
@@ -45,6 +44,7 @@ class IgniteService(IgniteAwareService):
             "collect_default": False}
     }
 
+    # pylint: disable=R0913
     def __init__(self, context, num_nodes, client_mode=False, version=DEV_BRANCH, properties=""):
         super(IgniteService, self).__init__(context, num_nodes, client_mode, version, properties)
 
