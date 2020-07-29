@@ -29,12 +29,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycle
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**

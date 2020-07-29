@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Extended query entity with not-null fields support.

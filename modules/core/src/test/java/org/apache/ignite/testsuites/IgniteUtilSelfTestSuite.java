@@ -18,13 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
-import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
+import org.apache.ignite.internal.util.DistributedProcessCoordinatorLeftTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
+import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
-import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -135,10 +135,9 @@ import org.junit.runners.Suite;
     //dbx
     PageIdUtilsSelfTest.class,
 
-    // control.sh
-    CommandHandlerParsingTest.class,
+    GridCountDownCallbackTest.class,
 
-    GridCountDownCallbackTest.class
+    DistributedProcessCoordinatorLeftTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

@@ -619,7 +619,7 @@ public abstract class IgniteUtils {
 
     /** JDK9: URLClassPath#getURLs. */
     private static Method mthdURLClassPathGetUrls;
-    
+
     /** Byte count prefixes. */
     private static String BYTE_CNT_PREFIXES = " KMGTPE";
 
@@ -1208,7 +1208,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if ordering is supported.
      */
     public static boolean discoOrdered(DiscoverySpi discoSpi) {
-        DiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), DiscoverySpiOrderSupport.class);
+        DiscoverySpiOrderSupport ann = getAnnotation(discoSpi.getClass(), DiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
     }
@@ -1285,7 +1285,7 @@ public abstract class IgniteUtils {
      * @param msg Message.
      */
     public static void dumpStack(@Nullable IgniteLogger log, String msg) {
-        U.error(log, "Dumping stack.", new Exception(msg));
+        error(log, "Dumping stack.", new Exception(msg));
     }
 
     /**
@@ -1462,7 +1462,7 @@ public abstract class IgniteUtils {
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
         GridStringBuilder sb = new GridStringBuilder(THREAD_DUMP_MSG)
-            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
+            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
             printThreadInfo(info, sb, deadlockedThreadsIds);
@@ -1547,6 +1547,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Stacktrace of current thread as {@link String}.
+     */
+    public static String stackTrace() {
+        GridStringBuilder sb = new GridStringBuilder();
+        long threadId = Thread.currentThread().getId();
+
+        printStackTrace(threadId, sb);
+
+        return sb.toString();
+    }
+
+    /**
      * @return {@code true} if there is java level deadlock.
      */
     public static boolean deadlockPresent() {
@@ -1627,12 +1639,12 @@ public abstract class IgniteUtils {
             return cls.getDeclaredConstructor();
         }
         catch (Exception ignore) {
-            Method ctorFac = U.ctorFactory();
-            Object sunRefFac = U.sunReflectionFactory();
+            Method ctorFac = ctorFactory();
+            Object sunRefFac = sunReflectionFactory();
 
             if (ctorFac != null && sunRefFac != null)
                 try {
-                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, U.objectConstructor());
+                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, objectConstructor());
                 }
                 catch (IllegalAccessException | InvocationTargetException e) {
                     throw new IgniteCheckedException("Failed to get object constructor for class: " + cls, e);
@@ -3995,7 +4007,7 @@ public abstract class IgniteUtils {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveIgniteUrl(springCfgPath);
+            url = resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 url = resolveInClasspath(springCfgPath);
@@ -4711,7 +4723,7 @@ public abstract class IgniteUtils {
      */
     public static void quietAndInfo(IgniteLogger log, String msg) {
         if (log.isQuiet())
-            U.quiet(false, msg);
+            quiet(false, msg);
 
         if (log.isInfoEnabled())
             log.info(msg);
@@ -5043,7 +5055,7 @@ public abstract class IgniteUtils {
             List<Runnable> tasks = exec.shutdownNow();
 
             if (!F.isEmpty(tasks))
-                U.warn(log, "Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
+                warn(log, "Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
                     ", tasks=" + tasks + ']');
 
             try {
@@ -5536,7 +5548,7 @@ public abstract class IgniteUtils {
         if (size == -1)
             return null;
 
-        HashMap<K, V> map = U.newHashMap(size);
+        HashMap<K, V> map = newHashMap(size);
 
         for (int i = 0; i < size; i++)
             map.put((K)in.readObject(), (V)in.readObject());
@@ -6083,10 +6095,10 @@ public abstract class IgniteUtils {
         if (obj instanceof GridPeerDeployAware)
             return ((GridPeerDeployAware)obj).deployClass();
 
-        if (U.isPrimitiveArray(obj))
+        if (isPrimitiveArray(obj))
             return obj.getClass();
 
-        if (!U.isJdk(obj.getClass()))
+        if (!isJdk(obj.getClass()))
             return obj.getClass();
 
         if (obj instanceof Iterable<?>) {
@@ -6102,7 +6114,7 @@ public abstract class IgniteUtils {
             if (e != null) {
                 Object k = e.getKey();
 
-                if (k != null && !U.isJdk(k.getClass()))
+                if (k != null && !isJdk(k.getClass()))
                     return k.getClass();
 
                 Object v = e.getValue();
@@ -6170,7 +6182,7 @@ public abstract class IgniteUtils {
         if (ldr == null)
             ldr = gridClassLoader;
 
-        String lambdaParent = U.lambdaEnclosingClassName(clsName);
+        String lambdaParent = lambdaEnclosingClassName(clsName);
 
         try {
             ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
@@ -6328,7 +6340,7 @@ public abstract class IgniteUtils {
         if (obj instanceof Iterable)
             return peerDeployAware0((Iterable)obj);
 
-        if (obj.getClass().isArray() && !U.isPrimitiveArray(obj))
+        if (obj.getClass().isArray() && !isPrimitiveArray(obj))
             return peerDeployAware0((Object[])obj);
 
         return peerDeployAware(obj);
@@ -8050,7 +8062,7 @@ public abstract class IgniteUtils {
                         f.get();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to execute future: " + f, e);
+                        error(log, "Failed to execute future: " + f, e);
                     }
                 }
             });
@@ -8732,9 +8744,9 @@ public abstract class IgniteUtils {
         int dot = fileName.lastIndexOf('.');
 
         if (dot < 0 || dot == fileName.length() - 1)
-            return fileName + '-' + U.id8(nodeId);
+            return fileName + '-' + id8(nodeId);
         else
-            return fileName.substring(0, dot) + '-' + U.id8(nodeId) + fileName.substring(dot);
+            return fileName.substring(0, dot) + '-' + id8(nodeId) + fileName.substring(dot);
     }
 
     /**
@@ -8858,7 +8870,7 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return U.forName(clsName, ldr, null);
+        return forName(clsName, ldr, null);
     }
 
     /**
@@ -9140,7 +9152,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if error is invalid argument error on MAC.
      */
     public static boolean isMacInvalidArgumentError(Exception e) {
-        return U.isMacOs() && e instanceof SocketException && e.getMessage() != null &&
+        return isMacOs() && e instanceof SocketException && e.getMessage() != null &&
             e.getMessage().toLowerCase().contains("invalid argument");
     }
 
@@ -9196,7 +9208,7 @@ public abstract class IgniteUtils {
                     ((LifecycleAware)obj).stop();
                 }
                 catch (Exception e) {
-                    U.error(log, "Failed to stop component (ignoring): " + obj, e);
+                    error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }
         }
@@ -9495,7 +9507,7 @@ public abstract class IgniteUtils {
                 File readme = new File(igniteDir, "README.txt");
 
                 if (!readme.exists()) {
-                    U.writeStringToFile(readme,
+                    writeStringToFile(readme,
                         "This is Apache Ignite working directory that contains information that \n" +
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
@@ -9554,7 +9566,7 @@ public abstract class IgniteUtils {
         }
 
         if (delIfExist && dir.exists()) {
-            if (!U.delete(dir))
+            if (!delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
 
@@ -10408,7 +10420,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+            return unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10437,7 +10449,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
+            return unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10726,8 +10738,8 @@ public abstract class IgniteUtils {
 
         if (adjustedWalArchiveSize > dsCfg.getMaxWalArchiveSize()) {
             if (log != null)
-                U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
-                    U.readableSize(adjustedWalArchiveSize, false) +
+                quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
+                    readableSize(adjustedWalArchiveSize, false) +
                     " (to override, use DataStorageConfiguration.setMaxWalArchiveSize)");
 
             return adjustedWalArchiveSize;
@@ -10784,7 +10796,7 @@ public abstract class IgniteUtils {
 
                 @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     if (exc != null)
-                        U.error(null, "error during size calculation of directory - " + dir, exc);
+                        error(null, "error during size calculation of directory - " + dir, exc);
 
                     // Ignoring
                     return FileVisitResult.CONTINUE;
@@ -10817,7 +10829,7 @@ public abstract class IgniteUtils {
                 }
 
                 @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    U.error(null, "file skipped during recursive search - " + file, exc);
+                    error(null, "file skipped during recursive search - " + file, exc);
 
                     // Ignoring.
                     return FileVisitResult.CONTINUE;
@@ -10825,7 +10837,7 @@ public abstract class IgniteUtils {
 
                 @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     if (exc != null)
-                        U.error(null, "error during recursive search - " + dir, exc);
+                        error(null, "error during recursive search - " + dir, exc);
 
                     // Ignoring.
                     return FileVisitResult.CONTINUE;
@@ -11056,11 +11068,6 @@ public abstract class IgniteUtils {
 
             case GridIoPolicy.UTILITY_CACHE_POOL:
                 parallelismLvl = cfg.getUtilityCacheThreadPoolSize();
-
-                break;
-
-            case GridIoPolicy.IGFS_POOL:
-                parallelismLvl = cfg.getIgfsThreadPoolSize();
 
                 break;
 
@@ -11312,7 +11319,7 @@ public abstract class IgniteUtils {
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
+            : F.eq(discoMgr.localNode(), oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**
@@ -11522,7 +11529,7 @@ public abstract class IgniteUtils {
             int cntr = val.get1();
 
             if (cntr == 0)
-                val.set2(U.currentTimeMillis());
+                val.set2(currentTimeMillis());
 
             val.set1(++cntr);
 
@@ -11536,16 +11543,16 @@ public abstract class IgniteUtils {
             int cntr = val.get1();
 
             if (--cntr == 0) {
-                long timeout = U.currentTimeMillis() - val.get2();
+                long timeout = currentTimeMillis() - val.get2();
 
                 if (timeout > readLockThreshold) {
                     GridStringBuilder sb = new GridStringBuilder();
 
                     sb.a(LOCK_HOLD_MESSAGE + timeout + " ms." + nl());
 
-                    U.printStackTrace(Thread.currentThread().getId(), sb);
+                    printStackTrace(Thread.currentThread().getId(), sb);
 
-                    U.warn(log, sb.toString());
+                    warn(log, sb.toString());
                 }
             }
 
@@ -11701,7 +11708,7 @@ public abstract class IgniteUtils {
                 lsnr.accept(t);
             }
             catch (Exception e) {
-                U.warn(log, "Listener error", e);
+                warn(log, "Listener error", e);
             }
         }
     }
@@ -11920,6 +11927,111 @@ public abstract class IgniteUtils {
         IgniteCompute compute = kctx.grid().compute(grp);
 
         compute.broadcast(job);
+    }
+
+    /**
+     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
+     *
+     * @param in Data input.
+     * @throws IOException If write failed.
+     * @return Read result.
+     */
+    public static Map<String, String> readStringMap(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+        else {
+            Map<String, String> map = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                map.put(readUTF(in), readUTF(in));
+
+            return map;
+        }
+    }
+
+    /**
+     * Writes string-to-string map to given data output.
+     *
+     * @param out Data output.
+     * @param map Map.
+     * @throws IOException If write failed.
+     */
+    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
     }
 
     /**

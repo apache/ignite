@@ -56,10 +56,12 @@ import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage.UNDEFINED_CONNECTION_INDEX;
 
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
@@ -292,6 +294,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13264")
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
@@ -609,7 +612,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             appMsg,
                             GridTestUtils.<Boolean>getFieldValue(ioMsg, "ordered"),
                             ioMsg.timeout(),
-                            ioMsg.skipOnTimeout());
+                            ioMsg.skipOnTimeout(),
+                            UNDEFINED_CONNECTION_INDEX
+                        );
 
                         needStaleTop = false;
                     }

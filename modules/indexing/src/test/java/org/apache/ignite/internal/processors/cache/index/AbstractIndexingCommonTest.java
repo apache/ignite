@@ -161,7 +161,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
             new Thread(() -> {
                 startThread.countDown();
 
-                new SchemaIndexCacheVisitorImpl(cctx, null, null, rebuildIdxFut) {
+                new SchemaIndexCacheVisitorImpl(cctx, null, rebuildIdxFut) {
                     /** {@inheritDoc} */
                     @Override protected void beforeExecute() {
                         String cacheName = cctx.name();

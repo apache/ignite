@@ -17,6 +17,9 @@
 
 package org.apache.ignite.spark;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -39,10 +42,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Test;
 import scala.Tuple2;
-
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * Tests for {@link JavaIgniteRDD} (standalone mode).

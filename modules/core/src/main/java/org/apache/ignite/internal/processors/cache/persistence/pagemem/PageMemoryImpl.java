@@ -710,8 +710,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
         assert started;
 
-        FullPageId fullId = new FullPageId(pageId, grpId);
-
         int partId = PageIdUtils.partId(pageId);
 
         Segment seg = segment(grpId, pageId);
@@ -745,6 +743,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         DelayedDirtyPageStoreWrite delayedWriter = delayedPageReplacementTracker != null
             ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
+        FullPageId fullId = new FullPageId(pageId, grpId);
+
         seg.writeLock().lock();
 
         long lockedPageAbsPtr = -1;
@@ -754,7 +754,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             // Double-check.
             long relPtr = seg.loadedPages.get(
                 grpId,
-                PageIdUtils.effectivePageId(pageId),
+                fullId.effectivePageId(),
                 seg.partGeneration(grpId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
@@ -785,7 +785,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 seg.loadedPages.put(
                     grpId,
-                    PageIdUtils.effectivePageId(pageId),
+                    fullId.effectivePageId(),
                     relPtr,
                     seg.partGeneration(grpId, partId)
                 );
@@ -2318,7 +2318,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     boolean skip = ignored != null && ignored.contains(rndAddr);
 
-                    if (relRmvAddr == rndAddr || pinned || skip) {
+                    final boolean dirty = isDirty(absPageAddr);
+
+                    CheckpointPages checkpointPages = this.checkpointPages;
+
+                    if (relRmvAddr == rndAddr || pinned || skip ||
+                        fullId.pageId() == storeMgr.metaPageId(fullId.groupId()) ||
+                        (dirty && (checkpointPages == null || !checkpointPages.contains(fullId)))
+                    ) {
                         i--;
 
                         continue;
@@ -2326,7 +2333,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
-                    final boolean dirty = isDirty(absPageAddr);
                     final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
                     if (pageTs < cleanTs && !dirty && !storMeta) {

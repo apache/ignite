@@ -214,7 +214,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
+        AuthorizationContext authCtx = authenticate(ses, user, pwd);
 
         handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);

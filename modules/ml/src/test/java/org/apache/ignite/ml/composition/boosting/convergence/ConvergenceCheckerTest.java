@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
@@ -25,10 +28,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Before;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /** */
 public abstract class ConvergenceCheckerTest {

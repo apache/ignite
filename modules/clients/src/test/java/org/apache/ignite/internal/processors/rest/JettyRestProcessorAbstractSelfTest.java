@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -43,6 +40,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -58,9 +58,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -104,16 +102,6 @@ import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
@@ -2125,47 +2113,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsSamplingStateTaskArg.class, "igfs", false));
-
-        info("VisorIgfsSamplingStateTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerClearTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerClearTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsFormatTaskArg.class, "igfs"));
-
-        info("VisorIgfsFormatTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsResetMetricsTaskArg.class)
-            .set(String.class, "igfs"));
-
-        info("VisorIgfsResetMetricsTask result: " + ret);
-
-        jsonTaskResult(ret);
-
         ret = content(new VisorGatewayArgument(VisorThreadDumpTask.class)
             .forNode(locNode));
 
@@ -4020,13 +3967,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        FileSystemConfiguration igfs = new FileSystemConfiguration();
-
-        igfs.setName("igfs");
-        igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
-
-        cfg.setFileSystemConfiguration(igfs);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 

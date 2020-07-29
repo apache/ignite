@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is an utility class for 'splitting' locking of some resources.

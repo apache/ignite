@@ -18,10 +18,10 @@
 package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessTransactionsSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.testframework.GridTestUtils;

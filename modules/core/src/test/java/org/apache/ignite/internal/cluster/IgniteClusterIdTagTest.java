@@ -19,13 +19,19 @@ package org.apache.ignite.internal.cluster;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.ClusterTagUpdatedEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -66,6 +72,8 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
             cfg.setDataStorageConfiguration(dsCfg);
         }
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -233,6 +241,50 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies restrictions for new tag provided for {@link IgniteCluster#tag(String)} method:
+     * <ol>
+     *     <li>Not null.</li>
+     *     <li>Non-empty.</li>
+     *     <li>Below 280 symbols (max tag length).</li>
+     * </ol>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testChangeTagExceptions() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        try {
+            ig0.cluster().tag(null);
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("cannot be null"));
+        }
+
+        try {
+            ig0.cluster().tag("");
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("should not be empty"));
+        }
+
+        String longString = new String(new char[281]);
+
+        try {
+            ig0.cluster().tag(longString);
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("Maximum tag length is exceeded"));
+        }
+    }
+
+    /**
      *  Verifies consistency of tag when set up in inactive and active clusters and on client nodes.
      *
      * @throws Exception If failed.
@@ -243,17 +295,14 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        boolean expectedExceptionThrown = false;
-
         try {
             ig0.cluster().tag(CUSTOM_TAG_0);
+
+            fail("Expected exception has not been thrown.");
         }
         catch (IgniteCheckedException e) {
-            if (e.getMessage().contains("Can not change cluster tag on inactive cluster."))
-                expectedExceptionThrown = true;
+            assertTrue(e.getMessage().contains("Can not change cluster tag on inactive cluster."));
         }
-
-        assertTrue(expectedExceptionThrown);
 
         IgniteEx ig1 = startGrid(1);
 
@@ -279,10 +328,100 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        ig0 = startGrid(0);
+        startGrid(0);
 
         ig1 = startGrid(1);
 
         assertEquals(CUSTOM_TAG_0, ig1.cluster().tag());
+    }
+
+    /**
+     * Verifies that event is fired when tag change request sent by user is completed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTagChangedEvent() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        UUID clusterId = ig.cluster().id();
+        String generatedTag = ig.cluster().tag();
+
+        AtomicReference<UUID> clusterIdFromEvent = new AtomicReference<>(null);
+        AtomicReference<String> oldTagFromEvent = new AtomicReference<>(null);
+        AtomicReference<String> newTagFromEvent = new AtomicReference<>(null);
+
+        AtomicBoolean evtFired = new AtomicBoolean(false);
+
+        ig.events().localListen((evt) ->
+            {
+                evtFired.set(true);
+
+                ClusterTagUpdatedEvent tagUpdatedEvt = (ClusterTagUpdatedEvent)evt;
+
+                clusterIdFromEvent.set(tagUpdatedEvt.clusterId());
+                oldTagFromEvent.set(tagUpdatedEvt.previousTag());
+                newTagFromEvent.set(tagUpdatedEvt.newTag());
+
+                return true;
+            },
+            EventType.EVT_CLUSTER_TAG_UPDATED);
+
+        ig.cluster().tag(CUSTOM_TAG_0);
+
+        assertTrue(GridTestUtils.waitForCondition(evtFired::get, 10_000));
+
+        assertEquals(clusterId, clusterIdFromEvent.get());
+        assertEquals(generatedTag, oldTagFromEvent.get());
+        assertEquals(CUSTOM_TAG_0, newTagFromEvent.get());
+    }
+
+    /**
+     * Verifies that event about cluster tag update is fired on remote nodes as well.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTagChangedEventMultinodeWithRemoteFilter() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        IgniteEx ig1 = startGrid(1);
+
+        UUID clusterId = ig0.cluster().id();
+        String generatedTag = ig0.cluster().tag();
+
+        AtomicReference<UUID> eventNodeId = new AtomicReference<>(null);
+
+        AtomicReference<UUID> clusterIdFromEvent = new AtomicReference<>(null);
+        AtomicReference<String> oldTagFromEvent = new AtomicReference<>(null);
+        AtomicReference<String> newTagFromEvent = new AtomicReference<>(null);
+
+        AtomicBoolean evtFired = new AtomicBoolean(false);
+
+        ig0.events(ig0.cluster().forRemotes()).remoteListen(
+            (IgniteBiPredicate<UUID, Event>)(uuid, event) -> {
+                eventNodeId.set(uuid);
+
+                evtFired.set(true);
+
+                ClusterTagUpdatedEvent tagUpdatedEvt = (ClusterTagUpdatedEvent)event;
+
+                clusterIdFromEvent.set(tagUpdatedEvt.clusterId());
+                oldTagFromEvent.set(tagUpdatedEvt.previousTag());
+                newTagFromEvent.set(tagUpdatedEvt.newTag());
+
+                return true;
+            },
+            (IgnitePredicate<Event>)event -> event.type() == EventType.EVT_CLUSTER_TAG_UPDATED);
+
+        ig0.cluster().tag(CUSTOM_TAG_0);
+
+        assertTrue(GridTestUtils.waitForCondition(evtFired::get, 10_000));
+
+        assertEquals(ig1.localNode().id(), eventNodeId.get());
+
+        assertEquals(clusterId, clusterIdFromEvent.get());
+        assertEquals(generatedTag, oldTagFromEvent.get());
+        assertEquals(CUSTOM_TAG_0, newTagFromEvent.get());
     }
 }

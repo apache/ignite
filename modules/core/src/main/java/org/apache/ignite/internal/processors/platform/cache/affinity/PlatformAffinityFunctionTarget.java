@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -27,8 +28,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.List;
 
 /**
  * Platform affinity function target:

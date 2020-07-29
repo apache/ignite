@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import java.util.Iterator;
 import java.util.List;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 
 /**
  * SqlQuery key-value iterator.

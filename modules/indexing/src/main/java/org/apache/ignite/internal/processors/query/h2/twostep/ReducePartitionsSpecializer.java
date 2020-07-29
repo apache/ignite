@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.util.IntArray;
-
-import java.util.Map;
 
 /**
  * Reducer partitions specializer.

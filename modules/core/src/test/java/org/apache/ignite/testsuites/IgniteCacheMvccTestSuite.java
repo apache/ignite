@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientTopologyTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientReconnectTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientTopologyTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;

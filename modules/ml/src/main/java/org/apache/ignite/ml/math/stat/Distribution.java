@@ -17,9 +17,8 @@
 
 package org.apache.ignite.ml.math.stat;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-
 import java.io.Serializable;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for distributions.
