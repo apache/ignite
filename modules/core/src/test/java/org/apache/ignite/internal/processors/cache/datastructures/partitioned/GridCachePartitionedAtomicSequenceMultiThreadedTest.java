@@ -336,15 +336,13 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
      */
     protected void runSequenceClosure(final GridInUnsafeClosure<IgniteAtomicSequence> c,
         final IgniteAtomicSequence seq, final int cnt, final int threadCnt) throws Exception {
-        multithreaded(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < cnt; i++)
-                        c.apply(seq);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+        multithreaded(() -> {
+            try {
+                for (int i = 0; i < cnt; i++)
+                    c.apply(seq);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
         }, threadCnt);
     }

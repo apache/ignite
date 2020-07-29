@@ -510,37 +510,35 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final long stopTime = System.currentTimeMillis() + 5000;
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        GridTestUtils.runMultiThreaded(idx -> {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                Ignite node = ignite(idx % NODES);
+            Ignite node = ignite(idx % NODES);
 
-                IgniteTransactions txs = node.transactions();
+            IgniteTransactions txs = node.transactions();
 
-                IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+            IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
-                while (System.currentTimeMillis() < stopTime) {
-                    int keyCnt = rnd.nextInt(10) + 1;
+            while (System.currentTimeMillis() < stopTime) {
+                int keyCnt = rnd.nextInt(10) + 1;
 
-                    Set<Integer> keys = new HashSet<>();
+                Set<Integer> keys = new HashSet<>();
 
-                    for (int i = 0; i < keyCnt; i++)
-                        keys.add(rnd.nextInt());
+                for (int i = 0; i < keyCnt; i++)
+                    keys.add(rnd.nextInt());
 
-                    if (tx) {
-                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            cache.getAll(keys);
-
-                            if (rnd.nextBoolean())
-                                tx.commit();
-                            else
-                                tx.rollback();
-                        }
-                    }
-                    else
+                if (tx) {
+                    try (Transaction transaction = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.getAll(keys);
+
+                        if (rnd.nextBoolean())
+                            transaction.commit();
+                        else
+                            transaction.rollback();
+                    }
                 }
+                else
+                    cache.getAll(keys);
             }
         }, NODES * 2, "get-thread");
 
@@ -853,40 +851,38 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final CyclicBarrier b = new CyclicBarrier(THREADS);
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                try {
-                    int min = idx * KEYS;
-                    int max = min + KEYS;
+        GridTestUtils.runMultiThreaded(idx -> {
+            try {
+                int min = idx * KEYS;
+                int max = min + KEYS;
 
-                    Set<Integer> keys = new HashSet<>();
+                Set<Integer> keys = new HashSet<>();
 
-                    for (int k = min; k < max; k++)
-                        keys.add(k);
+                for (int k = min; k < max; k++)
+                    keys.add(k);
 
-                    b.await();
+                b.await();
 
-                    for (int i = 0; i < 100; i++) {
-                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            for (int k = min; k < max; k++)
-                                cache.put(k, i);
+                for (int i = 0; i < 100; i++) {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        for (int k = min; k < max; k++)
+                            cache.put(k, i);
 
-                            tx.commit();
-                        }
-
-                        Map<Object, Object> res = checkAndGetAll(false, cache, keys, SCAN, GET);
-
-                        for (Integer key : keys)
-                            assertEquals(i, res.get(key));
-
-                        assertEquals(KEYS, res.size());
+                        tx.commit();
                     }
-                }
-                catch (Exception e) {
-                    error("Unexpected error: " + e, e);
 
-                    fail("Unexpected error: " + e);
+                    Map<Object, Object> res = checkAndGetAll(false, cache, keys, SCAN, GET);
+
+                    for (Integer key : keys)
+                        assertEquals(i, res.get(key));
+
+                    assertEquals(KEYS, res.size());
                 }
+            }
+            catch (Exception e) {
+                error("Unexpected error: " + e, e);
+
+                fail("Unexpected error: " + e);
             }
         }, THREADS, "test-thread");
     }
@@ -1663,20 +1659,18 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final int readers = 4;
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                Map<Integer, MvccTestAccount> accounts = new HashMap<>();
+            Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
-                for (int i = 0; i < ACCOUNTS; i++)
-                    accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
+            for (int i = 0; i < ACCOUNTS; i++)
+                accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
 
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.putAll(accounts);
+            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.putAll(accounts);
 
-                    tx.commit();
-                }
+                tx.commit();
             }
         };
 
@@ -2827,42 +2821,40 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map<Integer, List<Integer>> keysByParts = new HashMap<>();
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                for (int i = 0; i < cacheParts; i++) {
-                    List<Integer> keys = new ArrayList<>();
+            for (int i = 0; i < cacheParts; i++) {
+                List<Integer> keys = new ArrayList<>();
 
-                    keysByParts.put(i, keys);
+                keysByParts.put(i, keys);
+            }
+
+            Affinity aff = affinity(cache);
+
+            int cntr = 0;
+            int key = 0;
+
+            while (cntr < KEYS_PER_PART * cacheParts) {
+                int part = aff.partition(key);
+
+                List<Integer> keys = keysByParts.get(part);
+
+                if (keys.size() < KEYS_PER_PART) {
+                    keys.add(key);
+
+                    cntr++;
                 }
 
-                Affinity aff = affinity(cache);
+                key++;
+            }
 
-                int cntr = 0;
-                int key = 0;
+            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                for (List<Integer> keys : keysByParts.values())
+                    for (Integer k : keys)
+                        cache.put(k, new MvccTestAccount(0, 1));
 
-                while (cntr < KEYS_PER_PART * cacheParts) {
-                    int part = aff.partition(key);
-
-                    List<Integer> keys = keysByParts.get(part);
-
-                    if (keys.size() < KEYS_PER_PART) {
-                        keys.add(key);
-
-                        cntr++;
-                    }
-
-                    key++;
-                }
-
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    for (List<Integer> keys : keysByParts.values())
-                        for (Integer k : keys)
-                            cache.put(k, new MvccTestAccount(0, 1));
-
-                    tx.commit();
-                }
+                tx.commit();
             }
         };
 

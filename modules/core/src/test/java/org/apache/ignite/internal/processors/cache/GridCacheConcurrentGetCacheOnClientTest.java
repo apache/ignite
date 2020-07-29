@@ -56,21 +56,19 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
 
         final String cacheName = "TEST_CACHE";
 
-        runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    startLatch.await();
+        runAsync(() -> {
+            try {
+                startLatch.await();
 
-                    IgniteCache<Object, Object> cache = client2.cache(cacheName);
+                IgniteCache<Object, Object> cache = client2.cache(cacheName);
 
-                    if (cache == null)
-                        countFails.incrementAndGet();
+                if (cache == null)
+                    countFails.incrementAndGet();
 
-                    stopLatch.countDown();
-                }
-                catch (Exception e) {
-                    exceptionFails.incrementAndGet();
-                }
+                stopLatch.countDown();
+            }
+            catch (Exception e) {
+                exceptionFails.incrementAndGet();
             }
         });
 

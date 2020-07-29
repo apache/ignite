@@ -42,7 +42,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -162,20 +161,18 @@ public class IgnitePdsPageReplacementDuringPartitionClearTest extends GridCommon
         ig1.events().localListen(lsnr, EVT_PAGE_REPLACEMENT_STARTED);
         ig2.events().localListen(lsnr, EVT_PAGE_REPLACEMENT_STARTED);
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new GridPlainRunnable() {
-            @Override public void run() {
-                IgniteCache<Object, Object> cache = ig1.cache(CACHE_NAME);
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Object, Object> cache = ig1.cache(CACHE_NAME);
 
-                while (!lsnr.isReady()) {
-                    int start = idx.getAndAdd(100);
+            while (!lsnr.isReady()) {
+                int start = idx.getAndAdd(100);
 
-                    Map<Integer, TestValue> putMap = new HashMap<>(100, 1.f);
+                Map<Integer, TestValue> putMap = new HashMap<>(100, 1.f);
 
-                    for (int i = 0; i < 100; i++)
-                        putMap.put(start + i, new TestValue(start + i));
+                for (int i = 0; i < 100; i++)
+                    putMap.put(start + i, new TestValue(start + i));
 
-                    cache.putAll(putMap);
-                }
+                cache.putAll(putMap);
             }
         }, Runtime.getRuntime().availableProcessors(), "initial-load-runner");
 
@@ -214,20 +211,18 @@ public class IgnitePdsPageReplacementDuringPartitionClearTest extends GridCommon
     private IgniteInternalFuture<?> loadAsync(Ignite ig, AtomicBoolean stopFlag, int start) {
         AtomicInteger generator = new AtomicInteger(start);
 
-        return GridTestUtils.runMultiThreadedAsync(new GridPlainRunnable() {
-            @Override public void run() {
-                IgniteCache<Integer, TestValue> cache = ig.cache(CACHE_NAME);
+        return GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Integer, TestValue> cache = ig.cache(CACHE_NAME);
 
-                while (!stopFlag.get()) {
-                    int idx = generator.getAndAdd(100);
+            while (!stopFlag.get()) {
+                int idx = generator.getAndAdd(100);
 
-                    Map<Integer, TestValue> putMap = new HashMap<>(100, 1.f);
+                Map<Integer, TestValue> putMap = new HashMap<>(100, 1.f);
 
-                    for (int i = 0; i < 100; i++)
-                        putMap.put(idx + i, new TestValue(idx + i));
+                for (int i = 0; i < 100; i++)
+                    putMap.put(idx + i, new TestValue(idx + i));
 
-                    cache.putAll(putMap);
-                }
+                cache.putAll(putMap);
             }
         }, Runtime.getRuntime().availableProcessors(), "load-runner");
     }

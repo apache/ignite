@@ -426,32 +426,22 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * Filters cache entry projections leaving only ones with keys containing 'key'.
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilter =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                return entry.getKey().contains("key");
-            }
-        };
+        entry -> entry.getKey().contains("key");
 
     /**
      * Filters cache entry projections leaving only ones with keys not containing 'key'.
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilterInv =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                return !entry.getKey().contains("key");
-            }
-        };
+        entry -> !entry.getKey().contains("key");
 
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
      */
     protected static final IgnitePredicate<Cache.Entry<String, Integer>> lt50 =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                Integer i = entry.getValue();
+        entry -> {
+            Integer i = entry.getValue();
 
-                return i != null && i < 50;
-            }
+            return i != null && i < 50;
         };
 
     /**

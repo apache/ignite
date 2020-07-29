@@ -879,64 +879,62 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                     final Ignite grid = grid(localNodeId);
 
-                    IgniteClosure<Ignite, Void> closure = new IgniteClosure<Ignite, Void>() {
-                        @Override public Void apply(Ignite ignite) {
-                            final IgniteLock l = ignite.reentrantLock("lock", true, true, true);
+                    IgniteClosure<Ignite, Void> closure = ignite -> {
+                        final IgniteLock l = ignite.reentrantLock("lock", true, true, true);
 
-                            final AtomicReference<Thread> thread = new AtomicReference<>();
+                        final AtomicReference<Thread> thread = new AtomicReference<>();
 
-                            final AtomicBoolean done = new AtomicBoolean(false);
+                        final AtomicBoolean done = new AtomicBoolean(false);
 
-                            final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+                        final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
 
-                            final IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCount, false, true);
+                        final IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCount, false, true);
 
-                            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-                                @Override public Void call() throws Exception {
-                                    try {
-                                        thread.set(Thread.currentThread());
+                        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                            @Override public Void call() throws Exception {
+                                try {
+                                    thread.set(Thread.currentThread());
 
-                                        l.lockInterruptibly();
-                                    }
-                                    catch (IgniteInterruptedException ignored) {
-                                        exceptionThrown.set(true);
-                                    }
-                                    finally {
-                                        done.set(true);
-                                    }
-
-                                    return null;
+                                    l.lockInterruptibly();
                                 }
-                            });
+                                catch (IgniteInterruptedException ignored) {
+                                    exceptionThrown.set(true);
+                                }
+                                finally {
+                                    done.set(true);
+                                }
 
-                            // Wait until l.lock() has been called.
-                            while (!l.hasQueuedThreads()){
-                                // No-op.
+                                return null;
                             }
+                        });
 
-                            latch.countDown();
-
-                            latch.await();
-
-                            thread.get().interrupt();
-
-                            while (!done.get()){
-                                // No-op.
-                            }
-
-                            try {
-                                fut.get();
-                            }
-                            catch (IgniteCheckedException e) {
-                                fail(e.getMessage());
-
-                                throw new RuntimeException(e);
-                            }
-
-                            assertTrue(exceptionThrown.get());
-
-                            return null;
+                        // Wait until l.lock() has been called.
+                        while (!l.hasQueuedThreads()){
+                            // No-op.
                         }
+
+                        latch.countDown();
+
+                        latch.await();
+
+                        thread.get().interrupt();
+
+                        while (!done.get()){
+                            // No-op.
+                        }
+
+                        try {
+                            fut.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            fail(e.getMessage());
+
+                            throw new RuntimeException(e);
+                        }
+
+                        assertTrue(exceptionThrown.get());
+
+                        return null;
                     };
 
                     closure.apply(grid);
@@ -1621,66 +1619,61 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         final Map<Integer, Long> counts = new ConcurrentHashMap<>();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    final int localNodeId = (int)threadCounter.getAndIncrement();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            final int localNodeId = (int)threadCounter.getAndIncrement();
 
-                    final Ignite grid = grid(localNodeId);
+            final Ignite grid = grid(localNodeId);
 
-                    IgniteClosure<Ignite, Long> closure = new IgniteClosure<Ignite, Long>() {
-                        @Override public Long apply(Ignite ignite) {
-                            IgniteLock l = ignite.reentrantLock("lock", true, true, true);
+            IgniteClosure<Ignite, Long> closure = lambdaIgnite -> {
+                IgniteLock lock = lambdaIgnite.reentrantLock("lock", true, true, true);
 
-                            long localCount = 0;
+                long localCount = 0;
 
-                            IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCount, false, true);
+                IgniteCountDownLatch latch = lambdaIgnite.countDownLatch("latch", threadCount, false, true);
 
-                            latch.countDown();
+                latch.countDown();
 
-                            latch.await();
+                latch.await();
 
-                            while (true) {
-                                l.lock();
+                while (true) {
+                    lock.lock();
 
-                                try {
-                                    long opsCounter = (long) ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
+                    try {
+                        long opsCounter = (long) lambdaIgnite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
-                                    if (opsCounter == opsCount)
-                                        break;
+                        if (opsCounter == opsCount)
+                            break;
 
-                                    ignite.getOrCreateCache(OPS_COUNTER).put(OPS_COUNTER, ++opsCounter);
+                        lambdaIgnite.getOrCreateCache(OPS_COUNTER).put(OPS_COUNTER, ++opsCounter);
 
-                                    localCount++;
+                        localCount++;
 
-                                    if (localCount > 1000) {
-                                        assertTrue(localCount < (1 + tolerance) * opsCounter / threadCount);
+                        if (localCount > 1000) {
+                            assertTrue(localCount < (1 + tolerance) * opsCounter / threadCount);
 
-                                        assertTrue(localCount > (1 - tolerance) * opsCounter / threadCount);
-                                    }
-
-                                    if (localCount % 100 == 0) {
-                                        info("Node [id=" + ignite.cluster().localNode().id() + "] acquired " +
-                                            localCount + " times. " + "Total ops count: " +
-                                            opsCounter + "/" + opsCount + "]");
-                                    }
-                                }
-                                finally {
-                                    l.unlock();
-                                }
-                            }
-
-                            return localCount;
+                            assertTrue(localCount > (1 - tolerance) * opsCounter / threadCount);
                         }
-                    };
 
-                    long localCount = closure.apply(grid);
-
-                    counts.put(localNodeId, localCount);
-
-                    return null;
+                        if (localCount % 100 == 0) {
+                            info("Node [id=" + lambdaIgnite.cluster().localNode().id() + "] acquired " +
+                                localCount + " times. " + "Total ops count: " +
+                                opsCounter + "/" + opsCount + "]");
+                        }
+                    }
+                    finally {
+                        lock.unlock();
+                    }
                 }
-            }, threadCount);
+
+                return localCount;
+            };
+
+            long localCount = closure.apply(grid);
+
+            counts.put(localNodeId, localCount);
+
+            return null;
+        }, threadCount);
 
         fut.get();
 

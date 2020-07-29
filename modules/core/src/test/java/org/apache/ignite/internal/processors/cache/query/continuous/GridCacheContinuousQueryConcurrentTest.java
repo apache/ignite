@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -188,25 +186,22 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
                 final CountDownLatch latch = new CountDownLatch(1);
                 final int conQryCnt = 50;
 
-                Future<List<IgniteFuture<String>>> fut = execSrv.submit(
-                    new Callable<List<IgniteFuture<String>>>() {
-                        @Override public List<IgniteFuture<String>> call() throws Exception {
-                            int cnt = 0;
-                            List<IgniteFuture<String>> futures = new ArrayList<>();
+                Future<List<IgniteFuture<String>>> fut = execSrv.submit(() -> {
+                    int cnt = 0;
+                    List<IgniteFuture<String>> futures = new ArrayList<>();
 
-                            while (!stop.get()) {
-                                futures.add(waitForKey(i0, cache, cnt));
+                    while (!stop.get()) {
+                        futures.add(waitForKey(i0, cache, cnt));
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Started cont query count: " + cnt);
+                        if (log.isDebugEnabled())
+                            log.debug("Started cont query count: " + cnt);
 
-                                if (++cnt >= conQryCnt)
-                                    latch.countDown();
-                            }
+                        if (++cnt >= conQryCnt)
+                            latch.countDown();
+                    }
 
-                            return futures;
-                        }
-                    });
+                    return futures;
+                });
 
                 assert U.await(latch, 1, MINUTES);
 
@@ -241,32 +236,30 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         try {
             final IgniteCache<Integer, String> cache = grid(0).getOrCreateCache(ccfg);
 
-            restartFut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    while (!stopRes.get()) {
-                        startGrid(NODES);
+            restartFut = GridTestUtils.runAsync(() -> {
+                while (!stopRes.get()) {
+                    startGrid(NODES);
 
-                        assert GridTestUtils.waitForCondition(new PA() {
-                            @Override public boolean apply() {
-                                return grid(0).cluster().nodes().size() == NODES + 1;
-                            }
-                        }, 5000L);
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return grid(0).cluster().nodes().size() == NODES + 1;
+                        }
+                    }, 5000L);
 
-                        Thread.sleep(300);
+                    Thread.sleep(300);
 
-                        stopGrid(NODES);
+                    stopGrid(NODES);
 
-                        assert GridTestUtils.waitForCondition(new PA() {
-                            @Override public boolean apply() {
-                                return grid(0).cluster().nodes().size() == NODES;
-                            }
-                        }, 5000L);
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return grid(0).cluster().nodes().size() == NODES;
+                        }
+                    }, 5000L);
 
-                        Thread.sleep(300);
-                    }
-
-                    return null;
+                    Thread.sleep(300);
                 }
+
+                return null;
             });
 
             U.sleep(100);
@@ -279,25 +272,22 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
                 final CountDownLatch latch = new CountDownLatch(1);
                 final int conQryCnt = 50;
 
-                Future<List<IgniteFuture<String>>> fut = execSrv.submit(
-                    new Callable<List<IgniteFuture<String>>>() {
-                        @Override public List<IgniteFuture<String>> call() throws Exception {
-                            int cnt = 0;
-                            List<IgniteFuture<String>> futures = new ArrayList<>();
+                Future<List<IgniteFuture<String>>> fut = execSrv.submit(() -> {
+                    int cnt = 0;
+                    List<IgniteFuture<String>> futures = new ArrayList<>();
 
-                            while (!stop.get()) {
-                                futures.add(waitForKey(i0, cache, cnt));
+                    while (!stop.get()) {
+                        futures.add(waitForKey(i0, cache, cnt));
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Started cont query count: " + cnt);
+                        if (log.isDebugEnabled())
+                            log.debug("Started cont query count: " + cnt);
 
-                                if (++cnt >= conQryCnt)
-                                    latch.countDown();
-                            }
+                        if (++cnt >= conQryCnt)
+                            latch.countDown();
+                    }
 
-                            return futures;
-                        }
-                    });
+                    return futures;
+                });
 
                 latch.await();
 
@@ -347,17 +337,13 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         final CacheEntryListenerConfiguration<Integer, String> cfg =
             createCacheListener(key, promise, id);
 
-        promise.listen(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> fut) {
-                GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.deregisterCacheEntryListener(cfg);
+        promise.listen(future ->
+            GridTestUtils.runAsync(() -> {
+                cache.deregisterCacheEntryListener(cfg);
 
-                        return null;
-                    }
-                });
-            }
-        });
+                return null;
+            })
+        );
 
         // Start listening.
         // Assumption: When the call returns, the listener is guaranteed to have been registered.
@@ -368,15 +354,13 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // Check asynchronously.
         // Complete the promise if the key was inserted concurrently.
         if (!((IgniteCacheProxy)cache).context().mvccEnabled()) {
-            cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> f) {
-                    String val = f.get();
+            cache.getAsync(key).listen(future -> {
+                String val = future.get();
 
-                    if (val != null) {
-                        log.info("Completed by get: " + id);
+                if (val != null) {
+                    log.info("Completed by get: " + id);
 
-                        (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by async get");
-                    }
+                    (((GridFutureAdapter) ((IgniteFutureImpl) promise).internalFuture())).onDone("by async get");
                 }
             });
         }
@@ -385,22 +369,20 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
             // When MVCC transaction completes, it's updates are not visible immediately for the new transactions.
             // This is caused by the lag between transaction completes on the node and mvcc coordinator
             // removes this transaction from the active list.
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    String v;
+            GridTestUtils.runAsync(() -> {
+                String value;
 
-                    while (!Thread.currentThread().isInterrupted()) {
-                        v = cache.get(key);
+                while (!Thread.currentThread().isInterrupted()) {
+                    value = cache.get(key);
 
-                        if (v == null)
-                            doSleep(100);
-                        else {
-                            log.info("Completed by async mvcc get: " + id);
+                    if (value == null)
+                        doSleep(100);
+                    else {
+                        log.info("Completed by async mvcc get: " + id);
 
-                            (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
+                        (((GridFutureAdapter) ((IgniteFutureImpl) promise).internalFuture())).onDone("by get");
 
-                            break;
-                        }
+                        break;
                     }
                 }
             });

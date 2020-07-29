@@ -28,8 +28,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -111,20 +109,18 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        clientCache.getAsync("key").listen(new IgniteInClosure<IgniteFuture<Object>>() {
-            @Override public void apply(IgniteFuture<Object> fut) {
-                assertTrue(fut.isDone());
+        clientCache.getAsync("key").listen(future -> {
+            assertTrue(future.isDone());
 
-                try {
-                    fut.get();
+            try {
+                future.get();
 
-                    fail();
-                }
-                catch (CacheException e) {
-                    log.info("Expected error: " + e);
+                fail();
+            }
+            catch (CacheException e) {
+                log.info("Expected error: " + e);
 
-                    futLatch.countDown();
-                }
+                futLatch.countDown();
             }
         });
 

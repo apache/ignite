@@ -99,11 +99,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             new CacheDiagnosticManager()
         );
 
-        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
         PageMemory mem = new PageMemoryImpl(
             provider, sizes,

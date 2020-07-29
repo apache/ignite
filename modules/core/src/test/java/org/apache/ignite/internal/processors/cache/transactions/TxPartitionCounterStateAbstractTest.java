@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -701,14 +700,12 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         IgniteInternalFuture fut = GridTestUtils.runAsync(r);
 
         // Fail test if future failed to finish normally.
-        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture fut0) {
-                try {
-                    fut0.get();
-                }
-                catch (Throwable t) {
-                    testFailed.set(t);
-                }
+        fut.listen(future -> {
+            try {
+                ((IgniteInternalFuture) future).get();
+            }
+            catch (Throwable t) {
+                testFailed.set(t);
             }
         });
     }

@@ -460,80 +460,74 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                 final CountDownLatch evtFromLsnrLatch = new CountDownLatch(1);
 
                 IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> fltrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
-                            if (asyncFltr) {
-                                assertFalse("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("sys-"));
+                    (ignite, e) -> {
+                        if (asyncFltr) {
+                            assertFalse("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("sys-"));
 
-                                assertTrue("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("callback-"));
-                            }
+                            assertTrue("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("callback-"));
                         }
                     };
 
                 IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> lsnrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
-                            IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
+                    (ignite, e) -> {
+                        IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
 
-                            QueryTestValue val = e.getValue();
+                        QueryTestValue val = e.getValue();
 
-                            if (val == null)
-                                return;
-                            else if (val.equals(newVal)) {
-                                evtFromLsnrLatch.countDown();
+                        if (val == null)
+                            return;
+                        else if (val.equals(newVal)) {
+                            evtFromLsnrLatch.countDown();
 
-                                return;
+                            return;
+                        }
+                        else if (!val.equals(val0))
+                            return;
+
+                        // For MVCC mode we need to wait until updated value becomes visible. Usually this is
+                        // several ms to wait - mvcc coordinator need some time to register tx as finished.
+                        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+                            Object v = null;
+
+                            while (v == null && !Thread.currentThread().isInterrupted()) {
+                                v = cache0.get(key);
+
+                                if (v == null)
+                                    doSleep(50);
                             }
-                            else if (!val.equals(val0))
-                                return;
+                        }
 
-                            // For MVCC mode we need to wait until updated value becomes visible. Usually this is
-                            // several ms to wait - mvcc coordinator need some time to register tx as finished.
-                            if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                                Object v = null;
+                        try {
+                            assertEquals(val, val0);
 
-                                while (v == null && !Thread.currentThread().isInterrupted()) {
-                                    v = cache0.get(key);
+                            if (atomicityMode(cache0) != ATOMIC) {
+                                boolean committed = false;
 
-                                    if (v == null)
-                                        doSleep(50);
-                                }
-                            }
+                                while (!committed && !Thread.currentThread().isInterrupted()) {
+                                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                        cache0.put(key, newVal);
 
-                            try {
-                                assertEquals(val, val0);
+                                        tx.commit();
 
-                                if (atomicityMode(cache0) != ATOMIC) {
-                                    boolean committed = false;
-
-                                    while (!committed && !Thread.currentThread().isInterrupted()) {
-                                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                            cache0.put(key, newVal);
-
-                                            tx.commit();
-
-                                            committed = true;
-                                        }
-                                        catch (Exception ex) {
-                                            assertTrue(ex.getCause() instanceof TransactionSerializationException);
-                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
-                                        }
+                                        committed = true;
+                                    }
+                                    catch (Exception ex) {
+                                        assertTrue(ex.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
-                                else
-                                    cache0.put(key, newVal);
-
-                                latch.countDown();
                             }
-                            catch (Exception exp) {
-                                log.error("Failed: ", exp);
+                            else
+                                cache0.put(key, newVal);
 
-                                throw new IgniteException(exp);
-                            }
+                            latch.countDown();
+                        }
+                        catch (Exception exp) {
+                            log.error("Failed: ", exp);
+
+                            throw new IgniteException(exp);
                         }
                     };
 
@@ -635,86 +629,80 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                 final CountDownLatch evtFromLsnrLatch = new CountDownLatch(1);
 
                 IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> fltrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
-                            if (asyncFilter) {
-                                assertFalse("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("sys-"));
+                    (ignite, event) -> {
+                        if (asyncFilter) {
+                            assertFalse("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("sys-"));
 
-                                assertTrue("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("callback-"));
-                            }
+                            assertTrue("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("callback-"));
+                        }
 
-                            IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
+                        IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
 
-                            QueryTestValue val = e.getValue();
+                        QueryTestValue val = event.getValue();
 
-                            if (val == null)
-                                return;
-                            else if (val.equals(newVal)) {
-                                evtFromLsnrLatch.countDown();
+                        if (val == null)
+                            return;
+                        else if (val.equals(newVal)) {
+                            evtFromLsnrLatch.countDown();
 
-                                return;
-                            }
-                            else if (!val.equals(val0))
-                                return;
+                            return;
+                        }
+                        else if (!val.equals(val0))
+                            return;
 
-                            try {
-                                assertEquals(val, val0);
+                        try {
+                            assertEquals(val, val0);
 
-                                if (atomicityMode(cache0) != ATOMIC) {
-                                    boolean committed = false;
+                            if (atomicityMode(cache0) != ATOMIC) {
+                                boolean committed = false;
 
-                                    while (!committed && !Thread.currentThread().isInterrupted()) {
-                                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                while (!committed && !Thread.currentThread().isInterrupted()) {
+                                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
 
-                                            cache0.put(key, newVal);
+                                        cache0.put(key, newVal);
 
-                                            tx.commit();
+                                        tx.commit();
 
-                                            committed = true;
-                                        }
-                                        catch (Exception ex) {
-                                            assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));
-                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
-                                        }
+                                        committed = true;
+                                    }
+                                    catch (Exception ex) {
+                                        assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));
+                                        assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
-                                else
-                                    cache0.put(key, newVal);
-
-                                latch.countDown();
                             }
-                            catch (Exception exp) {
-                                log.error("Failed: ", exp);
+                            else
+                                cache0.put(key, newVal);
 
-                                throw new IgniteException(exp);
-                            }
+                            latch.countDown();
+                        }
+                        catch (Exception exp) {
+                            log.error("Failed: ", exp);
+
+                            throw new IgniteException(exp);
                         }
                     };
 
                 IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> lsnrClsr =
-                    new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
-                        @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
-                            ? extends QueryTestValue> e) {
-                            if (asyncLsnr) {
-                                assertFalse("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("sys-"));
+                    (ignite, e) -> {
+                        if (asyncLsnr) {
+                            assertFalse("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("sys-"));
 
-                                assertTrue("Failed: " + Thread.currentThread().getName(),
-                                    Thread.currentThread().getName().contains("callback-"));
-                            }
-
-                            QueryTestValue val = e.getValue();
-
-                            if (val == null || !val.equals(new QueryTestValue(1)))
-                                return;
-
-                            assertEquals(val, val0);
-
-                            latch.countDown();
+                            assertTrue("Failed: " + Thread.currentThread().getName(),
+                                Thread.currentThread().getName().contains("callback-"));
                         }
+
+                        QueryTestValue val = e.getValue();
+
+                        if (val == null || !val.equals(new QueryTestValue(1)))
+                            return;
+
+                        assertEquals(val, val0);
+
+                        latch.countDown();
                     };
 
                 QueryCursor qry = null;

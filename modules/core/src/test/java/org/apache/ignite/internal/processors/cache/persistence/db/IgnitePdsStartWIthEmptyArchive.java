@@ -33,7 +33,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -194,12 +193,10 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         // Await all current available semgment will be archived.
         assertTrue(GridTestUtils.waitForCondition(
-            new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
+            () -> {
+                long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
 
-                    return cut >= awaitAchviedSegments;
-                }
+                return cut >= awaitAchviedSegments;
             }, 10_000));
     }
 }

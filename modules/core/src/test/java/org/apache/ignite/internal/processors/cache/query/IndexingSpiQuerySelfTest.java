@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -208,19 +207,17 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
             for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
 
-                GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        Transaction tx;
+                GridTestUtils.assertThrowsWithCause(() -> {
+                    Transaction tx;
 
-                        try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
-                            cache.put(1, 1);
+                    try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
+                        cache.put(1, 1);
 
-                            tx0.commit();
-                        }
-
-                        assertEquals(TransactionState.ROLLED_BACK, tx.state());
-                        return null;
+                        tx0.commit();
                     }
+
+                    assertEquals(TransactionState.ROLLED_BACK, tx.state());
+                    return null;
                 }, IgniteTxHeuristicCheckedException.class);
             }
         }

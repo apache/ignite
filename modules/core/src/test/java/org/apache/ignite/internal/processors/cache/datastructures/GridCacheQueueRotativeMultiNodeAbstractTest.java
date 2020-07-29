@@ -151,14 +151,12 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
         assertTrue(queue.isEmpty());
 
-        Thread th = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    assert grid(1).compute().call(new TakeJob(queueName, config(true)));
-                }
-                catch (IgniteException e) {
-                    error(e.getMessage(), e);
-                }
+        Thread th = new Thread(() -> {
+            try {
+                assert grid(1).compute().call(new TakeJob(queueName, config(true)));
+            }
+            catch (IgniteException e) {
+                error(e.getMessage(), e);
             }
         });
 

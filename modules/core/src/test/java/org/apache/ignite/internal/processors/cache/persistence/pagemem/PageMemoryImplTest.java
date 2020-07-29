@@ -286,11 +286,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             plc,
             pageStoreMgr,
             pageStoreMgr,
-            new IgniteInClosure<FullPageId>() {
-                @Override public void apply(FullPageId fullPageId) {
-                    assertTrue(allocated.contains(fullPageId));
-                }
-            }
+            fullPageId -> assertTrue(allocated.contains(fullPageId))
         );
 
         assert pagesForStartThrottling < memory.checkpointBufferPagesSize() / 3;

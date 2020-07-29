@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
@@ -279,65 +278,62 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         final AtomicBoolean done = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
-                Random rnd = ThreadLocalRandom.current();
+        IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
+            Random rnd = ThreadLocalRandom.current();
 
-                while (!done.get()) {
-                    final int mode = rnd.nextInt(3);
+            while (!done.get()) {
+                final int mode = rnd.nextInt(3);
 
-                    Map<Integer, Person> map = new TreeMap<>();
+                Map<Integer, Person> map = new TreeMap<>();
 
-                    for (int i = 0; i < batch; i++) {
-                        int key = rnd.nextInt(ENTRIES_COUNT);
+                for (int i = 0; i < batch; i++) {
+                    int key = rnd.nextInt(ENTRIES_COUNT);
 
-                        map.put(key, new Person("fn" + key, "ln" + key));
-                    }
-
-                    while (true) {
-                        try {
-                            switch (mode) {
-                                case 0: // Pessimistic tx.
-                                    try (Transaction tx = load.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                                        cache.putAll(map);
-
-                                        tx.commit();
-                                    }
-
-                                    break;
-
-                                case 1: // Optimistic serializable tx.
-                                    try (Transaction tx = load.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                        cache.putAll(map);
-
-                                        tx.commit();
-                                    }
-
-                                    break;
-
-                                default: // Implicit tx.
-                                    cache.putAll(map);
-                            }
-
-                            break;
-                        }
-                        catch (Exception e) {
-                            if (X.hasCause(e,
-                                TransactionOptimisticException.class,
-                                TransactionRollbackException.class,
-                                ClusterTopologyException.class,
-                                NodeStoppingException.class))
-                                continue; // Expected types.
-
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
+                    map.put(key, new Person("fn" + key, "ln" + key));
                 }
 
-                return null;
+                while (true) {
+                    try {
+                        switch (mode) {
+                            case 0: // Pessimistic tx.
+                                try (Transaction tx = load.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                                    cache.putAll(map);
+
+                                    tx.commit();
+                                }
+
+                                break;
+
+                            case 1: // Optimistic serializable tx.
+                                try (Transaction tx = load.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                    cache.putAll(map);
+
+                                    tx.commit();
+                                }
+
+                                break;
+
+                            default: // Implicit tx.
+                                cache.putAll(map);
+                        }
+
+                        break;
+                    }
+                    catch (Exception e) {
+                        if (X.hasCause(e,
+                            TransactionOptimisticException.class,
+                            TransactionRollbackException.class,
+                            ClusterTopologyException.class,
+                            NodeStoppingException.class))
+                            continue; // Expected types.
+
+                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                    }
+                }
             }
+
+            return null;
         }, threads, "updater");
 
         long end = System.currentTimeMillis() + SF.apply(90000);

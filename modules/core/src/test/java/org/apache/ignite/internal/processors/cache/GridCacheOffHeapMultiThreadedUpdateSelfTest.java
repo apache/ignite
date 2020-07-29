@@ -72,23 +72,21 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         final int THREADS = 5;
         final int ITERATIONS_PER_THREAD = iterations();
 
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                IgniteTransactions txs = ignite(0).transactions();
+        GridTestUtils.runMultiThreaded(() -> {
+            IgniteTransactions txs = ignite(0).transactions();
 
-                for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
-                    if (i % 500 == 0)
-                        log.info("Iteration " + i);
+            for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
+                if (i % 500 == 0)
+                    log.info("Iteration " + i);
 
-                    try (Transaction tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
-                        cache.invoke(key, new IncProcessor());
+                try (Transaction tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
+                    cache.invoke(key, new IncProcessor());
 
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
-
-                return null;
             }
+
+            return null;
         }, THREADS, "transform");
 
         for (int i = 0; i < gridCount(); i++) {
@@ -208,21 +206,19 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         final int THREADS = 5;
         final int ITERATIONS_PER_THREAD = iterations();
 
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
-                    if (i % 500 == 0)
-                        log.info("Iteration " + i);
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
+                if (i % 500 == 0)
+                    log.info("Iteration " + i);
 
-                    try (Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
-                        cache.putIfAbsent(key, 100);
+                try (Transaction tx = grid(0).transactions().txStart(txConcurrency, REPEATABLE_READ)) {
+                    cache.putIfAbsent(key, 100);
 
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
-
-                return null;
             }
+
+            return null;
         }, THREADS, "putxIfAbsent");
 
         for (int i = 0; i < gridCount(); i++) {

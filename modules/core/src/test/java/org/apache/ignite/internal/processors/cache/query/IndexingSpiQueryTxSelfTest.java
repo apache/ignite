@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -108,20 +107,18 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
             for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
 
-                GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        Transaction tx;
+                GridTestUtils.assertThrowsWithCause(() -> {
+                    Transaction tx;
 
-                        try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
-                            cache.put(key, key);
+                    try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
+                        cache.put(key, key);
 
-                            tx0.commit();
-                        }
-
-                        assertEquals(TransactionState.ROLLED_BACK, tx.state());
-
-                        return null;
+                        tx0.commit();
                     }
+
+                    assertEquals(TransactionState.ROLLED_BACK, tx.state());
+
+                    return null;
                 }, IgniteTxHeuristicCheckedException.class);
 
                 checkFutures();

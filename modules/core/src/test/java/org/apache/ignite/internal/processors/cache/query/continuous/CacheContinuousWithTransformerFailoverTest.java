@@ -96,11 +96,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
         ContinuousQueryWithTransformer<Object, Object, String> qry = new ContinuousQueryWithTransformer<>();
 
         qry.setLocalListener(lsnr);
-        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<?, ?>, String>() {
-            @Override public String apply(CacheEntryEvent<?, ?> evt) {
-                return "" + evt.getKey() + evt.getValue();
-            }
-        }));
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(event -> "" + event.getKey() + event.getValue()));
 
         QueryCursor<?> cur = clnNode.cache(DEFAULT_CACHE_NAME).query(qry);
 
@@ -162,12 +158,10 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
                 }
             });
 
-            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
-                @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-                    latch.countDown();
+            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(event -> {
+                latch.countDown();
 
-                    throw new RuntimeException("Test error.");
-                }
+                throw new RuntimeException("Test error.");
             }));
 
             qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Integer>() {
@@ -206,12 +200,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
             final CountDownLatch latch2 = new CountDownLatch(2);
 
             Factory<? extends IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>> factory =
-                FactoryBuilder.factoryOf(
-                    new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
-                        @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-                            return evt.getKey();
-                        }
-                    });
+                FactoryBuilder.factoryOf(Cache.Entry::getKey);
 
             ContinuousQueryWithTransformer<Integer, Integer, Integer> qry1 = new ContinuousQueryWithTransformer<>();
 

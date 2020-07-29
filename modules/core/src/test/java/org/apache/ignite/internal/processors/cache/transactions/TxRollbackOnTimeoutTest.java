@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -190,39 +189,37 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final int KEYS_PER_THREAD = 10_000;
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                int start = idx * KEYS_PER_THREAD;
-                int end = start + KEYS_PER_THREAD;
+        GridTestUtils.runMultiThreaded(idx -> {
+            int start = idx * KEYS_PER_THREAD;
+            int end = start + KEYS_PER_THREAD;
 
-                int locked = 0;
+            int locked = 0;
 
-                try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
-                        for (int i = start; i < end; i++) {
-                            cache.get(i);
+            try {
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
+                    for (int i = start; i < end; i++) {
+                        cache.get(i);
 
-                            locked++;
-                        }
-
-                        tx.commit();
+                        locked++;
                     }
+
+                    tx.commit();
                 }
-                catch (Exception e) {
-                    info("Expected error: " + e);
-                }
+            }
+            catch (Exception e) {
+                info("Expected error: " + e);
+            }
 
-                info("Done, locked: " + locked);
+            info("Done, locked: " + locked);
 
-                if (retry) {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
-                        for (int i = start; i < end; i++)
-                            cache.get(i);
+            if (retry) {
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
+                    for (int i = start; i < end; i++)
+                        cache.get(i);
 
-                        cache.put(start, 0);
+                    cache.put(start, 0);
 
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
             }
         }, Math.min(4, Runtime.getRuntime().availableProcessors()), "tx-thread");
