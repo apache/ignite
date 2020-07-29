@@ -54,6 +54,9 @@ class IgniteVersion(LooseVersion):
 
         return LooseVersion.__str__(self)
 
+    def __repr__(self):
+        return "IgniteVersion ('%s')" % str(self)
+
 
 DEV_BRANCH = IgniteVersion("dev")
 
