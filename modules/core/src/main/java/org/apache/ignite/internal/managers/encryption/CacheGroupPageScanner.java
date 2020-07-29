@@ -28,7 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,33 +55,11 @@ import org.apache.ignite.thread.OomExceptionHandler;
  * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
 public class CacheGroupPageScanner implements DbCheckpointListener {
-    /** The number of pages that is scanned during reencryption under checkpoint lock. */
-    public static final String IGNITE_REENCRYPTION_BATCH_SIZE = "IGNITE_REENCRYPTION_BATCH_SIZE";
-
-    /** The number of threads used to scan partitions when re-encrypting a cache group. */
-    public static final String IGNITE_REENCRYPTION_THREAD_POOL_SIZE = "IGNITE_REENCRYPTION_THREAD_POOL_SIZE";
-
-    /** Set up this property to disable background reencryption. */
-    public static final String IGNITE_REENCRYPTION_DISABLED = "IGNITE_REENCRYPTION_DISABLED";
-
-    /** Page scan rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
-    public static final String IGNITE_REENCRYPTION_RATE_MBPS = "IGNITE_REENCRYPTION_RATE_MBPS";
-
     /** Thread prefix for scanning tasks. */
     private static final String REENCRYPT_THREAD_PREFIX = "reencrypt";
 
-    /** Max amount of pages that will be read into memory under checkpoint read lock. */
-    private final int batchSize = IgniteSystemProperties.getInteger(IGNITE_REENCRYPTION_BATCH_SIZE, 100);
-
-    /** Page scan rate limit (in megabytes per second). */
-    private final int maxScanSpeed = IgniteSystemProperties.getInteger(IGNITE_REENCRYPTION_RATE_MBPS, 0);
-
-    /** Disable background pages scanning. */
-    private final boolean disabled = IgniteSystemProperties.getBoolean(IGNITE_REENCRYPTION_DISABLED, false);
-
-    /** Number of threads for partition scanning. */
-    private final int threadsCnt = IgniteSystemProperties.getInteger(IGNITE_REENCRYPTION_THREAD_POOL_SIZE,
-        Runtime.getRuntime().availableProcessors());
+    /** Encryption configuration. */
+    private final EncryptionConfiguration encrCfg;
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -115,10 +93,12 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         log = ctx.log(getClass());
 
+        encrCfg = ctx.config().getEncryptionConfiguration();
+
         execSvc = new IgniteThreadPoolExecutor(REENCRYPT_THREAD_PREFIX,
             ctx.igniteInstanceName(),
-            threadsCnt,
-            threadsCnt,
+            encrCfg.getReencryptionThreadCnt(),
+            encrCfg.getReencryptionThreadCnt(),
             IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
             GridIoPolicy.SYSTEM_POOL,
@@ -128,7 +108,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         long pagesPerMegabyte = IgniteUtils.MB / ctx.config().getDataStorageConfiguration().getPageSize();
 
-        limiter = maxScanSpeed > 0 ? new BasicRateLimiter(maxScanSpeed * pagesPerMegabyte) : null;
+        limiter = encrCfg.getReencryptionRateLimit() > 0 ?
+            new BasicRateLimiter(encrCfg.getReencryptionRateLimit() * pagesPerMegabyte) : null;
     }
 
     /** {@inheritDoc} */
@@ -189,7 +170,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @return {@code True} If reencryption is disabled.
      */
     public boolean disabled() {
-        return disabled;
+        return encrCfg.isReencryptionDisabled();
     }
 
     /**
@@ -198,7 +179,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @param grpId Cache group ID.
      */
     public IgniteInternalFuture<Void> schedule(int grpId) throws IgniteCheckedException {
-        if (disabled)
+        if (disabled())
             throw new IgniteCheckedException("Reencryption is disabled.");
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
@@ -499,6 +480,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
                 long metaPageId = pageMem.partitionMetaPageId(grpId, partId);
                 long state = ctx.encryption().getEncryptionState(grpId, partId);
+                int batchSize = encrCfg.getReencryptionBatchSize();
 
                 int off = (int)(state >> Integer.SIZE);
                 int cnt = (int)state;

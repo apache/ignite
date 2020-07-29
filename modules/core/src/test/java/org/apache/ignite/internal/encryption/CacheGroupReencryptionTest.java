@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
@@ -54,14 +55,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-import static org.apache.ignite.internal.managers.encryption.CacheGroupPageScanner.IGNITE_REENCRYPTION_BATCH_SIZE;
-import static org.apache.ignite.internal.managers.encryption.CacheGroupPageScanner.IGNITE_REENCRYPTION_DISABLED;
-import static org.apache.ignite.internal.managers.encryption.CacheGroupPageScanner.IGNITE_REENCRYPTION_RATE_MBPS;
-import static org.apache.ignite.internal.managers.encryption.CacheGroupPageScanner.IGNITE_REENCRYPTION_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -85,6 +81,18 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** Count of cache backups. */
     private int backups;
 
+    /** Re-ncryption rate limit. */
+    private int pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+
+    /** The number of pages that is scanned during re-encryption under checkpoint lock. */
+    private int pageScanBatchSize = EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
+
+    /** The number of threads used to scan partitions during re-encryption. */
+    private int pageScanThreadCnt = EncryptionConfiguration.DFLT_REENCRYPTION_THREAD_POOL_SIZE;
+
+    /** Disable background re-encryption flag. */
+    private boolean pageScanDisabled = EncryptionConfiguration.DFLT_REENCRYPTION_DISABLED;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -107,6 +115,14 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failing));
 
         cfg.setDataStorageConfiguration(memCfg);
+
+        EncryptionConfiguration encrCfg = new EncryptionConfiguration()
+            .setReencryptionBatchSize(pageScanBatchSize)
+            .setReencryptionDisabled(pageScanDisabled)
+            .setReencryptionRateLimit(pageScanRate)
+            .setReencryptionThreadCnt(pageScanThreadCnt);
+
+        cfg.setEncryptionConfiguration(encrCfg);
 
         return cfg;
     }
@@ -143,7 +159,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> loadData(50_000));
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> loadData(50_000));
 
         forceCheckpoint();
 
@@ -182,19 +198,19 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "1")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
     public void testPhysicalRecoveryWithUpdates() throws Exception {
+        pageScanRate = 1;
+        pageScanThreadCnt = 1;
+
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
         createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
 
         loadData(50_000);
 
-        IgniteInternalFuture addFut = GridTestUtils.runAsync(() -> loadData(100_000));
+        IgniteInternalFuture<?> addFut = GridTestUtils.runAsync(() -> loadData(100_000));
 
-        IgniteInternalFuture updateFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
             IgniteCache<Long, String> cache = grid(GRID_0).cache(cacheName());
 
             while (!Thread.currentThread().isInterrupted()) {
@@ -286,8 +302,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "1")
     public void testCacheStopDuringReencryption() throws Exception {
+        pageScanRate = 1;
+
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
         IgniteEx node0 = nodes.get1();
@@ -325,9 +342,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "1")
     public void testPartitionEvictionDuringReencryption() throws Exception {
         backups = 1;
+        pageScanRate = 1;
 
         CountDownLatch rebalanceFinished = new CountDownLatch(1);
 
@@ -362,7 +379,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
-        System.setProperty(IGNITE_REENCRYPTION_RATE_MBPS, "0");
+        pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 
         startTestGrids(false);
 
@@ -375,11 +392,11 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "1")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "10")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "2")
     public void testPartitionFileDestroy() throws Exception {
         backups = 1;
+        pageScanRate = 1;
+        pageScanBatchSize = 10;
+        pageScanThreadCnt = 2;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -411,11 +428,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "1")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         backups = 1;
+        pageScanRate = 1;
+        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -465,11 +481,11 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "2")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "10")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "2")
     public void testNotBltNodeJoin() throws Exception {
         backups = 1;
+        pageScanRate = 1;
+        pageScanBatchSize = 10;
+        pageScanThreadCnt = 2;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -522,8 +538,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_DISABLED, value = "true")
     public void testReencryptionStartsAfterNodeRestart() throws Exception {
+        pageScanDisabled = true;
+
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
         IgniteEx node0 = nodes.get1();
@@ -551,7 +568,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
-        System.setProperty(IGNITE_REENCRYPTION_DISABLED, "false");
+        pageScanDisabled = false;
 
         startTestGrids(false);
 
@@ -562,11 +579,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "2")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
     public void testReencryptionOnUnstableTopology() throws Exception {
         backups = 1;
+        pageScanRate = 2;
+        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -620,11 +636,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_RATE_MBPS, value = "2")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
     public void testChangeBaseline() throws Exception {
         backups = 1;
+        pageScanRate = 2;
+        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -717,8 +732,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_DISABLED, value = "true")
     public void testReencryptionMetrics() throws Exception {
+        pageScanDisabled = true;
+
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
         IgniteEx node0 = nodes.get1();
@@ -731,7 +747,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         validateMetrics(node0, false);
         validateMetrics(node1, false);
 
-        System.setProperty(IGNITE_REENCRYPTION_DISABLED, "false");
+        pageScanDisabled = false;
 
         stopAllGrids();
 
