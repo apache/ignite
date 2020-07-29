@@ -14,15 +14,25 @@
 # limitations under the License.
 
 """
-This module renders Ignite config and all related artifacts
+This module contains iggnite config classes and utilities.
 """
 
 
 class IgniteConfig:
+    """
+    Ignite configuration renderer.
+    """
     def __init__(self, project="ignite"):
         self.project = project
 
-    def render(self, config_dir, work_dir, properties=""):
+    @staticmethod
+    def render(config_dir, work_dir, properties=""):
+        """
+        :param config_dir: Ignite config directory
+        :param work_dir: Ignite working directory.
+        :param properties: Additional xml string of properties.
+        :return: Rendered ignite configuration xml.
+        """
         return """<?xml version="1.0" encoding="UTF-8"?>
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -43,7 +53,12 @@ class IgniteConfig:
                    work_dir=work_dir,
                    properties=properties)
 
-    def render_log4j(self, work_dir):
+    @staticmethod
+    def render_log4j(work_dir):
+        """
+        :param work_dir: Ignite working directory.
+        :return: Rendered log4j configuration xml.
+        """
         return """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
     "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">

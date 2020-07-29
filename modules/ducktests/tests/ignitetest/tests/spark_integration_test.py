@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains spark integration test.
+"""
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_spark_app import SparkIgniteApplicationService
@@ -20,6 +24,7 @@ from ignitetest.services.spark import SparkService
 from ignitetest.tests.utils.ignite_test import IgniteTest
 
 
+# pylint: disable=W0223
 class SparkIntegrationTest(IgniteTest):
     """
     Test performs:
@@ -30,6 +35,9 @@ class SparkIntegrationTest(IgniteTest):
 
     @staticmethod
     def properties(client_mode="false"):
+        """
+        :return: Rendered configuration properties.
+        """
         return """
             <property name="clientMode" value="{client_mode}"/>
         """.format(client_mode=client_mode)
@@ -48,11 +56,15 @@ class SparkIntegrationTest(IgniteTest):
         self.ignite.stop()
 
     def test_spark_client(self):
+        """
+        Performs test scenario.
+        """
         self.stage("Starting sample data generator")
 
         IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test.SampleDataStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test."
+                            "SampleDataStreamerApplication",
             params="cache,1000",
             properties=self.properties(client_mode="true")).run()
 

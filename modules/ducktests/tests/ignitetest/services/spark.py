@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains spark service class.
+"""
+
 import os.path
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -24,6 +28,9 @@ from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 class SparkService(IgniteAwareService):
+    """
+    Start a spark node.
+    """
     INSTALL_DIR = "/opt/spark-{version}".format(version="2.3.4")
     SPARK_PERSISTENT_ROOT = "/mnt/spark"
 
@@ -68,6 +75,7 @@ class SparkService(IgniteAwareService):
 
         return cmd
 
+    # pylint: disable=W0221
     def start_node(self, node, timeout_sec=30):
         self.init_persistent(node)
 
@@ -91,7 +99,7 @@ class SparkService(IgniteAwareService):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
+    def stop_node(self, node):
         if node == self.nodes[0]:
             node.account.ssh(os.path.join(SparkService.INSTALL_DIR, "sbin", "stop-master.sh"))
         else:
@@ -103,28 +111,40 @@ class SparkService(IgniteAwareService):
         node.account.ssh("sudo rm -rf -- %s" % SparkService.SPARK_PERSISTENT_ROOT, allow_fail=False)
 
     def pids(self, node):
-        """Return process ids associated with running processes on the given node."""
         try:
             cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.java_class_name(node)
-            pid_arr = [pid for pid in node.account.ssh_capture(cmd, allow_fail=True, callback=int)]
-            return pid_arr
-        except (RemoteCommandError, ValueError) as e:
+            return list(node.account.ssh_capture(cmd, allow_fail=True, callback=int))
+        except (RemoteCommandError, ValueError):
             return []
 
     def java_class_name(self, node):
+        """
+        :param node: Spark node.
+        :return: Class name depending on node type (master or slave).
+        """
         if node == self.nodes[0]:
             return "org.apache.spark.deploy.master.Master"
-        else:
-            return "org.apache.spark.deploy.worker.Worker"
 
-    def master_log_path(self, node):
+        return "org.apache.spark.deploy.worker.Worker"
+
+    @staticmethod
+    def master_log_path(node):
+        """
+        :param node: Spark master node.
+        :return: Path to log file.
+        """
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.master.Master-{instance}-{host}.out".format(
             SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
 
-    def slave_log_path(self, node):
+    @staticmethod
+    def slave_log_path(node):
+        """
+        :param node: Spark slave node.
+        :return: Path to log file.
+        """
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.worker.Worker-{instance}-{host}.out".format(
             SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
             userID=node.account.user,

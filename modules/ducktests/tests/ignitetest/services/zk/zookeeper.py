@@ -12,12 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+This module contains classes and utilities to start zookeeper cluster for testing ZookeeperDiscovery.
+"""
+
 import os.path
 
 from ducktape.services.service import Service
 
 
 class ZookeeperSettings:
+    """
+    Settings for zookeeper quorum nodes.
+    """
     def __init__(self, tick_time=1000, init_limit=10, sync_limit=5, client_port=2181):
         self.tick_time = tick_time
         self.init_limit = init_limit
@@ -26,6 +34,9 @@ class ZookeeperSettings:
 
 
 class ZookeeperService(Service):
+    """
+    Zookeeper service.
+    """
     PERSISTENT_ROOT = "/mnt/zookeeper"
     CONFIG_ROOT = os.path.join(PERSISTENT_ROOT, "conf")
     LOG_FILE = os.path.join(PERSISTENT_ROOT, "zookeeper.log")
@@ -41,16 +52,17 @@ class ZookeeperService(Service):
         }
     }
 
-    def __init__(self, context, num_nodes, settings=ZookeeperSettings()):
+    def __init__(self, context, num_nodes, settings=ZookeeperSettings(), start_timeout_sec=60):
         super(ZookeeperService, self).__init__(context, num_nodes)
         self.settings = settings
+        self.start_timeout_sec = start_timeout_sec
 
-    def start(self, timeout_sec=60):
-        Service.start(self)
+    def start(self):
+        super(ZookeeperService, self).start()
         self.logger.info("Waiting for Zookeeper quorum...")
 
         for node in self.nodes:
-            self.await_quorum(node, timeout_sec)
+            self.await_quorum(node, self.start_timeout_sec)
 
         self.logger.info("Zookeeper quorum is formed.")
 
@@ -89,6 +101,11 @@ class ZookeeperService(Service):
         self.logger.info("Zookeeper node %d started on %s", idx, node.account.hostname)
 
     def await_quorum(self, node, timeout):
+        """
+        Await quorum formed on node (leader election ready).
+        :param node:  Zookeeper service node.
+        :param timeout: Wait timeout.
+        """
         with node.account.monitor_log(self.LOG_FILE) as monitor:
             monitor.offset = 0
             monitor.wait_until(
@@ -103,12 +120,26 @@ class ZookeeperService(Service):
         return "org.apache.zookeeper.server.quorum.QuorumPeerMain"
 
     def pids(self, node):
+        """
+        Get pids of zookeeper service node.
+        :param node: Zookeeper service node.
+        :return: List of pids.
+        """
         return node.account.java_pids(self.java_class_name())
 
     def alive(self, node):
+        """
+        Check if zookeeper service node is alive.
+        :param node: Zookeeper service node.
+        :return: True if node is alive
+        """
         return len(self.pids(node)) > 0
 
     def connection_string(self):
+        """
+        Form a connection string to zookeeper cluster.
+        :return: Connection string.
+        """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
     def stop_node(self, node):

@@ -13,15 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains basic ignite test.
+"""
+
 from ducktape.tests.test import Test
 from monotonic import monotonic
 
 
+# pylint: disable=W0223
 class IgniteTest(Test):
+    """
+    Basic ignite test.
+    """
     def __init__(self, test_context):
         super(IgniteTest, self).__init__(test_context=test_context)
 
     def stage(self, msg):
+        """
+        Print stage mark.
+        :param msg: Stage mark message.
+        """
         self.logger.info("[TEST_STAGE] " + msg + "...")
 
     @staticmethod

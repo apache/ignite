@@ -13,17 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains the ignite application service allows to perform custom logic writen on java.
+"""
+
 from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
 from ignitetest.tests.utils.version import DEV_BRANCH
 
-"""
-The Ignite application service allows to perform custom logic writen on java.
-"""
-
 
 class IgniteApplicationService(IgniteAwareApplicationService):
+    """
+    The Ignite application service allows to perform custom logic writen on java.
+    """
     service_java_class_name = "org.apache.ignite.internal.ducktest.utils.IgniteApplicationService"
 
+    # pylint: disable=R0913
     def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
         super(IgniteApplicationService, self).__init__(context, java_class_name, version, properties, params,
                                                        timeout_sec, self.service_java_class_name)

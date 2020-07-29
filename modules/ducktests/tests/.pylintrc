@@ -12,29 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+[BASIC]
+min-public-methods=0
+# TODO: Remove after migrating to python 3
+disable=R0205
 
-"""
-This module contains various useful decorators.
-"""
+[SIMILARITIES]
+ignore-imports=yes
 
-import functools
-from threading import RLock
-
-
-def memoize(func):
-    """
-    Decorate function to memoize first call to thread safe cache.
-    """
-    cache = func.cache = {}
-    lock = RLock()
-
-    @functools.wraps(func)
-    def memoized_func(*args, **kwargs):
-        key = str(args) + str(kwargs)
-        if key not in cache:
-            with lock:
-                if key not in cache:
-                    cache[key] = func(*args, **kwargs)
-        return cache[key]
-
-    return memoized_func
+[FORMAT]
+max-line-length=120

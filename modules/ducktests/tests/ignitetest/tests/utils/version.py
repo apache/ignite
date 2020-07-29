@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Module contains ignite version utility class.
+"""
 
 from distutils.version import LooseVersion
 from ignitetest import __version__
@@ -47,8 +50,8 @@ class IgniteVersion(LooseVersion):
     def __str__(self):
         if self.is_dev:
             return "dev"
-        else:
-            return LooseVersion.__str__(self)
+
+        return LooseVersion.__str__(self)
 
 
 def get_version(node=None):
@@ -58,8 +61,8 @@ def get_version(node=None):
     """
     if node is not None and hasattr(node, "version") and node.version is not None:
         return node.version
-    else:
-        return DEV_BRANCH
+
+    return DEV_BRANCH
 
 
 DEV_BRANCH = IgniteVersion("dev")

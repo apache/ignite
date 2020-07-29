@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Module contains node rebalance tests.
+"""
+
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
@@ -22,7 +26,11 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
+# pylint: disable=W0223
 class AddNodeRebalanceTest(IgniteTest):
+    """
+    Test basic rebalance scenarios.
+    """
     NUM_NODES = 4
     PRELOAD_TIMEOUT = 60
     DATA_AMOUNT = 1000000
@@ -34,6 +42,9 @@ class AddNodeRebalanceTest(IgniteTest):
 
     @staticmethod
     def properties(client_mode="false"):
+        """
+        :return: Rendered configuration properties.
+        """
         return """
             <property name="clientMode" value="{client_mode}"/>
         """.format(client_mode=client_mode)

@@ -12,18 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
 
-from ducktape.services.service import Service
+"""
+This module contains the base class to build Ignite aware application written on java.
+"""
+
+import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
-"""
-The base class to build Ignite aware application written on java.
-"""
-
 
 class IgniteAwareApplicationService(IgniteAwareService):
+    """
+    The base class to build Ignite aware application written on java.
+    """
+    # pylint: disable=R0913
     def __init__(self, context, java_class_name, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
         super(IgniteAwareApplicationService, self).__init__(context, 1, version, properties)
@@ -52,9 +55,10 @@ class IgniteAwareApplicationService(IgniteAwareService):
                 self.STDOUT_STDERR_CAPTURE)
         return cmd
 
+    # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=20):
         self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
-        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=True, allow_fail=True)
+        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown, allow_fail=True)
 
         stopped = self.wait_node(node, timeout_sec=self.stop_timeout_sec)
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
@@ -72,6 +76,9 @@ class IgniteAwareApplicationService(IgniteAwareService):
         node.account.ssh("rm -rf %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
     def app_args(self):
+        """
+        :return: Application arguments.
+        """
         args = self.java_class_name + "," + IgniteAwareApplicationService.CONFIG_FILE
 
         if self.params != "":
@@ -83,6 +90,9 @@ class IgniteAwareApplicationService(IgniteAwareService):
         return node.account.java_pids(self.servicejava_class_name)
 
     def jvm_opts(self):
+        """
+        :return: Application JVM options.
+        """
         return "-J-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file " + \
                "-J-Dlog4j.configDebug=true " \
                "-J-Xmx1G " \
@@ -90,6 +100,9 @@ class IgniteAwareApplicationService(IgniteAwareService):
                "-J-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false "
 
     def env(self):
+        """
+        :return: Export string of additional environment variables.
+        """
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
                "export EXCLUDE_TEST_CLASSES=true; " + \
                "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=self.PERSISTENT_ROOT) + \
@@ -97,6 +110,10 @@ class IgniteAwareApplicationService(IgniteAwareService):
                % self.path.home(self.version)
 
     def extract_result(self, name):
+        """
+        :param name: Result parameter's name.
+        :return: Extracted result of application run.
+        """
         res = ""
 
         output = self.nodes[0].account.ssh_capture(

@@ -12,6 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+This module contains PME free switch tests.
+"""
+
 import time
 
 from ducktape.mark import parametrize
@@ -23,11 +28,18 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
 
+# pylint: disable=W0223
 class PmeFreeSwitchTest(IgniteTest):
+    """
+    Tests PME free switch scenarios.
+    """
     NUM_NODES = 3
 
     @staticmethod
     def properties(client_mode="false"):
+        """
+        :return: Rendered configuration properties.
+       """
         return """
             <property name="clientMode" value="{client_mode}"/>
             <property name="cacheConfiguration">
@@ -54,6 +66,9 @@ class PmeFreeSwitchTest(IgniteTest):
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
     def test(self, version):
+        """
+        Test PME free scenario (node stop).
+        """
         data = {}
 
         self.stage("Starting nodes")
@@ -83,7 +98,8 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.SingleKeyTxStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test."
+                            "SingleKeyTxStreamerApplication",
             properties=self.properties(client_mode="true"),
             params="test-cache,1000",
             version=ignite_version)

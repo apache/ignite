@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains class to start ignite cluster node.
+"""
+
 import os.path
 import signal
 
@@ -24,6 +28,9 @@ from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 class IgniteService(IgniteAwareService):
+    """
+    Ignite node service.
+    """
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
@@ -40,6 +47,7 @@ class IgniteService(IgniteAwareService):
     def __init__(self, context, num_nodes, version=DEV_BRANCH, properties=""):
         super(IgniteService, self).__init__(context, num_nodes, version, properties)
 
+    # pylint: disable=W0221
     def start(self, timeout_sec=180):
         super(IgniteService, self).start()
 
@@ -64,11 +72,17 @@ class IgniteService(IgniteAwareService):
         return cmd
 
     def await_node_started(self, node, timeout_sec):
+        """
+        Await topology ready event on node start.
+        :param node: Node to wait
+        :param timeout_sec: Number of seconds to wait event.
+        """
         self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
 
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
+    # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
         pids = self.pids(node)
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
@@ -88,17 +102,20 @@ class IgniteService(IgniteAwareService):
         node.account.ssh("sudo rm -rf -- %s" % IgniteService.PERSISTENT_ROOT, allow_fail=False)
 
     def thread_dump(self, node):
+        """
+        Generate thread dump on node.
+        :param node: Ignite service node.
+        """
         for pid in self.pids(node):
             try:
                 node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
-            except:
+            except RemoteCommandError:
                 self.logger.warn("Could not dump threads on node")
 
     def pids(self, node):
-        """Return process ids associated with running processes on the given node."""
         try:
             cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.APP_SERVICE_CLASS
-            pid_arr = [pid for pid in node.account.ssh_capture(cmd, allow_fail=True, callback=int)]
+            pid_arr = list(node.account.ssh_capture(cmd, allow_fail=True, callback=int))
             return pid_arr
-        except (RemoteCommandError, ValueError) as e:
+        except (RemoteCommandError, ValueError):
             return []
