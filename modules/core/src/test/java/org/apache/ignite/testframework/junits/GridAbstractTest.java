@@ -1739,7 +1739,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return Grid test configuration.
      * @throws Exception If failed.
+     * Don't use this method in test, it doesn't call.
      */
+    @Deprecated
     protected IgniteConfiguration getConfiguration() throws Exception {
         // Generate unique Ignite instance name.
         return getConfiguration(getTestIgniteInstanceName());
