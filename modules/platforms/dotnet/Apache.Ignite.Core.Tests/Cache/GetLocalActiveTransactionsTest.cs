@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Linq;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
@@ -27,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework.Constraints;
 
     /// <summary>
-    /// 
+    /// Tests <see cref="ITransactions.GetLocalActiveTransactions"/>.
     /// </summary>
     public class GetLocalActiveTransactionsTest : TestBase
     {
@@ -46,7 +45,6 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Ignition.Start(cfg);
         }
-
 
         /// <summary>
         /// Fixture teardown.
