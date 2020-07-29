@@ -103,7 +103,7 @@ public class SchedulerSandboxTest extends AbstractSandboxTest {
                 throw error;
         });
 
-        if(isForbiddenCase)
+        if (isForbiddenCase)
             runForbiddenOperation(r, AccessControlException.class);
         else
             runOperation(r);

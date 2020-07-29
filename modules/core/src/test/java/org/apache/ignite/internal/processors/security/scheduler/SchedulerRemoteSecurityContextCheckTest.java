@@ -90,7 +90,7 @@ public class SchedulerRemoteSecurityContextCheckTest extends AbstractRemoteSecur
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterCompute(){
+    @Override protected void afterCompute() {
         try {
             latch.await(10, TimeUnit.SECONDS);
         }
