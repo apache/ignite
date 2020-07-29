@@ -39,6 +39,8 @@ public class RebalanceBlockingSPI extends TcpCommunicationSpi {
             if (grpId == CU.cacheId(cacheName)) {
                 CountDownLatch latch0 = supplyMsgLatch.get();
 
+                Optional.ofNullable(supplyMsgSndLatch.get()).ifPresent(CountDownLatch::countDown);
+
                 if (latch0 != null)
                     try {
                         latch0.await();
