@@ -39,7 +39,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Serves for managing encryption keys (and related structure) located in the heap.
+ * Serves for managing encryption keys and related datastructure located in the heap.
  */
 class CacheGroupEncryptionKeys {
     /** Group encryption keys. */
@@ -52,7 +52,7 @@ class CacheGroupEncryptionKeys {
     private final EncryptionSpi encSpi;
 
     /**
-     * @param encSpi  Encryption spi.
+     * @param encSpi Encryption spi.
      */
     CacheGroupEncryptionKeys(EncryptionSpi encSpi) {
         this.encSpi = encSpi;
@@ -137,18 +137,20 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * @return Local encryption keys.
+     * @param grpId Cache group ID.
+     *
+     * @return Local encryption keys used for specified cache group.
      */
     List<GroupKeyEncrypted> keys(int grpId) {
-        List<GroupKey> keys = grpKeys.get(grpId);
+        List<GroupKey> grpKeys = this.grpKeys.get(grpId);
 
-        if (F.isEmpty(keys))
+        if (F.isEmpty(grpKeys))
             return null;
 
-        List<GroupKeyEncrypted> encryptedKeys = new ArrayList<>(keys.size());
+        List<GroupKeyEncrypted> encryptedKeys = new ArrayList<>(grpKeys.size());
 
-        for (GroupKey key : keys)
-            encryptedKeys.add(new GroupKeyEncrypted(key.unsignedId(), encSpi.encryptKey(key.key())));
+        for (GroupKey grpKey : grpKeys)
+            encryptedKeys.add(new GroupKeyEncrypted(grpKey.unsignedId(), encSpi.encryptKey(grpKey.key())));
 
         return encryptedKeys;
     }
@@ -156,14 +158,12 @@ class CacheGroupEncryptionKeys {
     /**
      * @param grpId Cache group ID.
      * @param newKey New encrypted key for writing.
-     * @param createGrpIfNotExists Create a new list of keys for the group, if it doesn't exist.
      * @return Previous encryption key for writing.
      */
-    GroupKey put(int grpId, GroupKeyEncrypted newKey, boolean createGrpIfNotExists) {
+    GroupKey put(int grpId, GroupKeyEncrypted newKey) {
         assert newKey != null;
 
-        List<GroupKey> keys = createGrpIfNotExists ?
-            grpKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>()) : grpKeys.get(grpId);
+        List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
 
         if (keys == null)
             return null;
