@@ -122,7 +122,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                _txs.TxRollback(this);
+                try
+                {
+                    _txs.TxRollback(this);
+                }
+                finally
+                {
+                    _isClosed = true;
+                }
             }
         }
 
@@ -133,7 +140,18 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                return _txs.TxRollbackAsync(this).ContWith(x => _txs.TxClose(this));
+                return _txs.TxRollbackAsync(this)
+                    .ContWith(t =>
+                    {
+                        try
+                        {
+                            _txs.TxClose(this);
+                        }
+                        finally
+                        {
+                            _isClosed = true;
+                        }
+                    });
             }
         }
 
@@ -167,6 +185,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 {
                     Debug.WriteLine(e.Message);
                     // No-op.
+                }
+                finally
+                {
+                    _isClosed = true;
                 }
             }
         }
