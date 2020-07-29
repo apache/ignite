@@ -60,16 +60,21 @@ public class GridEventStorageManagerInternalEventsSelfTest extends GridCommonAbs
         Ignite ignite_1 = startGrid(0);
         Ignite ignite_2 = startGrid(1);
 
-        CountDownLatch activatedLatch = addDisposableLocalListener(ignite_2, EVT_CLUSTER_ACTIVATED);
         CountDownLatch deactivatedLatch = addDisposableLocalListener(ignite_2, EVT_CLUSTER_DEACTIVATED);
-        CountDownLatch stateChangedLatch = addDisposableLocalListener(ignite_2, EVT_CLUSTER_STATE_CHANGED);
+        CountDownLatch stateChangedLatch1 = addDisposableLocalListener(ignite_2, EVT_CLUSTER_STATE_CHANGED);
 
         ignite_1.cluster().state(ClusterState.INACTIVE);
+
+        assertTrue(deactivatedLatch.await(2, TimeUnit.SECONDS));
+        assertTrue(stateChangedLatch1.await(2, TimeUnit.SECONDS));
+
+        CountDownLatch activatedLatch = addDisposableLocalListener(ignite_2, EVT_CLUSTER_ACTIVATED);
+        CountDownLatch stateChangedLatch2 = addDisposableLocalListener(ignite_2, EVT_CLUSTER_STATE_CHANGED);
+
         ignite_1.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(activatedLatch.await(2, TimeUnit.SECONDS));
-        assertTrue(deactivatedLatch.await(2, TimeUnit.SECONDS));
-        assertTrue(stateChangedLatch.await(2, TimeUnit.SECONDS));
+        assertTrue(stateChangedLatch2.await(2, TimeUnit.SECONDS));
     }
 
     /**
