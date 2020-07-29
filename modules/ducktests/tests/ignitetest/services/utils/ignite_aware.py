@@ -27,6 +27,8 @@ from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteSe
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 
+from ignitetest.tests.utils.version import IgniteVersion
+
 
 class IgniteAwareService(BackgroundThreadService):
     """
@@ -46,20 +48,26 @@ class IgniteAwareService(BackgroundThreadService):
     }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, client_mode, version, properties):
+    def __init__(self, context, num_nodes, modules, client_mode, version, properties):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
-        self.path = IgnitePath(context)
         self.jvm_options = context.globals.get("jvm_opts", "")
 
         self.log_level = "DEBUG"
         self.properties = properties
-        self.version = version
-        self.logger_config = IgniteLoggerConfig()
+
+        if isinstance(version, IgniteVersion):
+            self.version = version
+        else:
+            self.version = IgniteVersion(version)
+
+        self.path = IgnitePath(self.version, context)
         self.client_mode = client_mode
 
-        for node in self.nodes:
-            node.version = version
+        libs = modules or []
+        libs.extend(["ignite-log4j"])
+        libs = map(lambda m: self.path.module(m) + "/*", libs)
+        self.user_libs = ":".join(libs)
 
     def start_node(self, node):
         self.init_persistent(node)
@@ -75,10 +83,12 @@ class IgniteAwareService(BackgroundThreadService):
         Init persistent directory.
         :param node: Ignite service node.
         """
+        logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
+
         node.account.mkdirs(self.PERSISTENT_ROOT)
         node.account.create_file(self.CONFIG_FILE, self.config().render(
             config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR, properties=self.properties))
-        node.account.create_file(self.LOG4J_CONFIG_FILE, self.logger_config.render(work_dir=self.WORK_DIR))
+        node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
 
     @abstractmethod
     def start_cmd(self, node):
@@ -159,7 +169,7 @@ class IgniteAwareService(BackgroundThreadService):
         """
         for node in self.nodes:
             cmd = "%s 1>> %s 2>> %s" % \
-                  (self.path.script(command, node),
+                  (self.path.script(command),
                    self.STDOUT_STDERR_CAPTURE,
                    self.STDOUT_STDERR_CAPTURE)
 

@@ -20,17 +20,24 @@ from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationSer
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 
+# pylint: disable=W0511
+# TODO: why not spark-submit? (spark-defaults could be configured instead of in-code addJar)
+# pylint: disable=W0511
+# TODO: how to configure spark version (2.3.0 vs 2.3.4)?
 class SparkIgniteApplicationService(IgniteAwareApplicationService):
     """
     The Ignite-Spark application service.
     """
     # pylint: disable=R0913
-    def __init__(self, context, java_class_name, client_mode=True, version=DEV_BRANCH, properties="", params="",
-                 timeout_sec=60):
-        super(SparkIgniteApplicationService, self).__init__(context, java_class_name, client_mode, version, properties,
-                                                            params, timeout_sec)
+    def __init__(self, context, java_class_name, modules=None, client_mode=True, version=DEV_BRANCH,
+                 properties="", params="", timeout_sec=60):
+        modules = modules or []
+        modules.extend(["ignite-spark"])
+        super(SparkIgniteApplicationService, self).__init__(context, java_class_name, modules, client_mode, version,
+                                                            properties, params, timeout_sec)
 
     def env(self):
         return IgniteAwareApplicationService.env(self) + \
                "export EXCLUDE_MODULES=\"kubernetes,aws,gce,mesos,rest-http,web-agent,zookeeper,serializers,store," \
-               "rocketmq\"; "
+               "rocketmq\"; " + \
+               "export USER_LIBS=$USER_LIBS:/opt/spark-2.3.4/jars/*; "

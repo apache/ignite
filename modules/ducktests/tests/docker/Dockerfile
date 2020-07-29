@@ -51,7 +51,6 @@ RUN for v in "2.7.6" "2.8.0" "2.8.1"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
-    cp -r ./ignite-$v/libs/optional/ignite-zookeeper ./ignite-$v/libs; \
     done
 
 RUN rm /opt/apache-ignite-*-bin.zip
@@ -73,7 +72,6 @@ ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
 
 RUN cd /opt && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
 RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
-RUN chmod a+wr /opt/$SPARK_NAME -R
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
