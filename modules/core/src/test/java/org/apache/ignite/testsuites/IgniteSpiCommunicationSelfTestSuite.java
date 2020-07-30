@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
@@ -103,9 +104,9 @@ import org.junit.runners.Suite;
     TcpCommunicationSpiMultiJvmTest.class,
     TooManyOpenFilesTcpCommunicationSpiTest.class,
 
-    GridTcpCommunicationInverseConnectionEstablishingTest.class
+    GridTcpCommunicationInverseConnectionEstablishingTest.class,
 
-    //GridCacheDhtLockBackupSelfTest.class,
+    GridCacheDhtLockBackupSelfTest.class,
 })
 public class IgniteSpiCommunicationSelfTestSuite {
 }

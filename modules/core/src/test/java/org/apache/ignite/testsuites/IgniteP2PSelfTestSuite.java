@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.GridP2PAffinitySelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
@@ -47,6 +48,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    GridP2PAffinitySelfTest.class,
     GridP2PDoubleDeploymentSelfTest.class,
     GridP2PHotRedeploymentSelfTest.class,
     GridP2PClassLoadingSelfTest.class,
@@ -58,7 +60,6 @@ import org.junit.runners.Suite;
     GridP2PJobClassLoaderSelfTest.class,
     GridP2PRecursionTaskSelfTest.class,
     GridP2PLocalDeploymentSelfTest.class,
-    //GridP2PTestTaskExecutionTest.class,
     GridP2PTimeoutSelfTest.class,
     GridP2PMissedResourceCacheSizeSelfTest.class,
     GridP2PContinuousDeploymentSelfTest.class,
