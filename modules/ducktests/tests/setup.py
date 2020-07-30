@@ -47,11 +47,11 @@ setup(name="ignitetest",
       version=version,
       description="Apache Ignite System Tests",
       author="Apache Ignite",
-      platforms=["any"], 
+      platforms=["any"],
       license="apache2.0",
       packages=find_packages(),
       include_package_data=True,
-      install_requires=["ducktape==0.7.7", "requests==2.20.0"],
+      install_requires=["ducktape==0.7.8", "requests==2.20.0"],
       tests_require=["pytest", "mock", "monotonic"],
       cmdclass={'test': PyTest}
 )
