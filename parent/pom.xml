@@ -325,14 +325,6 @@
                                 <packages>org.apache.ignite.client</packages>
                             </group>
                             <group>
-                                <title>File System APIs</title>
-                                <packages>org.apache.ignite.igfs*</packages>
-                            </group>
-                            <group>
-                                <title>Hadoop Accelerator APIs</title>
-                                <packages>org.apache.ignite.hadoop*</packages>
-                            </group>
-                            <group>
                                 <title>Streaming APIs</title>
                                 <packages>org.apache.ignite.streamer*:org.apache.ignite.stream*</packages>
                             </group>
@@ -467,10 +459,6 @@
                             <group>
                                 <title>Encryption SPI</title>
                                 <packages>org.apache.ignite.spi.encryption*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Web Console</title>
-                                <packages>org.apache.ignite.console*</packages>
                             </group>
                             <group>
                                 <title>Metric SPI</title>
@@ -986,18 +974,6 @@
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
-                                        <!--web console-->
-                                        <exclude>**/web-console/**/.eslintrc</exclude>
-                                        <exclude>**/web-console/**/.babelrc</exclude>
-                                        <exclude>**/web-console/**/*.json</exclude>
-                                        <exclude>**/web-console/**/*.json.sample</exclude>
-                                        <exclude>**/web-console/backend/build/**</exclude>
-                                        <exclude>**/web-console/backend/node_modules/**</exclude>
-                                        <exclude>**/web-console/e2e/testcafe/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/build/**</exclude>
-                                        <exclude>**/web-console/frontend/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/**/*.png</exclude>
-                                        <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                     </excludes>

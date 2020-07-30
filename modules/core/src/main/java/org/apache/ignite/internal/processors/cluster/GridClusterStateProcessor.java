@@ -1410,8 +1410,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     ctx.dataStructures().onActivate(ctx);
 
-                    ctx.igfs().onActivate(ctx);
-
                     ctx.task().onActivate(ctx);
 
                     ctx.encryption().onActivate(ctx);
