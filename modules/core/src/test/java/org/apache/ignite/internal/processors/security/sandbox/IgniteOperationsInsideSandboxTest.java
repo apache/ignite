@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -314,6 +315,19 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
             new TestRunnable() {
                 @Override public void run() {
                     ignite.affinity(TEST_CACHE).partition(new Object());
+                }
+            });
+    }
+
+    /** */
+    @Test
+    public void testScheduler() {
+        compute().broadcast(
+            new TestRunnable() {
+                @Override public void run() {
+                    ignite.scheduler().runLocal(TEST_RUNNABLE);
+                    ignite.scheduler().runLocal(TEST_RUNNABLE, 1, TimeUnit.MILLISECONDS);
+                    ignite.scheduler().callLocal(TEST_CALLABLE);
                 }
             });
     }
