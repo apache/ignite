@@ -229,6 +229,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private final AtomicLong commitOrRollbackTime = new AtomicLong(0);
 
     /** */
+    @GridToStringExclude
     private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
