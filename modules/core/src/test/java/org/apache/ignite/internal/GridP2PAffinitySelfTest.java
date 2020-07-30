@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,12 +42,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests affinity and affinity mapper P2P loading.
  */
-public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13267")
+public class GridP2PAffinitySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityMapper";
+    private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityKeyMapper";
 
     /** */
-    private static final String EXT_AFFINITY_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinity";
+    private static final String EXT_AFFINITY_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityFunction";
 
     /** URL of classes. */
     private static final URL[] URLS;
@@ -69,7 +71,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public GridAffinityP2PSelfTest() {
+    public GridP2PAffinitySelfTest() {
         super(false);
     }
 
