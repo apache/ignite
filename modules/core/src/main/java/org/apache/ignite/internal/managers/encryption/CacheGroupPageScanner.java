@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,14 +42,16 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.BasicRateLimiter;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
+
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /**
  * Cache group page stores scanner.
@@ -106,10 +109,10 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         execSvc.allowCoreThreadTimeOut(true);
 
-        long pagesPerMegabyte = IgniteUtils.MB / ctx.config().getDataStorageConfiguration().getPageSize();
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        limiter = encrCfg.getReencryptionRateLimit() > 0 ?
-            new BasicRateLimiter(encrCfg.getReencryptionRateLimit() * pagesPerMegabyte) : null;
+        limiter = CU.isPersistenceEnabled(dsCfg) && encrCfg.getReencryptionRateLimit() > 0 ?
+            new BasicRateLimiter(encrCfg.getReencryptionRateLimit() * MB / dsCfg.getPageSize()) : null;
     }
 
     /** {@inheritDoc} */
