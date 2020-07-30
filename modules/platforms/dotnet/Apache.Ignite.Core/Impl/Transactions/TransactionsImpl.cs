@@ -212,10 +212,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
                     var label = reader.ReadString();
 
-                    // var innerTxOld= new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
-                    //     (TransactionIsolation) isolation, timeout, label, _localNodeId, false);
-
-                    TransactionRollbackOnlyProxy innerTx = new TransactionRollbackOnlyProxy(this, id, (TransactionConcurrency) concurrency,
+                    var innerTx = new TransactionRollbackOnlyProxy(this, id, (TransactionConcurrency) concurrency,
                         (TransactionIsolation) isolation, timeout, label, _localNodeId);
 
                     result.Add(innerTx);
