@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
@@ -396,6 +397,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Dispose should not throw.")]
         public void Dispose()
         {
             try

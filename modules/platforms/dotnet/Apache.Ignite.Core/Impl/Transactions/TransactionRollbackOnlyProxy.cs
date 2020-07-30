@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
-    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Common;
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <list type="bullet">
     ///     <item><description><see cref="Rollback"/>.</description></item>
     ///     <item><description><see cref="RollbackAsync"/>.</description></item>
-    ///     <item><description><see cref="ITransaction.Dispose"/>.</description></item>
+    ///     <item><description><see cref="IDisposable.Dispose"/>.</description></item>
     ///     <item><description>Get <see cref="NodeId"/>.</description></item>
     ///     <item><description>Get <see cref="Isolation"/>.</description></item>
     ///     <item><description>Get <see cref="Concurrency"/>.</description></item>
@@ -193,6 +193,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Dispose should not throw.")]
         public void Dispose()
         {
             if (!_isClosed)
