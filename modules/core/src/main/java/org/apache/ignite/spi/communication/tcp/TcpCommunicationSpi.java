@@ -79,6 +79,7 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ClusterStateProvider;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationDiscoveryEventListener;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectGateway;
@@ -719,7 +720,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
-            new CommunicationListener<Message>() {
+            new CommunicationListenerEx<Message>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -727,6 +728,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 @Override public void onDisconnected(UUID nodeId) {
                     if (lsnr != null)
                         lsnr.onDisconnected(nodeId);
+                }
+
+                @Override public void onChannelOpened(UUID rmtNodeId, Message initMsg, Channel channel) {
+                    if (lsnr instanceof CommunicationListenerEx)
+                        ((CommunicationListenerEx<Message>)lsnr).onChannelOpened(rmtNodeId, initMsg, channel);
                 }
             }
         );
