@@ -18,7 +18,7 @@
 if ! command -v pylint &> /dev/null
 then
     echo "Please, install pylint first"
-    exit
+    exit 1
 fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
