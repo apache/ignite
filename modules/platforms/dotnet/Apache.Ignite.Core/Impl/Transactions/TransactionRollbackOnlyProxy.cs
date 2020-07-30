@@ -95,8 +95,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             get
             {
-                ThrowIfClosed();
-                return _txs.TxState(this);
+                lock (this)
+                {
+                    ThrowIfClosed();
+
+                    return _txs.TxState(this);   
+                }
             }
         }
 

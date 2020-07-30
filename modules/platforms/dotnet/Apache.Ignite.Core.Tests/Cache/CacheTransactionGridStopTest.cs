@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -27,41 +25,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheTransactionGridStopTest : TestBase
     {
-        /// <summary>
-        /// Test that finalization does not throw.
-        /// </summary>
-        [Test]
-        public void TestFinalizeDoesNotThrow()
-        {
-            Assert.DoesNotThrow(() =>
-            {
-                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig())
-                {
-                    IgniteInstanceName = TestUtils.TestName
-                });
-                ignite.GetTransactions().TxStart();
-                Ignition.Stop(ignite.Name, true);
-                Task.Factory.StartNew(() =>
-                    {
-                        for (int i = 0; i < 1; i++)
-                        {
-                            var igniteTr = Ignition.Start(new IgniteConfiguration(GetConfig())
-                            {
-                                IgniteInstanceName = TestUtils.TestName + i
-                            });
-                            igniteTr.GetTransactions().TxStart();
-                            Ignition.Stop(ignite.Name, true);
-                        }
-                    })
-                    .Wait();
-
-                var collectionCount = GC.CollectionCount(2);
-                GC.Collect(GC.MaxGeneration);
-                GC.WaitForPendingFinalizers();
-                var collectionCount1 = GC.CollectionCount(2);
-            });
-        }
-
         /// <summary>
         /// Test that dispose does not throw.
         /// </summary>
