@@ -12,6 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+Module contains discovery tests.
+"""
+
 import random
 
 from ducktape.mark import parametrize
@@ -24,7 +29,14 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 
 
+# pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
+    """
+    Test basic discovery scenarious (TCP and Zookeeper).
+    1. Start of ignite cluster.
+    2. Kill random node.
+    3. Wait that survived node detects node failure.
+    """
     NUM_NODES = 7
 
     CONFIG_TEMPLATE = """
@@ -44,11 +56,15 @@ class DiscoveryTest(IgniteTest):
 
     def __init__(self, test_context):
         super(DiscoveryTest, self).__init__(test_context=test_context)
-        self.zk = None
+        self.zk_quorum = None
         self.servers = None
 
     @staticmethod
     def properties(zookeeper_settings=None):
+        """
+        :param zookeeper_settings: ZookeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
+        :return: Rendered node's properties.
+        """
         return Template(DiscoveryTest.CONFIG_TEMPLATE) \
             .render(zookeeper_settings=zookeeper_settings)
 
@@ -56,8 +72,8 @@ class DiscoveryTest(IgniteTest):
         pass
 
     def teardown(self):
-        if self.zk:
-            self.zk.stop()
+        if self.zk_quorum:
+            self.zk_quorum.stop()
 
         if self.servers:
             self.servers.stop()
@@ -66,20 +82,26 @@ class DiscoveryTest(IgniteTest):
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
     def test_tcp(self, version):
+        """
+        Test basic discovery scenario with TcpDiscoverySpi.
+        """
         return self.__basic_test__(version, False)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
     def test_zk(self, version):
+        """
+        Test basic discovery scenario with ZookeeperDiscoverySpi.
+        """
         return self.__basic_test__(version, True)
 
     def __basic_test__(self, version, with_zk=False):
         if with_zk:
-            self.zk = ZookeeperService(self.test_context, 3)
+            self.zk_quorum = ZookeeperService(self.test_context, 3)
             self.stage("Starting Zookeper quorum")
-            self.zk.start()
-            properties = self.properties(zookeeper_settings={'connection_string': self.zk.connection_string()})
+            self.zk_quorum.start()
+            properties = self.properties(zookeeper_settings={'connection_string': self.zk_quorum.connection_string()})
             self.stage("Zookeper quorum started")
         else:
             properties = self.properties()
@@ -94,19 +116,19 @@ class DiscoveryTest(IgniteTest):
 
         start = self.monotonic()
         self.servers.start()
-        data = {'Ignite cluster start time (s)': self.monotonic() - start }
+        data = {'Ignite cluster start time (s)': self.monotonic() - start}
         self.stage("Topology is ready")
 
         # Node failure detection
         fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
 
-        data["nodes"] = [node.id() for node in self.servers.nodes]
+        data["nodes"] = [node.node_id() for node in self.servers.nodes]
 
         disco_infos = []
         for node in self.servers.nodes:
             disco_info = node.discovery_info()
             disco_infos.append({
-                "id": disco_info.id,
+                "id": disco_info.node_id,
                 "consistent_id": disco_info.consistent_id,
                 "coordinator": disco_info.coordinator,
                 "order": disco_info.order,
@@ -127,6 +149,10 @@ class DiscoveryTest(IgniteTest):
 
     @staticmethod
     def choose_random_node_to_kill(service):
+        """
+        :param service: Service nodes to process.
+        :return: Tuple of random node to kill and survived nodes
+        """
         idx = random.randint(0, len(service.nodes) - 1)
 
         survive = [node for i, node in enumerate(service.nodes) if i != idx]

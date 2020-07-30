@@ -12,11 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+This module contains various useful decorators.
+"""
+
 import functools
 from threading import RLock
 
 
 def memoize(func):
+    """
+    Decorate function to memoize first call to thread safe cache.
+    """
     cache = func.cache = {}
     lock = RLock()
 

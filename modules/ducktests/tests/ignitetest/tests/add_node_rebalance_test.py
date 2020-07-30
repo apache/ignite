@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Module contains node rebalance tests.
+"""
+
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
@@ -22,15 +26,15 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
+# pylint: disable=W0223
 class AddNodeRebalanceTest(IgniteTest):
+    """
+    Test basic rebalance scenarios.
+    """
     NUM_NODES = 4
     PRELOAD_TIMEOUT = 60
     DATA_AMOUNT = 1000000
     REBALANCE_TIMEOUT = 60
-
-    """
-    Test performs rebalance tests.
-    """
 
     def __init__(self, test_context):
         super(AddNodeRebalanceTest, self).__init__(test_context=test_context)

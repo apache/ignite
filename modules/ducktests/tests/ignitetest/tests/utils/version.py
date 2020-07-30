@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Module contains ignite version utility class.
+"""
 
 from distutils.version import LooseVersion
 from ducktape.cluster.cluster import ClusterNode
@@ -49,8 +52,8 @@ class IgniteVersion(LooseVersion):
     def __str__(self):
         if self.is_dev:
             return "dev"
-        else:
-            return LooseVersion.__str__(self)
+
+        return LooseVersion.__str__(self)
 
 
 def get_version(node=None):
@@ -61,7 +64,8 @@ def get_version(node=None):
     if isinstance(node, ClusterNode) and hasattr(node, 'version'):
         return getattr(node, 'version')
 
-    if isinstance(node, str) or isinstance(node, unicode):
+    # pylint: disable=E0602
+    if isinstance(node, (str, unicode)):
         return node
 
     return DEV_BRANCH

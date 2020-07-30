@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains spark integration test.
+"""
+
 from ducktape.mark import parametrize
 
 from ignitetest.services.ignite import IgniteService
@@ -23,6 +27,7 @@ from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH
 
 
+# pylint: disable=W0223
 class SparkIntegrationTest(IgniteTest):
     """
     Test performs:
@@ -45,6 +50,9 @@ class SparkIntegrationTest(IgniteTest):
 
     @parametrize(version=str(DEV_BRANCH))
     def test_spark_client(self, version):
+        """
+        Performs test scenario.
+        """
         self.spark = SparkService(self.test_context, version=version, num_nodes=2)
         self.spark.start()
 
@@ -55,7 +63,8 @@ class SparkIntegrationTest(IgniteTest):
 
         IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test.SampleDataStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.spark_integration_test."
+                            "SampleDataStreamerApplication",
             params="cache,1000",
             version=version).run()
 

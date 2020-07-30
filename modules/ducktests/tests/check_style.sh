@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,14 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=missing-module-docstring
-# This determines the version of ignitetest that can be published to PyPi and installed with pip
-#
-# Note that in development, this version name can't follow Ignite's convention of having a trailing "-SNAPSHOT"
-# due to python version naming restrictions, which are enforced by python packaging tools
-# (see  https://www.python.org/dev/peps/pep-0440/)
-#
-# Instead, in development branches, the version should have a suffix of the form ".devN"
-#
-# For example, when Ignite is at version 2.9.0-SNAPSHOT, this should be something like "2.9.0.dev0"
-__version__ = '2.10.0.dev0'
+if ! command -v pylint &> /dev/null
+then
+    echo "Please, install pylint first"
+    exit 1
+fi
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+pylint --rcfile="$SCRIPT_DIR"/.pylintrc "$SCRIPT_DIR"/ignitetest
