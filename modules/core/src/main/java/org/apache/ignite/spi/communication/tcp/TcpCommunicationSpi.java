@@ -2993,7 +2993,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             Message connIdxMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : msg;
 
             if (connIdxMsg instanceof TcpConnectionIndexAwareMessage) {
-                int msgConnIdx = ((TcpConnectionIndexAwareMessage)msg).connectionIndex();
+                int msgConnIdx = ((TcpConnectionIndexAwareMessage)connIdxMsg).connectionIndex();
 
                 connIdx = msgConnIdx == UNDEFINED_CONNECTION_INDEX ? connPlc.connectionIndex() : msgConnIdx;
             }
