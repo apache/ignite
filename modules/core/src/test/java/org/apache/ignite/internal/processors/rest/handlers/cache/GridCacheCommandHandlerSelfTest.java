@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -220,13 +221,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheClear() throws Exception {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler((grid()).context());
+
+        HashMap<Object, Object> caches = new HashMap<>();
+        caches.put(DEFAULT_CACHE_NAME, null);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
-
-        req.cacheName(DEFAULT_CACHE_NAME);
-
         req.command(GridRestCommand.CACHE_CLEAR);
+        req.values(caches);
 
         try {
             // Change cache state.
