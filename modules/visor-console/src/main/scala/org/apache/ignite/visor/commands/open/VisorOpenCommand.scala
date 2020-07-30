@@ -149,9 +149,8 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
                 val cfgs =
                     try
-                        // Cache, IGFS, indexing SPI configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
-                            "lifecycleBeans", "indexingSpi").get1()
+                        // Cache, indexing SPI configurations should be excluded from daemon node config.
+                        spring.loadConfigurations(url, "cacheConfiguration", "lifecycleBeans", "indexingSpi").get1()
                     finally {
                         if (log4jTup != null && !visor.quiet)
                             U.removeLog4jNoOpLogger(log4jTup)

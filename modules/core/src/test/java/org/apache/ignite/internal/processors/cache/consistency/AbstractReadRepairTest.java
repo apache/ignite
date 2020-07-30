@@ -253,7 +253,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             boolean init = entry.initialValue(
                 new CacheObjectImpl(++val, null), // Incremental value.
-                mgr.next(), // Incremental version.
+                mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
                 0,
                 0,
                 false,

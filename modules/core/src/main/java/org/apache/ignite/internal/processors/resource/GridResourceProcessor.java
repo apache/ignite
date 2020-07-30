@@ -21,7 +21,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -214,26 +213,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Injects filesystem instance into given object.
-     *
-     * @param obj Object.
-     * @param igfs Ignite filesystem to inject.
-     * @return {@code True} if filesystem was injected.
-     * @throws IgniteCheckedException If failed to inject.
-     */
-    public boolean injectFileSystem(Object obj, IgniteFileSystem igfs) throws IgniteCheckedException {
-        assert obj != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Injecting cache store session: " + obj);
-
-        // Unwrap Proxy object.
-        obj = unwrapTarget(obj);
-
-        return inject(obj, GridResourceIoc.ResourceAnnotation.FILESYSTEM_RESOURCE, null, null, igfs);
-    }
-
-    /**
      * @param obj Object to inject.
      * @throws IgniteCheckedException If failed to inject.
      */
@@ -258,6 +237,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         inject(obj, annSet, null, null, params);
+
+        if (obj instanceof GridInternalWrapper) {
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
+
+            if (usrObj != null)
+                inject(usrObj, annSet, null, null, params);
+        }
     }
 
     /**
@@ -334,7 +320,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case LOAD_BALANCER:
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
-            case FILESYSTEM_RESOURCE:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
