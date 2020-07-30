@@ -72,7 +72,7 @@ class JmxClient(object):
         cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
 
-        name = next(self.__run_cmd__(cmd)).strip()
+        name = next(self.__run_cmd(cmd)).strip()
 
         return JmxMBean(self, name)
 
@@ -86,9 +86,9 @@ class JmxClient(object):
         cmd = "echo $'open %s\\n get -b %s %s \\n close' | %s | sed 's/%s = \\(.*\\);/\\1/'" \
               % (self.pid, mbean, attr, self.jmx_util_cmd, attr)
 
-        return iter(s.strip() for s in self.__run_cmd__(cmd))
+        return iter(s.strip() for s in self.__run_cmd(cmd))
 
-    def __run_cmd__(self, cmd):
+    def __run_cmd(self, cmd):
         return self.node.account.ssh_capture(cmd, allow_fail=False, callback=str)
 
 

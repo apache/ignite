@@ -42,7 +42,7 @@ class IgnitePath:
         :param project: Project name.
         :return: Home directory.
         """
-        version = self.__version__(node_or_version)
+        version = self.__version(node_or_version)
         home_dir = project or self.project
         if version is not None:
             home_dir += "-%s" % str(version)
@@ -56,11 +56,11 @@ class IgnitePath:
         :param project: Project name.
         :return: Full path to script.
         """
-        version = self.__version__(node_or_version)
+        version = self.__version(node_or_version)
         return os.path.join(self.home(version, project=project), "bin", script_name)
 
     @staticmethod
-    def __version__(node_or_version):
+    def __version(node_or_version):
         if isinstance(node_or_version, IgniteVersion):
             return node_or_version
 
