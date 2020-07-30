@@ -36,7 +36,7 @@ public class EncryptionConfiguration {
     /** The number of threads used to scan partitions during re-encryption. */
     private int reencryptionThreadCnt = DFLT_REENCRYPTION_THREAD_POOL_SIZE;
 
-    /** Re-ncryption rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
+    /** Re-encryption rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
     private double reencryptionRateLimit = DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
@@ -99,7 +99,7 @@ public class EncryptionConfiguration {
     /**
      * Sets re-encryption rate limit.
      *
-     * @param reencryptionRateLimit Re-ncryption rate limit in megabytes per second.
+     * @param reencryptionRateLimit Re-encryption rate limit in megabytes per second.
      * @return {@code this} for chaining.
      */
     public EncryptionConfiguration setReencryptionRateLimit(double reencryptionRateLimit) {

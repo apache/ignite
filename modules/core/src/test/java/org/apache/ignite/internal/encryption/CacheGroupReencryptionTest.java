@@ -81,7 +81,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** Count of cache backups. */
     private int backups;
 
-    /** Re-ncryption rate limit. */
+    /** Re-encryption rate limit. */
     private double pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
