@@ -86,7 +86,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         public TransactionState State
         {
-            get { return _txs.TxState(this); }
+            get
+            {
+                ThrowIfClosed();
+                return _txs.TxState(this);
+            }
         }
 
         public TimeSpan Timeout { get; private set; }
@@ -216,9 +220,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private InvalidOperationException GetClosedException()
         {
             return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
-                "Transaction {0} is closed, state is {1}", Id, State));
+                "Transaction {0} is closed", Id));
         }
 
+        /// <summary>
+        /// Gets invalid operation exception.
+        /// </summary>
         private static InvalidOperationException GetInvalidOperationException()
         {
             return new InvalidOperationException("Operation is not supported by rollback only transaction.");

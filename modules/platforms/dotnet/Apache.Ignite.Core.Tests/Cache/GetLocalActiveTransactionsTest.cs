@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
     using NUnit.Framework.Constraints;
@@ -86,6 +87,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Assert.AreEqual(concurrency, txView.Concurrency);
                     Assert.AreEqual(isolation, txView.Isolation);
                     Assert.AreEqual(tx.NodeId, txView.NodeId);
+                    Assert.AreEqual(tx.State, txView.State);
                     Assert.AreEqual(label, txView.Label);
                     Assert.AreEqual(timeout, txView.Timeout);
                     Assert.IsTrue(txView.IsRollbackOnly);
@@ -127,6 +129,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(1, cache.Get(1));
                 Assert.AreEqual(2, cache.Get(2));
             }
+            
+            Assert.AreEqual(1, cache.Get(1));
+            Assert.AreEqual(2, cache.Get(2));
         }
 
         /// <summary>
@@ -163,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test that operation throws.
         /// </summary>
         [Test]
-        public void TestThrows()
+        public void TestUnsupportedOperationsThrow()
         {
             var cache = Cache();
             var transactions = cache.Ignite.GetTransactions();
@@ -193,6 +198,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        /// <summary>
+        /// Tests that multiple rollback attempts will throw.
+        /// </summary>
+        [Test]
+        public void TestMultipleRollbackThrows()
+        {
+            var cache = Cache();
+            var transactions = cache.Ignite.GetTransactions();
+
+            using (transactions.TxStart())
+            {
+                var local = (TransactionRollbackOnlyProxy)transactions.GetLocalActiveTransactions().Single();
+                local.Rollback();
+                var constrait = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
+                    .And.Message.Contains("Transaction " + local.Id + " is closed"));
+                Assert.Throws(constrait, () => local.Rollback());
+                Assert.Throws(constrait, () => local.RollbackAsync().Wait());
+            }
+        }
+        
         /// <summary>
         /// Gets cache.
         /// </summary>
