@@ -26,7 +26,7 @@ from jinja2 import Template
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
+from ignitetest.tests.utils.version import LATEST_2_7
 
 
 # pylint: disable=W0223
@@ -37,7 +37,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 7
+    NUM_NODES = 3
 
     CONFIG_TEMPLATE = """
         {% if zookeeper_settings %}
@@ -78,25 +78,43 @@ class DiscoveryTest(IgniteTest):
         if self.servers:
             self.servers.stop()
 
+    # @cluster(num_nodes=NUM_NODES)
+    # # @parametrize(version=str(DEV_BRANCH))
+    # @parametrize(version=str(LATEST_2_7))
+    # def test_tcp_not_coordinator_single(self, version):
+    #     """
+    #     Test basic discovery scenario with TcpDiscoverySpi.
+    #     """
+    #     return self.__basic_test__(version)
+
     @cluster(num_nodes=NUM_NODES)
-    @parametrize(version=str(DEV_BRANCH))
+    # @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
-    def test_tcp(self, version):
+    def test_tcp_not_coordinator_two(self, version):
         """
         Test basic discovery scenario with TcpDiscoverySpi.
         """
-        return self.__basic_test__(version, False)
+        return self.__basic_test__(version, nodes_to_kill=2)
 
-    @cluster(num_nodes=NUM_NODES + 3)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_7))
-    def test_zk(self, version):
-        """
-        Test basic discovery scenario with ZookeeperDiscoverySpi.
-        """
-        return self.__basic_test__(version, True)
+    # @cluster(num_nodes=NUM_NODES)
+    # # @parametrize(version=str(DEV_BRANCH))
+    # @parametrize(version=str(LATEST_2_7))
+    # def test_tcp_coordinator(self, version):
+    #     """
+    #     Test basic discovery scenario with TcpDiscoverySpi.
+    #     """
+    #     return self.__basic_test__(version, True)
 
-    def __basic_test__(self, version, with_zk=False):
+    # @cluster(num_nodes=NUM_NODES + 3)
+    # @parametrize(version=str(DEV_BRANCH))
+    # @parametrize(version=str(LATEST_2_7))
+    # def test_zk(self, version):
+    #     """
+    #     Test basic discovery scenario with ZookeeperDiscoverySpi.
+    #     """
+    #     return self.__basic_test__(version, False, True)
+
+    def __basic_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
         if with_zk:
             self.zk_quorum = ZookeeperService(self.test_context, 3)
             self.stage("Starting Zookeper quorum")
@@ -119,8 +137,20 @@ class DiscoveryTest(IgniteTest):
         data = {'Ignite cluster start time (s)': self.monotonic() - start}
         self.stage("Topology is ready")
 
-        # Node failure detection
-        fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
+        if nodes_to_kill > self.servers.num_nodes - 1:
+            raise Exception("Too many nodes to kill: " + str(nodes_to_kill))
+
+        if with_zk:
+            node_chooser = lambda nodes: random.sample(nodes, nodes_to_kill)
+        elif coordinator:
+            node_chooser = lambda nodes: \
+                next(node for node in nodes if node.discovery_info().node_id == nodes[0].discovery_info().coordinator)
+        else:
+            node_chooser = lambda nodes: \
+                random.sample([n for n in self.servers.nodes if n.discovery_info().node_id
+                               != self.servers.nodes[0].discovery_info().coordinator], nodes_to_kill)
+
+        failed_nodes, survived_node = self.choose_node_to_kill(self.servers.nodes, node_chooser)
 
         data["nodes"] = [node.node_id() for node in self.servers.nodes]
 
@@ -138,24 +168,30 @@ class DiscoveryTest(IgniteTest):
 
         data["node_disco_info"] = disco_infos
 
-        self.servers.stop_node(fail_node, clean_shutdown=False)
-
         start = self.monotonic()
-        self.servers.await_event_on_node("Node FAILED", random.choice(survived_node), 60, True)
+
+        ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+
+        self.servers.stop_nodes(failed_nodes, clean_shutdown=False)
+
+        for failed_id in ids_to_wait:
+            self.stage("Waiting for stopping " + failed_id)
+
+            self.servers.await_event_on_node("Node FAILED: TcpDiscoveryNode \\[id=" + failed_id, survived_node, 30,
+                                             from_the_beginning=True)
 
         data['Failure of node detected in time (s)'] = self.monotonic() - start
 
         return data
 
     @staticmethod
-    def choose_random_node_to_kill(service):
+    def choose_node_to_kill(nodes, chooser):
         """
-        :param service: Service nodes to process.
-        :return: Tuple of random node to kill and survived nodes
+        :param chooser: chooser of node to kill.
+        :return: Tuple of nodes to kill and survived nodes
         """
-        idx = random.randint(0, len(service.nodes) - 1)
+        kill = chooser(nodes)
 
-        survive = [node for i, node in enumerate(service.nodes) if i != idx]
-        kill = service.nodes[idx]
+        survive = random.choice([node for node in nodes if node not in kill])
 
         return kill, survive

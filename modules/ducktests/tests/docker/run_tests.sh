@@ -22,6 +22,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Num of cotainers that ducktape will prepare for tests
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
+IGNITE_NUM_CONTAINERS=4
 
 # Image name to run nodes
 default_image_name="ducker-ignite-openjdk-8"
@@ -32,6 +33,7 @@ IMAGE_NAME="${IMAGE_NAME:-$default_image_name}"
 
 # Path to ducktests
 TC_PATHS="./ignitetest/"
+TC_PATHS=./ignitetest/tests/discovery_test.py
 # Global parameters to pass to ducktape util with --global param
 GLOBALS="{}"
 # Ducktests parameters to pass to ducktape util with --parameters param

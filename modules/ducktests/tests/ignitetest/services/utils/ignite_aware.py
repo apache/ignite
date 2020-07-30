@@ -127,7 +127,7 @@ class IgniteAwareService(BackgroundThreadService):
         :param evt_message: Event message.
         :param node: Ignite service node.
         :param timeout_sec: Number of seconds to check the condition for before failing.
-        :param from_the_beginning: If True, search for message from the beggining of log file.
+        :param from_the_beginning: If True, search for message from the beginning of log file.
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
