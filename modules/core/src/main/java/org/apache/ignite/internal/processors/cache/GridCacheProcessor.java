@@ -2699,7 +2699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 completeProxyInitialize(cctx.name());
 
-                jCacheProxies.remove(cctx.name());
+//                jCacheProxies.remove(cctx.name());
 
                 sharedCtx.removeCacheContext(cctx);
             }
@@ -2707,6 +2707,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sharedCtx.io().writeUnlock();
             }
         }
+//        if (cctx.affinityNode()) {
+//            GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
+//
+//            assert cache != null : cctx.name();
+//
+//            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
+//
+//            completeProxyInitialize(cctx.name());
+//        }
         else {
             cctx.gate().onStopped();
 
