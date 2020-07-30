@@ -201,10 +201,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 {
                     _txs.TxRemove(this);
                 }
-                catch (Exception e)
+                catch
                 {
-                    Debug.WriteLine(e.Message);
-                    // No-op.
+                    // No-op. Dispose should not throw.
                 }
                 finally
                 {
