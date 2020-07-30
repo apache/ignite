@@ -58,7 +58,9 @@ import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsIn
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.PrivilegedProxyTest;
+import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
+import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -93,6 +95,7 @@ import org.junit.runners.Suite;
     ThinClientSecurityContextOnRemoteNodeTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
     EventsRemoteSecurityContextCheckTest.class,
+    SchedulerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
@@ -112,6 +115,7 @@ import org.junit.runners.Suite;
     ContinuousQueryWithTransformerSandboxTest.class,
     EventsSandboxTest.class,
     PrivilegedProxyTest.class,
+    SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class

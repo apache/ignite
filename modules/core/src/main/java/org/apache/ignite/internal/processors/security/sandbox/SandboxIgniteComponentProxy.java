@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
@@ -50,7 +51,6 @@ import org.apache.ignite.transactions.Transaction;
 public final class SandboxIgniteComponentProxy {
     /** The array of classes that should be proxied. */
     private static final Class<?>[] PROXIED_CLASSES = new Class[] {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-13301 IgniteScheduler is not covered by sandbox yet.
         Ignite.class,
         IgniteCache.class,
         IgniteCompute.class,
@@ -71,7 +71,8 @@ public final class SandboxIgniteComponentProxy {
         QueryCursor.class,
         GridIterator.class,
         Transaction.class,
-        BinaryObject.class
+        BinaryObject.class,
+        IgniteScheduler.class
     };
 
     /**
