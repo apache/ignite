@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private readonly long _id;
 
         /** Is closed. */
-        private volatile bool _isClosed = false;
+        private volatile bool _isClosed;
 
         public TransactionRollbackOnlyProxy(
             TransactionsImpl txs,
@@ -69,21 +69,28 @@ namespace Apache.Ignite.Core.Impl.Transactions
             Label = label;
         }
 
+        /** <inheritdoc /> */
         public Guid NodeId { get; private set; }
 
+        /** <inheritdoc /> */
         public long ThreadId
         {
             get { throw GetInvalidOperationException(); }
         }
 
+        /** <inheritdoc /> */
         public DateTime StartTime
         {
             get { throw GetInvalidOperationException(); }
         }
 
+        /** <inheritdoc /> */
         public TransactionIsolation Isolation { get; private set; }
+
+        /** <inheritdoc /> */
         public TransactionConcurrency Concurrency { get; private set; }
 
+        /** <inheritdoc /> */
         public TransactionState State
         {
             get
@@ -93,9 +100,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }
         }
 
+        /** <inheritdoc /> */
         public TimeSpan Timeout { get; private set; }
+
+        /** <inheritdoc /> */
         public string Label { get; private set; }
 
+        /** <inheritdoc /> */
         public bool IsRollbackOnly
         {
             get { return true; }
@@ -165,6 +176,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             throw GetInvalidOperationException();
         }
 
+        /** <inheritdoc /> */
         public TV Meta<TV>(string name)
         {
             throw GetInvalidOperationException();
