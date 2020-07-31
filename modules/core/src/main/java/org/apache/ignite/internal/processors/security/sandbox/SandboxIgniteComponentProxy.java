@@ -38,18 +38,23 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.transactions.Transaction;
 
 /** Create instace of Ignite component proxy to use inside the Ignite Sandbox. */
 public final class SandboxIgniteComponentProxy {
     /** The array of classes that should be proxied. */
-    private static final Class[] PROXIED_CLASSES = new Class[] {
+    private static final Class<?>[] PROXIED_CLASSES = new Class[] {
         Ignite.class,
         IgniteCache.class,
         IgniteCompute.class,
         ExecutorService.class,
-        IgniteScheduler.class,
         IgniteTransactions.class,
         IgniteDataStreamer.class,
         IgniteAtomicSequence.class,
@@ -62,19 +67,31 @@ public final class SandboxIgniteComponentProxy {
         IgniteQueue.class,
         IgniteSet.class,
         IgniteBinary.class,
-        Affinity.class
+        Affinity.class,
+        QueryCursor.class,
+        GridIterator.class,
+        Transaction.class,
+        BinaryObject.class,
+        IgniteScheduler.class
     };
+
+    /**
+     * @return The proxy of {@code ignite} to use inside the Ignite Sandbox.
+     */
+    public static Ignite igniteProxy(Ignite ignite) {
+        return proxy(((IgniteEx)ignite).context(), Ignite.class, ignite);
+    }
 
     /**
      * @return The proxy of {@code instance} to use inside the Ignite Sandbox.
      */
-    public static <T> T proxy(Class cls, T instance) {
+    private static <T> T proxy(GridKernalContext ctx, Class<?> cls, T instance) {
         Objects.requireNonNull(cls, "Parameter 'cls' cannot be null.");
         Objects.requireNonNull(instance, "Parameter 'instance' cannot be null.");
 
         return SecurityUtils.doPrivileged(
             () -> (T)Proxy.newProxyInstance(cls.getClassLoader(), new Class[] {cls},
-                new SandboxIgniteComponentProxyHandler(instance))
+                new SandboxIgniteComponentProxyHandler(ctx, instance))
         );
     }
 
@@ -83,8 +100,12 @@ public final class SandboxIgniteComponentProxy {
         /** */
         private final Object original;
 
+        /** Context. */
+        private final GridKernalContext ctx;
+
         /** */
-        public SandboxIgniteComponentProxyHandler(Object original) {
+        public SandboxIgniteComponentProxyHandler(GridKernalContext ctx, Object original) {
+            this.ctx = ctx;
             this.original = original;
         }
 
@@ -92,14 +113,18 @@ public final class SandboxIgniteComponentProxy {
         @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
             Object res = SecurityUtils.doPrivileged(() -> mtd.invoke(original, args));
 
-            Class cls = proxiedClass(res);
+            if (res != null && SecurityUtils.isSystemType(ctx, res, true)) {
+                Class<?> cls = proxiedClass(res);
 
-            return cls != null ? proxy(cls, res) : res;
+                return cls != null ? proxy(ctx, cls, res) : res;
+            }
+
+            return res;
         }
 
         /** */
-        private Class proxiedClass(Object obj) {
-            for (Class cls : PROXIED_CLASSES) {
+        private Class<?> proxiedClass(Object obj) {
+            for (Class<?> cls : PROXIED_CLASSES) {
                 if (cls.isInstance(obj))
                     return cls;
             }

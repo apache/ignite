@@ -42,10 +42,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -297,11 +293,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @return {@code True} if counters must be applied.
      */
     private boolean shouldApplyCountersOnRollbackError(Throwable e) {
-        return e == null ||
-            e instanceof IgniteTxRollbackCheckedException ||
-            e instanceof IgniteTxTimeoutCheckedException ||
-            e instanceof IgniteTxOptimisticCheckedException ||
-            e instanceof IgniteTxSerializationCheckedException;
+        return !(e instanceof NodeStoppingException);
     }
 
     /**

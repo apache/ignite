@@ -90,36 +90,6 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNullCache() throws Exception {
-        QueryCommandHandler cmdHnd = new QueryCommandHandler(grid().context());
-
-        Integer arg1 = 1000;
-
-        Object[] arr = new Object[] {arg1, arg1};
-
-        RestQueryRequest req = new RestQueryRequest();
-
-        req.command(GridRestCommand.EXECUTE_SQL_QUERY);
-        req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getName());
-        req.pageSize(10);
-        req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
-        req.arguments(arr);
-        req.cacheName(null);
-
-        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
-        resp.get();
-
-        // If cache name is not set server uses name 'default'.
-        assertEquals("Failed to find cache with name: default", resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
-        assertNull(resp.result().getResponse());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testNullPageSize() throws Exception {
         grid().getOrCreateCache(getName());
 
