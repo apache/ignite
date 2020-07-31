@@ -133,15 +133,6 @@ if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
 fi
 
 #
-# If this is a Hadoop edition, and HADOOP_HOME set, add the native library location:
-#
-if [ -d "${IGNITE_HOME}/libs/ignite-hadoop/" ] && [ -n "${HADOOP_HOME}" ] && [ -d "${HADOOP_HOME}/lib/native/" ]; then
-   if [[ "${JVM_OPTS}${JVM_XOPTS}" != *-Djava.library.path=* ]]; then
-      JVM_OPTS="${JVM_OPTS} -Djava.library.path=${HADOOP_HOME}/lib/native/"
-   fi
-fi
-
-#
 # Set main class to start service (grid node by default).
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
@@ -181,6 +172,7 @@ elif [ $version -ge 11 ] ; then
         --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
         --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED \
         --illegal-access=permit \
         ${JVM_OPTS}"
 fi

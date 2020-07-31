@@ -17,7 +17,12 @@
 
 package org.apache.ignite.cache;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.concurrent.Callable;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -33,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -50,7 +56,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
     public static final String MEM_REGION = "mem-region";
 
     /** In memory cache name. */
-    public static final String MEM_REGOIN_CACHE = DEFAULT_CACHE_NAME + "_mem";
+    public static final String MEM_REGION_CACHE = DEFAULT_CACHE_NAME + "_mem";
 
     /** In memory dynamic cache name. */
     public static final String DYNAMIC_CACHE_NAME = DEFAULT_CACHE_NAME + "_dynamic";
@@ -82,7 +88,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         if (addtiotionalMemRegion) {
             cfg.setCacheConfiguration(cfg.getCacheConfiguration()[0],
-                new CacheConfiguration(MEM_REGOIN_CACHE)
+                new CacheConfiguration(MEM_REGION_CACHE)
                     .setDataRegionName(MEM_REGION)
                     .setBackups(BACKUPS))
                 .getDataStorageConfiguration()
@@ -99,7 +105,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Custom node filter. It filters all node that name contains a {@link FILTERED_NODE_SUFFIX}.
+     * Custom node filter. It filters all node that name contains a {@link #FILTERED_NODE_SUFFIX}.
      */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
@@ -237,6 +243,77 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
     @Test
     public void testRebalanceDynamicCacheOnMixedCluster() throws Exception {
         testRebalanceDynamicCache(true, true);
+    }
+
+    /** */
+    @Test
+    public void testComplexCompatibilityInMemory() throws Exception {
+        persistenceEnabled = false;
+        addtiotionalMemRegion = false;
+
+        IgniteEx crd = startGrid(0);
+
+        IgnitePredicate<ClusterNode> filter0 =
+            n -> Stream.of("0", "1").anyMatch(k -> n.consistentId().toString().endsWith(k));
+        IgnitePredicate<ClusterNode> filter1 =
+            n -> Stream.of("0", "1", "2").anyMatch(k -> n.consistentId().toString().endsWith(k));
+        IgnitePredicate<ClusterNode> filter2 =
+            n -> Stream.of("0", "1", "3").anyMatch(k -> n.consistentId().toString().endsWith(k));
+
+        final String cache0Name = "cache0";
+        IgniteCache<Object, Object> cache0 =
+            crd.getOrCreateCache(new CacheConfiguration<>(cache0Name).setBackups(1).setNodeFilter(filter0));
+
+        for (int i = 0; i < 1024; i++)
+            cache0.put(i, i);
+
+        // Trigger rebalancing.
+        IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        spi2.blockMessages(TestRecordingCommunicationSpi.blockDemandMessageForGroup(CU.cacheId(cache0Name)));
+
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(cfg1);
+
+                return null;
+            }
+        });
+
+        spi2.waitForBlocked();
+
+        // Compatible event.
+        startGrid(2);
+
+        // Compatible event.
+        startGrid(3);
+
+        awaitPartitionMapExchange(false, false, null, false, new HashSet<>(Arrays.asList("cache1", "cache2")));
+
+        // Compatible event.
+        final String cache1Name = "cache1";
+        IgniteCache<Object, Object> cache1 =
+            crd.getOrCreateCache(new CacheConfiguration<>(cache1Name).setBackups(1).setNodeFilter(filter1));
+
+        // Compatible event.
+        final String cache2Name = "cache2";
+        IgniteCache<Object, Object> cache2 =
+            crd.getOrCreateCache(new CacheConfiguration<>(cache2Name).setBackups(1).setNodeFilter(filter2));
+
+        for (int i = 0; i < 1024; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        // Compatible event.
+        stopGrid(2);
+
+        // Compatible event.
+        stopGrid(3);
+
+        spi2.stopBlock();
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -474,7 +551,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
                 GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
 
                 if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMessage.groupId()
-                    && CU.cacheId(MEM_REGOIN_CACHE) != demandMessage.groupId())
+                    && CU.cacheId(MEM_REGION_CACHE) != demandMessage.groupId())
                     return false;
 
                 info("Message was caught: " + msg.getClass().getSimpleName()

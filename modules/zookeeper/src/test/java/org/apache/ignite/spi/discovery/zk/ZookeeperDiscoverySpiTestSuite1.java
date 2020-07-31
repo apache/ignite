@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSucc
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSslTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySplitBrainTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryTopologyChangeAndReconnectTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperValidatePathsTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -39,6 +40,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    ZookeeperValidatePathsTest.class,
     ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
     ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
     ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
