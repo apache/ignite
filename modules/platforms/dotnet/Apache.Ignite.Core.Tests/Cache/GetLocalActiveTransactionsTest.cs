@@ -183,7 +183,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 t => t.AddMeta("test", "test"),
                 t => t.Meta<string>("test"),
                 t => t.RemoveMeta<string>("test"),
-                t => t.SetRollbackonly()
             };
 
             using (transactions.TxStart())
@@ -211,10 +210,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var local = (TransactionRollbackOnlyProxy)transactions.GetLocalActiveTransactions().Single();
                 local.Rollback();
-                var constrait = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
+                var constraint = new ReusableConstraint(Is.TypeOf<InvalidOperationException>()
                     .And.Message.Contains("Transaction " + local.Id + " is closed"));
-                Assert.Throws(constrait, () => local.Rollback());
-                Assert.Throws(constrait, () => local.RollbackAsync().Wait());
+                Assert.Throws(constraint, () => local.Rollback());
+                Assert.Throws(constraint, () => local.RollbackAsync().Wait());
             }
         }
         

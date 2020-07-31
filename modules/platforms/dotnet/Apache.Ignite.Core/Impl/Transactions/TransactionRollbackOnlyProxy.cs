@@ -27,17 +27,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <summary>
     /// Cache transaction proxy which supports only implicit rollback operations and getters.
     /// <para/>
-    /// Supports next operations:
+    /// Does not support the following operations:
     /// <list type="bullet">
-    ///     <item><description><see cref="Rollback"/>.</description></item>
-    ///     <item><description><see cref="RollbackAsync"/>.</description></item>
-    ///     <item><description><see cref="IDisposable.Dispose"/>.</description></item>
-    ///     <item><description>Get <see cref="NodeId"/>.</description></item>
-    ///     <item><description>Get <see cref="Isolation"/>.</description></item>
-    ///     <item><description>Get <see cref="Concurrency"/>.</description></item>
-    ///     <item><description>Get <see cref="Label"/>.</description></item>
-    ///     <item><description>Get <see cref="IsRollbackOnly"/>.</description></item>
-    ///     <item><description>Get <see cref="Id"/>.</description></item>
+    ///     <item><description><see cref="Commit"/>.</description></item>
+    ///     <item><description><see cref="CommitAsync"/>.</description></item>
+    ///     <item><description>Get <see cref="Meta{TV}"/>.</description></item>
+    ///     <item><description>Get <see cref="AddMeta{TV}"/>.</description></item>
+    ///     <item><description>Get <see cref="RemoveMeta{TV}"/>.</description></item>
+    ///     <item><description>Get <see cref="StartTime"/>.</description></item>
+    ///     <item><description>Get <see cref="ThreadId"/>.</description></item>
     /// </list>
     /// </summary>
     internal class TransactionRollbackOnlyProxy : ITransaction
@@ -119,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public bool SetRollbackonly()
         {
-            throw GetInvalidOperationException();
+            return true;
         }
 
         /** <inheritDoc /> */
@@ -203,10 +201,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 {
                     _txs.TxRemove(this);
                 }
-                catch
-                {
-                    // No-op. Dispose should not throw.
-                }
+                // catch()
+                // {
+                //     // No-op. Dispose should not throw.
+                // }
                 finally
                 {
                     _isClosed = true;

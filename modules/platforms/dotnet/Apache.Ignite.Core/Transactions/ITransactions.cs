@@ -104,17 +104,16 @@ namespace Apache.Ignite.Core.Transactions
 
         /// <summary>
         /// Returns a list of active transactions initiated by this node.
-        ///  <para/>
-        /// Transactions support next operations:
+        /// <para/>
+        /// Returned transactions do not support next operations:
         /// <list type="bullet">
-        ///     <item><description><see cref="ITransaction.Rollback"/>.</description></item>
-        ///     <item><description><see cref="ITransaction.RollbackAsync"/>.</description></item>
-        ///     <item><description><see cref="IDisposable.Dispose"/>.</description></item>
-        ///     <item><description>Get <see cref="ITransaction.NodeId"/>.</description></item>
-        ///     <item><description>Get <see cref="ITransaction.Isolation"/>.</description></item>
-        ///     <item><description>Get <see cref="ITransaction.Concurrency"/>.</description></item>
-        ///     <item><description>Get <see cref="ITransaction.Label"/>.</description></item>
-        ///     <item><description>Get <see cref="ITransaction.IsRollbackOnly"/>.</description></item>
+        ///     <item><description><see cref="ITransaction.Commit"/>.</description></item>
+        ///     <item><description><see cref="ITransaction.CommitAsync"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.ThreadId"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.StartTime"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.Meta{TV}"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.AddMeta{TV}"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.RemoveMeta{TV}"/>.</description></item>
         /// </list>
         /// </summary>
         /// <returns>Collection of <see cref="ITransactionCollection"/></returns>
