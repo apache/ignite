@@ -210,6 +210,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 finally
                 {
                     _isClosed = true;
+                    GC.SuppressFinalize(this);
                 }
             }
         }
