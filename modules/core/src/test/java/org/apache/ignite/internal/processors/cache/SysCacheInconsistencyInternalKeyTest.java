@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.GridTaskNameHashKey;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.db.RebalanceBlockingSPI;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -62,7 +63,7 @@ public class SysCacheInconsistencyInternalKeyTest extends GridCommonAbstractTest
         IgniteInternalCache<Object, Object> utilityCache = node1.context().cache().utilityCache();
 
         for (int i = 0; i < 1000; i++)
-            utilityCache.putAsync(new KeyUtility("key-" + i), "Obj").get();
+            utilityCache.putAsync(new GridTaskNameHashKey(i), "Obj").get();
 
         CountDownLatch stopRebalanceLatch = new CountDownLatch(1);
 
@@ -77,42 +78,12 @@ public class SysCacheInconsistencyInternalKeyTest extends GridCommonAbstractTest
         readyToSndLatch.await();
 
         for (int i = 0; i < 1000; i++)
-            utilityCache.remove(new KeyUtility("key-" + i));
+            utilityCache.remove(new GridTaskNameHashKey(i));
 
         stopRebalanceLatch.countDown();
 
         awaitPartitionMapExchange(true, true, null);
 
         assertFalse(idleVerify(node1, UTILITY_CACHE_NAME).hasConflicts());
-    }
-
-    /**
-     *
-     */
-    private static class KeyUtility extends GridCacheUtilityKey<KeyUtility> {
-        /**
-         *
-         */
-        private static final long serialVersionUID = 0L;
-
-        /** Inner key. */
-        private String innerKey;
-
-        /**
-         * @param key Key.
-         */
-        private KeyUtility(String key) {
-            innerKey = key;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean equalsx(KeyUtility key) {
-            return key.innerKey.equals(innerKey);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return innerKey.hashCode();
-        }
     }
 }
