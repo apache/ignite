@@ -267,7 +267,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
 
-        if (ignite != null)
+        if (ignite != null && igniteInstanceName != null)
             igniteInstanceName = ignite.name();
     }
 

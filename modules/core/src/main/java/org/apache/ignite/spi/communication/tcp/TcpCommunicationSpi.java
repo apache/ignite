@@ -636,6 +636,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<FailureProcessor> failureProcessorSupplier = () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
+        this.igniteInstanceName = igniteInstanceName;
+
         cfg.failureDetectionTimeout(ignite.configuration().getFailureDetectionTimeout());
 
         attributeNames = new AttributeNames(
