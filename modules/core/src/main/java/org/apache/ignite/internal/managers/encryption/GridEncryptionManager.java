@@ -760,6 +760,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             GroupKeyEncrypted key = new GroupKeyEncrypted(keyIds[i] & 0xff, keys[i]);
 
             synchronized (metaStorageMux) {
+                // Store new key as inactive for recovery.
+                grpKeys.putUnused(grpId, key);
+
+                writeToMetaStore(grpId, true, false);
+
+                // Set new key as key for writing.
                 GroupKey prevGrpKey = grpKeys.put(grpId, key);
 
                 assert prevGrpKey != null && prevGrpKey.id() != key.id() : "prev=" + prevGrpKey + ", currId=" + key.id();

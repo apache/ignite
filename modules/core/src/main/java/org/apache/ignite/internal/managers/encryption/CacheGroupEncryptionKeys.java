@@ -153,12 +153,14 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
+     * Put new encryption key and set it for writing.
+     *
      * @param grpId Cache group ID.
-     * @param newKey New encrypted key for writing.
+     * @param newEncKey New encrypted key for writing.
      * @return Previous encryption key for writing.
      */
-    GroupKey put(int grpId, GroupKeyEncrypted newKey) {
-        assert newKey != null;
+    GroupKey put(int grpId, GroupKeyEncrypted newEncKey) {
+        assert newEncKey != null;
 
         List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
 
@@ -167,9 +169,24 @@ class CacheGroupEncryptionKeys {
 
         GroupKey prevKey = F.first(keys);
 
-        keys.add(0, new GroupKey(newKey.id(), encSpi.decryptKey(newKey.key())));
+        GroupKey newKey = new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key()));
+
+        keys.add(0, newKey);
+
+        // Remove the duplicate key from the tail of the list if exists.
+        keys.subList(1, keys.size()).remove(newKey);
 
         return prevKey;
+    }
+
+    /**
+     * Put new unused key.
+     *
+     * @param grpId Cache group ID.
+     * @param newEncKey New encrypted key for writing.
+     */
+    void putUnused(int grpId, GroupKeyEncrypted newEncKey) {
+        grpKeys.get(grpId).add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
     }
 
     /**
