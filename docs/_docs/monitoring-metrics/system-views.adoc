@@ -1,0 +1,354 @@
+= System Views
+
+WARNING: The system views are an experimental feature and can be changed in future releases.
+
+Ignite provides a number of built-in SQL views that contain information about cluster nodes and node metrics.
+These views are contained in the SYS schema.
+See the link:SQL/schemas[Understanding Schemas] page for the information on how to access a non-default schema.
+
+[IMPORTANT]
+====
+[discrete]
+=== Limitations
+. You cannot create objects in the SYS schema.
+. System views provided by the SYS schema cannot be joined with user tables.
+====
+
+== NODES
+
+CAUTION: Experimental
+
+The NODES view contains information about the cluster nodes.
+
+[cols="1,1,2",opts="header"]
+|===
+| Column
+| Data Type
+|Description
+
+|NODE_ID |UUID |Node ID.
+
+|CONSISTENT_ID
+
+|VARCHAR
+
+|Node's consistent ID.
+
+|VERSION
+
+|VARCHAR
+
+|Node version.
+
+|IS_CLIENT
+
+|BOOLEAN
+
+|Indicates whether the node is a client.
+
+|IS_DAEMON
+
+|BOOLEAN
+
+|Indicates whether the node is a daemon node.
+
+|NODE_ORDER
+|INT
+|Node order within the topology.
+
+|ADDRESSES
+|VARCHAR
+|The addresses of the node.
+
+|HOSTNAMES
+|VARCHAR
+|The host names of the node.
+
+|===
+
+== NODE_ATTRIBUTES
+
+CAUTION: Experimental
+
+The NODE_ATTRIBUTES view contains the attributes of all nodes.
+
+
+[cols="1,1,2",opts="stretch,header"]
+|===
+| Column
+|Data Type
+|Description
+
+|NODE_ID
+|UUID
+|Node ID.
+
+|NAME
+|VARCHAR
+|Attribute name.
+
+|VALUE
+|VARCHAR
+|Attribute value.
+
+|===
+
+== BASELINE_NODES
+
+CAUTION: Experimental
+
+
+The BASELINE_NODES view contains information about the nodes that are part of the current baseline topology.
+
+[cols="1,1,2",opts="header,stretch"]
+|===
+| Column
+|Data Type
+|Description
+
+|CONSISTENT_ID
+
+|VARCHAR
+
+|Node consistent ID.
+
+|ONLINE
+|BOOLEAN
+|Indicates whether the node is up and running.
+
+|===
+
+== NODE_METRICS
+
+CAUTION: Experimental
+
+The NODE_METRICS view provides various metrics about the state of nodes, resource consumption and other metrics.
+
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|NODE_ID|UUID| Node ID.
+|LAST_UPDATE_TIME|TIMESTAMP|Last time the metrics were updated.
+|MAX_ACTIVE_JOBS|INT|  Maximum number of concurrent jobs this node ever had at one time.
+|CUR_ACTIVE_JOBS|INT| Number of currently active jobs running on the node.
+|AVG_ACTIVE_JOBS|FLOAT| Average number of active jobs concurrently executing on the node.
+|MAX_WAITING_JOBS|INT|Maximum number of waiting jobs this node ever had at one time.
+|CUR_WAITING_JOBS|INT|Number of queued jobs currently waiting to be executed.
+|AVG_WAITING_JOBS|FLOAT| Average number of waiting jobs this node ever had at one time.
+|MAX_REJECTED_JOBS|INT| Maximum number of jobs rejected at once during a single collision resolution operation.
+|CUR_REJECTED_JOBS|INT|Number of jobs rejected as a result of the most recent collision resolution operation.
+|AVG_REJECTED_JOBS|FLOAT| Average number of jobs this node rejected as a result of collision resolution operations.
+|TOTAL_REJECTED_JOBS|INT| Total number of jobs this node has rejected as a result of collision resolution operations since the node startup.
+|MAX_CANCELED_JOBS|INT| Maximum number of cancelled jobs this node ever had running concurrently.
+|CUR_CANCELED_JOBS|INT| Number of cancelled jobs that are still running.
+|AVG_CANCELED_JOBS|FLOAT| Average number of cancelled jobs this node ever had running concurrently.
+|TOTAL_CANCELED_JOBS|INT| Number of jobs cancelled since the node startup.
+|MAX_JOBS_WAIT_TIME|TIME| Maximum time a job ever spent waiting in a queue before being executed.
+|CUR_JOBS_WAIT_TIME|TIME| Longest wait time among the jobs that are currently waiting for execution.
+|AVG_JOBS_WAIT_TIME|TIME| Average time jobs spend in the queue before being executed.
+|MAX_JOBS_EXECUTE_TIME|TIME|  Maximum job execution time.
+|CUR_JOBS_EXECUTE_TIME|TIME|  Longest time a current job has been executing for.
+|AVG_JOBS_EXECUTE_TIME|TIME| Average job execution time on this node.
+|TOTAL_JOBS_EXECUTE_TIME|TIME|Total time all finished jobs took to execute on this node since the node startup.
+|TOTAL_EXECUTED_JOBS|INT|  Total number of jobs handled by the node since the node startup.
+|TOTAL_EXECUTED_TASKS|INT| Total number of tasks handled by the node.
+|TOTAL_BUSY_TIME|TIME| Total time this node spent executing jobs.
+|TOTAL_IDLE_TIME|TIME| Total time this node spent idling (not executing any jobs).
+|CUR_IDLE_TIME|TIME| Time this node has spent idling since executing the last job.
+|BUSY_TIME_PERCENTAGE|FLOAT|Percentage of job execution vs idle time.
+|IDLE_TIME_PERCENTAGE|FLOAT|Percentage of idle vs job execution time.
+|TOTAL_CPU|INT| Number of CPUs available to the Java Virtual Machine.
+|CUR_CPU_LOAD|DOUBLE| Percentage of CPU usage expressed as a fraction in the range [0, 1].
+|AVG_CPU_LOAD|DOUBLE| Average percentage of CPU usage expressed as a fraction in the range [0, 1].
+|CUR_GC_CPU_LOAD|DOUBLE| Average time spent in GC since the last update of the metrics. By default, metrics are updated every 2 seconds.
+|HEAP_MEMORY_INIT|LONG| Amount of heap memory in bytes that the JVM initially requests from the operating system for memory management. Shows `-1` if the initial memory size is undefined.
+|HEAP_MEMORY_USED|LONG| Current heap size that is used for object allocation. The heap consists of one or more memory pools. This value is the sum of used heap memory values of all heap memory pools.
+|HEAP_MEMORY_COMMITED|LONG|  Amount of heap memory in bytes that is committed for the JVM to use. This amount of memory is guaranteed for the JVM to use. The heap consists of one or more memory pools. This value is the sum of committed heap memory values of all heap memory pools.
+|HEAP_MEMORY_MAX|LONG|  Maximum amount of heap memory in bytes that can be used for memory management. The column displays `-1` if the maximum memory size is undefined.
+|HEAP_MEMORY_TOTAL|LONG| Total amount of heap memory in bytes. The column displays `-1` if the total memory size is undefined.
+|NONHEAP_MEMORY_INIT|LONG| Amount of non-heap memory in bytes that the JVM initially requests from the operating system for memory management. The column displays `-1` if the initial memory size is undefined.
+|NONHEAP_MEMORY_USED|LONG|  Current non-heap memory size that is used by Java VM. The non-heap memory consists of one or more memory pools. This value is the sum of used non-heap memory values of all non-heap memory pools.
+|NONHEAP_MEMORY_COMMITED|LONG| Amount of non-heap memory in bytes that is committed for the JVM to use. This amount of memory is guaranteed for the JVM to use. The non-heap memory consists of one or more memory pools. This value is the sum of committed non-heap memory values of all non-heap memory pools.
+|NONHEAP_MEMORY_MAX|LONG| Returns the maximum amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the maximum memory size is undefined.
+|NONHEAP_MEMORY_TOTAL|LONG| Total amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the total memory size is undefined.
+|UPTIME|TIME|Uptime of the JVM.
+|JVM_START_TIME|TIMESTAMP|Start time of the JVM.
+|NODE_START_TIME|TIMESTAMP| Start time of the node.
+|LAST_DATA_VERSION|LONG|In-Memory Data Grid assigns incremental versions to all cache operations. This column contains the latest data version on the node.
+|CUR_THREAD_COUNT|INT|  Number of live threads including both daemon and non-daemon threads.
+|MAX_THREAD_COUNT|INT| Maximum live thread count since the JVM started or peak was reset.
+|TOTAL_THREAD_COUNT|LONG| Total number of threads  started since the JVM started.
+|CUR_DAEMON_THREAD_COUNT|INT|Number of live daemon threads.
+|SENT_MESSAGES_COUNT|INT|Number of node communication messages sent.
+|SENT_BYTES_COUNT|LONG|  Amount of bytes sent.
+|RECEIVED_MESSAGES_COUNT|INT|Number of node communication messages received.
+|RECEIVED_BYTES_COUNT|LONG| Amount of bytes received.
+|OUTBOUND_MESSAGES_QUEUE|INT|  Outbound messages queue size.
+
+|===
+
+
+
+== TABLES
+
+CAUTION: Experimental
+
+The TABLES view contains information about the SQL tables.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|CACHE_GROUP_ID | INT | The id of the cache group.
+|CACHE_GROUP_NAME| VARCHAR| The name of the cache group.
+|CACHE_ID| INT| The ID of the cache corresponding to the table.
+|CACHE_NAME| VARCHAR | The name of the cache corresponding to the table.
+|SCHEMA_NAME | VARCHAR | The name of the schema.
+|TABLE_NAME| VARCHAR| The name of the table.
+|AFFINITY_KEY_COLUMN| VARCHAR | The column that is used as the affinity key.
+|KEY_ALIAS| VARCHAR | The alias for the key fields.
+|VALUE_ALIAS| VARCHAR| The alias for the value field.
+|KEY_TYPE_NAME| VARCHAR | The type of the key field.
+|VALUE_TYPE_NAME| VARCHAR| The type of the value field.
+|===
+
+
+== CACHE_GROUPS
+
+CAUTION: Experimental
+
+The CACHE_GROUPS view contains information about the link:configuring-caches/cache-groups[cache groups].
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+
+|CACHE_GROUP_ID|INT | The ID of the cache group.
+|CACHE_GROUP_NAME | VARCHAR | The name of the cache group.
+|IS_SHARED|BOOLEAN | If this group contains more than one cache.
+|CACHE_COUNT|INT | The number of caches in the cache group.
+|CACHE_MODE | VARCHAR | The cache mode.
+|ATOMICITY_MODE | VARCHAR | The link:configuring-caches/atomicity-modes[atomicity mode] of the cache group.
+|AFFINITY| VARCHAR | The string representation (as returned by the `toString()` method) of the affinity function defined for the cache group.
+|PARTITIONS_COUNT|INT | The number of partitions.
+|NODE_FILTER | VARCHAR | The string representation (as returned by the `toString()` method) of the node filter defined for the cache group.
+
+|DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
+|TOPOLOGY_VALIDATOR | VARCHAR |  The string representation (as returned by the `toString()` method) of the topology validator defined for the cache group.
+|PARTITION_LOSS_POLICY | VARCHAR | link:partition-loss-policy[Partition loss policy].
+|REBALANCE_MODE | VARCHAR  | link:data-rebalancing#configuring-rebalancing-mode[Rebalancing mode].
+|REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
+|REBALANCE_ORDER|INT | link:data-rebalancing#other-properties[Rebalancing order].
+|BACKUPS|INT | The number of link:configuring-caches/configuring-backups[backup partitions] configured for the cache group.
+|===
+
+== LOCAL_SQL_RUNNING_QUERIES
+
+This view contains information about the SQL queries currently executing on the node where the view is maintained. This view is node-specific, meaning each node has an instance of the view that contains the information about SQL queries that were started on this node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+
+| QUERY_ID| VARCHAR   | The ID of the query (generated internally).
+| SQL| VARCHAR | The SQL query.
+| SCHEMA_NAME| VARCHAR | The name of the schema.
+| LOCAL| BOOLEAN | Indicates whether the query is link:SQL/sql-api#local-execution[local] or not.
+| START_TIME| TIMESTAMP| A timestamp identifying when the query was started.
+| DURATION| BIGINT | The duration of the query up to the current moment.
+| MEMORY_CURRENT| BIGINT | The amount of memory the query uses at the current moment, in bytes.
+| MEMORY_MAX| BIGINT | The maximum amount of memory the query has used during its execution, in bytes.
+| DISK_ALLOCATION_CURRENT| BIGINT | The amount of disk space the query uses at the moment, in bytes. See link:memory-configuration/memory-quotas#query-offloading[Query Offloading] for details.
+| DISK_ALLOCATION_MAX| BIGINT | Maximum amount of disk space the query has used during its execution, in bytes.
+| DISK_ALLOCATION_TOTAL| BIGINT | The query can allocate different amount of disk space at different stages of execution (because query execution follows the map-reduce pattern). This column returns the sum of those amounts, in bytes.
+| INITIATOR_ID| VARCHAR a| A string identifying the entity that started the query. By default, the `initiator_id` has different format depending on where the query was started:
+
+* link:SQL/JDBC/jdbc-driver[JDBC thin driver]: `jdbc-thin:<client_IP_host>:<client_IP_port>@<user_name>`
+* Thin clients: `cli:<client_IP_host>:<client_IP_port>@<user_name>`
+* link:SQL/JDBC/jdbc-client-driver[JDBC client driver]: `jdbc-v2:<client_IP_host>:sqlGrid-ignite-jdbc-driver-<UUID>`
+* link:distributed-computing/distributed-computing#executing-tasks[Task]: `<job_class_name>:<job_ID>`
+
+The query initiator can be set via SQL API: link:{javadoc_base_url}/org/apache/ignite/cache/query/SqlFieldsQuery.html[SqlFieldsQuery].
+
+|===
+
+
+== LOCAL_SQL_QUERY_HISTORY
+
+This system view contains the list of SQL queries executed on the node where the view is maintained. This system view is node-specific, meaning each node has an instance of the view that contains the information about SQL queries that were started on this node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+
+| SCHEMA_NAME| VARCHAR| The name of the schema.
+| SQL| VARCHAR| The SQL query.
+| LOCAL| BOOLEAN| Indicates whether the query is link:SQL/sql-api#local-execution[local].
+| EXECUTIONS| BIGINT| How many times the query was executed since the start of the cluster.
+| FAILURES| BIGINT| How many times the query failed.
+| DURATION_MIN| BIGINT| Minimum duration of the query.
+| DURATION_MAX| BIGINT| Maximum duration of the query.
+| LAST_START_TIME| TIMESTAMP| The timestamp when the query was started last time.
+| MEMORY_MIN| BIGINT| Minimum amount of memory the query has used, in bytes.
+| MEMORY_MAX| BIGINT| Maximum amount of memory the query has used, in bytes.
+| DISK_ALLOCATION_MIN| BIGINT| Minimum allocated disk space the query has used. See link:memory-configuration/memory-quotas#query-offloading[Query Offloading] for details.
+| DISK_ALLOCATION_MAX| BIGINT| Maximum allocated disk space the query has used.
+| DISK_ALLOCATION_TOTAL_MIN| BIGINT| Minimum total allocated disk space the query has used. See the explanation for the `DISK_ALLOCATION_TOTAL` column in <<LOCAL_SQL_RUNNING_QUERIES>>.
+| DISK_ALLOCATION_TOTAL_MAX| BIGINT |Maximum total allocated disk space the query has used.
+
+|===
+
+== INDEXES View
+
+CAUTION: Experimental
+
+The INDEXES view contains information about SQL indexes.
+
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|INDEX_NAME | VARCHAR | The name of the index.
+|INDEX_TYPE |VARCHAR  | The type of the index.
+|COLUMNS | VARCHAR |  The columns included in the index.
+|SCHEMA_NAME | VARCHAR |  The schema name.
+| TABLE_NAME| VARCHAR | The table name.
+
+| CACHE_GROUP_ID |VARCHAR |  The cache group ID.
+| CACHE_GROUP_NAME |VARCHAR |  The cache group name.
+| CACHE_NAME |VARCHAR |  The cache name.
+| CACHE_ID | INT | Cache ID.
+|INLINE_SIZE | INT | The link:perf-troubleshooting-guide/sql-tuning#increasing-index-inline-size[inline size] in bytes.
+| IS_PK | BOOLEAN | Indicates whether the index is for the primary key.
+| IS_UNIQUE | BOOLEAN | Indicates if the index is unique.
+|===
+
+== Examples
+
+To query the system views using the link:tools-analytics/sqlline[SQLLine] tool, connect to the SYS schema as follows:
+
+[source, shell]
+----
+./sqlline.sh -u jdbc:ignite:thin://127.0.0.1/SYS
+----
+
+If your node is running on a remote server, replace `127.0.0.1` with the IP address of the server.
+
+Run a query:
+
+[source, sql]
+----
+-- get the list of nodes
+select * from NODES;
+
+-- view the CPU load as a percentage for a specific node
+select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = 'a1b77663-b37f-4ddf-87a6-1e2d684f3bae'
+
+----
+
+The same example using link:thin-clients/java-thin-client[Java Thin Client]:
+
+[source, java]
+----
+include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
+----

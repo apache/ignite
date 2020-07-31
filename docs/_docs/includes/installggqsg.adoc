@@ -3,7 +3,7 @@ To get started with the Apache Ignite binary distribution:
 .  Download the https://ignite.apache.org/download.cgi#binaries[Ignite binary, window="_blank"]
 as a zip archive.
 .  Unzip the zip archive into the installation folder in your system.
-. (Optional) Enable required link:developers-guide/setup#enabling-modules[modules].
+. (Optional) Enable required link:setup#enabling-modules[modules].
 . (Optional) Set the `IGNITE_HOME` environment variable or Windows PATH to
 point to the installation folder and make sure there is no trailing `/` (or
 `\` for Windows) in the path.

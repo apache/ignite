@@ -68,6 +68,32 @@ Asciidoctor::Extensions.register do
 end
 
 
+class JavadocUrlMacro < Extensions::InlineMacroProcessor
+  use_dsl
+
+  named :javadoc
+  name_positional_attributes 'text'
+
+  def process parent, target, attrs
+
+    parts = target.split('.')
+
+    if attrs['text'] == nil
+      text = parts.last();
+    else
+      text = attrs['text'] 
+    end
+
+    target = parent.document.attributes['javadoc_base_url'] + '/' + parts.join('/') + ".html" 
+    attrs.store('window', '_blank')
+
+    (create_anchor parent, text, type: :link, target: target, attributes: attrs).render
+  end
+end
+
+Asciidoctor::Extensions.register do
+  inline_macro JavadocUrlMacro  
+end
 Extensions.register do 
  inline_macro do
    named :link

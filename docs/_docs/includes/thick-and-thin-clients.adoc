@@ -1,5 +1,5 @@
 Ignite clients come in several different flavors, each with various capabilities.
-link:developers-guide/SQL/JDBC/jdbc-driver[JDBC] and link:developers-guide/SQL/ODBC/odbc-driver[ODBC] drivers
+link:SQL/JDBC/jdbc-driver[JDBC] and link:SQL/ODBC/odbc-driver[ODBC] drivers
 are useful for SQL-only applications and SQL-based tools. Thick and thin clients go beyond SQL capabilities and
 support many more APIs. Finally, ORM frameworks like Spring Data or Hibernate are also integrated with Ignite and
 can be used as an access point to your cluster.

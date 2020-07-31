@@ -1,0 +1,511 @@
+= Control Script
+
+
+Ignite provides a command line script — `control.sh|bat` — that you can use to monitor and control your clusters.
+The script is located under the `/bin/` folder of the installation directory.
+
+The control script syntax is as follows:
+
+[tabs]
+--
+tab:Linux[]
+[source, shell]
+----
+control.sh <connection parameters> <command> <arguments>
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat <connection parameters> <command> <arguments>
+----
+
+--
+
+== Connecting to Cluster
+
+When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:11211`).
+If you want to connect to a node that is running on a remove machine, specify the connection parameters.
+
+[cols="2,3,1",opts="header"]
+|===
+|Parameter | Description | Default Value
+
+| --host HOST_OR_IP | The host name or IP address of the node. | `localhost`
+
+| --port PORT | The port to connect to. | `11211`
+
+| --user USER | The user name. |
+| --password PASSWORD |The user password. |
+| --ping-interval PING_INTERVAL | The ping interval. | 5000
+| --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
+| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]. | `TLS`
+| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SupportedCipherSuites[Supported ciphers,window=_blank]. |
+| --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
+| --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
+| --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
+| --keystore-password KEYSTORE_PWD | The password to the keystore.  |
+| --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
+| --truststore TRUSTSTORE_PATH | The path to the truststore. |
+| --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+|===
+
+
+== Activation, Deactivation and Topology Management
+
+You can use the control script to activate or deactivate your cluster, and manage the link:baseline-topology[Baseline Topology].
+
+include::includes/note-on-deactivation.adoc[]
+
+=== Activating Cluster
+
+Activation sets the baseline topology of the cluster to the set of nodes available at the moment of activation.
+Activation is required only if you use link:persistence/native-persistence[native persistence].
+
+To activate the cluster, run the following command:
+
+
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --activate
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --activate
+----
+--
+
+=== Deactivating Cluster
+
+To deactivate the cluster, run the following command:
+
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --deactivate [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --deactivate [--yes]
+----
+--
+
+
+=== Getting Cluster State
+
+The state of the cluster refers to whether it is activated or not.
+
+To get the state of the cluster, run the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --state
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --state
+----
+--
+
+
+=== Getting Nodes Registered in Baseline Topology
+
+To get the list of nodes registered in the baseline topology, run the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline
+----
+
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline
+----
+--
+
+The output contains the current topology version, the list of consistent IDs of the nodes included in the baseline topology, and the list of nodes that joined the cluster but were not added to the baseline topology.
+
+[source, shell]
+----
+Command [BASELINE] started
+Arguments: --baseline
+--------------------------------------------------------------------------------
+Cluster state: active
+Current topology version: 3
+
+Current topology version: 3 (Coordinator: ConsistentId=dd3d3959-4fd6-4dc2-8199-bee213b34ff1, Order=1)
+
+Baseline nodes:
+    ConsistentId=7d79a1b5-cbbd-4ab5-9665-e8af0454f178, State=ONLINE, Order=2
+    ConsistentId=dd3d3959-4fd6-4dc2-8199-bee213b34ff1, State=ONLINE, Order=1
+--------------------------------------------------------------------------------
+Number of baseline nodes: 2
+
+Other nodes:
+    ConsistentId=30e16660-49f8-4225-9122-c1b684723e97, Order=3
+Number of other nodes: 1
+Command [BASELINE] finished with code: 0
+Control utility has completed execution at: 2019-12-24T16:53:08.392865
+Execution time: 333 ms
+----
+
+=== Adding Nodes to Baseline Topology
+
+To add a node to the baseline topology, run the command given below.
+After the node is added, the link:data-rebalancing[rebalancing process] will start.
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline add _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline add _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+=== Removing Nodes from Baseline Topology
+
+To remove a node from the baseline topology, use the `remove` command.
+Only offline nodes can be removed from the baseline topology: shut down the node first and then use the `remove` command.
+This operation starts the rebalancing process, which will re-distribute the data across the nodes that remain in the baseline topology.
+//The node will not be shut down until you manually do it.
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline remove _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline remove _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+=== Setting Baseline Topology
+
+You can set the baseline topology by either providing a list of nodes (consistent IDs) or by specifying the desired version of the baseline topology.
+
+To set a list of node as the baseline topology, use the following command:
+
+[tabs]
+--
+tab:Linux[]
+
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline set _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline set _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+
+To restore a specific version of the baseline topology, use the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline version _topologyVersion_ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline version _topologyVersion_ [--yes]
+----
+--
+
+=== Enabling Baseline Topology Autoadjustment
+
+link:baseline-topology#baseline-topology-autoadjustment[Baseline topology autoadjustment] refers to automatic update of baseline topology after the topology has been stable for a specific amount of time.
+
+For in-memory clusters, autoadjustment is enabled by default with the timeout set to 0. It means that baseline topology changes immediately after server nodes join or leave the cluster.
+For clusters with persistence, the automatic baseline adjustment is disabled by default.
+To enable it, use the following command:
+
+[tabs]
+--
+tab:Linux[]
+
+[source, shell]
+----
+control.sh --baseline auto_adjust enable timeout 30000
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --baseline auto_adjust enable timeout 30000
+----
+--
+
+The timeout is set in milliseconds. The baseline is set to the current topology when a given number of milliseconds has passed after the last JOIN/LEFT/FAIL event.
+Every new JOIN/LEFT/FAIL event restarts the timeout countdown.
+
+To disable baseline autoadjustment, use the following command:
+
+[tabs]
+--
+tab:Linux[]
+
+[source, shell]
+----
+control.sh --baseline auto_adjust disable
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --baseline auto_adjust disable
+----
+--
+
+== Transaction Management
+
+The control script allows you to get the information about the transactions being executed in the cluster.
+You can also cancel specific transactions.
+
+The following command returns a list of transactions that satisfy a given filter (or all transactions if no filter is provided):
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --tx _<transaction filter>_ --info
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --tx _<transaction filter>_ --info
+----
+--
+
+The transaction filter parameters are listed in the following table.
+
+[cols="2,5",opts="header"]
+|===
+|Parameter | Description
+| --xid _XID_ | Transaction ID.
+| --min-duration _SECONDS_ | Minimum number of seconds a transaction has been executing.
+|--min-size _SIZE_ | Minimum size of a transaction
+|--label _LABEL_ | User label for transactions. You can use a regular expression.
+|--servers\|--clients | Limit the scope of the operation to either server or client nodes.
+| --nodes _nodeId1,nodeId2..._ |  The list of consistent IDs of the nodes you want to get transactions from.
+|--limit _NUMBER_ | Limit the number of transactions to the given value.
+|--order DURATION\|SIZE\|START_TIME | The parameter that is used to sort the output.
+|===
+
+
+To cancel transactions, use the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --tx _<transaction filter>_ --kill
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --tx _<transaction filter>_ --kill
+----
+--
+
+For example, to cancel the transactions that have been running for more than 100 seconds, execute the following command:
+
+[source, shell]
+----
+control.sh --tx --min-duration 100 --kill
+----
+
+== Contention Detection in Transactions
+
+The `contention` command detects when multiple transactions are in contention to create a lock for the same key. The command is useful if you have long-running or hanging transactions.
+
+Example:
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Reports all keys that are point of contention for at least 5 transactions on all cluster nodes.
+control.sh|bat --cache contention 5
+
+# Reports all keys that are point of contention for at least 5 transactions on specific server node.
+control.sh|bat --cache contention 5 f2ea-5f56-11e8-9c2d-fa7a
+----
+--
+
+If there are any highly contended keys, the utility dumps extensive information including the keys, transactions, and nodes where the contention took place.
+
+Example:
+
+[source,text]
+----
+[node=TcpDiscoveryNode [id=d9620450-eefa-4ab6-a821-644098f00001, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47501], discPort=47501, order=2, intOrder=2, lastExchangeTime=1527169443913, loc=false, ver=2.5.0#20180518-sha1:02c9b2de, isClient=false]]
+
+// No contention on node d9620450-eefa-4ab6-a821-644098f00001.
+
+[node=TcpDiscoveryNode [id=03379796-df31-4dbd-80e5-09cef5000000, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47500], discPort=47500, order=1, intOrder=1, lastExchangeTime=1527169443913, loc=false, ver=2.5.0#20180518-sha1:02c9b2de, isClient=false]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=CREATE, val=UserCacheObjectImpl [val=0, hasValBytes=false], tx=GridNearTxLocal[xid=e9754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439646, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1247], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=8a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439656, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=6a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439654, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=7a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439655, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=4a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439652, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+
+// Node 03379796-df31-4dbd-80e5-09cef5000000 is place for contention on key KeyCacheObjectImpl [part=0, val=0, hasValBytes=false].
+----
+
+
+== Monitoring Cache State
+
+One of the most important commands that `control.sh|bat` provides is `--cache list`, which is used for cache monitoring. The command provides a list of deployed caches and their affinity/distributiong parameters and distribution within cache groups. There is also a command for viewing existing atomic sequences.
+
+[source,shell]
+----
+# Displays a list of all caches
+control.sh|bat --cache list .
+
+# Displays a list of caches whose names start with "account-".
+control.sh|bat --cache list account-.*
+
+# Displays info about cache group distribution for all caches.
+control.sh|bat --cache list . --groups
+
+# Displays info about cache group distribution for the caches whose names start with "account-".
+control.sh|bat --cache list account-.* --groups
+
+# Displays info about all atomic sequences.
+control.sh|bat --cache list . --seq
+
+# Displays info about the atomic sequnces whose names start with "counter-".
+control.sh|bat --cache list counter-.* --seq
+----
+
+== Resetting Lost Partitions
+
+You can use the control script to reset lost partitions for specific caches.
+Refer to link:partition-loss-policy[Partition Loss Policy] for details.
+
+[source, shell]
+----
+control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
+----
+
+
+== Consistency Check Commands
+
+`control.sh|bat` includes a set of consistency check commands that enable you to verify internal data consistency.
+
+First, the commands can be used for debugging and troubleshooting purposes especially if you're in active development.
+
+Second, if there is a suspicion that a query (such as a SQL query, etc.) returns an incomplete or wrong result set, the commands can verify whether there is inconsistency in the data.
+
+Finally, the consistency check commands can be utilized as part of regular cluster health monitoring.
+
+Let's review these usage scenarios in more detail.
+
+=== Verifying Partition Checksums
+
+//Even if update counters and size are equal on the primary and backup nodes, there might be a case when the primary and backup  diverge due to some critical failure.
+The `idle_verify` command compares the hash of the primary partition with that of the backup partitions and reports any differences.
+The differences might be the result of node failure or incorrect shutdown during an update operation.
+If any inconsistency is detected, we recommend remove the incorrect partitions.
+
+[source,shell]
+----
+# Checks partitions of all caches that their partitions actually contain same data.
+control.sh|bat --cache idle_verify
+
+# Checks partitions of specific caches that their partitions actually contain same data.
+control.sh|bat --cache idle_verify cache1,cache2,cache3
+----
+
+If any partitions diverge, a list of conflict partitions is printed out, as follows:
+
+[source,text]
+----
+idle_verify check has finished, found 2 conflict partitions.
+
+Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
+Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97506054, updateCntr=3, size=3, consistentId=bltTest1], PartitionHashRecord [isPrimary=false, partHash=65957380, updateCntr=3, size=2, consistentId=bltTest0]]
+Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=6]
+Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, updateCntr=3, size=3, consistentId=bltTest1], PartitionHashRecord [isPrimary=false, partHash=66016964, updateCntr=3, size=2, consistentId=bltTest0]]
+----
+
+[WARNING]
+====
+[discrete]
+=== Cluster Should Be Idle During `idle_verify` Check
+All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
+====
+
+=== Validating SQL Index Consistency
+The `validate_indexes` command validates the indexes of given caches on all cluster nodes.
+
+The following is checked by the validation process:
+
+. All the key-value entries that are referenced from a primary index has to be reachable from secondary SQL indexes.
+. All the key-value entries that are referenced from a primary index has to be reachable. A reference from the primary index shouldn't point to nowhere.
+. All the key-value entries that are referenced from secondary SQL indexes have to be reachable from the primary index.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks indexes of all caches on all cluster nodes.
+control.sh|bat --cache validate_indexes
+
+# Checks indexes of specific caches on all cluster nodes.
+control.sh|bat --cache validate_indexes cache1,cache2
+
+# Checks indexes of specific caches on node with given node ID.
+control.sh|bat --cache validate_indexes cache1,cache2 f2ea-5f56-11e8-9c2d-fa7a
+----
+--
+
+If indexes refer to non-existing entries (or some entries are not indexed), errors are dumped to the output, as follows:
+
+[source,text]
+----
+PartitionKey [grpId=-528791027, grpName=persons-cache-vi, partId=0] ValidateIndexesPartitionResult [updateCntr=313, size=313, isPrimary=true, consistentId=bltTest0]
+IndexValidationIssue [key=0, cacheName=persons-cache-vi, idxName=_key_PK], class org.apache.ignite.IgniteCheckedException: Key is present in CacheDataTree, but can't be found in SQL index.
+IndexValidationIssue [key=0, cacheName=persons-cache-vi, idxName=PERSON_ORGID_ASC_IDX], class org.apache.ignite.IgniteCheckedException: Key is present in CacheDataTree, but can't be found in SQL index.
+validate_indexes has finished with errors (listed above).
+----
+
+[WARNING]
+====
+[discrete]
+=== Cluster Should Be Idle During `validate_indexes` Check
+Like `idle_verify`, indexes validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
+====

@@ -1,6 +1,0 @@
----
-layout: toc
----
-
-= Administrators Guide
-

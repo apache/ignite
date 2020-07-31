@@ -6,9 +6,9 @@ namespace dotnet_helloworld
     //todo discuss about "Indexing Nested Objects"
     public class DefiningIndexes
     {
+        // tag::idxAnnotationCfg[]
         class Person
         {
-            // tag::idxAnnotationCfg[]
             // Indexed field. Will be visible to the SQL engine.
             [QuerySqlField(IsIndexed = true)] public long Id;
 
@@ -17,22 +17,27 @@ namespace dotnet_helloworld
 
             //Will NOT be visible to the SQL engine.
             public int Age;
-            /**
-              * Indexed field sorted in descending order.
-              * Will be visible to the SQL engine.
-            */
+
+            /** Indexed field sorted in descending order.
+              * Will be visible to the SQL engine. */
             [QuerySqlField(IsIndexed = true, IsDescending = true)]
             public float Salary;
-            // end::idxAnnotationCfg[]
         }
-        
+        // end::idxAnnotationCfg[]
+
         //todo indexing nested objects - will be deprecated, discuss with Artem
 
         public static void RegisteringIndexedTypes()
         {
-            // tag::registeringIndexedTypes[]
-            //looks like it's unsupported in dotnet
-            // end::registeringIndexedTypes[]
+            // tag::register-indexed-types[]
+            var ccfg = new CacheConfiguration
+            {
+                QueryEntities = new[]
+                {
+                    new QueryEntity(typeof(long), typeof(Person))
+                }
+            };
+            // end::register-indexed-types[]
         }
 
         public class GroupIndexes
@@ -69,17 +74,17 @@ namespace dotnet_helloworld
                             {
                                 Name = "id",
                                 FieldType = typeof(long)
-                            },   
+                            },
                             new QueryField
                             {
                                 Name = "name",
                                 FieldType = typeof(string)
-                            },   
+                            },
                             new QueryField
                             {
                                 Name = "salary",
                                 FieldType = typeof(long)
-                            },   
+                            },
                         },
                         Indexes = new[]
                         {
@@ -94,6 +99,73 @@ namespace dotnet_helloworld
                 CacheConfiguration = new[] {cacheCfg}
             });
             // end::queryEntity[]
+        }
+
+        private static void QueryEntityInlineSize()
+        {
+            // tag::query-entity-with-inline-size[]
+            var qe = new QueryEntity
+            {
+                Indexes = new[]
+                {
+                    new QueryIndex
+                    {
+                        InlineSize = 13
+                    }
+                }
+            };
+            // end::query-entity-with-inline-size[]
+        }
+
+        private static void QueryEntityKeyFields()
+        {
+            // tag::custom-key[]
+            var ccfg = new CacheConfiguration
+            {
+                Name = "personCache",
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyTypeName = "CustomKey",
+                        ValueTypeName = "Person",
+                        Fields = new[]
+                        {
+                            new QueryField
+                            {
+                                Name = "intKeyField",
+                                FieldType = typeof(int),
+                                IsKeyField = true
+                            },
+                            new QueryField
+                            {
+                                Name = "strKeyField",
+                                FieldType = typeof(string),
+                                IsKeyField = true
+                            },
+                            new QueryField
+                            {
+                                Name = "firstName",
+                                FieldType = typeof(string)
+                            },
+                            new QueryField
+                            {
+                                Name = "lastName",
+                                FieldType = typeof(string)
+                            }
+                        }
+                    },
+                }
+            };
+            // end::custom-key[]
+        }
+
+        private class InlineSize
+        {
+            // tag::annotation-with-inline-size[]
+            [QuerySqlField(IsIndexed = true, IndexInlineSize = 13)]
+            public string Country { get; set; }
+            // end::annotation-with-inline-size[]
         }
     }
 }

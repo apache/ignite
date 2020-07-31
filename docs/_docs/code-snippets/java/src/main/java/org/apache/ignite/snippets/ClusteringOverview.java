@@ -48,17 +48,16 @@ public class ClusteringOverview {
         // tag::commSpi[]
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        // Override local port.
+        // Set the local port.
         commSpi.setLocalPort(4321);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
         // end::commSpi[]
         // tag::commSpi[]
 
-        // Override default communication SPI.
         cfg.setCommunicationSpi(commSpi);
 
-        // Start grid.
+        // Start the node.
         Ignition.start(cfg);
         // end::commSpi[]
         serverNode.close();
