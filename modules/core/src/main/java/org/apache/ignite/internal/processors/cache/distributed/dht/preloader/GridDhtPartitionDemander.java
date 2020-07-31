@@ -1448,8 +1448,6 @@ public class GridDhtPartitionDemander {
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
                 if (!isInitial()) {
-                    // TODO: 31.07.2020 print finish rebalance chain
-                    
                     sendRebalanceFinishedEvent();
 
                     if (log.isInfoEnabled())
@@ -1458,6 +1456,41 @@ public class GridDhtPartitionDemander {
                     // Complete sync future only if rebalancing was not cancelled.
                     if (res && !grp.preloader().syncFuture().isDone())
                         ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
+
+                    // Finish rebalance chain.
+                    if (isNull(next) && log.isInfoEnabled()) {
+                        Set<RebalanceFuture> futs = ctx.cacheContexts().stream()
+                            .map(GridCacheContext::preloader)
+                            .filter(GridDhtPreloader.class::isInstance)
+                            .map(GridDhtPreloader.class::cast)
+                            .map(p -> p.demander().rebalanceFut)
+                            .filter(fut -> !fut.isInitial())
+                            .collect(Collectors.toSet());
+
+                        long parts = 0;
+                        long entries = 0;
+                        long bytes = 0;
+                        long minStartTime = Long.MAX_VALUE;
+
+                        for (RebalanceFuture fut : futs) {
+                            parts += Stream.of(fut.fullRebalancingParts, fut.histRebalancingParts)
+                                .flatMap(map -> map.values().stream()).mapToInt(Collection::size).sum();
+
+                            entries += Stream.of(fut.fullReceivedKeys, fut.histReceivedKeys)
+                                .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
+
+                            bytes += Stream.of(fut.fullReceivedBytes, fut.histReceivedBytes)
+                                .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
+
+                            minStartTime = Math.min(minStartTime, fut.startTime);
+                        }
+
+                        log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
+                            ", partitions=" + parts +
+                            ", entries=" + entries +
+                            ", duration=" + (System.currentTimeMillis() - minStartTime) + "ms" +
+                            ", bytesRcvd=" + U.humanReadableByteCount(bytes) + ']');
+                    }
                 }
 
                 if (next != null)
