@@ -84,7 +84,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceStatistics() throws Exception {
-        createCluster(3);
+        IgniteEx crd = createCluster(3);
 
         ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(3)).setGridLogger(listeningTestLog);
@@ -132,7 +132,6 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                     "grp=" + node.context().cache().cacheGroup(msg.groupId()).cacheOrGroupName(),
                     "partitions=" + infos.size(),
                     "entries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
-                    "bytesRcvd=" + U.humanReadableByteCount(((Integer)U.field(msg, "msgSize")).longValue()),
                     "topVer=" + msg.topologyVersion(),
                     "rebalanceId=" + U.field(msg, "rebalanceId")
                 };
@@ -146,7 +145,6 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         long rebId = -1;
         int parts = 0;
         int entries = 0;
-        int bytes = 0;
 
         for (List<GridDhtPartitionSupplyMessage> msgs : supplyMsgs.values()) {
             for (GridDhtPartitionSupplyMessage msg : msgs) {
@@ -155,14 +153,12 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                 rebId = U.field(msg, "rebalanceId");
                 parts += infos.size();
                 entries += infos.values().stream().mapToInt(i -> i.infos().size()).sum();
-                bytes += (int)U.field(msg, "msgSize");
             }
         }
 
         String[] checVals = {
             "partitions=" + parts,
             "entries=" + entries,
-            "bytesRcvd=" + U.humanReadableByteCount(bytes),
             "rebalanceId=" + rebId
         };
 
