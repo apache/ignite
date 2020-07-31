@@ -77,26 +77,3 @@ class SmokeServicesTest(IgniteTest):
         zookeeper = ZookeeperService(self.test_context, num_nodes=2)
         zookeeper.start()
         zookeeper.stop()
-
-
-# pylint: disable=C0415
-def debug():
-    """
-    Useful start point for debugging
-    Be sure ducktape cluster is up (use 'ducker-ignite up' command)
-    """
-
-    import os
-    import sys
-    from ducktape.command_line import main
-
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    cluster = os.path.join(this_dir, "..", "..", "docker", "build", "cluster.json")
-
-    sys.argv.extend(["--cluster-file", cluster, "smoke_test.py"])
-
-    main.main()
-
-
-if __name__ == "__main__":
-    debug()
