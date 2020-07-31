@@ -45,6 +45,13 @@ namespace ignite
                 router.Get()->Connect();
             }
 
+            transactions::SP_TransactionsImpl IgniteClientImpl::ClientTransactions() const
+            {
+                transactions::SP_TransactionsImpl transactions(new transactions::TransactionsImpl(router));
+
+                return transactions;
+            }
+
             cache::SP_CacheClientImpl IgniteClientImpl::GetCache(const char* name) const
             {
                 CheckCacheName(name);

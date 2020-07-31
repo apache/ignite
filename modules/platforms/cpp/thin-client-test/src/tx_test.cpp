@@ -27,17 +27,15 @@
 using namespace ignite::thin;
 using namespace boost::unit_test;
 
-class AuthTestSuiteFixture
+class IgniteClientTestSuiteFixture1
 {
 public:
-    AuthTestSuiteFixture()
+    IgniteClientTestSuiteFixture1()
     {
-        ignite_test::ClearLfs();
-
-        serverNode = ignite_test::StartCrossPlatformServerNode("auth.xml", "ServerNode");
+        serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
     }
 
-    ~AuthTestSuiteFixture()
+    ~IgniteClientTestSuiteFixture1()
     {
         ignite::Ignition::StopAll(false);
     }
@@ -47,27 +45,19 @@ private:
     ignite::Ignite serverNode;
 };
 
-BOOST_FIXTURE_TEST_SUITE(AuthTestSuite, AuthTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteClientTestSuiteFixture1)
 
-BOOST_AUTO_TEST_CASE(AuthSuccess)
-{
-    IgniteClientConfiguration cfg;
-
-    cfg.SetEndPoints("127.0.0.1:11110");
-    cfg.SetUser("ignite");
-    cfg.SetPassword("ignite");
-
-    IgniteClient::Start(cfg);
-}
-
-BOOST_AUTO_TEST_CASE(AuthReject)
+BOOST_AUTO_TEST_CASE(TestTx)
 {
     IgniteClientConfiguration cfg;
 
     cfg.SetEndPoints("127.0.0.1:11110");
 
-    BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
-}
+    IgniteClient client = IgniteClient::Start(cfg);
 
+    ignite::thin::transactions::ClientTransaction* tx = client.ClientTransactions().txStart();
+
+    tx->commit();
+}
 
 BOOST_AUTO_TEST_SUITE_END()

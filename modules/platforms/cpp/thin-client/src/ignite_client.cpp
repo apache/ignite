@@ -21,6 +21,8 @@
 #include "impl/ignite_client_impl.h"
 #include "impl/cache/cache_client_impl.h"
 
+#include "string"
+
 using namespace ignite::impl::thin;
 using namespace cache;
 using namespace ignite::common::concurrent;
@@ -75,6 +77,11 @@ namespace ignite
         IgniteClient::SP_Void IgniteClient::InternalCreateCache(const char* name)
         {
             return static_cast<SP_Void>(GetClientImpl(impl).CreateCache(name));
+        }
+
+        IgniteClient::SP_Void IgniteClient::InternalTransactions()
+        {
+            return static_cast<SP_Void>(GetClientImpl(impl).ClientTransactions());
         }
 
         IgniteClient::IgniteClient(SP_Void& impl)
