@@ -3555,8 +3555,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         ", top=" + finalR.topologyVersion() +
                                         ", rebalanceId=" + rebId +
                                         ", evt=" + exchId.discoveryEventName() +
-                                        ", node=" + exchId.nodeId() +
-                                        ", rebalanceId=" + finalR.rebalanceId() + ']');
+                                        ", node=" + exchId.nodeId() + ']');
 
                                     finalR.requestPartitions();
                                 }

@@ -1129,7 +1129,8 @@ public class GridDhtPartitionDemander {
             IgniteLogger log,
             long rebalanceId,
             RebalanceFuture next,
-            AtomicLong lastCancelledTime) {
+            AtomicLong lastCancelledTime
+        ) {
             assert assignments != null;
             assert assignments != null : "Asiignments must not be null.";
 

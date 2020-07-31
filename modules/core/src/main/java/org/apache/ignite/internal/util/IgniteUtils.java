@@ -10788,7 +10788,7 @@ public abstract class IgniteUtils {
                 }
 
                 @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    U.error(null, "file skipped - " + file, exc);
+                    error(null, "file skipped - " + file, exc);
 
                     // Skip directory or file
                     return FileVisitResult.CONTINUE;
