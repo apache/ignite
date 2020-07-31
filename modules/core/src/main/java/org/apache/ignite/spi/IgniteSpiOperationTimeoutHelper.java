@@ -105,10 +105,10 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
-     * Checks whether the given {@link Exception} is generated because failure detection timeout has been reached.
+     * Checks whether the given {@link Exception} is a timeout.
      *
-     * @param e Exception.
-     * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
+     * @param e Exception to check.
+     * @return {@code True} if given exception is a timeout. {@code False} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
         return X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class);
