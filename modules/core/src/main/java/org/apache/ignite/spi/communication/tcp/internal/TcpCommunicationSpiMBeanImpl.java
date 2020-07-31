@@ -36,8 +36,13 @@ public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implemen
 
     /** State provider. */
     private final ClusterStateProvider stateProvider;
-    
-    /** {@inheritDoc} */
+
+    /**
+     * @param spiAdapter Spi adapter.
+     * @param metricsLsnr Metrics listener.
+     * @param cfg Config.
+     * @param stateProvider State provider.
+     */
     public TcpCommunicationSpiMBeanImpl(
         IgniteSpiAdapter spiAdapter,
         TcpCommunicationMetricsListener metricsLsnr,

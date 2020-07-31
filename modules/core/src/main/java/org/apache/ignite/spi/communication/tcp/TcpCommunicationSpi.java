@@ -830,8 +830,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
-
         if (shmemSrv != null) {
 
             MessageFactory msgFactory = new MessageFactory() {
@@ -937,6 +935,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ctxInitLatch.countDown();
 
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
+
+        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
 
         srvLsnr.metricsListener(metricsLsnr);
         clientPool.metricsListener(metricsLsnr);
