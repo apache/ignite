@@ -38,12 +38,12 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -561,8 +561,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 return rec.dataSize();
 
-            case ENCRYPTION_STATUS_RECORD:
-                return ((EncryptionStatusRecord)record).dataSize();
+            case REENCRYPTION_STATUS_RECORD:
+                return ((ReencryptionStatusRecord)record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1251,24 +1251,19 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case ENCRYPTION_STATUS_RECORD:
+            case REENCRYPTION_STATUS_RECORD:
                 int grpsCnt = in.readInt();
 
-                Map<Integer, Map<Integer, Long>> map = U.newHashMap(grpsCnt);
+                Map<Integer, Byte> map = U.newHashMap(grpsCnt);
 
                 for (int i = 0; i < grpsCnt; i++) {
                     int grpId = in.readInt();
-                    int partsCnt = in.readInt();
+                    byte keyId = in.readByte();
 
-                    Map<Integer, Long> parts = U.newHashMap(partsCnt);
-
-                    for (int j = 0; j < partsCnt; j++)
-                        parts.put(in.readShort() & 0xffff, (long)in.readInt());
-
-                    map.put(grpId, parts);
+                    map.put(grpId, keyId);
                 }
 
-                res = new EncryptionStatusRecord(map);
+                res = new ReencryptionStatusRecord(map);
 
                 break;
 
@@ -1887,23 +1882,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case ENCRYPTION_STATUS_RECORD:
-                EncryptionStatusRecord statusRecord = (EncryptionStatusRecord)rec;
+            case REENCRYPTION_STATUS_RECORD:
+                ReencryptionStatusRecord statusRecord = (ReencryptionStatusRecord)rec;
 
-                Map<Integer, Map<Integer, Integer>> map = statusRecord.groupsStatus();
+                Map<Integer, Byte> map = statusRecord.groups();
 
                 buf.putInt(map.size());
 
-                for (Map.Entry<Integer, Map<Integer, Integer>> e : map.entrySet()) {
-                    Map<Integer, Integer> parts = e.getValue();
-
+                for (Map.Entry<Integer, Byte> e : map.entrySet()) {
                     buf.putInt(e.getKey());
-                    buf.putInt(parts.size());
-
-                    for (Map.Entry<Integer, Integer> state : parts.entrySet()) {
-                        buf.putShort((short)state.getKey().intValue());
-                        buf.putInt(state.getValue());
-                    }
+                    buf.put(e.getValue());
                 }
 
                 break;

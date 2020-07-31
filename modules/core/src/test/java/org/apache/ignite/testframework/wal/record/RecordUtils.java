@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTION_STATUS_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.REENCRYPTION_STATUS_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INIT_NEW_PAGE_RECORD;
@@ -222,7 +222,7 @@ public class RecordUtils {
             put(PARTITION_META_PAGE_UPDATE_COUNTERS_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
             put(MASTER_KEY_CHANGE_RECORD, RecordUtils::buildMasterKeyChangeRecord);
             put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecord);
-            put(ENCRYPTION_STATUS_RECORD, RecordUtils::buildEncryptionStatusRecord);
+            put(REENCRYPTION_STATUS_RECORD, RecordUtils::buildEncryptionStatusRecord);
             put(ROTATED_ID_PART_RECORD, RecordUtils::buildRotatedIdPartRecord);
             put(MVCC_DATA_PAGE_MARK_UPDATED_RECORD, RecordUtils::buildDataPageMvccMarkUpdatedRecord);
             put(MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD, RecordUtils::buildDataPageMvccUpdateTxStateHintRecord);
@@ -544,8 +544,8 @@ public class RecordUtils {
     }
 
     /** **/
-    public static EncryptionStatusRecord buildEncryptionStatusRecord() {
-        return new EncryptionStatusRecord(Collections.emptyMap());
+    public static ReencryptionStatusRecord buildEncryptionStatusRecord() {
+        return new ReencryptionStatusRecord(Collections.emptyMap());
     }
 
     /** **/

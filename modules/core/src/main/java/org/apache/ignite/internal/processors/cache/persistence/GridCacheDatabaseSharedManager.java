@@ -84,7 +84,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
@@ -2421,8 +2421,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case ENCRYPTION_STATUS_RECORD:
-                        cctx.kernalContext().encryption().applyEncryptionStatus((EncryptionStatusRecord)rec);
+                    case REENCRYPTION_STATUS_RECORD:
+                        cctx.kernalContext().encryption().applyReencryptionStatus((ReencryptionStatusRecord)rec);
 
                         break;
 
