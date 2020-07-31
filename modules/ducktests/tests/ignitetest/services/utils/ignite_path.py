@@ -19,8 +19,6 @@ This module contains ignite path resolve utilities.
 
 import os
 
-from ignitetest.tests.utils.version import get_version, IgniteVersion
-
 
 class IgnitePath:
     """Path resolver for Ignite system tests which assumes the following layout:
@@ -33,35 +31,28 @@ class IgnitePath:
     SCRATCH_ROOT = "/mnt"
     IGNITE_INSTALL_ROOT = "/opt"
 
-    def __init__(self, context):
+    def __init__(self, version, context):
+        self.version = version
         self.project = context.globals.get("project", "ignite")
 
-    def home(self, node_or_version, project=None):
-        """
-        :param node_or_version: Ignite service node or IgniteVersion instance.
-        :param project: Project name.
-        :return: Home directory.
-        """
-        version = self.__version(node_or_version)
-        home_dir = project or self.project
-        if version is not None:
-            home_dir += "-%s" % str(version)
+        home_dir = "%s-%s" % (self.project, str(self.version))
+        self._home = os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
 
-        return os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
-
-    def script(self, script_name, node_or_version, project=None):
+    def module(self, module_name):
         """
-        :param script_name: Script name.
-        :param node_or_version: Ignite service node or IgniteVersion instance.
-        :param project: Project name.
-        :return: Full path to script.
+        :param module_name: name of Ignite optional lib
+        :return: absolute path to the specified module
         """
-        version = self.__version(node_or_version)
-        return os.path.join(self.home(version, project=project), "bin", script_name)
+        if self.version.is_dev:
+            module_path = os.path.join("modules", module_name, "target")
+        else:
+            module_path = os.path.join("libs", "optional", module_name)
 
-    @staticmethod
-    def __version(node_or_version):
-        if isinstance(node_or_version, IgniteVersion):
-            return node_or_version
+        return os.path.join(self._home, module_path)
 
-        return get_version(node_or_version)
+    def script(self, script_name):
+        """
+        :param script_name: name of Ignite script
+        :return: absolute path to the specified script
+        """
+        return os.path.join(self._home, "bin", script_name)

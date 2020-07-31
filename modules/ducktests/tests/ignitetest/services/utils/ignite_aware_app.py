@@ -27,9 +27,9 @@ class IgniteAwareApplicationService(IgniteAwareService):
     The base class to build Ignite aware application written on java.
     """
     # pylint: disable=R0913
-    def __init__(self, context, java_class_name, client_mode, version, properties, params, timeout_sec,
+    def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
-        super(IgniteAwareApplicationService, self).__init__(context, 1, client_mode, version, properties)
+        super(IgniteAwareApplicationService, self).__init__(context, 1, modules, client_mode, version, properties)
 
         self.servicejava_class_name = service_java_class_name
         self.java_class_name = java_class_name
@@ -48,7 +48,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
     def start_cmd(self, node):
         cmd = self.env()
         cmd += "%s %s %s 1>> %s 2>> %s &" % \
-               (self.path.script("ignite.sh", node),
+               (self.path.script("ignite.sh"),
                 self.jvm_opts(),
                 self.app_args(),
                 self.STDOUT_STDERR_CAPTURE,
@@ -106,8 +106,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
                "export EXCLUDE_TEST_CLASSES=true; " + \
                "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=self.PERSISTENT_ROOT) + \
-               "export USER_LIBS=%s/libs/optional/ignite-log4j/*:/opt/ignite-dev/modules/ducktests/target/*; " \
-               % self.path.home(self.version)
+               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*; " % self.user_libs
 
     def extract_result(self, name):
         """
