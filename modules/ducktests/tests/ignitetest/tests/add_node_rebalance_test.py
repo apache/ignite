@@ -69,7 +69,7 @@ class AddNodeRebalanceTest(IgniteTest):
         IgniteApplicationService(self.test_context,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
                                  version=ignite_version,
-                                 params="test-cache,%d" % self.DATA_AMOUNT,
+                                 params={"cacheName": "test-cache", "range": "%d" % self.DATA_AMOUNT},
                                  timeout_sec=self.PRELOAD_TIMEOUT).run()
 
         ignite = IgniteService(self.test_context, num_nodes=1, version=ignite_version)

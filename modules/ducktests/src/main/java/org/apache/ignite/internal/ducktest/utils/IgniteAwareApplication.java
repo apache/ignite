@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Arrays;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -161,14 +161,14 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    protected abstract void run(String[] args) throws Exception;
+    protected abstract void run(Map<String, String> args) throws Exception;
 
     /**
      * @param args Args.
      */
-    public void start(String[] args) {
+    public void start(Map<String, String> args) {
         try {
-            log.info("Application params: " + Arrays.toString(args));
+            log.info("Application params: " + args);
 
             run(args);
 

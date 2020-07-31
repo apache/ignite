@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,6 +30,8 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -55,9 +61,12 @@ public class IgniteApplicationService {
         try (Ignite ignite = Ignition.start(cfg)) {
             IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor(Ignite.class).newInstance(ignite);
 
-            String[] appParams = Arrays.copyOfRange(params, 2, params.length);
+            ObjectReader reader = new ObjectMapper().readerFor(Map.class);
 
-            app.start(appParams);
+            Map<String, String> map = params.length > 2 ?
+                reader.readValue(new String(Base64.getDecoder().decode(params[2]), UTF_8)) : new HashMap<>();
+
+            app.start(map);
         }
     }
 }

@@ -56,3 +56,9 @@ class IgnitePath:
         :return: absolute path to the specified script
         """
         return os.path.join(self._home, "bin", script_name)
+
+    def home(self):
+        """
+        :return: home directory
+        """
+        return self._home

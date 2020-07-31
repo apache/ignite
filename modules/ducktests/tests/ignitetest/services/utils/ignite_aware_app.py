@@ -17,6 +17,8 @@
 This module contains the base class to build Ignite aware application written on java.
 """
 
+import base64
+import json
 import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
@@ -82,7 +84,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         args = self.java_class_name + "," + IgniteAwareApplicationService.CONFIG_FILE
 
         if self.params != "":
-            args += "," + self.params
+            args += "," + str(base64.b64encode(json.dumps(self.params).encode("UTF-8")))
 
         return args
 
@@ -106,7 +108,23 @@ class IgniteAwareApplicationService(IgniteAwareService):
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
                "export EXCLUDE_TEST_CLASSES=true; " + \
                "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=self.PERSISTENT_ROOT) + \
-               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*; " % self.user_libs
+               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*%s; " % \
+               (self.user_libs, self.app_service_libs())
+
+    def app_service_libs(self):
+        """
+        :return: Libs required to start IgniteAwareApplication java implementation.
+        """
+        if self.version.is_dev:
+            return ""
+
+        libs = ""
+
+        for line in self.nodes[0].account.ssh_capture(
+                "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home()):
+            libs += ":" + line
+
+        return libs
 
     def extract_result(self, name):
         """

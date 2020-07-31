@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -33,10 +34,10 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(String[] args) {
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(args[0]);
+    @Override public void run(Map<String, String> args) {
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(args.get("cacheName"));
 
-        int warmup = Integer.parseInt(args[1]);
+        int warmup = Integer.parseInt(args.get("warmup"));
 
         long max = -1;
 

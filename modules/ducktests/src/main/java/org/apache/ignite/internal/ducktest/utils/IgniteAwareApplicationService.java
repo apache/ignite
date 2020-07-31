@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import java.util.Base64;
+import java.util.Map;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -40,8 +45,12 @@ public class IgniteAwareApplicationService {
 
         IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
-        String[] appParams = Arrays.copyOfRange(params, 1, params.length);
+        ObjectReader reader = new ObjectMapper().readerFor(Map.class);
 
-        app.start(appParams);
+        Map<String, String> map = reader.readValue(new String(Base64.getDecoder().decode(params[2]), UTF_8));
+
+        map.put("cfgPath", params[1]);
+
+        app.start(map);
     }
 }

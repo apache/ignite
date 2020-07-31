@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.smoke_test;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,7 +37,7 @@ public class SimpleApplication extends IgniteAwareApplication {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(String[] args) {
+    @Override public void run(Map<String, String> args) {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(UUID.randomUUID().toString());
 
         cache.put(1, 2);
