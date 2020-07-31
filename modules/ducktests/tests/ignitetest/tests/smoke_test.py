@@ -74,9 +74,9 @@ class SmokeServicesTest(IgniteTest):
         """
         Test that ZookeeperService correctly start and stop
         """
-        zk = ZookeeperService(self.test_context, num_nodes=2)
-        zk.start()
-        zk.stop()
+        zookeeper = ZookeeperService(self.test_context, num_nodes=2)
+        zookeeper.start()
+        zookeeper.stop()
 
 
 # pylint: disable=C0415
