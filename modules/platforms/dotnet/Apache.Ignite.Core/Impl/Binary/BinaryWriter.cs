@@ -905,6 +905,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             _stream.WriteInt(val);
 
             var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+            
+            // TODO: This happens on every write - bottleneck. We only need to send a given enum once.
             SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
         }
 
