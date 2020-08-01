@@ -67,7 +67,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         /// Class with int field benchmark.
         /// </summary>
         [Benchmark]
-        public void PutClassWithEnumFieldBenchmark()
+        public void PutClassWithEnumField()
         {
             var obj = new ClassWithEnumField
             {
