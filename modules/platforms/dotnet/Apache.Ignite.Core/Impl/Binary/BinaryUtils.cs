@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
         
         /** Cached maps of enum members per type. */
-        public static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues = 
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues = 
             new CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>>();
 
         /// <summary>
