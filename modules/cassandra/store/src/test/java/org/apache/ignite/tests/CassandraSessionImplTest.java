@@ -41,22 +41,27 @@ import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** */
 public class CassandraSessionImplTest {
-
+    /** */
     private PreparedStatement preparedStatement1 = mockPreparedStatement();
 
+    /** */
     private PreparedStatement preparedStatement2 = mockPreparedStatement();
 
+    /** */
     private MyBoundStatement1 boundStatement1 = new MyBoundStatement1(preparedStatement1);
 
+    /** */
     private MyBoundStatement2 boundStatement2 = new MyBoundStatement2(preparedStatement2);
 
+    /** */
     @SuppressWarnings("unchecked")
     @Test
     public void executeFailureTest() {
@@ -94,9 +99,10 @@ public class CassandraSessionImplTest {
 
         BatchExecutionAssistant<String, String> batchExecutionAssistant = new MyBatchExecutionAssistant();
         ArrayList<String> data = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+
+        for (int i = 0; i < 10; i++)
             data.add(String.valueOf(i));
-        }
+
         cassandraSession.execute(batchExecutionAssistant, data);
 
         verify(cluster, times(2)).connect();
@@ -105,6 +111,7 @@ public class CassandraSessionImplTest {
         assertEquals(10, batchExecutionAssistant.processedCount());
     }
 
+    /** */
     private static PreparedStatement mockPreparedStatement() {
         PreparedStatement ps = mock(PreparedStatement.class);
         when(ps.getVariables()).thenReturn(mock(ColumnDefinitions.class));
@@ -113,10 +120,12 @@ public class CassandraSessionImplTest {
         return ps;
     }
 
+    /** */
     private class MyBatchExecutionAssistant implements BatchExecutionAssistant {
+        /** */
+        private final Set<Integer> processed = new HashSet<>();
 
-        private Set<Integer> processed = new HashSet<>();
-
+        /** {@inheritDoc} */
         @Override public void process(Row row, int seqNum) {
             if (processed.contains(seqNum))
                 return;
@@ -124,64 +133,78 @@ public class CassandraSessionImplTest {
             processed.add(seqNum);
         }
 
+        /** {@inheritDoc} */
         @Override public boolean alreadyProcessed(int seqNum) {
             return processed.contains(seqNum);
         }
 
+        /** {@inheritDoc} */
         @Override public int processedCount() {
             return processed.size();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean tableExistenceRequired() {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public String getTable() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public String getStatement() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
             if (statement instanceof WrappedPreparedStatement)
                 statement = ((WrappedPreparedStatement)statement).getWrappedStatement();
 
-            if (statement == preparedStatement1) {
+            if (statement == preparedStatement1)
                 return boundStatement1;
-            }
-            else if (statement == preparedStatement2) {
+
+            if (statement == preparedStatement2)
                 return boundStatement2;
-            }
 
             throw new RuntimeException("unexpected");
         }
 
+        /** {@inheritDoc} */
         @Override public KeyValuePersistenceSettings getPersistenceSettings() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public String operationName() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public Object processedData() {
             return null;
         }
 
     }
 
+    /** */
     private static class MyBoundStatement1 extends BoundStatement {
-
+        /**
+         * @param ps Prepared statement.
+         */
         MyBoundStatement1(PreparedStatement ps) {
             super(ps);
         }
 
     }
 
+    /** */
     private static class MyBoundStatement2 extends BoundStatement {
-
+        /**
+         * @param ps Prepared statement.
+         */
         MyBoundStatement2(PreparedStatement ps) {
             super(ps);
         }
