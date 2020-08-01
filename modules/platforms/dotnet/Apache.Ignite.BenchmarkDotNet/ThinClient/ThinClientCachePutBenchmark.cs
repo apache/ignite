@@ -8,12 +8,12 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// <summary>
     /// Cache put benchmarks.
     /// <para />
-    /// |                         Method |      Mean |    Error |   StdDev | Ratio | RatioSD |
-    /// |------------------------------- |----------:|---------:|---------:|------:|--------:|
-    /// |                   PutPrimitive |  44.54 us | 0.886 us | 1.551 us |  1.00 |    0.00 |
-    /// |              PutPrimitiveAsync |  65.24 us | 1.290 us | 1.434 us |  1.45 |    0.05 |
-    /// |           PutClassWithIntField |  67.21 us | 1.275 us | 1.518 us |  1.50 |    0.05 |
-    /// | PutClassWithEnumFieldBenchmark | 130.13 us | 2.472 us | 2.428 us |  2.88 |    0.08 |
+    /// |                Method |     Mean |    Error |   StdDev | Ratio | RatioSD |
+    /// |---------------------- |---------:|---------:|---------:|------:|--------:|
+    /// |          PutPrimitive | 45.47 us | 0.907 us | 1.330 us |  1.00 |    0.00 |
+    /// |     PutPrimitiveAsync | 66.28 us | 1.317 us | 1.617 us |  1.45 |    0.05 |
+    /// |  PutClassWithIntField | 68.34 us | 1.275 us | 1.130 us |  1.49 |    0.05 |
+    /// | PutClassWithEnumField | 71.13 us | 1.419 us | 2.734 us |  1.57 |    0.08 |
     /// </summary>
     public class ThinClientCachePutBenchmark : ThinClientBenchmarkBase
     {
