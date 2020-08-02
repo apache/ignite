@@ -31,12 +31,5 @@ namespace Apache.Ignite.Core.Client.Services
         /// <param name="name">Service name.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
         T GetServiceProxy<T>(string name) where T : class;
-
-        // TODO: Do we need those?
-        // * How do we make async requests with a proxy?
-        // * Proxy objects are not available in .NET Standard, is this a problem for us?
-        object InvokeService(string name, params object[] args);
-
-        Task<object> InvokeServiceAsync(string name, params object[] args);
     }
 }
