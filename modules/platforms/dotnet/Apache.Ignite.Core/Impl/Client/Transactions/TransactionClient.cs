@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
 
@@ -30,9 +31,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Unique  transaction ID.*/
         private readonly int _id;
 
-        /** Ignite. */
-        private readonly IgniteClient _ignite;
-
         /** Socket. */
         private readonly ClientSocket _socket;
 
@@ -43,14 +41,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
-        /// <param name="ignite">Ignite.</param>
         /// <param name="socket">Socket.</param>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
         /// <param name="timeout">Timeout.</param>
         /// <param name="label">Label.</param>
         public TransactionClient(int id,
-            IgniteClient ignite,
             ClientSocket socket,
             TransactionConcurrency concurrency,
             TransactionIsolation isolation,
@@ -58,7 +54,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             string label)
         {
             _id = id;
-            _ignite = ignite;
             _socket = socket;
             Concurrency = concurrency;
             Isolation = isolation;
@@ -115,7 +110,15 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         public ClientSocket Socket
         {
-            get { return _socket; }
+            get
+            {
+                if (_socket.IsDisposed)
+                {
+                    throw new IgniteClientException("Transaction context has been lost due to connection errors.");
+                }
+
+                return _socket;
+            }
         }
 
         /// <summary>
@@ -135,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             {
                 try
                 {
-                    _ignite.Socket.DoOutInOp<object>(ClientOp.TxEnd,
+                    Socket.DoOutInOp<object>(ClientOp.TxEnd,
                         ctx =>
                         {
                             ctx.Writer.WriteInt(_id);

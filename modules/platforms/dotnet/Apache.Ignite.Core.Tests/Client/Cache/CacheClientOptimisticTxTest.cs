@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests client explicit optimistic transactions.
         /// </summary>
         [Test]
-        [Ignore("Test")]
         public void TestExplicitOptimisticTransactionThrowsOptimisticExceptionOnConflict()
         {
             var cache = GetTransactionalCache();
@@ -80,7 +79,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests client ambient optimistic transactions (with <see cref="TransactionScope"/>).
         /// </summary>
         [Test]
-        [Ignore("Test")]
         public void TestAmbientOptimisticTransactionThrowsOptimisticExceptionOnConflict()
         {
             var cache = GetTransactionalCache();

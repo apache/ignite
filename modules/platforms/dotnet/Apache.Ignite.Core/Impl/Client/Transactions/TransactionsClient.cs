@@ -171,7 +171,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 },
                 ctx => new TransactionClient(
                     ctx.Reader.ReadInt(),
-                    _ignite,
                     ctx.Socket,
                     concurrency,
                     isolation,
