@@ -68,7 +68,7 @@ public class WalScannerTest {
     private static final String TEST_DUMP_FILE = "output.txt";
 
     /** **/
-    private static final FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
+    private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
 
     /**
      * @throws Exception If failed.
