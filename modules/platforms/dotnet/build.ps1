@@ -17,7 +17,7 @@
 
  #>
 
- <#
+<#
 
 .SYNOPSIS
 Apache Ignite.NET build script.
@@ -67,7 +67,7 @@ Path to nuget.exe.
 NuGet version override (normally inferred from assembly version).
 
 .EXAMPLE
-.\build.ps1 -clean  
+.\build.ps1 -clean
 # Full rebuild of Java, .NET and NuGet packages.
 
 .EXAMPLE
@@ -78,9 +78,9 @@ NuGet version override (normally inferred from assembly version).
 
 param (
     [switch]$skipJava,
-	[switch]$skipDotNet,
+    [switch]$skipDotNet,
     [switch]$skipNuGet,
-    [switch]$skipCodeAnalysis,  
+    [switch]$skipCodeAnalysis,
     [switch]$clean,
     [ValidateSet("Any CPU", "x64", "x86")]
     [string]$platform="Any CPU",
@@ -90,18 +90,34 @@ param (
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
     [string]$asmDirs="",
     [string]$nugetPath="",
-	[string]$version=""
- )
+    [string]$version=""
+)
+
+# 0) Functions
+function Make-Dir([string]$dirPath) {
+    New-Item -Path $dirPath -ItemType "directory" -Force
+    Remove-Item -Force -Recurse $dirPath\*.*
+}
+
+function Exec([string]$command) {
+    try {
+        iex "& $command"
+    } catch {
+        echo "Command failed: $command"
+        throw
+        exit -1
+    }
+}
 
 # 1) Build Java (Maven)
 # Detect Ignite root directory
 cd $PSScriptRoot\..
 
-while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms)))) { 
-	cd .. 
-	if ((Get-Location).Drive.Root -eq (Get-Location).Path) {
-		break
-	}
+while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms)))) {
+    cd ..
+    if ((Get-Location).Drive.Root -eq (Get-Location).Path) {
+        break
+    }
 }
 
 echo "Ignite home detected at '$pwd'."
@@ -109,7 +125,7 @@ echo "Ignite home detected at '$pwd'."
 if (!$skipJava) {
     # Detect Maven
     $mv = "mvn"
-    if ((Get-Command $mv -ErrorAction SilentlyContinue) -eq $null) { 
+    if ((Get-Command $mv -ErrorAction SilentlyContinue) -eq $null) {
         $mvHome = ($env:MAVEN_HOME, $env:M2_HOME, $env:M3_HOME, $env:MVN_HOME -ne $null)[0]
 
         if ($mvHome -eq $null) {
@@ -122,19 +138,14 @@ if (!$skipJava) {
     }
 
     # Install Maven Wrapper
-    cmd /c "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
-    $mv = "mvnw.cmd"
+    Exec "$mv --% -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    $mv = If ($IsLinux) { "./mvnw" } else { ".\mvnw.cmd" }
 
     # Run Maven
     echo "Starting Java (Maven) build..."
-    
-    $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    cmd /c "$mv $mvnTargets -DskipTests $mavenOpts"
 
-    # Check result
-    if ($LastExitCode -ne 0) {
-        echo "Java (Maven) build failed."; exit -1
-    }
+    $mvnTargets = if ($clean)  { "clean package" } else { "package" }
+    Exec "$mv --% $mvnTargets -DskipTests $mavenOpts"
 }
 else {
     echo "Java (Maven) build skipped."
@@ -142,13 +153,14 @@ else {
 
 # Copy (relevant) jars
 $libsDir = "$PSScriptRoot\bin\libs"
-mkdir -Force $libsDir; del -Force $libsDir\*.*
+Make-Dir($libsDir)
 
-ls $jarDirs.Split(',') *.jar -recurse `
+Get-ChildItem $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
-   -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
-   | % { copy -Force $_ $libsDir }
-   
+   -exclude "*-sources*","*-javadoc*","*-tests*" `
+   | ? { $_.FullName -inotmatch '[\\/]optional[\\/]' } `
+   | % { Copy-Item -Force $_ $libsDir }
+
 # Restore directory
 cd $PSScriptRoot
 
@@ -158,78 +170,85 @@ cd $PSScriptRoot
 # Detect NuGet
 $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
-if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-	$ng = ".\nuget.exe"
+if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
+    $ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }
 
-	if (-not (Test-Path $ng)) {
-		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
-	}
+    if (-not (Test-Path $ng)) {
+        echo "Downloading NuGet..."
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")
+    }
 }
 
 echo "Using NuGet from: $ng"
 
 if (!$skipDotNet) {
-	# Detect MSBuild 4.0+
-	for ($i=20; $i -ge 4; $i--) {
-		$regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
-		if (Test-Path $regKey) { break }
-	}
+    $msBuild = "msbuild"
 
-	if (!(Test-Path $regKey)) {
-		echo "Failed to detect MSBuild path, exiting."
-		exit -1
-	}
+    if ((Get-Command $msBuild -ErrorAction SilentlyContinue) -eq $null)
+    {
+        # Detect MSBuild 4.0+
+        for ($i = 20; $i -ge 4; $i--) {
+            $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
+            if (Test-Path $regKey)
+            {
+                break
+            }
+        }
 
-	$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
-	echo "MSBuild detected at '$msbuildExe'."
+        if (!(Test-Path $regKey))
+        {
+            echo "Failed to detect MSBuild path, exiting."
+            exit -1
+        }
 
-	# Restore NuGet packages
-	echo "Restoring NuGet..."
-	& $ng restore Apache.Ignite.sln
+        $msBuild = (Join-Path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
+        $msBuild = "`"$msBuild`""  # Put in quotes and escape to handle whitespace in path
+    }
 
-	# Build
-	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
-	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-	$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
-	echo "Starting MsBuild: '$msBuildCommand'"
-	cmd /c $msBuildCommand
+    echo "MSBuild detected at '$msBuild'."
 
-	# Check result
-	if ($LastExitCode -ne 0) {
-		echo ".NET build failed."
-		exit -1
-	}
+    # Restore NuGet packages
+    echo "Restoring NuGet..."
+    Exec "$ng restore Apache.Ignite.sln"
+
+    # Build
+    $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
+    $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
+    $msBuildCommand = "$msBuild Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+    echo "Starting MsBuild: '$msBuildCommand'"
+    Exec $msBuildCommand
 }
 
 if ($asmDirs) {
-    ls $asmDirs.Split(',') | % `
+    Get-ChildItem $asmDirs.Split(',') | % `
     {
-        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
+        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
 
         if ($_.Name.EndsWith(".exe.config")) {
-            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName);
+            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName)
         }
 
         if ($projName.StartsWith("Apache.Ignite")) {
-            $target = "$projName\bin\Release"
-            mkdir -Force $target
+            $target = [IO.Path]::Combine($projName, "bin", $configuration)
+            New-Item -Path $target -ItemType "directory" -Force
 
-            xcopy /s /y $_.FullName $target
+            echo "Copying '$_' to '$target'"
+            Copy-Item -Force $_.FullName $target
         }
-    }    
+    }
 }
 
 # Copy binaries
-mkdir -Force bin; del -Force bin\*.*
+Make-Dir("bin")
 
-ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
+Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
-                     | where Name -NotLike "*Benchmarks*" | % {
-    $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
-                {"bin\$configuration"} else {"bin\$platform\$configuration"}
-    $dir = join-path (split-path -parent $_) $binDir    
-    xcopy /s /y $dir\*.* bin
+                     | where Name -NotLike "*DotNetCore*" `
+                     | where Name -NotLike "*Benchmark*" | % {
+    $projDir = split-path -parent $_.FullName
+    $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
+    echo "Copying files to bin from '$dir'"
+    Copy-Item -Force -Recurse $dir bin
 }
 
 
@@ -242,22 +261,16 @@ if (!$skipNuGet) {
     }
 
     $nupkgDir = "nupkg"
-    mkdir -Force $nupkgDir; del -Force $nupkgDir\*.*
+    Make-Dir($nupkgDir)
 
     # Detect version
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
-    ls *.nuspec -Recurse  `
-        | % { 
-            & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
-
-            # check result
-            if ($LastExitCode -ne 0)
-            {
-                echo "NuGet pack failed."; exit -1
-            }
-        }
+    Get-ChildItem *.nuspec -Recurse  `
+        | % {
+        Exec "$ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
+    }
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
 }
