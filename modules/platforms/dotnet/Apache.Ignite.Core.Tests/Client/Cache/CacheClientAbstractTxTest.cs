@@ -333,7 +333,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 igniteTx = GetSingleLocalTransaction();
 
-                Assert.AreEqual(igniteTx.Label, label1);
+                Assert.AreEqual(label1, igniteTx.Label);
+                Assert.AreEqual(label1, tx.Label);
 
                 cache.Put(1, 10);
                 cache.Put(2, 20);
@@ -345,11 +346,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(10, cache.Get(1));
             Assert.AreEqual(20, cache.Get(2));
 
-            using (Client.GetTransactions().WithLabel(label1).WithLabel(label2).TxStart())
+            using (var tx = Client.GetTransactions().WithLabel(label1).WithLabel(label2).TxStart())
             {
                 igniteTx = GetSingleLocalTransaction();
 
-                Assert.AreEqual(igniteTx.Label, label2);
+                Assert.AreEqual(label2, igniteTx.Label);
+                Assert.AreEqual(label2, tx.Label);
             }
 
             igniteTx.Dispose();
