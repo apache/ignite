@@ -126,8 +126,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long> getSize =
             new IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long>() {
-                @Override
-                public Long applyx(GridCacheEntryInfo info, CacheObjectContext ctx) throws IgniteCheckedException {
+                /** {@inheritDoc} */
+                @Override public Long applyx(GridCacheEntryInfo info, CacheObjectContext ctx) throws IgniteCheckedException {
                     return mvccEnabled ? info.marshalledSize(ctx) :
                         (long)(info.key().valueBytes(ctx).length + info.value().valueBytes(ctx).length);
                 }
