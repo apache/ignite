@@ -26,19 +26,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -49,9 +49,6 @@ import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQu
  */
 @SuppressWarnings("unchecked")
 public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected final Marshaller marsh;
 
@@ -92,12 +89,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         cfg.setBinaryConfiguration(binCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -239,11 +230,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite(0).destroyCache("S2P");
         ignite(0).destroyCache("I2P");
@@ -303,19 +289,28 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @return Cache configuration.
      */
     static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
-        return new CacheConfiguration(DEFAULT_CACHE_NAME)
+        CacheConfiguration res = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
             .setSqlEscapeAll(escapeSql)
             .setIndexedTypes(idxTypes);
+
+        for (int i = 0; i < idxTypes.length / 2; i++) {
+            Class<?> keyType = idxTypes[i];
+
+            if (!QueryUtils.isSqlType(keyType))
+                res.setKeyConfiguration(new CacheKeyConfiguration(keyType));
+        }
+
+        return res;
     }
 
     /**
      *
      */
-    protected final static class Key implements Serializable {
+    protected static final class Key implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -326,6 +321,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         /** */
         @QuerySqlField
+        @AffinityKeyMapped
         public final int key;
 
         /** {@inheritDoc} */
@@ -348,7 +344,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected final static class Key2 implements Serializable {
+    protected static final class Key2 implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

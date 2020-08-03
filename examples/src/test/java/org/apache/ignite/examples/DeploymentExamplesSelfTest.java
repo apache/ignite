@@ -19,6 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.misc.deployment.DeploymentExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Deployment examples self test.
@@ -27,6 +28,7 @@ public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentExample() throws Exception {
         DeploymentExample.main(EMPTY_ARGS);
     }

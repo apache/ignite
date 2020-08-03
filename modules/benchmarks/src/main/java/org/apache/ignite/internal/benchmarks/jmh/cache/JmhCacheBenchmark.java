@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -25,20 +26,13 @@ import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.profile.GCProfiler;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 /**
  * Put benchmark.
  */
 @SuppressWarnings("unchecked")
 public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
-    /**
-     * Set up routine.
-     *
-     * @throws Exception If failed.
-     */
-
-    public void setup() throws Exception {
+    /** {@inheritDoc} */
+    @Override public void setup() throws Exception {
         super.setup();
 
         IgniteDataStreamer<Integer, IntValue> dataLdr = node.dataStreamer(cache.getName());

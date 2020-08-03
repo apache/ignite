@@ -26,8 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query close request.
  */
 public class JdbcQueryCloseRequest extends JdbcRequest {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /**
      */
@@ -36,33 +36,39 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      */
-    public JdbcQueryCloseRequest(long queryId) {
+    public JdbcQueryCloseRequest(long cursorId) {
         super(QRY_CLOSE);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
-        writer.writeLong(queryId);
+        writer.writeLong(cursorId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
-        queryId = reader.readLong();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */

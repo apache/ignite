@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -47,6 +48,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -76,6 +78,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatch() throws Exception {
         checkLatch();
     }
@@ -86,6 +89,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -324,6 +328,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode1() throws Exception {
         if (gridCount() == 1)
             return;
@@ -336,6 +341,8 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         final AtomicBoolean countedDown = new AtomicBoolean();
 
+        CountDownLatch allLatchesObtained = new CountDownLatch(gridCount());
+
         for (int i = 0; i < gridCount(); i++) {
             final Ignite ignite = grid(i);
 
@@ -344,6 +351,8 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
                     IgniteCountDownLatch latch = ignite.countDownLatch("l1", 10,
                         true,
                         false);
+
+                    allLatchesObtained.countDown();
 
                     assertNotNull(latch);
 
@@ -361,8 +370,11 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         }
 
         for (int i = 0; i < 10; i++) {
-            if (i == 9)
+            if (i == 9) {
                 countedDown.set(true);
+
+                allLatchesObtained.await();
+            }
 
             latch.countDown();
         }
@@ -374,6 +386,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchBroadcast() throws Exception {
         Ignite ignite = grid(0);
         ClusterGroup srvsGrp = ignite.cluster().forServers();
@@ -426,6 +439,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode2() throws Exception {
         if (gridCount() == 1)
             return;

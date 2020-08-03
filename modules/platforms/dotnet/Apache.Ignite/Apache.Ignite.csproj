@@ -47,6 +47,8 @@
     <Compile Include="Config\ArgsConfigurator.cs" />
     <Compile Include="Config\Configurator.cs" />
     <Compile Include="Config\ConfigValueParser.cs" />
+    <Compile Include="Config\ArgsAssemblyLoader.cs" />
+    <Compile Include="ConsoleUtils.cs" />
     <Compile Include="IgniteRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\IgniteService.cs">

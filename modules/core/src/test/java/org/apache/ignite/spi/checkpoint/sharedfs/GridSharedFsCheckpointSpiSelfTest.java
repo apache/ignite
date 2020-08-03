@@ -37,7 +37,7 @@ public class GridSharedFsCheckpointSpiSelfTest extends GridCheckpointSpiAbstract
     /**
      * @return Paths.
      */
-    @GridSpiTestConfig(setterName="setDirectoryPaths")
+    @GridSpiTestConfig(setterName = "setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         return F.asList(PATH);
     }

@@ -39,42 +39,43 @@ import org.jetbrains.annotations.Nullable;
  * {@link TransactionOptimisticException} If operation with optimistic behavior failed.
  * {@link TransactionRollbackException} If operation performs within transaction that automatically rolled back.
  * {@link TransactionTimeoutException} If operation performs within transaction and timeout occurred.
+ * {@link TransactionSerializationException} If operation performs within mvcc transaction and write conflict occurred.
  */
 public class TransactionException extends IgniteException {
-	/** Serial version UID. */
-	private static final long serialVersionUID = 0L;
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
 
-	/** Creates empty exception. */
-	public TransactionException() {
-		// No-op.
-	}
+    /** Creates empty exception. */
+    public TransactionException() {
+        // No-op.
+    }
 
-	/**
-	 * Creates new exception with given error message.
-	 *
-	 * @param msg Error message.
-	 */
-	public TransactionException(String msg) {
-		super(msg);
-	}
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionException(String msg) {
+        super(msg);
+    }
 
-	/**
-	 * Creates new transaction exception with given throwable as a cause and
-	 * source of error message.
-	 *
-	 * @param cause Non-null throwable cause.
-	 */
-	public TransactionException(Throwable cause) {
-		super(cause);
-	}
+    /**
+     * Creates new transaction exception with given throwable as a cause and
+     * source of error message.
+     *
+     * @param cause Non-null throwable cause.
+     */
+    public TransactionException(Throwable cause) {
+        super(cause);
+    }
 
-	/**
-	 * Creates new exception with given error message and optional nested exception.
-	 *
-	 * @param msg Error message.
-	 * @param cause Optional nested exception (can be {@code null}).
-	 */
-	public TransactionException(String msg, @Nullable Throwable cause) {
-		super(msg, cause);
-	}
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public TransactionException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 }

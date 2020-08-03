@@ -30,15 +30,17 @@ public interface JdbcRawBinarylizable {
      * Writes fields to provided writer.
      *
      * @param writer Binary object writer.
+     * @param protoCtx JDBC protocol context.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException;
+    public void writeBinary(BinaryWriterExImpl writer, JdbcProtocolContext protoCtx) throws BinaryObjectException;
 
     /**
      * Reads fields from provided reader.
      *
      * @param reader Binary object reader.
+     * @param protoCtx JDBC protocol context.
      * @throws BinaryObjectException In case of error.
      */
-    public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException;
+    public void readBinary(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx) throws BinaryObjectException;
 }

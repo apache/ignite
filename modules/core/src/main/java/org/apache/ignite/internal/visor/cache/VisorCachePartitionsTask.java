@@ -28,18 +28,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.escapeName;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 
 /**
  * Task that collect keys distribution in partitions.
@@ -63,7 +64,7 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCacheParti
             if (res.getException() != null)
                 throw res.getException();
 
-            parts.put(res.getNode().id(), (VisorCachePartitions)res.getData());
+            parts.put(res.getNode().id(), res.getData());
         }
 
         return parts;
@@ -98,7 +99,7 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCacheParti
             GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
 
             // Cache was not started.
-            if (ca == null || !ca.context().started())
+            if (ca == null || !ca.context().started() || VisorTaskUtils.isRestartingCache(ignite, cacheName))
                 return parts;
 
             CacheConfiguration cfg = ca.configuration();

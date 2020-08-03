@@ -144,7 +144,6 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (ClusterGroupAdapter)in.readObject();
     }
@@ -208,15 +207,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        long now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
 
         timeout = TimeUnit.MILLISECONDS.convert(timeout, unit);
 
-        long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;
-
         // Prevent overflow.
-        if (end < 0)
-            end = Long.MAX_VALUE;
+        if (timeout <= 0)
+            timeout = Long.MAX_VALUE;
 
         List<IgniteInternalFuture<?>> locTasks;
 
@@ -227,11 +224,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         Iterator<IgniteInternalFuture<?>> iter = locTasks.iterator();
 
-        while (iter.hasNext() && now < end) {
+        long passedMillis = 0L;
+
+        while (iter.hasNext() && passedMillis < timeout) {
             IgniteInternalFuture<?> fut = iter.next();
 
             try {
-                fut.get(end - now);
+                fut.get(timeout - passedMillis);
             }
             catch (ComputeTaskTimeoutCheckedException e) {
                 U.error(log, "Failed to get task result: " + fut, e);
@@ -245,7 +244,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
                     throw new InterruptedException("Got interrupted while waiting for task completion.");
             }
 
-            now = U.currentTimeMillis();
+            passedMillis = U.millisSinceNanos(startNanos);
         }
 
         return true;
@@ -343,19 +342,19 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         A.ensure(timeout >= 0, "timeout >= 0");
         A.notNull(unit, "unit != null");
 
-        long now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
 
         timeout = TimeUnit.MILLISECONDS.convert(timeout, unit);
 
-        long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;
-
         // Prevent overflow.
-        if (end < 0)
-            end = Long.MAX_VALUE;
+        if (timeout <= 0)
+            timeout = Long.MAX_VALUE;
 
         checkShutdown();
 
         Collection<IgniteInternalFuture<T>> taskFuts = new ArrayList<>();
+
+        long passedMillis = 0L;
 
         for (Callable<T> task : tasks) {
             // Execute task without predefined timeout.
@@ -373,15 +372,15 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
             taskFuts.add(fut);
 
-            now = U.currentTimeMillis();
+            passedMillis = U.millisSinceNanos(startNanos);
         }
 
         boolean isInterrupted = false;
 
         for (IgniteInternalFuture<T> fut : taskFuts) {
-            if (!isInterrupted && now < end) {
+            if (!isInterrupted && passedMillis < timeout) {
                 try {
-                    fut.get(end - now);
+                    fut.get(timeout - passedMillis);
                 }
                 catch (ComputeTaskTimeoutCheckedException ignore) {
                     if (log.isDebugEnabled())
@@ -400,7 +399,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
                 }
             }
 
-            now = U.currentTimeMillis();
+            passedMillis = U.millisSinceNanos(startNanos);
         }
 
         // Throw exception if any task wait was interrupted.
@@ -472,7 +471,6 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      *     ...
      * </pre>
      */
-    @SuppressWarnings({"MethodWithTooExceptionsDeclared"})
     @Override public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
         A.notNull(tasks, "tasks != null");
@@ -480,15 +478,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         A.ensure(timeout >= 0, "timeout >= 0");
         A.notNull(unit, "unit != null");
 
-        long now = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
 
         timeout = TimeUnit.MILLISECONDS.convert(timeout, unit);
 
-        long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;
-
         // Prevent overflow.
-        if (end < 0)
-            end = Long.MAX_VALUE;
+        if (timeout <= 0)
+            timeout = Long.MAX_VALUE;
 
         checkShutdown();
 
@@ -518,13 +514,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         int errCnt = 0;
 
         for (IgniteInternalFuture<T> fut : taskFuts) {
-            now = U.currentTimeMillis();
+            long passedMillis = U.millisSinceNanos(startNanos);
 
             boolean cancel = false;
 
-            if (!isInterrupted && !isResRcvd && now < end) {
+            if (!isInterrupted && !isResRcvd && passedMillis < timeout) {
                 try {
-                    res = fut.get(end - now);
+                    res = fut.get(timeout - passedMillis);
 
                     isResRcvd = true;
 
@@ -695,7 +691,6 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"MethodWithTooExceptionsDeclared"})
         @Override public T get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException {
             A.ensure(timeout >= 0, "timeout >= 0");
             A.notNull(unit, "unit != null");

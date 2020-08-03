@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,12 +36,12 @@ public class IgniteBinaryImpl implements IgniteBinary {
     private GridKernalContext ctx;
 
     /** */
-    private CacheObjectBinaryProcessor proc;
+    private IgniteCacheObjectProcessor proc;
 
     /**
      * @param ctx Context.
      */
-    public IgniteBinaryImpl(GridKernalContext ctx, CacheObjectBinaryProcessor proc) {
+    public IgniteBinaryImpl(GridKernalContext ctx, IgniteCacheObjectProcessor proc) {
         this.ctx = ctx;
 
         this.proc = proc;
@@ -61,12 +60,11 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException {
         guard();
 
         try {
-            return (T)proc.marshalToBinary(obj);
+            return (T)proc.marshalToBinary(obj, false);
         }
         finally {
             unguard();
@@ -170,7 +168,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
+    @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
         guard();
 
         try {

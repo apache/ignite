@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"config\cache\store\cache-store-session-shared-factory.xml"
+                SpringConfigUrl = @"Config/Cache/Store/cache-store-session-shared-factory.xml"
             };
         }
 
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             get
             {
                 // Shared PlatformDotNetCacheStoreFactory results in a single store instance.
-                return 1;
+                return 2;
             }
         }
     }

@@ -62,6 +62,8 @@ import org.apache.ignite.lang.IgnitePredicate;
  * @see EventType#EVT_CACHE_REBALANCE_STARTED
  * @see EventType#EVT_CACHE_REBALANCE_STOPPED
  * @see EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST
+ * @see EventType#EVT_CACHE_REBALANCE_PART_SUPPLIED
+ * @see EventType#EVT_CACHE_REBALANCE_PART_MISSED
  */
 public class CacheRebalancingEvent extends EventAdapter {
     /** */

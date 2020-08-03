@@ -37,6 +37,18 @@ public class CacheEntryInfoCollection implements Message {
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> infos;
 
+    /** */
+    public CacheEntryInfoCollection() {
+        // No-op
+    }
+
+    /**
+     * @param infos List of cache entry info.
+     */
+    public CacheEntryInfoCollection(List<GridCacheEntryInfo> infos) {
+        this.infos = infos;
+    }
+
     /**
      *
      */
@@ -115,5 +127,24 @@ public class CacheEntryInfoCollection implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("[");
+
+        for (int i = 0; i < infos().size(); i++) {
+            GridCacheEntryInfo info = infos().get(i);
+
+            Object k = info.key().value(null, false);
+
+            b.append("[key=").append(k == null ? "null" : k).append(", ver=").
+                append(info.version()).append(", val=").append(info.value()).append(']');
+        }
+
+        b.append(']');
+
+        return b.toString();
     }
 }

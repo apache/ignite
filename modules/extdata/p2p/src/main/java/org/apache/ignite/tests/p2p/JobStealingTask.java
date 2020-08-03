@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,8 +51,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert !subgrid.isEmpty();
 
@@ -65,7 +65,6 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) {
         Map<UUID, Integer> ret = U.newHashMap(results.size());
 

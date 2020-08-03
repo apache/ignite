@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -109,13 +111,17 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
             boolean allCaches = cacheNames.isEmpty();
 
             for (IgniteCacheProxy ca : caches) {
-                if (ca.context().started()) {
-                    String cacheName = ca.getName();
+                String cacheName = ca.getName();
 
-                    VisorCacheMetrics cm = new VisorCacheMetrics(ignite, cacheName);
+                if (!VisorTaskUtils.isRestartingCache(ignite, cacheName)) {
+                    GridCacheContext ctx = ca.context();
 
-                    if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.isSystem()))
-                        res.add(cm);
+                    if (ctx.started() && (ctx.affinityNode() || ctx.isNear())) {
+                        VisorCacheMetrics cm = new VisorCacheMetrics(ignite, cacheName);
+
+                        if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.isSystem()))
+                            res.add(cm);
+                    }
                 }
             }
 

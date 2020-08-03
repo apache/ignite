@@ -36,11 +36,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
@@ -48,9 +46,6 @@ import static org.junit.Assert.assertNotEquals;
  * Tests that cache value is copied for get, interceptor and invoke closure.
  */
 public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     public static final int ITER_CNT = 1000;
 
@@ -83,12 +78,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(spi);
-
         c.setPeerClassLoadingEnabled(p2pEnabled);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
@@ -96,7 +85,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
         return c;
     }
 
-    /** {@inheritDoc} */
+    /** */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -117,6 +106,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PEnabled() throws Exception {
         doTest(true);
     }
@@ -124,6 +114,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PDisbaled() throws Exception {
         doTest(false);
     }
@@ -251,7 +242,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
             for (int i = 0; i < ITER_CNT; i++)
                 cache.put(new TestKey(i, i), new TestValue(i));
 
-            interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>(){
+            interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>() {
                 @Override public TestValue onBeforePut(Cache.Entry<TestKey, TestValue> entry, TestValue newVal) {
                     // Check that we have correct value and key.
                     assertEquals(entry.getKey().key(), entry.getKey().field());
@@ -505,7 +496,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
         /**
          * @return key Key.
          */
-        public int key(){
+        public int key() {
             return key;
         }
 

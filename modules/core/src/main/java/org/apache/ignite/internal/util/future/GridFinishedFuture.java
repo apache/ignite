@@ -75,7 +75,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public T result() {
         return resFlag == RES ? (T)res : null;
     }
@@ -96,7 +95,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public T get() throws IgniteCheckedException {
         if (resFlag == ERR)
             throw U.cast((Throwable)res);

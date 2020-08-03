@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -66,12 +67,13 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerReconnect() throws Exception {
         final Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 
@@ -130,12 +132,13 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 

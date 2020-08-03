@@ -23,6 +23,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test of absence of gaps between jobs in compute
@@ -55,13 +56,14 @@ public class IgniteComputeJobOneThreadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoTimeout() throws Exception {
         Ignite ignite = ignite(0);
 
         IgniteFuture fut = null;
 
         for (int i = 0; i < 10000; i++) {
-            fut =  ignite.compute().runAsync(new IgniteRunnable() {
+            fut = ignite.compute().runAsync(new IgniteRunnable() {
                 @Override public void run() {
 
                 }

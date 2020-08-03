@@ -17,26 +17,29 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.logger.log4j.GridLog4jConfigUpdateTest;
 import org.apache.ignite.logger.log4j.GridLog4jCorrectFileNameTest;
 import org.apache.ignite.logger.log4j.GridLog4jInitializedTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingFileTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingPathTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingUrlTest;
 import org.apache.ignite.logger.log4j.GridLog4jNotInitializedTest;
+import org.apache.ignite.logger.log4j.GridLog4jWatchDelayTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Log4j logging tests.
  */
-public class IgniteLog4jTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Log4j Logging Test Suite");
-
-        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
-
-        return suite;
-    }
-}
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridLog4jInitializedTest.class,
+    GridLog4jNotInitializedTest.class,
+    GridLog4jCorrectFileNameTest.class,
+    GridLog4jLoggingFileTest.class,
+    GridLog4jLoggingPathTest.class,
+    GridLog4jLoggingUrlTest.class,
+    GridLog4jConfigUpdateTest.class,
+    GridLog4jWatchDelayTest.class,
+})
+public class IgniteLog4jTestSuite { }

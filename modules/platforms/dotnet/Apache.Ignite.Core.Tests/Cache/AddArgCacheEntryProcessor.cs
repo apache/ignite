@@ -82,7 +82,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             return entry.Value;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Invalid override.
+        /// </summary>
         public int Process(IMutableCacheEntry<int, int> entry, int arg)
         {
             throw new Exception("Invalid method");

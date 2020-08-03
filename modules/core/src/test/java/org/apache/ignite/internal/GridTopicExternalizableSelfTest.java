@@ -23,13 +23,14 @@ import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteExternalizableAbstractTest;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.junit.Test;
 
 /**
  * Grid topic externalization test.
  */
 public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstractTest {
     /** */
-    private static final IgniteUuid A_GRID_UUID = IgniteUuid.randomUuid();
+    private static final IgniteUuid A_IGNITE_UUID = IgniteUuid.randomUuid();
 
     /** */
     private static final UUID AN_UUID = UUID.randomUUID();
@@ -46,12 +47,13 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testSerializationTopicCreatedByGridUuid() throws Exception {
+    @Test
+    public void testSerializationTopicCreatedByIgniteUuid() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
 
             for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_GRID_UUID);
+                Externalizable msgOut = (Externalizable)topic.topic(A_IGNITE_UUID);
 
                 assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
             }
@@ -61,12 +63,13 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testSerializationTopicCreatedByGridUuidAndUUID() throws Exception {
+    @Test
+    public void testSerializationTopicCreatedByIgniteUuidAndUUID() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
 
             for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_GRID_UUID, AN_UUID);
+                Externalizable msgOut = (Externalizable)topic.topic(A_IGNITE_UUID, AN_UUID);
 
                 assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
             }
@@ -76,12 +79,13 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testSerializationTopicCreatedByGridUuidAndLong() throws Exception {
+    @Test
+    public void testSerializationTopicCreatedByIgniteUuidAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
 
             for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_GRID_UUID, A_LONG);
+                Externalizable msgOut = (Externalizable)topic.topic(A_IGNITE_UUID, A_LONG);
 
                 assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
             }
@@ -91,6 +95,7 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationTopicCreatedByStringAndUUIDAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
@@ -106,6 +111,7 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationTopicCreatedByString() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
@@ -121,6 +127,7 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationTopicCreatedByStringAndIntAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
@@ -136,6 +143,7 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationTopicCreatedByStrinAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
@@ -151,6 +159,7 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationTopicCreatedByStringAndUUIDAndIntAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');

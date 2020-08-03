@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -27,6 +28,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
@@ -37,10 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -48,9 +49,6 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  *
  */
 public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String AFF1_CACHE1 = "a1c1";
 
@@ -66,16 +64,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** */
     private static final String AFF4_FILTER_CACHE2 = "a4c2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
+        cfg.setUserAttributes(Collections.singletonMap("name", igniteInstanceName));
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -141,16 +134,10 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeMessages() throws Exception {
         ignite(0);
 
@@ -164,9 +151,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             checkMessages(0, true);
         }
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         awaitPartitionMapExchange();
 
@@ -193,7 +178,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         List<Object> msgs = commSpi0.recordedMessages(false);
 
-        assertTrue(msgs.size() > 0);
+        assertTrue(!msgs.isEmpty());
 
         for (Object msg : msgs) {
             assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsFullMessage);
@@ -217,7 +202,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
             List<Object> msgs = commSpi0.recordedMessages(false);
 
-            assertTrue(msgs.size() > 0);
+            assertTrue(!msgs.isEmpty());
 
             for (Object msg : msgs) {
                 assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsSingleMessage);
@@ -244,12 +229,19 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs =
-            getFieldValue(getFieldValue(msg, "partCntrs"), "map");
+        Map<Integer, CachePartitionFullCountersMap> partCntrs =
+            getFieldValue(getFieldValue(msg, "partCntrs2"), "map");
 
         if (partCntrs != null) {
-            for (Map<Integer, Long> cntrs : partCntrs.values())
-                assertTrue(cntrs.isEmpty());
+            for (CachePartitionFullCountersMap cntrs : partCntrs.values()) {
+                long[] initialUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
+                long[] updCntrs = getFieldValue(cntrs, "updCntrs");
+
+                for (int i = 0; i < initialUpdCntrs.length; i++) {
+                    assertEquals(0, initialUpdCntrs[i]);
+                    assertEquals(0, updCntrs[i]);
+                }
+            }
         }
     }
 
@@ -266,11 +258,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = getFieldValue(msg, "partCntrs");
+        Map<Integer, CachePartitionPartialCountersMap> partCntrs = getFieldValue(msg, "partCntrs");
 
         if (partCntrs != null) {
-            for (Map<Integer, Long> cntrs : partCntrs.values())
-                assertTrue(cntrs.isEmpty());
+            for (CachePartitionPartialCountersMap cntrs : partCntrs.values())
+                assertEquals(0, cntrs.size());
         }
     }
 
@@ -372,7 +364,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             // Do not start cache on coordinator.
-            return node.order() > 1;
+            return !((String)node.attribute("name")).endsWith("0");
         }
     }
 }

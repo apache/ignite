@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.cache;
  * @param <T> Type for iterator.
  * @param <V> Type for cache query future.
  */
-public abstract class CacheIteratorConverter <T, V> {
+public abstract class CacheIteratorConverter<T, V> {
     /**
      * Converts class V to class T.
      *

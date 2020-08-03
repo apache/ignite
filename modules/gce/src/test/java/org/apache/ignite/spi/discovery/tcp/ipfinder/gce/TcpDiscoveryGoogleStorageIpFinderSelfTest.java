@@ -61,8 +61,6 @@ public class TcpDiscoveryGoogleStorageIpFinderSelfTest
         catch (Exception e) {
             log.warning("Failed to remove bucket on GCE [bucketName=" + bucketName + ", mes=" + e.getMessage() + ']');
         }
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

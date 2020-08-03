@@ -93,6 +93,18 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** */
         private const int OpListenTopology = 11;
 
+        /** */
+        private const int OpGetTimeout = 12;
+
+        /** */
+        private const int OpSetTimeout = 13;
+
+        /** */
+        private const int OpPerThreadBufferSize = 14;
+
+        /** */
+        private const int OpSetPerThreadBufferSize = 15;
+
         /** Cache name. */
         private readonly string _cacheName;
 
@@ -277,6 +289,41 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
             }
         }
+        
+        /** <inheritDoc /> */
+        public int PerThreadBufferSize
+        {
+            get
+            {
+                _rwLock.EnterReadLock(); 
+                
+                try
+                {
+                    ThrowIfDisposed();
+
+                    return (int) DoOutInOp(OpPerThreadBufferSize);
+                }
+                finally
+                {
+                    _rwLock.ExitReadLock();
+                }
+            }
+            set
+            {
+                _rwLock.EnterWriteLock(); 
+                
+                try
+                {
+                    ThrowIfDisposed();
+
+                    DoOutInOp(OpSetPerThreadBufferSize, value);
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
+            }
+        }
 
         /** <inheritDoc /> */
         public int PerNodeParallelOperations
@@ -356,8 +403,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                ThrowIfDisposed();
-
                 return _closeFut.Task;
             }
         }
@@ -549,6 +594,41 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        public TimeSpan Timeout
+        {
+            get
+            {
+                _rwLock.EnterReadLock();
+
+                try
+                {
+                    ThrowIfDisposed();
+
+                    return BinaryUtils.LongToTimeSpan(DoOutInOp(OpGetTimeout));
+                }
+                finally
+                {
+                    _rwLock.ExitReadLock();
+                }
+            }
+            set
+            {
+                _rwLock.EnterWriteLock();
+
+                try
+                {
+                    ThrowIfDisposed();
+
+                    DoOutInOp(OpSetTimeout, (long) value.TotalMilliseconds);
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
+            }
+        }
+
+        /** <inheritDoc /> */
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         protected override void Dispose(bool disposing)
         {
@@ -657,6 +737,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 new DataStreamerBatch<TK, TV>(curBatch) : null, curBatch) == curBatch;
 
             // 2. Perform actual send.
+            Debug.Assert(curBatch != null, "curBatch != null");
             curBatch.Send(this, plc);
 
             if (wait)
@@ -858,7 +939,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// </summary>
             public void RunThread()
             {
-                new Thread(Run).Start();
+                TaskRunner.Run(Run);
             }
         }
 

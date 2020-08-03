@@ -35,6 +35,7 @@ import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Local deployment SPI test.
@@ -87,6 +88,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testDeploy() throws Exception {
         String taskName = "GridDeploymentTestTask";
 
@@ -114,6 +116,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testRedeploy() throws Exception {
         String taskName = "GridDeploymentTestTask";
 
@@ -163,7 +166,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
      *
      */
     @SuppressWarnings({"PublicInnerClass", "InnerClassMayBeStatic"})
-    @ComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     public class GridDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
@@ -180,7 +183,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
      *
      */
     @SuppressWarnings({"PublicInnerClass", "InnerClassMayBeStatic"})
-    @ComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     public class GridDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {

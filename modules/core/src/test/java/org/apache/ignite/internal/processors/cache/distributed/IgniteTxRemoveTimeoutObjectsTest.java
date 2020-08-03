@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -30,8 +32,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -53,9 +58,20 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
         return 60_000;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7388", MvccFeatureChecker.forcedMvcc());
+
+        if (nearEnabled())
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.beforeTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRemoveTimeoutObjects() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
@@ -120,21 +136,34 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
 
         info("Tx2 stopped");
 
-        // Check that that changes committed.
-        for (int i = 0; i < PUT_CNT; i++)
-            assertEquals(cache0.get(i).intValue(), i);
+        // Assertions should be into a transaction because of near cache.
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+
+            // Check that changes committed.
+            for (int i = 0; i < PUT_CNT; i++)
+                assertEquals(cache0.get(i).intValue(), i);
+
+            tx.commit();
+        }
     }
 
     /**
      * Fails if at least one grid contains LockTimeoutObjects.
      */
-    private void assertDoesNotContainLockTimeoutObjects() {
-        for (Ignite ignite : G.allGrids()) {
-            for (GridTimeoutObject object : getTimeoutObjects((IgniteEx)ignite)) {
-                if (object.getClass().getSimpleName().equals("LockTimeoutObject"))
-                    fail("Grids contain LockTimeoutObjects.");
+    private void assertDoesNotContainLockTimeoutObjects() throws IgniteInterruptedCheckedException {
+        boolean noLockTimeoutObjs = GridTestUtils.waitForCondition(() -> {
+            for (Ignite ignite : G.allGrids()) {
+                for (GridTimeoutObject object : getTimeoutObjects((IgniteEx)ignite)) {
+                    if (object.getClass().getSimpleName().equals("LockTimeoutObject"))
+                        return false;
+                }
             }
-        }
+
+            return true;
+        }, getTestTimeout());
+
+        if (!noLockTimeoutObjs)
+            fail("Grids contain LockTimeoutObjects.");
     }
 
     /**
@@ -179,7 +208,7 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
             .append("]");
 
         info(sb.toString()
-            .replaceAll("distributed.IgniteTxRollbackOnStopTest", "Grid"));
+            .replaceAll("distributed.IgniteTxRemoveTimeoutObjectsTest", "Grid"));
     }
 
     /**
@@ -190,5 +219,10 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
         GridTimeoutProcessor timeout = igniteEx.context().timeout();
 
         return GridTestUtils.getFieldValue(timeout, timeout.getClass(), "timeoutObjs");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

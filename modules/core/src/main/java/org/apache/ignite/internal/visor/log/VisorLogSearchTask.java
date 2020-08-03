@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.visor.log;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +30,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.io.GridReversedLinesFileReader;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,12 +41,15 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.decode;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.matchedFiles;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgnitePath;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveSymbolicLink;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.textFile;
 
 /**
  * Search text matching in logs
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTaskArg, VisorLogSearchTaskResult,
     Collection<VisorLogSearchResult>> {
     /** */
@@ -173,21 +175,22 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTaskArg
 
         /** {@inheritDoc} */
         @Override protected Collection<VisorLogSearchResult> run(VisorLogSearchTaskArg arg) {
-            URL url = U.resolveIgniteUrl(arg.getFolder());
-
-            if (url == null)
-                throw new IgniteException(new FileNotFoundException("Log folder not found: " + arg.getFolder()));
-
-            UUID uuid = ignite.localNode().id();
-            String nid = uuid.toString().toLowerCase();
-
-            String filePtrn = arg.getFilePattern().replace("@nid8", nid.substring(0, 8)).replace("@nid", nid);
-
             try {
-                File fld = new File(url.toURI());
-                int pathIdx = (fld.isDirectory() ? fld : fld.getParentFile()).getAbsolutePath().length() + 1;
+                File folder = resolveIgnitePath(arg.getFolder());
 
-                List<VisorLogFile> matchingFiles = matchedFiles(fld, filePtrn);
+                if (folder == null)
+                    return null;
+
+                folder = resolveSymbolicLink(folder);
+
+                UUID uuid = ignite.localNode().id();
+                String nid = uuid.toString().toLowerCase();
+
+                String filePtrn = arg.getFilePattern().replace("@nid8", nid.substring(0, 8)).replace("@nid", nid);
+
+                int pathIdx = (folder.isDirectory() ? folder : folder.getParentFile()).getAbsolutePath().length() + 1;
+
+                List<VisorLogFile> matchingFiles = matchedFiles(folder, filePtrn);
 
                 Collection<VisorLogSearchResult> results = new ArrayList<>(arg.getLimit());
 

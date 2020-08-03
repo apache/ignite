@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * safe to use when all transactions that involve moving primary partitions are completed and partition map
  * exchange is also completed.
  * <p/>
- * When new new cache operation is started, it will wait for this future before acquiring new locks on particular
+ * When new cache operation is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
@@ -47,7 +47,7 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
 
     /**
      * Gets result topology version of this future. Result version can differ from initial exchange version
-     * if excanges for multiple discovery events are merged, in this case result version is version of last
+     * if exchanges for multiple discovery events are merged, in this case result version is version of last
      * discovery event.
      * <p>
      * This method should be called only for finished topology future
@@ -78,12 +78,18 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @param read {@code True} if validating read operation, {@code false} if validating write.
      * @param key Key (optimization to avoid collection creation).
      * @param keys Keys involved in a cache operation.
-     * @return valid ot not.
+     * @return Not null exception if a cache is in invalid state.
      */
-    @Nullable public Throwable validateCache(
+    @Nullable public CacheInvalidStateException validateCache(
         GridCacheContext cctx,
         boolean recovery,
         boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys);
+
+    /**
+     *
+     * @return {@code True} if this exchange changed affinity.
+     */
+    public boolean changedAffinity();
 }

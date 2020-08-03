@@ -30,7 +30,6 @@ import org.apache.lucene.store.LockObtainFailedException;
  */
 public class GridLuceneLockFactory extends LockFactory {
     /** */
-    @SuppressWarnings("TypeMayBeWeakened")
     private final GridConcurrentHashSet<String> locks = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
@@ -83,8 +82,7 @@ public class GridLuceneLockFactory extends LockFactory {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return super.toString() + ": " + lockName;
         }
     }

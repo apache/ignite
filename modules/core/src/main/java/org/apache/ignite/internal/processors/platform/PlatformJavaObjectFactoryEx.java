@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.Map;
 import org.apache.ignite.platform.PlatformJavaObjectFactory;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * Extended Java object factory interface to handle special cases.

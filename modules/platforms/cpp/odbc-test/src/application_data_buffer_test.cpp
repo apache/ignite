@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <ignite/odbc/system/odbc_constants.h>
 
 #include <boost/test/unit_test.hpp>
@@ -120,7 +116,9 @@ BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 
     uint8_t binary[] = { 0x21, 0x84, 0xF4, 0xDC, 0x01, 0x00, 0xFF, 0xF0 };
 
-    appBuf.PutBinaryData(binary, sizeof(binary));
+    int32_t written = 0;
+
+    appBuf.PutBinaryData(binary, sizeof(binary), written);
 
     BOOST_CHECK(!strcmp(buffer, "2184f4dc0100fff0"));
     BOOST_CHECK(reslen == strlen("2184f4dc0100fff0"));
@@ -156,7 +154,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
@@ -273,7 +271,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);

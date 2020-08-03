@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -118,13 +119,13 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidPartition(int part) {
+    @Override public void invalidPartition(int cacheId, int part, GridCacheVersion ver) {
         if (entry != null && entry.context().affinity().partition(entry.key()) == part)
             entry = null;
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxRemoteSingleStateImpl.class, this);
     }
 

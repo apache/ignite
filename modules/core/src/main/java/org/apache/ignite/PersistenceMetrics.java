@@ -17,13 +17,13 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
  * Persistence metrics used to obtain statistics on persistence.
  *
- * Use {@link IgniteCacheDatabaseSharedManager#persistentStoreMetrics()} to obtain persistent metrics.
+ * @deprecated Use {@link DataStorageMetrics} instead.
  */
+@Deprecated
 public interface PersistenceMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.

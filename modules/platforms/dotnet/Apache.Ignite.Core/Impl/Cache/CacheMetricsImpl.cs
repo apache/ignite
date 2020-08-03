@@ -116,6 +116,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly int _keySize;
 
         /** */
+        private readonly long _cacheSize;
+
+        /** */
         private readonly bool _isEmpty;
 
         /** */
@@ -211,6 +214,78 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** */
         private readonly bool _isWriteThrough;
 
+        /** */
+        private readonly bool _isValidForReading;
+
+        /** */
+        private readonly bool _isValidForWriting;
+
+        /** */
+        private readonly int _totalPartitionsCount;
+
+        /** */
+        private readonly int _rebalancingPartitionsCount;
+
+        /** */
+        private readonly long _keysToRebalanceLeft;
+
+        /** */
+        private readonly long _rebalancingKeysRate;
+
+        /** */
+        private readonly long _rebalancingBytesRate;
+
+        /** */
+        private readonly long _heapEntriesCount;
+
+        /** */
+        private readonly long _estimatedRebalancingFinishTime;
+
+        /** */
+        private readonly long _rebalancingStartTime;
+
+        /** */
+        private readonly long _rebalancingClearingPartitionsLeft;
+
+        /** */
+        private readonly long _rebalancedKeys;
+
+        /** */
+        private readonly long _estimatedRebalancedKeys;
+
+        /** */
+        private readonly long _entryProcessorPuts;
+
+        /** */
+        private readonly float _entryProcessorAverageInvocationTime;
+
+        /** */
+        private readonly long _entryProcessorInvocations;
+
+        /** */
+        private readonly float _entryProcessorMaxInvocationTime;
+
+        /** */
+        private readonly float _entryProcessorMinInvocationTime;
+
+        /** */
+        private readonly long _entryProcessorReadOnlyInvocations;
+
+        /** */
+        private readonly float _entryProcessorHitPercentage;
+
+        /** */
+        private readonly long _entryProcessorHits;
+
+        /** */
+        private readonly long _entryProcessorMisses;
+
+        /** */
+        private readonly float _entryProcessorMissPercentage;
+
+        /** */
+        private readonly long _entryProcessorRemovals;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
@@ -279,6 +354,31 @@ namespace Apache.Ignite.Core.Impl.Cache
             _isManagementEnabled = reader.ReadBoolean();
             _isReadThrough = reader.ReadBoolean();
             _isWriteThrough = reader.ReadBoolean();
+            _isValidForReading = reader.ReadBoolean();
+            _isValidForWriting = reader.ReadBoolean();
+            _totalPartitionsCount = reader.ReadInt();
+            _rebalancingPartitionsCount = reader.ReadInt();
+            _keysToRebalanceLeft = reader.ReadLong();
+            _rebalancingKeysRate = reader.ReadLong();
+            _rebalancingBytesRate = reader.ReadLong();
+            _heapEntriesCount = reader.ReadLong();
+            _estimatedRebalancingFinishTime = reader.ReadLong();
+            _rebalancingStartTime = reader.ReadLong();
+            _rebalancingClearingPartitionsLeft = reader.ReadLong();
+            _cacheSize = reader.ReadLong();
+            _rebalancedKeys = reader.ReadLong();
+            _estimatedRebalancedKeys = reader.ReadLong();
+            _entryProcessorPuts = reader.ReadLong();
+            _entryProcessorAverageInvocationTime = reader.ReadFloat();
+            _entryProcessorInvocations = reader.ReadLong();
+            _entryProcessorMaxInvocationTime = reader.ReadFloat();
+            _entryProcessorMinInvocationTime = reader.ReadFloat();
+            _entryProcessorReadOnlyInvocations = reader.ReadLong();
+            _entryProcessorHitPercentage = reader.ReadFloat();
+            _entryProcessorHits = reader.ReadLong();
+            _entryProcessorMisses = reader.ReadLong();
+            _entryProcessorMissPercentage = reader.ReadFloat();
+            _entryProcessorRemovals = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -367,6 +467,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public int Size { get { return _size; } }
+
+        /** <inheritDoc /> */
+        public long CacheSize { get { return _cacheSize; } }
 
         /** <inheritDoc /> */
         public int KeySize { get { return _keySize; } }
@@ -466,5 +569,77 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public bool IsWriteThrough { get { return _isWriteThrough; } }
+
+        /** <inheritDoc /> */
+        public bool IsValidForReading { get { return _isValidForReading; } }
+
+        /** <inheritDoc /> */
+        public bool IsValidForWriting { get { return _isValidForWriting; } }
+
+        /** <inheritDoc /> */
+        public int TotalPartitionsCount { get { return _totalPartitionsCount; } }
+
+        /** <inheritDoc /> */
+        public int RebalancingPartitionsCount { get { return _rebalancingPartitionsCount; } }
+
+        /** <inheritDoc /> */
+        public long KeysToRebalanceLeft { get { return _keysToRebalanceLeft; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingKeysRate { get { return _rebalancingKeysRate; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingBytesRate { get { return _rebalancingBytesRate; } }
+
+        /** <inheritDoc /> */
+        public long HeapEntriesCount { get { return _heapEntriesCount; } }
+
+        /** <inheritDoc /> */
+        public long EstimatedRebalancingFinishTime { get { return _estimatedRebalancingFinishTime; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingStartTime { get { return _rebalancingStartTime; } }
+
+        /** <inheritDoc /> */
+        public long RebalanceClearingPartitionsLeft { get { return _rebalancingClearingPartitionsLeft; } }
+
+        /** <inheritDoc /> */
+        public long RebalancedKeys { get { return _rebalancedKeys; } }
+
+        /** <inheritDoc /> */
+        public long EstimatedRebalancingKeys { get { return _estimatedRebalancedKeys; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorPuts { get { return _entryProcessorPuts; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorAverageInvocationTime { get { return _entryProcessorAverageInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorInvocations { get { return _entryProcessorInvocations; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMaxInvocationTime { get { return _entryProcessorMaxInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMinInvocationTime { get { return _entryProcessorMinInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorReadOnlyInvocations { get { return _entryProcessorReadOnlyInvocations; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorHitPercentage { get { return _entryProcessorHitPercentage; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorHits { get { return _entryProcessorHits; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorMisses { get { return _entryProcessorMisses; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMissPercentage { get { return _entryProcessorMissPercentage; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorRemovals { get { return _entryProcessorRemovals; } }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.computegrid.ComputeTaskMapExample;
 import org.apache.ignite.examples.computegrid.ComputeTaskSplitExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Hello world examples self test.
@@ -28,6 +29,7 @@ public class TaskExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskSplitExample() throws Exception {
         ComputeTaskSplitExample.main(EMPTY_ARGS);
     }
@@ -35,6 +37,7 @@ public class TaskExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskMapExample() throws Exception {
         ComputeTaskMapExample.main(EMPTY_ARGS);
     }

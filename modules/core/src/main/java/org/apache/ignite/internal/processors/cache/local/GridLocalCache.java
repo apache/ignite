@@ -25,15 +25,12 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -185,7 +182,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (entry != null && ctx.isAll(entry, CU.empty0())) {
                 entry.releaseLocal();
 
-                ctx.evicts().touch(entry, topVer);
+                entry.touch();
             }
         }
     }
@@ -210,7 +207,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param fut Clears future from cache.
      */
     void onFutureDone(GridLocalLockFuture fut) {
-        if (ctx.mvcc().removeMvccFuture(fut)) {
+        if (ctx.mvcc().removeVersionedFuture(fut)) {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
@@ -234,5 +231,33 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         return localSizeLong(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        return ctx.closures().callLocalSafe(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                preloadPartition(part);
+
+                return null;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nextVersion() {
+        return ctx.versions().next(ctx.shared().kernalContext().discovery().topologyVersion());
     }
 }

@@ -32,33 +32,28 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class CacheStartOnJoinTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Iteration. */
     private static final int ITERATIONS = 3;
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -91,25 +86,23 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
             }
         };
 
-        testSpi.setIpFinder(ipFinder);
+        testSpi.setIpFinder(sharedStaticIpFinder);
         testSpi.setJoinTimeout(60_000);
 
         cfg.setDiscoverySpi(testSpi);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(50 * 1024 * 1024);
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setClientMode(client);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000L;
+        return 10L * 60 * 1000;
     }
 
     /** {@inheritDoc} */
@@ -122,13 +115,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN);
-
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart1() throws Exception {
         concurrentClientsStart(false);
     }
@@ -136,6 +128,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart2() throws Exception {
         concurrentClientsStart(true);
     }
@@ -162,8 +155,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTest(final boolean createCache) throws Exception {
-        client = false;
-
         final int CLIENTS = 5;
         final int SRVS = 4;
 
@@ -173,19 +164,28 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         final CyclicBarrier b = new CyclicBarrier(CLIENTS);
 
-        client = true;
-
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 try {
                     b.await();
 
-                    Ignite node = startGrid(idx + SRVS);
+                    Ignite node = startClientGrid(idx + SRVS);
 
                     if (createCache) {
                         for (int c = 0; c < 5; c++) {
                             for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                cache.put(c, c);
+                                boolean updated = false;
+
+                                while (!updated) {
+                                    try {
+                                        cache.put(c, c);
+
+                                        updated = true;
+                                    }
+                                    catch (Exception e) {
+                                        assertMvccWriteConflict(e);
+                                    }
+                                }
 
                                 assertEquals(c, cache.get(c));
                             }
@@ -250,6 +250,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         return ccfg;
     }
+
     /**
      * @param node Node.
      * @param cacheName Cache name.

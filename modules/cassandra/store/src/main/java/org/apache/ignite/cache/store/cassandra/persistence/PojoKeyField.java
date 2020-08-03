@@ -24,7 +24,6 @@ import org.w3c.dom.Element;
  * Descriptor for Ignite key POJO class
  */
 public class PojoKeyField extends PojoField {
-
     /**
      * Specifies sort order for POJO key field
      */
@@ -58,6 +57,19 @@ public class PojoKeyField extends PojoField {
                 throw new IllegalArgumentException("Incorrect sort order '" + el.getAttribute(SORT_ATTR) + "' specified");
             }
         }
+    }
+
+    /**
+     * Constructs instance of {@code PojoKeyField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoKeyField instance
+     * @param pojoCls java class of the corresponding POJO
+     */
+    public PojoKeyField(PojoKeyField field, Class<?> pojoCls) {
+        super(field, pojoCls);
+
+        sortOrder = field.sortOrder;
     }
 
     /**

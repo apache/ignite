@@ -28,11 +28,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -46,25 +45,26 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * Checks that exception is propagated to user when cache store throws an exception.
  */
 public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Near enabled flag. */
     private boolean nearEnabled;
 
     /** Cache mode for test. */
     private CacheMode cacheMode;
 
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -88,21 +88,25 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorNear() throws Exception {
         checkGetError(true, PARTITIONED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorColocated() throws Exception {
         checkGetError(false, PARTITIONED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorReplicated() throws Exception {
         checkGetError(false, REPLICATED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorLocal() throws Exception {
         checkGetError(false, LOCAL);
     }
@@ -116,7 +120,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         this.nearEnabled = nearEnabled;
         this.cacheMode = cacheMode;
 
-        startGrids(3);
+        startGridsMultiThreaded(3);
 
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {

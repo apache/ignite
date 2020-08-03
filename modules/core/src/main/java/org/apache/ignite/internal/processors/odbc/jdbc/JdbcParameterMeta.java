@@ -52,7 +52,6 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     /** Mode. */
     private int mode;
 
-
     /**
      * Default constructor is used for binary serialization.
      */
@@ -133,7 +132,10 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeInt(isNullable);
         writer.writeBoolean(signed);
         writer.writeInt(precision);
@@ -145,7 +147,10 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         isNullable = reader.readInt();
         signed = reader.readBoolean();
         precision = reader.readInt();

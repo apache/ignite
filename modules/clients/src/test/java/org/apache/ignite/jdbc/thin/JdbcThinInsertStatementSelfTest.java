@@ -24,8 +24,8 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Statement test.
@@ -42,7 +42,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
         "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
 
     /** Arguments for prepared statement. */
-    private final Object [][] args = new Object[][] {
+    private final Object[][] args = new Object[][] {
         {"p1", 1, "John", "White", 25},
         {"p3", 3, "Mike", "Green", 40},
         {"p2", 2, "Joe", "Black", 35}
@@ -141,6 +141,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         assertEquals(3, stmt.executeUpdate(SQL));
     }
@@ -148,6 +149,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedExecuteUpdate() throws SQLException {
         assertEquals(3, prepStmt.executeUpdate());
     }
@@ -155,6 +157,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         assertFalse(stmt.execute(SQL));
     }
@@ -162,6 +165,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedExecute() throws SQLException {
         assertFalse(prepStmt.execute());
     }
@@ -169,6 +173,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      *
      */
+    @Test
     public void testDuplicateKeys() {
         jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
 
@@ -177,7 +182,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
             @Override public Object call() throws Exception {
                 return stmt.execute(SQL);
             }
-        }, IgniteCheckedException.class,
+        }, SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());

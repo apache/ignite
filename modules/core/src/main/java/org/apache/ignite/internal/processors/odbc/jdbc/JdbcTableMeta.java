@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
 
 /**
  * JDBC table metadata.
@@ -32,11 +36,14 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** Table name. */
     private String tblName;
 
+    /** Table type. */
+    private String tblType;
+
     /**
      * Default constructor is used for deserialization.
      */
     JdbcTableMeta() {
-        // No-op.
+        tblType = TYPE_TABLE;
     }
 
     /**
@@ -47,6 +54,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
         this.tblName = tblName;
+        this.tblType = tblType;
     }
 
     /**
@@ -63,16 +71,53 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         return tblName;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        writer.writeString(schemaName);
-        writer.writeString(tblName);
+    /**
+     * @return Table type.
+     */
+    public String tableType() {
+        return tblType;
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        writer.writeString(schemaName);
+        writer.writeString(tblName);
+
+        if (protoCtx.isTableTypesSupported())
+            writer.writeString(tblType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         schemaName = reader.readString();
         tblName = reader.readString();
+
+        if (protoCtx.isTableTypesSupported())
+            tblType = reader.readString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JdbcTableMeta meta = (JdbcTableMeta)o;
+
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(schemaName, tblName);
     }
 
     /** {@inheritDoc} */

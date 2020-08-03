@@ -78,6 +78,46 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
             };
 
+            class IGNITE_IMPORT_EXPORT ReadWriteLock
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ReadWriteLock();
+
+                /**
+                 * Destructor.
+                 */
+                ~ReadWriteLock();
+
+                /**
+                 * Lock in exclusive mode.
+                 */
+                void LockExclusive();
+
+                /**
+                 * Release in exclusive mode.
+                 */
+                void ReleaseExclusive();
+
+                /**
+                 * Lock in shared mode.
+                 */
+                void LockShared();
+
+                /**
+                 * Release in shared mode.
+                 */
+                void ReleaseShared();
+
+            private:
+                /** Lock. */
+                pthread_rwlock_t lock;
+
+                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock)
+            };
+
             /**
              * Special latch with count = 1.
              */
@@ -411,9 +451,10 @@ namespace ignite
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
 
+#if !defined(__APPLE__)
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
-
+#endif
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);
                 }
@@ -501,9 +542,10 @@ namespace ignite
                     pthread_condattr_t attr;
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
-
+#if !defined(__APPLE__)
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
+#endif
 
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);

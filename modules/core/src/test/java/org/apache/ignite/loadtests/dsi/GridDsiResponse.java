@@ -28,11 +28,9 @@ public class GridDsiResponse implements Serializable {
     private long id;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long msgId;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long transactionId;
 
     /**
@@ -46,7 +44,7 @@ public class GridDsiResponse implements Serializable {
      * @param terminalId Terminal ID.
      * @return Cache key.
      */
-    public Object getCacheKey(String terminalId){
+    public Object getCacheKey(String terminalId) {
         //return new AffinityKey<String>("RESPONSE:" + id.toString(), terminalId);
         return new ResponseKey(id, terminalId);
     }
@@ -60,7 +58,6 @@ public class GridDsiResponse implements Serializable {
         private Long key;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         @AffinityKeyMapped
         private String terminalId;
 

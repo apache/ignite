@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -28,15 +29,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Near transaction prepare request.
+ * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
@@ -57,6 +60,9 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int ALLOW_WAIT_TOP_FUT_FLAG_MASK = 0x10;
 
+    /** Recovery value flag. */
+    private static final int RECOVERY_FLAG_MASK = 0x40;
+
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -75,6 +81,10 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     @GridToStringExclude
     private byte flags;
+
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -121,7 +131,8 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean firstClientReq,
         boolean allowWaitTopFut,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean recovery
     ) {
         super(tx,
             timeout,
@@ -141,11 +152,14 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
+        txLbl = tx.label();
+
         setFlag(near, NEAR_FLAG_MASK);
         setFlag(implicitSingle, IMPLICIT_SINGLE_FLAG_MASK);
         setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(allowWaitTopFut, ALLOW_WAIT_TOP_FUT_FLAG_MASK);
+        setFlag(recovery, RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -154,6 +168,20 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public boolean allowWaitTopologyFuture() {
         return isFlag(ALLOW_WAIT_TOP_FUT_FLAG_MASK);
+    }
+
+    /**
+     * @return Recovery flag.
+     */
+    public final boolean recovery() {
+        return isFlag(RECOVERY_FLAG_MASK);
+    }
+
+    /**
+     * @param val Recovery flag.
+     */
+    public void recovery(boolean val) {
+        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -227,6 +255,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
+    /**
      *
      */
     public void cloneEntries() {
@@ -243,7 +278,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
-            return c;
+            return Collections.emptyList();
 
         Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
@@ -300,38 +335,44 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         switch (writer.state()) {
-            case 20:
+            case 21:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 22:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 23:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 24:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 25:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
-                if (!writer.writeMessage("topVer", topVer))
+            case 26:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 27:
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -352,7 +393,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         switch (reader.state()) {
-            case 20:
+            case 21:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -360,7 +401,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -368,7 +409,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 23:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -376,7 +417,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 24:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -384,7 +425,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 25:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -392,8 +433,16 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 25:
-                topVer = reader.readMessage("topVer");
+            case 26:
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 27:
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -412,7 +461,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 28;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */

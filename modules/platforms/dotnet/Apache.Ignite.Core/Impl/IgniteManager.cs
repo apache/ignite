@@ -21,19 +21,19 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
-    using System.Runtime.InteropServices;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Log;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native interface manager.
     /// </summary>
-    public static unsafe class IgniteManager
+    internal static class IgniteManager
     {
         /** Java Command line argument: Xms. Case sensitive. */
         private const string CmdJvmMinMemJava = "-Xms";
@@ -41,11 +41,14 @@ namespace Apache.Ignite.Core.Impl
         /** Java Command line argument: Xmx. Case sensitive. */
         private const string CmdJvmMaxMemJava = "-Xmx";
 
+        /** Java Command line argument: file.encoding. Case sensitive. */
+        private const string CmdJvmFileEncoding = "-Dfile.encoding=";
+
+        /** Java Command line argument: java.util.logging.config.file. Case sensitive. */
+        private const string CmdJvmUtilLoggingConfigFile = "-Djava.util.logging.config.file=";
+
         /** Monitor for DLL load synchronization. */
         private static readonly object SyncRoot = new object();
-
-        /** First created context. */
-        private static void* _ctx;
 
         /** Configuration used on JVM start. */
         private static JvmConfiguration _jvmCfg;
@@ -57,10 +60,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create JVM.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        /// <param name="cbs">Callbacks.</param>
-        /// <param name="log"></param>
-        /// <returns>Context.</returns>
-        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs, ILogger log)
+        /// <param name="log">Logger</param>
+        /// <returns>Callback context.</returns>
+        internal static UnmanagedCallbacks CreateJvmContext(IgniteConfiguration cfg, ILogger log)
         {
             lock (SyncRoot)
             {
@@ -79,19 +81,26 @@ namespace Apache.Ignite.Core.Impl
                 }
 
                 // 2. Create unmanaged pointer.
-                void* ctx = CreateJvm(cfg, cbs);
+                var jvm = CreateJvm(cfg, log);
 
-                cbs.SetContext(ctx);
-
-                // 3. If this is the first JVM created, preserve it.
-                if (_ctx == null)
+                if (cfg.RedirectJavaConsoleOutput)
                 {
-                    _ctx = ctx;
+                    jvm.EnableJavaConsoleWriter();
+                }
+
+                var cbs = new UnmanagedCallbacks(log, jvm);
+                jvm.RegisterCallbacks(cbs);
+
+                // 3. If this is the first JVM created, preserve configuration.
+                if (_jvmCfg == null)
+                {
                     _jvmCfg = jvmCfg;
                 }
+
+                return cbs;
             }
         }
-        
+
         /// <summary>
         /// Memory manager attached to currently running JVM.
         /// </summary>
@@ -101,80 +110,62 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Blocks until JVM stops.
-        /// </summary>
-        public static void DestroyJvm()
-        {
-            lock (SyncRoot)
-            {
-                if (_ctx != null)
-                {
-                    UU.DestroyJvm(_ctx);
-
-                    _ctx = null;
-                }
-            }
-        }
-
-        /// <summary>
         /// Create JVM.
         /// </summary>
         /// <returns>JVM.</returns>
-        private static void* CreateJvm(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        private static Jvm CreateJvm(IgniteConfiguration cfg, ILogger log)
         {
-            var cp = Classpath.CreateClasspath(cfg);
+            // Do not bother with classpath when JVM exists.
+            var jvm = Jvm.Get(true);
 
-            var jvmOpts = GetMergedJvmOptions(cfg);
-            
-            var opts = new sbyte*[1 + jvmOpts.Count];
-
-            int idx = 0;
-                
-            opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cp);
-
-            foreach (string cfgOpt in jvmOpts)
-                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cfgOpt);
-
-            try
+            if (jvm != null)
             {
-                IntPtr mem = Marshal.AllocHGlobal(opts.Length * 8);
-
-                fixed (sbyte** opts0 = opts)
-                {
-                    PlatformMemoryUtils.CopyMemory(opts0, mem.ToPointer(), opts.Length * 8);
-                }
-
-                try
-                {
-                    return UU.CreateContext(mem.ToPointer(), opts.Length, cbs.CallbacksPointer);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(mem);
-                }
+                return jvm;
             }
-            finally
-            {
-                foreach (sbyte* opt in opts)
-                    Marshal.FreeHGlobal((IntPtr)opt);
-            }
+
+            var igniteHome = IgniteHome.Resolve(cfg.IgniteHome, log);
+            var cp = Classpath.CreateClasspath(classPath: cfg.JvmClasspath, igniteHome: igniteHome, log: log);
+
+            var jvmOpts = GetMergedJvmOptions(cfg, igniteHome);
+
+            jvmOpts.Add(cp);
+
+            return Jvm.GetOrCreate(jvmOpts);
         }
 
         /// <summary>
         /// Gets JvmOptions collection merged with individual properties (Min/Max mem, etc) according to priority.
         /// </summary>
-        private static IList<string> GetMergedJvmOptions(IgniteConfiguration cfg)
+        private static IList<string> GetMergedJvmOptions(IgniteConfiguration cfg, string igniteHome)
         {
             var jvmOpts = cfg.JvmOptions == null ? new List<string>() : cfg.JvmOptions.ToList();
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)) &&
                 cfg.JvmInitialMemoryMb != IgniteConfiguration.DefaultJvmInitMem)
-                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava,
+                    cfg.JvmInitialMemoryMb));
+            }
 
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)) &&
                 cfg.JvmMaxMemoryMb != IgniteConfiguration.DefaultJvmMaxMem)
-                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+            {
+                jvmOpts.Add(
+                    string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+            }
+
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmFileEncoding, StringComparison.Ordinal)))
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}UTF-8", CmdJvmFileEncoding));
+            }
+
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmUtilLoggingConfigFile, StringComparison.Ordinal)) &&
+                !string.IsNullOrWhiteSpace(igniteHome))
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}", CmdJvmUtilLoggingConfigFile,
+                    Path.Combine(igniteHome, "config", "java.util.logging.properties")));
+            }
 
             return jvmOpts;
         }

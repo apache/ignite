@@ -39,7 +39,7 @@ public @interface QueryGroupIndex {
 
     /**
      * Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
-     * thus minimizing data page accesses, thus incraesing query performance.
+     * thus minimizing data page accesses, thus increasing query performance.
      * <p>
      * Allowed values:
      * <ul>

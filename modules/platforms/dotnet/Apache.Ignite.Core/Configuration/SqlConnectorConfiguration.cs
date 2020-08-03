@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
     using System.ComponentModel;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
@@ -24,6 +25,7 @@ namespace Apache.Ignite.Core.Configuration
     /// <summary>
     /// SQL connector configuration (for ODBC and JDBC).
     /// </summary>
+    [Obsolete("Use ClientConnectorConfiguration instead.")]
     public class SqlConnectorConfiguration
     {
         /// <summary>

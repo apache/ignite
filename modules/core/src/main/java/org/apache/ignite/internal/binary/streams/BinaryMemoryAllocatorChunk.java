@@ -35,7 +35,7 @@ public class BinaryMemoryAllocatorChunk {
     private int maxMsgSize;
 
     /** Last time array size is checked. */
-    private long lastCheck = U.currentTimeMillis();
+    private long lastCheckNanos = System.nanoTime();
 
     /** Whether the holder is acquired or not. */
     private boolean acquired;
@@ -88,15 +88,15 @@ public class BinaryMemoryAllocatorChunk {
 
         this.acquired = false;
 
-        long now = U.currentTimeMillis();
+        long nowNanos = System.nanoTime();
 
-        if (now - this.lastCheck >= CHECK_FREQ) {
+        if (U.nanosToMillis(nowNanos - lastCheckNanos) >= CHECK_FREQ) {
             int halfSize = data.length >> 1;
 
             if (this.maxMsgSize < halfSize)
                 this.data = new byte[halfSize];
 
-            this.lastCheck = now;
+            lastCheckNanos = nowNanos;
         }
     }
 

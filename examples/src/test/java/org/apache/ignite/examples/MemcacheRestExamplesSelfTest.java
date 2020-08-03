@@ -20,6 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExample;
 import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * MemcacheRestExample self test.
@@ -36,6 +37,7 @@ public class MemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemcacheRestExample() throws Exception {
         MemcacheRestExample.main(EMPTY_ARGS);
     }

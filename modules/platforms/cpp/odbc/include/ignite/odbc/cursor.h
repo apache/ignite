@@ -70,6 +70,13 @@ namespace ignite
             bool HasData() const;
 
             /**
+             * Check whether cursor closed remotely.
+             *
+             * @return true, if the cursor closed remotely.
+             */
+            bool IsClosedRemotely() const;
+
+            /**
              * Get query ID.
              *
              * @return Query ID.

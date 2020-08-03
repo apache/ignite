@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Code\impl">
+      <UniqueIdentifier>{9bc8816b-8ec1-4da2-9381-d194f811280c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache">
+      <UniqueIdentifier>{143c6ccd-4c0a-4ac3-a6a5-23aa030288db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache">
+      <UniqueIdentifier>{372189a3-2442-47b1-bd75-7fe916a586ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\affinity">
+      <UniqueIdentifier>{23850408-24ce-4781-8f30-acfc51ced59f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite_client.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\data_router.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\protocol_version.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\message.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\utility.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\data_channel.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\remote_type_updater.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_node.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\affinity\affinity_assignment.cpp">
+      <Filter>Code\impl\affinity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\affinity\affinity_topology_version.cpp">
+      <Filter>Code\impl\affinity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\affinity\affinity_manager.cpp">
+      <Filter>Code\impl\affinity</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\readable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\data_channel.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\data_router.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ignite_client_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\message.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\protocol_version.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\response_status.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\utility.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\remote_type_updater.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ignite_node.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\affinity_assignment.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\affinity_topology_version.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\cache_affinity_configs.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\node_partitions.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\affinity_manager.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\partition_awareness_group.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

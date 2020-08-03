@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -82,6 +83,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphore() throws Exception {
         checkSemaphore();
         checkSemaphoreSerialization();
@@ -90,6 +92,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
         if (atomicsCacheMode() == LOCAL)
             return;
@@ -104,6 +107,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -243,7 +247,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                             log.info("Thread is going to wait on semaphore: " + Thread.currentThread().getName() + ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 
-                            assert  semaphore.tryAcquire(1, 1, MINUTES);
+                            assert semaphore.tryAcquire(1, 1, MINUTES);
 
                             log.info("Thread is again runnable: " + Thread.currentThread().getName() + ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 
@@ -282,6 +286,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreClosing() throws Exception {
         IgniteConfiguration cfg;
         GridStringLogger stringLogger;
@@ -472,6 +477,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreMultinode1() throws Exception {
         if (gridCount() == 1)
             return;

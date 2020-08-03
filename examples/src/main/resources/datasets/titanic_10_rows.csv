@@ -1,0 +1,11 @@
+﻿pclass;survived;name;sex;age;sibsp;parch;ticket;fare;cabin;embarked;boat;body;homedest
+1;1;Allen, Miss. Elisabeth Walton;;29;;;24160;211,3375;B5;;2;;St Louis, MO
+1;1;Allison, Master. Hudson Trevor;male;0,9167;1;2;113781;151,55;C22 C26;S;11;;Montreal, PQ / Chesterville, ON
+1;0;Allison, Miss. Helen Loraine;female;2;1;2;113781;151,55;C22 C26;S;;;Montreal, PQ / Chesterville, ON
+1;0;Allison, Mr. Hudson Joshua Creighton;male;30;1;2;113781;151,55;C22 C26;S;;135;Montreal, PQ / Chesterville, ON
+1;0;Allison, Mrs. Hudson J C (Bessie Waldo Daniels);female;25;1;2;113781;151,55;C22 C26;S;;;Montreal, PQ / Chesterville, ON
+1;1;Anderson, Mr. Harry;male;48;0;0;19952;26,55;E12;S;3;;New York, NY
+1;1;Andrews, Miss. Kornelia Theodosia;female;63;1;0;13502;77,9583;D7;S;10;;Hudson, NY
+1;0;Andrews, Mr. Thomas Jr;male;39;0;0;112050;0;A36;S;;;Belfast, NI
+1;1;Appleton, Mrs. Edward Dale (Charlotte Lamson);female;53;2;0;11769;51,4792;C101;S;D;;Bayside, Queens, NY
+1;0;Artagaveytia, Mr. Ramon;male;71;0;0;PC 17609;49,5042;;C;;22;Montevideo, Uruguay

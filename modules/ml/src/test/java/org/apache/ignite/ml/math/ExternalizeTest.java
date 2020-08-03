@@ -23,7 +23,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import org.apache.ignite.ml.math.impls.MathTestConstants;
+import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -31,6 +31,7 @@ import static org.junit.Assert.fail;
 
 /**
  * Common test for externalization.
+ * TODO: IGNITE-7325 remove this class from all test and change on ExternalizableTest
  */
 public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
     /** */

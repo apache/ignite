@@ -123,7 +123,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeString(schemaName);
         writer.writeString(tblName);
         writer.writeString(idxName);
@@ -142,7 +145,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         schemaName = reader.readString();
         tblName = reader.readString();
         idxName = reader.readString();
@@ -156,7 +162,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
             fieldsAsc = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i)
-                fieldsAsc .add(reader.readBoolean());
+                fieldsAsc.add(reader.readBoolean());
         }
         else
             fieldsAsc = Collections.emptyList();

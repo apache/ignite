@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
@@ -33,26 +38,19 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
 /**
  * Interop compute.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored", "UnusedDeclaration"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class PlatformCompute extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_AFFINITY = 1;
-
     /** */
     private static final int OP_BROADCAST = 2;
 
@@ -73,6 +71,24 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_EXEC_NATIVE = 8;
+
+    /** */
+    private static final int OP_WITH_NO_RESULT_CACHE = 9;
+
+    /** */
+    private static final int OP_WITH_EXECUTOR = 10;
+
+    /** */
+    private static final int OP_AFFINITY_CALL_PARTITION = 11;
+
+    /** */
+    private static final int OP_AFFINITY_RUN_PARTITION = 12;
+
+    /** */
+    private static final int OP_AFFINITY_CALL = 13;
+
+    /** */
+    private static final int OP_AFFINITY_RUN = 14;
 
     /** Compute instance. */
     private final IgniteComputeImpl compute;
@@ -99,18 +115,29 @@ public class PlatformCompute extends PlatformAbstractTarget {
         computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param compute Compute.
+     * @param computeForPlatform Compute over platform-specific nodes.
+     */
+    private PlatformCompute(PlatformContext platformCtx, IgniteComputeImpl compute,
+                            IgniteComputeImpl computeForPlatform) {
+        super(platformCtx);
+        this.compute = compute;
+        this.computeForPlatform = computeForPlatform;
+    }
+
     /** {@inheritDoc} */
     @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
-                return processClosures(reader.readLong(), reader, false, false);
+                return processClosures(reader.readLong(), reader, false);
 
             case OP_BROADCAST:
-                return processClosures(reader.readLong(), reader, true, false);
-
-            case OP_AFFINITY:
-                return processClosures(reader.readLong(), reader, false, true);
+                return processClosures(reader.readLong(), reader, true);
 
             case OP_EXEC_NATIVE: {
                 long taskPtr = reader.readLong();
@@ -123,6 +150,66 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
             case OP_EXEC_ASYNC:
                 return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
+
+            case OP_WITH_EXECUTOR: {
+                String executorName = reader.readString();
+
+                return new PlatformCompute(platformCtx,
+                        (IgniteComputeImpl)compute.withExecutor(executorName),
+                        (IgniteComputeImpl)computeForPlatform.withExecutor(executorName));
+            }
+
+            case OP_AFFINITY_CALL_PARTITION: {
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+                int part = reader.readInt();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+
+                PlatformCallable callable = new PlatformCallable(func, ptr);
+
+                IgniteFuture future = compute.affinityCallAsync(cacheNames, part, callable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_CALL: {
+                String cacheName = reader.readString();
+                Object key = reader.readObjectDetached();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+
+                PlatformCallable callable = new PlatformCallable(func, ptr);
+
+                IgniteFuture future = compute.affinityCallAsync(cacheName, key, callable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_RUN_PARTITION: {
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+                int part = reader.readInt();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr);
+
+                IgniteFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_RUN: {
+                String cacheName = reader.readString();
+                Object key = reader.readObjectDetached();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr);
+
+                IgniteFuture future = compute.affinityRunAsync(cacheName, key, runnable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
 
             default:
                 return super.processInStreamOutObject(type, reader);
@@ -145,6 +232,13 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 return TRUE;
             }
+
+            case OP_WITH_NO_RESULT_CACHE: {
+                compute.withNoResultCache();
+                computeForPlatform.withNoResultCache();
+
+                return TRUE;
+            }
         }
 
         return super.processInLongOutLong(type, val);
@@ -156,8 +250,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
-        boolean affinity) {
+    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -168,16 +261,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
                     new PlatformBroadcastingSingleClosureTask(platformCtx, taskPtr);
 
                 task0.job(nextClosureJob(task0, reader));
-
-                task = task0;
-            }
-            else if (affinity) {
-                PlatformBalancingSingleClosureAffinityTask task0 =
-                    new PlatformBalancingSingleClosureAffinityTask(platformCtx, taskPtr);
-
-                task0.job(nextClosureJob(task0, reader));
-
-                task0.affinity(reader.readString(), reader.readObjectDetached(), platformCtx.kernalContext());
 
                 task = task0;
             }

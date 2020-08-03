@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 
 /**
@@ -50,6 +51,11 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasContext() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void releaseStart() {
         // No-op.
     }
@@ -62,6 +68,16 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformCacheManager cacheManager() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setThreadLocal(Object value) {
         // No-op.
     }
 }

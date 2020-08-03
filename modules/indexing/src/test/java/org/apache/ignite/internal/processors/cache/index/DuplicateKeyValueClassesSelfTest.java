@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.UUID;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.UUID;
+import org.junit.Test;
 
 /**
  * Make sure that cache can start with multiple key-value classes of the same type.
  */
 @SuppressWarnings("unchecked")
-public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
+public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -43,16 +42,12 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
         grid(0).destroyCache(CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test duplicate key class.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateKeyClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
@@ -66,6 +61,7 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateValueClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)

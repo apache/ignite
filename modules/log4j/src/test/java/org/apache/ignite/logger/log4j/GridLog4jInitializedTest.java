@@ -17,29 +17,36 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.BasicConfigurator;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Log4j initialized test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jInitializedTest extends TestCase {
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void setUp() throws Exception {
+public class GridLog4jInitializedTest {
+    /** */
+    @Before
+    public void setUp() {
         BasicConfigurator.configure();
     }
 
     /** */
+    @Test
     public void testLogInitialize() {
         IgniteLogger log = new Log4JLogger();
 
-        assert log.isInfoEnabled() == true;
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains("config=null"));
+
+        assertTrue(log.isInfoEnabled());
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");

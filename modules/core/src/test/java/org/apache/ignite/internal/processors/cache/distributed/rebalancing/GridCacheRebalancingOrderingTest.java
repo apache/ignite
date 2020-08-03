@@ -59,6 +59,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -104,7 +105,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
-    private final static Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
 
     /** Test cache name. */
     private static final String TEST_CACHE_NAME = "TestCache";
@@ -117,8 +118,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isFirstGrid(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -172,13 +171,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 1000 * 60 * 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -275,8 +267,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startClientGrid(0);
 
         ServerStarter srvStarter = startServers();
 
@@ -814,7 +807,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
          * @param part the partition
          * @return the set for the given partition
          */
-        public Set<IntegerKey> ensureKeySet(final int part) {
+        @Override public Set<IntegerKey> ensureKeySet(final int part) {
             return ensureKeySet(part, partMap);
         }
 

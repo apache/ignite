@@ -48,6 +48,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
@@ -67,6 +68,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysCommit() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -79,6 +81,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysRollback() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 

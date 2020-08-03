@@ -37,8 +37,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Force keys request. This message is sent by node while preloading to force
- * another node to put given keys into the next batch of transmitting entries.
+ * Force keys request. This message is sent by node while preloading to force another node to put given keys into the
+ * next batch of transmitting entries.
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
@@ -121,8 +121,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         return topVer;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -167,26 +166,26 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
-                if (!writer.writeMessage("topVer", topVer))
+            case 7:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -207,7 +206,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -215,7 +214,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -223,7 +222,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -231,8 +230,8 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 6:
-                topVer = reader.readMessage("topVer");
+            case 7:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -251,7 +250,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

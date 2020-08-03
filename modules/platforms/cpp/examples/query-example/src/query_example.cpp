@@ -43,37 +43,39 @@ const char* PERSON_CACHE = "Person";
 const char* PERSON_TYPE = "Person";
 
 /**
- * Example for SQL queries based on all employees working for a specific
+ * Example for SQL fields queries based on all employees working for a specific
  * organization (query uses distributed join).
+ *
+ * Note that SQL Fields Query can only be performed using fields that have been
+ * listed in "QueryEntity" been of the config.
  */
 void DoSqlQueryWithDistributedJoin()
 {
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
-
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // SQL clause query which joins on 2 types to select people for a specific organization.
-    std::string joinSql(
-        "from Person, \"Organization\".Organization as org "
+    SqlFieldsQuery qry(
+        "select firstName, lastName from Person "
+        "inner join \"Organization\".Organization as org "
         "where Person.orgId = org._key "
         "and lower(org.name) = lower(?)");
-
-    SqlQuery qry("Person", joinSql);
 
     qry.AddArgument<std::string>("ApacheIgnite");
 
     // Enable distributed joins for query.
     qry.SetDistributedJoins(true);
 
-    // Execute queries for find employees for different organizations.
-    ResVector igniters;
-    cache.Query(qry).GetAll(igniters);
+    QueryFieldsCursor cursor = cache.Query(qry);
 
     // Printing first result set.
     std::cout << "Following people are 'ApacheIgnite' employees (distributed join): " << std::endl;
 
-    for (ResVector::const_iterator i = igniters.begin(); i != igniters.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+    while (cursor.HasNext())
+    {
+        QueryFieldsRow row = cursor.GetNext();
+
+        std::cout << row.GetNext<std::string>() << " " << row.GetNext<std::string>() << std::endl;
+    }
 
     std::cout << std::endl;
 
@@ -81,28 +83,30 @@ void DoSqlQueryWithDistributedJoin()
 
     qry.AddArgument<std::string>("Other");
 
-    ResVector others;
-    cache.Query(qry).GetAll(others);
+    cursor = cache.Query(qry);
 
     // Printing second result set.
     std::cout << "Following people are 'Other' employees (distributed join): " << std::endl;
 
-    for (ResVector::const_iterator i = others.begin(); i != others.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+    while (cursor.HasNext())
+    {
+        QueryFieldsRow row = cursor.GetNext();
+
+        std::cout << row.GetNext<std::string>() << " " << row.GetNext<std::string>() << std::endl;
+    }
 
     std::cout << std::endl;
 }
 
 /**
- * Example for SQL-based fields queries that return only required
- * fields instead of whole key-value pairs.
+ * Example for SQL-based fields queries that return only person name and company it works in.
  *
  * Note that SQL Fields Query can only be performed using fields that have been
  * listed in "QueryEntity" been of the config.
  */
-void DoSqlFieldsQueryWithJoin()
+void DoSqlQueryWithJoin()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Execute query to get names of all employees.
     std::string sql(
@@ -121,7 +125,7 @@ void DoSqlFieldsQueryWithJoin()
     {
         QueryFieldsRow row = cursor.GetNext();
 
-        std::cout << row.GetNext<std::string>() << ", ";
+        std::cout << row.GetNext<std::string>() << " is working in ";
         std::cout << row.GetNext<std::string>() << std::endl;
     }
 
@@ -129,15 +133,14 @@ void DoSqlFieldsQueryWithJoin()
 }
 
 /**
- * Example for SQL-based fields queries that return only required fields instead
- * of whole key-value pairs.
+ * Example for SQL-based fields queries that uses SQL functions.
  *
  * Note that SQL Fields Query can only be performed using fields that have been
  * listed in "QueryEntity" been of the config.
  */
-void DoSqlFieldsQuery()
+void DoSqlQueryWithFunction()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Execute query to get names of all employees.
     QueryFieldsCursor cursor = cache.Query(SqlFieldsQuery(
@@ -161,17 +164,15 @@ void DoSqlFieldsQuery()
  */
 void DoSqlQueryWithAggregation()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Calculate average of salary of all persons in ApacheIgnite.
     // Note that we also join on Organization cache as well.
-    std::string sql(
+    SqlFieldsQuery qry(
         "select avg(salary) "
         "from Person, \"Organization\".Organization as org "
         "where Person.orgId = org._key "
         "and lower(org.name) = lower(?)");
-
-    SqlFieldsQuery qry(sql);
 
     qry.AddArgument<std::string>("ApacheIgnite");
 
@@ -187,6 +188,67 @@ void DoSqlQueryWithAggregation()
 }
 
 /**
+ * Example for SQL queries based on salary ranges.
+ *
+ * Note that SQL Query can only be performed using fields that have been
+ * listed in "QueryEntity" been of the config.
+ */
+void DoSqlQuery()
+{
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
+
+    // SQL clause which selects salaries based on range.
+    SqlFieldsQuery qry(
+        "select firstName, lastName, salary "
+        "from Person "
+        "where salary > ? and salary <= ?");
+
+    // Execute queries for salary range 0 - 1000.
+    std::cout << "People with salaries between 0 and 1000 (queried with SQL query): " << std::endl;
+
+    qry.AddArgument(0);
+    qry.AddArgument(1000);
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+
+    while (cursor.HasNext())
+    {
+        QueryFieldsRow row = cursor.GetNext();
+
+        std::cout
+            << row.GetNext<std::string>() << " "
+            << row.GetNext<std::string>() << " : "
+            << row.GetNext<double>()
+            << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    qry.ClearArguments();
+
+    // Execute queries for salary range 1000 - 2000.
+    std::cout << "People with salaries between 1000 and 2000 (queried with SQL query): " << std::endl;
+
+    qry.AddArgument(1000);
+    qry.AddArgument(2000);
+
+    cursor = cache.Query(qry);
+
+    while (cursor.HasNext())
+    {
+        QueryFieldsRow row = cursor.GetNext();
+
+        std::cout
+            << row.GetNext<std::string>() << " "
+            << row.GetNext<std::string>() << " : "
+            << row.GetNext<double>()
+            << std::endl;
+    }
+
+    std::cout << std::endl;
+}
+
+/**
  * Example for TEXT queries using LUCENE-based indexing of people's resumes.
  *
  * Note that to be able to do so you have to add FULLTEXT index for the 'resume'
@@ -194,9 +256,9 @@ void DoSqlQueryWithAggregation()
  */
 void DoTextQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     //  Query for all people with "Master" in their resumes.
     ResVector masters;
@@ -210,7 +272,7 @@ void DoTextQuery()
 
     // Printing first result set.
     for (ResVector::const_iterator i = masters.begin(); i != masters.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
@@ -218,104 +280,7 @@ void DoTextQuery()
 
     // Printing second result set.
     for (ResVector::const_iterator i = bachelors.begin(); i != bachelors.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
-
-    std::cout << std::endl;
-}
-
-/**
- * Example for SQL queries based on all employees working for a specific organization.
- *
- * Note that SQL Query can only be performed using fields that have been
- * listed in "QueryEntity" been of the config.
- */
-void DoSqlQueryWithJoin()
-{
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
-
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
-
-    // SQL clause query which joins on 2 types to select people for a specific organization.
-    std::string sql(
-        "from Person, \"Organization\".Organization as org "
-        "where Person.orgId = org._key "
-        "and lower(org.name) = lower(?)");
-
-    SqlQuery qry(PERSON_TYPE, sql);
-
-    // Execute queries for find employees for different organizations.
-    std::cout << "Following people are 'ApacheIgnite' employees: " << std::endl;
-
-    qry.AddArgument<std::string>("ApacheIgnite");
-
-    ResVector res;
-    cache.Query(qry).GetAll(res);
-
-    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
-
-    std::cout << std::endl;
-
-    std::cout << "Following people are 'Other' employees: " << std::endl;
-
-    qry.ClearArguments();
-
-    qry.AddArgument<std::string>("Other");
-
-    res.clear();
-    cache.Query(qry).GetAll(res);
-
-    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
-
-    std::cout << std::endl;
-}
-
-/**
- * Example for SQL queries based on salary ranges.
- *
- * Note that SQL Query can only be performed using fields that have been
- * listed in "QueryEntity" been of the config.
- */
-void DoSqlQuery()
-{
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
-
-    // SQL clause which selects salaries based on range.
-    std::string sql("salary > ? and salary <= ?");
-
-    SqlQuery qry(PERSON_TYPE, sql);
-
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
-
-    // Execute queries for salary range 0 - 1000.
-    std::cout << "People with salaries between 0 and 1000 (queried with SQL query): " << std::endl;
-
-    qry.AddArgument(0);
-    qry.AddArgument(1000);
-
-    ResVector res;
-    cache.Query(qry).GetAll(res);
-
-    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-            std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
-
-    std::cout << std::endl;
-
-    qry.ClearArguments();
-
-    // Execute queries for salary range 1000 - 2000.
-    std::cout << "People with salaries between 1000 and 2000 (queried with SQL query): " << std::endl;
-
-    qry.AddArgument(1000);
-    qry.AddArgument(2000);
-
-    res.clear();
-
-    cache.Query(qry).GetAll(res);
-
-    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
@@ -325,11 +290,11 @@ void DoSqlQuery()
  */
 void DoScanQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     ScanQuery scan;
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     ResVector res;
     cache.Query(scan).GetAll(res);
@@ -342,7 +307,7 @@ void DoScanQuery()
         Person person(i->GetValue());
 
         if (person.salary <= 1000)
-            std::cout << i->GetKey() << " : " << person.ToString() << std::endl;
+            std::cout << i->GetKey().ToString() << " : " << person.ToString() << std::endl;
     }
 
     std::cout << std::endl;
@@ -369,34 +334,43 @@ void Initialize()
     orgCache.Put(org1Id, org1);
     orgCache.Put(org2Id, org2);
 
-    Cache<int64_t, Person> personCache =
-        Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> personCache =
+        Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Clear cache before running the example.
     personCache.Clear();
 
     // People.
+
+    // Collocated by 1st organisation:
     Person p1(org1Id, "John", "Doe", "John Doe has Master Degree.", 2000);
     Person p2(org1Id, "Jane", "Doe", "Jane Doe has Bachelor Degree.", 1000);
+
+    PersonKey pKey1 (1, org1Id);
+    PersonKey pKey2 (2, org1Id);
+
+    // Collocated by second organisation:
     Person p3(org2Id, "John", "Smith", "John Smith has Bachelor Degree.", 1000);
     Person p4(org2Id, "Jane", "Smith", "Jane Smith has Master Degree.", 2000);
 
+    PersonKey pKey3 (3, org2Id);
+    PersonKey pKey4 (4, org2Id);
+
     // Note that in this example we use custom affinity key for Person objects
     // to ensure that all persons are collocated with their organizations.
-    personCache.Put(1, p1);
-    personCache.Put(2, p2);
-    personCache.Put(3, p3);
-    personCache.Put(4, p4);
+    personCache.Put(pKey1, p1);
+    personCache.Put(pKey2, p2);
+    personCache.Put(pKey3, p3);
+    personCache.Put(pKey4, p4);
 }
 
 int main()
 {
-    IgniteConfiguration cfg;
-
-    cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
-
     try
     {
+        IgniteConfiguration cfg;
+        cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
+
         // Start a node.
         Ignite ignite = Ignition::Start(cfg);
 
@@ -408,13 +382,16 @@ int main()
         Cache<int64_t, Organization> orgCache = ignite.GetCache<int64_t, Organization>(ORG_CACHE);
 
         // Get person cache instance.
-        Cache<int64_t, Person> personCache = ignite.GetCache<int64_t, Person>(PERSON_CACHE);
+        Cache<PersonKey, Person> personCache = ignite.GetCache<PersonKey, Person>(PERSON_CACHE);
 
         // Populate cache.
         Initialize();
 
         // Example for SCAN-based query based on a predicate.
         DoScanQuery();
+
+        // Example for TEXT-based querying for a given string in peoples resumes.
+        DoTextQuery();
 
         // Example for SQL-based querying employees based on salary ranges.
         DoSqlQuery();
@@ -425,21 +402,20 @@ int main()
         // Example for SQL-based querying employees for a given organization (includes distributed SQL join).
         DoSqlQueryWithDistributedJoin();
 
-        // Example for TEXT-based querying for a given string in peoples resumes.
-        DoTextQuery();
+        // Example for SQL-based fields queries that uses SQL functions.
+        DoSqlQueryWithFunction();
 
         // Example for SQL-based querying to calculate average salary among all employees within a company.
         DoSqlQueryWithAggregation();
 
-        // Example for SQL-based fields queries that return only required
-        // fields instead of whole key-value pairs.
-        DoSqlFieldsQuery();
-
-        // Example for SQL-based fields queries that uses joins.
-        DoSqlFieldsQueryWithJoin();
-
         // Stop node.
         Ignition::StopAll(false);
+
+        std::cout << std::endl;
+        std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
+        std::cout << std::endl;
+
+        std::cin.get();
     }
     catch (IgniteError& err)
     {
@@ -447,12 +423,6 @@ int main()
 
         return err.GetCode();
     }
-
-    std::cout << std::endl;
-    std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
-    std::cout << std::endl;
-
-    std::cin.get();
 
     return 0;
 }

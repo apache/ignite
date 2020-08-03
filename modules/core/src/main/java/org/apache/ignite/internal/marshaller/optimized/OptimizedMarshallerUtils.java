@@ -154,9 +154,6 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** JDK marshaller. */
-    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
-
     static {
         long mapOff;
 
@@ -213,9 +210,9 @@ class OptimizedMarshallerUtils {
             boolean registered;
 
             try {
-                registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName());
+                registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName(), false);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
@@ -305,7 +302,7 @@ class OptimizedMarshallerUtils {
             throw new IOException("Failed to resolve class for ID: " + typeId, e);
         }
 
-        Class cls = U.forName(clsName, ldr, false);
+        Class cls = U.forName(clsName, ldr, null, false);
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 

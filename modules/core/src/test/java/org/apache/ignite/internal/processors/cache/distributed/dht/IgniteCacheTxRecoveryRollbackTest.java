@@ -49,13 +49,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -69,13 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static ConcurrentHashMap<Object, Object> storeMap = new ConcurrentHashMap<>();
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -83,13 +75,9 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -98,7 +86,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             for (Ignite node : G.allGrids()) {
-                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().txs();
+                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().activeTransactions();
 
                 assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
             }
@@ -115,6 +103,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Implicit() throws Exception {
         nearTx1(null);
     }
@@ -122,6 +111,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Optimistic() throws Exception {
         nearTx1(OPTIMISTIC);
     }
@@ -129,6 +119,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Pessimistic() throws Exception {
         nearTx1(PESSIMISTIC);
     }
@@ -149,10 +140,8 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite client1 = startGrid(4);
-        final Ignite client2 = startGrid(5);
+        final Ignite client1 = startClientGrid(4);
+        final Ignite client2 = startClientGrid(5);
 
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
@@ -213,6 +202,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Implicit() throws Exception {
         nearTx2(null);
     }
@@ -220,6 +210,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Optimistic() throws Exception {
         nearTx2(OPTIMISTIC);
     }
@@ -227,6 +218,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Pessimistic() throws Exception {
         nearTx2(PESSIMISTIC);
     }
@@ -246,10 +238,8 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite client1 = startGrid(4);
-        final Ignite client2 = startGrid(5);
+        final Ignite client1 = startClientGrid(4);
+        final Ignite client2 = startClientGrid(5);
 
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
@@ -319,6 +309,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreImplicit() throws Exception {
         txWithStore(null, true);
     }
@@ -326,6 +317,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreOptimistic() throws Exception {
         txWithStore(OPTIMISTIC, true);
     }
@@ -333,6 +325,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStorePessimistic() throws Exception {
         txWithStore(PESSIMISTIC, true);
     }
@@ -340,6 +333,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughImplicit() throws Exception {
         txWithStore(null, false);
     }
@@ -347,6 +341,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughOptimistic() throws Exception {
         txWithStore(OPTIMISTIC, false);
     }
@@ -354,6 +349,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughPessimistic() throws Exception {
         txWithStore(PESSIMISTIC, false);
     }
@@ -376,9 +372,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         srv0Cache.put(key, 1);
 
-        client = true;
-
-        Ignite client = startGrid(4);
+        Ignite client = startClientGrid(4);
 
         testSpi(srv0).blockMessages(GridNearTxPrepareResponse.class, client.name());
 

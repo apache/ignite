@@ -34,7 +34,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     /** */
     private static final Method GEOMETRY_FROM_BYTES;
 
-    /**
+    /*
      * Initialize field.
      */
     static {

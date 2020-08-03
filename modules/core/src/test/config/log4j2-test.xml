@@ -20,12 +20,12 @@
 <Configuration>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
             <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </Console>
 
         <Routing name="FILE">
@@ -33,7 +33,7 @@
                 <Route>
                     <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}.log"
                                  filePattern="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
-                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
                         <Policies>
                             <TimeBasedTriggeringPolicy interval="6" modulate="true" />
                             <SizeBasedTriggeringPolicy size="10 MB" />

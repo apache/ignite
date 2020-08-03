@@ -54,21 +54,34 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly bool _includeAllFields;
 
+        /** */
+        private readonly bool _visitEntireSubQueryModel;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
         /// <param name="modelVisitor">The _model visitor.</param>
-        /// <param name="useStar">Flag indicating that star '*' qualifier should be used
-        /// for the whole-table select instead of _key, _val.</param>
-        /// <param name="includeAllFields">Flag indicating that star '*' qualifier should be used
-        /// for the whole-table select as well as _key, _val.</param>
-        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields)
+        /// <param name="useStar">
+        /// Flag indicating that star '*' qualifier should be used
+        /// for the whole-table select instead of _key, _val.
+        /// </param>
+        /// <param name="includeAllFields">
+        /// Flag indicating that star '*' qualifier should be used
+        /// for the whole-table select as well as _key, _val.
+        /// </param>
+        /// <param name="visitEntireSubQueryModel">
+        /// Flag indicating that subquery 
+        /// should be visited as full query
+        /// </param>
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields,
+            bool visitEntireSubQueryModel)
         {
             Debug.Assert(modelVisitor != null);
 
             _modelVisitor = modelVisitor;
             _useStar = useStar;
             _includeAllFields = includeAllFields;
+            _visitEntireSubQueryModel = visitEntireSubQueryModel;
         }
 
         /// <summary>
@@ -169,31 +182,17 @@ namespace Apache.Ignite.Linq.Impl
             {
                 case ExpressionType.Equal:
                 {
-                    var rightConst = expression.Right as ConstantExpression;
+                    // Use `IS [NOT] DISTINCT FROM` for correct null comparison semantics.
+                    // E.g. when user says `.Where(x => x == null)`, it should work, but with `=` it does not.
+                    ResultBuilder.Append(" IS NOT DISTINCT FROM ");
 
-                    if (rightConst != null && rightConst.Value == null)
-                    {
-                        // Special case for nulls, since "= null" does not work in SQL
-                        ResultBuilder.Append(" is null)");
-                        return expression;
-                    }
-
-                    ResultBuilder.Append(" = ");
                     break;
                 }
 
                 case ExpressionType.NotEqual:
                 {
-                    var rightConst = expression.Right as ConstantExpression;
+                    ResultBuilder.Append(" IS DISTINCT FROM ");
 
-                    if (rightConst != null && rightConst.Value == null)
-                    {
-                        // Special case for nulls, since "<> null" does not work in SQL
-                        ResultBuilder.Append(" is not null)");
-                        return expression;
-                    }
-
-                    ResultBuilder.Append(" <> ");
                     break;
                 }
 
@@ -474,6 +473,11 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConstant(ConstantExpression expression)
         {
+            if (MethodVisitor.VisitConstantCall(expression, this))
+            {
+                return expression;
+            }
+
             AppendParameter(expression.Value);
 
             return expression;
@@ -543,11 +547,17 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryModel = expression.QueryModel;
 
             var contains = subQueryModel.ResultOperators.FirstOrDefault() as ContainsResultOperator;
-            
+
             // Check if IEnumerable.Contains is used.
-            if (subQueryModel.ResultOperators.Count == 1 && contains != null)
+            if (subQueryModel.ResultOperators.Count == 1 && contains != null) 
             {
                 VisitContains(subQueryModel, contains);
+            }
+            else if (_visitEntireSubQueryModel)
+            {
+                ResultBuilder.Append("(");
+                _modelVisitor.VisitQueryModel(subQueryModel, false, true);
+                ResultBuilder.Append(")");
             }
             else
             {
@@ -574,7 +584,15 @@ namespace Apache.Ignite.Linq.Impl
                 Visit(contains.Item);
 
                 ResultBuilder.Append(" IN (");
-                _modelVisitor.VisitQueryModel(subQueryModel);
+                if (_visitEntireSubQueryModel)
+                {
+                    _modelVisitor.VisitQueryModel(subQueryModel, false, true);
+                }
+                else
+                {
+                    _modelVisitor.VisitQueryModel(subQueryModel);
+                }
+                
                 ResultBuilder.Append(")");
             }
             else

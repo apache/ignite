@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * Marker that we start memory recovering
+ * Marker indicates that binary memory recovery has finished.
  */
 public class MemoryRecoveryRecord extends WALRecord {
     /** Create timestamp, millis */
-    private long time;
+    private final long time;
 
     /**
      * Default constructor.
@@ -42,5 +44,10 @@ public class MemoryRecoveryRecord extends WALRecord {
      */
     public long time() {
         return time;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MemoryRecoveryRecord.class, this, "super", super.toString());
     }
 }

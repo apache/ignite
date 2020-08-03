@@ -17,11 +17,16 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
 /**
  * Contains event type constants. The decision to use class and not enumeration
@@ -41,7 +46,6 @@ import org.apache.ignite.lang.IgnitePredicate;
  * <li>{@link #EVTS_DISCOVERY}</li>
  * <li>{@link #EVTS_DISCOVERY_ALL}</li>
  * <li>{@link #EVTS_ERROR}</li>
- * <li>{@link #EVTS_IGFS}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
  * </ul>
@@ -243,6 +247,16 @@ public interface EventType {
     public static final int EVT_TASK_REDUCED = 25;
 
     /**
+     * Built-in event type: Visor or Web Console management task started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TaskEvent
+     */
+    public static final int EVT_MANAGEMENT_TASK_STARTED = 26;
+
+    /**
      * Built-in event type: non-task class deployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -421,17 +435,17 @@ public interface EventType {
      *
      * @see CacheEvent
      */
-     public static final int EVT_CACHE_ENTRY_CREATED = 60;
+    public static final int EVT_CACHE_ENTRY_CREATED = 60;
 
-     /**
-      * Built-in event type: entry destroyed.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
+    /**
+     * Built-in event type: entry destroyed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
 
     /**
      * Built-in event type: entry evicted.
@@ -441,57 +455,57 @@ public interface EventType {
      *
      * @see CacheEvent
      */
-     public static final int EVT_CACHE_ENTRY_EVICTED = 62;
+    public static final int EVT_CACHE_ENTRY_EVICTED = 62;
 
-     /**
-      * Built-in event type: object put.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_PUT = 63;
+    /**
+     * Built-in event type: object put.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_PUT = 63;
 
-     /**
-      * Built-in event type: object read.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_READ = 64;
+    /**
+     * Built-in event type: object read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_READ = 64;
 
-     /**
-      * Built-in event type: object removed.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_REMOVED = 65;
+    /**
+     * Built-in event type: object removed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_REMOVED = 65;
 
-     /**
-      * Built-in event type: object locked.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_LOCKED = 66;
+    /**
+     * Built-in event type: object locked.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_LOCKED = 66;
 
-     /**
-      * Built-in event type: object unlocked.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
+    /**
+     * Built-in event type: object unlocked.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
     /**
      * Built-in event type: cache object was expired when reading it.
@@ -573,6 +587,26 @@ public interface EventType {
     public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
+     * Built-in event type: cache partition was fully sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_SUPPLIED = 87;
+
+    /**
+     * Built-in event type: cache partition was not sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_MISSED = 88;
+
+    /**
      * Built-in event type: query executed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -623,150 +657,6 @@ public interface EventType {
     public static final int EVT_CACHE_NODES_LEFT = 100;
 
     /**
-     * Built-in event type: IGFS file created.
-     * <p>
-     * Fired when IGFS component creates new file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CREATED = 116;
-
-    /**
-     * Built-in event type: IGFS file renamed.
-     * <p>
-     * Fired when IGFS component renames an existing file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_RENAMED = 117;
-
-    /**
-     * Built-in event type: IGFS file deleted.
-     * <p>
-     * Fired when IGFS component deletes a file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_DELETED = 118;
-
-    /**
-     * Built-in event type: IGFS file opened for reading.
-     * <p>
-     * Fired when IGFS file is opened for reading.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_OPENED_READ = 119;
-
-    /**
-     * Built-in event type: IGFS file opened for writing.
-     * <p>
-     * Fired when IGFS file is opened for writing.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_OPENED_WRITE = 120;
-
-    /**
-     * Built-in event type: IGFS file or directory metadata updated.
-     * <p>
-     * Fired when IGFS file or directory metadata is updated.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_META_UPDATED = 121;
-
-    /**
-     * Built-in event type: IGFS file closed.
-     * <p>
-     * Fired when IGFS file is closed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CLOSED_WRITE = 122;
-
-    /**
-     * Built-in event type: IGFS file closed.
-     * <p>
-     * Fired when IGFS file is closed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CLOSED_READ = 123;
-
-    /**
-     * Built-in event type: IGFS directory created.
-     * <p>
-     * Fired when IGFS component creates new directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_CREATED = 124;
-
-    /**
-     * Built-in event type: IGFS directory renamed.
-     * <p>
-     * Fired when IGFS component renames an existing directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_RENAMED = 125;
-
-    /**
-     * Built-in event type: IGFS directory deleted.
-     * <p>
-     * Fired when IGFS component deletes a directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_DELETED = 126;
-
-    /**
-     * Built-in event type: IGFS file purged.
-     * <p>
-     * Fired when IGFS file data was actually removed from cache.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_PURGED = 127;
-
-    /**
      * Built-in event type: WAL segment movement to archive folder completed
      * <p>
      * Fired for each completed WAL segment which was moved to archive
@@ -777,6 +667,217 @@ public interface EventType {
      * @see WalSegmentArchivedEvent
      */
     public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
+
+    /**
+     * Built-in event type: Transaction has been started.
+     * <p>
+     * Fired for each started transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_STARTED = 129;
+
+    /**
+     * Built-in event type: Transaction has been committed.
+     * <p>
+     * Fired for each committed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_COMMITTED = 130;
+
+    /**
+     * Built-in event type: Transaction has been rolled back.
+     * <p>
+     * Fired for each rolled back transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_ROLLED_BACK = 131;
+
+    /**
+     * Built-in event type: Transaction has been suspended.
+     * <p>
+     * Fired for each suspended transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_SUSPENDED = 132;
+
+    /**
+     * Built-in event type: Transaction has been resumed.
+     * <p>
+     * Fired for each resumed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_RESUMED = 133;
+
+    /**
+     * Built-in event type: WAL archive segment compaction is completed.
+     * <p>
+     * Fired for each WAL archive segment upon its compaction completion.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchivedEvent
+     */
+    public static final int EVT_WAL_SEGMENT_COMPACTED = 134;
+
+    /**
+     * Built-in event type: Cache consistency violation detected.
+     * <p>
+     * Fired for each consistency violation incident.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheConsistencyViolationEvent
+     * @see IgniteCache#withReadRepair
+     */
+    public static final int EVT_CONSISTENCY_VIOLATION = 135;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster activated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_ACTIVATED = 140;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster deactivated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_DEACTIVATED = 141;
+
+    /**
+     * Built-in event type: page replacement started in one of the data regions. The name of the data region will
+     * be indicated in the event.
+     * <p>
+     * Fired when all existing free pages are exhausted and Ignite replaces one of the loaded pages with a
+     * cold page from disk.
+     * <p>
+     * When started, page replacement negatively affects performance; it is recommended to monitor page replacement
+     * metrics and set data region size accordingly.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see org.apache.ignite.configuration.DataRegionConfiguration#setMaxSize(long)
+     * @see PageReplacementStartedEvent
+     */
+    public static final int EVT_PAGE_REPLACEMENT_STARTED = 142;
+
+    /**
+     * Built-in event type: cluster tag has been changed by user request.
+     * Event includes the following information: ID of the cluster, old tag and new tag.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#tag(String)
+     * @see IgniteCluster#id()
+     */
+    public static final int EVT_CLUSTER_TAG_UPDATED = 143;
+
+    /**
+     * Built-in event type: Cluster state changed.
+     * <p>
+     * Fired when cluster state changed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_STATE_CHANGED = 144;
+
+    /**
+     * Built-in event type: Cluster state change initiated.
+     * <p>
+     * Fired when cluster deactivation process started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterStateChangeStartedEvent
+     */
+    public static final int EVT_CLUSTER_STATE_CHANGE_STARTED = 145;
+
+    /**
+     * Built-in event type: baseline topology has been changed by either user request or auto-adjust timeout event.
+     * Event includes the following information: new baseline nodes.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#setBaselineTopology(long)
+     * @see IgniteCluster#setBaselineTopology(Collection)
+     */
+    public static final int EVT_BASELINE_CHANGED = 146;
+
+    /**
+     * Built-in event type: baseline auto-adjust "enabled" flag has been changed by user request.
+     * Event includes the following information: auto-adjust enabled flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustEnabled(boolean)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED = 147;
+
+    /**
+     * Built-in event type: baseline auto-adjust timeout has been changed by user request.
+     * Event includes the following information: auto-adjust "enabled" flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustTimeout(long)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
 
     /**
      * All checkpoint events. This array can be directly passed into
@@ -929,7 +1030,9 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
         EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-        EVT_CACHE_REBALANCE_PART_DATA_LOST
+        EVT_CACHE_REBALANCE_PART_DATA_LOST,
+        EVT_CACHE_REBALANCE_PART_SUPPLIED,
+        EVT_CACHE_REBALANCE_PART_MISSED
     };
 
     /**
@@ -946,7 +1049,8 @@ public interface EventType {
     /**
      * All cache query events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cache query events.
+     * subscribe to all cache query events and requires to set {@link MemoryEventStorageSpi}
+     * or other implementation different from {@link NoopEventStorageSpi}.
      */
     public static final int[] EVTS_CACHE_QUERY = {
         EVT_CACHE_QUERY_EXECUTED,
@@ -954,25 +1058,30 @@ public interface EventType {
     };
 
     /**
-     * All Igfs events. This array can be directly passed into
+     * All Transaction events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all transaction events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int[] EVTS_TX = {
+        EVT_TX_STARTED,
+        EVT_TX_COMMITTED,
+        EVT_TX_ROLLED_BACK,
+        EVT_TX_SUSPENDED,
+        EVT_TX_RESUMED
+    };
+
+    /**
+     * All cluster activation events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see IgfsEvent
+     * @see ClusterActivationEvent
      */
-    public static final int[] EVTS_IGFS = {
-        EVT_IGFS_FILE_CREATED,
-        EVT_IGFS_FILE_RENAMED,
-        EVT_IGFS_FILE_DELETED,
-        EVT_IGFS_FILE_OPENED_READ,
-        EVT_IGFS_FILE_OPENED_WRITE,
-        EVT_IGFS_FILE_CLOSED_WRITE,
-        EVT_IGFS_FILE_CLOSED_READ,
-        EVT_IGFS_FILE_PURGED,
-        EVT_IGFS_META_UPDATED,
-        EVT_IGFS_DIR_CREATED,
-        EVT_IGFS_DIR_RENAMED,
-        EVT_IGFS_DIR_DELETED,
+    public static final int[] EVTS_CLUSTER_ACTIVATION = {
+        EVT_CLUSTER_ACTIVATED,
+        EVT_CLUSTER_DEACTIVATED
     };
 
     /**

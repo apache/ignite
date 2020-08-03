@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * JDBC IP finder self test.
@@ -66,6 +67,7 @@ public class TcpDiscoveryJdbcIpFinderSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInitSchemaFlag() throws Exception {
         initSchema = false;
 

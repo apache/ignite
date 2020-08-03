@@ -231,7 +231,6 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -249,7 +248,6 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 

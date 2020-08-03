@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Some math utils.
  */
+
 package org.apache.ignite.ml.math.util;

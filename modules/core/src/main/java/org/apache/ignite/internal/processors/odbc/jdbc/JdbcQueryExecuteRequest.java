@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -47,21 +47,34 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private Object[] args;
 
+    /** Expected statement type. */
+    private JdbcStatementType stmtType;
+
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
+    /** Flag, that signals, that query expects partition response in response. */
+    private boolean partResReq;
+
     /**
      */
     JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
+
+        autoCommit = true;
     }
 
     /**
+     * @param stmtType Expected statement type.
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
+     * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(String schemaName, int pageSize, int maxRows, String sqlQry,
-        Object[] args) {
+    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
+        boolean autoCommit, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -69,6 +82,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.maxRows = maxRows;
         this.sqlQry = sqlQry;
         this.args = args;
+        this.stmtType = stmtType;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -106,9 +121,26 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return schemaName;
     }
 
+    /**
+     * @return Expected statement type.
+     */
+    public JdbcStatementType expectedStatementType() {
+        return stmtType;
+    }
+
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
+    }
+
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeString(schemaName);
         writer.writeInt(pageSize);
@@ -119,13 +151,24 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (args != null) {
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, false);
+                JdbcUtils.writeObject(writer, arg, protoCtx);
         }
+
+        if (protoCtx.isAutoCommitSupported())
+            writer.writeBoolean(autoCommit);
+
+        writer.writeByte((byte)stmtType.ordinal());
+
+        if (protoCtx.isAffinityAwarenessSupported())
+            writer.writeBoolean(partResReq);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         schemaName = reader.readString();
         pageSize = reader.readInt();
@@ -137,11 +180,41 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         args = new Object[argsNum];
 
         for (int i = 0; i < argsNum; ++i)
-            args[i] = SqlListenerUtils.readObject(reader, false);
+            args[i] = JdbcUtils.readObject(reader, protoCtx);
+
+        if (protoCtx.isAutoCommitSupported())
+            autoCommit = reader.readBoolean();
+
+        try {
+            if (reader.available() > 0)
+                stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+            else
+                stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
+        }
+
+        if (protoCtx.isAffinityAwarenessSupported())
+            partResReq = reader.readBoolean();
+    }
+
+    /**
+     * @return Partition response request.
+     */
+    public boolean partitionResponseRequest() {
+        return partResReq;
+    }
+
+    /**
+     * @param partResReq New partition response request.
+     */
+    public void partitionResponseRequest(boolean partResReq) {
+        this.partResReq = partResReq;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteRequest.class, this);
+        return S.toString(JdbcQueryExecuteRequest.class, this, super.toString());
     }
 }

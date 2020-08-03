@@ -18,30 +18,42 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
  * JDBC message parser.
  */
-public class JdbcMessageParser implements SqlListenerMessageParser {
+public class JdbcMessageParser implements ClientListenerMessageParser {
     /** Kernal context. */
     private final GridKernalContext ctx;
+
+    /** Protocol context. */
+    private final JdbcProtocolContext protoCtx;
 
     /** Initial output stream capacity. */
     protected static final int INIT_CAP = 1024;
 
+    /** Binary context. */
+    private BinaryContext binCtx;
+
     /**
      * @param ctx Context.
+     * @param protoCtx Protocol context.
      */
-    public JdbcMessageParser(GridKernalContext ctx) {
+    public JdbcMessageParser(GridKernalContext ctx, JdbcProtocolContext protoCtx) {
         this.ctx = ctx;
+        this.protoCtx = protoCtx;
+        this.binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).marshaller().context();
     }
 
     /**
@@ -51,7 +63,7 @@ public class JdbcMessageParser implements SqlListenerMessageParser {
     protected BinaryReaderExImpl createReader(byte[] msg) {
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        return new BinaryReaderExImpl(null, stream, ctx.config().getClassLoader(), true);
+        return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
     }
 
     /**
@@ -59,20 +71,21 @@ public class JdbcMessageParser implements SqlListenerMessageParser {
      * @return Writer.
      */
     protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+        return new BinaryWriterExImpl(binCtx, new BinaryHeapOutputStream(cap),
+            BinaryThreadLocalContext.get().schemaHolder(), null);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryReaderExImpl reader = createReader(msg);
 
-        return JdbcRequest.readRequest(reader);
+        return JdbcRequest.readRequest(reader, protoCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(SqlListenerResponse msg) {
+    @Override public byte[] encode(ClientListenerResponse msg) {
         assert msg != null;
 
         assert msg instanceof JdbcResponse;
@@ -81,7 +94,22 @@ public class JdbcMessageParser implements SqlListenerMessageParser {
 
         BinaryWriterExImpl writer = createWriter(INIT_CAP);
 
-        res.writeBinary(writer);
+        res.writeBinary(writer, protoCtx);
 
         return writer.array();
-    }}
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decodeCommandType(byte[] msg) {
+        assert msg != null;
+
+        return JdbcRequest.readType(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long decodeRequestId(byte[] msg) {
+        assert msg != null;
+
+        return JdbcRequest.readRequestId(msg);
+    }
+}

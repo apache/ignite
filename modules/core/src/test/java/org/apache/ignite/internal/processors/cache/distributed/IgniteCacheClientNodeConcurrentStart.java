@@ -23,10 +23,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -34,9 +32,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  *
  */
 public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES_CNT = 6;
 
@@ -48,8 +43,6 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assertNotNull(clientNodes);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         boolean client = false;
 
@@ -76,6 +69,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

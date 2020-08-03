@@ -55,7 +55,7 @@ public class GridifyAspectJAspect {
      * @return Method execution result.
      * @throws Throwable If execution failed.
      */
-    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "CatchGenericClass", "unchecked"})
+    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "unchecked"})
     @Around("execution(@org.apache.ignite.compute.gridify.Gridify * *(..)) && !cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
         Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();

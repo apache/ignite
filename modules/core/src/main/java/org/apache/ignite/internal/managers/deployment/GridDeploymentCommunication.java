@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -52,6 +53,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
  */
 @GridToStringExclude
 class GridDeploymentCommunication {
+    /** */
+    private static final String CLASS_FILE_EXTENSION = ".class";
+
     /** */
     private final IgniteLogger log;
 
@@ -204,13 +208,11 @@ class GridDeploymentCommunication {
             // since it was already performed before (and was successful).
             if (!(ldr instanceof GridDeploymentClassLoader)) {
                 // First check for @GridNotPeerDeployable annotation.
+                String clsName = req.resourceName().replace('/', '.');
+
                 try {
-                    String clsName = req.resourceName().replace('/', '.');
-
-                    int idx = clsName.indexOf(".class");
-
-                    if (idx >= 0)
-                        clsName = clsName.substring(0, idx);
+                    if (clsName.endsWith(CLASS_FILE_EXTENSION))
+                        clsName = clsName.substring(0, clsName.length() - CLASS_FILE_EXTENSION.length());
 
                     Class<?> cls = Class.forName(clsName, true, ldr);
 
@@ -228,8 +230,10 @@ class GridDeploymentCommunication {
                         return;
                     }
                 }
-                catch (ClassNotFoundException ignore) {
-                    // Safely ignore it here - resource wasn't a class name.
+                catch (LinkageError | ClassNotFoundException e) {
+                    U.warn(log, "Failed to resolve class: " + clsName, e);
+                    // Defined errors can be safely ignored here, because of resource which is able to be not a class name.
+                    // Unsuccessful response will be sent below if the resource failed to be loaded.
                 }
             }
 
@@ -351,9 +355,8 @@ class GridDeploymentCommunication {
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
+        final ClusterNode dstNode, long threshold) throws IgniteCheckedException, TimeoutException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
@@ -470,13 +473,21 @@ class GridDeploymentCommunication {
 
                         timeout = threshold - U.currentTimeMillis();
                     }
+
+                    if (timeout <= 0)
+                        throw new TimeoutException();
                 }
                 catch (InterruptedException e) {
                     // Interrupt again to get it in the users code.
                     Thread.currentThread().interrupt();
 
-                    throw new IgniteCheckedException("Got interrupted while waiting for response from node: " +
-                        dstNode.id(), e);
+                    TimeoutException te = new TimeoutException(
+                        "Got interrupted while waiting for response from node: " + dstNode.id()
+                    );
+
+                    te.initCause(e);
+
+                    throw te;
                 }
             }
 

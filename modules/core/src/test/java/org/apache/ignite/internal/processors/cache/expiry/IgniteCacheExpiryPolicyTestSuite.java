@@ -17,52 +17,48 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerNotificationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  *
  */
-public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
-    /**
-     * @return Cache Expiry Policy test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache Expiry Policy Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheLargeValueExpireTest.class,
 
-        suite.addTestSuite(IgniteCacheLargeValueExpireTest.class);
+    IgniteCacheAtomicLocalExpiryPolicyTest.class,
+    //IgniteCacheAtomicLocalOnheapExpiryPolicyTest.class,
+    IgniteCacheAtomicExpiryPolicyTest.class,
+    //IgniteCacheAtomicOnheapExpiryPolicyTest.class,
+    IgniteCacheAtomicWithStoreExpiryPolicyTest.class,
+    IgniteCacheAtomicReplicatedExpiryPolicyTest.class,
 
-        suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicWithStoreExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedExpiryPolicyTest.class);
+    IgniteCacheTxLocalExpiryPolicyTest.class,
+    IgniteCacheTxExpiryPolicyTest.class,
+    IgniteCacheTxWithStoreExpiryPolicyTest.class,
+    IgniteCacheTxReplicatedExpiryPolicyTest.class,
 
-        suite.addTestSuite(IgniteCacheTxLocalExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxWithStoreExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxReplicatedExpiryPolicyTest.class);
+    IgniteCacheAtomicExpiryPolicyWithStoreTest.class,
+    IgniteCacheTxExpiryPolicyWithStoreTest.class,
 
-        suite.addTestSuite(IgniteCacheAtomicExpiryPolicyWithStoreTest.class);
-        suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);
+    IgniteCacheExpiryStoreLoadSelfTest.class,
 
-        suite.addTestSuite(IgniteCacheExpiryStoreLoadSelfTest.class);
+    IgniteCacheClientNearCacheExpiryTest.class,
 
-        suite.addTestSuite(IgniteCacheTtlCleanupSelfTest.class);
+    IgniteCacheEntryListenerExpiredEventsTest.class,
 
-        suite.addTestSuite(IgniteCacheClientNearCacheExpiryTest.class);
+    IgniteCacheExpireAndUpdateConsistencyTest.class,
 
-        suite.addTestSuite(IgniteCacheEntryListenerExpiredEventsTest.class);
+    // Eager ttl expiration tests.
+    GridCacheTtlManagerNotificationTest.class,
+    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
 
-        suite.addTestSuite(IgniteCacheExpireAndUpdateConsistencyTest.class);
-
-        // Eager ttl expiration tests.
-        suite.addTestSuite(GridCacheTtlManagerNotificationTest.class);
-        suite.addTestSuite(IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class);
-
-        return suite;
-    }
+    IgniteCacheExpireWhileRebalanceTest.class
+})
+public class IgniteCacheExpiryPolicyTestSuite {
 }

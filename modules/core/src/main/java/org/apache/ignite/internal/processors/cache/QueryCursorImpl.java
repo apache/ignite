@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 
 import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.CLOSED;
 import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.EXECUTION;
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T> {
     /** */
-    private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
+    private static final AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /** Query executor. */
@@ -62,39 +63,45 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
-    /**
-     * @param iterExec Query executor.
-     * @param cancel Cancellation closure.
-     */
-    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel) {
-        this(iterExec, cancel, true);
-    }
+    /** */
+    private final boolean lazy;
+
+    /** Partition result. */
+    private PartitionResult partRes;
 
     /**
      * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this(iterExec, null);
+        this(iterExec, null, true, false);
     }
 
     /**
      * @param iterExec Query executor.
      * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry, boolean lazy) {
         this.iterExec = iterExec;
         this.cancel = cancel;
         this.isQry = isQry;
+        this.lazy = lazy;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
+        return new AutoClosableCursorIterator<>(this, iter());
+    }
+
+    /**
+     * @return An simple iterator.
+     */
+    protected Iterator<T> iter() {
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
         iter = iterExec.iterator();
 
-        if (!STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
+        if (!lazy && !STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
             // Handle race with cancel and make sure the iterator resources are freed correctly.
             closeIter();
 
@@ -111,8 +118,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         List<T> all = new ArrayList<>();
 
         try {
-            for (T t : this) // Implicitly calls iterator() to do all checks.
-                all.add(t);
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                all.add(iter.next());
         }
         finally {
             close();
@@ -124,8 +133,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** {@inheritDoc} */
     @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
         try {
-            for (T t : this)
-                clo.consume(t);
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                clo.consume(iter.next());
         }
         finally {
             close();
@@ -134,7 +145,20 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-        while(state != CLOSED) {
+        while (state != CLOSED) {
+            if (lazy) {
+                //In lazy mode: check that iterator has no data: in this case cancel.cancel() shouldn't be called.
+                try {
+                    if (iter != null && !iter.hasNext())
+                        STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY);
+                }
+                catch (Exception e) {
+                    // Ignore exception on check iterator
+                    // because Iterator.hasNext() may throw error on invalid / error query.
+                    STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY);
+                }
+            }
+
             if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                 closeIter();
 
@@ -144,6 +168,8 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
                 if (cancel != null)
                     cancel.cancel();
+
+                closeIter();
 
                 return;
             }
@@ -211,5 +237,26 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         /** Executing. */EXECUTION,
         /** Result ready. */RESULT_READY,
         /** Closed. */CLOSED,
+    }
+
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
+    }
+
+    /**
+     * @return Lazy mode flag.
+     */
+    protected boolean lazy() {
+        return lazy;
+    }
+
+    /**
+     * @param partRes New partition result.
+     */
+    public void partitionResult(PartitionResult partRes) {
+        this.partRes = partRes;
     }
 }

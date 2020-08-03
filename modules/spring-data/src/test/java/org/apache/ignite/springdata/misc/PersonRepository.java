@@ -21,14 +21,14 @@ package org.apache.ignite.springdata.misc;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.apache.ignite.springdata.repository.IgniteRepository;
 
 /**
- *
+ * Test repository.
  */
 @RepositoryConfig(cacheName = "PersonCache")
 public interface PersonRepository extends IgniteRepository<Person, Integer> {
@@ -46,6 +46,9 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
 
     /** */
     public Iterable<Person> findFirst10ByFirstNameLike(String val);
+
+    /** */
+    public int countByFirstName(String val);
 
     /** */
     public int countByFirstNameLike(String val);
@@ -88,5 +91,9 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
     public int countQuery(String val);
+
+    /** */
+    @Query("SELECT count(*) FROM Person")
+    public int countAllPersons();
 }
 

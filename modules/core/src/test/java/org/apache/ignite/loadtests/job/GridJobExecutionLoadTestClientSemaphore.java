@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -39,7 +40,6 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -55,7 +55,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder8 txCnt = new LongAdder8();
+    private static LongAdder txCnt = new LongAdder();
 
     /** Finish flag. */
     private static volatile boolean finish;
@@ -64,7 +64,6 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static Semaphore tasksSem;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
         final IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> t) {
@@ -98,7 +97,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             final int noThreads = args.length > 0 ? Integer.parseInt(args[0]) :
                 Runtime.getRuntime().availableProcessors();
             final int duration = args.length > 1 ? Integer.parseInt(args[1]) : 0;
-            int tasksCnt  = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
+            int tasksCnt = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
             final String outputFileName = args.length > 3 ? args[3] : null;
 
             X.println("Thread count: " + noThreads);

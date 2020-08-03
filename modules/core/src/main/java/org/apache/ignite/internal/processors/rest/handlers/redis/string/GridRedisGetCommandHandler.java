@@ -46,21 +46,15 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
         GET
     );
 
-    /** Grid context. */
-    private final GridKernalContext ctx;
-
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
-     * @param ctx Context.
+     * @param ctx Kernal context.
      */
-    public GridRedisGetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
-        GridKernalContext ctx) {
-        super(log, hnd);
-
-        this.ctx = ctx;
+    public GridRedisGetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */

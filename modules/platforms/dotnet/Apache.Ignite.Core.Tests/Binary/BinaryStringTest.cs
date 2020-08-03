@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -76,6 +75,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(test, res);
         }
 
+#if !NETCOREAPP
         /// <summary>
         /// Tests the old serialization mode.
         /// </summary>
@@ -83,18 +83,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestNewMode()
         {
             // Run "TestOldMode" in a separate process with changed setting.
-            Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, "true");
-
-            TestUtils.RunTestInNewProcess(GetType().FullName, "TestOldMode");
+            using (EnvVar.Set(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, "true"))
+            {
+                TestUtils.RunTestInNewProcess(GetType().FullName, "TestOldMode");
+            }
         }
-
-        /// <summary>
-        /// Test tear down.
-        /// </summary>
-        [TearDown]
-        public void TearDown()
-        {
-            Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, null);
-        }
+#endif
     }
 }

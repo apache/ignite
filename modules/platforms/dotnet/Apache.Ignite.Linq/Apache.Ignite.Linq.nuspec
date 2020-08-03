@@ -34,28 +34,46 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 LINQ Provider for Apache Ignite
 
 Query distributed in-memory data in a strongly-typed manner and with IDE support!
 All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.
+
+Supports .NET 4+ and .NET Core 2.0+.
             
 More info: https://apacheignite-net.readme.io/
         </description>
-        <releaseNotes></releaseNotes>
-        <copyright>Copyright 2017</copyright>
+        <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
-            <dependency id="Remotion.Linq" version="[2.0.1]" />
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+                <dependency id="Remotion.Linq" version="[2.0.1]" />                
+            </group>
+            
+            <group targetFramework=".NETStandard2.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+                <dependency id="Remotion.Linq" version="[2.1.2]" />
+            </group>
         </dependencies>    
     </metadata>
     <files>
+	    <file src="bin\$configuration$\Apache.Ignite.Linq.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Linq.xml" target="lib\net40" />
+
+        <file src="bin\$configuration$\Apache.Ignite.Linq.dll" target="lib\netstandard2.0" />
+        <file src="bin\$configuration$\Apache.Ignite.Linq.xml" target="lib\netstandard2.0" />
+
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
+
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>

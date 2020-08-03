@@ -100,7 +100,8 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param cache Cache.
      * @param eConverter Exception converter.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite,
+    protected HibernateAccessStrategyAdapter(
+        Ignite ignite,
         HibernateCacheProxy cache,
         HibernateExceptionConverter eConverter) {
         this.cache = cache;
@@ -124,7 +125,12 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     @Nullable public Object get(Object key) {
         try {
-            return cache.get(key);
+            Object val = cache.get(key);
+
+            if (log.isDebugEnabled())
+                log.debug("Get [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
+
+            return val;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -147,6 +153,9 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param val Value.
      */
     public void putFromLoad(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug("Put from load [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
+
         try {
             cache.put(key, val);
         }
@@ -225,6 +234,9 @@ public abstract class HibernateAccessStrategyAdapter {
      * Called to remove all data from cache without regard to transaction.
      */
     public void evictAll() {
+        if (log.isDebugEnabled())
+            log.debug("Evict all [cache=" + cache.name() + ']');
+
         try {
             evictAll(cache);
         }

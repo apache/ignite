@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests SPI in multi-threaded environment.
@@ -56,7 +57,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     /**
      * @return Paths.
      */
-    @GridSpiTestConfig(setterName="setDirectoryPaths")
+    @GridSpiTestConfig(setterName = "setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         return Collections.singleton(PATH);
     }
@@ -65,6 +66,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSpi() throws Exception {
         final AtomicInteger writeFinished = new AtomicInteger();
 
@@ -93,7 +95,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
         IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    try{
+                    try {
                         byte[] state = createTestArray((byte)2);
 
                         for (int i = 0; i < ITER_CNT; i++)
@@ -196,8 +198,6 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         deleteFolder(new File(U.getIgniteHome(), PATH));
     }
 }

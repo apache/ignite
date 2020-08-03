@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Package includes classes that integrates with Apache Ignite SQL engine.
  */
+
 package org.apache.ignite.springdata.repository.query;

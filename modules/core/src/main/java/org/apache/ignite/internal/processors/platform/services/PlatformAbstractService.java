@@ -94,6 +94,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             out.synchronize();
 
             ptr = platformCtx.gateway().serviceInit(mem.pointer());
+
+            PlatformInputStream in = mem.input();
+
+            in.synchronize();
+
+            BinaryRawReaderEx reader = platformCtx.reader(in);
+
+            PlatformUtils.readInvocationResult(platformCtx, reader);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -173,6 +181,12 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** {@inheritDoc} */
     @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
+            throws IgniteCheckedException {
+        return invokeMethod(mthdName, srvKeepBinary, false, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
         throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
@@ -205,14 +219,13 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawReaderEx reader = platformCtx.reader(in);
 
-            return PlatformUtils.readInvocationResult(platformCtx, reader);
+            return PlatformUtils.readInvocationResult(platformCtx, reader, deserializeResult);
         }
     }
 
     /**
      * @param ignite Ignite instance.
      */
-    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         // Ignite instance can be null here because service processor invokes "cleanup" on resource manager.

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -24,18 +30,40 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  */
 public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
+    /** */
+    private static final Function<Integer, Set<Integer>> CREATE_INT_SET = k -> new HashSet<>();
+
+    /** */
+    private Map<Integer, Set<Integer>> touchedParts;
+
     /**
      * @param cacheCtx Cache context.
      * @param tx Transaction.
      * @param commit {@code False} if transaction rolled back.
      */
     protected final void onTxEnd(GridCacheContext cacheCtx, IgniteInternalTx tx, boolean commit) {
-        if (cacheCtx.cache().configuration().isStatisticsEnabled()) {
-            // Convert start time from ms to ns.
+        if (cacheCtx.statisticsEnabled()) {
+            long durationNanos = U.millisToNanos(U.currentTimeMillis() - tx.startTime());
+
             if (commit)
-                cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
+                cacheCtx.cache().metrics0().onTxCommit(durationNanos);
             else
-                cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
+                cacheCtx.cache().metrics0().onTxRollback(durationNanos);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Set<Integer>> touchedPartitions() {
+        Map<Integer, Set<Integer>> parts = touchedParts;
+
+        return parts != null ? Collections.unmodifiableMap(parts) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void touchPartition(int cacheId, int partId) {
+        if (touchedParts == null)
+            touchedParts = new HashMap<>();
+
+        touchedParts.computeIfAbsent(cacheId, CREATE_INT_SET).add(partId);
     }
 }

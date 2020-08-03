@@ -52,7 +52,8 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
      * @param restoreExchId Initial exchange ID for current exchange.
      * @return Message.
      */
-    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId, GridDhtPartitionExchangeId restoreExchId) {
+    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId,
+        GridDhtPartitionExchangeId restoreExchId) {
         GridDhtPartitionsSingleRequest msg = new GridDhtPartitionsSingleRequest(msgExchId);
 
         msg.restoreState(true);
@@ -89,7 +90,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         }
 
         switch (writer.state()) {
-            case 5:
+            case 6:
                 if (!writer.writeMessage("restoreExchId", restoreExchId))
                     return false;
 
@@ -111,7 +112,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
             return false;
 
         switch (reader.state()) {
-            case 5:
+            case 6:
                 restoreExchId = reader.readMessage("restoreExchId");
 
                 if (!reader.isLastRead())
@@ -131,7 +132,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */

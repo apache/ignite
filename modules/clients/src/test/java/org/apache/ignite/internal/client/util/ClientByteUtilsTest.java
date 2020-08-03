@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.GridClientByteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToInt;
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToLong;
@@ -42,6 +43,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
      *
      * @throws Exception On any exception.
      */
+    @Test
     public void testUuidConvertions() throws Exception {
         Map<String, byte[]> map = new LinkedHashMap<>();
 
@@ -92,6 +94,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
     public void testShortToBytes() throws Exception {
         Map<String, Short> map = new HashMap<>();
 
@@ -116,6 +119,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
     public void testIntToBytes() throws Exception {
         Map<String, Integer> map = new HashMap<>();
 
@@ -140,6 +144,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
     public void testLongToBytes() throws Exception {
         Map<String, Long> map = new LinkedHashMap<>();
 

@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -82,13 +83,12 @@ public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
 
         if (urlPkgPrefixesBackup != null)
             System.setProperty(Context.URL_PKG_PREFIXES, urlPkgPrefixesBackup);
-
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFactory() throws Exception {
         CacheJndiTmFactory f = new CacheJndiTmFactory("wrongJndiName", NOT_TM_JNDI_NAME, TM_JNDI_NAME2, TM_JNDI_NAME);
 
@@ -102,6 +102,7 @@ public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFactoryException() throws Exception {
         final CacheJndiTmFactory f = new CacheJndiTmFactory("wrongJndiName", NOT_TM_JNDI_NAME, "wrongJndiName2");
 

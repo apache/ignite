@@ -97,7 +97,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
      * @param doneCb Done callback.
      * @return Internal future
      */
-    protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
+    protected <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
         @Nullable Executor exec) {
         C1<IgniteInternalFuture<V>, T> clos = new C1<IgniteInternalFuture<V>, T>() {
             @Override public T apply(IgniteInternalFuture<V> fut) {
@@ -198,7 +198,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (obj == null || !obj.getClass().equals(InternalFutureListener.class))
                 return false;

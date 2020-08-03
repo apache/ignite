@@ -23,7 +23,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -32,19 +39,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -52,9 +50,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * Test for binary objects stored in cache.
  */
 public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int THREAD_CNT = 64;
 
@@ -64,8 +59,6 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -99,11 +92,6 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache mode.
      */
@@ -129,10 +117,12 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait") public void testGetPut() throws Exception {
+    @SuppressWarnings("BusyWait")
+    @Test
+    public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
 
         IgniteInternalFuture<?> f = multithreadedAsync(
             new Callable<Object>() {

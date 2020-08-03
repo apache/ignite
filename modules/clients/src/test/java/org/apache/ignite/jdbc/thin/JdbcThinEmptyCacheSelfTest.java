@@ -23,9 +23,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -34,9 +32,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for empty cache.
  */
 public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -62,12 +57,6 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -79,15 +68,10 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(CACHE_NAME);
+        conn.setSchema('"' + CACHE_NAME + '"');
 
         stmt = conn.createStatement();
 
@@ -109,6 +93,7 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectNumber() throws Exception {
         ResultSet rs = stmt.executeQuery("select 1");
 
@@ -127,6 +112,7 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectString() throws Exception {
         ResultSet rs = stmt.executeQuery("select 'str'");
 

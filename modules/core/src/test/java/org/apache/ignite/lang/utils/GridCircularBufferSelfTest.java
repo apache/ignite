@@ -17,11 +17,13 @@
 
 package org.apache.ignite.lang.utils;
 
+import java.util.Deque;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.junit.Test;
 
 /**
  *
@@ -30,6 +32,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCreation() {
         try {
             GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(-2);
@@ -72,6 +75,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleThreaded() throws Exception {
         int size = 8;
         int iterCnt = size * 10;
@@ -106,6 +110,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutliThreaded() throws Exception {
         int size = 32 * 1024;
 
@@ -134,6 +139,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutliThreaded2() throws Exception {
         int size = 256 * 1024;
 
@@ -143,8 +149,8 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         info("Created buffer: " + buf);
 
         final int iterCnt = 10_000;
-        final ConcurrentLinkedDeque8<Integer> evictedQ = new ConcurrentLinkedDeque8<>();
-        final ConcurrentLinkedDeque8<Integer> putQ = new ConcurrentLinkedDeque8<>();
+        final Deque<Integer> evictedQ = new ConcurrentLinkedDeque<>();
+        final Deque<Integer> putQ = new ConcurrentLinkedDeque<>();
 
         multithreaded(
             new Callable<Object>() {
@@ -168,7 +174,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         evictedQ.addAll(buf.items());
 
         assert putQ.containsAll(evictedQ);
-        assert evictedQ.sizex() == putQ.sizex();
+        assert evictedQ.size() == putQ.size();
 
         info("Buffer: " + buf);
     }

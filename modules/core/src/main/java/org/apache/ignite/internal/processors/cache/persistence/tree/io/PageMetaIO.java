@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -121,14 +123,18 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulSnapshotId Last successful snapshot id.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public void setLastSuccessfulSnapshotId(long pageAddr, long lastSuccessfulSnapshotId) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF, lastSuccessfulSnapshotId);
     }
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public long getLastSuccessfulSnapshotId(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF);
     }
@@ -136,29 +142,37 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public void setLastSuccessfulFullSnapshotId(long pageAddr, long lastSuccessfulFullSnapshotId) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
     }
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public long getLastSuccessfulFullSnapshotId(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param nextSnapshotId Next snapshot id.
+     * @param nextSnapshotTag Next snapshot tag.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
-    public void setNextSnapshotTag(long pageAddr, long nextSnapshotId) {
-        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotId);
+    @Deprecated
+    public void setNextSnapshotTag(long pageAddr, long nextSnapshotTag) {
+        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotTag);
     }
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public long getLastSuccessfulSnapshotTag(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF);
     }
@@ -166,14 +180,18 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public void setLastSuccessfulSnapshotTag(long pageAddr, long lastSuccessfulSnapshotTag) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF, lastSuccessfulSnapshotTag);
     }
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0. See IGNITE-11139.
      */
+    @Deprecated
     public long getNextSnapshotTag(long pageAddr) {
         return PageUtils.getLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF);
     }
@@ -225,5 +243,17 @@ public class PageMetaIO extends PageIO {
      */
     public int getCandidatePageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("PageMeta[\n\ttreeRoot=").a(getReuseListRoot(addr))
+            .a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(addr))
+            .a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(addr))
+            .a(",\n\tnextSnapshotTag=").a(getNextSnapshotTag(addr))
+            .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
+            .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
+            .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
+            .a("\n]");
     }
 }

@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="AckSendThreshold"/> property. </summary>
         public const int DefaultAckSendThreshold = 16;
 
+        /// <summary> Default value of <see cref="ConnectionsPerNode"/> property. </summary>
+        public const int DefaultConnectionsPerNode = 1;
+
         /// <summary> Default value of <see cref="ConnectTimeout"/> property. </summary>
         public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(5);
 
@@ -48,6 +51,9 @@ namespace Apache.Ignite.Core.Communication.Tcp
 
         /// <summary> Default value of <see cref="DirectSendBuffer"/> property. </summary>
         public const bool DefaultDirectSendBuffer = false;
+
+        /// <summary> Default value of <see cref="FilterReachableAddresses"/> property. </summary>
+        public const bool DefaultFilterReachableAddresses = false;
 
         /// <summary> Default value of <see cref="IdleConnectionTimeout"/> property. </summary>
         public static readonly TimeSpan DefaultIdleConnectionTimeout = TimeSpan.FromSeconds(30);
@@ -70,11 +76,23 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorsCount"/> property. </summary>
         public static readonly int DefaultSelectorsCount = Math.Min(4, Environment.ProcessorCount);
 
+        /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
+        public const long DefaultSelectorSpins = 0;
+
+        /// <summary> Default value of <see cref="SharedMemoryPort"/> property. </summary>
+        public const int DefaultSharedMemoryPort = -1;
+
         /// <summary> Default socket buffer size. </summary>
         public const int DefaultSocketBufferSize = 32 * 1024;
 
+        /// <summary> Default value of <see cref="SocketWriteTimeout"/> property. </summary>
+        public const long DefaultSocketWriteTimeout = 2000;
+
         /// <summary> Default value of <see cref="TcpNoDelay"/> property. </summary>
         public const bool DefaultTcpNoDelay = true;
+
+        /// <summary> Default value of <see cref="UsePairedConnections"/> property. </summary>
+        public const bool DefaultUsePairedConnections = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
@@ -82,19 +100,25 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public TcpCommunicationSpi()
         {
             AckSendThreshold = DefaultAckSendThreshold;
+            ConnectionsPerNode = DefaultConnectionsPerNode;
             ConnectTimeout = DefaultConnectTimeout;
             DirectBuffer = DefaultDirectBuffer;
             DirectSendBuffer = DefaultDirectSendBuffer;
+            FilterReachableAddresses = DefaultFilterReachableAddresses;
             IdleConnectionTimeout = DefaultIdleConnectionTimeout;
             LocalPort = DefaultLocalPort;
             LocalPortRange = DefaultLocalPortRange;
             MaxConnectTimeout = DefaultMaxConnectTimeout;
             MessageQueueLimit = DefaultMessageQueueLimit;
             ReconnectCount = DefaultReconnectCount;
+            SharedMemoryPort = DefaultSharedMemoryPort;
             SelectorsCount = DefaultSelectorsCount;
+            SelectorSpins = DefaultSelectorSpins;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             SocketSendBufferSize = DefaultSocketBufferSize;
+            SocketWriteTimeout = DefaultSocketWriteTimeout;
             TcpNoDelay = DefaultTcpNoDelay;
+            UsePairedConnections = DefaultUsePairedConnections;
         }
 
         /// <summary>
@@ -104,9 +128,11 @@ namespace Apache.Ignite.Core.Communication.Tcp
         internal TcpCommunicationSpi(IBinaryRawReader reader)
         {
             AckSendThreshold = reader.ReadInt();
+            ConnectionsPerNode = reader.ReadInt();
             ConnectTimeout = reader.ReadLongAsTimespan();
             DirectBuffer = reader.ReadBoolean();
             DirectSendBuffer = reader.ReadBoolean();
+            FilterReachableAddresses = reader.ReadBoolean();
             IdleConnectionTimeout = reader.ReadLongAsTimespan();
             LocalAddress = reader.ReadString();
             LocalPort = reader.ReadInt();
@@ -115,15 +141,19 @@ namespace Apache.Ignite.Core.Communication.Tcp
             MessageQueueLimit = reader.ReadInt();
             ReconnectCount = reader.ReadInt();
             SelectorsCount = reader.ReadInt();
+            SelectorSpins = reader.ReadLong();
+            SharedMemoryPort = reader.ReadInt();
             SlowClientQueueLimit = reader.ReadInt();
             SocketReceiveBufferSize = reader.ReadInt();
             SocketSendBufferSize = reader.ReadInt();
+            SocketWriteTimeout = reader.ReadLong();
             TcpNoDelay = reader.ReadBoolean();
             UnacknowledgedMessagesBufferSize = reader.ReadInt();
+            UsePairedConnections = reader.ReadBoolean();
         }
 
         /// <summary>
-        /// Gets or sets the number of received messages per connection to node 
+        /// Gets or sets the number of received messages per connection to node
         /// after which acknowledgment message is sent.
         /// </summary>
         [DefaultValue(DefaultAckSendThreshold)]
@@ -136,14 +166,14 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public TimeSpan ConnectTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
+        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect)
         /// or heap (ByteBuffer.allocate) buffer.
         /// </summary>
         [DefaultValue(DefaultDirectBuffer)]
         public bool DirectBuffer { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
+        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect)
         /// or heap (ByteBuffer.allocate) send buffer.
         /// </summary>
         [DefaultValue(DefaultDirectSendBuffer)]
@@ -156,7 +186,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public TimeSpan IdleConnectionTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets the local host address for socket binding. Note that one node could have 
+        /// Gets or sets the local host address for socket binding. Note that one node could have
         /// additional addresses beside the loopback one. This configuration parameter is optional.
         /// </summary>
         public string LocalAddress { get; set; }
@@ -193,7 +223,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary>
         /// Gets or sets the message queue limit for incoming and outgoing messages.
         /// <para />
-        /// When set to positive number send queue is limited to the configured value. 
+        /// When set to positive number send queue is limited to the configured value.
         /// <c>0</c> disables the limitation.
         /// </summary>
         [DefaultValue(DefaultMessageQueueLimit)]
@@ -216,11 +246,11 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary>
         /// Gets or sets slow client queue limit.
         /// <para/>
-        /// When set to a positive number, communication SPI will monitor clients outbound message queue sizes 
+        /// When set to a positive number, communication SPI will monitor clients outbound message queue sizes
         /// and will drop those clients whose queue exceeded this limit.
         /// <para/>
         /// Usually this value should be set to the same value as <see cref="MessageQueueLimit"/> which controls
-        /// message back-pressure for server nodes. The default value for this parameter is <c>0</c> 
+        /// message back-pressure for server nodes. The default value for this parameter is <c>0</c>
         /// which means unlimited.
         /// </summary>
         public int SlowClientQueueLimit { get; set; }
@@ -230,7 +260,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         [DefaultValue(DefaultSocketBufferSize)]
         public int SocketReceiveBufferSize { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the size of the socket send buffer.
         /// </summary>
@@ -250,11 +280,54 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public bool TcpNoDelay { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of stored unacknowledged messages per connection to node. 
-        /// If number of unacknowledged messages exceeds this number 
+        /// Gets or sets the maximum number of stored unacknowledged messages per connection to node.
+        /// If number of unacknowledged messages exceeds this number
         /// then connection to node is closed and reconnect is attempted.
         /// </summary>
         public int UnacknowledgedMessagesBufferSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of connections per node.
+        /// </summary>
+        [DefaultValue(DefaultConnectionsPerNode)]
+        public int ConnectionsPerNode { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether separate connections should be used for incoming and outgoing data.
+        /// Set this to <c>true</c> if <see cref="ConnectionsPerNode"/> should maintain connection for outgoing
+        /// and incoming messages separately. In this case total number of connections between local and each remote
+        /// node is equals to <see cref="ConnectionsPerNode"/> * 2.
+        /// </summary>
+        public bool UsePairedConnections { get; set; }
+
+        /// <summary>
+        /// Gets or sets a local port to accept shared memory connections.
+        /// </summary>
+        [DefaultValue(DefaultSharedMemoryPort)]
+        public int SharedMemoryPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets socket write timeout for TCP connection. If message can not be written to
+        /// socket within this time then connection is closed and reconnect is attempted.
+        /// <para />
+        /// Default value is <see cref="DefaultSocketWriteTimeout"/>.
+        /// </summary>
+        [DefaultValue(DefaultSocketWriteTimeout)]
+        public long SocketWriteTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a values that defines how many non-blocking selectors should be made.
+        /// Can be set to <see cref="Int64.MaxValue"/> so selector threads will never block.
+        /// <para />
+        /// Default value is <see cref="DefaultSelectorSpins"/>.
+        /// </summary>
+        public long SelectorSpins { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether filter for reachable addresses
+        /// should be enabled on creating tcp client.
+        /// </summary>
+        public bool FilterReachableAddresses { get; set; }
 
         /// <summary>
         /// Writes this instance to the specified writer.
@@ -262,9 +335,11 @@ namespace Apache.Ignite.Core.Communication.Tcp
         internal void Write(IBinaryRawWriter writer)
         {
             writer.WriteInt(AckSendThreshold);
+            writer.WriteInt(ConnectionsPerNode);
             writer.WriteLong((long) ConnectTimeout.TotalMilliseconds);
             writer.WriteBoolean(DirectBuffer);
             writer.WriteBoolean(DirectSendBuffer);
+            writer.WriteBoolean(FilterReachableAddresses);
             writer.WriteLong((long) IdleConnectionTimeout.TotalMilliseconds);
             writer.WriteString(LocalAddress);
             writer.WriteInt(LocalPort);
@@ -273,11 +348,15 @@ namespace Apache.Ignite.Core.Communication.Tcp
             writer.WriteInt(MessageQueueLimit);
             writer.WriteInt(ReconnectCount);
             writer.WriteInt(SelectorsCount);
+            writer.WriteLong(SelectorSpins);
+            writer.WriteInt(SharedMemoryPort);
             writer.WriteInt(SlowClientQueueLimit);
             writer.WriteInt(SocketReceiveBufferSize);
             writer.WriteInt(SocketSendBufferSize);
+            writer.WriteLong(SocketWriteTimeout);
             writer.WriteBoolean(TcpNoDelay);
             writer.WriteInt(UnacknowledgedMessagesBufferSize);
+            writer.WriteBoolean(UsePairedConnections);
         }
     }
 }

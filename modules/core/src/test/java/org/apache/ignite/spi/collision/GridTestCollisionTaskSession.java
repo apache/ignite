@@ -169,7 +169,6 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         if (priAttrKey != null && priAttrKey.equals(key))
             return (V)pri;

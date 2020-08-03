@@ -163,4 +163,9 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      */
     public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
         Map<Integer, T2<Long, Long>> cntrs);
+
+    /**
+     * @return Init state for partition counters.
+     */
+    public Map<Integer, T2<Long, Long>> updateCounters();
 }

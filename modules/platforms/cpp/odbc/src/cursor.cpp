@@ -64,6 +64,11 @@ namespace ignite
                 currentPagePos < currentPage->GetSize();
         }
 
+        bool Cursor::IsClosedRemotely() const
+        {
+            return currentPage.get() && currentPage->IsLast();
+        }
+
         void Cursor::UpdateData(std::auto_ptr<ResultPage>& newPage)
         {
             currentPage = newPage;

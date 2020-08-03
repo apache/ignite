@@ -34,29 +34,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests modification of values returned by query iterators with enabled copy on read.
  */
 public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int KEYS = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if ("client".equals(cfg.getIgniteInstanceName()))
-            cfg.setClientMode(true);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration<Integer, Value> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -93,20 +83,14 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Tests two step query from dedicated client.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoStepSqlClientQuery() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Value> cache = client.cache(DEFAULT_CACHE_NAME);
 
             List<Cache.Entry<Integer, Value>> all = cache.query(
@@ -135,6 +119,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /**
      * Test two step query without local reduce phase.
      */
+    @Test
     public void testTwoStepSkipReduceSqlQuery() {
         IgniteCache<Integer, Value> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -152,6 +137,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /**
      * Test two step query value copy.
      */
+    @Test
     public void testTwoStepReduceSqlQuery() {
         IgniteCache<Integer, Value> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -170,6 +156,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /**
      * Tests local sql query.
      */
+    @Test
     public void testLocalSqlQuery() {
         IgniteCache<Integer, Value> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -189,6 +176,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /**
      * Tests local sql query.
      */
+    @Test
     public void testLocalSqlFieldsQuery() {
         IgniteCache<Integer, Value> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -231,6 +219,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRunningSqlFieldsQuery() throws Exception {
         IgniteInternalFuture<?> fut = runQueryAsync(new SqlFieldsQuery("select _val, sleep(1000) from Value limit 3"));
 
@@ -271,6 +260,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRunningSqlQuery() throws Exception {
         IgniteInternalFuture<?> fut = runQueryAsync(new SqlQuery<Integer, Value>(Value.class, "id > sleep(100)"));
 
@@ -311,6 +301,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelingSqlFieldsQuery() throws Exception {
         runQueryAsync(new SqlFieldsQuery("select * from (select _val, sleep(100) from Value limit 50)"));
 

@@ -22,13 +22,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -70,13 +72,6 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             g.cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @param cache Cache.
      */
@@ -99,6 +94,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests cancellation.
      */
+    @Test
     public void testQueryCancel() {
         testQuery(false, 1, TimeUnit.SECONDS);
     }
@@ -106,6 +102,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests cancellation with zero timeout.
      */
+    @Test
     public void testQueryCancelZeroTimeout() {
         testQuery(false, 1, TimeUnit.MILLISECONDS);
     }
@@ -113,6 +110,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests timeout.
      */
+    @Test
     public void testQueryTimeout() {
         testQuery(true, 1, TimeUnit.SECONDS);
     }
@@ -144,13 +142,13 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             }, timeoutUnits, timeUnit);
         }
 
-        try(QueryCursor<List<?>> ignored = cursor) {
+        try (QueryCursor<List<?>> ignored = cursor) {
             cursor.iterator();
 
             fail("Expecting timeout");
         }
         catch (Exception e) {
-            assertTrue("Must throw correct exception", e.getCause() instanceof QueryCancelledException);
+            assertNotNull("Must throw correct exception", X.cause(e, QueryCancelledException.class));
         }
 
         // Test must exit gracefully.

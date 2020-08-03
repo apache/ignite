@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
-
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.jetbrains.annotations.Nullable;
@@ -30,12 +29,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface DiscoverySpiCustomMessage extends Serializable {
     /**
-     * Called when message passed the ring.
+     * Called when custom message has been handled by all nodes.
+     *
+     * @return Ack message or {@code null} if ack is not required.
      */
     @Nullable public DiscoverySpiCustomMessage ackMessage();
 
     /**
-     * @return {@code true} if message can be modified during listener notification. Changes will be send to next nodes.
+     * @return {@code True} if message can be modified during listener notification. Changes will be send to next nodes.
      */
     public boolean isMutable();
+
+    /**
+     * Called on discovery coordinator node after listener is notified. If returns {@code true}
+     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
+     * message, it is sent to all nodes.
+     *
+     * @return {@code True} if message should not be sent to all nodes.
+     *
+     * @deprecated Is not used anymore and will be removed at 3.0.
+     */
+    @Deprecated
+    public boolean stopProcess();
 }

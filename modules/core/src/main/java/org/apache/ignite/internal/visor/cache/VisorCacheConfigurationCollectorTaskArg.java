@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -32,8 +33,11 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Collection of cache deployment IDs. */
+    /** Collection of cache names. */
     private Collection<String> cacheNames;
+
+    /** Cache name regexp. */
+    private String regex;
 
     /**
      * Default constructor.
@@ -50,20 +54,46 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     }
 
     /**
+     * @param regex Cache name regexp.
+     */
+    public VisorCacheConfigurationCollectorTaskArg(String regex) {
+        // Checks, that regex is correct.
+        Pattern.compile(regex);
+
+        this.regex = regex;
+    }
+
+    /**
      * @return Collection of cache deployment IDs.
      */
     public Collection<String> getCacheNames() {
         return cacheNames;
     }
 
+    /**
+     * @return Cache name regexp.
+     */
+    public String getRegex() {
+        return regex;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, cacheNames);
+        U.writeString(out, regex);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readCollection(in);
+
+        if (protoVer > V1)
+            regex = U.readString(in);
     }
 
     /** {@inheritDoc} */

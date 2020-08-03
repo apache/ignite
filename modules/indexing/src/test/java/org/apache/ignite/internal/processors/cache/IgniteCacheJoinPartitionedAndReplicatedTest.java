@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -26,17 +31,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.CacheException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,10 +44,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
 public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String PERSON_CACHE = "person";
 
@@ -59,16 +55,9 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     /** */
     private static final String ORG_CACHE_REPLICATED = "orgRepl";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -122,8 +111,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -148,16 +135,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(2);
     }
 
     /** {@inheritDoc} */
@@ -178,9 +156,9 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
+    @Test
     public void testJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
-
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
@@ -231,9 +209,9 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
+    @Test
     public void testReplicatedToPartitionedLeftJoin() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
-
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);

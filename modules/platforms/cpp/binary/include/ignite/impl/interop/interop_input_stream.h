@@ -199,7 +199,7 @@ namespace ignite
                 /**
                  * Set position.
                  *
-                 * @param Position.
+                 * @param pos Position.
                  */
                 void Position(int32_t pos);
 
@@ -230,7 +230,7 @@ namespace ignite
                 /**
                  * Copy data from the stream shifting it along the way.
                  *
-                 * @param ptr Pointer to data.
+                 * @param dest Pointer to data.
                  * @param off Offset.
                  * @param cnt Amount of data to copy.
                  */

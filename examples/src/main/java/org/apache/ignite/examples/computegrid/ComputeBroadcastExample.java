@@ -22,9 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Demonstrates broadcasting computations within cluster.
@@ -63,14 +60,10 @@ public class ComputeBroadcastExample {
      */
     private static void hello(Ignite ignite) throws IgniteException {
         // Print out hello message on all nodes.
-        ignite.compute().broadcast(
-            new IgniteRunnable() {
-                @Override public void run() {
-                    System.out.println();
-                    System.out.println(">>> Hello Node! :)");
-                }
-            }
-        );
+        ignite.compute().broadcast(() -> {
+            System.out.println();
+            System.out.println(">>> Hello Node! :)");
+        });
 
         System.out.println();
         System.out.println(">>> Check all nodes for hello message output.");
@@ -84,23 +77,16 @@ public class ComputeBroadcastExample {
      */
     private static void gatherSystemInfo(Ignite ignite) throws IgniteException {
         // Gather system info from all nodes.
-        Collection<String> res = ignite.compute().broadcast(
-            new IgniteCallable<String>() {
-                // Automatically inject ignite instance.
-                @IgniteInstanceResource
-                private Ignite ignite;
+        Collection<String> res = ignite.compute().broadcast(() -> {
+            System.out.println();
+            System.out.println("Executing task on node: " + ignite.cluster().localNode().id());
 
-                @Override public String call() {
-                    System.out.println();
-                    System.out.println("Executing task on node: " + ignite.cluster().localNode().id());
-
-                    return "Node ID: " + ignite.cluster().localNode().id() + "\n" +
-                        "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " +
-                        System.getProperty("os.arch") + "\n" +
-                        "User: " + System.getProperty("user.name") + "\n" +
-                        "JRE: " + System.getProperty("java.runtime.name") + " " +
-                        System.getProperty("java.runtime.version");
-                }
+            return "Node ID: " + ignite.cluster().localNode().id() + "\n" +
+                "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " +
+                System.getProperty("os.arch") + "\n" +
+                "User: " + System.getProperty("user.name") + "\n" +
+                "JRE: " + System.getProperty("java.runtime.name") + " " +
+                System.getProperty("java.runtime.version");
         });
 
         // Print result.
@@ -108,9 +94,9 @@ public class ComputeBroadcastExample {
         System.out.println("Nodes system information:");
         System.out.println();
 
-        for (String r : res) {
+        res.forEach(r -> {
             System.out.println(r);
             System.out.println();
-        }
+        });
     }
 }

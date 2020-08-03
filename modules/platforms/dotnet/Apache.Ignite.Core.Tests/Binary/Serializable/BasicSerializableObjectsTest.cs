@@ -44,12 +44,13 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestEmptyObjectOnline()
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "1")))
             {
                 var cache = ignite.CreateCache<int, EmptyObject>("c");
 
                 cache[1] = new EmptyObject();
 
-                var res = cache[1];
+                var res = ignite2.GetCache<int, EmptyObject>("c")[1];
 
                 Assert.IsNotNull(res);
             }
@@ -62,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestMissingCtor()
         {
             var ex = Assert.Throws<SerializationException>(() => TestUtils.SerializeDeserialize(new MissingCtor()));
-            Assert.AreEqual(string.Format("The constructor to deserialize an object of type '{0}' was not found.", 
+            Assert.AreEqual(string.Format("The constructor to deserialize an object of type '{0}' was not found.",
                 typeof(MissingCtor)), ex.Message);
         }
 
@@ -76,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             var res = TestUtils.SerializeDeserialize(type);
 
-            Assert.AreEqual(type, res);
+            Assert.AreEqual(type.AssemblyQualifiedName, res.AssemblyQualifiedName);
         }
 
         /// <summary>

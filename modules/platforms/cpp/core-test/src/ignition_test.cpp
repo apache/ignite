@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -35,9 +31,9 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     IgniteConfiguration cfg;
 
 #ifdef IGNITE_TESTS_32
-    ignite_test::InitConfig(cfg, "cache-test-32.xml");
+    ignite_test::InitConfig(cfg, "persistence-store-32.xml");
 #else
-    ignite_test::InitConfig(cfg, "cache-test.xml");
+    ignite_test::InitConfig(cfg, "persistence-store.xml");
 #endif
 
     IgniteError err;
@@ -79,6 +75,39 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     
     Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
+}
+
+BOOST_AUTO_TEST_CASE(TestStartWithpersistence)
+{
+    IgniteConfiguration cfg;
+
+#ifdef IGNITE_TESTS_32
+    ignite_test::InitConfig(cfg, "persistence-store-32.xml");
+#else
+    ignite_test::InitConfig(cfg, "persistence-store.xml");
+#endif
+    try
+    {
+        Ignite grid = Ignition::Start(cfg, "test");
+    }
+    catch (...)
+    {
+        // Stop all
+        Ignition::StopAll(true);
+
+        throw;
+    }
+}
+
+BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
+{
+    IgniteConfiguration cfg;
+
+    ignite_test::InitConfig(cfg, "invalid.xml");
+
+    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
+
+    Ignition::StopAll(false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

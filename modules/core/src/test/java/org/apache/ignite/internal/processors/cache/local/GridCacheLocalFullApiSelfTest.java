@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -25,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -49,6 +52,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testMapKeysToNodes() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -78,5 +82,79 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
 
         for (String key : keys)
             assert "key1".equals(key) || "key2".equals(key);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLocalClearAsync() throws Exception {
+        localCacheClear(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLocalClear() throws Exception {
+        localCacheClear(false);
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    private void localCacheClear(boolean async) throws Exception {
+        // In addition to the existing tests, it confirms the data is cleared only on one node,
+        // not on all nodes that have local caches with same names.
+        try {
+            startGrid(1);
+
+            IgniteCache<String, Integer> cache = jcache();
+
+            for (int i = 0; i < 5; i++) {
+                cache.put(String.valueOf(i), i);
+                jcache(1).put(String.valueOf(i), i);
+            }
+
+            if (async)
+                cache.clearAsync("4").get();
+            else
+                cache.clear("4");
+
+            assertNull(peek(cache, "4"));
+            assertNotNull(peek(jcache(1), "4"));
+
+            if (async)
+                cache.clearAllAsync(new HashSet<>(Arrays.asList("2", "3"))).get();
+            else
+                cache.clearAll(new HashSet<>(Arrays.asList("2", "3")));
+
+            for (int i = 2; i < 4; i++) {
+                assertNull(peek(cache, String.valueOf(i)));
+                assertNotNull(peek(jcache(1), String.valueOf(i)));
+            }
+
+            if (async)
+                cache.clearAsync().get();
+            else
+                cache.clear();
+
+            for (int i = 0; i < 2; i++) {
+                assertNull(peek(cache, String.valueOf(i)));
+                assertNotNull(peek(jcache(1), String.valueOf(i)));
+            }
+
+            if (async)
+                jcache(1).clearAsync().get();
+            else
+                jcache(1).clear();
+
+            for (int i = 0; i < 2; i++)
+                assert jcache(i).localSize() == 0;
+        }
+        finally {
+            stopGrid(1);
+        }
     }
 }

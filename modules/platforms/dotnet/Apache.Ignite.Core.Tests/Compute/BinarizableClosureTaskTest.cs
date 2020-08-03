@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 

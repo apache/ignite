@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -27,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Abstract page delta record.
  */
-public abstract class PageDeltaRecord extends WALRecord {
+public abstract class PageDeltaRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     private int grpId;
 
@@ -52,9 +54,14 @@ public abstract class PageDeltaRecord extends WALRecord {
     }
 
     /**
-     * @return Cache group ID.
+     * @return Full page ID.
      */
-    public int groupId() {
+    public FullPageId fullPageId() {
+        return new FullPageId(pageId, grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int groupId() {
         return grpId;
     }
 

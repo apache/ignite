@@ -186,13 +186,12 @@ namespace ignite
          * Binary type specialization for CacheEntryProcessorHolder.
          */
         template<typename P, typename A>
-        struct BinaryType<impl::cache::CacheEntryProcessorHolder<P, A> >
+        struct BinaryType<impl::cache::CacheEntryProcessorHolder<P, A> > :
+            BinaryTypeNonNullableType< impl::cache::CacheEntryProcessorHolder<P, A> >
         {
             typedef impl::cache::CacheEntryProcessorHolder<P, A> UnderlyingType;
 
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(UnderlyingType)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(UnderlyingType)
 
             static int32_t GetTypeId()
             {

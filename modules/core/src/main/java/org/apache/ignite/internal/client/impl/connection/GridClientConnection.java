@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.client.impl.GridClientDataMetricsAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,7 +57,7 @@ public abstract class GridClientConnection {
     private SSLContext sslCtx;
 
     /** Client credentials. */
-    private Object cred;
+    private SecurityCredentials cred;
 
     /** Reason why connection was closed. {@code null} means connection is still alive. */
     protected volatile GridClientConnectionCloseReason closeReason;
@@ -70,7 +72,7 @@ public abstract class GridClientConnection {
      * @param cred Client credentials.
      */
     protected GridClientConnection(UUID clientId, InetSocketAddress srvAddr, SSLContext sslCtx, GridClientTopology top,
-        Object cred) {
+        SecurityCredentials cred) {
         assert top != null;
 
         this.clientId = clientId;
@@ -103,21 +105,6 @@ public abstract class GridClientConnection {
      */
     public InetSocketAddress serverAddress() {
         return srvAddr;
-    }
-
-    /**
-     * Encodes cache flags to bit map.
-     *
-     * @param flagSet Set of flags to be encoded.
-     * @return Bit map.
-     */
-    public static int encodeCacheFlags(Collection<GridClientCacheFlag> flagSet) {
-        int bits = 0;
-
-        if (flagSet.contains(GridClientCacheFlag.SKIP_STORE))
-            bits |= 1;
-
-        return bits;
     }
 
     /**
@@ -172,7 +159,7 @@ public abstract class GridClientConnection {
      * @param destNodeId Destination node ID.
      * @return Whether entry was actually removed.
      * @throws GridClientConnectionResetException In case of error.
-     * @throws org.apache.ignite.internal.client.GridClientClosedException If client was manually closed before request was sent over network.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
@@ -322,20 +309,47 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Change grid global state.
+     * Changes grid global state.
      *
-     * @param active Active.
+     * @param state New cluster state.
      * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
-            throws GridClientClosedException, GridClientConnectionResetException;
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Get current grid state.
+     * Changes grid global state.
+     *
+     * @param state New cluster state.
+     * @param destNodeId Destination node id.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Gets current grid global state.
      *
      * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
+    public abstract GridClientFuture<ClusterState> state(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get a cluster name.
+     *
+     * @param destNodeId Destination node id.
+     * @return Future to get the cluster name.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<String> clusterName(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
@@ -411,7 +425,7 @@ public abstract class GridClientConnection {
      *
      * @return Credentials.
      */
-    protected Object credentials() {
+    protected SecurityCredentials credentials() {
         return cred;
     }
 

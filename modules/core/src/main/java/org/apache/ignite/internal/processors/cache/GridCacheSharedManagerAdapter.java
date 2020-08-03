@@ -86,6 +86,21 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /** {@inheritDoc} */
+    @Override public final void onKernalStart(boolean active) {
+        if (!starting.get())
+            return;
+
+        onKernalStart0(active);
+    }
+
+    /**
+     * @param active Cluster active flag.
+     */
+    protected void onKernalStart0(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public final void stop(boolean cancel) {
         if (!starting.get() || !stop.compareAndSet(false, true))
             // Ignoring attempt to stop manager that has never been started.
@@ -132,6 +147,11 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
         // No-op.
     }
 

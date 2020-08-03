@@ -85,7 +85,11 @@ namespace ignite
             void Module::Unload()
             {
                 if (IsLoaded())
+                {
                     FreeLibrary(handle);
+
+                    handle = NULL;
+                }
             }
 
             Module LoadModule(const char* path)

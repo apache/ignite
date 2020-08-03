@@ -27,8 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Topology future created for client cache start.
  */
-public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter
-    implements GridDhtTopologyFuture {
+public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
     /** */
     final AffinityTopologyVersion topVer;
 
@@ -63,7 +62,10 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter
     public void validate(CacheGroupContext grp, Collection<ClusterNode> topNodes) {
         grpValidRes = U.newHashMap(1);
 
-        grpValidRes.put(grp.groupId(), validateCacheGroup(grp,topNodes));
+        CacheGroupValidation valRes = validateCacheGroup(grp, topNodes);
+
+        if (!valRes.isValid() || valRes.hasLostPartitions())
+            grpValidRes.put(grp.groupId(), valRes);
     }
 
     /** {@inheritDoc} */
@@ -79,6 +81,11 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean changedAffinity() {
+        return true;
     }
 
     /** {@inheritDoc} */

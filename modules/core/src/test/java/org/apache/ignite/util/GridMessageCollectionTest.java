@@ -18,23 +18,27 @@
 package org.apache.ignite.util;
 
 import java.nio.ByteBuffer;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.junit.Test;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.ignite.internal.util.GridMessageCollection.of;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  *
  */
-public class GridMessageCollectionTest extends TestCase {
+public class GridMessageCollectionTest {
     /** */
     private byte proto;
 
@@ -58,6 +62,7 @@ public class GridMessageCollectionTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testMarshal() {
         UUIDCollectionMessage um0 = UUIDCollectionMessage.of();
         UUIDCollectionMessage um1 = UUIDCollectionMessage.of(randomUUID());
@@ -119,7 +124,8 @@ public class GridMessageCollectionTest extends TestCase {
 
         assertEquals(m.directType(), type);
 
-        GridIoMessageFactory msgFactory = new GridIoMessageFactory(null);
+        IgniteMessageFactory msgFactory =
+                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
 
         Message mx = msgFactory.create(type);
 

@@ -17,13 +17,18 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.MetricsMxBean;
 
 /**
  * Configures Apache Ignite Persistent store.
+ * @deprecated Use {@link DataStorageConfiguration} instead.
  */
+@Deprecated
 public class PersistentStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -59,10 +64,7 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
-    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
-
-    /** Default thread local buffer size. */
-    public static final int DFLT_TLB_SIZE = 128 * 1024;
+    public static final WALMode DFLT_WAL_MODE = WALMode.LOG_ONLY;
 
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
@@ -81,6 +83,9 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
+
+    /** Default write throttling enabled. */
+    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
     /** */
     private String persistenceStorePath;
@@ -121,8 +126,8 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Wal mode. */
     private WALMode walMode = DFLT_WAL_MODE;
 
-    /** WAl thread local buffer size. */
-    private int tlbSize = DFLT_TLB_SIZE;
+    /** WAl buffer size. */
+    private int walBuffSize/* = DFLT_WAL_BUFF_SIZE*/;
 
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
@@ -137,7 +142,9 @@ public class PersistentStoreConfiguration implements Serializable {
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
     /** Factory to provide I/O interface for files */
-    private FileIOFactory fileIOFactory = new RandomAccessFileIOFactory();
+    private FileIOFactory fileIOFactory =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+            new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
@@ -156,6 +163,11 @@ public class PersistentStoreConfiguration implements Serializable {
      *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /**
+     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
+     */
+    private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
@@ -223,7 +235,6 @@ public class PersistentStoreConfiguration implements Serializable {
         return this;
     }
 
-
     /**
      * Gets a number of threads to use for the checkpointing purposes.
      *
@@ -236,7 +247,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets a number of threads to use for the checkpointing purposes.
      *
-     * @param checkpointingThreads Number of checkpointing threads. One thread is used by default.
+     * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
@@ -398,11 +409,31 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
+     * Gets flag indicating whether write throttling is enabled.
+     */
+    public boolean isWriteThrottlingEnabled() {
+        return writeThrottlingEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether write throttling is enabled.
+     *
+     * @param writeThrottlingEnabled Write throttling enabled flag.
+     */
+    public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
+        this.writeThrottlingEnabled = writeThrottlingEnabled;
+
+        return this;
+    }
+
+    /**
      * Gets the length of the time interval for rate-based metrics. This interval defines a window over which
      * hits will be tracked. Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
      *
      * @return Time interval in milliseconds.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public long getRateTimeInterval() {
         return rateTimeInterval;
     }
@@ -412,7 +443,9 @@ public class PersistentStoreConfiguration implements Serializable {
      * hits will be tracked.
      *
      * @param rateTimeInterval Time interval in milliseconds.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration setRateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
@@ -424,7 +457,9 @@ public class PersistentStoreConfiguration implements Serializable {
      * Default value is {@link #DFLT_SUB_INTERVALS}.
      *
      * @return The number of sub-intervals for history tracking.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public int getSubIntervals() {
         return subIntervals;
     }
@@ -433,7 +468,9 @@ public class PersistentStoreConfiguration implements Serializable {
      * Sets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
      *
      * @param subIntervals The number of sub-intervals for history tracking.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration setSubIntervals(int subIntervals) {
         this.subIntervals = subIntervals;
 
@@ -454,26 +491,52 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walMode Wal mode.
      */
     public PersistentStoreConfiguration setWalMode(WALMode walMode) {
+        if (walMode == WALMode.DEFAULT)
+            walMode = WALMode.FSYNC;
+
         this.walMode = walMode;
 
         return this;
     }
 
     /**
-     * Property define size thread local buffer.
-     * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
      *
-     * @return Thread local buffer size.
+     * @return WAL buffer size.
+     * @deprecated Instead {@link #getWalBufferSize()} should be used.
      */
+    @Deprecated
     public int getTlbSize() {
-        return tlbSize <= 0 ? DFLT_TLB_SIZE : tlbSize;
+        return getWalBufferSize();
     }
 
     /**
-     * @param tlbSize Tlb size.
+     * @param tlbSize WAL buffer size.
+     * @deprecated Instead {@link #setWalBufferSize(int walBuffSize)} should be used.
      */
+    @Deprecated
     public PersistentStoreConfiguration setTlbSize(int tlbSize) {
-        this.tlbSize = tlbSize;
+        return setWalBufferSize(tlbSize);
+    }
+
+    /**
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
+     *
+     * @return WAL buffer size.
+     */
+    @Deprecated
+    public int getWalBufferSize() {
+        return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
+    }
+
+    /**
+     * @param walBuffSize WAL buffer size.
+     */
+    @Deprecated
+    public PersistentStoreConfiguration setWalBufferSize(int walBuffSize) {
+        this.walBuffSize = walBuffSize;
 
         return this;
     }
@@ -571,7 +634,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
+     * <b>Note:</b> setting this value with {@link WALMode#FSYNC} may generate file size overhead for WAL segments in case
      * grid is used rarely.
      *
      * @param walAutoArchiveAfterInactivity time in millis to run auto archiving segment (even if incomplete) after last

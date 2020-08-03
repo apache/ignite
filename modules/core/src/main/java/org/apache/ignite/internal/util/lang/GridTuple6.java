@@ -259,7 +259,6 @@ public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Ext
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();
@@ -280,7 +279,6 @@ public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Ext
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         v1 = (V1)in.readObject();
         v2 = (V2)in.readObject();

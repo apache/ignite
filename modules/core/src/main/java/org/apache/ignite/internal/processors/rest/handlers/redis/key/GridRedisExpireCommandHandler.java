@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -55,9 +56,10 @@ public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisExpireCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
-        super(log, hnd);
+    public GridRedisExpireCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */
@@ -95,7 +97,7 @@ public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return ((Boolean)restRes.getResponse() == true ? GridRedisProtocolParser.toInteger("1")
+        return ((Boolean)restRes.getResponse() ? GridRedisProtocolParser.toInteger("1")
             : GridRedisProtocolParser.toInteger("0"));
     }
 }

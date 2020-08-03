@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -192,26 +194,31 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     // Server node join.
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testJoinWithOutConfiguration() throws Exception {
         withOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testStaticCacheConfigurationOnJoin() throws Exception {
         staticCacheConfigurationOnJoinTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testStaticCacheConfigurationInCluster() throws Exception {
         staticCacheConfigurationInClusterTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testStaticCacheConfigurationSameOnBoth() throws Exception {
         staticCacheConfigurationSameOnBothTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testStaticCacheConfigurationDifferentOnBoth() throws Exception {
         staticCacheConfigurationDifferentOnBothTemplate().execute();
     }
@@ -219,29 +226,33 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     // Client node join.
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testJoinClientWithOutConfiguration() throws Exception {
         joinClientWithOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationOnJoin() throws Exception {
         joinClientStaticCacheConfigurationOnJoinTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         joinClientStaticCacheConfigurationInClusterTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationSameOnBoth() throws Exception {
         joinClientStaticCacheConfigurationSameOnBothTemplate().execute();
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5518");
-
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 
@@ -318,7 +329,7 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     }
 
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate() throws Exception {
-        return  staticCacheConfigurationDifferentOnBothTemplate()
+        return staticCacheConfigurationDifferentOnBothTemplate()
             .nodeConfiguration(setClient)
             .afterNodeJoin(
                 new Runnable() {

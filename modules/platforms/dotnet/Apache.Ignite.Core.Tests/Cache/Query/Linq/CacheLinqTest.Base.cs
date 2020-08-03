@@ -45,11 +45,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /** Cache name. */
         private const string PersonOrgCacheName = "person_org";
 
+        /** Cache schema. */
+        private const string PersonOrgCacheSchema = "person_org_Schema";
+
         /** Cache name. */
         private const string PersonSecondCacheName = "person_cache";
 
-        /** Role cache name. */
-        private const string RoleCacheName = "role_cache";
+        /** Cache schema. */
+        private const string PersonSecondCacheSchema = "\"person_cache_SCHEMA\"";
+
+        /** Role cache name: uses invalid characters to test name escaping. */
+        private const string RoleCacheName = "role$ cache.";
 
         /** */
         private const int RoleCount = 3;
@@ -134,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>
@@ -199,7 +205,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     new QueryEntity(typeof (int), typeof (Organization)))
                 {
                     CacheMode = CacheMode.Replicated,
-                    SqlEscapeAll = GetSqlEscapeAll()
+                    SqlEscapeAll = GetSqlEscapeAll(),
+                    SqlSchema = PersonOrgCacheSchema
                 });
         }
 
@@ -231,14 +238,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                         })
                     {
                         CacheMode = CacheMode.Replicated,
-                        SqlEscapeAll = GetSqlEscapeAll()
+                        SqlEscapeAll = GetSqlEscapeAll(),
+                        SqlSchema = PersonSecondCacheSchema
                     });
         }
 
         /// <summary>
         /// Checks that function maps to SQL function properly.
         /// </summary>
-        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query, 
+        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query,
             Func<TR, TR> localResultFunc = null)
         {
             localResultFunc = localResultFunc ?? (x => x);
@@ -263,7 +271,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Checks that function used in Where Clause maps to SQL function properly
         /// </summary>
-        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, 
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query,
             Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
         {
             // Calculate result locally, using real method invocation
@@ -295,7 +303,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var persons = GetPersonCache().AsCacheQueryable();
 
             var res = persons
-                .Select(x => new {Foo = x.Key % 2 == 0 ? even : odd, x.Value})
+                .Select(x => new { x.Key, Foo = x.Key % 2 == 0 ? even : odd, x.Value })
+                .OrderBy(x => x.Key)
                 .ToArray();
 
             if (comparer != null)
@@ -345,6 +354,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             [QuerySqlField] public int AliasTest { get; set; }
 
+            [QuerySqlField] public bool Bool { get; set; }
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("age1", Age);
@@ -353,6 +364,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 writer.WriteObject("Address", Address);
                 writer.WriteTimestamp("Birthday", Birthday);
                 writer.WriteInt("AliasTest", AliasTest);
+                writer.WriteBoolean("Bool", Bool);
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -363,6 +375,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 Address = reader.ReadObject<Address>("Address");
                 Birthday = reader.ReadTimestamp("Birthday");
                 AliasTest = reader.ReadInt("AliasTest");
+                Bool = reader.ReadBoolean("Bool");
             }
         }
 
@@ -485,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 if (Equals(x, y))
                     return 0;
 
-                if (x is double)
+                if (x is double && y is double)
                 {
                     var dx = (double) x;
                     var dy = (double) y;
@@ -499,6 +512,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     return Math.Abs((double) x - (double) y) < relEpsilon ? 0 : 1;
                 }
 
+                // ReSharper disable once PossibleNullReferenceException
                 return ((IComparable) x).CompareTo(y);
             }
         }

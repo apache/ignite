@@ -29,6 +29,7 @@ import org.apache.ignite.internal.client.integration.ClientAbstractSelfTest;
 import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.log4j.Log4JLogger;
+import org.junit.Test;
 
 /**
  * Abstract base class for http routing tests.
@@ -70,7 +71,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
 
         assert router.getSendCount() > sndCnt :
             "Failed to ensure network activity [currCnt=" + router.getSendCount() + ", oldCnt=" + sndCnt + ']';
-        assert router.getReceivedCount() > rcvCnt:
+        assert router.getReceivedCount() > rcvCnt :
             "Failed to ensure network activity [currCnt=" + router.getReceivedCount() + ", oldCnt=" + rcvCnt + ']';
     }
 
@@ -86,8 +87,6 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         router.stop();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -110,7 +109,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
         cfg.setHost(HOST);
         cfg.setPort(ROUTER_PORT);
         cfg.setPortRange(0);
-        cfg.setServers(Collections.singleton(HOST+":"+BINARY_PORT));
+        cfg.setServers(Collections.singleton(HOST + ":" + BINARY_PORT));
         cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
 
         return cfg;
@@ -119,6 +118,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     @Override public void testConnectable() throws Exception {
         GridClient client = client();
 

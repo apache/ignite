@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
-import java.nio.ByteBuffer;
 
 /**
  * Query table descriptor.
@@ -93,6 +92,7 @@ public class QueryTable implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -121,6 +121,7 @@ public class QueryTable implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(QueryTable.class);

@@ -61,7 +61,6 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         assert rcvd.isEmpty() : "Should not cache result in Java for interop task";
 
@@ -138,7 +137,6 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
      *
      * @param e If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void onDone(Exception e) {
         lock.writeLock().lock();
 

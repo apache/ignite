@@ -21,6 +21,10 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -33,9 +37,9 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -44,6 +48,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
@@ -61,12 +66,15 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -306,16 +314,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
         return null;
     }
@@ -334,7 +332,7 @@ public class IgniteMock implements Ignite {
             };
 
             if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration());
+                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {
@@ -469,18 +467,48 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
+        return NoopTracingConfigurationManager.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return null;
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        return null;
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /**

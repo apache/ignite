@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
 
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes the nullable boolean.
+        /// Writes the nullable int.
         /// </summary>
         public static void WriteIntNullable(this IBinaryRawWriter writer, int? value)
         {
@@ -50,6 +51,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 writer.WriteBoolean(true);
                 writer.WriteInt(value.Value);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
+
+        /// <summary>
+        /// Writes the nullable long.
+        /// </summary>
+        public static void WriteLongNullable(this IBinaryRawWriter writer, long? value)
+        {
+            if (value != null)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteLong(value.Value);
             }
             else
                 writer.WriteBoolean(false);
@@ -92,12 +107,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (selector == null)
             {
                 foreach (var val in vals)
-                    writer.Write(val);
+                    writer.WriteObjectDetached(val);
             }
             else
             {
                 foreach (var val in vals)
-                    writer.Write(selector(val));
+                    writer.WriteObjectDetached(selector(val));
             }
         }
 
@@ -142,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 foreach (var val in vals)
                 {
-                    writer.Write(val);
+                    writer.WriteObjectDetached(val);
 
                     size++;
                 }
@@ -151,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 foreach (var val in vals)
                 {
-                    writer.Write(selector(val));
+                    writer.WriteObjectDetached(selector(val));
 
                     size++;
                 }
@@ -181,6 +196,69 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             writer.Stream.WriteInt(pos, cnt);
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
+        {
+            WriteCollectionRaw(writer, collection, (w, x) => x.Write(w));
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection, Action<TWriter, T> action)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
+        {
+            Debug.Assert(writer != null);
+
+            if (collection != null)
+            {
+                writer.WriteInt(collection.Count);
+
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    action(writer, x);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Writes strings.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="strings">Strings.</param>
+        public static int WriteStrings(this BinaryWriter writer, IEnumerable<string> strings)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(strings != null);
+            
+            var pos = writer.Stream.Position;
+
+            var count = 0;
+            writer.WriteInt(count);  // Reserve space.
+
+            foreach (var cacheName in strings)
+            {
+                writer.WriteString(cacheName);
+                count++;
+            }
+
+            writer.Stream.WriteInt(pos, count);
+
+            return count;
         }
     }
 }

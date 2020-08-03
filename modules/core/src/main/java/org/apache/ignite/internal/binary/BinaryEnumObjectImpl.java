@@ -174,11 +174,10 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, true);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
 
         return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
     }
@@ -205,7 +204,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
         return (T)deserialize(null);
     }
@@ -260,7 +258,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (!S.INCLUDE_SENSITIVE)
+        if (!S.includeSensitive())
             return ord >= 0 ? "BinaryEnum" : "null";
 
         // 1. Try deserializing the object.
@@ -458,14 +456,5 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
-    }
-
-    /**
-     * @param cls type to examine.
-     * @return true if typeId equals for passed type and current
-     * binary enum.
-     */
-    public boolean isTypeEquals(final Class<?> cls) {
-        return ctx.descriptorForClass(cls, false).typeId() == typeId();
     }
 }

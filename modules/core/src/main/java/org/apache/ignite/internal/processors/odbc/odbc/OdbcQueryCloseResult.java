@@ -27,7 +27,7 @@ public class OdbcQueryCloseResult {
     /**
      * @param queryId Query ID.
      */
-    public OdbcQueryCloseResult(long queryId){
+    public OdbcQueryCloseResult(long queryId) {
         this.queryId = queryId;
     }
 

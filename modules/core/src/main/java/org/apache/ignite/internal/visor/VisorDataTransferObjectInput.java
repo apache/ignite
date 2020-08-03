@@ -20,12 +20,14 @@ package org.apache.ignite.internal.visor;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectInput;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Wrapper for object input.
+ * @deprecated Use {@link IgniteDataTransferObjectInput} instead. This class may be removed in Ignite 3.0.
  */
 public class VisorDataTransferObjectInput implements ObjectInput {
     /** */

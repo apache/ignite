@@ -68,13 +68,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -87,11 +85,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Partitioned cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
@@ -178,12 +172,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             c.setConnectorConfiguration(clientCfg);
         }
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
@@ -239,13 +227,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        info("Stopping grids.");
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         client = GridClientFactory.start(clientConfiguration());
     }
@@ -262,6 +243,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyProjections() throws Exception {
         final GridClientCompute dflt = client.compute();
 
@@ -297,6 +279,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionRun() throws Exception {
         GridClientCompute dflt = client.compute();
 
@@ -326,6 +309,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyListener() throws Exception {
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);
@@ -438,7 +422,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {
                             Thread.sleep(1000);
@@ -482,7 +465,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * Communication SPI which checks cache flags.
      */
-    @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

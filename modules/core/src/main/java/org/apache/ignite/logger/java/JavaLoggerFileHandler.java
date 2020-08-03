@@ -68,7 +68,6 @@ public final class JavaLoggerFileHandler extends StreamHandler {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public boolean isLoggable(LogRecord record) {
         FileHandler delegate0 = delegate;
 
@@ -136,7 +135,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * @param workDir Work directory.
      * @return Logging directory.
      */
-    private static File logDirectory(String workDir) throws IgniteCheckedException {
+    public static File logDirectory(String workDir) throws IgniteCheckedException {
         return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) :
             U.resolveWorkDirectory(workDir, "log", false);
     }

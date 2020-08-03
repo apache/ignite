@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheBasicApiAbstractTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -27,8 +29,16 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Basic API tests.
  */
 public class GridCacheLocalBasicApiSelfTest extends GridCacheBasicApiAbstractTest {
+    /** */
+    @Before
+    public void beforeGridCacheLocalBasicApiSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();

@@ -308,7 +308,7 @@ public class AboutDialog extends JDialog {
      * @param act Escape button action.
      */
     private void setEscAction(ActionListener act) {
-        assert(act != null);
+        assert (act != null);
 
         getRootPane().registerKeyboardAction(act,
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0x0),
@@ -328,7 +328,6 @@ public class AboutDialog extends JDialog {
     public static void centerShow(final String appName, final String bannerSpec,
         final String ver, final Date release, final String copyright) {
         SwingUtilities.invokeLater(new Runnable() {
-            @SuppressWarnings("NonThreadSafeLazyInitialization")
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {

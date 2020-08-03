@@ -63,6 +63,12 @@ namespace Apache.Ignite.Core.Compute
         ICompute WithNoFailover();
 
         /// <summary>
+        /// Disables caching for the next executed task in the current thread.
+        /// </summary>
+        /// <returns>This compute instance for chaining calls.</returns>
+        ICompute WithNoResultCache();
+
+        /// <summary>
         /// Sets task timeout for the next executed task on this projection in the current thread.
         /// When task starts execution, the timeout is reset, so one timeout is used only once.
         /// </summary>
@@ -77,6 +83,17 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <returns>This compute instance for chaining calls.</returns>
         ICompute WithKeepBinary();
+
+        /// <summary>
+        /// Gets instance of the compute API associated with custom executor. All tasks and closures submitted to
+        /// returned instance will be processed by this executor on both remote and local nodes.
+        /// If an executor with the given name doesn't exist, task will be processed in default ("public") pool.
+        /// <para/>
+        /// Executor should be defined in <see cref="IgniteConfiguration.ExecutorConfiguration"/>.
+        /// </summary>
+        /// <param name="executorName">Executor name.</param>
+        /// <returns>New Compute instance associated with a custom executor.</returns>
+        ICompute WithExecutor(string executorName);
 
         /// <summary>
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
@@ -324,6 +341,41 @@ namespace Apache.Ignite.Core.Compute
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        TRes AffinityCall<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
@@ -515,6 +567,38 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task.</returns>
         Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
+            CancellationToken cancellationToken);
+        
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        void AffinityRun(IEnumerable<string> cacheNames, int partition, IComputeAction action);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action, 
             CancellationToken cancellationToken);
 
         /// <summary>

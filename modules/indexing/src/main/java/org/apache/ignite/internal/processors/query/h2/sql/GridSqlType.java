@@ -49,6 +49,10 @@ public final class GridSqlType {
         ValueBoolean.DISPLAY_SIZE, "BOOLEAN");
 
     /** */
+    public static final GridSqlType STRING = new GridSqlType(Value.STRING, 0, 0,
+        -1, "VARCHAR");
+
+    /** */
     public static final GridSqlType RESULT_SET = new GridSqlType(Value.RESULT_SET, 0,
         Integer.MAX_VALUE, Integer.MAX_VALUE, "");
 

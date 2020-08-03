@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.PersistentStore
 {
+    using System;
+
     /// <summary>
     /// Write Ahead Log mode.
     /// </summary>
+    [Obsolete("Use Apache.Ignite.Core.Data.WalMode")]
     public enum WalMode
     {
         /// <summary>

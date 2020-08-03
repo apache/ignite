@@ -28,17 +28,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
 /**
  * Test large cache counts.
@@ -69,9 +67,6 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     /** */
     private LifecycleBean lbean;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Network timeout. */
     private long netTimeout = 1000;
 
@@ -96,14 +91,9 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
         if (lbean != null)
             c.setLifecycleBeans(lbean);
 
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
         c.setDeploymentMode(CONTINUOUS);
         c.setNetworkTimeout(netTimeout);
@@ -121,6 +111,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadZeroBackupsTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 0;
@@ -148,6 +139,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -226,6 +218,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupThreeNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -258,6 +251,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackThreeNodesWithLifeCycleBean() throws Exception {
         preloadMode = SYNC;
         backups = 1;

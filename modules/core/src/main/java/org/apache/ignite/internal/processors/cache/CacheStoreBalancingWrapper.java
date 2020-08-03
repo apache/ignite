@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Cache store wrapper that ensures that there will be no more that one thread loading value from underlying store.
@@ -47,7 +47,7 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     private CacheStore<K, V> delegate;
 
     /** Pending cache store loads. */
-    private ConcurrentMap<K, LoadFuture> pendingLoads = new ConcurrentHashMap8<>();
+    private ConcurrentMap<K, LoadFuture> pendingLoads = new ConcurrentHashMap<>();
 
     /** Load all threshold. */
     private int loadAllThreshold = DFLT_LOAD_ALL_THRESHOLD;

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -62,6 +63,11 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onheapCacheEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -120,6 +126,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueNotStored() throws Exception {
         cpyOnRead = true;
 
@@ -168,7 +175,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             for (int g = 0; g < gridCount(); g++)
                 assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -176,7 +183,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);
@@ -188,6 +195,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 cache.localEvict(Collections.singleton(key));
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+
+                cache.get(key);
 
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
@@ -239,7 +248,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         for (int g = 0; g < gridCount(); g++) {
             IgniteEx ig = grid(g);
 
-            GridCacheAdapter cache0 = internalCache(ig, null);
+            GridCacheAdapter cache0 = internalCache(ig, DEFAULT_CACHE_NAME);
 
             GridCacheEntryEx e = cache0.peekEx(key);
 
@@ -289,6 +298,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueStored() throws Exception {
         cpyOnRead = false;
 
@@ -333,7 +343,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             for (int g = 0; g < gridCount(); g++)
                 assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -341,7 +351,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);
@@ -353,6 +363,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 cache.localEvict(Collections.singleton(key));
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+
+                cache.get(key);
 
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
@@ -369,7 +381,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         for (int g = 0; g < gridCount(); g++) {
             IgniteEx ig = grid(g);
 
-            GridCacheAdapter cache0 = internalCache(ig, null);
+            GridCacheAdapter cache0 = internalCache(ig, DEFAULT_CACHE_NAME);
 
             GridCacheEntryEx e = cache0.peekEx(key);
 
@@ -495,7 +507,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "TestValue [val=" + val + ']';
         }
     }

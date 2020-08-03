@@ -44,7 +44,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
      * @param queryId Query ID.
      * @param meta Query metadata.
      */
-    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
+    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta) {
         super(QRY_META);
 
         this.meta = meta;
@@ -58,8 +58,11 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         if (F.isEmpty(meta))
             writer.writeInt(0);
@@ -67,13 +70,16 @@ public class JdbcQueryMetadataResult extends JdbcResult {
             writer.writeInt(meta.size());
 
             for (JdbcColumnMeta m : meta)
-                m.writeBinary(writer);
+                m.writeBinary(writer, protoCtx);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         int size = reader.readInt();
 
@@ -85,7 +91,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
             for (int i = 0; i < size; ++i) {
                 JdbcColumnMeta m = new JdbcColumnMeta();
 
-                m.readBinary(reader);
+                m.readBinary(reader, protoCtx);
 
                 meta.add(m);
             }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Memory event storage load test.
@@ -34,6 +35,7 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
     /**
      * @throws Exception If test failed
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

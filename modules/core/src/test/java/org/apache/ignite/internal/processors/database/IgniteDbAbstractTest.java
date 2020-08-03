@@ -22,14 +22,13 @@ import java.util.Arrays;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -41,9 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @return Node count.
      */
@@ -62,7 +58,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         if (client)
             cfg.setClientMode(true);
@@ -71,12 +67,18 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         if (isLargePage())
             dbCfg.setPageSize(16 * 1024);
-        else
-            dbCfg.setPageSize(1024);
+
+        dbCfg.setWalMode(WALMode.LOG_ONLY);
+
+        dbCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
 
         configure(dbCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -128,11 +130,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (!client)
             cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setMarshaller(null);
 
         configure(cfg);
@@ -148,9 +145,9 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mCfg MemoryConfiguration.
+     * @param mCfg DataStorageConfiguration.
      */
-    protected void configure(MemoryConfiguration mCfg){
+    protected void configure(DataStorageConfiguration mCfg) {
         // No-op.
     }
 
@@ -163,13 +160,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-//        long seed = System.currentTimeMillis();
-//
-//        info("Seed: " + seed + "L");
-//
-//        BPlusTree.rnd = new Random(seed);
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 
@@ -183,7 +174,15 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         assert gridCount() > 0;
 
-        grid(0).active(true);
+        final IgniteClusterEx cluster = grid(0).cluster();
+
+        if (log.isInfoEnabled())
+            log.info("BTL before activation: " + cluster.currentBaselineTopology());
+
+        cluster.active(true);
+
+        if (log.isInfoEnabled())
+            log.info("BTL after activation: " + cluster.currentBaselineTopology());
 
         awaitPartitionMapExchange();
     }
@@ -194,7 +193,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**

@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -27,12 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.UUID;
+import org.junit.Test;
 
 /**
  * Contains tests for binary object fields.
@@ -105,6 +105,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         check("fByte");
     }
@@ -114,6 +115,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArray() throws Exception {
         check("fByteArr");
     }
@@ -123,6 +125,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         check("fBool");
     }
@@ -132,6 +135,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBooleanArray() throws Exception {
         check("fBoolArr");
     }
@@ -141,6 +145,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         check("fShort");
     }
@@ -150,6 +155,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShortArray() throws Exception {
         check("fShortArr");
     }
@@ -159,6 +165,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testChar() throws Exception {
         check("fChar");
     }
@@ -168,6 +175,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCharArray() throws Exception {
         check("fCharArr");
     }
@@ -177,6 +185,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInt() throws Exception {
         check("fInt");
     }
@@ -186,6 +195,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIntArray() throws Exception {
         check("fIntArr");
     }
@@ -195,6 +205,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         check("fLong");
     }
@@ -204,6 +215,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLongArray() throws Exception {
         check("fLongArr");
     }
@@ -213,6 +225,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         check("fFloat");
     }
@@ -222,6 +235,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatArray() throws Exception {
         check("fFloatArr");
     }
@@ -231,6 +245,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         check("fDouble");
     }
@@ -240,6 +255,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleArray() throws Exception {
         check("fDoubleArr");
     }
@@ -249,6 +265,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         check("fString");
     }
@@ -258,6 +275,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStringArray() throws Exception {
         check("fStringArr");
     }
@@ -267,6 +285,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDate() throws Exception {
         check("fDate");
     }
@@ -276,6 +295,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDateArray() throws Exception {
         check("fDateArr");
     }
@@ -285,6 +305,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         check("fTimestamp");
     }
@@ -294,6 +315,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampArray() throws Exception {
         check("fTimestampArr");
     }
@@ -303,6 +325,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUuid() throws Exception {
         check("fUuid");
     }
@@ -312,6 +335,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidArray() throws Exception {
         check("fUuidArr");
     }
@@ -321,6 +345,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimal() throws Exception {
         check("fDecimal");
     }
@@ -330,6 +355,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalArray() throws Exception {
         check("fDecimalArr");
     }
@@ -339,6 +365,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testObject() throws Exception {
         check("fObj");
     }
@@ -348,6 +375,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectArray() throws Exception {
         check("fObjArr");
     }
@@ -357,6 +385,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNull() throws Exception {
         check("fNull");
     }
@@ -366,6 +395,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMissing() throws Exception {
         String fieldName = "fMissing";
 
@@ -540,7 +570,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Outer test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestOuterObject {
         /** Inner object. */
         public TestObject fInner;
@@ -565,38 +594,59 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Test object class, c
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestObject {
         /** Primitive fields. */
         public byte fByte;
+
         public boolean fBool;
+
         public short fShort;
+
         public char fChar;
+
         public int fInt;
+
         public long fLong;
+
         public float fFloat;
+
         public double fDouble;
 
         public byte[] fByteArr;
+
         public boolean[] fBoolArr;
+
         public short[] fShortArr;
+
         public char[] fCharArr;
+
         public int[] fIntArr;
+
         public long[] fLongArr;
+
         public float[] fFloatArr;
+
         public double[] fDoubleArr;
 
         /** Special fields. */
         public String fString;
+
         public Date fDate;
+
         public Timestamp fTimestamp;
+
         public UUID fUuid;
+
         public BigDecimal fDecimal;
 
         public String[] fStringArr;
+
         public Date[] fDateArr;
+
         public Timestamp[] fTimestampArr;
+
         public UUID[] fUuidArr;
+
         public BigDecimal[] fDecimalArr;
 
         /** Nested object. */
@@ -659,7 +709,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Inner test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestInnerObject {
         /** Value. */
         private int val;

@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.concurrent.atomic.LongAdder;
 import sun.misc.Unsafe;
 
 
@@ -264,7 +265,7 @@ public class ConcurrentLinkedDeque8<E>
     private transient volatile Node<E> tail;
 
     /** */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     private static final Node<Object> PREV_TERMINATOR, NEXT_TERMINATOR;
 
@@ -1142,17 +1143,13 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E getFirst() {
+    /** {@inheritDoc} */
+    @Override public E getFirst() {
         return screenNullResult(peekFirst());
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E getLast() {
+    /** {@inheritDoc} */
+    @Override public E getLast() {
         return screenNullResult(peekLast());
     }
 
@@ -1178,17 +1175,13 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E removeFirst() {
+    /** {@inheritDoc} */
+    @Override public E removeFirst() {
         return screenNullResult(pollFirst());
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E removeLast() {
+    /**{@inheritDoc} */
+    @Override public E removeLast() {
         return screenNullResult(pollLast());
     }
 
@@ -1720,8 +1713,7 @@ public class ConcurrentLinkedDeque8<E>
             try {
                 return AccessController.doPrivileged
                     (new PrivilegedExceptionAction<Unsafe>() {
-                        @Override
-                        public Unsafe run() throws Exception {
+                        @Override public Unsafe run() throws Exception {
                             Field f = Unsafe.class.getDeclaredField("theUnsafe");
 
                             f.setAccessible(true);

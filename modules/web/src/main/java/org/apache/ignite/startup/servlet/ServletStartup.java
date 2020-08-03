@@ -124,7 +124,6 @@ public class ServletStartup extends HttpServlet {
     private Collection<String> igniteInstanceNames = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public void init() throws ServletException {
         // Avoid multiple servlet instances. Ignite should be loaded once.
         if (loaded)

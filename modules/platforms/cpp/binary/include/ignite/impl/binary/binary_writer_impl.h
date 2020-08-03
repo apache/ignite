@@ -31,7 +31,6 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
-#include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_object_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
@@ -41,10 +40,18 @@
 
 namespace ignite
 {
+    namespace binary
+    {
+        class BinaryWriter;
+    }
+
     namespace impl
     {
         namespace binary
         {
+            // Forward declaration.
+            class BinaryTypeManager;
+
             /**
              * Internal implementation of binary reader.
              */
@@ -461,7 +468,7 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* val, const int32_t len);
+                void WriteString(const char* val, int32_t len);
 
                 /**
                  * Write string.
@@ -470,12 +477,32 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* fieldName, const char* val, const int32_t len);
+                void WriteString(const char* fieldName, const char* val, int32_t len);
+
+                /**
+                 * Write string.
+                 *
+                 * @param val String.
+                 */
+                void WriteString(const std::string& val)
+                {
+                    WriteString(val.c_str(), static_cast<int32_t>(val.size()));
+                }
+
+                /**
+                 * Write string.
+                 *
+                 * @param fieldName Field name.
+                 * @param val String.
+                 */
+                void WriteString(const char* fieldName, const std::string& val)
+                {
+                    WriteString(fieldName, val.c_str(), static_cast<int32_t>(val.size()));
+                }
 
                 /**
                  * Start string array write.
                  *
-                 * @param typ Collection type.
                  * @return Session ID.
                  */
                 int32_t WriteStringArray();
@@ -498,6 +525,21 @@ namespace ignite
                 void WriteStringElement(int32_t id, const char* val, int32_t len);
 
                 /**
+                 * Write binary enum entry.
+                 *
+                 * @param entry Binary enum entry.
+                 */
+                void WriteBinaryEnum(ignite::binary::BinaryEnumEntry entry);
+
+                /**
+                 * Write binary enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @param entry Binary enum entry.
+                 */
+                void WriteBinaryEnum(const char* fieldName, ignite::binary::BinaryEnumEntry entry);
+
+                /**
                  * Write NULL value.
                  */
                 void WriteNull();
@@ -517,7 +559,6 @@ namespace ignite
                 /**
                  * Start array write.
                  *
-                 * @param typ Collection type.
                  * @return Session ID.
                  */
                 int32_t WriteArray();
@@ -605,7 +646,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename T>
-                void WriteElement(int32_t id, T val)
+                void WriteElement(int32_t id, const T& val)
                 {
                     CheckSession(id);
                                         
@@ -622,7 +663,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename K, typename V>
-                void WriteElement(int32_t id, K key, V val)
+                void WriteElement(int32_t id, const K& key, const V& val)
                 {
                     CheckSession(id);
 
@@ -645,7 +686,7 @@ namespace ignite
                  * @param val Object.
                  */
                 template<typename T>
-                void WriteObject(T val)
+                void WriteObject(const T& val)
                 {
                     CheckRawMode(true);
 
@@ -666,6 +707,55 @@ namespace ignite
                     WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
 
                     WriteTopObject(val);
+                }
+
+                /**
+                 * Write enum entry.
+                 *
+                 * @param val Binary enum entry.
+                 *
+                 * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+                 */
+                template<typename T>
+                void WriteEnum(T val)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (TypeMeta::IsNull(val))
+                    {
+                        WriteNull();
+
+                        return;
+                    }
+
+                    ignite::binary::BinaryEnumEntry entry(TypeMeta::GetTypeId(), TypeMeta::GetOrdinal(val));
+
+                    WriteBinaryEnum(entry);
+                }
+
+                /**
+                 * Write enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Binary enum entry.
+                 *
+                 * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+                 */
+                template<typename T>
+                void WriteEnum(const char* fieldName, T val)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (TypeMeta::IsNull(val))
+                    {
+                        WriteNull(fieldName);
+
+                        return;
+                    }
+
+                    ignite::binary::BinaryEnumEntry entry(TypeMeta::GetTypeId(), TypeMeta::GetOrdinal(val));
+
+                    WriteBinaryEnum(fieldName, entry);
                 }
 
                 /**
@@ -695,7 +785,7 @@ namespace ignite
                  *
                  * @param obj Object to write.
                  */
-                template<typename T>
+                template<typename W, typename T>
                 void WriteTopObject0(const T& obj)
                 {
                     typedef ignite::binary::BinaryType<T> BType;
@@ -716,7 +806,7 @@ namespace ignite
                         int32_t pos = stream->Position();
 
                         BinaryWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get(), pos);
-                        ignite::binary::BinaryWriter writer(&writerImpl);
+                        W writer(&writerImpl);
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
@@ -999,43 +1089,56 @@ namespace ignite
             };
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int8_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int8_t>(const int8_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const bool& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, bool>(const bool& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int16_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int16_t>(const int16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const uint16_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, uint16_t>(const uint16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int32_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int32_t>(const int32_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int64_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int64_t>(const int64_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const float& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, float>(const float& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const double& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, double>(const double& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Guid& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Guid>(const Guid& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Date& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Date>(const Date& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Timestamp& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Timestamp>(const Timestamp& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Time& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Time>(const Time& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const std::string& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::string>(const std::string& obj);
         }
     }
 }

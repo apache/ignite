@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -31,6 +32,7 @@ public class IgniteCacheGroupsSqlSegmentedIndexSelfTest extends IgniteSqlSegment
     /**
      * @throws Exception If failed.
      */
+    @Test
     @Override public void testSegmentedPartitionedWithReplicated() throws Exception {
         log.info("Test is ignored");
     }

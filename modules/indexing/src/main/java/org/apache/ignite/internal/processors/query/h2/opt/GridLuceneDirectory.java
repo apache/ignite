@@ -75,7 +75,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     }
 
     /** {@inheritDoc} */
-    @Override public void renameFile(String source, String dest) throws IOException {
+    @Override public void rename(String source, String dest) throws IOException {
         ensureOpen();
 
         GridLuceneFile file = fileMap.get(source);
@@ -86,6 +86,16 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         fileMap.put(dest, file);
 
         fileMap.remove(source);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void syncMetaData() throws IOException {
+        // Noop. No meta data sync needed as all data is in-memory.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexOutput createTempOutput(String prefix, String suffix, IOContext ctx) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -133,7 +143,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     @Override public IndexOutput createOutput(final String name, final IOContext context) throws IOException {
         ensureOpen();
 
-        GridLuceneFile file = newRAMFile(name);
+        GridLuceneFile file = new GridLuceneFile(this);
 
         // Lock for using in stream. Will be unlocked on stream closing.
         file.lockRef();
@@ -152,16 +162,6 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     /** {@inheritDoc} */
     @Override public void sync(final Collection<String> names) throws IOException {
         // Noop. No fsync needed as all data is in-memory.
-    }
-
-    /**
-     * Returns a new {@link GridLuceneFile} for storing data. This method can be
-     * overridden to return different {@link GridLuceneFile} impls, that e.g. override.
-     *
-     * @return New ram file.
-     */
-    protected GridLuceneFile newRAMFile(String filename) {
-        return new GridLuceneFile(this, filename);
     }
 
     /** {@inheritDoc} */
@@ -198,7 +198,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
             }
             catch (IOException e) {
                 if (errs == null)
-                    errs = new IgniteException("Failed to close index directory."+
+                    errs = new IgniteException("Failed to close index directory." +
                     " Some index readers weren't closed properly, that may leads memory leak.");
 
                 errs.addSuppressed(e);

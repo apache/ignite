@@ -22,6 +22,8 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -30,6 +32,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * parameter.
  */
 public class IgniteCacheTxStoreSessionWriteBehindCoalescingTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheTxStoreSessionWriteBehindCoalescingTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
@@ -41,7 +49,9 @@ public class IgniteCacheTxStoreSessionWriteBehindCoalescingTest extends IgniteCa
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteBehindCoalescing(false);

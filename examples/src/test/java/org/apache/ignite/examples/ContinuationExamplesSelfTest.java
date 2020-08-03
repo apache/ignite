@@ -19,6 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.computegrid.ComputeFibonacciContinuationExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Continuation example self test.
@@ -27,6 +28,7 @@ public class ContinuationExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuationExample() throws Exception {
         ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
     }

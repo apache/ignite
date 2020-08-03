@@ -126,7 +126,11 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Guid = Guid.NewGuid(),
                 Guids = new[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()},
                 String = "hello world",
-                Strings = new[] {"hello", "world"}
+                Strings = new[] {"hello", "world"},
+                IntPtr = new IntPtr(12345),
+                IntPtrs = new[] {IntPtr.Zero, new IntPtr(1), new IntPtr(-1), new IntPtr(long.MaxValue)},
+                UIntPtr = new UIntPtr(1234567),
+                UIntPtrs = new[] {UIntPtr.Zero, new UIntPtr(1), new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)}
             };
 
             var vals = new[] {new Primitives(), val1};
@@ -246,6 +250,18 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Assert.AreEqual(val.Strings, res.Strings);
                 Assert.AreEqual(val.Strings, bin.GetField<string[]>("strings"));
 
+                Assert.AreEqual(val.IntPtr, res.IntPtr);
+                Assert.AreEqual(val.IntPtr, bin.GetField<IntPtr>("intptr"));
+
+                Assert.AreEqual(val.IntPtrs, res.IntPtrs);
+                Assert.AreEqual(val.IntPtrs, bin.GetField<IntPtr[]>("intptrs"));
+
+                Assert.AreEqual(val.UIntPtr, res.UIntPtr);
+                Assert.AreEqual(val.UIntPtr, bin.GetField<UIntPtr>("uintptr"));
+
+                Assert.AreEqual(val.UIntPtrs, res.UIntPtrs);
+                Assert.AreEqual(val.UIntPtrs, bin.GetField<UIntPtr[]>("uintptrs"));
+
                 VerifyFieldTypes(bin);
             }
         }
@@ -306,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                     DateTime.Now, DateTime.MinValue, DateTime.MaxValue, DateTime.UtcNow, null
                 },
                 Guid = Guid.NewGuid(),
-                Guids = new Guid?[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null},
+                Guids = new Guid?[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null}
             };
 
             var vals = new[] {new PrimitivesNullable(), val1};
@@ -476,6 +492,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.AreEqual("Object", binType.GetFieldTypeName("datetime"));
             Assert.AreEqual("Object", binType.GetFieldTypeName("datetimes"));
+
+            Assert.AreEqual("Object", binType.GetFieldTypeName("intptr"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("intptrs"));
+
+            Assert.AreEqual("Object", binType.GetFieldTypeName("uintptr"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("uintptrs"));
         }
 
         /// <summary>
@@ -524,6 +546,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             public DateTime[] DateTimes { get; set; }
             public string String { get; set; }
             public string[] Strings { get; set; }
+            public IntPtr IntPtr { get; set; }
+            public IntPtr[] IntPtrs { get; set; }
+            public UIntPtr UIntPtr { get; set; }
+            public UIntPtr[] UIntPtrs { get; set; }
 
             public Primitives()
             {
@@ -581,6 +607,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
                 String = info.GetString("string");
                 Strings = (string[]) info.GetValue("strings", typeof(string[]));
+
+                IntPtr = (IntPtr) info.GetInt64("intptr");
+                IntPtrs = (IntPtr[]) info.GetValue("intptrs", typeof(IntPtr[]));
+
+                UIntPtr = (UIntPtr) info.GetInt64("uintptr");
+                UIntPtrs = (UIntPtr[]) info.GetValue("uintptrs", typeof(UIntPtr[]));
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -619,6 +651,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 info.AddValue("datetimes", DateTimes, typeof(DateTime[]));
                 info.AddValue("string", String, typeof(string));
                 info.AddValue("strings", Strings, typeof(string[]));
+                info.AddValue("intptr", IntPtr);
+                info.AddValue("intptrs", IntPtrs, typeof(IntPtr[]));
+                info.AddValue("uintptr", UIntPtr);
+                info.AddValue("uintptrs", UIntPtrs, typeof(UIntPtr[]));
             }
         }
 

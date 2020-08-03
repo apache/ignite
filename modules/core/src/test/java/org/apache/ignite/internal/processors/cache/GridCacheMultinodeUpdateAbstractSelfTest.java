@@ -26,9 +26,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  * Multinode update test.
@@ -74,6 +75,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -86,8 +88,12 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
         Integer expVal = 0;
 
-        for (int i = 0; i < iterations(); i++) {
-            log.info("Iteration: " + i);
+        final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
+
+        int iter = 0;
+
+        while (System.currentTimeMillis() < endTime) {
+            log.info("Iteration: " + iter++);
 
             final AtomicInteger gridIdx = new AtomicInteger();
 
@@ -97,8 +103,20 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
                     final IgniteCache<Integer, Integer> cache = grid(idx).cache(DEFAULT_CACHE_NAME);
 
-                    for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++)
-                        cache.invoke(key, new IncProcessor());
+                        for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
+                            boolean updated = false;
+
+                            while (!updated) {
+                                try {
+                                    cache.invoke(key, new IncProcessor());
+
+                                    updated = true;
+                                }
+                                catch (Exception e) {
+                                    assertMvccWriteConflict(e);
+                                }
+                            }
+                        }
 
                     return null;
                 }
@@ -114,13 +132,6 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }
         }
-    }
-
-    /**
-     * @return Number of iterations.
-     */
-    protected int iterations() {
-        return atomicityMode() == ATOMIC ? 30 : 15;
     }
 
     /**

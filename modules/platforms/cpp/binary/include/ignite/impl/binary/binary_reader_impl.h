@@ -30,13 +30,20 @@
 #include "ignite/common/utils.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
+#include "ignite/binary/binary_enum_entry.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
 #include "ignite/time.h"
+#include "ignite/binary/binary_enum.h"
 
 namespace ignite
 {
+    namespace binary
+    {
+        class BinaryReader;
+    }
+
     namespace impl
     {
         namespace binary
@@ -60,6 +67,7 @@ namespace ignite
                  * @param rawOff Raw data offset.
                  * @param footerBegin Footer beginning absolute position in stream.
                  * @param footerEnd Footer ending absolute position in stream.
+                 * @param schemaType Schema Type.
                  */
                 BinaryReaderImpl(interop::InteropInputStream* stream, BinaryIdResolver* idRslvr,
                     int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
@@ -554,16 +562,38 @@ namespace ignite
                 int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
 
                 /**
+                 * Read enum entry.
+                 *
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnum();
+
+                /**
+                 * Read enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnum(const char* fieldName);
+
+                /**
                  * Read string.
                  *
                  * @param len Expected length of string.
-                 * @param res Array to store data to (should be able to acocmodate null-terminator).
+                 * @param res Array to store data to (should be able to accomodate null-terminator).
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
                  *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadString(char* res, const int32_t len);
+
+                /**
+                 * Read string.
+                 *
+                 * @param res String to store result.
+                 */
+                void ReadString(std::string& res);
 
                 /**
                  * Read string.
@@ -850,6 +880,33 @@ namespace ignite
                 }
 
                 /**
+                 * Read enum value.
+                 *
+                 * @return Enum value.
+                 */
+                template<typename T>
+                T ReadEnum()
+                {
+                    ignite::binary::BinaryEnumEntry entry = ReadBinaryEnum();
+
+                    return DeserializeEnumEntry<T>(entry);
+                }
+
+                /**
+                 * Read enum value.
+                 *
+                 * @param fieldName Field name.
+                 * @return Enum value.
+                 */
+                template<typename T>
+                T ReadEnum(const char* fieldName)
+                {
+                    ignite::binary::BinaryEnumEntry entry = ReadBinaryEnum(fieldName);
+
+                    return DeserializeEnumEntry<T>(entry);
+                }
+
+                /**
                  * Try read object.
                  * Reads value, stores it to res and returns true if the value is
                  * not null. Otherwise just returns false.
@@ -890,9 +947,20 @@ namespace ignite
                 /**
                  * Read object.
                  *
-                 * @return Read object.
+                 * @param res Read object.
                  */
                 template<typename T>
+                void ReadTopObject(T& res)
+                {
+                    return ignite::binary::ReadHelper<T>::Read(*this, res);
+                }
+
+                /**
+                 * Read object.
+                 *
+                 * @return Read object.
+                 */
+                template<typename R, typename T>
                 void ReadTopObject0(T& res)
                 {
                     int32_t pos = stream->Position();
@@ -921,7 +989,7 @@ namespace ignite
 
                             stream->Position(curPos + portOff); // Position stream right on the object.
 
-                            ReadTopObject0<T>(res);
+                            ReadTopObject0<R, T>(res);
 
                             stream->Position(curPos + portLen + 4); // Position stream after binary.
 
@@ -996,7 +1064,7 @@ namespace ignite
                             BinaryReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
                                                         typeId, hashCode, len, rawOff,
                                                         footerBegin, footerEnd, schemaType);
-                            ignite::binary::BinaryReader reader(&readerImpl);
+                            R reader(&readerImpl);
 
                             BType::Read(reader, res);
 
@@ -1082,6 +1150,36 @@ namespace ignite
                 BinaryOffsetType::Type schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryReaderImpl)
+
+                /**
+                 * Deserialize EnumEntry into user type.
+                 *
+                 * @param entry Entry to deserialize.
+                 * @return User type value.
+                 */
+                template<typename T>
+                T DeserializeEnumEntry(ignite::binary::BinaryEnumEntry entry)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (entry.IsNull())
+                    {
+                        T res;
+
+                        TypeMeta::GetNull(res);
+
+                        return res;
+                    }
+
+                    if (entry.GetTypeId() != TypeMeta::GetTypeId())
+                    {
+                        IGNITE_ERROR_FORMATTED_2(ignite::IgniteError::IGNITE_ERR_BINARY,
+                            "Unexpected type ID during deserialization of the enum: ",
+                            "expected", TypeMeta::GetTypeId(), "actual", entry.GetTypeId());
+                    }
+
+                    return TypeMeta::FromOrdinal(entry.GetOrdinal());
+                }
                     
                 /**
                  * Internal routine to read Guid array.
@@ -1386,6 +1484,13 @@ namespace ignite
                 void ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr) const;
 
                 /**
+                 * Read enum entry.
+                 *
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnumInternal();
+
+                /**
                  * Internal string read routine.
                  *
                  * @param res Resulting array.
@@ -1419,43 +1524,56 @@ namespace ignite
             };
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int8_t>(int8_t& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int8_t>(int8_t& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<bool>(bool& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, bool>(bool& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int16_t>(int16_t& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int16_t>(int16_t& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<uint16_t>(uint16_t& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, uint16_t>(uint16_t& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int32_t>(int32_t& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int32_t>(int32_t& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int64_t>(int64_t& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int64_t>(int64_t& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<float>(float& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, float>(float& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<double>(double& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, double>(double& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Guid>(Guid& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Guid>(Guid& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Date>(Date& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Date>(Date& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Timestamp>(Timestamp& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Timestamp>(Timestamp& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Time>(Time& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Time>(Time& res);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res);
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, std::string>(std::string& res);
 
             template<>
             inline int8_t BinaryReaderImpl::GetNull() const

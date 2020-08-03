@@ -44,10 +44,8 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -91,20 +89,11 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     /** */
     private static final int PRODUCT_CNT = 100;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         X.println("Ignite instance name: " + igniteInstanceName);
 
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         int i = 0;
 
@@ -208,6 +197,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
         int qryThreadNum = 5;

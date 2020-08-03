@@ -23,21 +23,18 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -83,7 +80,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
      * @param ig Node.
      * @return Node caches.
      */
-    protected static Map<String, GridCacheAdapter> caches(IgniteEx ig){
+    protected static Map<String, GridCacheAdapter> caches(IgniteEx ig) {
         return field(ig.context().cache(), CACHES);
     }
 
@@ -212,7 +209,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -221,7 +218,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -293,21 +290,22 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             }
         };
 
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         return super.getConfiguration(name)
-            .setDiscoverySpi(
-                new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteConfiguration persistentCfg(IgniteConfiguration cfg) throws Exception {
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -390,8 +388,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             for (IgniteConfiguration cfg : cfgs) {
                 strPlanBuilder.append("node: ")
                     .append(cfg.getIgniteInstanceName())
-                    .append(" activeOnStart - ")
-                    .append(cfg.isActiveOnStart())
+                    .append(" stateOnStart - ")
+                    .append(cfg.getClusterStateOnStart())
                     .append("\n");
 
                 CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
@@ -417,8 +415,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             strPlanBuilder.append("Join node:\n")
                 .append(cfg.getIgniteInstanceName())
                 .append(cfg.isClientMode() != null && cfg.isClientMode() ? " (client)" : "")
-                .append(" activeOnStart - ")
-                .append(cfg.isActiveOnStart())
+                .append(" stateOnStart - ")
+                .append(cfg.getClusterStateOnStart())
                 .append("\n");
 
             CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
@@ -512,7 +510,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param caches Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder dynamicCacheStart(IgniteCallable<List<CacheConfiguration>> caches){
+        public JoinNodeTestPlanBuilder dynamicCacheStart(IgniteCallable<List<CacheConfiguration>> caches) {
             strPlanBuilder.append("Dynamic caches start")
                 .append("\n");
 
@@ -525,7 +523,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param r Cache start callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder afterDynamicCacheStarted(Runnable r){
+        public JoinNodeTestPlanBuilder afterDynamicCacheStarted(Runnable r) {
             strPlanBuilder.append("Check after dynamic caches start")
                 .append("\n");
 
@@ -538,7 +536,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param caches Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder dynamicCacheStop(IgniteCallable<List<String>> caches){
+        public JoinNodeTestPlanBuilder dynamicCacheStop(IgniteCallable<List<String>> caches) {
             strPlanBuilder.append("Dynamic caches stop")
                 .append("\n");
 
@@ -551,7 +549,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param r Callback.
          * @return Test builder.
          */
-        public JoinNodeTestPlanBuilder afterDynamicCacheStopped(Runnable r){
+        public JoinNodeTestPlanBuilder afterDynamicCacheStopped(Runnable r) {
             strPlanBuilder.append("Check after dynamic caches stop")
                 .append("\n");
 
@@ -602,6 +600,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 startGrid(nodeCfg);
 
                 nodes.add(nodeCfg.getIgniteInstanceName());
+
+                if (state)
+                    awaitPartitionMapExchange();
 
                 System.out.println(">>> Check after new node join in cluster");
 
@@ -688,23 +689,23 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          * @param ig Node.
          * @return Next minor version.
          */
-        private AffinityTopologyVersion nextMinorVersion(IgniteEx ig){
+        private AffinityTopologyVersion nextMinorVersion(IgniteEx ig) {
             AffinityTopologyVersion cur = ig.context().discovery().topologyVersionEx();
 
-           return cur.nextMinorVersion();
+            return cur.nextMinorVersion();
         }
 
         /**
          * @param ver Version.
          */
-        private void awaitTopologyVersion(final AffinityTopologyVersion ver){
+        private void awaitTopologyVersion(final AffinityTopologyVersion ver) {
             onAllNode(new CI1<IgniteEx>() {
                 @Override public void apply(IgniteEx ig) {
                     while (true) {
                         AffinityTopologyVersion locTopVer = ig.context().cache().context()
                             .exchange().readyAffinityVersion();
 
-                        if (locTopVer.compareTo(ver) < 0){
+                        if (locTopVer.compareTo(ver) < 0) {
                             System.out.println("Top ready " + locTopVer + " on " + ig.localNode().id());
 
                             try {
@@ -776,7 +777,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(0, caches.size());
+                    for (GridCacheAdapter cacheAdapter : caches.values())
+                        Assert.assertTrue("Cache should be in recovery mode: " + cacheAdapter.context(),
+                            cacheAdapter.context().isRecoveryMode());
                 }
             });
         }

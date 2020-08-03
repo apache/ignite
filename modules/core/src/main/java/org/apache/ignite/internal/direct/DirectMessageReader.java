@@ -27,6 +27,9 @@ import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,7 +44,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageReader implements MessageReader {
     /** State. */
+    @GridToStringInclude
     private final DirectMessageState<StateItem> state;
+
+    /** Protocol version. */
+    @GridToStringInclude
+    private final byte protoVer;
 
     /** Whether last field was fully read. */
     private boolean lastRead;
@@ -56,6 +64,8 @@ public class DirectMessageReader implements MessageReader {
                 return new StateItem(msgFactory, protoVer);
             }
         });
+
+        this.protoVer = protoVer;
     }
 
     /** {@inheritDoc} */
@@ -305,6 +315,21 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion(String name) {
+        if (protoVer >= 3) {
+            DirectByteBufferStream stream = state.item().stream;
+
+            AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
+
+            lastRead = stream.lastFinished();
+
+            return val;
+        }
+
+        return readMessage(name);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T extends Message> T readMessage(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
@@ -380,7 +405,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(DirectMessageReader.class, this);
     }
 
@@ -409,6 +434,11 @@ public class DirectMessageReader implements MessageReader {
 
                     break;
 
+                case 3:
+                    stream = new DirectByteBufferStreamImplV3(msgFactory);
+
+                    break;
+
                 default:
                     throw new IllegalStateException("Invalid protocol version: " + protoVer);
             }
@@ -420,7 +450,7 @@ public class DirectMessageReader implements MessageReader {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(StateItem.class, this);
         }
     }

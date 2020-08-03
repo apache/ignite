@@ -155,7 +155,6 @@ public interface GridOffHeapPartitionedMap {
      */
     public long size();
 
-
     /**
      * Gets number of elements in the map.
      *

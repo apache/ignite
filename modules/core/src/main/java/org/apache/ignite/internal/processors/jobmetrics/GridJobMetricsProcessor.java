@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL;
 
 /**
  * Processes job metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
     private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
@@ -179,7 +183,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
 
         InternalMetrics m = this.metrics;
 
-        m.snapshotsQueues[ThreadLocalRandom8.current().nextInt(m.snapshotsQueues.length)].add(metrics);
+        m.snapshotsQueues[ThreadLocalRandom.current().nextInt(m.snapshotsQueues.length)].add(metrics);
 
         // Handle current and total idle times.
         long idleTimer0 = idleTimer;
@@ -238,6 +242,9 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private int totalRejectedJobs;
 
+        /** */
+        private long totalExecTime;
+
         /**
          * @param size Size (should be power of 2).
          */
@@ -258,6 +265,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
             totalFinishedJobs += s.getFinishedJobs();
             totalCancelledJobs += s.getCancelJobs();
             totalRejectedJobs += s.getRejectJobs();
+            totalExecTime += s.getExecutionTime();
         }
 
         /**
@@ -277,7 +285,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
                 rdc.collect(s);
             }
 
-            rdc.collectTotals(totalFinishedJobs, totalCancelledJobs, totalRejectedJobs);
+            rdc.collectTotals(totalFinishedJobs, totalCancelledJobs, totalRejectedJobs, totalExecTime);
         }
     }
 
@@ -371,11 +379,12 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
          * @param totalCancelledJobs Cancelled jobs.
          * @param totalRejectedJobs Rejected jobs.
          */
-        void collectTotals(int totalFinishedJobs, int totalCancelledJobs, int totalRejectedJobs) {
+        void collectTotals(int totalFinishedJobs, int totalCancelledJobs, int totalRejectedJobs, long totalExecTime) {
             // Totals.
             m.setTotalExecutedJobs(m.getTotalExecutedJobs() + totalFinishedJobs);
             m.setTotalCancelledJobs(m.getTotalCancelledJobs() + totalCancelledJobs);
             m.setTotalRejectedJobs(m.getTotalRejectedJobs() + totalRejectedJobs);
+            m.setTotalJobsExecutionTime(m.getTotalJobsExecutionTime() + totalExecTime);
         }
 
         /** {@inheritDoc} */

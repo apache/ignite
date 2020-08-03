@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -35,6 +36,7 @@ import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
 import static java.sql.Types.INTEGER;
@@ -166,7 +168,6 @@ class JdbcUtils {
      * @param cls Java class name.
      * @return Type from {@link Types}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int type(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return BOOLEAN;
@@ -190,8 +191,10 @@ class JdbcUtils {
             return TIME;
         else if (Timestamp.class.getName().equals(cls))
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return DATE;
+        else if (BigDecimal.class.getName().equals(cls))
+            return DECIMAL;
         else
             return OTHER;
     }
@@ -202,7 +205,6 @@ class JdbcUtils {
      * @param cls Java class name.
      * @return SQL type name.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static String typeName(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return "BOOLEAN";
@@ -226,8 +228,10 @@ class JdbcUtils {
             return "TIME";
         else if (Timestamp.class.getName().equals(cls))
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return "DATE";
+        else if (BigDecimal.class.getName().equals(cls))
+            return "DECIMAL";
         else
             return "OTHER";
     }

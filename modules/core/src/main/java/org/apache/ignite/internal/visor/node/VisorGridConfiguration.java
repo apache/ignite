@@ -26,9 +26,9 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -119,6 +119,15 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** List of service configurations. */
     private List<VisorServiceConfiguration> srvcCfgs;
 
+    /** Configuration of data storage. */
+    private VisorDataStorageConfiguration dataStorage;
+
+    /** Client connector configuration */
+    private VisorClientConnectorConfiguration clnConnCfg;
+
+    /** MVCC configuration. */
+    private VisorMvccConfiguration mvccCfg;
+
     /**
      * Default constructor.
      */
@@ -147,17 +156,16 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         inclEvtTypes = c.getIncludeEventTypes();
         rest = new VisorRestConfiguration(c);
         userAttrs = c.getUserAttributes();
-        igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
         atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
         txCfg = new VisorTransactionConfiguration(c.getTransactionConfiguration());
 
-        if (c.getMemoryConfiguration() != null)
-            memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
+        if (c.getDataStorageConfiguration() != null)
+            memCfg = null;
 
-        if (c.getPersistentStoreConfiguration() != null)
-            psCfg = new VisorPersistentStoreConfiguration(c.getPersistentStoreConfiguration());
+        if (c.getDataStorageConfiguration() != null)
+            psCfg = null;
 
         storeSesLsnrs = compactArray(c.getCacheStoreSessionListenerFactories());
         warmupClos = compactClass(c.getWarmupClosure());
@@ -165,21 +173,23 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         BinaryConfiguration bc = c.getBinaryConfiguration();
 
         if (bc != null)
-            binaryCfg = new VisorBinaryConfiguration();
+            binaryCfg = new VisorBinaryConfiguration(bc);
 
         cacheKeyCfgs = VisorCacheKeyConfiguration.list(c.getCacheKeyConfiguration());
 
-        HadoopConfiguration hc = c.getHadoopConfiguration();
+        ClientConnectorConfiguration ccc = c.getClientConnectorConfiguration();
 
-        if (hc != null)
-            hadoopCfg = new VisorHadoopConfiguration(hc);
-
-        SqlConnectorConfiguration scc = c.getSqlConnectorConfiguration();
-
-        if (scc != null)
-            sqlConnCfg = new VisorSqlConnectorConfiguration(scc);
+        if (ccc != null)
+            clnConnCfg = new VisorClientConnectorConfiguration(ccc);
 
         srvcCfgs = VisorServiceConfiguration.list(c.getServiceConfiguration());
+
+        DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
+
+        if (dsCfg != null)
+            dataStorage = new VisorDataStorageConfiguration(dsCfg);
+
+        mvccCfg = new VisorMvccConfiguration(c);
     }
 
     /**
@@ -351,10 +361,36 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     }
 
     /**
+     * @return Client connector configuration.
+     */
+    public VisorClientConnectorConfiguration getClientConnectorConfiguration() {
+        return clnConnCfg;
+    }
+
+    /**
      * @return List of service configurations
      */
     public List<VisorServiceConfiguration> getServiceConfigurations() {
         return srvcCfgs;
+    }
+
+    /**
+     * @return Configuration of data storage.
+     */
+    public VisorDataStorageConfiguration getDataStorageConfiguration() {
+        return dataStorage;
+    }
+
+    /**
+     * @return MVCC configuration.
+     */
+    public VisorMvccConfiguration getMvccConfiguration() {
+        return mvccCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V4;
     }
 
     /** {@inheritDoc} */
@@ -370,7 +406,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(inclEvtTypes);
         out.writeObject(rest);
         U.writeMap(out, userAttrs);
-        U.writeCollection(out, igfss);
+        U.writeCollection(out, null);
         U.writeMap(out, env);
         out.writeObject(sysProps);
         out.writeObject(atomic);
@@ -381,9 +417,12 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         U.writeString(out, warmupClos);
         out.writeObject(binaryCfg);
         U.writeCollection(out, cacheKeyCfgs);
-        out.writeObject(hadoopCfg);
+        out.writeObject(null);
         out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
+        out.writeObject(dataStorage);
+        out.writeObject(clnConnCfg);
+        out.writeObject(mvccCfg);
     }
 
     /** {@inheritDoc} */
@@ -413,6 +452,15 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         hadoopCfg = (VisorHadoopConfiguration)in.readObject();
         sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
         srvcCfgs = U.readList(in);
+
+        if (protoVer > V1)
+            dataStorage = (VisorDataStorageConfiguration)in.readObject();
+
+        if (protoVer > V2)
+            clnConnCfg = (VisorClientConnectorConfiguration)in.readObject();
+
+        if (protoVer > V3)
+            mvccCfg = (VisorMvccConfiguration)in.readObject();
     }
 
     /** {@inheritDoc} */

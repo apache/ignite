@@ -21,7 +21,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -80,6 +79,18 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        // The IgniteSecurity started for this moment,
+        // and we can make a decision on what instance of Ignite injector should be used.
+        if (ctx.security().sandbox().enabled()) {
+            injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
+                new GridResourceProxiedIgniteInjector(ctx.grid());
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,26 +213,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Injects filesystem instance into given object.
-     *
-     * @param obj Object.
-     * @param igfs Ignite filesystem to inject.
-     * @return {@code True} if filesystem was injected.
-     * @throws IgniteCheckedException If failed to inject.
-     */
-    public boolean injectFileSystem(Object obj, IgniteFileSystem igfs) throws IgniteCheckedException {
-        assert obj != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Injecting cache store session: " + obj);
-
-        // Unwrap Proxy object.
-        obj = unwrapTarget(obj);
-
-        return inject(obj, GridResourceIoc.ResourceAnnotation.FILESYSTEM_RESOURCE, null, null, igfs);
-    }
-
-    /**
      * @param obj Object to inject.
      * @throws IgniteCheckedException If failed to inject.
      */
@@ -246,6 +237,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         inject(obj, annSet, null, null, params);
+
+        if (obj instanceof GridInternalWrapper) {
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
+
+            if (usrObj != null)
+                inject(usrObj, annSet, null, null, params);
+        }
     }
 
     /**
@@ -329,10 +327,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
                 break;
 
-            case FILESYSTEM_RESOURCE:
-                res = new GridResourceBasicInjector<>(param);
-                break;
-
             default:
                 res = injectorByAnnotation[ann.ordinal()];
                 break;
@@ -397,7 +391,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         injectToJob(dep, taskCls, obj, ses, jobCtx);
 
         if (obj instanceof GridInternalWrapper) {
-            Object usrObj = ((GridInternalWrapper)obj).userObject();
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
 
             if (usrObj != null)
                 injectToJob(dep, taskCls, usrObj, ses, jobCtx);

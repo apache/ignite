@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,14 +30,15 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -104,6 +103,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePutGetClassesWithNameConflict() throws Exception {
         Ignite srv1 = startGrid(0);
         Ignite srv2 = startGrid(1);
@@ -193,16 +193,11 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
-                    int type,
-                    long topVer,
-                    ClusterNode node,
-                    Collection<ClusterNode> topSnapshot,
-                    @Nullable Map<Long, Collection<ClusterNode>> topHist,
-                    @Nullable DiscoverySpiCustomMessage spiCustomMsg
+            @Override public IgniteFuture<?> onDiscovery(
+                DiscoveryNotification notification
             ) {
-                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
-                        : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
+                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
+                        : (DiscoveryCustomMessage) U.field(notification.getCustomMsgData(), "delegate");
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator
@@ -219,7 +214,9 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(notification);
+
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */

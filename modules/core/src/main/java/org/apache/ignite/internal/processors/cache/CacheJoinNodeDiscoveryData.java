@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -51,11 +53,12 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      * @param templates Templates.
      * @param startCaches {@code True} if required to start all caches on joining node.
      */
-   public CacheJoinNodeDiscoveryData(
+    public CacheJoinNodeDiscoveryData(
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
-        boolean startCaches) {
+        boolean startCaches
+    ) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
@@ -99,30 +102,36 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
 
         /** */
         @GridToStringInclude
-        private final StoredCacheData cacheData;
+        private StoredCacheData cacheData;
 
         /** */
         @GridToStringInclude
-        private final CacheType cacheType;
+        private CacheType cacheType;
 
         /** */
         @GridToStringInclude
-        private final boolean sql;
+        private boolean sql;
 
         /** Flags added for future usage. */
-        private final long flags;
+        private long flags;
+
+        /** Statically configured flag */
+        private boolean staticallyConfigured;
 
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
          * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
+         * @param staticallyConfigured {@code true} if it was configured by static config and {@code false} otherwise.
          */
-        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags) {
+        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
+            boolean staticallyConfigured) {
             this.cacheData = cacheData;
             this.cacheType = cacheType;
             this.sql = sql;
             this.flags = flags;
+            this.staticallyConfigured = staticallyConfigured;
         }
 
         /**
@@ -144,6 +153,34 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean sql() {
             return sql;
+        }
+
+        /**
+         * @return {@code true} if it was configured by static config and {@code false} otherwise.
+         */
+        public boolean isStaticallyConfigured() {
+            return staticallyConfigured;
+        }
+
+        /**
+         * @return Long which bits represent some flags.
+         */
+        public long getFlags() {
+            return flags;
+        }
+
+        /**
+         * @param ois ObjectInputStream.
+         */
+        private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+            ObjectInputStream.GetField gf = ois.readFields();
+
+            cacheData = (StoredCacheData)gf.get("cacheData", null);
+            cacheType = (CacheType)gf.get("cacheType", null);
+            sql = gf.get("sql", false);
+            flags = gf.get("flags", 0L);
+            staticallyConfigured = gf.get("staticallyConfigured", true);
         }
 
         /** {@inheritDoc} */

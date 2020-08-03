@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
+import org.junit.Test;
 
 /**
  * Simple test for arbitrary CacheObject reading/writing.
@@ -36,6 +36,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncompleteObject() throws Exception {
         final byte[] data = new byte[1024];
 

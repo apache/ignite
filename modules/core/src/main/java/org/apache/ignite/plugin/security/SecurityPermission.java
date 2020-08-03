@@ -64,7 +64,19 @@ public enum SecurityPermission {
     SERVICE_CANCEL,
 
     /** Service invoke permission. */
-    SERVICE_INVOKE;
+    SERVICE_INVOKE,
+
+    /** Cache create permission. */
+    CACHE_CREATE,
+
+    /** Cache destroy permission. */
+    CACHE_DESTROY,
+
+    /** Join as server node permission. */
+    JOIN_AS_SERVER,
+
+    /** Administration operation with cluster metadata (REMOVE, UPDATE). */
+    ADMIN_METADATA_OPS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

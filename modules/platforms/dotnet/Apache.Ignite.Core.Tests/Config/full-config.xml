@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- Full XML config with all properties having custom values. -->
+
+<igniteConfiguration
+              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' 
+              isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' 
+              peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' 
+              consistentId='someId012' redirectJavaConsoleOutput='false' authenticationEnabled='true' mvccVacuumFrequency='10000' mvccVacuumThreadCount='4'
+              sqlQueryHistorySize='123'>
+    <localhost>127.1.1.1</localhost>
+    <binaryConfiguration compactFooter='false' keepDeserialized='true'>
+        <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+        <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper' />
+        <types>
+            <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
+        </types>
+        <typeConfigurations>
+            <binaryTypeConfiguration affinityKeyFieldName='affKeyFieldName' isEnum='true' keepDeserialized='True' typeName='typeName'>
+                <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper, Apache.Ignite.Core.Tests' />
+                <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' />
+                <serializer type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestSerializer, Apache.Ignite.Core.Tests' />
+            </binaryTypeConfiguration>
+        </typeConfigurations>
+    </binaryConfiguration>
+    <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0' localAddress='192.168.1.1' localPort='6655'>
+        <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
+    </discoverySpi>
+    <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
+    <jvmOptions>
+        <string>-Xms1g</string>
+        <string>-Xmx4g</string>
+    </jvmOptions>
+    <sqlSchemas>
+        <string>SCHEMA_1</string>
+        <string>schema_2</string>
+    </sqlSchemas>
+    <lifecycleHandlers>
+        <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
+    </lifecycleHandlers>
+    <cacheConfiguration>
+        <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'
+                            onheapCacheEnabled='true' storeConcurrentLoadAllThreshold='8' rebalanceOrder='9' rebalanceBatchesPrefetchCount='10' maxQueryIteratorsCount='11' queryDetailMetricsSize='12'
+                            queryParallelism='13' sqlSchema='mySchema'>
+            <queryEntities>
+                <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
+                    <fields>
+                        <queryField name='length' fieldType='System.Int32' isKeyField='true' notNull='true'>
+                            <defaultValue type="System.Double">3.456</defaultValue>
+                        </queryField>
+                    </fields>
+                    <aliases>
+                        <queryAlias fullName='somefield.field' alias='shortField' />
+                    </aliases>
+                    <indexes>
+                        <queryIndex name='idx' indexType='Geospatial' inlineSize='123'>
+                            <fields>
+                                <queryIndexField name='indexFld' isDescending='true' />
+                            </fields>
+                        </queryIndex>
+                    </indexes>
+                </queryEntity>
+            </queryEntities>
+            <evictionPolicy type='LruEvictionPolicy' batchSize='1' maxSize='2' maxMemorySize='3' />
+            <nearConfiguration nearStartSize='7'>
+                <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
+            </nearConfiguration>
+            <platformCacheConfiguration keyTypeName="int" valueTypeName="string" keepBinary="true" />
+            <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
+            <expiryPolicyFactory type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPolicyFactory, Apache.Ignite.Core.Tests' />
+            <pluginConfigurations>
+                <iCachePluginConfiguration type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPluginConfiguration, Apache.Ignite.Core.Tests' />
+            </pluginConfigurations>
+            <keyConfiguration>
+                <cacheKeyConfiguration typeName='foo' affinityKeyFieldName='bar' />
+            </keyConfiguration>
+        </cacheConfiguration>
+        <cacheConfiguration name='secondCache' />
+    </cacheConfiguration>
+    <includedEventTypes>
+        <int>42</int>
+        <int>TaskFailed</int>
+        <int>JobFinished</int>
+    </includedEventTypes>
+    <userAttributes>
+        <pair key='myNode' value='true' />
+        <pair key='foo'>
+            <value type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests'>
+                <bar>Baz</bar>
+            </value>
+        </pair>
+    </userAttributes>
+    <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
+    <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
+    <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
+    <pluginConfigurations>
+        <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
+    </pluginConfigurations>
+    <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
+    <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
+        <memoryPolicies>
+            <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' rateTimeInterval='0:1:2' subIntervals='9' />
+        </memoryPolicies>
+    </memoryConfiguration>
+    <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
+    <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' idleTimeout = "00:00:19">
+        <thinClientConfiguration maxActiveTxPerConnection='20' maxActiveComputeTasksPerConnection='21' />
+    </clientConnectorConfiguration>
+    <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' 
+                                  checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' 
+                                  walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' 
+                                  walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' 
+                                  walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' 
+                                  checkpointWriteOrder='Random' writeThrottlingEnabled='true' />
+    <consistentId type='System.String'>someId012</consistentId>
+    <localEventListeners>
+        <localEventListener type='Apache.Ignite.Core.Events.LocalEventListener`1[[Apache.Ignite.Core.Events.CacheRebalancingEvent]]'>
+            <eventTypes>
+                <int>CacheObjectPut</int>
+                <int>81</int>
+            </eventTypes>
+            <listener type='Apache.Ignite.Core.Tests.EventsTestLocalListeners+Listener`1[[Apache.Ignite.Core.Events.CacheRebalancingEvent]]' />
+        </localEventListener>
+        <localEventListener type='Apache.Ignite.Core.Events.LocalEventListener`1[[Apache.Ignite.Core.Events.IEvent]]'>
+            <eventTypes>
+                <int>CacheObjectPut</int>
+                <int>81</int>
+            </eventTypes>
+            <listener type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyEventListener' />
+        </localEventListener>
+    </localEventListeners>
+    <dataStorageConfiguration alwaysWriteFullPages="false" checkpointFrequency="00:00:01"
+                              checkpointThreads="3" concurrencyLevel="4" lockWaitTime="00:00:05" metricsEnabled="true"
+                              pageSize="6" storagePath="cde" metricsRateTimeInterval="00:00:07"
+                              metricsSubIntervalCount="8" systemRegionInitialSize="9" systemRegionMaxSize="10" 
+                              walThreadLocalBufferSize="11"
+                              walArchivePath="abc" walFlushFrequency="00:00:12" walFsyncDelayNanos="13" walHistorySize="14"
+                              walMode="Background" walRecordIteratorBufferSize="15" walSegments="16" walSegmentSize="17"
+                              walPath="wal-store" writeThrottlingEnabled="true" walAutoArchiveAfterInactivity="00:00:18"
+                              walPageCompression="Zstd">
+        <dataRegionConfigurations>
+            <dataRegionConfiguration emptyPagesPoolSize="1" evictionThreshold="2" initialSize="3" metricsEnabled="true"
+                                     maxSize="4" name="reg2" pageEvictionMode="RandomLru" metricsRateTimeInterval="00:00:01"
+                                     metricsSubIntervalCount="5" swapPath="swap" checkpointPageBufferSize="7" />
+        </dataRegionConfigurations>
+        <defaultDataRegionConfiguration emptyPagesPoolSize="2" evictionThreshold="3" initialSize="4"
+                                        maxSize="5" metricsEnabled="false" name="reg1" pageEvictionMode="Disabled"
+                                        metricsRateTimeInterval="00:00:03" metricsSubIntervalCount="6"
+                                        swapPath="swap2" checkpointPageBufferSize="8" />
+    </dataStorageConfiguration>
+    <sslContextFactory type='SslContextFactory' protocol='SSL'
+                       keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
+                       trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
+    <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
+    <executorConfiguration>
+        <executorConfiguration name='exec1' size='1' />
+        <executorConfiguration name='exec2' size='2' />
+    </executorConfiguration>
+</igniteConfiguration>

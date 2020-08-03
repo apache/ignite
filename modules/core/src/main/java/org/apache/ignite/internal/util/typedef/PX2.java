@@ -32,4 +32,4 @@ import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 public abstract class PX2<T1, T2> extends IgnitePredicate2X<T1, T2> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

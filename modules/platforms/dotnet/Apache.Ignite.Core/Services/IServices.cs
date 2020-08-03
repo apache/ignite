@@ -156,6 +156,38 @@ namespace Apache.Ignite.Core.Services
         Task DeployAsync(ServiceConfiguration configuration);
 
         /// <summary>
+        /// Deploys multiple services described by provided configurations. Depending on specified parameters, 
+        /// multiple instances of the same service may be deployed. Whenever topology changes,
+        /// Ignite will automatically rebalance the deployed services within cluster to make sure that each node
+        /// will end up with about equal number of deployed instances whenever possible.
+        /// <para/>
+        /// If deployment of some of the provided services fails, then <see cref="ServiceDeploymentException"/> 
+        /// containing a list of failed service configurations 
+        /// (<see cref="ServiceDeploymentException.FailedConfigurations"/>) will be thrown. It is guaranteed that all 
+        /// services  that were provided to this method and are not present in the list of failed services are 
+        /// successfully deployed by the moment of the exception being thrown.
+        /// Note that if exception is thrown, then partial deployment may have occurred.
+        /// </summary>
+        /// <param name="configurations">Collection of service configurations to be deployed.</param>
+        void DeployAll(IEnumerable<ServiceConfiguration> configurations);
+
+        /// <summary>
+        /// Asynchronously deploys multiple services described by provided configurations. Depending on specified 
+        /// parameters, multiple instances of the same service may be deployed (<see cref="ServiceConfiguration"/>).
+        /// Whenever topology changes, Ignite will automatically rebalance the deployed services within cluster to make
+        /// sure that each node  will end up with about equal number of deployed instances whenever possible.
+        /// <para/>
+        /// If deployment of some of the provided services fails, then <see cref="ServiceDeploymentException"/> 
+        /// containing a list of failed service configurations 
+        /// (<see cref="ServiceDeploymentException.FailedConfigurations"/>) will be thrown. It is guaranteed that all 
+        /// services, that were provided to this method and are not present in the list of failed services, are 
+        /// successfully deployed by the moment of the exception being thrown.
+        /// Note that if exception is thrown, then partial deployment may have occurred.
+        /// </summary>
+        /// <param name="configurations">Collection of service configurations to be deployed.</param>
+        Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations);
+
+        /// <summary>
         /// Cancels service deployment. If a service with specified name was deployed on the grid,
         /// then <see cref="IService.Cancel"/> method will be called on it.
         /// <para/>
@@ -238,6 +270,32 @@ namespace Apache.Ignite.Core.Services
         /// service or try to load-balance between services.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
         T GetServiceProxy<T>(string name, bool sticky) where T : class;
+
+        /// <summary>
+        /// Gets a remote handle on the service as a dynamic object. If service is available locally,
+        /// then local instance is returned, otherwise, a remote proxy is dynamically
+        /// created and provided for the specified service.
+        /// <para />
+        /// This method utilizes <c>dynamic</c> feature of the language and does not require any
+        /// service interfaces or classes. Java services can be accessed as well as .NET services.
+        /// </summary>
+        /// <param name="name">Service name.</param>
+        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
+        dynamic GetDynamicServiceProxy(string name);
+
+        /// <summary>
+        /// Gets a remote handle on the service as a dynamic object. If service is available locally,
+        /// then local instance is returned, otherwise, a remote proxy is dynamically
+        /// created and provided for the specified service.
+        /// <para />
+        /// This method utilizes <c>dynamic</c> feature of the language and does not require any
+        /// service interfaces or classes. Java services can be accessed as well as .NET services.
+        /// </summary>
+        /// <param name="name">Service name.</param>
+        /// <param name="sticky">Whether or not Ignite should always contact the same remote
+        /// service or try to load-balance between services.</param>
+        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
+        dynamic GetDynamicServiceProxy(string name, bool sticky);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.

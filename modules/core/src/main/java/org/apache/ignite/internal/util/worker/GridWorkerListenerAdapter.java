@@ -23,11 +23,16 @@ package org.apache.ignite.internal.util.worker;
 public class GridWorkerListenerAdapter implements GridWorkerListener {
     /** {@inheritDoc} */
     @Override public void onStarted(GridWorker w) {
-        /* No-op. */
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onStopped(GridWorker w) {
-        /* No-op. */
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIdle(GridWorker w) {
+        // No-op.
     }
 }

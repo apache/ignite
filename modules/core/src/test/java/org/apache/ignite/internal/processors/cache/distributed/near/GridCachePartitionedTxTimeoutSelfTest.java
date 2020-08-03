@@ -19,11 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -32,26 +28,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Simple cache test.
  */
 public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
-    /** Transaction timeout. */
-    private static final long TIMEOUT = 50;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TransactionConfiguration txCfg = c.getTransactionConfiguration();
-
-        txCfg.setTxSerializableEnabled(true);
-        txCfg.setDefaultTxTimeout(TIMEOUT);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

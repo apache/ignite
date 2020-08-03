@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests manager with {@link org.apache.ignite.spi.IgniteSpiNoop} SPI's.
@@ -35,6 +36,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnabledManager() throws IgniteCheckedException {
         GridTestKernalContext ctx = new GridTestKernalContext(new GridStringLogger());
 

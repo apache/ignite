@@ -18,62 +18,36 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 
 /**
  */
 public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private String backup;
-
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        backup = System.getProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER);
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, backup);
-
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @WithSystemProperty(key = IGNITE_UPDATE_NOTIFIER, value = "true")
     public void testNotifierEnabledForCluster() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
-
         checkNotifierStatusForCluster(true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @WithSystemProperty(key = IGNITE_UPDATE_NOTIFIER, value = "false")
     public void testNotifierDisabledForCluster() throws Exception {
         checkNotifierStatusForCluster(false);
     }
@@ -83,36 +57,28 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void checkNotifierStatusForCluster(boolean enabled) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(enabled));
-
         IgniteEx grid1 = startGrid(0);
 
         checkNotifier(grid1, enabled);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(!enabled));
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, String.valueOf(!enabled));
 
         IgniteEx grid2 = startGrid(1);
 
         checkNotifier(grid2, enabled);
 
-        client = true;
-
-        IgniteEx grid3 = startGrid(2);
+        IgniteEx grid3 = startClientGrid(2);
 
         checkNotifier(grid3, enabled);
 
         // Failover.
         stopGrid(0); // Kill oldest.
 
-        client = false;
-
         IgniteEx grid4 = startGrid(3);
 
         checkNotifier(grid4, enabled);
 
-        client = true;
-
-        IgniteEx grid5 = startGrid(4);
+        IgniteEx grid5 = startClientGrid(4);
 
         checkNotifier(grid5, enabled);
     }

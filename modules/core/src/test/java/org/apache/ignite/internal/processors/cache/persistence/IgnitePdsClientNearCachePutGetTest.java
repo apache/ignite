@@ -17,39 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.database.IgniteDbPutGetAbstractTest;
 
 /**
  *
  */
-public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCachePutGetTest {
+public class IgnitePdsClientNearCachePutGetTest extends IgniteDbPutGetAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
-        return cfg;
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        super.beforeTest();
+    @Override protected boolean indexingEnabled() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    @Override protected boolean withClientNearCache() {
+        return true;
     }
 }

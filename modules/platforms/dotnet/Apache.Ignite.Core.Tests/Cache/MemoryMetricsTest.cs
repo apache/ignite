@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Linq;
@@ -43,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Verify metrics.
             var metrics = ignite.GetMemoryMetrics().OrderBy(x => x.Name).ToArray();
-            Assert.AreEqual(3, metrics.Length);  // two defined plus system.
+            Assert.AreEqual(4, metrics.Length);  // two defined plus system and plus TxLog.
 
             var emptyMetrics = metrics[0];
             Assert.AreEqual(MemoryPolicyNoMetrics, emptyMetrics.Name);
@@ -91,7 +92,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, metrics.EvictionRate);
             Assert.AreEqual(0, metrics.LargeEntriesPagesPercentage);
             Assert.AreEqual(0, metrics.PageFillFactor);
-            Assert.AreEqual(0, metrics.TotalAllocatedPages);
         }
 
         /// <summary>
@@ -101,6 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     DefaultMemoryPolicyName = MemoryPolicyWithMetrics,

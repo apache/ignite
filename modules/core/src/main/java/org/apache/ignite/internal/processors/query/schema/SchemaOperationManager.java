@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -27,16 +32,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Schema operation manager.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class SchemaOperationManager {
     /** Kernal context. */
     private final GridKernalContext ctx;

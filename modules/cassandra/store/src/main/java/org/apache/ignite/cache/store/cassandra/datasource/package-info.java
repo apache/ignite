@@ -18,4 +18,5 @@
 /**
  * Contains data source implementation
  */
+
 package org.apache.ignite.cache.store.cassandra.datasource;

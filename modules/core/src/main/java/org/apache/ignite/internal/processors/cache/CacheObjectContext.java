@@ -17,40 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Map;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-@SuppressWarnings("TypeMayBeWeakened")
 public class CacheObjectContext implements CacheObjectValueContext {
     /** */
-    private GridKernalContext kernalCtx;
+    private final GridKernalContext kernalCtx;
 
     /** */
-    private String cacheName;
+    private final String cacheName;
 
     /** */
+    @SuppressWarnings("deprecation")
     private AffinityKeyMapper dfltAffMapper;
 
-    /** */
-    private boolean cpyOnGet;
+    /** Whether custom affinity mapper is used. */
+    private final boolean customAffMapper;
 
     /** */
-    private boolean storeVal;
+    private final boolean cpyOnGet;
 
     /** */
-    private boolean addDepInfo;
+    private final boolean storeVal;
+
+    /** */
+    private final boolean addDepInfo;
+
+    /** Boinary enabled flag. */
+    private final boolean binaryEnabled;
 
     /**
      * @param kernalCtx Kernal context.
@@ -58,19 +55,25 @@ public class CacheObjectContext implements CacheObjectValueContext {
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
+     * @param binaryEnabled Binary enabled flag.
      */
+    @SuppressWarnings("deprecation")
     public CacheObjectContext(GridKernalContext kernalCtx,
         String cacheName,
         AffinityKeyMapper dfltAffMapper,
+        boolean customAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean addDepInfo) {
+        boolean addDepInfo,
+        boolean binaryEnabled) {
         this.kernalCtx = kernalCtx;
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
+        this.customAffMapper = customAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
         this.addDepInfo = addDepInfo;
+        this.binaryEnabled = binaryEnabled;
     }
 
     /**
@@ -98,8 +101,16 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /**
      * @return Default affinity mapper.
      */
+    @SuppressWarnings("deprecation")
     public AffinityKeyMapper defaultAffMapper() {
         return dfltAffMapper;
+    }
+
+    /**
+     * @return Whether custom affinity mapper is used.
+     */
+    public boolean customAffinityMapper() {
+        return customAffMapper;
     }
 
     /** {@inheritDoc} */
@@ -109,7 +120,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
 
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
-        return false;
+        return binaryEnabled;
     }
 
     /**

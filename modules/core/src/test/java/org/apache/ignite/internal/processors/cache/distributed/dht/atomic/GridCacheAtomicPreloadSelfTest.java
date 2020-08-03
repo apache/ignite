@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -68,6 +69,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(true, PESSIMISTIC);
     }
@@ -75,6 +77,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, PESSIMISTIC);
     }
@@ -82,6 +85,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }
@@ -89,6 +93,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }

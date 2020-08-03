@@ -215,7 +215,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /**
@@ -272,32 +272,32 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByteArray("affAssignmentIdsBytes", affAssignmentIdsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeByteArray("idealAffAssignmentBytes", idealAffAssignmentBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeByteArray("partBytes", partBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeMessage("topVer", topVer))
+            case 8:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -318,7 +318,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 affAssignmentIdsBytes = reader.readByteArray("affAssignmentIdsBytes");
 
                 if (!reader.isLastRead())
@@ -326,7 +326,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -334,7 +334,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 idealAffAssignmentBytes = reader.readByteArray("idealAffAssignmentBytes");
 
                 if (!reader.isLastRead())
@@ -342,7 +342,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 partBytes = reader.readByteArray("partBytes");
 
                 if (!reader.isLastRead())
@@ -350,8 +350,8 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 7:
-                topVer = reader.readMessage("topVer");
+            case 8:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Dataload
 {
     using System;
+    using System.IO;
     using System.Threading;
     using NUnit.Framework;
 
@@ -36,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             var cacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config\cache-local-node.xml",
+                SpringConfigUrl = Path.Combine("Config", "cache-local-node.xml"),
                 IgniteInstanceName = "cacheGrid"
             };
 

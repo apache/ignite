@@ -17,14 +17,14 @@
 
 package org.apache.ignite.binary;
 
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -33,7 +33,10 @@ import java.util.Map;
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
  */
-public class BinaryTypeConfiguration {
+public class BinaryTypeConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Class name. */
     private String typeName;
 

@@ -31,7 +31,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,12 +39,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  *
@@ -73,6 +73,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -125,6 +126,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -151,6 +153,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -183,6 +186,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetReadThrough() throws Exception {
         getReadThrough(false, null, null);
         getReadThrough(true, null, null);

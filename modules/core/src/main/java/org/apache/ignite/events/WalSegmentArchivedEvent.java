@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Event indicates there was movement of WAL segment file to archive has been completed
+ * Event indicates the completion of WAL segment file transition to archive.
  */
 public class WalSegmentArchivedEvent extends EventAdapter {
     /** */
@@ -45,7 +45,16 @@ public class WalSegmentArchivedEvent extends EventAdapter {
         @NotNull final ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile) {
-        super(node, "", EventType.EVT_WAL_SEGMENT_ARCHIVED);
+        this(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_ARCHIVED);
+    }
+
+    /** */
+    protected WalSegmentArchivedEvent(
+        @NotNull final ClusterNode node,
+        final long absWalSegmentIdx,
+        final File archiveFile,
+        int evtType) {
+        super(node, "", evtType);
         this.absWalSegmentIdx = absWalSegmentIdx;
         this.archiveFile = archiveFile;
     }

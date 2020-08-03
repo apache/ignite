@@ -22,16 +22,24 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
+
 /**
  * Recovery information for single node.
  */
 public class GridNioRecoveryDescriptor {
+    /** Timeout for outgoing recovery descriptor reservation. */
+    private static final long DESC_RESERVATION_TIMEOUT =
+        Math.max(1_000, IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT, 5_000));
+
     /** Number of acknowledged messages. */
     private long acked;
 
@@ -79,6 +87,10 @@ public class GridNioRecoveryDescriptor {
 
     /** */
     private final boolean pairedConnections;
+
+    /** Session for the descriptor. */
+    @GridToStringExclude
+    private GridNioSession ses;
 
     /**
      * @param pairedConnections {@code True} if in/out connections pair is used for communication with node.
@@ -266,13 +278,24 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
-     * @throws InterruptedException If interrupted.
      * @return {@code True} if reserved.
+     * @throws InterruptedException If interrupted.
      */
     public boolean reserve() throws InterruptedException {
         synchronized (this) {
-            while (!connected && reserved)
-                wait();
+            long t0 = System.nanoTime();
+
+            while (!connected && reserved) {
+                wait(DESC_RESERVATION_TIMEOUT);
+
+                if ((System.nanoTime() - t0) / 1_000_000 >= DESC_RESERVATION_TIMEOUT - 100) {
+                    // Dumping a descriptor.
+                    log.error("Failed to wait for recovery descriptor reservation " +
+                        "[desc=" + this + ", ses=" + ses + ']');
+
+                    return false;
+                }
+            }
 
             if (!connected) {
                 reserved = true;
@@ -354,6 +377,8 @@ public class GridNioRecoveryDescriptor {
         SessionWriteRequest[] futs = null;
 
         synchronized (this) {
+            ses = null;
+
             connected = false;
 
             if (handshakeReq != null) {
@@ -440,16 +465,35 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
+     * @return Current session.
+     */
+    public synchronized GridNioSession session() {
+        return ses;
+    }
+
+    /**
+     * @param ses Session.
+     */
+    public synchronized void session(GridNioSession ses) {
+        this.ses = ses;
+    }
+
+    /**
      * @param reqs Requests to notify about error.
      */
     private void notifyOnNodeLeft(SessionWriteRequest[] reqs) {
         IOException e = new IOException("Failed to send message, node has left: " + node.id());
+        IgniteException cloErr = null;
 
         for (SessionWriteRequest req : reqs) {
             req.onError(e);
 
-            if (req.ackClosure() != null)
-                req.ackClosure().apply(new IgniteException(e));
+            if (req.ackClosure() != null) {
+                if (cloErr == null)
+                    cloErr = new IgniteException(e);
+
+                req.ackClosure().apply(cloErr);
+            }
         }
     }
 

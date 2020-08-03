@@ -34,6 +34,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Session load test task.
@@ -51,7 +52,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
     private Map<String, Integer> params;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert taskSes != null;
         assert arg != null;
         assert arg > 0;

@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /** <inheritdoc /> */
         public TV Value
         {
-            get { return default(TV); }
+            get { return _oldVal; }
         }
 
         /** <inheritdoc /> */
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /** <inheritdoc /> */
         public bool HasValue
         {
-            get { return false; }
+            get { return true; }
         }
 
         /** <inheritdoc /> */

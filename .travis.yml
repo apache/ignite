@@ -1,0 +1,54 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+matrix:
+  include:
+    - language: java
+      os: linux
+      dist: trusty
+      install: skip
+      jdk: openjdk8
+      before_script:
+        - echo $JVM_EXTRA_ARGS
+      script: mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -Dmaven.javadoc.skip=true -B -V
+      before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+      cache: {directories: [$HOME/.m2/repository]}
+
+    - language: java
+      os: linux
+      dist: trusty
+      install: skip
+      jdk: openjdk11
+      before_script:
+        - echo $JVM_EXTRA_ARGS
+        - |
+          export JVM_EXTRA_ARGS='--illegal-access=permit
+          --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          -Djdk.tls.client.protocols=TLSv1.2'
+      # ignite-scalar module currently doesn't build under jdk11
+      script: mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses,!spark-2.4,!spark,!scala -Dmaven.javadoc.skip=true -B -V
+      before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+      cache: {directories: [$HOME/.m2/repository]}
+
+    - language: csharp
+      mono: none
+      dotnet: 3.1.101
+      script:
+        - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
+        - 

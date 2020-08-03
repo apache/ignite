@@ -72,7 +72,12 @@ public class GridCacheSqlQuery implements Message {
     /** Derived partition info. */
     @GridToStringInclude
     @GridDirectTransient
-    private transient Object[] derivedPartitions;
+    private transient Object derivedPartitions;
+
+    /** Flag indicating that query contains sub-queries. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient boolean hasSubQries;
 
     /**
      * For {@link Message}.
@@ -259,6 +264,7 @@ public class GridCacheSqlQuery implements Message {
         cp.sort = sort;
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
+        cp.hasSubQries = hasSubQries;
 
         return cp;
     }
@@ -334,16 +340,31 @@ public class GridCacheSqlQuery implements Message {
     /**
      * @return Derived partitions.
      */
-    public Object[] derivedPartitions() {
+    public Object derivedPartitions() {
         return derivedPartitions;
     }
 
     /**
      * @param derivedPartitions Derived partitions.
+     */
+    public void derivedPartitions(Object derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
+    }
+
+    /**
+     * @return {@code true} if query contains sub-queries.
+     */
+    public boolean hasSubQueries() {
+        return hasSubQries;
+    }
+
+    /**
+     * @param hasSubQries Flag indicating that query contains sub-queries.
+     *
      * @return {@code this}.
      */
-    public GridCacheSqlQuery derivedPartitions(Object[] derivedPartitions) {
-        this.derivedPartitions = derivedPartitions;
+    public GridCacheSqlQuery hasSubQueries(boolean hasSubQries) {
+        this.hasSubQries = hasSubQries;
 
         return this;
     }

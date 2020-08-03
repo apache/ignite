@@ -24,14 +24,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -42,24 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
-    private final int SRV_CNT = 3;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
+    private static final int SRV_CNT = 3;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -67,23 +47,13 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRV_CNT);
 
-        client = true;
-
-        startGrid(SRV_CNT);
-
-        client = false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+        startClientGrid(SRV_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedTx() throws Exception {
         updateMultithreaded(TRANSACTIONAL, false);
     }
@@ -91,6 +61,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedTxRestart() throws Exception {
         updateMultithreaded(TRANSACTIONAL, true);
     }
@@ -98,6 +69,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedAtomic() throws Exception {
         updateMultithreaded(ATOMIC, false);
     }
@@ -105,6 +77,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedAtomicRestart() throws Exception {
         updateMultithreaded(ATOMIC, true);
     }
@@ -158,7 +131,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         }
 
         try {
-            long stopTime = System.currentTimeMillis() + 30_000;
+            long stopTime = System.currentTimeMillis() + 10_000;
 
             int iter = 0;
 

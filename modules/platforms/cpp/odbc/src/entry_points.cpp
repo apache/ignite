@@ -216,8 +216,7 @@ SQLRETURN SQL_API SQLNativeSql(SQLHDBC      conn,
                                SQLINTEGER   outQueryBufferLen,
                                SQLINTEGER*  outQueryLen)
 {
-    return ignite::SQLNativeSql(conn, inQuery, inQueryLen,
-        outQueryBuffer, outQueryBufferLen, outQueryLen);
+    return ignite::SQLNativeSql(conn, inQuery, inQueryLen, outQueryBuffer, outQueryBufferLen, outQueryLen);
 }
 
 
@@ -239,8 +238,7 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT       stmt,
                                   SQLPOINTER     numericAttr)
 #endif
 {
-    return ignite::SQLColAttribute(stmt, columnNum, fieldId,
-        strAttr, bufferLen, strAttrLen, (SQLLEN*)numericAttr);
+    return ignite::SQLColAttribute(stmt, columnNum, fieldId, strAttr, bufferLen, strAttrLen, (SQLLEN*)numericAttr);
 }
 
 SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
@@ -327,8 +325,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
                                   SQLSMALLINT   bufferLen,
                                   SQLSMALLINT*  resLen)
 {
-    return ignite::SQLGetDiagField(handleType, handle,
-        recNum, diagId, buffer, bufferLen, resLen);
+    return ignite::SQLGetDiagField(handleType, handle, recNum, diagId, buffer, bufferLen, resLen);
 }
 
 SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
@@ -340,8 +337,7 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
                                 SQLSMALLINT     msgBufferLen,
                                 SQLSMALLINT*    msgLen)
 {
-    return ignite::SQLGetDiagRec(handleType, handle, recNum,
-        sqlState, nativeError, msgBuffer, msgBufferLen, msgLen);
+    return ignite::SQLGetDiagRec(handleType, handle, recNum, sqlState, nativeError, msgBuffer, msgBufferLen, msgLen);
 }
 
 SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT stmt, SQLSMALLINT type)
@@ -349,9 +345,7 @@ SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT stmt, SQLSMALLINT type)
     return ignite::SQLGetTypeInfo(stmt, type);
 }
 
-SQLRETURN SQL_API SQLEndTran(SQLSMALLINT    handleType,
-                             SQLHANDLE      handle,
-                             SQLSMALLINT    completionType)
+SQLRETURN SQL_API SQLEndTran(SQLSMALLINT handleType, SQLHANDLE handle, SQLSMALLINT completionType)
 {
     return ignite::SQLEndTran(handleType, handle, completionType);
 }
@@ -381,8 +375,7 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
                                 SQLINTEGER  valueBufLen,
                                 SQLINTEGER* valueResLen)
 {
-    return ignite::SQLGetEnvAttr(env, attr,
-        valueBuf, valueBufLen, valueResLen);
+    return ignite::SQLGetEnvAttr(env, attr, valueBuf, valueBufLen, valueResLen);
 }
 
 SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
@@ -405,9 +398,7 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT stmt, SQLPOINTER* value)
     return ignite::SQLParamData(stmt, value);
 }
 
-SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
-                             SQLPOINTER   data,
-                             SQLLEN       strLengthOrIndicator)
+SQLRETURN SQL_API SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN strLengthOrIndicator)
 {
     return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
 }
@@ -419,8 +410,7 @@ SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
                                    SQLSMALLINT* decimalDigits,
                                    SQLSMALLINT* nullable)
 {
-    return ignite::SQLDescribeParam(stmt, paramNum, dataType,
-     paramSize, decimalDigits, nullable);
+    return ignite::SQLDescribeParam(stmt, paramNum, dataType, paramSize, decimalDigits, nullable);
 }
 
 SQLRETURN SQL_API SQLError(SQLHENV      env,
@@ -432,8 +422,24 @@ SQLRETURN SQL_API SQLError(SQLHENV      env,
                            SQLSMALLINT  msgBufLen,
                            SQLSMALLINT* msgResLen)
 {
-    return ignite::SQLError(env, conn, stmt, state,
-        error, msgBuf, msgBufLen, msgResLen);
+    return ignite::SQLError(env, conn, stmt, state, error, msgBuf, msgBufLen, msgResLen);
+}
+
+SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC     conn,
+                                    SQLINTEGER  attr,
+                                    SQLPOINTER  valueBuf,
+                                    SQLINTEGER  valueBufLen,
+                                    SQLINTEGER* valueResLen)
+{
+    return ignite::SQLGetConnectAttr(conn, attr, valueBuf, valueBufLen, valueResLen);
+}
+
+SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
+                                    SQLINTEGER  attr,
+                                    SQLPOINTER  value,
+                                    SQLINTEGER  valueLen)
+{
+    return ignite::SQLSetConnectAttr(conn, attr, value, valueLen);
 }
 
 //
@@ -561,25 +567,6 @@ SQLRETURN SQL_API SQLSetScrollOptions(SQLHSTMT      stmt,
                                       SQLUSMALLINT  crowRowset)
 {
     LOG_MSG("SQLSetScrollOptions called");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC     conn,
-                                    SQLINTEGER  attr,
-                                    SQLPOINTER  valueBuf,
-                                    SQLINTEGER  valueBufLen,
-                                    SQLINTEGER* valueResLen)
-{
-    LOG_MSG("SQLGetConnectAttr called");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
-                                    SQLINTEGER  attr,
-                                    SQLPOINTER  value,
-                                    SQLINTEGER  valueLen)
-{
-    LOG_MSG("SQLSetConnectAttr called");
     return SQL_SUCCESS;
 }
 

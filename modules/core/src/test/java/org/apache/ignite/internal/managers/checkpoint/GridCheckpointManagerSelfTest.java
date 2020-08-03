@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -27,6 +28,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testCacheBased() throws Exception {
         doTest("cache");
     }
@@ -34,6 +36,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testSharedFsBased() throws Exception {
         doTest("sharedfs");
     }
@@ -41,6 +44,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testDatabaseBased() throws Exception {
         doTest("jdbc");
     }
@@ -48,6 +52,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testMultiNodeCacheBased() throws Exception {
         doMultiNodeTest("cache");
     }
@@ -55,6 +60,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testMultiNodeSharedFsBased() throws Exception {
         doMultiNodeTest("sharedfs");
     }
@@ -62,6 +68,7 @@ public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstract
     /**
      * @throws Exception Thrown if any exception occurs.
      */
+    @Test
     public void testMultiNodeDatabaseBased() throws Exception {
         doMultiNodeTest("jdbc");
     }

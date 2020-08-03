@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -40,9 +41,11 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert PageIO.getType(pageAddr) == PageIO.T_META || PageIO.getType(pageAddr) == PageIO.T_PART_META;
+        int type = PageIO.getType(pageAddr);
 
-        PageMetaIO io = PageMetaIO.VERSIONS.forVersion(PageIO.getVersion(pageAddr));
+        assert type == PageIO.T_META || type == PageIO.T_PART_META;
+
+        PageMetaIO io = PageIO.getPageIO(type, PageIO.getVersion(pageAddr));
 
         io.setLastAllocatedPageCount(pageAddr, lastAllocatedIdx);
     }
@@ -57,6 +60,11 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
      */
     public int lastAllocatedIndex() {
         return lastAllocatedIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageUpdateLastAllocatedIndex.class, this, "super", super.toString());
     }
 }
 

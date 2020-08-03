@@ -21,8 +21,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System.Collections.Generic;
     using System.Data;
     using System.Linq;
+#if !NETCOREAPP  // AppDomains are not supported in .NET Core
     using System.Reflection;
     using System.Reflection.Emit;
+#endif
     using System.Runtime.Serialization;
     using System.Xml;
     using Apache.Ignite.Core.Cluster;
@@ -96,6 +98,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
 
+#if !NETCOREAPP// AppDomains are not supported in .NET Core
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
@@ -110,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             for (var i = 0; i < count; i++)
             {
                 dynamic val = Activator.CreateInstance(GenerateDynamicType());
-                
+
                 val.Id = i;
                 val.Name = "Name_" + i;
 
@@ -142,11 +145,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Serializable);
 
             typeBuilder.DefineField("Id", typeof (int), FieldAttributes.Public);
-            
+
             typeBuilder.DefineField("Name", typeof (string), FieldAttributes.Public);
 
             return typeBuilder.CreateType();
         }
+#endif
 
         /// <summary>
         /// Tests the DataTable serialization.

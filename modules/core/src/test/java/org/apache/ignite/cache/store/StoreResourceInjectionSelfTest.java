@@ -15,24 +15,19 @@ package org.apache.ignite.cache.store;/*
  * limitations under the License.
  */
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import javax.cache.configuration.*;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test resource injection.
  */
 public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -45,12 +40,6 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -62,6 +51,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInStoreFactory() throws Exception {
         cacheCfg.setCacheStoreFactory(new MyCacheStoreFactory());
 
@@ -71,6 +61,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInLoaderFactory() throws Exception {
         cacheCfg.setCacheLoaderFactory(new MyCacheStoreFactory());
 
@@ -80,6 +71,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInWriterFactory() throws Exception {
         cacheCfg.setCacheWriterFactory(new MyCacheStoreFactory());
 

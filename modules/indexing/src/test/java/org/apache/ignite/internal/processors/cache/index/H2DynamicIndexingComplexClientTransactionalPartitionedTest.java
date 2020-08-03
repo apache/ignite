@@ -23,11 +23,11 @@ import org.apache.ignite.cache.CacheMode;
 /**
  * Test to check work of DML+DDL operations of transactional partitioned cache with queries initiated from client node.
  */
-public class H2DynamicIndexingComplexClientTransactionalPartitionedTest extends H2DynamicIndexingComplexTest {
+public class H2DynamicIndexingComplexClientTransactionalPartitionedTest extends H2DynamicIndexingComplexAbstractTest {
     /**
      * Constructor.
      */
     public H2DynamicIndexingComplexClientTransactionalPartitionedTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CLIENT_IDX);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 1, CLIENT_IDX);
     }
 }

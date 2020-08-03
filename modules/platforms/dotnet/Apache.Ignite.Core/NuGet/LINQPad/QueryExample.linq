@@ -31,7 +31,6 @@
 /// 
 /// Requirements:
 /// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
-/// * Microsoft Visual C++ 2010 Redistributable Package: http://www.microsoft.com/en-us/download/details.aspx?id=14632 (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()
@@ -58,15 +57,12 @@ void Main()
 		persons[5] = new Person { OrgId = 3, Name = "Christopher Adams" };
 
         // SQL query
-        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).Dump("Organizations with size less than 100K");
+        orgs.Query(new SqlFieldsQuery("select * from Organization where size < ?", 100000)).Dump("Organizations with size less than 100K");
 		
 		// SQL query with join
 		const string orgName = "Apache";
-		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs-sql\".Organization where Person.OrgId = \"orgs-sql\".Organization._key and \"orgs-sql\".Organization.Name = ?", orgName))
+		persons.Query(new SqlFieldsQuery("select Person.name from Person, \"orgs-sql\".Organization where Person.OrgId = \"orgs-sql\".Organization._key and \"orgs-sql\".Organization.Name = ?", orgName))
 			.Dump("Persons working for " + orgName);
-
-		// Fields query
-		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
 
 		// Full text query
 		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");

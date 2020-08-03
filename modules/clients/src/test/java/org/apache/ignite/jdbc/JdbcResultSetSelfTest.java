@@ -17,6 +17,21 @@
 
 package org.apache.ignite.jdbc;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
@@ -28,22 +43,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.sql.*;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,9 +56,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("FloatingPointEquality")
 public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/";
 
@@ -83,12 +83,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
@@ -106,11 +100,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -161,6 +150,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -181,6 +171,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -201,6 +192,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -221,6 +213,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInteger() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -241,6 +234,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -261,6 +255,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -281,6 +276,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -301,6 +297,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimal() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -321,6 +318,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -341,6 +339,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArray() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -362,6 +361,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testDate() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -383,6 +383,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testTime() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -403,6 +404,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -423,6 +425,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrl() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -512,6 +515,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObject() throws Exception {
         final Ignite ignite = ignite(0);
         final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
@@ -546,6 +550,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNavigation() throws Exception {
         ResultSet rs = stmt.executeQuery("select * from TestObject where id > 0");
 
@@ -583,6 +588,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindColumn() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 
@@ -608,7 +614,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField

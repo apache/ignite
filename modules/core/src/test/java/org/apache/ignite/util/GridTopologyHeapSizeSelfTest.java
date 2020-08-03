@@ -19,15 +19,12 @@ package org.apache.ignite.util;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -36,25 +33,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Tests for calculation logic for topology heap size.
  */
 public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyHeapSizeInOneJvm() throws Exception {
         try {
             ClusterNode node1 = startGrid(1).cluster().node();
@@ -72,6 +54,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTopologyHeapSizeForNodesWithDifferentPids() {
         GridTestNode node1 = getNode("123456789ABC", 1000);
         GridTestNode node2 = getNode("123456789ABC", 1001);
@@ -85,6 +68,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTopologyHeapSizeForNodesWithDifferentMacs() {
         GridTestNode node1 = getNode("123456789ABC", 1000);
         GridTestNode node2 = getNode("CBA987654321", 1000);
@@ -107,8 +91,8 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     private GridTestNode getNode(String mac, int pid) {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.setHeapMemoryMaximum(1024 * 1024 * 1024);
-        metrics.setHeapMemoryInitialized(1024 * 1024 * 1024);
+        metrics.setHeapMemoryMaximum(1024L * 1024 * 1024);
+        metrics.setHeapMemoryInitialized(1024L * 1024 * 1024);
 
         GridTestNode node = new GridTestNode(UUID.randomUUID(), metrics);
 

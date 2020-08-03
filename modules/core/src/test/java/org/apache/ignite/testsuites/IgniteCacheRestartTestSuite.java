@@ -17,33 +17,29 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCreateRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheNearRestartRollbackSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMultithreadedUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Cache stability test suite on changing topology.
  */
-public class IgniteCacheRestartTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache Restart Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCachePartitionedNodeRestartTest.class,
+    GridCachePartitionedOptimisticTxNodeRestartTest.class,
+    GridCacheReplicatedNodeRestartSelfTest.class,
+    GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class,
+    IgniteCacheNearRestartRollbackSelfTest.class,
+    NearCacheMultithreadedUpdateTest.class,
 
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheCreateRestartSelfTest.class);
-
-        return suite;
-    }
+    IgniteCacheCreateRestartSelfTest.class
+})
+public class IgniteCacheRestartTestSuite {
 }

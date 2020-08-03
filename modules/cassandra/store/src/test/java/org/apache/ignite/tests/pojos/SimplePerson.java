@@ -17,14 +17,13 @@
 
 package org.apache.ignite.tests.pojos;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Date;
 import java.util.List;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Simple POJO without getters/setters which could be stored as a value in Ignite cache
@@ -44,7 +43,7 @@ public class SimplePerson implements Externalizable {
 
     /** */
     @QuerySqlField(name = "age")
-    private int age;
+    private short age;
 
     /** */
     @QuerySqlField(name = "married", index = true)
@@ -67,7 +66,6 @@ public class SimplePerson implements Externalizable {
     private List<String> phones;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public SimplePerson() {
     }
 
@@ -85,7 +83,7 @@ public class SimplePerson implements Externalizable {
     }
 
     /** */
-    public SimplePerson(long personNum, String firstName, String lastName, int age, boolean married,
+    public SimplePerson(long personNum, String firstName, String lastName, short age, boolean married,
                         long height, float weight, Date birthDate, List<String> phones) {
         this.personNum = personNum;
         this.firstName = firstName;
@@ -104,7 +102,7 @@ public class SimplePerson implements Externalizable {
         out.writeLong(personNum);
         out.writeObject(firstName);
         out.writeObject(lastName);
-        out.writeInt(age);
+        out.writeShort(age);
         out.writeBoolean(married);
         out.writeLong(height);
         out.writeFloat(weight);
@@ -118,7 +116,7 @@ public class SimplePerson implements Externalizable {
         personNum = in.readLong();
         firstName = (String)in.readObject();
         lastName = (String)in.readObject();
-        age = in.readInt();
+        age = in.readShort();
         married = in.readBoolean();
         height = in.readLong();
         weight = in.readFloat();

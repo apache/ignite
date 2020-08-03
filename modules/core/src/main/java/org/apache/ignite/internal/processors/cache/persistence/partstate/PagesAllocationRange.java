@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Range of pages allocated.
  * Contains currently allocated page count and previously observed page count.
@@ -60,9 +62,6 @@ public class PagesAllocationRange {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "PagesAllocationRange{" +
-            "lastAllocatedPageCnt=" + lastAllocatedPageCnt +
-            ", currAllocatedPageCnt=" + currAllocatedPageCnt +
-            '}';
+        return S.toString(PagesAllocationRange.class, this);
     }
 }

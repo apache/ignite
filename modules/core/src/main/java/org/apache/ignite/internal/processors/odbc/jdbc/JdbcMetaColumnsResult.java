@@ -51,6 +51,25 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     }
 
     /**
+     * Used by children classes.
+     * @param type Type ID.
+     */
+    protected JdbcMetaColumnsResult(byte type) {
+        super(type);
+    }
+
+    /**
+     * Used by children classes.
+     * @param type Type ID.
+     * @param meta Columns metadata.
+     */
+    protected JdbcMetaColumnsResult(byte type, Collection<JdbcColumnMeta> meta) {
+        super(type);
+
+        this.meta = new ArrayList<>(meta);
+    }
+
+    /**
      * @return Columns metadata.
      */
     public List<JdbcColumnMeta> meta() {
@@ -58,22 +77,28 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         if (F.isEmpty(meta))
             writer.writeInt(0);
         else {
             writer.writeInt(meta.size());
 
-            for(JdbcColumnMeta m : meta)
-                m.writeBinary(writer);
+            for (JdbcColumnMeta m : meta)
+                m.writeBinary(writer, protoCtx);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         int size = reader.readInt();
 
@@ -83,13 +108,20 @@ public class JdbcMetaColumnsResult extends JdbcResult {
             meta = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i) {
-                JdbcColumnMeta m = new JdbcColumnMeta();
+                JdbcColumnMeta m = createMetaColumn();
 
-                m.readBinary(reader);
+                m.readBinary(reader, protoCtx);
 
                 meta.add(m);
             }
         }
+    }
+
+    /**
+     * @return Empty columns metadata to deserialization.
+     */
+    protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMeta();
     }
 
     /** {@inheritDoc} */

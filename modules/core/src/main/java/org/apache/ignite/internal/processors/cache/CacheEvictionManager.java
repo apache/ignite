@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
@@ -35,10 +34,9 @@ public interface CacheEvictionManager extends GridCacheManager {
     public void touch(IgniteTxEntry txEntry, boolean loc);
 
     /**
-     * @param e      Entry for eviction policy notification.
-     * @param topVer Topology version.
+     * @param e Entry for eviction policy notification.
      */
-    public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer);
+    public void touch(GridCacheEntryEx e);
 
     /**
      * @param entry Entry to attempt to evict.

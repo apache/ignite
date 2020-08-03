@@ -40,11 +40,11 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstractTest {
     /** */
@@ -70,6 +70,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -84,6 +85,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -156,7 +158,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         startSignal = new CountDownLatch[EXEC_COUNT];
         stopSignal = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++){
+        for (int i = 0; i < EXEC_COUNT; i++) {
             startSignal[i] = new CountDownLatch(1);
 
             stopSignal[i] = new CountDownLatch(1);

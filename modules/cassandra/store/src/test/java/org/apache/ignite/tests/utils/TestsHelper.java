@@ -17,30 +17,27 @@
 
 package org.apache.ignite.tests.utils;
 
-
-import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.tests.load.Generator;
-import org.springframework.core.io.ClassPathResource;
-
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Calendar;
-import java.util.Date;
-
+import java.util.Set;
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.tests.load.Generator;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.Product;
 import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.SimplePersonId;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Helper class for all tests
@@ -490,7 +487,7 @@ public class TestsHelper {
         for (int i = 0; i < phonesCnt; i++)
             phones.add(randomNumber(4));
 
-        return new SimplePerson(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
+        return new SimplePerson(personNum, randomString(4), randomString(4), (short)RANDOM.nextInt(100),
                 RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
     }
 
@@ -508,7 +505,7 @@ public class TestsHelper {
         for (int i = 0; i < phonesCnt; i++)
             phones.add(randomNumber(4));
 
-        return new Person(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
+        return new Person(personNum, randomString(4), randomString(4), (short)RANDOM.nextInt(100),
             RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
     }
 

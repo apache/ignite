@@ -17,20 +17,31 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test for {@link TcpCommunicationSpi}
  */
-abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi> {
+abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
     /** */
     private static final int SPI_COUNT = 3;
 
@@ -48,7 +59,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override protected CommunicationSpi getSpi(int idx) {
+    @Override protected CommunicationSpi<Message> getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         if (!useShmem)
@@ -72,11 +83,12 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
 
         // Test idle clients remove.
-        for (CommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
             assertEquals(getSpiCount() - 1, clients.size());
@@ -85,11 +97,74 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         }
     }
 
+    /**
+     *
+     */
+    @Test
+    public void testCheckConnection1() {
+        for (int i = 0; i < 100; i++) {
+            for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+                TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
+
+                List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+
+                assert checkNodes.size() > 1;
+
+                IgniteFuture<BitSet> fut = spi.checkConnection(checkNodes);
+
+                BitSet res = fut.get();
+
+                for (int n = 0; n < checkNodes.size(); n++)
+                    assertTrue(res.get(n));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCheckConnection2() throws Exception {
+        final int THREADS = spis.size();
+
+        final CyclicBarrier b = new CyclicBarrier(THREADS);
+
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            final TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
+
+            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+
+                    assert checkNodes.size() > 1;
+
+                    b.await();
+
+                    for (int i = 0; i < 100; i++) {
+                        IgniteFuture<BitSet> fut = spi.checkConnection(checkNodes);
+
+                        BitSet res = fut.get();
+
+                        for (int n = 0; n < checkNodes.size(); n++)
+                            assertTrue(res.get(n));
+                    }
+
+                    return null;
+                }
+            }));
+        }
+
+        for (IgniteInternalFuture<?> f : futs)
+            f.get();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (CommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 20; i++) {

@@ -30,11 +30,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -44,9 +39,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test for Jdbc driver query without class on client
  */
 public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** TestObject class name. */
     protected static final String TEST_OBJECT = "org.apache.ignite.internal.JdbcTestObject";
 
@@ -56,13 +48,8 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     /** Statement. */
     protected Statement stmt;
 
-    /** */
-    private String marshallerBackup = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
@@ -70,11 +57,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         QueryEntity queryEntity = new QueryEntity();
@@ -111,13 +93,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         IgniteCache<String, BinaryObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put("0", binObj);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, marshallerBackup);
     }
 
     /** {@inheritDoc} */

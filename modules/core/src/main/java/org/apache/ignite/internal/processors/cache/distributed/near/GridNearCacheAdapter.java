@@ -64,7 +64,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common logic for near caches.
+ * Common logic for near caches (smaller local cache that stores most recently or most frequently accessed data).
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
@@ -216,7 +216,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
-     * @param canRemap Can remap flag.
      * @param needVer Need version.
      * @return Loaded values.
      */
@@ -231,7 +230,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
-        boolean canRemap,
         boolean needVer
     ) {
         if (F.isEmpty(keys))
@@ -251,7 +249,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             deserializeBinary,
             expiry,
             skipVal,
-            canRemap,
             needVer,
             false,
             recovery);
@@ -384,37 +381,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return dht().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgfsDataSizeChanged(long delta) {
-        dht().onIgfsDataSizeChanged(delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return dht().isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return dht().isMongoMetaCache();
-    }
-
-    /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
         boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
-            GridCacheVersion obsoleteVer = ctx.versions().next();
+            GridCacheVersion obsoleteVer = nextVersion();
 
             List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 
@@ -457,7 +429,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {
                         try {
-                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
+                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE) == null;
                         }
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);

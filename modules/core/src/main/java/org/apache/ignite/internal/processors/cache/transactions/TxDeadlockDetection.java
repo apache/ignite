@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
  */
 public class TxDeadlockDetection {
     /** Deadlock detection maximum iterations. */
-    private static final int DEADLOCK_TIMEOUT = getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000);
+    private static int deadLockTimeout = getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000);
 
     /** Sequence. */
     private static final AtomicLong SEQ = new AtomicLong();
@@ -220,7 +220,6 @@ public class TxDeadlockDetection {
          * @param topVer Transaction topology version.
          * @param keys Keys.
          */
-        @SuppressWarnings("unchecked")
         private TxDeadlockFuture(GridCacheSharedContext cctx,
             GridCacheVersion txId,
             AffinityTopologyVersion topVer,
@@ -230,7 +229,7 @@ public class TxDeadlockDetection {
             this.topVer = topVer;
             this.keys = keys;
 
-            if (DEADLOCK_TIMEOUT > 0) {
+            if (deadLockTimeout > 0) {
                 timeoutObj = new DeadlockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -556,7 +555,7 @@ public class TxDeadlockDetection {
              * Default constructor.
              */
             DeadlockTimeoutObject() {
-                super(DEADLOCK_TIMEOUT);
+                super(deadLockTimeout);
             }
 
             /** {@inheritDoc} */
@@ -565,7 +564,7 @@ public class TxDeadlockDetection {
 
                 IgniteLogger log = cctx.kernalContext().log(this.getClass());
 
-                U.warn(log, "Deadlock detection was timed out [timeout=" + DEADLOCK_TIMEOUT + ", fut=" + this + ']');
+                U.warn(log, "Deadlock detection was timed out [timeout=" + deadLockTimeout + ", fut=" + this + ']');
 
                 onDone();
             }

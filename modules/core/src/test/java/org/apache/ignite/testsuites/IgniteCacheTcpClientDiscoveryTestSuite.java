@@ -17,30 +17,51 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
+
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional;
 
 /**
  * Tests a cache with TcpClientDiscovery SPI being enabled.
  */
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTcpClientDiscoveryTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
+    public static List<Class<?>> suite() {
+        return suite(null);
+    }
 
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
+    /**
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
+     */
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
+
+        GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientPartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientPartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheTcpClientDiscoveryMultiThreadedTest.class, ignoredTests);
 
         return suite;
     }

@@ -19,50 +19,42 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.GPC;
-import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * DHT cache preloader.
@@ -70,6 +62,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
+
+    /** Disable rebalancing cancellation optimization. */
+    private final boolean disableRebalancingCancellationOptimization = IgniteSystemProperties.getBoolean(
+        IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION);
 
     /** */
     private GridDhtPartitionTopology top;
@@ -85,15 +81,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
-
-    /** Demand lock. */
-    private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
-
-    /** */
-    private final ConcurrentHashMap<Integer, GridDhtLocalPartition> partsToEvict = new ConcurrentHashMap<>();
-
-    /** */
-    private final AtomicInteger partsEvictOwning = new AtomicInteger();
 
     /** */
     private boolean stopped;
@@ -121,23 +108,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        super.preloadPredicate(preloadPred);
-
-        assert supplier != null && demander != null : "preloadPredicate may be called only after start()";
-
-        supplier.preloadPredicate(preloadPred);
-        demander.preloadPredicate(preloadPred);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
-        // Acquire write busy lock.
-        busyLock.writeLock().lock();
+        pause();
 
         try {
             if (supplier != null)
@@ -151,7 +126,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             stopped = true;
         }
         finally {
-            busyLock.writeLock().unlock();
+            resume();
         }
     }
 
@@ -160,6 +135,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     private IgniteCheckedException stopError() {
         return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
+    }
+
+    /**
+     * @return Rebalance cancellation optimization flag.
+     */
+    public boolean disableRebalancingCancellationOptimization() {
+        return disableRebalancingCancellationOptimization;
     }
 
     /** {@inheritDoc} */
@@ -172,155 +154,165 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
-        supplier.onTopologyChanged(lastFut.initialVersion());
+        supplier.onTopologyChanged();
 
         demander.onTopologyChanged(lastFut);
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut) {
+        if (ctx.kernalContext().clientNode())
+            return false; // No-op.
+
+        AffinityTopologyVersion lastAffChangeTopVer =
+            ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
+
+        return lastAffChangeTopVer.equals(exchFut.topologyVersion());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtPreloaderAssignments generateAssignments(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
         if (!grp.rebalanceEnabled())
-            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
+            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion(), false);
 
-        int partCnt = grp.affinity().partitions();
+        int partitions = grp.affinity().partitions();
 
         AffinityTopologyVersion topVer = top.readyTopologyVersion();
 
-        assert exchFut == null || exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) :
+        assert exchFut == null ||
+            exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) ||
+            exchFut.context().events().topologyVersion().equals(ctx.exchange().lastAffinityChangedTopologyVersion(top.readyTopologyVersion())) :
             "Topology version mismatch [exchId=" + exchId +
-            ", grp=" + grp.name() +
-            ", topVer=" + top.readyTopologyVersion() + ']';
+                ", grp=" + grp.name() +
+                ", topVer=" + top.readyTopologyVersion() + ']';
 
-        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, topVer);
+        GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer,
+            exchFut != null && exchFut.affinityReassign());
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        for (int p = 0; p < partCnt; p++) {
-            if (ctx.exchange().hasPendingExchange()) {
+        CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
+
+        for (int p = 0; p < partitions; p++) {
+            if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchId);
 
-                assigns.cancelled(true);
+                assignments.cancelled(true);
 
-                return assigns;
+                return assignments;
             }
 
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
+                GridDhtLocalPartition part = top.localPartition(p);
 
                 assert part != null;
                 assert part.id() == p;
 
+                // Do not rebalance OWNING or LOST partitions.
+                if (part.state() == OWNING || part.state() == LOST)
+                    continue;
+
+                // If partition is currently rented prevent destroy and start clearing process.
+                if (part.state() == RENTING) {
+                    if (part.reserve()) {
+                        part.moving();
+
+                        part.clearAsync();
+
+                        part.release();
+                    }
+                }
+
+                // If partition was destroyed recreate it.
+                if (part.state() == EVICTED) {
+                    part.awaitDestroy();
+
+                    part = top.localPartition(p, topVer, true);
+
+                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
+
+                    part.resetUpdateCounter();
+                }
+
+                if (part.state() != MOVING && part.state() != OWNING) {
+                    throw new AssertionError("Partition has invalid state for rebalance "
+                        + aff.topologyVersion() + " " + part);
+                }
+
                 ClusterNode histSupplier = null;
 
-                if (ctx.database().persistenceEnabled() && exchFut != null) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+                if (grp.persistenceEnabled() && exchFut != null) {
+                    List<UUID> nodeIds = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
-                    if (nodeId != null)
-                        histSupplier = ctx.discovery().node(nodeId);
+                    if (!F.isEmpty(nodeIds))
+                        histSupplier = ctx.discovery().node(nodeIds.get(p % nodeIds.size()));
                 }
 
-                if (histSupplier != null) {
-                    if (part.state() != MOVING) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
-
-                        continue; // For.
-                    }
-
-                    assert ctx.database().persistenceEnabled();
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
+                    assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
-                    GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
+                    GridDhtPartitionDemandMessage msg = assignments.get(histSupplier);
 
                     if (msg == null) {
-                        assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
+                        assignments.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            assigns.topologyVersion(),
-                            grp.groupId()));
+                            assignments.topologyVersion(),
+                            grp.groupId())
+                        );
                     }
 
-                    msg.addPartition(p, true);
+                    // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
+                    msg.partitions().
+                        addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
-                    if (ctx.database().persistenceEnabled()) {
-                        if (part.state() == RENTING || part.state() == EVICTED) {
-                            IgniteInternalFuture<?> rentFut = part.rent(false);
+                    int partId = p;
+                    List<ClusterNode> picked = remoteOwners(p, topVer, node -> {
+                        if (exchFut != null && !exchFut.isNodeApplicableForFullRebalance(node.id(), grp.groupId(), partId))
+                            return false;
 
-                            while (true) {
-                                try {
-                                    rentFut.get(20, TimeUnit.SECONDS);
+                        return true;
+                    });
 
-                                    break;
-                                }
-                                catch (IgniteFutureTimeoutCheckedException ignore) {
-                                    // Continue.
-                                    U.warn(log, "Still waiting for partition eviction: " + part);
+                    if (!picked.isEmpty()) {
+                        ClusterNode n = picked.get(p % picked.size());
 
-                                    part.tryEvictAsync(false);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Error while clearing outdated local partition", e);
+                        GridDhtPartitionDemandMessage msg = assignments.get(n);
 
-                                    break;
-                                }
-                            }
-
-                            part = top.localPartition(p, topVer, true);
-
-                            assert part != null;
-                        }
-                    }
-
-                    if (part.state() != MOVING) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
-
-                        continue; // For.
-                    }
-
-                    Collection<ClusterNode> picked = pickedOwners(p, topVer);
-
-                    if (picked.isEmpty()) {
-                        top.own(part);
-
-                        if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                            grp.addRebalanceEvent(p,
-                                EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                exchId.eventNode(),
-                                exchId.event(),
-                                exchId.eventTimestamp());
+                        if (msg == null) {
+                            assignments.put(n, msg = new GridDhtPartitionDemandMessage(
+                                top.updateSequence(),
+                                assignments.topologyVersion(),
+                                grp.groupId()));
                         }
 
-                        if (log.isDebugEnabled())
-                            log.debug("Owning partition as there are no other owners: " + part);
-                    }
-                    else {
-                        ClusterNode n = F.rand(picked);
-
-                        GridDhtPartitionDemandMessage msg = assigns.get(n);
-
-                    if (msg == null) {
-                        assigns.put(n, msg = new GridDhtPartitionDemandMessage(
-                            top.updateSequence(),
-                            assigns.topologyVersion(),
-                            grp.groupId()));
-                    }
-
-                        msg.addPartition(p, false);
+                        msg.partitions().addFull(p);
                     }
                 }
             }
         }
 
-        return assigns;
+        if (!assignments.isEmpty()) {
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
+            assert exchFut == null || !exchFut.rebalanced() :
+                "Unexpected rebalance on rebalanced cluster " +
+                    "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
+        }
+
+        return assignments;
     }
 
     /** {@inheritDoc} */
@@ -329,82 +321,77 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * @param p Partition.
-     * @param topVer Topology version.
-     * @return Picked owners.
-     */
-    private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = grp.affinity().cachedAffinity(topVer).get(p);
-
-        int affCnt = affNodes.size();
-
-        Collection<ClusterNode> rmts = remoteOwners(p, topVer);
-
-        int rmtCnt = rmts.size();
-
-        if (rmtCnt <= affCnt)
-            return rmts;
-
-        List<ClusterNode> sorted = new ArrayList<>(rmts);
-
-        // Sort in descending order, so nodes with higher order will be first.
-        Collections.sort(sorted, CU.nodeComparator(false));
-
-        // Pick newest nodes.
-        return sorted.subList(0, affCnt);
-    }
-
-    /**
+     * Returns remote owners (excluding local node) for specified partition {@code p}.
+     *
      * @param p Partition.
      * @param topVer Topology version.
      * @return Nodes owning this partition.
      */
-    private Collection<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
-        return F.view(grp.topology().owners(p, topVer), F.remoteNodes(ctx.localNodeId()));
+    private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
+        return remoteOwners(p, topVer, node -> true);
+    }
+
+    /**
+     * Returns remote owners (excluding local node) for specified partition {@code p}
+     * which is additionally filtered by the specified predicate.
+     *
+     * @param p Partition.
+     * @param topVer Topology version.
+     * @return Nodes owning this partition.
+     */
+    private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer, IgnitePredicate<ClusterNode> pred) {
+        List<ClusterNode> owners = grp.topology().owners(p, topVer);
+
+        List<ClusterNode> res = new ArrayList<>(owners.size());
+
+        for (ClusterNode owner : owners) {
+            if (!owner.id().equals(ctx.localNodeId()) && pred.apply(owner))
+                res.add(owner);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
-        if (!enterBusy())
-            return;
-
-        try {
-            demandLock.readLock().lock();
+    @Override public void handleSupplyMessage(UUID nodeId, final GridDhtPartitionSupplyMessage s) {
+        demander.registerSupplyMessage(nodeId, s, () -> {
+            if (!enterBusy())
+                return;
 
             try {
-                demander.handleSupplyMessage(idx, id, s);
+                demander.handleSupplyMessage(nodeId, s);
             }
             finally {
-                demandLock.readLock().unlock();
+                leaveBusy();
             }
-        }
-        finally {
-            leaveBusy();
-        }
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
-        if (!enterBusy())
-            return;
+    @Override public void handleDemandMessage(int idx, UUID nodeId, GridDhtPartitionDemandMessage d) {
+        ctx.kernalContext().getStripedRebalanceExecutorService().execute(() -> {
+            if (!enterBusy())
+                return;
 
-        try {
-            supplier.handleDemandMessage(idx, id, d);
-        }
-        finally {
-            leaveBusy();
-        }
+            try {
+                supplier.handleDemandMessage(idx, nodeId, d);
+            }
+            finally {
+                leaveBusy();
+            }
+        }, Math.abs(nodeId.hashCode()));
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable addAssignments(
+    @Override public RebalanceFuture addAssignments(
         GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
-        int cnt,
-        Runnable next,
-        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
+        long rebalanceId,
+        final RebalanceFuture next,
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut, compatibleRebFut);
     }
 
     /**
@@ -427,9 +414,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @return {@code true} if entered to busy state.
      */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     private boolean enterBusy() {
-        if (!busyLock.readLock().tryLock())
-            return false;
+        busyLock.readLock().lock();
 
         if (stopped) {
             busyLock.readLock().unlock();
@@ -448,10 +435,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * Resends partitions on partition evict within configured timeout.
+     * Update topology on partition eviction and optionally refresh partition map.
      *
      * @param part Evicted partition.
-     * @param updateSeq Update sequence.
+     * @param updateSeq {@code True} to refresh partition maps.
      */
     public void onPartitionEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         if (!enterBusy())
@@ -463,8 +450,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
                 grp.addUnloadEvent(part.id());
 
-            if (updateSeq)
+            if (updateSeq) {
+                if (log.isDebugEnabled())
+                    log.debug("Partitions have been scheduled to resend [reason=" +
+                        "Eviction [grp" + grp.cacheOrGroupName() + " " + part.id() + "]");
+
                 ctx.exchange().scheduleResendPartitions();
+            }
         }
         finally {
             leaveBusy();
@@ -473,6 +465,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean needForceKeys() {
+        // Do not use force key request with enabled MVCC.
+        if (grp.mvccEnabled())
+            return false;
+
         if (grp.rebalanceEnabled()) {
             IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
 
@@ -497,7 +493,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {
@@ -514,7 +509,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Future for request.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    private GridDhtFuture<Object> request0(GridCacheContext cctx, Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+    private GridDhtFuture<Object> request0(GridCacheContext cctx, Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer) {
         if (cctx.isNear())
             cctx = cctx.near().dht().context();
 
@@ -557,89 +553,70 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> forceRebalance() {
-        return demander.forceRebalance();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unwindUndeploys() {
-        demandLock.writeLock().lock();
+        if (!enterBusy())
+            return new GridFinishedFuture<>();
 
         try {
-            grp.unwindUndeploys();
+            return demander.forceRebalance();
         }
         finally {
-            demandLock.writeLock().unlock();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void evictPartitionAsync(GridDhtLocalPartition part) {
-        partsToEvict.putIfAbsent(part.id(), part);
-
-        if (partsEvictOwning.get() == 0 && partsEvictOwning.compareAndSet(0, 1)) {
-            ctx.kernalContext().closure().callLocalSafe(new GPC<Boolean>() {
-                @Override public Boolean call() {
-                    boolean locked = true;
-
-                    while (locked || !partsToEvict.isEmpty()) {
-                        if (!locked && !partsEvictOwning.compareAndSet(0, 1))
-                            return false;
-
-                        try {
-                            for (GridDhtLocalPartition part : partsToEvict.values()) {
-                                try {
-                                    partsToEvict.remove(part.id());
-
-                                    part.tryEvict();
-
-                                    GridDhtPartitionState state = part.state();
-
-                                    if (state == RENTING || ((state == MOVING || state == OWNING) && part.shouldBeRenting()))
-                                        partsToEvict.put(part.id(), part);
-                                }
-                                catch (Throwable ex) {
-                                    if (ctx.kernalContext().isStopping()) {
-                                        LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
-                                            false,
-                                            true);
-
-                                        partsToEvict.clear();
-
-                                        return true;
-                                    }
-                                    else
-                                        LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
-                                }
-                            }
-                        }
-                        finally {
-                            if (!partsToEvict.isEmpty()) {
-                                if (ctx.kernalContext().isStopping()) {
-                                    partsToEvict.clear();
-
-                                    locked = false;
-                                }
-                                else
-                                    locked = true;
-                            }
-                            else {
-                                boolean res = partsEvictOwning.compareAndSet(1, 0);
-
-                                assert res;
-
-                                locked = false;
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-            }, /*system pool*/ true);
-        }
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    @Override public void pause() {
+        busyLock.writeLock().lock();
     }
 
     /** {@inheritDoc} */
-    @Override public void dumpDebugInfo() {
-        supplier.dumpDebugInfo();
+    @Override public void resume() {
+        busyLock.writeLock().unlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+        if (!enterBusy())
+            return;
+
+        try {
+            demander.finishPreloading(topVer);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Return supplier.
+     *
+     * @return Supplier.
+     * */
+    public GridDhtPartitionSupplier supplier() {
+        return supplier;
+    }
+
+    /**
+     * @param supplier Supplier.
+     */
+    public void supplier(GridDhtPartitionSupplier supplier) {
+        this.supplier = supplier;
+    }
+
+    /**
+     * Return demander.
+     *
+     * @return Demander.
+     * */
+    public GridDhtPartitionDemander demander() {
+        return demander;
+    }
+
+    /**
+     * @param demander Demander.
+     */
+    public void demander(GridDhtPartitionDemander demander) {
+        this.demander = demander;
     }
 }

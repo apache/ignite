@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
     using Apache.Ignite.Core.Impl.Common;
@@ -656,8 +657,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var hdr = BinaryObjectHeader.Read(Stream, pos);
 
-                if (!doDetach)
+                if (!doDetach && Stream.CanGetArray)
+                {
                     return new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
+                }
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
@@ -698,14 +701,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     BinaryObject portObj;
 
-                    if (_detach)
+                    if (_detach || !Stream.CanGetArray)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
                         portObj = new BinaryObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
+                    {
                         portObj = new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
+                    }
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -720,14 +725,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? _marsh.GetDescriptor(ReadUnregisteredType(typeOverride))
                         : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true, null, typeOverride);
 
-                    // Instantiate object. 
+                    if (desc == null)
+                    {
+                        throw new BinaryObjectException(string.Format(
+                            "No matching type found for object [typeId={0}, userType={1}].",
+                            hdr.TypeId, hdr.IsUserType));
+                    }
+
                     if (desc.Type == null)
                     {
                         throw new BinaryObjectException(string.Format(
                             "No matching type found for object [typeId={0}, typeName={1}]. " +
                             "This usually indicates that assembly with specified type is not loaded on a node. " +
                             "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter. " +
-                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingEnabled to true.",
+                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingMode to CurrentAppDomain.",
                             desc.TypeId, desc.TypeName));
                     }
 
@@ -766,7 +777,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var typeName = ReadString();  // Must read always.
 
-            return knownType ?? Marshaller.ResolveType(typeName);
+            var type = knownType ?? Marshaller.ResolveType(typeName);
+
+            if (type == null)
+            {
+                throw new IgniteException("Could not resolve unregistered type " + typeName);
+            }
+
+            return type;
         }
 
         /// <summary>
@@ -852,6 +870,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        /// Gets the schema for the current object, if any.
+        /// </summary>
+        public int[] Schema
+        {
+            get { return _frame.Schema; }
         }
 
         /// <summary>

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public interface WALPointer {
+public interface WALPointer extends Serializable {
     /**
      * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
      */

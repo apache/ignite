@@ -22,10 +22,6 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "test_type.h"
@@ -38,27 +34,27 @@ BOOST_FIXTURE_TEST_SUITE(SqlOperatorTestSuite, ignite::SqlTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestOperatorAddInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 + 51", 123 + 51);
+    CheckSingleResult<SQLINTEGER>("SELECT 123 + 51", 123 + 51);
 };
 
 BOOST_AUTO_TEST_CASE(TestOperatorSubInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 - 51", 123 - 51);
+    CheckSingleResult<SQLINTEGER>("SELECT 123 - 51", 123 - 51);
 };
 
 BOOST_AUTO_TEST_CASE(TestOperatorDivInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 / 51", 123 / 51);
+    CheckSingleResult<SQLINTEGER>("SELECT 123 / 51", 123 / 51);
 };
 
 BOOST_AUTO_TEST_CASE(TestOperatorModInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 % 51", 123 % 51);
+    CheckSingleResult<SQLINTEGER>("SELECT 123 % 51", 123 % 51);
 };
 
 BOOST_AUTO_TEST_CASE(TestOperatorMultInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 * 51", 123 * 51);
+    CheckSingleResult<SQLINTEGER>("SELECT 123 * 51", 123 * 51);
 };
 
 BOOST_AUTO_TEST_CASE(TestOperatorAddDouble)

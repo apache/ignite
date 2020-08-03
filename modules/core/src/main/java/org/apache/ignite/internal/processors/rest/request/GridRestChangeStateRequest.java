@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.cluster.ClusterState;
+
 /**
  *
  */
@@ -26,6 +28,9 @@ public class GridRestChangeStateRequest extends GridRestRequest {
 
     /** Request current state. */
     private boolean reqCurrentState;
+
+    /** If {@code true}, cluster deactivation will be forced. */
+    private boolean forceDeactivation;
 
     /**
      *
@@ -53,5 +58,20 @@ public class GridRestChangeStateRequest extends GridRestRequest {
      */
     public void reqCurrentState() {
         reqCurrentState = true;
+    }
+
+    /**
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     */
+    public void forceDeactivation(boolean forceDeactivation) {
+        this.forceDeactivation = forceDeactivation;
+    }
+
+    /**
+     * @return {@code True} if cluster deactivation will be forced. {@code False} otherwise.
+     * @see ClusterState#INACTIVE
+     */
+    public boolean forceDeactivation() {
+        return forceDeactivation;
     }
 }

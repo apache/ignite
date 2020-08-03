@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -46,7 +47,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  */
 public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCacheAbstractTest {
     /** */
-    private static final int CACHES_COUNT = 50;
+    private static final int CACHES_COUNT = 30;
 
     /** */
     private static final int DISCOVERY_HISTORY_SIZE = 10;
@@ -121,13 +122,14 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testDynamicCacheCreation() throws Exception {
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 
             IgniteInternalFuture[] futs = new IgniteInternalFuture[CACHES_COUNT];
 
-            for (int i = 0; i < CACHES_COUNT; i ++) {
+            for (int i = 0; i < CACHES_COUNT; i++) {
                 final int cacheIdx = i;
 
                 final int gridIdx = cacheIdx % gridCount();
@@ -145,7 +147,7 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
                 fut.get();
             }
 
-            for (int i = 0; i < CACHES_COUNT; i ++) {
+            for (int i = 0; i < CACHES_COUNT; i++) {
                 final int cacheIdx = i;
 
                 final int gridIdx = cacheIdx % gridCount();

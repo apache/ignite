@@ -20,20 +20,21 @@ package org.apache.ignite.jvmtest;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * JDK read write lock test.
  */
-public class ReadWriteLockMultiThreadedTest extends TestCase {
+public class ReadWriteLockMultiThreadedTest {
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
+    @Test
     public void testReadThenWriteLockAcquire() throws Exception {
         ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -45,6 +46,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testNotOwnedLockRelease() {
         ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -55,6 +57,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
+    @Test
     public void testWriteLockAcquire() throws Exception {
         final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -124,6 +127,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
+    @Test
     public void testReadLockAcquire() throws Exception {
         final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -169,6 +173,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
+    @Test
     public void testTryWriteLock() throws Exception {
         final ReadWriteLock lock = new ReentrantReadWriteLock();
 

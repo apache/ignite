@@ -85,6 +85,12 @@ namespace Apache.Ignite.Core.Cache
         bool IsKeepBinary { get; }
 
         /// <summary>
+        /// Gets a value indicating whether to allow use atomic operations in transactions.
+        /// </summary>
+        [Obsolete("Not supported, will be removed in future releases.")]
+        bool IsAllowAtomicOpsInTx { get; }
+
+        /// <summary>
         /// Get another cache instance with read-through and write-through behavior disabled.
         /// </summary>
         /// <returns>Cache with read-through and write-through behavior disabled.</returns>
@@ -95,7 +101,7 @@ namespace Apache.Ignite.Core.Cache
         /// invoked on the returned cache.
         /// <para />
         /// Expiry durations for each operation are calculated only once and then used as constants. Please
-        /// consider this when implementing customg expiry policy implementations.
+        /// consider this when implementing custom expiry policy implementations.
         /// </summary>
         /// <param name="plc">Expiry policy to use.</param>
         /// <returns>Cache instance with the specified expiry policy set.</returns>
@@ -110,6 +116,14 @@ namespace Apache.Ignite.Core.Cache
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Cache instance with binary mode enabled.</returns>
         ICache<TK1, TV1> WithKeepBinary<TK1, TV1>();
+
+        /// <summary>
+        /// Get another cache instance with operations allowed in transactions.
+        /// Only atomic caches need this. Transactional caches already available for transactions.
+        /// </summary>
+        /// <returns>Cache allowed to use in transactions.</returns>
+        [Obsolete("Not supported, will be removed in future releases.")]
+        ICache<TK, TV> WithAllowAtomicOpsInTx();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.
@@ -162,11 +176,11 @@ namespace Apache.Ignite.Core.Cache
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Loads the specified entries into the cache using the configured 
+        /// Loads the specified entries into the cache using the configured
         /// <see cref="ICacheStore"/>> for the given keys.
         /// <para />
-        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
-        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if
+        /// <paramref name="replaceExistingValues" /> is true.
         /// If no loader is configured for the cache, no objects will be loaded.
         /// </summary>
         /// <param name="keys">The keys to load.</param>
@@ -175,11 +189,11 @@ namespace Apache.Ignite.Core.Cache
         void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues);
 
         /// <summary>
-        /// Asynchronously loads the specified entries into the cache using the configured 
+        /// Asynchronously loads the specified entries into the cache using the configured
         /// <see cref="ICacheStore"/>> for the given keys.
         /// <para />
-        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
-        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if
+        /// <paramref name="replaceExistingValues" /> is true.
         /// If no loader is configured for the cache, no objects will be loaded.
         /// </summary>
         /// <param name="keys">The keys to load.</param>
@@ -251,32 +265,33 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Cache value with the specified key.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV this[TK key] { get; set; }
 
         /// <summary>
-        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
+        /// Retrieves value mapped to the specified key from cache.
         ///
         /// If the value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
         /// will be loaded from persistent store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// If key is not present in cache, KeyNotFoundException will be thrown.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV Get(TK key);
 
         /// <summary>
-        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
+        /// Retrieves value mapped to the specified key from cache.
         ///
         /// If the value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
         /// will be loaded from persistent store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// If key is not present in cache, KeyNotFoundException will be thrown.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         Task<TV> GetAsync(TK key);
 
         /// <summary>
@@ -512,6 +527,10 @@ namespace Apache.Ignite.Core.Cache
         /// Stores given key-value pairs in cache.
         /// If write-through is enabled, the stored values will be persisted to store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary{K, V}"/>. Using unordered
+        /// dictionary, such as <see cref="Dictionary{K, V}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
         void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals);
@@ -520,6 +539,10 @@ namespace Apache.Ignite.Core.Cache
         /// Stores given key-value pairs in cache.
         /// If write-through is enabled, the stored values will be persisted to store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary{K, V}"/>. Using unordered
+        /// dictionary, such as <see cref="Dictionary{K, V}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
         Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals);
@@ -641,6 +664,10 @@ namespace Apache.Ignite.Core.Cache
         /// Removes given key mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
         void RemoveAll(IEnumerable<TK> keys);
@@ -649,6 +676,10 @@ namespace Apache.Ignite.Core.Cache
         /// Removes given key mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
         Task RemoveAllAsync(IEnumerable<TK> keys);
@@ -693,6 +724,59 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
+        long GetSizeLong(params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries in partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>>
+        long GetSizeLong(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
+        Task<long> GetSizeLongAsync(params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries in a partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>
+        Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries cached on this node as long value.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size on this node.</returns>
+        long GetLocalSizeLong(params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries in a partition cached on this node as long value.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size on this node.</returns>
+        long GetLocalSizeLong(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>
@@ -704,6 +788,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="qry">SQL fields query.</param>
         /// <returns>Cursor.</returns>
+        IFieldsQueryCursor Query(SqlFieldsQuery qry);
+
+        /// <summary>
+        /// Queries separate entry fields.
+        /// </summary>
+        /// <param name="qry">SQL fields query.</param>
+        /// <returns>Cursor.</returns>
+        [Obsolete("Use Query(SqlFieldsQuery qry) instead.")]
         IQueryCursor<IList> QueryFields(SqlFieldsQuery qry);
 
         /// <summary>
@@ -725,6 +817,19 @@ namespace Apache.Ignite.Core.Cache
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
         IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry);
+
+        /// <summary>
+        /// Start continuous query execution.
+        /// </summary>
+        /// <param name="qry">Continuous query.</param>
+        /// <param name="initialQry">
+        /// The initial fields query. This query will be executed before continuous listener is registered which allows
+        /// to iterate through entries which have already existed at the time continuous query is executed.
+        /// </param>
+        /// <returns>
+        /// Handle to get initial query cursor or stop query execution.
+        /// </returns>
+        IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry);
 
         /// <summary>
         /// Get local cache entries.
@@ -772,6 +877,10 @@ namespace Apache.Ignite.Core.Cache
         /// Implementations may choose to process the entries in any order, including concurrently.
         /// Furthermore there is no guarantee implementations will use the same processor instance
         /// to process each entry, as the case may be in a non-local cache topology.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <typeparam name="TArg">The type of the argument.</typeparam>
         /// <typeparam name="TRes">The type of the result.</typeparam>
@@ -784,7 +893,7 @@ namespace Apache.Ignite.Core.Cache
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+        ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -796,6 +905,10 @@ namespace Apache.Ignite.Core.Cache
         /// Implementations may choose to process the entries in any order, including concurrently.
         /// Furthermore there is no guarantee implementations will use the same processor instance
         /// to process each entry, as the case may be in a non-local cache topology.
+        ///
+        /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <typeparam name="TArg">The type of the argument.</typeparam>
         /// <typeparam name="TRes">The type of the result.</typeparam>
@@ -808,7 +921,7 @@ namespace Apache.Ignite.Core.Cache
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+        Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -866,6 +979,19 @@ namespace Apache.Ignite.Core.Cache
         ICacheMetrics GetLocalMetrics();
 
         /// <summary>
+        /// Sets statistics (metrics) enabled flag cluster wide for this cache.
+        /// </summary>
+        /// <param name="enabled">Enabled flag</param>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
+        void EnableStatistics(bool enabled);
+
+        /// <summary>
+        /// Clears cluster statistics for this cache.
+        /// </summary>
+        void ClearStatistics();
+
+        /// <summary>
         /// Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter
         /// has non-zero value. When many nodes are started or stopped almost concurrently,
         /// it is more efficient to delay rebalancing until the node topology is stable to make sure that no redundant
@@ -898,5 +1024,59 @@ namespace Apache.Ignite.Core.Cache
         /// and <see cref="IIgnite.ResetLostPartitions(IEnumerable{string})"/>.
         /// </summary>
         ICollection<int> GetLostPartitions();
+
+        /// <summary>
+        /// Gets query metrics.
+        /// </summary>
+        /// <returns>Query metrics.</returns>
+        IQueryMetrics GetQueryMetrics();
+
+        /// <summary>
+        /// Reset query metrics.
+        /// </summary>
+        void ResetQueryMetrics();
+
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        void PreloadPartition(int partition);
+
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory asynchronously.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns>Task.</returns>
+        Task PreloadPartitionAsync(int partition);
+
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory if it exists on the local node.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns><code>True</code>if partition was preloaded, <code>False</code> if it doesn't belong to local node.</returns>
+        bool LocalPreloadPartition(int partition);
     }
 }

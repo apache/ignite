@@ -22,15 +22,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
+import static org.apache.ignite.testframework.MvccFeatureChecker.isSupported;
 
 /**
  * Test to check slow TX warning timeout defined by
@@ -38,9 +38,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -59,15 +56,9 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
         CacheConfiguration cc3 = defaultCacheConfiguration();
 
         cc3.setName("local");
-        cc3.setCacheMode(LOCAL);
+        cc3.setCacheMode((!forcedMvcc() || isSupported(LOCAL)) ? LOCAL : REPLICATED);
 
         c.setCacheConfiguration(cc1, cc2, cc3);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         return c;
     }
@@ -75,6 +66,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWarningOutput() throws Exception {
         try {
             IgniteKernal g = (IgniteKernal)startGrid(1);

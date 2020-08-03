@@ -68,7 +68,12 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Nullable @Override public Object get(Object key) {
         try {
-            return cache.get(key);
+            Object val = cache.get(key);
+
+            if (log.isDebugEnabled())
+                log.debug("Get [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
+
+            return val;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -79,6 +84,9 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     @Override public void putFromLoad(Object key, Object val) {
         try {
             cache.put(key, val);
+
+            if (log.isDebugEnabled())
+                log.debug("Put [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -98,9 +106,12 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override public boolean update(Object key, Object val) {
         try {
-            cache.put(key, val);
+            boolean res = cache.put(key, val);
 
-            return true;
+            if (log.isDebugEnabled())
+                log.debug("Update [cache=" + cache.name() + ", key=" + key + ", val=" + val + ", res=" + res + ']');
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -115,9 +126,12 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override public boolean insert(Object key, Object val) {
         try {
-            cache.put(key, val);
+            boolean res = cache.put(key, val);
 
-            return true;
+            if (log.isDebugEnabled())
+                log.debug("Insert [cache=" + cache.name() + ", key=" + key + ", val=" + val + ", res=" + res + ']');
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);

@@ -1,20 +1,18 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.visor.commands.common
@@ -129,7 +127,7 @@ class VisorTextTable {
     private val rows = collection.mutable.ArrayBuffer.empty[Seq[Cell]]
 
     /** Current row, if any. */
-    private var curRow: collection.mutable.ArrayBuffer[Cell] = null
+    private var curRow: collection.mutable.ArrayBuffer[Cell] = _
 
     /** Table's margin, if any. */
     private var margin: Margin = Margin()
@@ -148,7 +146,7 @@ class VisorTextTable {
 
     /**
      * Flag indicating whether of not to automatically draw horizontal lines
-     * for multiline rows.
+     * for multi line rows.
      */
     var autoBorder = true
 
@@ -278,7 +276,7 @@ class VisorTextTable {
      */
     def addHeaderCell(lines: Any*): VisorTextTable = {
         assert(lines != null)
-        assert(lines.length > 0)
+        assert(lines.nonEmpty)
 
         // Break up long line into multiple ones - if necessary.
         val lst = lines flatten(_.toString.grouped(maxCellWidth))
@@ -402,7 +400,7 @@ class VisorTextTable {
         var hdrH = 0
 
         // Initialize column widths with header row (if any).
-        for (i <- 0 until hdr.size) {
+        for (i <- hdr.indices) {
             val c = hdr(i)
 
             colWs(i) = c.width
@@ -411,7 +409,7 @@ class VisorTextTable {
         }
 
         // Calc row heights and column widths.
-        for (i <- 0 until rows.length; j <- 0 until colsNum) {
+        for (i <- rows.indices; j <- 0 until colsNum) {
             val c = rows(i)(j)
 
             rowHs(i) = math.max(rowHs(i), c.height)
@@ -424,7 +422,7 @@ class VisorTextTable {
         val tbl = new GridStringBuilder()
 
         // Top margin.
-        for (i <- 0 until margin.top)
+        for (_ <- 0 until margin.top)
             tbl.a(" ").a(NL)
 
         // Print header, if any.
@@ -435,7 +433,7 @@ class VisorTextTable {
                 // Left margin and '|'.
                 tbl.a(blank(margin.left)).a(HDR_VER)
 
-                for (j <- 0 until hdr.size) {
+                for (j <- hdr.indices) {
                     val c = hdr(j)
 
                     if (i >= 0 && i < c.height)
@@ -461,14 +459,14 @@ class VisorTextTable {
                 // Left margin and '+'
                 tbl.a(blank(margin.left)).a(ROW_CRS)
 
-                for (k <- 0 until rows(i).size)
+                for (k <- rows(i).indices)
                     tbl.a(dash(ROW_HOR, colWs(k))).a(ROW_CRS)
 
                 // Right margin.
                 tbl.a(blank(margin.right)).a(NL)
             }
 
-            for (i <- 0 until rows.size) {
+            for (i <- rows.indices) {
                 val r = rows(i)
 
                 val rowH = rowHs(i)
@@ -480,7 +478,7 @@ class VisorTextTable {
                     // Left margin and '|'
                     tbl.a(blank(margin.left)).a(ROW_VER)
 
-                    for (k <- 0 until r.size) {
+                    for (k <- r.indices) {
                         val c = r(k)
                         val w = colWs(k)
 
@@ -504,7 +502,7 @@ class VisorTextTable {
         }
 
         // Bottom margin.
-        for (i <- 1 to margin.bottom)
+        for (_ <- 1 to margin.bottom)
             tbl.a(" ").a(NL)
 
         print(tbl.toString)

@@ -19,12 +19,13 @@ package org.apache.ignite.examples.binary.datagrid;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -32,7 +33,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Address;
@@ -40,17 +40,16 @@ import org.apache.ignite.examples.model.Employee;
 import org.apache.ignite.examples.model.EmployeeKey;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.OrganizationType;
-import org.apache.ignite.binary.BinaryObject;
 
 /**
- * This example demonstrates use of binary objects with cache queries.
- * The example populates cache with sample data and runs several SQL and full text queries over this data.
+ * This example demonstrates use of binary objects with cache queries. The example populates cache with sample data and
+ * runs several SQL and full text queries over this data.
  * <p>
- * Remote nodes should always be started with the following command:
- * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}
+ * Remote nodes should always be started with the following command: {@code 'ignite.{sh|bat}
+ * examples/config/example-ignite.xml'}
  * <p>
- * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
- * start a node with {@code examples/config/example-ignite.xml} configuration.
+ * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will start a
+ * node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheClientBinaryQueryExample {
     /** Organization cache name. */
@@ -106,14 +105,11 @@ public class CacheClientBinaryQueryExample {
                 // Get cache that will work with binary objects.
                 IgniteCache<BinaryObject, BinaryObject> binaryCache = employeeCache.withKeepBinary();
 
-                // Run SQL query example.
-                sqlQuery(binaryCache);
+                // Run SQL fields query example.
+                sqlFieldsQuery(binaryCache);
 
                 // Run SQL query with join example.
                 sqlJoinQuery(binaryCache);
-
-                // Run SQL fields query example.
-                sqlFieldsQuery(binaryCache);
 
                 // Run full text query example.
                 textQuery(binaryCache);
@@ -134,30 +130,21 @@ public class CacheClientBinaryQueryExample {
      * @return Cache type metadata.
      */
     private static QueryEntity createEmployeeQueryEntity() {
-        QueryEntity employeeEntity = new QueryEntity();
-
-        employeeEntity.setValueType(Employee.class.getName());
-        employeeEntity.setKeyType(EmployeeKey.class.getName());
-
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-
-        fields.put("name", String.class.getName());
-        fields.put("salary", Long.class.getName());
-        fields.put("addr.zip", Integer.class.getName());
-        fields.put("organizationId", Integer.class.getName());
-        fields.put("addr.street", Integer.class.getName());
-
-        employeeEntity.setFields(fields);
-
-        employeeEntity.setIndexes(Arrays.asList(
-            new QueryIndex("name"),
-            new QueryIndex("salary"),
-            new QueryIndex("addr.zip"),
-            new QueryIndex("organizationId"),
-            new QueryIndex("addr.street", QueryIndexType.FULLTEXT)
-        ));
-
-        return employeeEntity;
+        return new QueryEntity()
+            .setValueType(Employee.class.getName())
+            .setKeyType(EmployeeKey.class.getName())
+            .addQueryField("organizationId", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("salary", Long.class.getName(), null)
+            .addQueryField("addr.zip", Integer.class.getName(), null)
+            .addQueryField("addr.street", String.class.getName(), null)
+            .setKeyFields(Collections.singleton("organizationId"))
+            .setIndexes(Arrays.asList(
+                new QueryIndex("name"),
+                new QueryIndex("salary"),
+                new QueryIndex("addr.zip"),
+                new QueryIndex("organizationId"),
+                new QueryIndex("addr.street", QueryIndexType.FULLTEXT)));
     }
 
     /**
@@ -166,64 +153,15 @@ public class CacheClientBinaryQueryExample {
      * @return Cache type metadata.
      */
     private static QueryEntity createOrganizationQueryEntity() {
-        QueryEntity organizationEntity = new QueryEntity();
-
-        organizationEntity.setValueType(Organization.class.getName());
-        organizationEntity.setKeyType(Integer.class.getName());
-
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-
-        fields.put("name", String.class.getName());
-        fields.put("address.street", String.class.getName());
-
-        organizationEntity.setFields(fields);
-
-        organizationEntity.setIndexes(Arrays.asList(
-            new QueryIndex("name")
-        ));
-
-        return organizationEntity;
-    }
-
-    /**
-     * Queries employees that have provided ZIP code in address.
-     *
-     * @param cache Ignite cache.
-     */
-    private static void sqlQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlQuery<BinaryObject, BinaryObject> query = new SqlQuery<>(Employee.class, "zip = ?");
-
-        int zip = 94109;
-
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(query.setArgs(zip));
-
-        System.out.println();
-        System.out.println(">>> Employees with zip " + zip + ':');
-
-        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
-            System.out.println(">>>     " + e.getValue().deserialize());
-    }
-
-    /**
-     * Queries employees that work for organization with provided name.
-     *
-     * @param cache Ignite cache.
-     */
-    private static void sqlJoinQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlQuery<BinaryObject, BinaryObject> qry = new SqlQuery<>(Employee.class,
-            "from Employee, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
-                "where Employee.organizationId = org._key and org.name = ?");
-
-        String organizationName = "GridGain";
-
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees =
-            cache.query(qry.setArgs(organizationName));
-
-        System.out.println();
-        System.out.println(">>> Employees working for " + organizationName + ':');
-
-        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
-            System.out.println(">>>     " + e.getValue());
+        return new QueryEntity()
+            .setValueType(Organization.class.getName())
+            .setKeyType(Integer.class.getName())
+            .addQueryField("keyId", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("address.street", String.class.getName(), null)
+            .setKeyFieldName("keyId")
+            .setIndexes(Arrays.asList(
+                new QueryIndex("name")));
     }
 
     /**
@@ -241,6 +179,27 @@ public class CacheClientBinaryQueryExample {
 
         for (List<?> row : employees.getAll())
             System.out.println(">>>     [Name=" + row.get(0) + ", salary=" + row.get(1) + ']');
+    }
+
+    /**
+     * Queries employees that work for organization with provided name.
+     *
+     * @param cache Ignite cache.
+     */
+    private static void sqlJoinQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "select e.* from Employee e, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
+                "where e.organizationId = org.keyId and org.name = ?");
+
+        String organizationName = "GridGain";
+
+        QueryCursor<List<?>> employees = cache.query(qry.setArgs(organizationName));
+
+        System.out.println();
+        System.out.println(">>> Employees working for " + organizationName + ':');
+
+        for (List<?> row : employees.getAll())
+            System.out.println(">>>     " + row);
     }
 
     /**

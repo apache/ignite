@@ -24,7 +24,6 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,34 +31,30 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test was added to check fix for IGNITE-4465.
  */
 public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SYS_THREADS = 16;
 
     /** */
-    private boolean client;
+    @Before
+    public void beforeCacheConcurrentReadThroughTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
-
-        if (!client) {
+        if (!cfg.isClientMode()) {
             cfg.setPublicThreadPoolSize(SYS_THREADS);
             cfg.setSystemThreadPoolSize(SYS_THREADS);
         }
@@ -77,12 +72,11 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentReadThrough() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         assertTrue(client.configuration().isClientMode());
 
@@ -123,14 +117,17 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
             for (IgniteFuture<?> fut : futs)
                 fut.get();
 
-            int loadCnt = TestCacheStore.loadCnt.get();
+            log.info("Iteration [iter=" + iter + ']');
 
-            long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                int loadCnt = TestCacheStore.loadCnt.get();
 
-            log.info("Iteration [iter=" + iter + ", loadCnt=" + loadCnt + ", misses=" + misses + ']');
+                long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
 
-            assertTrue("Unexpected loadCnt: " + loadCnt, loadCnt > 0 && loadCnt <= SYS_THREADS);
-            assertTrue("Unexpected misses: " + misses, misses > 0 && misses <= SYS_THREADS);
+                log.info("Iteration [loadCnt=" + loadCnt + ", misses=" + misses + ']');
+
+                return (loadCnt > 0 && loadCnt <= SYS_THREADS) && (misses > 0 && misses <= SYS_THREADS);
+            }, 5000));
 
             client.destroyCache(cacheName);
         }

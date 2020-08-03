@@ -24,11 +24,11 @@ import java.net.SocketException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Java server socket test.
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * BindException or SocketException may be thrown. Purpose of this test is
  * to find some explanation to that.
  */
-public class ServerSocketMultiThreadedTest extends TestCase {
+public class ServerSocketMultiThreadedTest {
     /** */
     private static final int THREADS_CNT = 10;
 
@@ -47,6 +47,7 @@ public class ServerSocketMultiThreadedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentBind() throws Exception {
         final AtomicInteger bindExCnt = new AtomicInteger();
         final AtomicInteger sockExCnt = new AtomicInteger();

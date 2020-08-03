@@ -189,7 +189,6 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;
@@ -275,13 +274,14 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
                 totalFailoverJobs++;
             }
 
-            if (node != null)
+            if (node != null) {
+                // Avoid printing a job because it can cause job failover to fail, reproduced by testJobWithRestart.
                 U.warn(log, "Failed over job to a new node [newNode=" + node.id() +
                     ", oldNode=" + ctx.getJobResult().getNode().id() +
                     ", sesId=" + ctx.getTaskSession().getId() +
-                    ", job=" + ctx.getJobResult().getJob() +
                     ", jobCtx=" + ctx.getJobResult().getJobContext() +
                     ", task=" + ctx.getTaskSession().getTaskName() + ']');
+            }
 
             return node;
         }

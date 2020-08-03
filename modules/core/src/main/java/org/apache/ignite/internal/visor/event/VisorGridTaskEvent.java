@@ -119,11 +119,6 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
             dtout.writeByte(super.getProtocolVersion());
@@ -133,7 +128,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
 
         U.writeString(out, taskName);
         U.writeString(out, taskClsName);
-        U.writeGridUuid(out, taskSesId);
+        U.writeIgniteUuid(out, taskSesId);
         out.writeBoolean(internal);
     }
 
@@ -145,7 +140,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
 
         taskName = U.readString(in);
         taskClsName = U.readString(in);
-        taskSesId = U.readGridUuid(in);
+        taskSesId = U.readIgniteUuid(in);
         internal = in.readBoolean();
     }
 

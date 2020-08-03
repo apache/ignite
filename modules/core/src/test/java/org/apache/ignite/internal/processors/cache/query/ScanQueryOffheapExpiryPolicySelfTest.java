@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,10 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
-import java.util.concurrent.TimeUnit;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
@@ -71,16 +71,10 @@ public class ScanQueryOffheapExpiryPolicySelfTest extends GridCommonAbstractTest
         startGridsMultiThreaded(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesMovedFromOnHeap() throws Exception {
         Ignite ignite0 = grid(0);
         Ignite ignite1 = grid(1);

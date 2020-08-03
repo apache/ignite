@@ -23,11 +23,11 @@ import org.apache.ignite.cache.CacheMode;
 /**
  * Test to check work of DML+DDL operations of atomic partitioned cache with queries initiated from server node.
  */
-public class H2DynamicIndexingComplexServerAtomicPartitionedTest extends H2DynamicIndexingComplexTest {
+public class H2DynamicIndexingComplexServerAtomicPartitionedTest extends H2DynamicIndexingComplexAbstractTest {
     /**
      * Constructor.
      */
     public H2DynamicIndexingComplexServerAtomicPartitionedTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, SRV_IDX);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, 1, SRV_IDX);
     }
 }

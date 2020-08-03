@@ -27,14 +27,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -45,21 +43,11 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
  */
 public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private boolean testSpi;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
 
         if (testSpi) {
             TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
@@ -80,6 +68,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate1() throws Exception {
         putReadersUpdate(1);
     }
@@ -87,6 +76,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate2() throws Exception {
         putReadersUpdate(0);
     }
@@ -102,20 +92,18 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
 
         awaitPartitionMapExchange();
 
-        client = true;
-
         Ignite srv = ignite(0);
 
         srv.createCache(cacheConfiguration(backups));
 
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         IgniteCache<Object, Object> cache1 = client1.createNearCache(DEFAULT_CACHE_NAME,
             new NearCacheConfiguration<>());
 
         Integer key = primaryKey(srv.cache(DEFAULT_CACHE_NAME));
 
-        Ignite client2 = startGrid(SRVS + 1);
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         IgniteCache<Object, Object> cache2 = client2.cache(DEFAULT_CACHE_NAME);
 
@@ -145,6 +133,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails1() throws Exception {
         putReaderUpdatePrimaryFails(1);
     }
@@ -152,6 +141,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails2() throws Exception {
         putReaderUpdatePrimaryFails(0);
     }
@@ -169,20 +159,16 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
 
         awaitPartitionMapExchange();
 
-        client = true;
-
         Ignite srv = ignite(0);
 
         srv.createCache(cacheConfiguration(backups));
 
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         IgniteCache<Object, Object> cache1 = client1.createNearCache(DEFAULT_CACHE_NAME,
             new NearCacheConfiguration<>());
 
-        Ignite client2 = startGrid(SRVS + 1);
-
-        client= false;
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         IgniteCache<Object, Object> cache2 = client2.cache(DEFAULT_CACHE_NAME);
 
@@ -208,7 +194,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 srv = startGrid(0);
 
-                awaitPartitionMapExchange();
+                awaitPartitionMapExchange(true, true, null);
 
                 key = primaryKey(srv.cache(DEFAULT_CACHE_NAME));
 

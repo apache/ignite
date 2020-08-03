@@ -18,6 +18,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.springdata.SpringDataExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Spring Data example test.
@@ -26,6 +27,7 @@ public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpringDataExample() throws Exception {
         SpringDataExample.main(EMPTY_ARGS);
     }

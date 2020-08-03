@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Test metadata handler.
@@ -30,12 +30,19 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
+    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
         BinaryType otherType = metas.put(typeId, meta);
 
         if (otherType != null)
             throw new IllegalStateException("Metadata replacement is not allowed in " +
                 TestCachingMetadataHandler.class.getSimpleName() + '.');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        addMeta(typeId, meta, failIfUnregistered);
     }
 
     /** {@inheritDoc} */
@@ -51,5 +58,10 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     /** {@inheritDoc} */
     @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+        return metas.values();
     }
 }

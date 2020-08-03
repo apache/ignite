@@ -30,7 +30,10 @@ import org.apache.ignite.services.ServiceConfiguration;
 
 /**
  * Service per-node assignment.
+ *
+ * @deprecated Services internals use messages for deployment management instead of the utility cache, since Ignite 2.8.
  */
+@Deprecated
 public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;

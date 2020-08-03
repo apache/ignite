@@ -21,33 +21,29 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.Properties;
+import java.util.logging.Logger;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.yarn.utils.IgniteYarnUtils;
 
 /**
- * Downloads and stores Ignite.
+ * Downloads and stores Ignite release.
  */
 public class IgniteProvider {
     /** */
-    public static final String DOWNLOAD_LINK = "http://tiny.cc/updater/download_community.php";
+    public static final Logger log = Logger.getLogger(IgniteProvider.class.getSimpleName());
+
+    /** */
+    public static final String DOWNLOAD_LINK = "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=/ignite/";
 
     /** */
     private ClusterProperties props;
-
-    /** */
-    private String latestVersion = null;
-
-    /** */
-    private boolean hdfs = false;
 
     /** */
     private FileSystem fs;
@@ -62,93 +58,67 @@ public class IgniteProvider {
     }
 
     /**
-     * @return Latest ignite version.
+     * @return Path to current Ignite release.
      */
     public Path getIgnite() throws Exception {
         File folder = checkDownloadFolder();
 
-        if (latestVersion == null) {
-            List<String> localFiles = findIgnites(folder);
-            List<String> hdfsFiles = findIgnites(fs, props.igniteReleasesDir());
+        Properties verProps = new Properties();
 
-            String localLatestVersion = findLatestVersion(localFiles);
-            String hdfsLatestVersion = findLatestVersion(hdfsFiles);
-
-            if (localLatestVersion != null && hdfsLatestVersion != null) {
-                if (VersionComparator.INSTANCE.compare(hdfsLatestVersion, localLatestVersion) >= 0) {
-                    latestVersion = hdfsLatestVersion;
-
-                    hdfs = true;
-                }
-            }
-            else if (localLatestVersion != null)
-                latestVersion = localLatestVersion;
-            else if (hdfsLatestVersion != null) {
-                latestVersion = hdfsLatestVersion;
-
-                hdfs = true;
-            }
+        try (InputStream is = IgniteProvider.class.getClassLoader().getResourceAsStream("ignite.properties")) {
+            verProps.load(is);
         }
 
-        String newVersion = updateIgnite(latestVersion);
+        String curVer = verProps.getProperty("ignite.version");
 
-        if (latestVersion != null && newVersion.equals(latestVersion)) {
-            if (hdfs)
-                return new Path(formatPath(props.igniteReleasesDir(), latestVersion));
-            else
-                return IgniteYarnUtils.copyLocalToHdfs(fs, formatPath(props.igniteLocalWorkDir(), latestVersion),
-                    formatPath(props.igniteReleasesDir(), latestVersion));
-        }
-        else {
-            latestVersion = newVersion;
+        if (curVer == null || curVer.isEmpty())
+            throw new IllegalStateException("Failed to determine Ignite version");
 
-            return IgniteYarnUtils.copyLocalToHdfs(fs, formatPath(props.igniteLocalWorkDir(), latestVersion),
-                formatPath(props.igniteReleasesDir(), latestVersion));
+        log.info("Searching for Ignite release " + curVer);
+
+        File release = findIgnite(folder, curVer);
+
+        if (release == null) {
+            Path releaseOnHdfs = findIgnite(fs, props.igniteReleasesDir(), curVer);
+
+            if (releaseOnHdfs != null)
+                return releaseOnHdfs;
+
+            release = updateIgnite(curVer);
         }
+
+        return IgniteYarnUtils.copyLocalToHdfs(fs, release.getAbsolutePath(),
+            props.igniteReleasesDir() + File.separator + release.getName());
     }
 
     /**
      * @param folder Folder.
+     * @param curVer Ignite version.
      * @return Ignite archives.
      */
-    private List<String> findIgnites(File folder) {
+    private File findIgnite(File folder, String curVer) {
         String[] files = folder.list();
-
-        List<String> ignites = new ArrayList<>();
 
         if (files != null) {
             for (String fileName : files) {
-                if (fileName.contains("gridgain-community-fabric-") && fileName.endsWith(".zip"))
-                    ignites.add(fileName);
+                if (fileName.equals(igniteRelease(curVer))) {
+                    log.info("Found local release at " + folder.getAbsolutePath());
+
+                    return new File(folder, fileName);
+                }
             }
         }
 
-        return ignites;
-    }
-
-    /**
-     * @param files Files.
-     * @return latest ignite version.
-     */
-    private String findLatestVersion(List<String> files) {
-        String latestVersion = null;
-
-        if (!files.isEmpty()) {
-            if (files.size() == 1)
-                latestVersion = parseVersion(files.get(0));
-            else
-                latestVersion = parseVersion(Collections.max(files, VersionComparator.INSTANCE));
-        }
-
-        return latestVersion;
+        return null;
     }
 
     /**
      * @param fs File system,
      * @param folder Folder.
+     * @param curVer Ignite version.
      * @return Ignite archives.
      */
-    private List<String> findIgnites(FileSystem fs, String folder) {
+    private Path findIgnite(FileSystem fs, String folder, String curVer) {
         FileStatus[] fileStatuses = null;
 
         try {
@@ -158,34 +128,37 @@ public class IgniteProvider {
             // Ignore. Folder doesn't exist.
         }
         catch (Exception e) {
-            throw new RuntimeException("Couldnt get list files from hdfs.", e);
+            throw new RuntimeException("Couldn't get list files from hdfs.", e);
         }
-
-        List<String> ignites = new ArrayList<>();
 
         if (fileStatuses != null) {
             for (FileStatus file : fileStatuses) {
                 String fileName = file.getPath().getName();
 
-                if (fileName.contains("gridgain-community-fabric-") && fileName.endsWith(".zip"))
-                    ignites.add(fileName);
+                if (fileName.equals(igniteRelease(curVer))) {
+                    log.info("Found HDFS release at " + file.getPath());
+
+                    return file.getPath();
+                }
             }
         }
 
-        return ignites;
+        return null;
     }
 
     /**
-     * @param version Ignite version.
+     * @param igniteUrl Download link.
      * @return Ignite.
      */
-    public Path getIgnite(String version) throws Exception {
+    public Path getIgnite(String igniteUrl) throws Exception {
         checkDownloadFolder();
 
         // Download ignite.
-        String fileName = downloadIgnite(version);
+        String fileName = downloadIgnite(igniteUrl);
 
         Path dst = new Path(props.igniteReleasesDir() + File.separator + fileName);
+
+        log.info("Using specified release at " + igniteUrl);
 
         if (!fs.exists(dst))
             fs.copyFromLocalFile(new Path(props.igniteLocalWorkDir() + File.separator + fileName), dst);
@@ -194,50 +167,50 @@ public class IgniteProvider {
     }
 
     /**
-     * @param folder folder
-     * @param version version
-     * @return Path
+     * @return File name.
      */
-    private static String formatPath(String folder, String version) {
-        return folder + File.separator + "gridgain-community-fabric-" + version + ".zip";
+    private static String igniteRelease(String version) {
+        return "apache-ignite-" + version + "-bin.zip";
     }
 
     /**
-     * @param currentVersion The current latest version.
+     * @param curVer Ignite version.
      * @return Current version if the current version is latest; new ignite version otherwise.
      */
-    private String updateIgnite(String currentVersion) {
+    private File updateIgnite(String curVer) {
         try {
-            URL url;
-
-            if (currentVersion == null)
-                url = new URL(DOWNLOAD_LINK);
-            else
-                url = new URL(DOWNLOAD_LINK + "?version=" + currentVersion);
+            // Such as https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=/ignite/2.7.0/apache-ignite-2.7.0-bin.zip
+            URL url = new URL(DOWNLOAD_LINK + curVer + "/" + igniteRelease(curVer));
 
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
 
             int code = conn.getResponseCode();
 
-            if (code == 200) {
-                String redirectUrl = conn.getURL().toString();
+            String redirectUrl = conn.getURL().toString();
 
-                checkDownloadFolder();
+            if (code == 301 || code == 302) {
+                redirectUrl = conn.getHeaderField("Location");
 
-                FileOutputStream outFile = new FileOutputStream(props.igniteLocalWorkDir() + File.separator
-                    + fileName(redirectUrl));
+                conn.disconnect();
 
-                outFile.getChannel().transferFrom(Channels.newChannel(conn.getInputStream()), 0, Long.MAX_VALUE);
-
-                outFile.close();
-
-                return parseVersion(redirectUrl);
+                conn = (HttpURLConnection)new URL(redirectUrl).openConnection();
             }
-            else if (code == 304)
-                // This version is latest.
-                return currentVersion;
-            else
+            else if (code != 200)
                 throw new RuntimeException("Got unexpected response code. Response code: " + code);
+
+            checkDownloadFolder();
+
+            File ignite = new File(props.igniteLocalWorkDir(), fileName(redirectUrl));
+
+            FileOutputStream outFile = new FileOutputStream(ignite);
+
+            outFile.getChannel().transferFrom(Channels.newChannel(conn.getInputStream()), 0, Long.MAX_VALUE);
+
+            outFile.close();
+
+            log.info("Found remote release at " + redirectUrl);
+
+            return ignite;
         }
         catch (IOException e) {
             throw new RuntimeException("Failed update ignite.", e);
@@ -297,51 +270,11 @@ public class IgniteProvider {
 
     /**
      * @param url URL.
-     * @return Ignite version.
-     */
-    private static String parseVersion(String url) {
-        String[] split = url.split("-");
-
-        return split[split.length - 1].replaceAll(".zip", "");
-    }
-
-    /**
-     * @param url URL.
      * @return File name.
      */
     private static String fileName(String url) {
         String[] split = url.split("/");
 
         return split[split.length - 1];
-    }
-
-    /**
-     * Ignite version comparator.
-     */
-    public static final class VersionComparator implements Comparator<String> {
-        /** */
-        public static final VersionComparator INSTANCE = new VersionComparator();
-
-        /** */
-        private VersionComparator() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compare(String f1, String f2) {
-            if (f1.equals(f2))
-                return 0;
-
-            String[] ver1 = parseVersion(f1).split("\\.");
-            String[] ver2 = parseVersion(f2).split("\\.");
-
-            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0])
-                && Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1])
-                && Integer.valueOf(ver1[2]) >= Integer.valueOf(ver2[2]))
-
-                return 1;
-            else
-                return -1;
-        }
     }
 }

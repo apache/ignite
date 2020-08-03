@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -92,6 +91,6 @@ public class MergeRecord<L> extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MergeRecord.class, this, "prntId", U.hexLong(prntId), "rightId", U.hexLong(rightId),
-            "parent", super.toString());
+            "super", super.toString());
     }
 }

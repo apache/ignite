@@ -36,6 +36,7 @@ import org.hibernate.Transaction;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -83,11 +84,6 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -173,6 +169,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntityCacheReadWrite() throws Exception {
         for (AccessType accessType : new AccessType[]{AccessType.READ_WRITE, AccessType.NONSTRICT_READ_WRITE})
             testEntityCacheReadWrite(accessType);

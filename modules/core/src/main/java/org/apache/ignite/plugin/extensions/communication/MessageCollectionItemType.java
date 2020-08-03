@@ -84,7 +84,10 @@ public enum MessageCollectionItemType {
     IGNITE_UUID,
 
     /** Message. */
-    MSG;
+    MSG,
+
+    /** Topology version. */
+    AFFINITY_TOPOLOGY_VERSION;
 
     /** Enum values. */
     private static final MessageCollectionItemType[] VALS = values();

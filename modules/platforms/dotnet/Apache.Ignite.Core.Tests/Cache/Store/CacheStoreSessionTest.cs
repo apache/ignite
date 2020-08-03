@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"config\cache\store\cache-store-session.xml"
+                SpringConfigUrl = @"Config/Cache/Store/cache-store-session.xml"
             };
         }
 
@@ -77,12 +77,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 TestUtils.AssertHandleRegistryHasItems(Ignition.GetIgnite(), 2, 1000);
             }
-            finally 
+            finally
             {
                 Ignition.StopAll(true);
             }
         }
-        
+
         /// <summary>
         /// Test basic session API.
         /// </summary>
@@ -106,17 +106,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Rollback();
             }
 
-            // SessionEnd is called once per store instance.
-            Assert.AreEqual(StoreCount, _dumps.Count);
-
-            foreach (var ops in _dumps)
-            {
-                var op = ops.Single();
-                Assert.AreEqual(OperationType.SesEnd, op.Type);
-                Assert.IsFalse(op.Commit);
-            }
-
-            _dumps = new ConcurrentBag<ICollection<Operation>>();
+            // SessionEnd should not be called.
+            Assert.AreEqual(0, _dumps.Count);
 
             // 2. Test puts.
             using (var tx = ignite.GetTransactions().TxStart())
@@ -230,7 +221,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 }
 
                 return (ICollection<Operation>) ops;
-            } 
+            }
         }
 
         /// <summary>
@@ -266,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             /// Cache name.
             /// </summary>
             public string CacheName { get; private set; }
-            
+
             /// <summary>
             /// Operation type.
             /// </summary>

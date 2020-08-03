@@ -107,6 +107,7 @@ public class CassandraLifeCycleBean implements LifecycleBean {
                 System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + cassandraCfgFile);
 
             embeddedCassandraDaemon = new CassandraDaemon(true);
+            embeddedCassandraDaemon.applyConfig();
             embeddedCassandraDaemon.init(null);
             embeddedCassandraDaemon.start();
         }

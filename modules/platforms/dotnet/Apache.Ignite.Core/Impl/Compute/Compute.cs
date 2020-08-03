@@ -60,6 +60,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public ICompute WithNoResultCache()
+        {
+            _compute.WithNoResultCache();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
             _compute.WithTimeout(timeout);
@@ -73,6 +81,14 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.WithKeepBinary();
 
             return this;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithExecutor(string executorName)
+        {
+            var computeImpl = _compute.WithExecutor(executorName);
+
+            return new Compute(computeImpl);
         }
 
         /** <inheritDoc /> */
@@ -220,9 +236,26 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TJobRes Call<TJobRes>(Func<TJobRes> func)
+        public TRes AffinityCall<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func)
         {
-            return _compute.Execute(func).Get();
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+            IgniteArgumentCheck.NotNull(func, "func");
+            
+            return _compute.AffinityCall(cacheNames, partition, func).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, 
+            IComputeFunc<TRes> func)
+        {
+            return _compute.AffinityCall(cacheNames, partition, func).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, 
+            IComputeFunc<TRes> func, CancellationToken cancellationToken)
+        {
+            return _compute.AffinityCall(cacheNames, partition, func).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -368,6 +401,25 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             return GetTaskIfAlreadyCancelled<object>(cancellationToken) ??
                 _compute.AffinityRun(cacheName, affinityKey, action).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
+        public void AffinityRun(IEnumerable<string> cacheNames, int partition, IComputeAction action)
+        {
+            _compute.AffinityRun(cacheNames, partition, action).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action)
+        {
+            return _compute.AffinityRun(cacheNames, partition, action).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action,
+            CancellationToken cancellationToken)
+        {
+            return _compute.AffinityRun(cacheNames, partition, action).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */

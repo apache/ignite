@@ -20,11 +20,14 @@ namespace Apache.Ignite.Core.Cache.Query
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// SQL fields query.
     /// </summary>
-    public class SqlFieldsQuery
+    public class SqlFieldsQuery : IQueryBaseInternal
     {
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
@@ -58,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// SQL.
         /// </summary>
         public string Sql { get; set; }
-        
+
         /// <summary>
         /// Arguments.
         /// </summary>
@@ -66,7 +69,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public object[] Arguments { get; set; }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.
@@ -115,6 +118,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Gets or sets a value indicating whether this query contains only replicated tables.
         /// This is a hint for potentially more effective execution.
         /// </summary>
+        [Obsolete("No longer used as of Apache Ignite 2.8.")]
         public bool ReplicatedOnly { get; set; }
 
         /// <summary>
@@ -136,6 +140,19 @@ namespace Apache.Ignite.Core.Cache.Query
         public string Schema { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="SqlFieldsQuery"/> is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -147,9 +164,45 @@ namespace Apache.Ignite.Core.Cache.Query
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
-                                 ", Colocated={8}, Schema={9}]", Sql, args, Local,
+                                 ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
+#pragma warning disable 618
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
-                                 Colocated, Schema);
+#pragma warning restore 618
+                                 Colocated, Schema, Lazy);
+        }
+
+        /** <inheritdoc /> */
+        void IQueryBaseInternal.Write(BinaryWriter writer, bool keepBinary)
+        {
+            Write(writer);
+        }
+
+        /// <summary>
+        /// Writes this query.
+        /// </summary>
+        internal void Write(BinaryWriter writer)
+        {
+            writer.WriteBoolean(Local);
+            writer.WriteString(Sql);
+            writer.WriteInt(PageSize);
+
+            QueryBase.WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteBoolean(EnforceJoinOrder);
+            writer.WriteBoolean(Lazy); // Lazy flag.
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+#pragma warning disable 618
+            writer.WriteBoolean(ReplicatedOnly);
+#pragma warning restore 618
+            writer.WriteBoolean(Colocated);
+            writer.WriteString(Schema); // Schema
+        }
+
+        /** <inheritdoc /> */
+        CacheOp IQueryBaseInternal.OpId
+        {
+            get { return CacheOp.QrySqlFields; }
         }
     }
 }

@@ -34,17 +34,33 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>log4net Logger for Apache Ignite</description>
-        <releaseNotes></releaseNotes>
-        <copyright>Copyright 2017</copyright>
+        <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache log4net logger</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
-            <dependency id="log4net" version="[2.0.0, 3.0.0)" />
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+                <dependency id="log4net" version="[2.0.0, 3.0.0)" />                
+            </group>
+            <group targetFramework=".NETStandard2.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+                <dependency id="log4net" version="[2.0.6, 3.0.0)" />
+            </group>
         </dependencies>    
     </metadata>
+    <files>
+	    <file src="bin\$configuration$\Apache.Ignite.Log4Net.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Log4Net.xml" target="lib\net40" />
+
+	    <file src="bin\$configuration$\Apache.Ignite.Log4Net.dll" target="lib\netstandard2.0" />
+		<file src="bin\$configuration$\Apache.Ignite.Log4Net.xml" target="lib\netstandard2.0" />
+
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
+    </files>
 </package>

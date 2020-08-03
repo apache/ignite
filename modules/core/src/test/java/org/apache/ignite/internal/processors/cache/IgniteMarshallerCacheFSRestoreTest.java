@@ -21,24 +21,31 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Map;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -46,6 +53,9 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean isDuplicateObserved = true;
+
+    /** */
+    private boolean isPersistenceEnabled;
 
     /**
      *
@@ -67,6 +77,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -75,22 +86,31 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration singleCacheConfig = new CacheConfiguration()
+        CacheConfiguration singleCacheCfg = new CacheConfiguration()
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-        cfg.setCacheConfiguration(singleCacheConfig);
+        cfg.setCacheConfiguration(singleCacheCfg);
+
+        //persistence must be enabled to verify restoring mappings from FS case
+        if (isPersistenceEnabled)
+            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cleanUpWorkDir();
-
         stopAllGrids();
+        cleanUpWorkDir();
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
     }
 
     /**
@@ -99,7 +119,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     private void cleanUpWorkDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
+        U.delete(U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
     }
 
     /**
@@ -110,11 +130,15 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * In that case the request must not be marked as duplicate and must be processed in a regular way.
      * No hangs must take place.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-5401">IGNITE-5401</a> Take a look at JIRA ticket for more information about context of this test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-5401">IGNITE-5401</a> JIRA ticket
+     * provides more information about context of this test.
      *
      * This test must never hang on proposing of MarshallerMapping.
      */
+    @Test
     public void testFileMappingReadAndPropose() throws Exception {
+        isPersistenceEnabled = false;
+
         prepareMarshallerFileStore();
 
         IgniteEx ignite0 = startGrid(0);
@@ -151,15 +175,67 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         String fileName = typeId + ".classname0";
 
-        File marshStoreDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
+        File marshStoreDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
 
-        try(FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
+        try (FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
             try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                 writer.write(typeName);
 
                 writer.flush();
             }
         }
+    }
+
+    /**
+     * Verifies scenario that node with corrupted marshaller mapping store must fail on startup
+     * with appropriate error message.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6536">IGNITE-6536</a> JIRA provides more information
+     * about this case.
+     */
+    @Test
+    public void testNodeStartFailsOnCorruptedStorage() throws Exception {
+        isPersistenceEnabled = true;
+
+        Ignite ig = startGrids(3);
+
+        ig.active(true);
+
+        ig.cache(DEFAULT_CACHE_NAME).put(0, new SimpleValue(0, "value0"));
+
+        stopAllGrids();
+
+        corruptMarshallerStorage();
+
+        try {
+            startGrid(0);
+        }
+        catch (IgniteCheckedException e) {
+            verifyException((IgniteCheckedException) e.getCause());
+        }
+    }
+
+    /**
+     * Class name for CustomClass class mapping file gets cleaned up from file system.
+     */
+    private void corruptMarshallerStorage() throws Exception {
+        Path marshallerDir = Paths.get(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+
+        File[] storedMappingsFiles = marshallerDir.toFile().listFiles();
+
+        assert storedMappingsFiles.length == 1;
+
+        try (FileOutputStream out = new FileOutputStream(storedMappingsFiles[0])) {
+            out.getChannel().truncate(0);
+        }
+    }
+
+    /** */
+    private void verifyException(IgniteCheckedException e) throws Exception {
+        String msg = e.getMessage();
+
+        if (msg == null || !msg.contains("Class name is null"))
+            throw new Exception("Exception with unexpected message was thrown: " + msg, e);
     }
 
     /** */
@@ -178,16 +254,11 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
-                int type,
-                long topVer,
-                ClusterNode node,
-                Collection<ClusterNode> topSnapshot,
-                @Nullable Map<Long, Collection<ClusterNode>> topHist,
-                @Nullable DiscoverySpiCustomMessage spiCustomMsg
+            @Override public IgniteFuture<?> onDiscovery(
+                DiscoveryNotification notification
             ) {
-                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
-                    : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
+                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
+                    : (DiscoveryCustomMessage) U.field(notification.getCustomMsgData(), "delegate");
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator
@@ -202,7 +273,9 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(notification);
+
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */

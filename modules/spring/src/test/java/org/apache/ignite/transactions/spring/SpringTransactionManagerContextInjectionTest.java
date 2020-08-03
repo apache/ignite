@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +36,7 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBeanInjectionUsingConfigPath() throws Exception {
         BeanFactory factory = new AnnotationConfigApplicationContext(TestPathConfiguration.class);
 
@@ -56,6 +58,7 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBeanInjectionUsingConfig() throws Exception {
         BeanFactory factory = new AnnotationConfigApplicationContext(TestCfgConfiguration.class);
 

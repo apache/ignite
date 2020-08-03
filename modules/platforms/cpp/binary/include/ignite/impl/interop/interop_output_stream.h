@@ -144,6 +144,14 @@ namespace ignite
                 void WriteInt64(const int64_t val);
 
                 /**
+                 * Write signed 64-byte integer.
+                 *
+                 * @param pos Position.
+                 * @param val Value.
+                 */
+                void WriteInt64(const int32_t pos, const int64_t val);
+
+                /**
                  * Write signed 64-byte integer array.
                  *
                  * @param val Value.

@@ -115,7 +115,6 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
@@ -124,7 +123,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
      * @param entry Entry to touch.
      * @return {@code True} if queue has been changed by this call.
      */
-    protected boolean touch(EvictableEntry<K, V> entry) {
+    @Override protected boolean touch(EvictableEntry<K, V> entry) {
         Node<EvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.

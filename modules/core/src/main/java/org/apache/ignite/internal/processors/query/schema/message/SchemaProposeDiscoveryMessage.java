@@ -99,9 +99,8 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
      * @param err Error.
      */
     public void onError(SchemaOperationException err) {
-        if (!hasError()) {
+        if (!hasError())
             this.err = err;
-        }
     }
 
     /**

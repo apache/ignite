@@ -27,19 +27,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
  */
 public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** First cache name. */
     private static final String CACHE1_NAME = "cache1";
 
@@ -57,12 +52,6 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE1_NAME), cacheConfiguration(CACHE2_NAME));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -100,15 +89,11 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @Test
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // No-op.
@@ -122,6 +107,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaNameInQuery() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
@@ -134,14 +120,14 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
         ResultSet rs = stmt.getResultSet();
 
-        while(rs.next())
+        while (rs.next())
             assertEquals(rs.getInt(2), rs.getInt(1) * 2);
 
         stmt.execute("select t._key, t._val from \"cache2\".Integer t");
 
         rs = stmt.getResultSet();
 
-        while(rs.next())
+        while (rs.next())
             assertEquals(rs.getInt(2), rs.getInt(1) * 3);
 
         stmt.execute("select t._key, t._val, v._val " +
@@ -149,7 +135,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
         rs = stmt.getResultSet();
 
-        while(rs.next()) {
+        while (rs.next()) {
             assertEquals(rs.getInt(2), rs.getInt(1) * 2);
             assertEquals(rs.getInt(3), rs.getInt(1) * 3);
         }
@@ -160,8 +146,9 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaInUrl() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache1")) {
+        try (Connection conn = DriverManager.getConnection(URL + "/\"cache1\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -172,7 +159,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
                 assertEquals(rs.getInt(2), rs.getInt(1) * 2);
         }
 
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try (Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -187,8 +174,9 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaInUrlAndInQuery() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try (Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val, v._val " +
@@ -206,8 +194,9 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetSchema() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             // Try to execute query without set schema
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -217,11 +206,14 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to query Ignite");
+            }, SQLException.class, "Table \"INTEGER\" not found");
 
-            conn.setSchema("cache1");
+            conn.setSchema("\"cache1\"");
 
             Statement stmt = conn.createStatement();
+
+            //Must not affects previous created statements.
+            conn.setSchema("invalid_schema");
 
             stmt.execute("select t._key, t._val from Integer t");
 

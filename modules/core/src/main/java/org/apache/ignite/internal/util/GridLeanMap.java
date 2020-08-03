@@ -61,7 +61,6 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      *
      * @param size Initial size.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public GridLeanMap(int size) {
         assert size >= 0;
 
@@ -257,7 +256,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "CloneDoesntDeclareCloneNotSupportedException"})
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override protected Object clone() {
         try {
             GridLeanMap<K, V> clone = (GridLeanMap<K, V>)super.clone();

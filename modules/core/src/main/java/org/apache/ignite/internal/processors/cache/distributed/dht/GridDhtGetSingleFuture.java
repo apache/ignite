@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,6 +46,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -103,6 +109,12 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Recovery context flag. */
     private final boolean recovery;
 
+    /** Transaction label. */
+    private final String txLbl;
+
+    /** */
+    private final MvccSnapshot mvccSnapshot;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -115,6 +127,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
+     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridDhtGetSingleFuture(
         GridCacheContext<K, V> cctx,
@@ -128,7 +142,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLbl,
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert reader != null;
         assert key != null;
@@ -145,10 +161,12 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.txLbl = txLbl;
+        this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
 
-        ver = cctx.versions().next();
+        ver = cctx.cache().nextVersion();
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtGetSingleFuture.class);
@@ -192,7 +210,10 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map() {
+        // TODO Get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251.
         if (cctx.group().preloader().needForceKeys()) {
+            assert !cctx.mvccEnabled();
+
             GridDhtFuture<Object> fut = cctx.group().preloader().request(
                 cctx,
                 Collections.singleton(key),
@@ -225,7 +246,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 onDone(e);
                             }
                             else
-                                map0();
+                                map0(true);
                         }
                     }
                 );
@@ -234,19 +255,20 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
         }
 
-        map0();
+        map0(false);
     }
 
     /**
      *
      */
-    private void map0() {
+    private void map0(boolean forceKeys) {
         assert retry == null : retry;
 
-        if (!map(key)) {
+        if (!map(key, forceKeys)) {
             retry = cctx.affinity().partition(key);
 
-            onDone((GridCacheEntryInfo)null);
+            if (!isDone())
+                onDone((GridCacheEntryInfo)null);
 
             return;
         }
@@ -263,9 +285,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param key Key.
      * @return {@code True} if mapped.
      */
-    private boolean map(KeyCacheObject key) {
+    private boolean map(KeyCacheObject key, boolean forceKeys) {
         try {
             int keyPart = cctx.affinity().partition(key);
+
+            if (cctx.mvccEnabled()) {
+                boolean noOwners = cctx.topology().owners(keyPart, topVer).isEmpty();
+
+                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
+                // (we have a not strict partition loss policy if we've got here) we need to set flag forceKeys to true
+                // to avoid useless remapping to other non-owning partitions. For non-mvcc caches the force key request
+                // is also useless in the such situations, so the same flow is here: allegedly we've made a force key
+                // request with no results and therefore forceKeys flag may be set to true here.
+                if (noOwners)
+                    forceKeys = true;
+            }
 
             GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
                 cache().topology().localPartition(keyPart, topVer, true) :
@@ -278,9 +312,16 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                this.part = part.id();
+                if (forceKeys || (part.state() == OWNING || part.state() == LOST)) {
+                    this.part = part.id();
 
-                return true;
+                    return true;
+                }
+                else {
+                    part.release();
+
+                    return false;
+                }
             }
             else
                 return false;
@@ -293,7 +334,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      *
      */
-    @SuppressWarnings( {"unchecked", "IfMayBeConditional"})
     private void getAsync() {
         assert part != -1;
 
@@ -349,7 +389,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         log.debug("Got removed entry when getting a DHT value: " + e);
                 }
                 finally {
-                    cctx.evicts().touch(e, topVer);
+                    e.touch();
                 }
             }
         }
@@ -365,8 +405,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true,
-                recovery);
+                recovery,
+                txLbl,
+                mvccSnapshot);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -391,8 +432,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                /*can remap*/true,
-                                recovery);
+                                recovery,
+                                null,
+                                mvccSnapshot);
 
                         fut0.listen(createGetFutureListener());
                     }

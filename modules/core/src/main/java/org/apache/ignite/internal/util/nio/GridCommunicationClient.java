@@ -92,8 +92,8 @@ public interface GridCommunicationClient {
      * @param nodeId Remote node ID. Provided only for sync clients.
      * @param msg Message to send.
      * @param c Ack closure.
-     * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
+     * @throws IgniteCheckedException If failed.
      */
     public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> c)
         throws IgniteCheckedException;

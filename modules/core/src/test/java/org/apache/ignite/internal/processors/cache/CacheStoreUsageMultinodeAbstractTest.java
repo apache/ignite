@@ -37,9 +37,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -57,12 +54,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    protected boolean client;
-
     /** */
     protected boolean cache;
 
@@ -84,10 +75,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -152,7 +139,8 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache0).context().store().configured());
-        assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());
+        if (atomicityMode() != ATOMIC)
+            assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());
 
         List<TransactionConcurrency> tcList = new ArrayList<>();
 
@@ -232,9 +220,8 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         }
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
-                return writeMap.size() > 0;
+            @Override public boolean apply() {
+                return !writeMap.isEmpty();
             }
         }, 1000);
 

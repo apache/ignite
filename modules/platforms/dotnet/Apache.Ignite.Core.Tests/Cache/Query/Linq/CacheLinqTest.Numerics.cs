@@ -43,8 +43,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestNumerics()
         {
-            var cache = Ignition.GetIgnite()
-                .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof(Numerics))
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", 
+                    new QueryEntity(typeof(int), typeof(Numerics)))
                 {
                     SqlEscapeAll = GetSqlEscapeAll()
                 });

@@ -18,4 +18,5 @@
 /**
  * Contains implementation of JMS queue and topic messages consumer.
  */
+
 package org.apache.ignite.stream.jms11;

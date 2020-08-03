@@ -55,12 +55,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -86,9 +84,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
     /** Proceed put condition. */
     private final Condition putCond = lock.newCondition();
-
-    /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Caches comparison start latch. */
     private CountDownLatch cmpLatch;
@@ -223,11 +218,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(ccfg);
         cfg.setConnectorConfiguration(null);
@@ -240,6 +230,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         startUp();
 
@@ -266,7 +257,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                         startBarrier.await();
                     }
                     catch (InterruptedException | BrokenBarrierException ignore) {
-                        return ;
+                        return;
                     }
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -317,7 +308,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                                 expVals.remove(key);
                         }
                         catch (Exception e) {
-                            log.error("Cache update failed [putMap=" + putMap+ ", rmvSet=" + rmvSet + ']', e);
+                            log.error("Cache update failed [putMap=" + putMap + ", rmvSet=" + rmvSet + ']', e);
 
                             errCtr.incrementAndGet();
                         }
@@ -494,12 +485,12 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @return {@code True} if check passed successfully.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
+    @SuppressWarnings({"TooBroadScope"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
-        for (int i = 0 ; i < dataNodes(); i++) {
+        for (int i = 0; i < dataNodes(); i++) {
             IgniteCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;

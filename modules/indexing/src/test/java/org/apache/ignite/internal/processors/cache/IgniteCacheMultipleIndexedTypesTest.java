@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -49,6 +50,7 @@ public class IgniteCacheMultipleIndexedTypesTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleIndexedTypes() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

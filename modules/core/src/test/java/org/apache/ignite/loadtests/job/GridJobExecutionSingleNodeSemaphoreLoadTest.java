@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -42,8 +43,8 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
 
@@ -84,7 +85,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             final int duration = args.length > 2 ? Integer.parseInt(args[2]) : 0;
             final String outputFileName = args.length > 3 ? args[3] : null;
 
-            final LongAdder8 execCnt = new LongAdder8();
+            final LongAdder execCnt = new LongAdder();
 
             try {
                 final Ignite g = G.start("modules/tests/config/grid-job-load.xml");
@@ -173,7 +174,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      * @param iterCntr Iteration counter.
      */
     private static void runTest(final Ignite g, int threadCnt, int taskCnt, long dur,
-        final LongAdder8 iterCntr) {
+        final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 
         final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {
@@ -200,7 +201,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 

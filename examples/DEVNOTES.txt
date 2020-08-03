@@ -1,0 +1,11 @@
+Ignite Examples Build Instructions
+==================================
+1) Compile and install Ignite from project root folder:
+
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
+
+   (If needed, refer DEVNOTES.txt in project root folder for most up-to-date build instructions.)
+
+2) Build examples from "examples" sub-folder under Ignite project root:
+
+        mvn clean package -DskipTests

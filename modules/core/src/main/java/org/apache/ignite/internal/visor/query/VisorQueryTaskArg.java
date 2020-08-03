@@ -52,6 +52,12 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
     /** Result batch size. */
     private int pageSize;
 
+    /** Lazy query execution flag */
+    private boolean lazy;
+
+    /** Collocation flag. */
+    private boolean collocated;
+
     /**
      * Default constructor.
      */
@@ -68,8 +74,63 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
      * @param loc Flag whether to execute query locally.
      * @param pageSize Result batch size.
      */
-    public VisorQueryTaskArg(String cacheName, String qryTxt,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean loc, int pageSize) {
+    public VisorQueryTaskArg(
+        String cacheName,
+        String qryTxt,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean replicatedOnly,
+        boolean loc,
+        int pageSize
+    ) {
+        this(cacheName, qryTxt, distributedJoins, enforceJoinOrder, replicatedOnly, loc, pageSize, false, false);
+    }
+
+    /**
+     * @param cacheName Cache name for query.
+     * @param qryTxt Query text.
+     * @param distributedJoins If {@code true} then distributed joins enabled.
+     * @param enforceJoinOrder If {@code true} then enforce join order.
+     * @param replicatedOnly {@code true} then query contains only replicated tables.
+     * @param loc Flag whether to execute query locally.
+     * @param pageSize Result batch size.
+     * @param lazy Lazy query execution flag.
+     */
+    public VisorQueryTaskArg(
+        String cacheName,
+        String qryTxt,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean replicatedOnly,
+        boolean loc,
+        int pageSize,
+        boolean lazy
+    ) {
+        this(cacheName, qryTxt, distributedJoins, enforceJoinOrder, replicatedOnly, loc, pageSize, lazy, false);
+    }
+
+    /**
+     * @param cacheName Cache name for query.
+     * @param qryTxt Query text.
+     * @param distributedJoins If {@code true} then distributed joins enabled.
+     * @param enforceJoinOrder If {@code true} then enforce join order.
+     * @param replicatedOnly {@code true} then query contains only replicated tables.
+     * @param loc Flag whether to execute query locally.
+     * @param pageSize Result batch size.
+     * @param lazy Lazy query execution flag.
+     * @param collocated Collocation flag.
+     */
+    public VisorQueryTaskArg(
+        String cacheName,
+        String qryTxt,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean replicatedOnly,
+        boolean loc,
+        int pageSize,
+        boolean lazy,
+        boolean collocated
+    ) {
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
         this.distributedJoins = distributedJoins;
@@ -77,6 +138,8 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         this.replicatedOnly = replicatedOnly;
         this.loc = loc;
         this.pageSize = pageSize;
+        this.lazy = lazy;
+        this.collocated = collocated;
     }
 
     /**
@@ -128,6 +191,29 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         return pageSize;
     }
 
+    /**
+     * Lazy query execution flag.
+     *
+     * @return Lazy flag.
+     */
+    public boolean getLazy() {
+        return lazy;
+    }
+
+    /**
+     * Flag indicating if this query is collocated.
+     *
+     * @return {@code true} If the query is collocated.
+     */
+    public boolean isCollocated() {
+        return collocated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V3;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheName);
@@ -136,6 +222,8 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         out.writeBoolean(enforceJoinOrder);
         out.writeBoolean(loc);
         out.writeInt(pageSize);
+        out.writeBoolean(lazy);
+        out.writeBoolean(collocated);
     }
 
     /** {@inheritDoc} */
@@ -146,6 +234,12 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         enforceJoinOrder = in.readBoolean();
         loc = in.readBoolean();
         pageSize = in.readInt();
+
+        if (protoVer > V1)
+            lazy = in.readBoolean();
+
+        if (protoVer > V2)
+            collocated = in.readBoolean();
     }
 
     /** {@inheritDoc} */

@@ -28,7 +28,7 @@
     <!--
         Grid configuration.
     -->
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Grid with default name. -->
 
         <property name="connectorConfiguration"><null/></property>
@@ -43,9 +43,15 @@
                 </property>
             </bean>
         </property>
+
+        <property name="lifecycleBeans">
+            <list>
+                <bean class="org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest.KillerLifecycleBean" />
+            </list>
+        </property>
     </bean>
 
-    <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
+    <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="igniteInstanceName" value="gridName2"/>
 
         <property name="connectorConfiguration"><null/></property>
@@ -60,5 +66,12 @@
                 </property>
             </bean>
         </property>
+
+        <property name="lifecycleBeans">
+            <list>
+                <bean class="org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest.KillerLifecycleBean" />
+            </list>
+        </property>
     </bean>
+
 </beans>

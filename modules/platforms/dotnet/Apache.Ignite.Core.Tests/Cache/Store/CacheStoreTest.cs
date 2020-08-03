@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
@@ -51,11 +53,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public virtual void BeforeTests()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                IgniteInstanceName = GridName,
-                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
-            });
+            Restart();
         }
 
         /// <summary>
@@ -73,6 +71,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 Ignition.StopAll(true);
             }
+        }
+
+        
+        /// <summary>
+        /// Stop all instances, set and start a test instance.
+        /// </summary>
+        private void Restart()
+        {
+            Ignition.StopAll(true);
+            
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = GridName,
+                SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-store.xml"),
+            });
         }
 
         /// <summary>
@@ -170,10 +183,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
+            Assert.AreEqual(0, cache.GetSizeLongAsync().Result);
 
             cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait();
 
             Assert.AreEqual(5, cache.GetSizeAsync().Result);
+            Assert.AreEqual(5, cache.GetSizeLongAsync().Result);
 
             for (int i = 105; i < 110; i++)
             {
@@ -243,6 +258,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = false;
 
             cache.Remove(1);
+        }
+        
+        /// <summary>
+        /// Tests that exceptions from CacheStoreFactory are propagated properly.
+        /// </summary>
+        [Test]
+        public void TestFailedCacheStoreException()
+        {
+            try
+            {
+                var ccfg = new CacheConfiguration("CacheWithFailedStore")
+                {
+                    CacheStoreFactory = new FailedCacheStoreFactory(),
+                    ReadThrough = true
+                };
+
+                Assert.Throws<CacheException>(() => Ignition.GetIgnite(GridName).GetOrCreateCache<int, int>(ccfg));
+            }
+            finally
+            {
+                // After failed cache grid is in ivalid state. Should be restarted.
+                Restart();
+            }
+          
         }
 
         [Test]
@@ -709,6 +748,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         public bool Invoke(ICacheEntry<int, string> entry)
         {
             throw new Exception("Expected exception in ExceptionalEntryFilter");
+        }
+    }
+
+    /// <summary>
+    /// Test factory.
+    /// </summary>
+    [Serializable]
+    public class FailedCacheStoreFactory : IFactory<ICacheStore>
+    {
+        /// <summary>
+        /// Creates an instance of the cache store. Throws an exception during creation.
+        /// </summary>
+        public ICacheStore CreateInstance()
+        {
+            throw new Exception("FailedCacheStoreFactory.CreateInstance exception");
         }
     }
 }

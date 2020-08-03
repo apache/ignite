@@ -20,35 +20,18 @@ package org.apache.ignite.internal.processors.service;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Service proxy test with client reconnect.
  */
 public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        cfg.setClientMode(igniteInstanceName.contains("client"));
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -57,10 +40,11 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         startGrid("server");
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.services().deployClusterSingleton("my-service", new MyServiceImpl());
 
@@ -82,11 +66,48 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
 
         startGrid("server");
 
-        assert latch.await(10, TimeUnit.SECONDS);
+        assertTrue(latch.await(12, TimeUnit.SECONDS));
 
         client.services().deployClusterSingleton("my-service", new MyServiceImpl());
 
         assertEquals(42, proxy.hello());
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientReconnectLongServiceInit() throws Exception {
+        startGrid("server");
+
+        Ignite client = startClientGrid("client");
+
+        client.services().deployClusterSingleton("my-service", new MyLongInitServiceImpl());
+
+        MyService proxy = client.services().serviceProxy("my-service", MyService.class, false);
+
+        assertEquals(9001, proxy.hello());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        client.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                latch.countDown();
+
+                return true;
+            }
+        }, EventType.EVT_CLIENT_NODE_RECONNECTED);
+
+        stopGrid("server");
+
+        startGrid("server");
+
+        assertTrue(latch.await(12, TimeUnit.SECONDS));
+
+        client.services().deployClusterSingleton("my-service", new MyLongInitServiceImpl());
+
+        assertEquals(9001, proxy.hello());
     }
 
     /**
@@ -114,6 +135,30 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+    }
+
+    /**
+     */
+    private static class MyLongInitServiceImpl implements MyService {
+        /** {@inheritDoc} */
+        @Override public int hello() {
+            return 9001;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            Thread.sleep(5_000);
         }
 
         /** {@inheritDoc} */

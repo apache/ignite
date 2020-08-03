@@ -21,9 +21,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -34,9 +31,6 @@ import redis.clients.jedis.JedisPoolConfig;
 public class RedisCommonAbstractTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Local host. */
     protected static final String HOST = "127.0.0.1";
@@ -70,8 +64,6 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         pool.destroy();
     }
 
@@ -89,12 +81,6 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
         redisCfg.setPort(PORT);
 
         cfg.setConnectorConfiguration(redisCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -114,7 +100,7 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
         return grid(0).cache(DFLT_CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected int gridCount() {
         return GRID_CNT;
     }

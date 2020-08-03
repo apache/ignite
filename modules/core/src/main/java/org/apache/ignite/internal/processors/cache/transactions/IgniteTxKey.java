@@ -37,7 +37,7 @@ public class IgniteTxKey implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private KeyCacheObject key;
 
     /** Cache ID. */

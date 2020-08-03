@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC response result.
@@ -56,6 +57,36 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
+    /** Multiple statements query results. */
+    static final byte QRY_EXEC_MULT = 13;
+
+    /** Columns metadata result V2. */
+    static final byte META_COLUMNS_V2 = 14;
+
+    /** Columns metadata result V3. */
+    static final byte META_COLUMNS_V3 = 15;
+
+    /** A request to send file from client to server. */
+    static final byte BULK_LOAD_ACK = 16;
+
+    /** Columns metadata result V4. */
+    static final byte META_COLUMNS_V4 = 17;
+
+    /** A result of the processing ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 18;
+
+    /** A result of the processing cache partitions distributions request. */
+    static final byte CACHE_PARTITIONS = 19;
+
+    /** A result of the successfully updated binary schema.  */
+    static final byte UPDATE_BINARY_SCHEMA_ACK = 20;
+
+    /** Get binary type schema result. */
+    static final byte BINARY_TYPE_GET = 21;
+
+    /** Get binary type name result. */
+    static final byte BINARY_TYPE_NAME_GET = 22;
+
     /** Success status. */
     private byte type;
 
@@ -69,26 +100,35 @@ public class JdbcResult implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeByte(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        // No-op.
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
     }
 
     /**
      * @param reader Binary reader.
+     * @param protoCtx Binary context.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcResult readResult(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static JdbcResult readResult(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         int resId = reader.readByte();
 
         JdbcResult res;
 
-        switch(resId) {
+        switch (resId) {
             case QRY_EXEC:
                 res = new JdbcQueryExecuteResult();
 
@@ -139,12 +179,67 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case QRY_EXEC_MULT:
+                res = new JdbcQueryExecuteMultipleStatementsResult();
+
+                break;
+
+            case META_COLUMNS_V2:
+                res = new JdbcMetaColumnsResultV2();
+
+                break;
+
+            case META_COLUMNS_V3:
+                res = new JdbcMetaColumnsResultV3();
+
+                break;
+
+            case BULK_LOAD_ACK:
+                res = new JdbcBulkLoadAckResult();
+
+                break;
+
+            case META_COLUMNS_V4:
+                res = new JdbcMetaColumnsResultV4();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                res = new JdbcOrderedBatchExecuteResult();
+
+                break;
+
+            case CACHE_PARTITIONS:
+                res = new JdbcCachePartitionsResult();
+
+                break;
+
+            case UPDATE_BINARY_SCHEMA_ACK:
+                res = new JdbcUpdateBinarySchemaResult();
+
+                break;
+
+            case BINARY_TYPE_GET:
+                res = new JdbcBinaryTypeGetResult();
+
+                break;
+
+            case BINARY_TYPE_NAME_GET:
+                res = new JdbcBinaryTypeNameGetResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }
 
-        res.readBinary(reader);
+        res.readBinary(reader, protoCtx);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcResult.class, this);
     }
 }

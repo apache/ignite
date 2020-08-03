@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2
+           http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <files>
+        <!-- Copy CPP files. -->
+        <file>
+            <source>modules/platforms/cpp/project/vs/ignite.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
+            <destName>ignite.sln</destName>
+        </file>
+
+        <file>
+            <source>modules/platforms/cpp/project/vs/ignite_x86.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
+            <destName>ignite_x86.sln</destName>
+        </file>
+
+        <file>
+            <source>modules/platforms/cpp/CMakeLists.txt</source>
+            <outputDirectory>/platforms/cpp</outputDirectory>
+            <destName>CMakeLists.txt</destName>
+        </file>
+
+        <!-- Copy Node.js files. -->
+        <file>
+            <source>modules/platforms/nodejs/index.js</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/nodejs/package.json</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/nodejs/README.md</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
+        <!-- Copy PHP files. -->
+        <file>
+            <source>modules/platforms/php/composer.json</source>
+            <outputDirectory>/platforms/php</outputDirectory>
+        </file>
+
+        <!-- Copy Python files. -->
+        <file>
+            <source>modules/platforms/python/LICENSE</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/README.md</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/setup.py</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <!-- Other files. -->
+        <file>
+            <source>assembly/LICENSE_IGNITE</source>
+            <destName>LICENSE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>assembly/NOTICE_IGNITE</source>
+            <destName>NOTICE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
+
+    <fileSets>
+        <!-- Move platforms readme. -->
+        <fileSet>
+            <directory>modules/platforms</directory>
+            <outputDirectory>/platforms</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move .Net readme. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet</directory>
+            <outputDirectory>/platforms/dotnet</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move .Net binaries. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet/bin</directory>
+            <outputDirectory>/platforms/dotnet/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net docs. -->
+        <fileSet>
+            <directory>modules/clients/target/dotnetdoc</directory>
+            <outputDirectory>/platforms/dotnet/docs</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net examples. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet/examples</directory>
+            <outputDirectory>/platforms/dotnet/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net licenses. -->
+        <fileSet>
+            <directory>modules/platforms/licenses</directory>
+            <outputDirectory>/platforms/dotnet/licenses</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP readme. -->
+        <fileSet>
+            <directory>modules/platforms/cpp</directory>
+            <outputDirectory>/platforms/cpp</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+                <include>DEVNOTES.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move CMake modules. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/cmake</directory>
+            <outputDirectory>/platforms/cpp/cmake</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "common" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/common</directory>
+            <outputDirectory>/platforms/cpp/common</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "network" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/network</directory>
+            <outputDirectory>/platforms/cpp/network</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "jni" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/jni</directory>
+            <outputDirectory>/platforms/cpp/jni</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "core" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/core</directory>
+            <outputDirectory>/platforms/cpp/core</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "ignite" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/ignite</directory>
+            <outputDirectory>/platforms/cpp/ignite</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP examples. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/examples</directory>
+            <outputDirectory>/platforms/cpp/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "odbc" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/odbc</directory>
+            <outputDirectory>/platforms/cpp/odbc</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "binary" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/binary</directory>
+            <outputDirectory>/platforms/cpp/binary</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "thin-client" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/thin-client</directory>
+            <outputDirectory>/platforms/cpp/thin-client</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP licenses. -->
+        <fileSet>
+            <directory>modules/platforms/licenses</directory>
+            <outputDirectory>/platforms/cpp/licenses</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP docs. -->
+        <fileSet>
+            <directory>modules/clients/target/cppdoc/html</directory>
+            <outputDirectory>/platforms/cpp/docs</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Copy Node.js binaries. -->
+        <fileSet>
+            <directory>modules/platforms/nodejs/lib</directory>
+            <outputDirectory>/platforms/nodejs/lib</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/nodejs/examples</directory>
+            <outputDirectory>/platforms/nodejs/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Copy PHP sources. -->
+        <fileSet>
+            <directory>modules/platforms/php/src</directory>
+            <outputDirectory>/platforms/php/src</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/php/examples</directory>
+            <outputDirectory>/platforms/php/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Copy Python sources. -->
+        <fileSet>
+            <directory>modules/platforms/python/pyignite</directory>
+            <outputDirectory>/platforms/python/pyignite</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/requirements</directory>
+            <outputDirectory>/platforms/python/requirements</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/examples</directory>
+            <outputDirectory>/platforms/python/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Other files. -->
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>igniterouter.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>igniterouter.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>config/router</directory>
+            <outputDirectory>/config/router</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <includes>
+                <include>rest/**</include>
+                <include>memcached/**</include>
+                <include>redis/**</include>
+                <include>sql/**</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>target/javadoc/core</directory>
+            <outputDirectory>/docs/javadoc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/scalar/target/site/scaladocs</directory>
+            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <includes>
+                <include>config/**</include>
+                <include>src/**</include>
+            </includes>
+            <excludes>
+                <exclude>**/package.html</exclude>
+                <exclude>src/test/**</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>assembly/libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
+    </fileSets>
+</component>

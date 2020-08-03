@@ -1,9 +1,0 @@
-*.idea
-*.log
-*.log.*
-.npmrc
-build/*
-node_modules
-public/stylesheets/*.css
-yarn.lock
-package-lock.json

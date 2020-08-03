@@ -18,6 +18,7 @@
 package org.apache.ignite.logger;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,5 +88,10 @@ public class NullLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NullLogger.class, this);
     }
 }

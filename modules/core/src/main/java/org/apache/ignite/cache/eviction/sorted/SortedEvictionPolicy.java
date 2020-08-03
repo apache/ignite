@@ -28,13 +28,13 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Math.abs;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
@@ -244,7 +244,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
@@ -256,7 +255,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      *
      * @param meta Holder.
      */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         Holder<K, V> holder = (Holder<K, V>)meta;
 
@@ -297,7 +295,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (this == obj)
                 return true;
@@ -353,7 +350,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public int compare(Holder<K, V> h1, Holder<K, V> h2) {
             if (h1 == h2)
                 return 0;
@@ -381,7 +377,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+        private final LongAdder size = new LongAdder();
 
         /**
          * @param comp Comparator.

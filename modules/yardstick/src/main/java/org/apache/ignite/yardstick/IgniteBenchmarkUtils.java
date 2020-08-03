@@ -18,7 +18,8 @@
 package org.apache.ignite.yardstick;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -159,7 +160,7 @@ public class IgniteBenchmarkUtils {
      * @param arg Argument name.
      * @param val Argument value.
      */
-    private static void addArg(List<String> args, String arg, Object val) {
+    private static void addArg(Collection<String> args, String arg, Object val) {
         args.add(arg);
         args.add(val.toString());
     }
@@ -181,5 +182,54 @@ public class IgniteBenchmarkUtils {
         BenchmarkUtils.println(cfg, "Preload logger was started.");
 
         return lgr;
+    }
+
+    /**
+     * Checks if address list contains no localhost addresses.
+     *
+     * @param adrList address list.
+     * @return {@code true} if address list contains no localhost addresses or {@code false} otherwise.
+     */
+    static boolean checkIfNoLocalhost(Iterable<String> adrList) {
+        int locAdrNum = 0;
+
+        for (String adr : adrList) {
+            if (adr.contains("127.0.0.1") || adr.contains("localhost"))
+                locAdrNum++;
+        }
+
+        return locAdrNum == 0;
+    }
+
+    /**
+     * Parses portRange string.
+     *
+     * @param portRange {@code String} port range as 'int..int'.
+     * @return {@code Collection<Integer>} Port list.
+     */
+    static Collection<Integer> getPortList(String portRange) {
+        int firstPort;
+        int lastPort;
+
+        try {
+            String[] numArr = portRange.split("\\.\\.");
+
+            firstPort = Integer.valueOf(numArr[0]);
+            lastPort = numArr.length > 1 ? Integer.valueOf(numArr[1]) : firstPort;
+        }
+        catch (NumberFormatException e) {
+            BenchmarkUtils.println(String.format("Failed to parse PORT_RANGE property: %s; %s",
+                portRange, e.getMessage()));
+
+            throw new IllegalArgumentException(String.format("Wrong value for PORT_RANGE property: %s",
+                portRange));
+        }
+
+        Collection<Integer> res = new HashSet<>();
+
+        for (int port = firstPort; port <= lastPort; port++)
+            res.add(port);
+
+        return res;
     }
 }

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Benchmarks.Model
 {
+    using System;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -73,6 +74,16 @@ namespace Apache.Ignite.Benchmarks.Model
         /// Points.
         /// </summary>
         public int Points { get; set; }
+        
+        /// <summary>
+        /// Birthday.
+        /// </summary>
+        public DateTime Birthday { get; set; }
+        
+        /// <summary>
+        /// Timespan.
+        /// </summary>
+        public DateTime Timestamp { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -101,6 +112,9 @@ namespace Apache.Ignite.Benchmarks.Model
             Payload = new byte[payloadSize];
 
             Points = 100;
+
+            Birthday = new DateTime(2005, 5, 5, 1, 1, 1, DateTimeKind.Local).AddHours(id);
+            Timestamp = new DateTime(2005, 5, 5, 1, 1, 1, DateTimeKind.Utc).AddMinutes(id);
         }
 
         /** <inheritDoc /> */
@@ -116,6 +130,8 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteByteArray("payload", Payload);
             writer.WriteString("name", Name);
             writer.WriteObject("address", Address);
+            writer.WriteObject("birthday", Birthday);
+            writer.WriteTimestamp("timestamp", Timestamp);
         }
 
         /** <inheritDoc /> */
@@ -131,6 +147,8 @@ namespace Apache.Ignite.Benchmarks.Model
             Payload = reader.ReadByteArray("payload");
             Name = reader.ReadString("name");
             Address = reader.ReadObject<Address>("address");
+            Birthday = reader.ReadObject<DateTime>("birthday");
+            Timestamp = reader.ReadTimestamp("timestamp").GetValueOrDefault();
         }
     }
 }

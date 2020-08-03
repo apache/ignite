@@ -23,8 +23,10 @@ import java.io.ObjectInput;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -238,7 +241,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 footerStart = start + offset;
 
                 if (BinaryUtils.hasRaw(flags)) {
-                    footerLen = len - offset - 4;
+                    footerLen = len - offset;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
                 else {
@@ -263,7 +266,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+                    desc = ctx.registerClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), true, false);
 
                     typeId = desc.typeId();
                 }
@@ -312,7 +315,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     BinaryClassDescriptor descriptor() {
         if (desc == null)
-            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
         return desc;
     }
@@ -440,7 +443,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return wrapping exception
      */
     private BinaryObjectException wrapFieldException(String fieldName, Exception e) {
-        if (S.INCLUDE_SENSITIVE)
+        if (S.includeSensitive())
             return new BinaryObjectException("Failed to read field: " + fieldName, e);
         else
             return new BinaryObjectException("Failed to read field.", e);
@@ -1305,7 +1308,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T readObject(String fieldName) throws BinaryObjectException {
         try {
             return findFieldByName(fieldName) ? (T)BinaryUtils.doReadObject(in, ctx, ldr, this) : null;
@@ -1357,7 +1359,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1530,7 +1532,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, true, factory);
+                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -1608,7 +1610,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, true, factory);
+                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -1752,7 +1754,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case OBJ:
                 if (desc == null)
-                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
                 streamPosition(dataStart);
 
@@ -1906,17 +1908,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
                 break;
 
             case COL:
-                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
+                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, false, true, null);
 
                 break;
 
             case MAP:
-                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
+                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, false, true, null);
 
                 break;
 
@@ -1924,9 +1926,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 obj = BinaryUtils.doReadBinaryObject(in, ctx, false);
 
                 ((BinaryObjectImpl)obj).context(ctx);
-
-                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
-                    obj = ((BinaryObject)obj).deserialize();
 
                 break;
 
@@ -1943,9 +1942,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case BINARY_ENUM:
                 obj = BinaryUtils.doReadBinaryEnum(in, ctx);
-
-                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
-                    obj = ((BinaryObject)obj).deserialize();
 
                 break;
 
@@ -2005,21 +2001,37 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
 
-                if (type == null || type.metadata() == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                BinaryMetadata meta = type != null ? type.metadata() : null;
 
-                for (BinarySchema typeSchema : type.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
+                if (type == null || meta == null)
+                    throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
+                        "(Ignite work directory might have been cleared after restart. Make sure that IGNITE_HOME " +
+                        "does not point to a temp folder or any other folder that is destroyed/cleared on restarts) [" +
+                        "typeId=" + typeId + ", IGNITE_HOME='" + U.getIgniteHome() + "']");
+
+                Collection<BinarySchema> existingSchemas = meta.schemas();
+
+                for (BinarySchema existingSchema : existingSchemas) {
+                    if (schemaId == existingSchema.schemaId()) {
+                        schema = existingSchema;
 
                         break;
                     }
                 }
 
-                if (schema == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                if (schema == null) {
+                    List<Integer> existingSchemaIds = new ArrayList<>(existingSchemas.size());
+
+                    for (BinarySchema existingSchema : existingSchemas)
+                        existingSchemaIds.add(existingSchema.schemaId());
+
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer" +
+                        " [typeName=" + type.typeName() +
+                        ", typeId=" + typeId +
+                        ", missingSchemaId=" + schemaId +
+                        ", existingSchemaIds=" + existingSchemaIds + ']'
+                    );
+                }
             }
             else
                 schema = createSchema();
@@ -2296,13 +2308,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void readFully(byte[] b) throws IOException {
         readFully(b, 0, b.length);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void readFully(byte[] b, int off, int len) throws IOException {
         int cnt = in.read(b, off, len);
 

@@ -18,8 +18,12 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Plugin;
@@ -27,12 +31,12 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Internal Ignite interface.
     /// </summary>
-    internal interface IIgniteInternal : IIgnite
+    internal interface IIgniteInternal
     {
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        BinaryProcessor BinaryProcessor { get; }
+        IBinaryProcessor BinaryProcessor { get; }
 
         /// <summary>
         /// Configuration.
@@ -62,8 +66,43 @@ namespace Apache.Ignite.Core.Impl
         PluginProcessor PluginProcessor { get; }
 
         /// <summary>
+        /// Gets the platform cache manager.
+        /// </summary>
+        PlatformCacheManager PlatformCacheManager { get; }
+
+        /// <summary>
         /// Gets the data streamer.
         /// </summary>
         IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary);
+
+        /// <summary>
+        /// Gets the public Ignite API.
+        /// </summary>
+        IIgnite GetIgnite();
+
+        /// <summary>
+        /// Gets the binary API.
+        /// </summary>
+        IBinary GetBinary();
+
+        /// <summary>
+        /// Gets internal affinity service for a given cache.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <returns>Cache data affinity service.</returns>
+        CacheAffinityImpl GetAffinity(string cacheName);
+
+        /// <summary>
+        /// Gets cache name by id.
+        /// </summary>
+        /// <param name="cacheId">Cache id.</param>
+        /// <returns>Cache name.</returns>
+        CacheConfiguration GetCacheConfiguration(int cacheId);
+
+        /// <summary>
+        /// Gets platform-specific thread local value from Java.
+        /// </summary>
+        /// <returns>Thread local value from Java.</returns>
+        object GetJavaThreadLocal();
     }
 }

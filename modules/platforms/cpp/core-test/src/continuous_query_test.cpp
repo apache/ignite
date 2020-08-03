@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <deque>
 
 #include <boost/test/unit_test.hpp>
@@ -260,13 +256,12 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<TestEntry>
+        struct BinaryType<TestEntry> : BinaryTypeDefaultAll<TestEntry>
         {
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TestEntry";
+            }
 
             static void Write(BinaryWriter& writer, const TestEntry& obj)
             {
@@ -279,30 +274,17 @@ namespace ignite
             }
         };
 
-        template<typename K, typename V>
-        struct BinaryType< RangeFilter<K,V> >
+        namespace
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("RangeFilter");
-            }
+            extern const char typeName[] = "RangeFilter";
+        }
 
+        template<typename K, typename V>
+        struct BinaryType< RangeFilter<K,V> > : BinaryTypeDefaultAll< RangeFilter<K,V> >
+        {
             static void GetTypeName(std::string& dst)
             {
                 dst = "RangeFilter";
-
-            }
-
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-
-            static bool IsNull(const RangeFilter<K,V>&)
-            {
-                return false;
-            }
-
-            static void GetNull(RangeFilter<K, V>& dst)
-            {
-                dst = RangeFilter<K,V>();
             }
 
             static void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
@@ -366,7 +348,7 @@ void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
     lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20));
 }
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
@@ -712,7 +694,7 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
     lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
     lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
 
     lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
 }
@@ -762,7 +744,7 @@ BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 
     lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
     lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
 
     lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
 }

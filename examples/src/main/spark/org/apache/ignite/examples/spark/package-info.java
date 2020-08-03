@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Basic examples for ignite functionality with spark.
  */
+
 package org.apache.ignite.examples.spark;

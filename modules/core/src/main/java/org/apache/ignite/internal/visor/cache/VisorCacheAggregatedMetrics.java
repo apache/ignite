@@ -48,22 +48,28 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     /** Node IDs with cache metrics. */
     private Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
 
-    /** Minimum number of elements in heap. */
+    /** Total number of entries in heap. */
+    private transient Long totalHeapSize;
+
+    /** Minimum number of entries in heap. */
     private transient Long minHeapSize;
 
-    /** Average number of elements in heap. */
+    /** Average number of entries in heap. */
     private transient Double avgHeapSize;
 
-    /** Maximum number of elements in heap. */
+    /** Maximum number of entries in heap. */
     private transient Long maxHeapSize;
 
-    /** Minimum number of elements in off heap. */
+    /** Total number of entries in off heap. */
+    private transient Long totalOffHeapSize;
+
+    /** Minimum number of entries in off heap. */
     private transient Long minOffHeapSize;
 
-    /** Average number of elements in off heap. */
+    /** Average number of entries in off heap. */
     private transient Double avgOffHeapSize;
 
-    /** Maximum number of elements in off heap. */
+    /** Maximum number of entries in off heap. */
     private transient Long maxOffHeapSize;
 
     /** Minimum hits of the owning cache. */
@@ -163,7 +169,21 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Minimum number of elements in heap.
+     * @return Total number of entries in heap.
+     */
+    public long getTotalHeapSize() {
+        if (totalHeapSize == null) {
+            totalHeapSize = 0L;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                totalHeapSize += metric.getHeapEntriesCount();
+        }
+
+        return totalHeapSize;
+    }
+
+    /**
+     * @return Minimum number of entries in heap.
      */
     public long getMinimumHeapSize() {
         if (minHeapSize == null) {
@@ -177,7 +197,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Average number of elements in heap.
+     * @return Average number of entries in heap.
      */
     public double getAverageHeapSize() {
         if (avgHeapSize == null) {
@@ -193,7 +213,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum number of elements in heap.
+     * @return Maximum number of entries in heap.
      */
     public long getMaximumHeapSize() {
         if (maxHeapSize == null) {
@@ -208,35 +228,49 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
 
     /**
      * @param metric Metrics to process.
-     * @return Off heap entries count.
+     * @return Off heap primary entries count.
      */
-    private long getOffHeapEntriesCount(VisorCacheMetrics metric) {
-        return metric.getOffHeapEntriesCount();
+    private long getOffHeapPrimaryEntriesCount(VisorCacheMetrics metric) {
+        return metric.getOffHeapPrimaryEntriesCount();
     }
 
     /**
-     * @return Minimum number of elements in off heap.
+     * @return Total number of entries in off-heap.
      */
-    public long getMinimumOffHeapSize() {
+    public long getTotalOffHeapSize() {
+        if (totalOffHeapSize == null) {
+            totalOffHeapSize = 0L;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                totalOffHeapSize += metric.getOffHeapPrimaryEntriesCount();
+        }
+
+        return totalOffHeapSize;
+    }
+
+    /**
+     * @return Minimum number of primary entries in off heap.
+     */
+    public long getMinimumOffHeapPrimarySize() {
         if (minOffHeapSize == null) {
             minOffHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minOffHeapSize = Math.min(minOffHeapSize, getOffHeapEntriesCount(metric));
+                minOffHeapSize = Math.min(minOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return minOffHeapSize;
     }
 
     /**
-     * @return Average number of elements in off heap.
+     * @return Average number of primary entries in off heap.
      */
-    public double getAverageOffHeapSize() {
+    public double getAverageOffHeapPrimarySize() {
         if (avgOffHeapSize == null) {
             avgOffHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgOffHeapSize += getOffHeapEntriesCount(metric);
+                avgOffHeapSize += getOffHeapPrimaryEntriesCount(metric);
 
             avgOffHeapSize /= metrics.size();
         }
@@ -245,14 +279,14 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum number of elements in off heap in the cache.
+     * @return Maximum number of primary entries in off heap.
      */
-    public long getMaximumOffHeapSize() {
+    public long getMaximumOffHeapPrimarySize() {
         if (maxOffHeapSize == null) {
             maxOffHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxOffHeapSize = Math.max(maxOffHeapSize, getOffHeapEntriesCount(metric));
+                maxOffHeapSize = Math.max(maxOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return maxOffHeapSize;

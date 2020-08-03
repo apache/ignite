@@ -43,7 +43,12 @@ public enum IgniteState {
      * set to {@link SegmentationPolicy#STOP} or {@link SegmentationPolicy#RESTART_JVM}
      * and node is stopped from internals of Ignite after segment becomes invalid.
      */
-    STOPPED_ON_SEGMENTATION;
+    STOPPED_ON_SEGMENTATION,
+
+    /**
+     * Grid factory stopped due to a critical failure.
+     */
+    STOPPED_ON_FAILURE;
 
     /** Enumerated values. */
     private static final IgniteState[] VALS = values();

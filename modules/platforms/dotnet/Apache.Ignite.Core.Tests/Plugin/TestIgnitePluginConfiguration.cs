@@ -19,7 +19,6 @@
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Plugin;
-    using Apache.Ignite.Examples.Datagrid;
 
     /// <summary>
     /// Plugin configuration.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,7 +73,7 @@ public enum GridRestCommand {
     /** Remove several values from cache. */
     CACHE_REMOVE_ALL("rmvall"),
 
-    /** Clear the specified cache, or all caches if none is specified. */
+    /** Clear the specified cache. */
     CACHE_CLEAR("clear"),
 
     /** Replace cache value only if there is currently a mapping for it. */
@@ -159,14 +160,64 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
+    @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
+    @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
+    @Deprecated
+    CLUSTER_ACTIVATE("activate"),
+
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
+    @Deprecated
+    CLUSTER_DEACTIVATE("deactivate"),
+
+    /** @deprecated Use {@link #CLUSTER_STATE} instead. */
+    @Deprecated
+    CLUSTER_CURRENT_STATE("currentstate"),
+
     /** */
-    CLUSTER_CURRENT_STATE("currentState");
+    CLUSTER_NAME("clustername"),
+
+    /** */
+    CLUSTER_STATE("state"),
+
+    /** */
+    CLUSTER_SET_STATE("setstate"),
+
+    /** */
+    BASELINE_CURRENT_STATE("baseline"),
+
+    /** */
+    BASELINE_SET("setbaseline"),
+
+    /** */
+    BASELINE_ADD("addbaseline"),
+
+    /** */
+    BASELINE_REMOVE("removebaseline"),
+
+    /** */
+    AUTHENTICATE("authenticate"),
+
+    /** */
+    ADD_USER("adduser"),
+
+    /** */
+    REMOVE_USER("removeuser"),
+
+    /** */
+    UPDATE_USER("updateuser"),
+
+    /** Data region metrics. */
+    DATA_REGION_METRICS("dataregion"),
+
+    /** Data storage metrics. */
+    DATA_STORAGE_METRICS("datastorage");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();
@@ -174,9 +225,7 @@ public enum GridRestCommand {
     /** Key to enum map. */
     private static final Map<String, GridRestCommand> cmds = new HashMap<>();
 
-    /**
-     * Map keys to commands.
-     */
+    // Map keys to commands.
     static {
         for (GridRestCommand cmd : values())
             cmds.put(cmd.key(), cmd);

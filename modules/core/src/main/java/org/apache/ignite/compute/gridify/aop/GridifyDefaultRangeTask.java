@@ -47,6 +47,7 @@ import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.util.gridify.GridifyUtils.UNKNOWN_SIZE;
 
@@ -83,7 +84,6 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     private ComputeLoadBalancer balancer;
 
     /** */
-    @SuppressWarnings({"UnusedDeclaration"})
     @TaskContinuousMapperResource
     private ComputeTaskContinuousMapper mapper;
 
@@ -130,7 +130,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg) {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
         assert ignite != null : "Grid instance could not be injected";

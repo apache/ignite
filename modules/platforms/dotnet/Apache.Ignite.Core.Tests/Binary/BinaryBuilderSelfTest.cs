@@ -50,8 +50,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void SetUp()
         {
-            TestUtils.KillProcesses();
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration
@@ -619,7 +617,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(-88648479, obj1.GetHashCode());
             Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
-            Assert.AreEqual("myType [, int=1, str=foo]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
+            Assert.AreEqual("myType [, int=1, str=foo]", Regex.Replace(obj1.ToString(), "idHash=[+-]?\\d+", ""));
         }
 
         /// <summary>
@@ -662,7 +660,22 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .Build();
 
             CheckPrimitiveFields1(binObj2);
+            
+            // Generic SetField with custom type and boxed values.
+            var binObj3 = _grid.GetBinary().GetBuilder(typeof(Primitives))
+                .SetField<object>("fByte", (byte) 1, typeof(byte))
+                .SetField<object>("fBool", true, typeof(bool))
+                .SetField<object>("fShort", (short) 2, typeof(short))
+                .SetField<object>("fChar", 'a', typeof(char))
+                .SetField<object>("fInt", 3, typeof(int))
+                .SetField<object>("fLong", 4L, typeof(long))
+                .SetField<object>("fFloat", 5f, typeof(float))
+                .SetField<object>("fDouble", 6d, typeof(double))
+                .SetField<object>("fDecimal", 7.7m, typeof(decimal))
+                .Build();
 
+            CheckPrimitiveFields1(binObj3);
+            
             // Check equality.
             Assert.AreEqual(binObj, binObj2);
             Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
@@ -697,9 +710,27 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             CheckPrimitiveFields2(binObj);
 
+            // Overwrite with generic methods and type override.
+            binObj3 = binObj.ToBuilder()
+                .SetField<object>("fByte", (byte) 7)
+                .SetField<object>("fBool", false)
+                .SetField<object>("fShort", (short) 8)
+                .SetField<object>("fChar", 'b')
+                .SetField<object>("fInt", 9)
+                .SetField<object>("fLong", 10L)
+                .SetField<object>("fFloat", 11f)
+                .SetField<object>("fDouble", 12d)
+                .SetField<object>("fDecimal", 13.13m)
+                .Build();
+
+            CheckPrimitiveFields2(binObj);
+
             // Check equality.
             Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj, binObj3);
+            Assert.AreEqual(binObj2, binObj3);
             Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
+            Assert.AreEqual(binObj.GetHashCode(), binObj3.GetHashCode());
         }
 
         /// <summary>
@@ -815,9 +846,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             CheckPrimitiveArrayFields1(binObj2);
 
+            // Generic SetField method with type override.
+            var binObj3 = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
+                .SetField<object>("fByte", new byte[] {1}, typeof(byte[]))
+                .SetField<Array>("fBool", new[] {true}, typeof(bool[]))
+                .SetField<object>("fShort", new short[] {2}, typeof(short[]))
+                .SetField<Array>("fChar", new[] {'a'}, typeof(char[]))
+                .SetField<object>("fInt", new[] {3}, typeof(int[]))
+                .SetField<Array>("fLong", new long[] {4}, typeof(long[]))
+                .SetField<object>("fFloat", new float[] {5}, typeof(float[]))
+                .SetField<Array>("fDouble", new double[] {6}, typeof(double[]))
+                .SetField<object>("fDecimal", new decimal?[] {7.7m}, typeof(decimal?[]))
+                .Build();
+
+            CheckPrimitiveArrayFields1(binObj);
+
             // Check equality.
             Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj, binObj3);
             Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
+            Assert.AreEqual(binObj.GetHashCode(), binObj3.GetHashCode());
 
             // Overwrite with generic setter.
             binObj = _grid.GetBinary().GetBuilder(binObj)
@@ -849,9 +897,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             CheckPrimitiveArrayFields2(binObj);
 
+            // Overwrite with generic setter and type override.
+            binObj3 = _grid.GetBinary().GetBuilder(binObj)
+                .SetField<Array>("fByte", new byte[] { 7 }, typeof(byte[]))
+                .SetField<object>("fBool", new[] { false }, typeof(bool[]))
+                .SetField<Array>("fShort", new short[] { 8 }, typeof(short[]))
+                .SetField<object>("fChar", new[] { 'b' }, typeof(char[]))
+                .SetField<Array>("fInt", new[] { 9 }, typeof(int[]))
+                .SetField<object>("fLong", new long[] { 10 }, typeof(long[]))
+                .SetField<Array>("fFloat", new float[] { 11 }, typeof(float[]))
+                .SetField<object>("fDouble", new double[] { 12 }, typeof(double[]))
+                .SetField<Array>("fDecimal", new decimal?[] { 13.13m }, typeof(decimal?[]))
+                .Build();
+
+            CheckPrimitiveArrayFields2(binObj3);
+
             // Check equality.
             Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj, binObj3);
             Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
+            Assert.AreEqual(binObj.GetHashCode(), binObj3.GetHashCode());
         }
 
         /// <summary>
@@ -1600,7 +1665,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(IdMapper.TestTypeId, _grid.GetBinary().GetTypeId(IdMapper.TestTypeName));
             
-            Assert.AreEqual(BinaryUtils.GetStringHashCode("someTypeName"), _grid.GetBinary().GetTypeId("someTypeName"));
+            Assert.AreEqual(BinaryUtils.GetStringHashCodeLowerCase("someTypeName"), _grid.GetBinary().GetTypeId("someTypeName"));
         }
 
         /// <summary>
@@ -1615,7 +1680,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var binType = bin.GetBinaryType();
 
-            Assert.AreEqual(BinaryUtils.GetStringHashCode(NameMapper.TestTypeName + "_"), binType.TypeId);
+            Assert.AreEqual(BinaryUtils.GetStringHashCodeLowerCase(NameMapper.TestTypeName + "_"), binType.TypeId);
             Assert.AreEqual(17, bin.GetField<int>(NameMapper.TestFieldName));
         }
 
@@ -1666,7 +1731,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var enumVal = TestEnumRegistered.Two;
             var intVal = (int) enumVal;
             var typeName = GetTypeName(typeof(TestEnumRegistered));
-            var typeId = BinaryUtils.GetStringHashCode(typeName);
+            var typeId = BinaryUtils.GetStringHashCodeLowerCase(typeName);
 
             var binEnums = new[]
             {
@@ -1827,7 +1892,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj1, obj2);
             Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
-            Assert.AreEqual("sortTest [, a=2, b=1, c=3]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
+            Assert.AreEqual("sortTest [, a=2, b=1, c=3]", Regex.Replace(obj1.ToString(), "idHash=[+-]?\\d+", ""));
 
             // Skip header, take 3 fields (type code + value).
             var bytes1 = obj1.Data.Skip(24).Take(6).ToArray();
@@ -1836,6 +1901,42 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(bytes1, bytes2);
 
             Assert.AreEqual(new[] {1, 2, 1, 1, 1, 3}, bytes1);
+        }
+
+        [Test]
+        public void TestTypeWithDuplicatePropertyName()
+        {
+            var marsh = new Marshaller(null);
+            TestDelegate action = () => marsh.GetDescriptor(typeof(DerivedSamePropertyClass));
+
+            var ex = Assert.Throws<BinaryObjectException>(action);
+            var expectedMessage = "DerivedSamePropertyClass derives from BaseSamePropertyClass and hides field Property " +
+                                  "from the base class. Ignite can not serialize two fields with the same name.";
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        [Test]
+        public void TestIncorrectBinaryFieldMapperException()
+        {
+            var cfg = new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration
+                    {
+                        TypeName = typeof(BaseSamePropertyClass).FullName,
+                        IdMapper = new IncorrectIdMapper()
+                    }
+                }
+            };
+
+            // ReSharper disable once ObjectCreationAsStatement
+            TestDelegate action = () => new Marshaller(cfg);
+
+            var ex = Assert.Throws<BinaryObjectException>(action);
+            var expectedMessage = "Conflicting field IDs [type=BaseSamePropertyClass, field1=Property, field2=BaseName, fieldId=-1])";
+
+            Assert.AreEqual(expectedMessage, ex.Message);
         }
     }
 
@@ -2170,13 +2271,29 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public int GetTypeId(string typeName)
         {
-            return typeName == TestTypeName ? TestTypeId : BinaryUtils.GetStringHashCode(typeName);
+            return typeName == TestTypeName ? TestTypeId : BinaryUtils.GetStringHashCodeLowerCase(typeName);
         }
 
         /** <inheritdoc /> */
         public int GetFieldId(int typeId, string fieldName)
         {
-            return BinaryUtils.GetStringHashCode(fieldName);
+            return BinaryUtils.GetStringHashCodeLowerCase(fieldName);
+        }
+    }
+
+    /// <summary>
+    /// Test incorrect id mapper.
+    /// </summary>
+    public class IncorrectIdMapper : IBinaryIdMapper
+    {
+        public int GetTypeId(string typeName)
+        {
+            return -1;
+        }
+
+        public int GetFieldId(int typeId, string fieldName)
+        {
+            return -1;
         }
     }
 
@@ -2229,5 +2346,25 @@ namespace Apache.Ignite.Core.Tests.Binary
     {
         /** */
         public int NameMapperTestField { get; set; }
+    }
+
+    /// <summary>
+    /// Base class for testing.
+    /// </summary>
+    public class BaseSamePropertyClass
+    {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public int Property { get; private set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public string BaseName { get; private set; }
+    }
+
+    /// <summary>
+    /// Derived class that hides base class' property name.
+    /// </summary>
+    public class DerivedSamePropertyClass : BaseSamePropertyClass
+    {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public new int Property { get; private set; }
     }
 }

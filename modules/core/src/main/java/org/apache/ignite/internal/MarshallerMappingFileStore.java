@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
@@ -28,11 +29,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -46,23 +49,38 @@ import org.apache.ignite.marshaller.MarshallerContext;
  */
 final class MarshallerMappingFileStore {
     /** */
+    private static final String FILE_EXTENSION = ".classname";
+
+    /** File lock timeout in milliseconds. */
+    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
+
+    /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
     /** */
     private final IgniteLogger log;
 
-    /** */
-    private final File workDir;
+    /**
+     * Kernel context
+     */
+    private final GridKernalContext ctx;
 
-    /** */
-    private final String FILE_EXTENSION = ".classname";
+    /** Marshaller mapping directory */
+    private final File mappingDir;
 
     /**
-     * @param log Logger.
+     * Creates marshaller mapping file store with custom predefined work directory.
+     *
+     * @param kctx Grid kernal context.
+     * @param workDir custom marshaller work directory.
      */
-    MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
-        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
-        this.log = log;
+    MarshallerMappingFileStore(final GridKernalContext kctx,
+        final File workDir) throws IgniteCheckedException {
+        this.ctx = kctx;
+        this.mappingDir = workDir;
+        log = kctx.log(MarshallerMappingFileStore.class);
+
+        fixLegacyFolder();
     }
 
     /**
@@ -78,24 +96,22 @@ final class MarshallerMappingFileStore {
         lock.lock();
 
         try {
-            File file = new File(workDir, fileName);
+            File file = new File(mappingDir, fileName);
 
             try (FileOutputStream out = new FileOutputStream(file)) {
-                FileLock fileLock = fileLock(out.getChannel(), false);
-
-                assert fileLock != null : fileName;
-
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(typeName);
+                    try (FileLock ignored = fileLock(out.getChannel(), false)) {
+                        writer.write(typeName);
 
-                    writer.flush();
+                        writer.flush();
+                    }
                 }
             }
             catch (IOException e) {
                 U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
                         ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
             }
-            catch(OverlappingFileLockException ignored) {
+            catch (OverlappingFileLockException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("File already locked (will ignore): " + file.getAbsolutePath());
             }
@@ -109,35 +125,55 @@ final class MarshallerMappingFileStore {
     }
 
     /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
+     * @param fileName File name.
      */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        String fileName = getFileName(platformId, typeId);
+    private String readMapping(String fileName) throws IgniteCheckedException {
+        ThreadLocalRandom rnd = null;
 
         Lock lock = fileLock(fileName);
 
         lock.lock();
 
         try {
-            File file = new File(workDir, fileName);
+            File file = new File(mappingDir, fileName);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                FileLock fileLock = fileLock(in.getChannel(), true);
+            long time = 0;
 
-                assert fileLock != null : fileName;
+            while (true) {
+                try (FileInputStream in = new FileInputStream(file)) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                        try (FileLock ignored = fileLock(in.getChannel(), true)) {
+                            if (file.length() > 0)
+                                return reader.readLine();
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    return reader.readLine();
+                            if (rnd == null)
+                                rnd = ThreadLocalRandom.current();
+
+                            if (time == 0)
+                                time = System.nanoTime();
+                            else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
+                                return null;
+
+                            U.sleep(rnd.nextLong(50));
+                        }
+                    }
                 }
-            }
-            catch (IOException ignored) {
-                return null;
+                catch (IOException ignored) {
+                    return null;
+                }
             }
         }
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
@@ -147,26 +183,86 @@ final class MarshallerMappingFileStore {
      * @param marshCtx Marshaller context to register mappings.
      */
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
-        for (File file : workDir.listFiles()) {
+        for (File file : mappingDir.listFiles()) {
             String name = file.getName();
 
             byte platformId = getPlatformId(name);
 
             int typeId = getTypeId(name);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String className = reader.readLine();
+            String clsName = readMapping(name);
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, className);
-                }
+            if (clsName == null) {
+                throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                    ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                    "Clean up marshaller directory (<work_dir>/marshaller) and restart the node. File name: " + name +
+                    ", FileSize: " + file.length());
+            }
+
+            marshCtx.registerClassNameLocally(platformId, typeId, clsName);
+        }
+    }
+
+    /**
+     * Checks if marshaller mapping for given [platformId, typeId] pair is already presented on disk.
+     * If so verifies that it is the same (if no {@link IgniteCheckedException} is thrown).
+     * If there is not such mapping writes it.
+     *
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     */
+    void mergeAndWriteMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        String existingTypeName = readMapping(platformId, typeId);
+
+        if (existingTypeName != null) {
+            if (!existingTypeName.equals(typeName))
+                throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
+                    " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
+                    " new typeName=" + typeName + ", existing typeName=" + existingTypeName + "." +
+                    " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
+        }
+        else
+            writeMapping(platformId, typeId, typeName);
+    }
+
+    /**
+     * Try looking for legacy directory with marshaller mappings and move it to new directory
+     */
+    private void fixLegacyFolder() throws IgniteCheckedException {
+        if (ctx.config().getWorkDirectory() == null)
+            return;
+
+        File legacyDir = new File(
+            ctx.config().getWorkDirectory(),
+            "marshaller"
+        );
+
+        File legacyTmpDir = new File(legacyDir.toString() + ".tmp");
+
+        if (legacyTmpDir.exists() && !IgniteUtils.delete(legacyTmpDir))
+            throw new IgniteCheckedException("Failed to delete legacy marshaller mappings dir: "
+                + legacyTmpDir.getAbsolutePath());
+
+        if (legacyDir.exists()) {
+            try {
+                IgniteUtils.copy(legacyDir, mappingDir, true);
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file "
-                    + name
-                    + " failed."
-                    , e);
+                throw new IgniteCheckedException("Failed to copy legacy marshaller mappings dir to new location", e);
             }
+
+            try {
+                // rename legacy dir so if deletion fails in the middle, we won't be stuck with half-deleted
+                // marshaller mappings
+                Files.move(legacyDir.toPath(), legacyTmpDir.toPath());
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to rename legacy marshaller mappings dir", e);
+            }
+
+            if (!IgniteUtils.delete(legacyTmpDir))
+                throw new IgniteCheckedException("Failed to delete legacy marshaller mappings dir");
         }
     }
 
@@ -239,10 +335,10 @@ final class MarshallerMappingFileStore {
         while (true) {
             FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
 
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
+            if (fileLock != null)
                 return fileLock;
+
+            U.sleep(rnd.nextLong(50));
         }
     }
 }

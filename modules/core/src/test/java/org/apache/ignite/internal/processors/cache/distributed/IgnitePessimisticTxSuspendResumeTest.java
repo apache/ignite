@@ -17,75 +17,136 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.Callable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
  *
  */
-public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest {
-    /**
-     * Creates new cache configuration.
-     *
-     * @return CacheConfiguration New cache configuration.
-     */
-    protected CacheConfiguration<Integer, String> getCacheConfiguration() {
-        CacheConfiguration<Integer, String> cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(PARTITIONED);
-
-        return cacheCfg;
-    }
-
+public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspendResumeTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(false);
-        cfg.setCacheConfiguration(getCacheConfiguration());
-
-        return cfg;
+    @Override protected TransactionConcurrency transactionConcurrency() {
+        return PESSIMISTIC;
     }
 
     /**
-     * Test for suspension on pessimistic transaction.
+     * Test explicit locks, implicit transactions and suspend/resume of pessimistic transactions.
      *
      * @throws Exception If failed.
      */
-    public void testSuspendPessimisticTx() throws Exception {
-        try (Ignite g = startGrid()) {
-            IgniteCache<Integer, String> cache = jcache();
+    @Test
+    public void testExplicitLockAndSuspendResume() throws Exception {
+        // TODO: IGNITE-9324 Lock operations are not supported when MVCC is enabled.
+        if (FORCE_MVCC)
+            return;
 
-            IgniteTransactions txs = g.transactions();
+        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
+            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    List<Lock> locks = new ArrayList<>(10);
 
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                final Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, isolation);
+                    for (int j = 0; j < 10; j++) {
+                        cache.put(j, j);
 
-                cache.put(1, "1");
+                        Lock lock = cache.lock(j);
 
-                GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        tx.suspend();
+                        locks.add(lock);
 
-                        return null;
+                        lock.lock();
+
+                        // Re-enter.
+                        if (j >= 5) {
+                            lock = cache.lock(j);
+
+                            locks.add(lock);
+
+                            lock.lock();
+                        }
+
+                        cache.put(j, j);
                     }
-                }, UnsupportedOperationException.class);
 
-                tx.close();
+                    final Transaction tx = ignite.transactions().txStart(transactionConcurrency(), isolation);
 
-                assertNull(cache.get(1));
+                    for (int j = 10; j < 20; j++)
+                        cache.put(j, j);
+
+                    tx.suspend();
+
+                    assertNull(cache.get(10));
+
+                    for (int j = 10; j < 20; j++)
+                        assertFalse("Locked key " + j, cache.lock(j).tryLock());
+
+                    for (int i = 0; i < 10; i++) {
+                        final int key = i;
+
+                        GridTestUtils.runAsync(() -> {
+                            tx.resume();
+
+                            cache.put(key + 10, key + 10);
+                            cache.put(key + 20, key + 20);
+
+                            tx.suspend();
+
+                            assertFalse("Locked key " + key, cache.lock(key).tryLock());
+                            assertFalse("Locked key " + (key + 10), cache.lock(key + 10).tryLock());
+                            assertFalse("Locked key " + (key + 20), cache.lock(key + 20).tryLock());
+
+                            cache.put(key + 30, key + 30);
+
+                            Lock lock = cache.lock(key + 30);
+
+                            assertTrue("Can't lock key " + (key + 30), lock.tryLock());
+
+                            cache.put(key + 30, key + 30);
+
+                            lock.unlock();
+
+                            cache.put(key + 30, key + 30);
+                        }).get(FUT_TIMEOUT);
+                    }
+
+                    for (int j = 10; j < 30; j++)
+                        assertFalse("Locked key " + j, cache.lock(j).tryLock());
+
+                    tx.resume();
+
+                    tx.commit();
+
+                    for (Lock lock : locks)
+                        lock.unlock();
+
+                    for (int i = 0; i < 30; i++)
+                        assertEquals(i, (int)cache.get(i));
+
+                    GridTestUtils.runAsync(() -> {
+                        for (int j = 0; j < 40; j++) {
+                            Lock lock = cache.lock(j);
+
+                            assertTrue("Can't lock key " + j, lock.tryLock());
+
+                            cache.put(j, j);
+
+                            lock.unlock();
+
+                            cache.put(j, j);
+                        }
+                    }).get(FUT_TIMEOUT);
+
+                    cache.removeAll();
+                }
             }
-        }
+        });
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteSpringBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -27,11 +28,12 @@ public class IgniteSpringBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInitialization() throws Exception {
         try (IgniteSpringBean bean = new IgniteSpringBean()) {
             bean.setConfiguration(getConfiguration("test"));
 
-            bean.afterPropertiesSet();
+            bean.afterSingletonsInstantiated();
 
             bean.compute();
         }
@@ -40,6 +42,7 @@ public class IgniteSpringBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIllegalState() throws Exception {
         IgniteSpringBean bean = new IgniteSpringBean();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,12 +28,12 @@ import org.w3c.dom.NodeList;
 /**
  * Stores persistence settings for Ignite cache value
  */
-public class ValuePersistenceSettings extends PersistenceSettings {
+public class ValuePersistenceSettings extends PersistenceSettings<PojoValueField> {
     /** XML element describing value field settings. */
     private static final String FIELD_ELEMENT = "field";
 
     /** Value fields. */
-    private List<PojoField> fields = new LinkedList<>();
+    private List<PojoValueField> fields = new LinkedList<>();
 
     /**
      * Creates class instance from XML configuration.
@@ -63,7 +64,7 @@ public class ValuePersistenceSettings extends PersistenceSettings {
     /**
      * @return List of value fields.
      */
-    @Override public List<PojoField> getFields() {
+    @Override public List<PojoValueField> getFields() {
         return fields == null ? null : Collections.unmodifiableList(fields);
     }
 
@@ -73,12 +74,27 @@ public class ValuePersistenceSettings extends PersistenceSettings {
     }
 
     /** {@inheritDoc} */
-    @Override protected PojoField createPojoField(Element el, Class clazz) {
+    @Override protected PojoValueField createPojoField(Element el, Class clazz) {
         return new PojoValueField(el, clazz);
     }
 
     /** {@inheritDoc} */
-    @Override protected PojoField createPojoField(PojoFieldAccessor accessor) {
+    @Override protected PojoValueField createPojoField(PojoFieldAccessor accessor) {
         return new PojoValueField(accessor);
     }
+
+    /** {@inheritDoc} */
+    @Override protected PojoValueField createPojoField(PojoValueField field, Class clazz) {
+        return new PojoValueField(field, clazz);
+    }
+
+    /**
+     * @see java.io.Serializable
+     */
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        fields = enrichFields(fields);
+    }
+
 }

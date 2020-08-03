@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryPositionReadable;
-import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.BinaryUtils;
-
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryPositionReadable;
+import org.apache.ignite.internal.binary.BinaryPrimitives;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -162,7 +161,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @param pos Position in the source array.
      * @return Read byte value.
      */
-    public byte readBytePositioned(int pos) {
+    @Override public byte readBytePositioned(int pos) {
         return BinaryPrimitives.readByte(arr, pos);
     }
 
@@ -274,7 +273,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                len = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                len = /** scale */ 4 + /** mag len */ 4 + /** mag bytes count */ readInt(4);
 
                 break;
 
@@ -580,7 +579,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++] != 0;
 
             case GridBinaryMarshaller.DECIMAL:
-                plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                plainLazyValLen = /** scale */ 4 + /** mag len */ 4 + /** mag bytes count */ readInt(4);
 
                 break;
 

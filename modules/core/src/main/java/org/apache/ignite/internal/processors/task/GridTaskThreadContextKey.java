@@ -27,8 +27,14 @@ public enum GridTaskThreadContextKey {
     /** No failover flag. */
     TC_NO_FAILOVER,
 
+    /** No result cache flag. */
+    TC_NO_RESULT_CACHE,
+
     /** Projection for the task. */
     TC_SUBGRID,
+
+    /** Projection predicate for the task. */
+    TC_SUBGRID_PREDICATE,
 
     /** Timeout in milliseconds associated with the task. */
     TC_TIMEOUT,

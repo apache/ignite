@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
+import org.junit.Test;
 
 /**
  * Base class for tests against {@link LifecycleAware} support.
@@ -107,6 +108,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleAware() throws Exception {
         Ignite ignite = startGrid();
 

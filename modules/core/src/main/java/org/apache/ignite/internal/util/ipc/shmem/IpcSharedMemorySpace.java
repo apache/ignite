@@ -31,7 +31,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_IPC_SHMEM_SPACE_DE
 /**
  *
  */
-@SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
 public class IpcSharedMemorySpace implements Closeable {
     /** Debug flag (enable for testing). */
     private static final boolean DEBUG = Boolean.getBoolean(IGNITE_IPC_SHMEM_SPACE_DEBUG);

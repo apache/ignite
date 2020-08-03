@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.junit.Test;
 
 /**
  * Sequence multi node tests.
@@ -59,6 +60,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementAndGet() throws Exception {
         Collection<Long> res = new HashSet<>();
 
@@ -94,6 +96,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndIncrement() throws Exception {
         Collection<Long> res = new HashSet<>();
 
@@ -129,6 +132,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalling() throws Exception {
         String seqName = UUID.randomUUID().toString();
 

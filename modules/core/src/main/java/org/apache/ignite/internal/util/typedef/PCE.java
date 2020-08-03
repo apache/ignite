@@ -21,7 +21,6 @@ import javax.cache.Cache;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.lang.IgnitePredicate;
 
-
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;Entry&lt;K, V&gt;&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort

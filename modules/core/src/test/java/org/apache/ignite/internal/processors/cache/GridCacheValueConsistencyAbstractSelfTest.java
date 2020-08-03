@@ -26,6 +26,10 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -77,6 +81,14 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        if (nearEnabled())
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
@@ -98,6 +110,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
@@ -124,7 +137,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (nearEnabled() && cache.equals(cache0))
+                    if (nearEnabled() &&
+                        ((IgniteCacheProxy)cache).context().equals(((IgniteCacheProxy)cache0).context()))
                         assertEquals((Integer)i, cache0.localPeek(key));
                     else
                         assertNull(cache0.localPeek(key));
@@ -155,6 +169,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
@@ -184,7 +199,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (nearEnabled() && cache.equals(cache0))
+                    if (nearEnabled() &&
+                        ((IgniteCacheProxy)cache).context().equals(((IgniteCacheProxy)cache0).context()))
                         assertEquals((Integer)i, cache0.localPeek(key));
                     else
                         assertNull(cache0.localPeek(key));
@@ -217,9 +233,9 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
 
         for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
@@ -270,11 +286,11 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
 
-       for (int i = 0; i < 10; i++) {
+       for (int i = 0; i < SF.applyLB(10, 2); i++) {
            log.info("Iteration: " + i);
 
            putRemoveConsistencyMultithreaded();

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -27,8 +28,6 @@ import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteFuture;
-
-import java.util.UUID;
 
 /**
  * Interop messaging.
@@ -144,11 +143,10 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_REMOTE_LISTEN:{
+            case OP_REMOTE_LISTEN: {
                 writer.writeUuid(startRemoteListen(reader, messaging));
 
                 break;
@@ -202,7 +200,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
                 if (messaging.isAsync())
                     return this;
 
-                return new PlatformMessaging (platformCtx, messaging.withAsync());
+                return new PlatformMessaging(platformCtx, messaging.withAsync());
         }
 
         return super.processOutObject(type);

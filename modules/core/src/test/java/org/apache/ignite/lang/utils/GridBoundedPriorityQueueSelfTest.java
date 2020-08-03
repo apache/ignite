@@ -26,6 +26,7 @@ import java.util.Random;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for {@link GridBoundedPriorityQueue}.
@@ -45,6 +46,7 @@ public class GridBoundedPriorityQueueSelfTest extends GridCommonAbstractTest {
     /**
      * Test eviction in bounded priority queue.
      */
+    @Test
     public void testEviction() {
         GridBoundedPriorityQueue<Integer> queue = new GridBoundedPriorityQueue<>(3, CMP);
 

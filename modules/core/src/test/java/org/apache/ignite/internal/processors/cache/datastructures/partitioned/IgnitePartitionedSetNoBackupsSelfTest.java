@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  *
@@ -43,6 +44,7 @@ public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocation() throws Exception {
         Set<Integer> set0 = grid(0).set(SET_NAME, config(true));
 
@@ -58,7 +60,7 @@ public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedS
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridCacheAdapter cache  = grid.context().cache().internalCache(cctx.name());
+            GridCacheAdapter cache = grid.context().cache().internalCache(cctx.name());
 
             Iterator<GridCacheMapEntry> entries = cache.map().entries(cache.context().cacheId()).iterator();
 

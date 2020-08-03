@@ -17,10 +17,13 @@
 
 package org.apache.ignite.tests;
 
-import com.datastax.driver.core.SimpleStatement;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.policies.RoundRobinPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -28,11 +31,22 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory;
+import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.SimplePerson;
+import org.apache.ignite.tests.pojos.SimplePersonId;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
+import org.apache.ignite.tests.utils.CassandraAdminCredentials;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.ignite.transactions.Transaction;
@@ -44,13 +58,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
-
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.SimplePersonId;
 
 /**
  * Unit tests for Ignite caches which utilizing {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
@@ -785,6 +792,94 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Passed POJO transaction tests for " + concurrency +
                 " concurrency and " + isolation + " isolation level");
         LOGGER.info("-----------------------------------------------------------------------------------");
+    }
+
+    /*
+     * KeyValuePersistenceSettings is passed directly, not as a bean and should be
+     * serialized and deserialized correctly
+     */
+    @Test
+    public void directPersistenceConfigTest() throws IOException {
+        Map<PersonId, Person> personMap = TestsHelper.generatePersonIdsPersonsMap();
+        PersonId id = TestsHelper.generateRandomPersonId();
+        Person person = TestsHelper.generateRandomPerson(id.getPersonNumber());
+
+        IgniteConfiguration config = igniteConfig();
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start(config)) {
+            LOGGER.info("Running POJO strategy write tests");
+            IgniteCache<PersonId, Person> cache = ignite.getOrCreateCache("cache1");
+
+            LOGGER.info("Running single operation write tests");
+            cache.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+            cache.put(id, person);
+            LOGGER.info("Single operation write tests passed");
+
+            LOGGER.info("Running bulk operation write tests");
+            cache.putAll(personMap);
+            LOGGER.info("Bulk operation write tests passed");
+        }
+
+        LOGGER.info("POJO strategy write tests passed");
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start(config)) {
+            LOGGER.info("Running POJO strategy read tests");
+            IgniteCache<PersonId, Person> cache = ignite.getOrCreateCache("cache1");
+
+            Person actualPerson = cache.get(id);
+            if (!person.equals(actualPerson))
+                throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
+
+            LOGGER.info("Single operation read tests passed");
+
+            LOGGER.info("Running bulk operation read tests");
+
+            Map<PersonId, Person> actualPersonMap = cache.getAll(personMap.keySet());
+            if (!TestsHelper.checkPersonMapsEqual(actualPersonMap, personMap, true))
+                throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
+
+            LOGGER.info("Bulk operation read tests passed");
+
+            LOGGER.info("POJO strategy read tests passed");
+
+            LOGGER.info("Running POJO strategy delete tests");
+
+            cache.remove(id);
+            cache.removeAll(personMap.keySet());
+
+            LOGGER.info("POJO strategy delete tests passed");
+        }
+    }
+
+    private IgniteConfiguration igniteConfig() throws IOException {
+        URL url = getClass().getClassLoader().getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
+        String persistence = U.readFileToString(url.getFile(), "UTF-8");
+
+        KeyValuePersistenceSettings persistenceSettings = new KeyValuePersistenceSettings(persistence);
+
+        DataSource dataSource = new DataSource();
+        dataSource.setContactPoints(CassandraHelper.getContactPointsArray());
+        dataSource.setCredentials(new CassandraAdminCredentials());
+        dataSource.setLoadBalancingPolicy(new RoundRobinPolicy());
+
+        CassandraCacheStoreFactory<String, Person> storeFactory = new CassandraCacheStoreFactory<>();
+        storeFactory.setDataSource(dataSource);
+        storeFactory.setPersistenceSettings(persistenceSettings);
+
+        CacheConfiguration<String, Person> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("cache1");
+        cacheConfiguration.setReadThrough(true);
+        cacheConfiguration.setWriteThrough(true);
+        cacheConfiguration.setCacheStoreFactory(storeFactory);
+
+        IgniteConfiguration config = new IgniteConfiguration();
+        config.setCacheConfiguration(cacheConfiguration);
+
+        return config;
     }
 
     /** */

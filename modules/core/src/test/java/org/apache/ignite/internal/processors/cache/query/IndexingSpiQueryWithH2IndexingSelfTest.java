@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
  */
 public class IndexingSpiQueryWithH2IndexingSelfTest extends IndexingSpiQuerySelfTest {
     /** */
-    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+    @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
         CacheConfiguration<K, V> ccfg = super.cacheConfiguration(cacheName);
 
         ccfg.setIndexedTypes(PersonKey.class, Person.class);

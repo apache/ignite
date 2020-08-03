@@ -30,8 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 /**
  * Topology validator test.
@@ -46,9 +46,6 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     /** cache name 2. */
     protected static String CACHE_NAME_2 = "cache2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected final int gridCount() {
         return 1;
@@ -58,7 +55,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (!client) {
+        if (!cfg.isClientMode()) {
             CacheConfiguration cCfg0 = cacheConfiguration(igniteInstanceName);
 
             CacheConfiguration cCfg1 = cacheConfiguration(igniteInstanceName);
@@ -85,8 +82,6 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
             }
         }
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -98,7 +93,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         int c = 0;
 
         for (ClusterNode node : nodes) {
-            if (!CU.clientNode(node))
+            if (!node.isClient())
                 c++;
         }
 
@@ -241,6 +236,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyValidator() throws Exception {
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);
@@ -273,9 +269,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
 
-        client = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);

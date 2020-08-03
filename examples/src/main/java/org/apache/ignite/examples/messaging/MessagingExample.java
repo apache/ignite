@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.messaging;
 
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -26,8 +25,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ExamplesUtils;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
@@ -47,13 +44,13 @@ public final class MessagingExample {
     private static final int MESSAGES_NUM = 10;
 
     /** Message topics. */
-    private enum EXAMPLE_TOPIC { ORDERED, UNORDERED }
+    private enum TOPIC { ORDERED, UNORDERED }
 
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
@@ -64,10 +61,10 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Group for remote nodes.
-            ClusterGroup rmts = ignite.cluster().forRemotes();
+            ClusterGroup rmtGrp = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
-            int msgCnt = rmts.nodes().size() * MESSAGES_NUM;
+            int msgCnt = rmtGrp.nodes().size() * MESSAGES_NUM;
 
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
@@ -75,17 +72,17 @@ public final class MessagingExample {
             localListen(ignite.message(ignite.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all cluster nodes.
-            startListening(ignite.message(rmts));
+            startListening(ignite, ignite.message(rmtGrp));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmts).send(EXAMPLE_TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmtGrp).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmts).sendOrdered(EXAMPLE_TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmtGrp).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -101,76 +98,64 @@ public final class MessagingExample {
     /**
      * Start listening to messages on remote cluster nodes.
      *
-     * @param msg Ignite messaging.
+     * @param ignite Ignite.
+     * @param imsg Ignite messaging.
+     * @throws IgniteException If failed.
      */
-    private static void startListening(IgniteMessaging msg) {
+    private static void startListening(final Ignite ignite, IgniteMessaging imsg) throws IgniteException {
         // Add ordered message listener.
-        msg.remoteListen(EXAMPLE_TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
-            @IgniteInstanceResource
-            private Ignite ignite;
+        imsg.remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
+            System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
-            @Override public boolean apply(UUID nodeId, String msg) {
-                System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
-
-                try {
-                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(EXAMPLE_TOPIC.ORDERED, msg);
-                }
-                catch (IgniteException e) {
-                    e.printStackTrace();
-                }
-
-                return true; // Return true to continue listening.
+            try {
+                ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
             }
+            catch (IgniteException e) {
+                e.printStackTrace();
+            }
+
+            return true; // Return true to continue listening.
         });
 
         // Add unordered message listener.
-        msg.remoteListen(EXAMPLE_TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
-            @IgniteInstanceResource
-            private Ignite ignite;
+        imsg.remoteListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+            System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
-            @Override public boolean apply(UUID nodeId, String msg) {
-                System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
-
-                try {
-                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(EXAMPLE_TOPIC.UNORDERED, msg);
-                }
-                catch (IgniteException e) {
-                    e.printStackTrace();
-                }
-
-                return true; // Return true to continue listening.
+            try {
+                ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
             }
+            catch (IgniteException e) {
+                e.printStackTrace();
+            }
+
+            return true; // Return true to continue listening.
         });
     }
 
     /**
      * Listen for messages from remote nodes.
      *
-     * @param msg Ignite messaging.
+     * @param imsg Ignite messaging.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        IgniteMessaging msg,
+        IgniteMessaging imsg,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        msg.localListen(EXAMPLE_TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
-            @Override public boolean apply(UUID nodeId, String msg) {
-                orderedLatch.countDown();
+        imsg.localListen(TOPIC.ORDERED, (nodeId, msg) -> {
+            orderedLatch.countDown();
 
-                // Return true to continue listening, false to stop.
-                return orderedLatch.getCount() > 0;
-            }
+            // Return true to continue listening, false to stop.
+            return orderedLatch.getCount() > 0;
         });
 
-        msg.localListen(EXAMPLE_TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
-            @Override public boolean apply(UUID nodeId, String msg) {
-                unorderedLatch.countDown();
+        imsg.localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+            unorderedLatch.countDown();
 
-                // Return true to continue listening, false to stop.
-                return unorderedLatch.getCount() > 0;
-            }
+            // Return true to continue listening, false to stop.
+            return unorderedLatch.getCount() > 0;
         });
     }
 }

@@ -75,7 +75,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param keys Entry keys.
      * @param msg Initial message.
      */
-    public void  txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
+    public void txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
         closure(nodeId).add(msg, new TxEntriesInfoClosure(cacheId, keys));
     }
 
@@ -160,7 +160,7 @@ public class IgniteDiagnosticPrepareContext {
     /**
      *
      */
-    private final static class CompoundInfoClosure implements IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> {
+    private static final class CompoundInfoClosure implements IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -25,27 +24,38 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot manager stub.
+ *
+ * @deprecated Use {@link IgniteSnapshotManager}.
  */
+@Deprecated
 public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
 
+    /** Temp files completeness marker. */
+    public static final String TEMP_FILES_COMPLETENESS_MARKER = "finished.tmp";
+
     /**
      * Try to start local snapshot operation if it's required by discovery event.
      *
-     * @param discoveryEvent Discovery event.
+     * @param discoveryEvt Discovery event.
+     * @param topVer topology version on the moment when this method was called
+     *
+     * @throws IgniteCheckedException if failed
      */
     @Nullable public IgniteInternalFuture tryStartLocalSnapshotOperation(
-            @Nullable DiscoveryEvent discoveryEvent
+            @Nullable DiscoveryEvent discoveryEvt, AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         return null;
     }
@@ -56,7 +66,8 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      */
     @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
         UUID initiatorNodeId,
-        T snapshotOperation
+        T snapshotOperation,
+        AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         return null;
     }
@@ -67,21 +78,24 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
-    public boolean onMarkCheckPointBegin(
+    public IgniteFuture<?> onMarkCheckPointBegin(
         T snapshotOperation,
         PartitionAllocationMap map
     ) throws IgniteCheckedException {
+        return null;
+    }
+
+    /**
+     *
+     */
+    public boolean partitionsAreFrozen(CacheGroupContext grp) {
         return false;
     }
 
     /**
      *
      */
-    public void restoreState() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    public boolean snapshotOperationInProgress(){
+    public boolean snapshotOperationInProgress() {
         return false;
     }
 
@@ -107,30 +121,18 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     }
 
     /**
-     * @param fullId Full page id.
-     * @param tmpWriteBuf buffer
-     * @param writtenPages Overall pages written, negative value means there is no progress tracked
-     * @param totalPages Overall pages count to be written, should be positive
-     */
-    public void onPageWrite(
-        final FullPageId fullId,
-        final ByteBuffer tmpWriteBuf,
-        final int writtenPages,
-        final int totalPages) {
-        // No-op.
-    }
-
-    /**
      * @param cctx Cctx.
+     * @param destroy Destroy flag.
      */
-    public void onCacheStop(GridCacheContext cctx) {
+    public void onCacheStop(GridCacheContext<?, ?> cctx, boolean destroy) {
         // No-op.
     }
 
     /**
      * @param gctx Cctx.
+     * @param destroy Destroy flag.
      */
-    public void onCacheGroupStop(CacheGroupContext gctx) {
+    public void onCacheGroupStop(CacheGroupContext gctx, boolean destroy) {
         // No-op.
     }
 
@@ -145,17 +147,6 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
         // No-op.
     }
 
-    /**
-     *
-     */
-    public void flushDirtyPageHandler(
-        FullPageId fullId,
-        ByteBuffer pageBuf,
-        Integer tag
-    ) throws IgniteCheckedException {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.
@@ -164,5 +155,12 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
+    }
+
+    /**
+     * @return {@code True} if TX READ records must be logged in WAL.
+     */
+    public boolean needTxReadLogging() {
+        return false;
     }
 }

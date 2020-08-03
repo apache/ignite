@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/odbc/parser.h>
@@ -27,7 +23,7 @@ using namespace ignite::odbc;
 
 struct TestMessage
 {
-    TestMessage()
+    TestMessage() : a(0), b()
     {
         // No-op.
     }
@@ -42,13 +38,13 @@ struct TestMessage
         // No-op.
     }
 
-    void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+    void Write(ignite::impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
     {
         writer.WriteInt32(a);
         writer.WriteString(b.data(), static_cast<int32_t>(b.size()));
     }
 
-    void Read(ignite::impl::binary::BinaryReaderImpl& reader)
+    void Read(ignite::impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
     {
         a = reader.ReadInt32();
 

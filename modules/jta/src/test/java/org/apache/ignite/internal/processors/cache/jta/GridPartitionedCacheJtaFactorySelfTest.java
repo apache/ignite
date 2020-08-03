@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import javax.cache.configuration.Factory;
+import javax.transaction.TransactionManager;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.objectweb.transaction.jta.TransactionManager;
 
 /**
  * Factory JTA integration test using PARTITIONED cache.
@@ -30,12 +30,19 @@ public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelf
     @Override protected void configureJta(IgniteConfiguration cfg) {
         TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
 
-        txCfg.setTxManagerFactory(new Factory<TransactionManager>() {
-            private static final long serialVersionUID = 0L;
+        txCfg.setTxManagerFactory(new TestTxManagerFactory());
+    }
 
-            @Override public TransactionManager create() {
-                return jotm.getTransactionManager();
-            }
-        });
+    /**
+     *
+     */
+    static class TestTxManagerFactory implements Factory<TransactionManager> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public TransactionManager create() {
+            return jotm.getTransactionManager();
+        }
     }
 }

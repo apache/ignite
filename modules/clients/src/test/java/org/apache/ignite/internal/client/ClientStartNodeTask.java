@@ -84,7 +84,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         cfg.setIgniteInstanceName(igniteInstanceName);
 
         // Start new node in current VM.
-        Ignite g =  G.start(cfg);
+        Ignite g = G.start(cfg);
 
         log.info(">>> Grid started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
 

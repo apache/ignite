@@ -31,17 +31,15 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.cache.TestCacheSession;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -52,9 +50,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -62,32 +57,13 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     private static final int CLIENT_NODE = 1;
 
     /** */
-    private static boolean client;
-
-    /** */
     private static volatile boolean isLoadFromStore;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
     }
 
     /** {@inheritDoc} */
@@ -98,14 +74,10 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
         TestStore.sessions.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupAtomic() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.ATOMIC, null, null);
     }
@@ -113,6 +85,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupAtomicLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -122,6 +95,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticRepeatableRead() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -129,6 +103,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticRepeatableReadLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -138,6 +113,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticReadCommitted() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, OPTIMISTIC, READ_COMMITTED);
     }
@@ -145,6 +121,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticReadCommittedLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -154,6 +131,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticRepeatableRead() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -161,6 +139,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticReadCommitted() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, READ_COMMITTED);
     }
@@ -168,10 +147,31 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticReadCommittedLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
+    public void testConnectionLeakOneBackupMvccPessimisticRepeatableRead() throws Exception {
+        checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
+    public void testConnectionLeakOneBackupMvccPessimisticRepeatableReadLoadFromStore() throws Exception {
+        isLoadFromStore = true;
+
+        checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**

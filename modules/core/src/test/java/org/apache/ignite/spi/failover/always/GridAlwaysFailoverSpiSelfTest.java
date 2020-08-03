@@ -29,6 +29,7 @@ import org.apache.ignite.spi.failover.GridFailoverTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 import static org.apache.ignite.spi.failover.always.AlwaysFailoverSpi.FAILED_NODE_LIST_ATTR;
 
@@ -40,6 +41,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -57,7 +59,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testTwoNodes() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -79,6 +81,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxAttempts() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -111,7 +114,6 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
      * @param res Job result.
      * @param cnt Failure count.
      */
-    @SuppressWarnings("unchecked")
     private void checkFailedNodes(ComputeJobResult res, int cnt) {
         Collection<UUID> failedNodes =
             (Collection<UUID>)res.getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);

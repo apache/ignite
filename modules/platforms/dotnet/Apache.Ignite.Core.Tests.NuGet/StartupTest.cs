@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.NuGet
     /// </summary>
     public class StartupTest
     {
+        /** */
+        private string _tempDir;
+
         /// <summary>
         /// Tears down the test.
         /// </summary>
@@ -44,6 +47,12 @@ namespace Apache.Ignite.Core.Tests.NuGet
                     proc.Kill();
                     proc.WaitForExit();
                 }
+            }
+
+            if (!string.IsNullOrEmpty(_tempDir))
+            {
+                Directory.Delete(_tempDir, true);
+                _tempDir = null;
             }
         }
 
@@ -104,7 +113,10 @@ namespace Apache.Ignite.Core.Tests.NuGet
             var packageDir = Directory.GetDirectories(packagesDir, packageDirName).Single();
             Assert.IsTrue(Directory.Exists(packageDir), packageDir);
 
-            var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
+            _tempDir = PathUtils.GetTempDirectoryName();
+            PathUtils.CopyDirectory(packageDir, _tempDir);
+
+            var exePath = Path.Combine(_tempDir, @"lib\net40\Apache.Ignite.exe");
             Assert.IsTrue(File.Exists(exePath), exePath);
 
             var springPath = Path.GetFullPath(@"config\ignite-config.xml");

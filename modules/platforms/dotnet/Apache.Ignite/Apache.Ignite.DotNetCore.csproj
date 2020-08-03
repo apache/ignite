@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>Apache.Ignite</AssemblyName>
+    <RootNamespace>Apache.Ignite</RootNamespace>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Service\IgniteService.cs" />
+    <Compile Remove="Service\IgniteServiceInstaller.cs" />
+  </ItemGroup>
+
+</Project>

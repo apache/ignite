@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryType;
-
 import java.util.ArrayList;
 import java.util.Collection;
-
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -110,7 +108,7 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(BinaryTypeImpl.class, this);
     }
 }

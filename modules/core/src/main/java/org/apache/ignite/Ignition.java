@@ -19,15 +19,25 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isInsideSandbox;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -136,30 +146,26 @@ public class Ignition {
     }
 
     /**
-     * Sets client mode static flag.
+     * Sets client mode thread-local flag.
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @param clientMode Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.setClientMode(clientMode);
     }
 
     /**
-     * Gets client mode static flag.
+     * Gets client mode thread-local flag.
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @return Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static boolean isClientMode() {
         return IgnitionEx.isClientMode();
@@ -198,7 +204,7 @@ public class Ignition {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return IgnitionEx.stop(cancel);
+        return IgnitionEx.stop(cancel, null);
     }
 
     /**
@@ -220,8 +226,8 @@ public class Ignition {
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
-    public static boolean stop(@Nullable String name, boolean cancel) {
-        return IgnitionEx.stop(name, cancel, false);
+    public static boolean stop(String name, boolean cancel) {
+        return IgnitionEx.stop(name, cancel, null, false);
     }
 
     /**
@@ -240,7 +246,7 @@ public class Ignition {
      *      up to the actual job to exit from execution
      */
     public static void stopAll(boolean cancel) {
-        IgnitionEx.stopAll(cancel);
+        IgnitionEx.stopAll(cancel, null);
     }
 
     /**
@@ -301,7 +307,7 @@ public class Ignition {
      */
     public static Ignite start() throws IgniteException {
         try {
-            return IgnitionEx.start();
+            return wrapToProxyIfNeeded(IgnitionEx.start());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -319,7 +325,7 @@ public class Ignition {
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg);
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -344,7 +350,7 @@ public class Ignition {
      */
     public static Ignite start(String springCfgPath) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgPath);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgPath));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -369,7 +375,7 @@ public class Ignition {
      */
     public static Ignite start(URL springCfgUrl) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgUrl);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgUrl));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -394,13 +400,12 @@ public class Ignition {
      */
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgStream);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgStream));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
     }
-
 
     /**
      * Gets or starts new grid instance if it hasn't been started yet.
@@ -411,7 +416,7 @@ public class Ignition {
      */
     public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg, false);
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg, false));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -476,8 +481,6 @@ public class Ignition {
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.
-     * <p>
-     * This method is identical to {@code G.grid(null)} apply.
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
@@ -485,7 +488,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite() throws IgniteIllegalStateException {
-        return IgnitionEx.grid();
+        return wrapToProxyIfNeeded(IgnitionEx.grid());
     }
 
     /**
@@ -494,7 +497,15 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return IgnitionEx.allGrids();
+        List<Ignite> res = IgnitionEx.allGrids();
+
+        if (F.isEmpty(res))
+            return res;
+
+        if (isInsideSandbox())
+            return res.stream().map(Ignition::wrapToProxy).collect(Collectors.toList());
+
+        return res;
     }
 
     /**
@@ -510,7 +521,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(locNodeId);
+        return wrapToProxyIfNeeded(IgnitionEx.grid(locNodeId));
     }
 
     /**
@@ -527,7 +538,7 @@ public class Ignition {
      *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(name);
+        return wrapToProxyIfNeeded(IgnitionEx.grid(name));
     }
 
     /**
@@ -542,7 +553,25 @@ public class Ignition {
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
     public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
-        return IgnitionEx.localIgnite();
+        return wrapToProxyIfNeeded(IgnitionEx.localIgnite());
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy.
+     */
+    private static Ignite wrapToProxy(Ignite ignite) {
+        return AccessController.doPrivileged((PrivilegedAction<Ignite>)
+            () -> SandboxIgniteComponentProxy.igniteProxy(ignite)
+        );
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     */
+    private static Ignite wrapToProxyIfNeeded(Ignite ignite) {
+        return isInsideSandbox() ? wrapToProxy(ignite) : ignite;
     }
 
     /**
@@ -569,5 +598,17 @@ public class Ignition {
      */
     public static boolean removeListener(IgnitionListener lsnr) {
         return IgnitionEx.removeListener(lsnr);
+    }
+
+    /**
+     * Initializes new instance of {@link IgniteClient}.
+     *
+     * @param cfg Thin client configuration.
+     * @return Client with successfully opened thin client connection.
+     */
+    public static IgniteClient startClient(ClientConfiguration cfg) throws ClientException {
+        Objects.requireNonNull(cfg, "cfg");
+
+        return TcpIgniteClient.start(cfg);
     }
 }

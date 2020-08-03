@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
+import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -40,6 +41,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 
 /**
@@ -150,6 +152,9 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     /** Message listeners. */
     private Set<IgniteJmsMessageListener> listeners = Collections.newSetFromMap(new ConcurrentHashMap<IgniteJmsMessageListener, Boolean>());
 
+    /** The Jms {@link ExceptionListener} to use. */
+    private ExceptionListener exceptionListener;
+
     /** Scheduler for handling {@link #batchClosureMillis}. */
     private ScheduledExecutorService scheduler;
 
@@ -215,6 +220,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                 connection.setClientID(clientId.trim());
             }
 
+            connection.setExceptionListener(new IgniteJmsExceptionListener());
+
             // build the JMS objects
             if (destinationType == Queue.class) {
                 initializeJmsObjectsForQueue();
@@ -232,8 +239,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             if (batched && batchClosureMillis > 0) {
                 scheduler = Executors.newScheduledThreadPool(1);
                 scheduler.schedule(new Runnable() {
-                    @Override
-                    public void run() {
+                    @Override public void run() {
                         for (Session session : sessions) {
                             try {
                                 session.commit();
@@ -267,7 +273,6 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     public void stop() throws IgniteException {
         if (stopped)
             throw new IgniteException("Attempted to stop an already stopped JMS Streamer");
-
 
         try {
             stopped = true;
@@ -424,6 +429,15 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         this.durableSubscriptionName = durableSubscriptionName;
     }
 
+    /**
+     * Exception listener for queue/topic failures.
+     *
+     * @param exceptionListener ExceptionListener interface implementation.
+     */
+    public void setExceptionListener(ExceptionListener exceptionListener) {
+        this.exceptionListener = exceptionListener;
+    }
+
     private void initializeJmsObjectsForTopic() throws JMSException {
         Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
         Topic topic = (Topic)destination;
@@ -477,7 +491,9 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private class IgniteJmsMessageListener implements MessageListener {
 
         private Session session;
+
         private AtomicInteger counter = new AtomicInteger(0);
+
         private Executor executor;
 
         public IgniteJmsMessageListener(Session session, boolean createThreadPool) {
@@ -486,15 +502,13 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             // if we don't need a thread pool, create a dummy one that executes the task synchronously
             //noinspection NullableProblems
             this.executor = createThreadPool ? Executors.newFixedThreadPool(threads) : new Executor() {
-                @Override
-                public void execute(Runnable command) {
+                @Override public void execute(Runnable command) {
                     command.run();
                 }
             };
         }
 
-        @Override
-        public void onMessage(final Message message) {
+        @Override public void onMessage(final Message message) {
             if (stopped) {
                 return;
             }
@@ -536,4 +550,16 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         }
     }
 
+    /**
+     * Exception listener for JmsExceptions.
+     */
+    private class IgniteJmsExceptionListener implements ExceptionListener {
+        /** {@inheritDoc} */
+        @Override public void onException(JMSException e) {
+            U.error(log, "Caught JMS internal exception.", e);
+
+            if (exceptionListener != null)
+                exceptionListener.onException(e);
+        }
+    }
 }

@@ -89,7 +89,6 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<List<ClusterNode>> res = new ArrayList<>(parts);
 
@@ -106,7 +105,7 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
         return Collections.unmodifiableList(res);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
         List<ClusterNode> sorted = new ArrayList<>(nodes);
 
@@ -159,7 +158,6 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
 
             if (n == null)
                 n = (it = sorted.iterator()).next();
-
 
             ret.add(n);
         }

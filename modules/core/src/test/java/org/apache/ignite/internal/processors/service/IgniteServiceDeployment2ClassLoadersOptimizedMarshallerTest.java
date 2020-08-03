@@ -16,14 +16,14 @@
  */
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
 public class IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest
-    extends IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest{
+    extends IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
         return new OptimizedMarshaller(false);

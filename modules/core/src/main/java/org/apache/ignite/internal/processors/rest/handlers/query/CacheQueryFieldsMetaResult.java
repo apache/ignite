@@ -102,7 +102,6 @@ public class CacheQueryFieldsMetaResult implements Externalizable {
         this.fieldName = fieldName;
     }
 
-
     /**
      * @return Field type name.
      */

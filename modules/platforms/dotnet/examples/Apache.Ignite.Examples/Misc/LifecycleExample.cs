@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Examples.Misc
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;

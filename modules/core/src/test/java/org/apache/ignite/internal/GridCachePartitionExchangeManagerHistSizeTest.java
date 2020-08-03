@@ -19,10 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 
@@ -30,47 +29,21 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_S
  * Test exchange history size parameter effect.
  */
 public class GridCachePartitionExchangeManagerHistSizeTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private String oldHistVal;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        oldHistVal = System.getProperty(IGNITE_EXCHANGE_HISTORY_SIZE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        if (oldHistVal != null)
-            System.setProperty(IGNITE_EXCHANGE_HISTORY_SIZE, oldHistVal);
-        else
-            System.clearProperty(IGNITE_EXCHANGE_HISTORY_SIZE);
-    }
-
-
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @WithSystemProperty(key = IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
     public void testSingleExchangeHistSize() throws Exception {
-        System.setProperty(IGNITE_EXCHANGE_HISTORY_SIZE, "1");
-
         startGridsMultiThreaded(10);
     }
 }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -26,14 +29,11 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
@@ -42,20 +42,13 @@ import static org.junit.Assert.assertNotEquals;
  */
 public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest {
     /** Pointers to release. */
-    private final Set<Long> ptrs = new ConcurrentHashSet<>();
+    private final Set<Long> ptrs = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -68,7 +61,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -95,6 +88,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test hash code generation for simple object.
      */
+    @Test
     public void testHashCode() {
         InnerClass obj = new InnerClass(1, "2", 3);
 
@@ -106,6 +100,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test hash code generation for simple object.
      */
+    @Test
     public void testHashCodeBinarylizable() {
         InnerClassBinarylizable obj = new InnerClassBinarylizable(1, "2", 3);
 
@@ -117,6 +112,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for simple object.
      */
+    @Test
     public void testEquals() {
         InnerClass obj = new InnerClass(1, "2", 3);
 
@@ -135,6 +131,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for simple object.
      */
+    @Test
     public void testEqualsBinarilyzable() {
         InnerClassBinarylizable obj = new InnerClassBinarylizable(1, "2", 3);
 
@@ -155,6 +152,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for different type IDs.
      */
+    @Test
     public void testEqualsDifferenTypes() {
         InnerClass obj1 = new InnerClass(1, "2", 3);
         InnerClassBinarylizable obj2 = new InnerClassBinarylizable(1, "2", 3);

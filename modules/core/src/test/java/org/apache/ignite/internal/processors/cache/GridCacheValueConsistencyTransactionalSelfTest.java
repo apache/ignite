@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -32,6 +33,6 @@ public class GridCacheValueConsistencyTransactionalSelfTest extends GridCacheVal
 
     /** {@inheritDoc} */
     @Override protected int iterationCount() {
-        return 50_000;
+        return SF.apply(50_000);
     }
 }

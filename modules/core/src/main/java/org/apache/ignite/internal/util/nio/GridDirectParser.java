@@ -28,6 +28,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
+
 /**
  * Parser for direct messages.
  */
@@ -76,9 +78,7 @@ public class GridDirectParser implements GridNioParser {
                 byte b0 = buf.get();
                 byte b1 = buf.get();
 
-                short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
-
-                msg = msgFactory.create(type);
+                msg = msgFactory.create(makeMessageType(b0, b1));
             }
 
             boolean finished = false;
@@ -104,9 +104,9 @@ public class GridDirectParser implements GridNioParser {
         }
         catch (Throwable e) {
             U.error(log, "Failed to read message [msg=" + msg +
-                ", buf=" + buf +
-                ", reader=" + reader +
-                ", ses=" + ses + "]",
+                    ", buf=" + buf +
+                    ", reader=" + reader +
+                    ", ses=" + ses + "]",
                 e);
 
             throw e;

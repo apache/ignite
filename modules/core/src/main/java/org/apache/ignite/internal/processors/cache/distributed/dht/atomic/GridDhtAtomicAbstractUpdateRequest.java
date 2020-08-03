@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -58,6 +59,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** */
     protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
+
+    /** Flag indicating transformation operation was performed. */
+    protected static final int DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK = 0x40;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
@@ -225,6 +229,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
+     * @return {@code True} if transformation operation was performed.
+     */
+    public final boolean transformOperation() {
+        return isFlag(DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK);
+    }
+
+    /**
      * @return {@code True} if on response flag changed.
      */
     public boolean onResponse() {
@@ -268,6 +279,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
+     * @param cacheOp Corresponding cache operation.
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
@@ -277,8 +289,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr
-    );
+        long updateCntr,
+        GridCacheOperation cacheOp);
 
     /**
      * @param key Key to add.
@@ -472,7 +484,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */
@@ -490,55 +502,55 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeLong("nearFutId", nearFutId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
-                if (!writer.writeMessage("topVer", topVer))
+            case 11:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 12:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -560,7 +572,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -568,7 +580,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -576,7 +588,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 nearFutId = reader.readLong("nearFutId");
 
                 if (!reader.isLastRead())
@@ -584,7 +596,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -592,7 +604,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -600,7 +612,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -612,7 +624,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -620,15 +632,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 10:
-                topVer = reader.readMessage("topVer");
+            case 11:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())

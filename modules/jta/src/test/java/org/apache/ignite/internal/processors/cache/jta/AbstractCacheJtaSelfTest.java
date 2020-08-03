@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.jta;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
 import org.apache.ignite.IgniteCache;
@@ -27,9 +29,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 import org.objectweb.jotm.Jotm;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -97,6 +98,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJta() throws Exception {
         UserTransaction jtaTx = jotm.getUserTransaction();
 
@@ -140,7 +142,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testJtaTwoCaches() throws Exception {
         UserTransaction jtaTx = jotm.getUserTransaction();
 
@@ -190,6 +192,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOpAwait() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 

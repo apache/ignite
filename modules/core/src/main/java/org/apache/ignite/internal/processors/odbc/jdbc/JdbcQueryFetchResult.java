@@ -44,7 +44,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    JdbcQueryFetchResult(List<List<Object>> items, boolean last){
+    JdbcQueryFetchResult(List<List<Object>> items, boolean last) {
         super(QRY_FETCH);
 
         this.items = items;
@@ -66,21 +66,27 @@ public class JdbcQueryFetchResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeBoolean(last);
 
-        JdbcUtils.writeItems(writer, items);
+        JdbcUtils.writeItems(writer, items, protoCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         last = reader.readBoolean();
 
-        items = JdbcUtils.readItems(reader);
+        items = JdbcUtils.readItems(reader, protoCtx);
     }
 
     /** {@inheritDoc} */

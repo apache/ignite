@@ -135,13 +135,13 @@ public class VisorSuppressedError extends VisorDataTransferObject {
         order = in.readLong();
         error = (VisorExceptionWrapper)in.readObject();
         threadId = in.readLong();
-        threadName= U.readString(in);
+        threadName = U.readString(in);
         time = in.readLong();
         msg = U.readString(in);
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(VisorSuppressedError.class, this);
     }
 }

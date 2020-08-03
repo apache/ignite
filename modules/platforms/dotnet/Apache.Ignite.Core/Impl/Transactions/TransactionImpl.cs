@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -45,6 +46,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** Timeout. */
         private readonly TimeSpan _timeout;
+
+        /** TX label. */
+        private readonly string _label;
 
         /** Start time. */
         private readonly DateTime _startTime;
@@ -71,21 +75,25 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="concurrency">TX concurrency.</param>
         /// <param name="isolation">TX isolation.</param>
         /// <param name="timeout">Timeout.</param>
+        /// <param name="label">TX label.</param>
         /// <param name="nodeId">The originating node identifier.</param>
+        /// <param name="bindToThread">Bind transaction to current thread or not.</param>
         public TransactionImpl(long id, TransactionsImpl txs, TransactionConcurrency concurrency,
-            TransactionIsolation isolation, TimeSpan timeout, Guid nodeId) {
+            TransactionIsolation isolation, TimeSpan timeout, string label, Guid nodeId, bool bindToThread = true) {
             _id = id;
             _txs = txs;
             _concurrency = concurrency;
             _isolation = isolation;
             _timeout = timeout;
+            _label = label;
             _nodeId = nodeId;
 
             _startTime = DateTime.Now;
 
             _threadId = Thread.CurrentThread.ManagedThreadId;
 
-            THREAD_TX = this;
+            if (bindToThread)
+                THREAD_TX = this;
         }    
 
         /// <summary>
@@ -217,6 +225,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public TimeSpan Timeout
         {
             get { return _timeout; }
+        }
+
+        /// <summary>
+        /// Label of current transaction.
+        /// </summary>
+        public string Label
+        {
+            get { return _label; }
         }
 
         /// <summary>
@@ -457,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         private Task CloseWhenComplete(Task task)
         {
-            return task.ContinueWith(x => Close());
+            return task.ContWith(x => Close());
         }
 
         /** <inheritdoc /> */

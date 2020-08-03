@@ -107,9 +107,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onContainersAllocated(List<Container> conts) {
+    @Override public synchronized void onContainersAllocated(List<Container> conts) {
         for (Container c : conts) {
             if (checkContainer(c)) {
+                log.log(Level.INFO, "Container {0} allocated", c.getId());
+
                 try {
                     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
@@ -117,7 +119,14 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                         // Set the tokens to the newly allocated container:
                         ctx.setTokens(allTokens.duplicate());
 
-                    Map<String, String> env = new HashMap<>(System.getenv());
+                    Map<String, String> env = new HashMap<>(ctx.getEnvironment());
+
+                    Map<String, String> systemEnv = System.getenv();
+
+                    for (String key : systemEnv.keySet()) {
+                        if (key.matches("^IGNITE_[_0-9A-Z]+$"))
+                            env.put(key, systemEnv.get(key));
+                    }
 
                     env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
 
@@ -167,8 +176,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     log.log(Level.WARNING, "Error launching container " + c.getId(), ex);
                 }
             }
-            else
+            else {
+                log.log(Level.WARNING, "Container {0} check failed. Releasing...", c.getId());
+
                 rmClient.releaseAssignedContainer(c.getId());
+            }
         }
     }
 
@@ -178,20 +190,28 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      */
     private boolean checkContainer(Container cont) {
         // Check limit on running nodes.
-        if (props.instances() <= containers.size())
+        if (props.instances() <= containers.size()) {
+            log.log(Level.WARNING, "Limit on running nodes exceeded. ({0} of {1} max)",
+                new Object[] {containers.size(), props.instances()});
+
             return false;
+        }
 
         // Check host name
         if (props.hostnameConstraint() != null
-                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches())
+                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches()) {
+            log.log(Level.WARNING, "Wrong host name '{0}'. It didn't match to '{1}' pattern.",
+                new Object[] {cont.getNodeId().getHost(), props.hostnameConstraint().toString()});
+
             return false;
+        }
 
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
             || cont.getResource().getMemory() < props.totalMemoryPerNode()) {
-            log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
-                new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
-                   cont.getResource().getMemory()});
+            log.log(Level.WARNING, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
+                new Object[] {cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
+                cont.getResource().getMemory()});
 
             return false;
         }
@@ -219,7 +239,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
+    @Override public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
         for (ContainerStatus status : statuses) {
             containers.remove(status.getContainerId());
 
@@ -229,7 +249,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onNodesUpdated(List<NodeReport> updated) {
+    @Override public synchronized void onNodesUpdated(List<NodeReport> updated) {
         for (NodeReport node : updated) {
             // If node unusable.
             if (node.getNodeState().isUnusable()) {
@@ -249,17 +269,17 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public void onShutdownRequest() {
+    @Override public void onShutdownRequest() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    public void onError(Throwable t) {
+    @Override public void onError(Throwable t) {
         nmClient.stop();
     }
 
     /** {@inheritDoc} */
-    public float getProgress() {
+    @Override public float getProgress() {
         return 50;
     }
 

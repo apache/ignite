@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Collection;
+import java.util.HashMap;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-
-import java.util.HashMap;
 
 /**
  * Simple caching metadata handler. Used mainly in tests.
@@ -46,21 +46,26 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void addMeta(int typeId, BinaryType type) throws BinaryObjectException {
-        synchronized (this) {
-            BinaryType oldType = metas.put(typeId, type);
+    @Override public synchronized void addMeta(int typeId, BinaryType type, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        BinaryType oldType = metas.put(typeId, type);
 
-            if (oldType != null) {
-                BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
-                BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
+        if (oldType != null) {
+            BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
+            BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
 
-                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
 
-                BinaryType mergedType = mergedMeta.wrap(((BinaryTypeImpl)oldType).context());
+            BinaryType mergedType = mergedMeta.wrap(((BinaryTypeImpl)oldType).context());
 
-                metas.put(typeId, mergedType);
-            }
+            metas.put(typeId, mergedType);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        addMeta(typeId, meta, failIfUnregistered);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +82,12 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
 
     /** {@inheritDoc} */
     @Override public synchronized BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-        BinaryTypeImpl type = (BinaryTypeImpl) metas.get(typeId);
-        return type.metadata().hasSchema(schemaId) ? type : null;
+        BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+        return type != null && type.metadata().hasSchema(schemaId) ? type : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+        return metas.values();
     }
 }

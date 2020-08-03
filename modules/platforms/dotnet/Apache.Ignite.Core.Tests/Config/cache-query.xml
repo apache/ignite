@@ -66,6 +66,11 @@
                                         <entry key="name" value="java.lang.String" />
                                     </util:map>
                                 </property>
+                                <property name="notNullFields">
+                                    <list>
+                                        <value>name</value>
+                                    </list>
+                                </property>
                                 <property name="indexes">
                                     <list>
                                         <bean class="org.apache.ignite.cache.QueryIndex">
@@ -83,6 +88,7 @@
                                                 </map>
                                             </property>
                                             <property name="indexType" value="SORTED"/>
+                                            <property name="inlineSize" value="2345"/>
                                         </bean>
                                     </list>
                                 </property>

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Concurrent map factory.
@@ -37,6 +37,6 @@ public class GridConcurrentFactory {
      * @return New concurrent map.
      */
     public static <K, V> ConcurrentMap<K, V> newMap() {
-        return new ConcurrentHashMap8<>();
+        return new ConcurrentHashMap<>();
     }
 }

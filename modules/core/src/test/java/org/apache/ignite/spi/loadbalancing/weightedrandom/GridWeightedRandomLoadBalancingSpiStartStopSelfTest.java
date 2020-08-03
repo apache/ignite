@@ -23,7 +23,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 /**
  * Wighted random load balancing SPI start-stop test.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridWeightedRandomLoadBalancingSpiStartStopSelfTest extends
     GridSpiStartStopAbstractTest<WeightedRandomLoadBalancingSpi> {

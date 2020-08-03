@@ -23,11 +23,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.AtomicConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureProxy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
@@ -47,6 +48,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      *
      */
+    @Test
     public void testRendezvousAffinity() throws Exception {
         try {
             affinityFunction = new RendezvousAffinityFunction(false, 10);
@@ -58,7 +60,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 AffinityFunction aff = cctx.config().getAffinity();
 
@@ -79,6 +81,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestAffinity() throws Exception {
         try {
             affinityFunction = new TestAffinityFunction("Some value");
@@ -90,7 +93,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 TestAffinityFunction aff = (TestAffinityFunction) cctx.config().getAffinity();
 
@@ -111,6 +114,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultAffinity() throws Exception {
         try {
             affinityFunction = null;
@@ -122,7 +126,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 AffinityFunction aff = cctx.config().getAffinity();
 

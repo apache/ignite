@@ -20,6 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.binary.datagrid.CacheClientBinaryPutGetExample;
 import org.apache.ignite.examples.binary.datagrid.CacheClientBinaryQueryExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  *
@@ -33,6 +34,7 @@ public class CacheClientBinaryExampleTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryPutGetExample() throws Exception {
         CacheClientBinaryPutGetExample.main(new String[] {});
     }
@@ -40,6 +42,7 @@ public class CacheClientBinaryExampleTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryQueryExample() throws Exception {
         CacheClientBinaryQueryExample.main(new String[] {});
     }

@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Cache.Eviction
     /// Eviction policy based on First In First Out (FIFO) algorithm with batch eviction support.
     /// <para />
     /// The eviction starts in the following cases: 
-    /// The cache size becomes { @code batchSize }
+    /// The cache size becomes <see cref="EvictionPolicyBase.BatchSize"/>
     /// elements greater than the maximum size;
     /// The size of cache entries in bytes becomes greater than the maximum memory size;
     /// The size of cache entry calculates as sum of key size and value size.

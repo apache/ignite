@@ -1502,7 +1502,6 @@ public class JdbcResultSet implements ResultSet {
      * @return Casted field value.
      * @throws SQLException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();
@@ -1523,7 +1522,7 @@ public class JdbcResultSet implements ResultSet {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+            throw new SQLException("Cannot convert to " + cls.getSimpleName().toLowerCase());
         }
     }
 

@@ -22,10 +22,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import java.util.UUID;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
@@ -125,35 +126,6 @@ public abstract class GridClientUtils {
     }
 
     /**
-     * Shutdowns given {@code ExecutorService} and wait for executor service to stop.
-     *
-     * @param owner The ExecutorService owner.
-     * @param exec ExecutorService to shutdown.
-     * @param log The logger to possible exceptions and warnings.
-     */
-    public static void shutdownNow(Class<?> owner, ExecutorService exec, Logger log) {
-        if (exec != null) {
-            List<Runnable> tasks = exec.shutdownNow();
-
-            if (!tasks.isEmpty())
-                log.warning("Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
-                    ", tasks=" + tasks + ']');
-
-            try {
-                exec.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException ignored) {
-                log.warning("Got interrupted while waiting for executor service to stop.");
-
-                exec.shutdownNow();
-
-                // Preserve interrupt status.
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
      * Gets simple class name taking care of empty names.
      *
      * @param cls Class to get the name for.
@@ -164,14 +136,38 @@ public abstract class GridClientUtils {
     }
 
     /**
-     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     * Checks that all cluster nodes support specified feature.
      *
-     * @param i Integer.
-     * @return Absolute value.
+     * @param client Client.
+     * @param feature Feature.
+     * @param validateClientNodes Whether client nodes should be checked as well.
+     * @param failIfUnsupportedFound If {@code true}, fails when found a node unsupporting {@code feature}.
+     * unsupporting {@code feature}.
+     * @return Id of node unsupporting {@code feature}. {@code Null} if all nodes support {@code feature}.
      */
-    public static int safeAbs(int i) {
-        i = Math.abs(i);
+    public static UUID checkFeatureSupportedByCluster(
+        GridClient client,
+        IgniteFeatures feature,
+        boolean validateClientNodes,
+        boolean failIfUnsupportedFound
+    ) throws GridClientException {
+        Collection<GridClientNode> nodes = validateClientNodes ?
+            client.compute().nodes() :
+            client.compute().nodes(GridClientNode::connectable);
 
-        return i < 0 ? 0 : i;
+        for (GridClientNode node : nodes) {
+            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
+
+            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
+                if (failIfUnsupportedFound) {
+                    throw new GridClientException("Failed to execute command: cluster contains node that " +
+                        "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
+                }
+                else
+                    return node.nodeId();
+            }
+        }
+
+        return null;
     }
 }

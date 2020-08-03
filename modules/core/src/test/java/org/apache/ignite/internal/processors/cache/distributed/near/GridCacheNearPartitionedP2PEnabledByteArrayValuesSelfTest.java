@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
  * Tests for byte array values in NEAR-PARTITIONED caches with P2P enabled.
  */
 public class GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest extends
-    GridCacheAbstractNearPartitionedByteArrayValuesSelfTest{
+    GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean peerClassLoading() {
         return true;

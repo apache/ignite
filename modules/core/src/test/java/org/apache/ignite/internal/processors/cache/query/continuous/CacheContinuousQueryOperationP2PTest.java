@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
@@ -28,6 +29,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -35,13 +37,15 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -51,54 +55,45 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    public static final int NODES = 5;
 
     /** */
-    private static final int NODES = 5;
-
-    /** */
-    private boolean client;
+    private static final int UPDATES = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        cfg.setCommunicationSpi(communicationSpi());
 
-        cfg.setClientMode(client);
         cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+    /**
+     * @return Communication SPI to use during a test.
+     */
+    protected CommunicationSpi communicationSpi() {
+        return new TcpCommunicationSpi();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -111,6 +106,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -123,6 +119,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -135,6 +132,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicatedClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -147,6 +145,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -155,9 +154,11 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
 
         testContinuousQuery(ccfg, false);
     }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -170,6 +171,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -182,6 +184,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -192,85 +195,210 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTx() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            TRANSACTIONAL_SNAPSHOT
+        );
+
+        testContinuousQuery(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxClient() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            TRANSACTIONAL_SNAPSHOT
+        );
+
+        testContinuousQuery(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxReplicated() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            TRANSACTIONAL_SNAPSHOT
+        );
+
+        testContinuousQuery(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxReplicatedClient() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            TRANSACTIONAL_SNAPSHOT
+        );
+
+        testContinuousQuery(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultithreadedUpdatesNodeJoin() throws Exception {
+        Ignite client = startGrid("client");
+
+        CacheConfiguration<Object, Object> cacheCfg = cacheConfiguration(PARTITIONED,
+            0,
+            ATOMIC
+        );
+        IgniteCache<Object, Object> cache = client.createCache(cacheCfg);
+
+        int iterations = 50;
+        int keysNum = 100;
+        int threadsNum = Runtime.getRuntime().availableProcessors();
+
+        CountDownLatch updatesLatch = new CountDownLatch(iterations * keysNum * threadsNum / 2);
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        final Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls =
+            (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
+        qry.setRemoteFilterFactory(
+            (Factory<? extends CacheEntryEventFilter<Object, Object>>)(Object)evtFilterFactoryCls.newInstance());
+
+        qry.setLocalListener((evts) -> {
+            for (CacheEntryEvent<?, ?> ignored : evts)
+                updatesLatch.countDown();
+        });
+
+        cache.query(qry);
+
+        for (int t = 0; t < threadsNum; t++) {
+            int threadId = t;
+
+            GridTestUtils.runAsync(() -> {
+                for (int i = 0; i < iterations; i++) {
+                    log.info("Iteration #" + (i + 1));
+
+                    for (int k = 0; k < keysNum; k++) {
+                        int key = keysNum * threadId + k;
+
+                        cache.put(key, key);
+                    }
+                }
+            }, "cache-writer-thread-" + threadId);
+        }
+
+        startGrid(NODES);
+
+        assertTrue("Failed to wait for all cache updates invocations. Latch: " + updatesLatch,
+            updatesLatch.await(30, TimeUnit.SECONDS));
+    }
+
+    /**
      * @param ccfg Cache configuration.
      * @param isClient Client.
      * @throws Exception If failed.
      */
     protected void testContinuousQuery(CacheConfiguration<Object, Object> ccfg, boolean isClient)
         throws Exception {
+
         ignite(0).createCache(ccfg);
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        QueryCursor<?> cur = null;
-
-        final Class<Factory<CacheEntryEventFilter>> evtFilterFactory =
+        final Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls =
             (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
 
-        final CountDownLatch latch = new CountDownLatch(10);
+        testContinuousQuery(ccfg, isClient, false, evtFilterFactoryCls);
+        testContinuousQuery(ccfg, isClient, true, evtFilterFactoryCls);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param isClient Client.
+     * @param joinNode If a node should be added to topology after a query is started.
+     * @param evtFilterFactoryCls Remote filter factory class.
+     * @throws Exception If failed.
+     */
+    private void testContinuousQuery(CacheConfiguration<Object, Object> ccfg,
+        boolean isClient, boolean joinNode,
+        Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls) throws Exception {
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final CountDownLatch latch = new CountDownLatch(UPDATES);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        TestLocalListener localLsnr = new TestLocalListener() {
-            @Override public void onEvent(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)
-                throws CacheEntryListenerException {
+        AtomicReference<String> err = new AtomicReference<>();
+
+        TestLocalListener locLsnr = new TestLocalListener() {
+            @Override protected void onEvent(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
                     latch.countDown();
 
                     log.info("Received event: " + evt);
+
+                    int key = evt.getKey();
+
+                    if (key % 2 == 0)
+                        err.set("Event received on entry, that doesn't pass a filter: " + key);
                 }
             }
         };
 
+        qry.setLocalListener(locLsnr);
+
+        qry.setRemoteFilterFactory(
+            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)(Object)evtFilterFactoryCls.newInstance());
+
         MutableCacheEntryListenerConfiguration<Integer, Integer> lsnrCfg =
             new MutableCacheEntryListenerConfiguration<>(
-                new FactoryBuilder.SingletonFactory<>(localLsnr),
+                new FactoryBuilder.SingletonFactory<>(locLsnr),
                 (Factory<? extends CacheEntryEventFilter<? super Integer, ? super Integer>>)
-                    (Object)evtFilterFactory.newInstance(),
+                    (Object)evtFilterFactoryCls.newInstance(),
                 true,
                 true
             );
 
-        qry.setLocalListener(localLsnr);
+        IgniteCache<Integer, Integer> cache;
 
-        qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)(Object)evtFilterFactory.newInstance());
+        cache = isClient
+            ? grid(NODES - 1).cache(ccfg.getName())
+            : grid(rnd.nextInt(NODES - 1)).cache(ccfg.getName());
 
-        IgniteCache<Integer, Integer> cache = null;
-
-        try {
-            if (isClient)
-                cache = grid(NODES - 1).cache(ccfg.getName());
-            else
-                cache = grid(rnd.nextInt(NODES - 1)).cache(ccfg.getName());
-
-            cur = cache.query(qry);
-
+        try (QueryCursor<?> cur = cache.query(qry)) {
             cache.registerCacheEntryListener(lsnrCfg);
 
-            for (int i = 0; i < 10; i++)
+            if (joinNode) {
+                startGrid(NODES);
+                awaitPartitionMapExchange();
+            }
+
+            for (int i = 0; i < UPDATES; i++)
                 cache.put(i, i);
 
-            assertTrue(latch.await(3, TimeUnit.SECONDS));
-        }
-        finally {
-            if (cur != null)
-                cur.close();
+            assertTrue("Failed to wait for local listener invocations: " + latch.getCount(),
+                latch.await(3, TimeUnit.SECONDS));
 
-            if (cache != null)
-                cache.deregisterCacheEntryListener(lsnrCfg);
+            assertNull(err.get(), err.get());
         }
     }
 
     /**
-     *
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(
+    protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode) {
@@ -289,7 +417,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static abstract class TestLocalListener implements CacheEntryUpdatedListener<Integer, Integer>,
+    private abstract static class TestLocalListener implements CacheEntryUpdatedListener<Integer, Integer>,
         CacheEntryCreatedListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)

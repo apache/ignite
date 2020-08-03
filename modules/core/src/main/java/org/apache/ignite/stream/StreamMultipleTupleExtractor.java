@@ -27,7 +27,6 @@ import java.util.Map;
  * @see StreamTupleExtractor
  */
 public interface StreamMultipleTupleExtractor<T, K, V> {
-
     /**
      * Extracts a set of key-values from a message.
      *

@@ -17,24 +17,29 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+
+import static java.util.Collections.singleton;
 
 /**
  * Test for {@link ClusterGroup}.
@@ -45,39 +50,43 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     private static final int NODES_CNT = 4;
 
     /** Projection node IDs. */
-    private static Collection<UUID> ids;
+    private static List<UUID> ids;
 
     /** */
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
-        ids = new LinkedList<>();
-
-        try {
-            for (int i = 0; i < NODES_CNT; i++) {
-                Ignition.setClientMode(i > 1);
-
-                Ignite g = startGrid(i);
-
-                ids.add(g.cluster().localNode().id());
-
-                if (i == 0)
-                    ignite = g;
-            }
+        for (int i = 0; i < NODES_CNT; i++) {
+            if (i > 1)
+                startClientGrid(i);
+            else
+                startGrid(i);
         }
-        finally {
-            Ignition.setClientMode(false);
-        }
+
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++)
-            stopGrid(i);
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        ignite = grid(0);
+
+        ids = G.allGrids().stream()
+            .map(Ignite::cluster)
+            .map(IgniteCluster::localNode)
+            .map(ClusterNode::id)
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -93,31 +102,45 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom() throws Exception {
         assertTrue(ignite.cluster().nodes().contains(ignite.cluster().forRandom().node()));
     }
 
     /**
-     * @throws Exception If failed.
      */
+    @Test
     public void testOldest() throws Exception {
-        ClusterGroup oldest = ignite.cluster().forOldest();
+        IgniteCluster cluster = grid(1).cluster();
 
-        ClusterNode node = null;
+        ClusterGroup oldest = cluster.forOldest();
 
-        long minOrder = Long.MAX_VALUE;
+        ClusterNode oldestNode = grid(0).localNode();
 
-        for (ClusterNode n : ignite.cluster().nodes()) {
-            if (n.order() < minOrder) {
-                node = n;
+        assertEquals(cluster.forNode(oldestNode).node(), oldest.node());
 
-                minOrder = n.order();
-            }
+        assertEqualsCollections(
+            singleton(cluster.forNode(oldestNode).node()),
+            cluster.nodes().stream().filter(oldest.predicate()::apply).collect(Collectors.toSet())
+        );
+
+        stopGrid(0);
+
+        try {
+            ClusterNode newOldestNode = grid(1).localNode();
+
+            assertEquals(cluster.forNode(newOldestNode).node(), oldest.node());
+
+            assertEqualsCollections(
+                singleton(cluster.forNode(newOldestNode).node()),
+                cluster.nodes().stream().filter(oldest.predicate()::apply).collect(Collectors.toSet())
+            );
+        }
+        finally {
+            startGrid(0);
         }
 
-        assertEquals(oldest.node(), ignite.cluster().forNode(node).node());
-
-        ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
+        ClusterGroup emptyGrp = cluster.forAttribute("nonExistent", "val");
 
         assertEquals(0, emptyGrp.forOldest().nodes().size());
     }
@@ -125,31 +148,57 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testYoungest() throws Exception {
-        ClusterGroup youngest = ignite.cluster().forYoungest();
+        IgniteCluster cluster = ignite.cluster();
 
-        ClusterNode node = null;
+        ClusterGroup youngest = cluster.forYoungest();
 
-        long maxOrder = Long.MIN_VALUE;
+        ClusterNode youngestNode = grid(NODES_CNT - 1).localNode();
 
-        for (ClusterNode n : ignite.cluster().nodes()) {
-            if (n.order() > maxOrder) {
-                node = n;
+        assertEquals(cluster.forNode(youngestNode).node(), youngest.node());
 
-                maxOrder = n.order();
-            }
+        assertEqualsCollections(
+            singleton(cluster.forNode(youngestNode).node()),
+            cluster.nodes().stream().filter(youngest.predicate()::apply).collect(Collectors.toSet())
+        );
+
+        stopGrid(NODES_CNT - 1);
+
+        try {
+            ClusterNode newYoungestNode = grid(NODES_CNT - 2).localNode();
+
+            assertEquals(cluster.forNode(newYoungestNode).node(), youngest.node());
+
+            assertEqualsCollections(
+                singleton(cluster.forNode(newYoungestNode).node()),
+                cluster.nodes().stream().filter(youngest.predicate()::apply).collect(Collectors.toSet())
+            );
+        }
+        finally {
+            startClientGrid(NODES_CNT - 1);
         }
 
-        assertEquals(youngest.node(), ignite.cluster().forNode(node).node());
-
-        ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
+        ClusterGroup emptyGrp = cluster.forAttribute("nonExistent", "val");
 
         assertEquals(0, emptyGrp.forYoungest().nodes().size());
+
+        try (Ignite ignore = startGrid(NODES_CNT)) {
+            ClusterNode newYoungestNode = grid(NODES_CNT).localNode();
+
+            assertEquals(cluster.forNode(newYoungestNode).node(), youngest.node());
+
+            assertEqualsCollections(
+                singleton(cluster.forNode(newYoungestNode).node()),
+                cluster.nodes().stream().filter(youngest.predicate()::apply).collect(Collectors.toSet())
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForDaemons() throws Exception {
         assertEquals(4, ignite.cluster().nodes().size());
 
@@ -175,6 +224,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNewNodes() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
         ClusterGroup oldest = ignite.cluster().forOldest();
@@ -198,6 +248,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForPredicate() throws Exception {
         IgnitePredicate<ClusterNode> evenP = new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -241,6 +292,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAgeClusterGroupSerialization() throws Exception {
         Marshaller marshaller = ignite.configuration().getMarshaller();
 
@@ -264,6 +316,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServer() throws Exception {
         ClusterGroup srv = ignite.cluster().forServers();
 
@@ -281,6 +334,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForCacheNodesOnDynamicCacheCreateDestroy() throws Exception {
         Random rnd = ThreadLocalRandom.current();
 
@@ -298,6 +352,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForClientNodesOnDynamicCacheCreateDestroy() throws Exception {
         Random rnd = ThreadLocalRandom.current();
 
@@ -374,6 +429,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyGroup() throws Exception {
         ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
 

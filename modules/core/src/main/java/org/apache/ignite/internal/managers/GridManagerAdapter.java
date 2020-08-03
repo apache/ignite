@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -62,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -442,7 +444,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.io().removeUserMessageListener(topic, p);
                     }
 
-                    @SuppressWarnings("deprecation")
                     @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
                         A.notNull(lsnr, "lsnr");
                         A.notNull(topic, "topic");
@@ -450,7 +451,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.io().addMessageListener(topic, lsnr);
                     }
 
-                    @SuppressWarnings("deprecation")
                     @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
                         A.notNull(lsnr, "lsnr");
                         A.notNull(topic, "topic");
@@ -558,6 +558,20 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
+                    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+                        for (GridComponent comp : ctx) {
+                            if (comp.discoveryDataType() == null)
+                                continue;
+
+                            IgniteNodeValidationResult err = comp.validateNode(node, discoData.newJoinerDiscoveryData(comp.discoveryDataType().ordinal()));
+
+                            if (err != null)
+                                return err;
+                        }
+
+                        return null;
+                    }
+
                     @Override public Collection<SecuritySubject> authenticatedSubjects() {
                         try {
                             return ctx.security().authenticatedSubjects();
@@ -602,6 +616,30 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public Map<String, Object> nodeAttributes() {
                         return ctx.nodeAttributes();
+                    }
+
+                    @Override public boolean communicationFailureResolveSupported() {
+                        return ctx.discovery().communicationErrorResolveSupported();
+                    }
+
+                    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+                        ctx.discovery().resolveCommunicationError(node, err);
+                    }
+
+                    @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+                        return ctx.metric().registry(name);
+                    }
+
+                    @Override public void removeMetricRegistry(String name) {
+                        ctx.metric().remove(name);
+                    }
+
+                    @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+                        return ctx.metric();
+                    }
+
+                    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+                        ctx.metric().addMetricRegistryCreationListener(lsnr);
                     }
 
                     /**
@@ -701,6 +739,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         return null;
     }
 

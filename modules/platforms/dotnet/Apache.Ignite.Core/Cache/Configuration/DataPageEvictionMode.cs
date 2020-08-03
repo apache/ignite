@@ -17,11 +17,14 @@
 
 namespace Apache.Ignite.Core.Cache.Configuration
 {
+    using System;
+
     /// <summary>
     /// Memory page eviction mode.
     /// Only data pages, that store key-value entries, are eligible for eviction.
     /// The other types of pages, like index or system pages, are not evictable.
     /// </summary>
+    [Obsolete("Use Apache.Ignite.Core.Configuration.DataPageEvictionMode")]
     public enum DataPageEvictionMode
     {
         /// <summary>

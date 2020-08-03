@@ -80,7 +80,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * @param igniteInstanceName Ignite instance name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
-    @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String igniteInstanceName, String id8) {
         assert impl != null;
 
@@ -119,13 +118,28 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(@Nullable String marker, String msg) {
+        impl.trace(marker, enrich(msg));
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         impl.debug(enrich(msg));
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(@Nullable String marker, String msg) {
+        impl.debug(marker, enrich(msg));
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         impl.info(enrich(msg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(@Nullable String marker, String msg) {
+        impl.info(marker, enrich(msg));
     }
 
     /** {@inheritDoc} */
@@ -139,6 +153,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.warning(marker, enrich(msg), e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         impl.error(enrich(msg));
     }
@@ -146,6 +165,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** {@inheritDoc} */
     @Override public void error(String msg, Throwable e) {
         impl.error(enrich(msg), e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.error(marker, enrich(msg), e);
     }
 
     /** {@inheritDoc} */
@@ -169,6 +193,15 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
+     * Gets the class name and parameters of the Logger type used.
+     *
+     * @return Logger information (name and parameters)
+     */
+    public String getLoggerInfo() {
+        return impl.toString();
+    }
+
+    /**
      * Enriches the log message with Ignite instance name if
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_INSTANCE_NAME} or
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME} system property is set.
@@ -187,7 +220,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, Object> t = stash.get();
 

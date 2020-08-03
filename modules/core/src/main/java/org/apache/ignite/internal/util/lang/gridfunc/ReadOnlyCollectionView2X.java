@@ -36,16 +36,16 @@ public class ReadOnlyCollectionView2X<T> extends GridSerializableCollection<T> {
     private static final long serialVersionUID = 0L;
 
     /** First collection. */
-    private final Collection<T> c1;
+    private final Collection<? extends T> c1;
 
     /** SecondCollection. */
-    private final Collection<T> c2;
+    private final Collection<? extends T> c2;
 
     /**
      * @param c1 First collection.
      * @param c2 SecondCollection.
      */
-    public ReadOnlyCollectionView2X(Collection<T> c1, Collection<T> c2) {
+    public ReadOnlyCollectionView2X(Collection<? extends T> c1, Collection<? extends T> c2) {
         this.c1 = c1;
         this.c2 = c2;
     }
@@ -54,8 +54,8 @@ public class ReadOnlyCollectionView2X<T> extends GridSerializableCollection<T> {
     @NotNull
     @Override public Iterator<T> iterator() {
         return new GridSerializableIterator<T>() {
-            private Iterator<T> it1 = c1.iterator();
-            private Iterator<T> it2 = c2.iterator();
+            private Iterator<? extends T> it1 = c1.iterator();
+            private Iterator<? extends T> it2 = c2.iterator();
 
             @Override public boolean hasNext() {
                 if (it1 != null)

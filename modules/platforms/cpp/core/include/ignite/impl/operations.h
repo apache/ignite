@@ -66,7 +66,7 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * 
+             *
              * @param val Value.
              */
             In1Operation(const T& val) : val(val)
@@ -248,9 +248,43 @@ namespace ignite
             const T& key;
 
             /** Peek modes. */
-            int32_t peekModes; 
+            int32_t peekModes;
 
             IGNITE_NO_COPY_ASSIGNMENT(InCacheLocalPeekOperation)
+        };
+
+        /**
+         * Cache Invoke input operation.
+         */
+        template<typename T1, typename T2>
+        class InCacheInvokeOperation : public InputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param val1 First value.
+             * @param val2 Second value.
+             */
+            InCacheInvokeOperation(const T1& val1, const T2& val2) : val1(val1), val2(val2)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
+            {
+                writer.WriteTopObject<T1>(val1);
+                writer.WriteInt64(0);
+                writer.WriteTopObject<T2>(val2);
+            }
+        private:
+            /** First value. */
+            const T1& val1;
+
+            /** Second value. */
+            const T2& val2;
+
+            IGNITE_NO_COPY_ASSIGNMENT(InCacheInvokeOperation)
         };
 
         /**
@@ -333,15 +367,18 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param val Value.
              */
-            Out1Operation()
+            Out1Operation(T& val) :
+                val(val)
             {
                 // No-op.
             }
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                val = reader.ReadTopObject<T>();
+                reader.ReadTopObject<T>(val);
             }
 
             virtual void SetNull()
@@ -349,18 +386,9 @@ namespace ignite
                 val = binary::BinaryUtils::GetDefaultValue<T>();
             }
 
-            /**
-             * Get value.
-             *
-             * @param Value.
-             */
-            T GetResult()
-            {
-                return val;
-            }
         private:
             /** Value. */
-            T val; 
+            T& val;
 
             IGNITE_NO_COPY_ASSIGNMENT(Out1Operation)
         };
@@ -374,16 +402,21 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param val1 Value 1.
+             * @param val2 Value 2.
              */
-            Out2Operation()
+            Out2Operation(T1& val1, T2& val2) :
+                val1(val1),
+                val2(val2)
             {
                 // No-op.
             }
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                val1 = reader.ReadTopObject<T1>();
-                val2 = reader.ReadTopObject<T2>();
+                reader.ReadTopObject<T1>(val1);
+                reader.ReadTopObject<T2>(val2);
             }
 
             virtual void SetNull()
@@ -392,32 +425,12 @@ namespace ignite
                 val2 = binary::BinaryUtils::GetDefaultValue<T2>();
             }
 
-            /**
-             * Get value 1.
-             *
-             * @param Value 1.
-             */
-            T1& Get1()
-            {
-                return val1;
-            }
-
-            /**
-             * Get value 2.
-             *
-             * @param Value 2.
-             */
-            T2& Get2()
-            {
-                return val2;
-            }
-
         private:
             /** Value 1. */
-            T1 val1; 
-            
+            T1& val1;
+
             /** Value 2. */
-            T2 val2; 
+            T2& val2;
 
             IGNITE_NO_COPY_ASSIGNMENT(Out2Operation)
         };
@@ -431,18 +444,27 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param val1 Value 1.
+             * @param val2 Value 2.
+             * @param val3 Value 3.
+             * @param val4 Value 4.
              */
-            Out4Operation()
+            Out4Operation(T1& val1, T2& val2, T3& val3, T4& val4) :
+                val1(val1),
+                val2(val2),
+                val3(val3),
+                val4(val4)
             {
                 // No-op.
             }
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                val1 = reader.ReadTopObject<T1>();
-                val2 = reader.ReadTopObject<T2>();
-                val3 = reader.ReadTopObject<T3>();
-                val4 = reader.ReadTopObject<T4>();
+                reader.ReadTopObject<T1>(val1);
+                reader.ReadTopObject<T2>(val2);
+                reader.ReadTopObject<T3>(val3);
+                reader.ReadTopObject<T4>(val4);
             }
 
             virtual void SetNull()
@@ -453,58 +475,18 @@ namespace ignite
                 val4 = binary::BinaryUtils::GetDefaultValue<T4>();
             }
 
-            /**
-             * Get value 1.
-             *
-             * @param Value 1.
-             */
-            T1& Get1()
-            {
-                return val1;
-            }
-
-            /**
-             * Get value 2.
-             *
-             * @param Value 2.
-             */
-            T2& Get2()
-            {
-                return val2;
-            }
-
-            /**
-             * Get value 3.
-             *
-             * @param Value 3.
-             */
-            T3& Get3()
-            {
-                return val3;
-            }
-
-            /**
-             * Get value 4.
-             *
-             * @param Value 4.
-             */
-            T4& Get4()
-            {
-                return val4;
-            }
-
         private:
             /** Value 1. */
-            T1 val1; 
-            
+            T1& val1;
+
             /** Value 2. */
-            T2 val2;
+            T2& val2;
 
             /** Value 3. */
-            T3 val3;
+            T3& val3;
 
             /** Value 4. */
-            T4 val4;
+            T4& val4;
 
             IGNITE_NO_COPY_ASSIGNMENT(Out4Operation)
         };
@@ -518,8 +500,11 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param val Value.
              */
-            OutMapOperation()
+            OutMapOperation(std::map<T1, T2>& val) :
+                val(val)
             {
                 // No-op.
             }
@@ -550,18 +535,9 @@ namespace ignite
                 // No-op.
             }
 
-            /**
-             * Get value.
-             *
-             * @return Value.
-             */
-            std::map<T1, T2> GetResult()
-            {
-                return val;
-            }
         private:
             /** Value. */
-            std::map<T1, T2> val;
+            std::map<T1, T2>& val;
 
             IGNITE_NO_COPY_ASSIGNMENT(OutMapOperation)
         };
@@ -587,7 +563,7 @@ namespace ignite
 
                 res.reserve(res.size() + cnt);
 
-                for (int i = 0; i < cnt; i++) 
+                for (int i = 0; i < cnt; i++)
                 {
                     K key = reader.ReadTopObject<K>();
                     V val = reader.ReadTopObject<V>();
@@ -604,7 +580,7 @@ namespace ignite
         private:
             /** Entries. */
             std::vector<ignite::cache::CacheEntry<K, V> >& res;
-            
+
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperation)
         };
 
@@ -645,7 +621,7 @@ namespace ignite
         private:
             /** Out iter. */
             Iter iter;
-            
+
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperationIter)
         };
 

@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -66,6 +67,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeouts() throws Exception {
         int max = 100;
 
@@ -136,6 +138,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutsMultithreaded() throws Exception {
         final int max = 100;
 
@@ -212,6 +215,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutObjectAdapterMultithreaded() throws Exception {
         final int max = 100;
 
@@ -272,6 +276,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutNeverCalled() throws Exception {
         int max = 100;
 
@@ -331,6 +336,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutNeverCalledMultithreaded() throws Exception {
 
         int threads = 20;
@@ -395,6 +401,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAddRemoveInterleaving() throws Exception {
         final AtomicInteger callCnt = new AtomicInteger(0);
 
@@ -517,6 +524,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutCallOnce() throws Exception {
         ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
             /** Timeout ID. */
@@ -558,6 +566,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutSameEndTime() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
 
@@ -631,6 +640,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCancelingWithClearedInterruptedFlag() throws Exception {
         final CountDownLatch onTimeoutCalled = new CountDownLatch(1);
 

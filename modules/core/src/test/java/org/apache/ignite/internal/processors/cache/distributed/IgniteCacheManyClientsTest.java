@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,11 +35,10 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,13 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SRVS = 4;
-
-    /** */
-    private boolean client;
 
     /** */
     private boolean clientDiscovery;
@@ -80,14 +72,11 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinderCleanFrequency(10 * 60_000);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(2 * 60_000);
 
         if (!clientDiscovery)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -107,13 +96,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60_000;
     }
@@ -121,6 +103,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsClientDiscovery() throws Throwable {
         clientDiscovery = true;
 
@@ -130,6 +113,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsSequentiallyClientDiscovery() throws Exception {
         clientDiscovery = true;
 
@@ -139,6 +123,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsForceServerMode() throws Throwable {
         manyClientsPutGet();
     }
@@ -147,8 +132,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void manyClientsSequentially() throws Exception {
-        client = true;
-
         List<Ignite> clients = new ArrayList<>();
 
         final int CLIENTS = 50;
@@ -158,7 +141,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = startGrid(idx++);
+            Ignite ignite = startClientGrid(idx++);
 
             log.info("Started node: " + ignite.name());
 
@@ -178,12 +161,36 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         log.info("All clients started.");
 
         try {
-            checkNodes(SRVS + CLIENTS);
+            checkNodes0(SRVS + CLIENTS);
         }
         finally {
             for (Ignite client : clients)
                 client.close();
         }
+    }
+
+    /**
+     * @param expCnt Expected number of nodes.
+     * @throws Exception If failed.
+     */
+    private void checkNodes0(final int expCnt) throws Exception {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    checkNodes(expCnt);
+
+                    return true;
+                }
+                catch (AssertionError e) {
+                    log.info("Check failed, will retry: " + e);
+                }
+
+                return false;
+            }
+        }, 10_000);
+
+        if (!wait)
+            checkNodes(expCnt);
     }
 
     /**
@@ -214,8 +221,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void manyClientsPutGet() throws Throwable {
-        client = true;
-
         final AtomicInteger idx = new AtomicInteger(SRVS);
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -236,7 +241,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("client-thread-node-" + nodeIdx);
 
-                        try (Ignite ignite = startGrid(nodeIdx)) {
+                        try (Ignite ignite = startClientGrid(nodeIdx)) {
                             log.info("Started node: " + ignite.name());
 
                             assertTrue(ignite.configuration().isClientMode());
@@ -297,23 +302,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             if (err0 != null)
                 throw err0;
 
-            boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    try {
-                        checkNodes(SRVS + THREADS);
-
-                        return true;
-                    }
-                    catch (AssertionFailedError e) {
-                        log.info("Check failed, will retry: " + e);
-                    }
-
-                    return false;
-                }
-            }, 10_000);
-
-            if (!wait)
-                checkNodes(SRVS + THREADS);
+            checkNodes0(SRVS + THREADS);
 
             log.info("Stop clients.");
 

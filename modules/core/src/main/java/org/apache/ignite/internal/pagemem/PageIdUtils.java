@@ -85,7 +85,7 @@ public final class PageIdUtils {
      * @return Page link.
      */
     public static long link(long pageId, int itemId) {
-        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM: itemId;
+        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM : itemId;
         assert (pageId >> (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE)) == 0 : U.hexLong(pageId);
 
         return pageId | (((long)itemId) << (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE));
@@ -126,7 +126,6 @@ public final class PageIdUtils {
     public static boolean isEffectivePageId(long pageId) {
         return (pageId & ~EFFECTIVE_PAGE_ID_MASK) == 0;
     }
-
 
     /**
      * Index of the item inside of data page.
@@ -184,10 +183,21 @@ public final class PageIdUtils {
      * @return New page ID.
      */
     public static long rotatePageId(long pageId) {
-        long updatedRotationId = (pageId >> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+        long updatedRotationId = (pageId >>> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+
+        if (updatedRotationId > MAX_ITEMID_NUM)
+            updatedRotationId = 1; // We always want non-zero updatedRotationId
 
         return (pageId & PAGE_ID_MASK) |
             (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+    }
+
+    /**
+     * Masks partition ID from full page ID.
+     * @param pageId Page ID to mask partition ID from.
+     */
+    public static long maskPartitionId(long pageId) {
+        return pageId & ~((-1L << PAGE_IDX_SIZE) & (~(-1L << PAGE_IDX_SIZE + PART_ID_SIZE)));
     }
 
     /**
@@ -199,5 +209,28 @@ public final class PageIdUtils {
      */
     public static long changeType(long pageId, byte type) {
         return pageId(partId(pageId), type, pageIndex(pageId));
+    }
+
+    /**
+     * @param pageId Page id.
+     */
+    public static String toDetailString(long pageId) {
+        return "pageId=" + pageId +
+            "(offset=" + itemId(pageId) +
+            ", flags=" + Integer.toBinaryString(flag(pageId)) +
+            ", partId=" + partId(pageId) +
+            ", index=" + pageIndex(pageId) +
+            ")";
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param partId Partition ID.
+     */
+    public static long changePartitionId(long pageId, int partId) {
+        byte flag = flag(pageId);
+        int pageIdx = pageIndex(pageId);
+
+        return pageId(partId, flag, pageIdx);
     }
 }

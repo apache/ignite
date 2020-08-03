@@ -50,6 +50,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.junit.Test;
 
 /**
  * Class for {@code PojoCacheStore} tests.
@@ -269,6 +270,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -354,7 +356,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
-                if (binaryEnable){
+                if (binaryEnable) {
                     if (k instanceof BinaryObject && v instanceof BinaryObject) {
                         BinaryObject key = (BinaryObject)k;
                         BinaryObject val = (BinaryObject)v;
@@ -378,7 +380,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                             && BinaryTest.class.getName().equals(valType))
                             binaryTestVals.add(val.field("bytes"));
                     }
-                }else {
+                } else {
                     if (k instanceof OrganizationKey && v instanceof Organization)
                         orgKeys.add(k);
                     else if (k instanceof PersonKey && v instanceof Person)
@@ -442,6 +444,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelLoad() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -503,6 +506,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteRetry() throws Exception {
         CacheJdbcPojoStore<Object, Object> store = store();
 
@@ -556,6 +560,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         Timestamp k = new Timestamp(System.currentTimeMillis());
 

@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
-
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.util.LocalDateTimeUtils;
+import org.h2.value.DataType;
 
 /**
  * Enum that helps to map java types to database types.
@@ -88,7 +87,7 @@ public enum H2DatabaseType {
     /** Map of Class to enum. */
     private static final Map<Class<?>, H2DatabaseType> map = new HashMap<>();
 
-    /**
+    /*
      * Initialize map of DB types.
      */
     static {
@@ -143,14 +142,12 @@ public enum H2DatabaseType {
         if (DataType.isGeometryClass(cls))
             return GEOMETRY;
 
-        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
-            if (LocalDateTimeUtils.isLocalDate(cls))
-                return DATE;
-            else if (LocalDateTimeUtils.isLocalTime(cls))
-                return TIME;
-            else if (LocalDateTimeUtils.isLocalDateTime(cls))
-                return TIMESTAMP;
-        }
+        if (LocalDateTimeUtils.LOCAL_DATE == cls)
+            return DATE;
+        else if (LocalDateTimeUtils.LOCAL_TIME == cls)
+            return TIME;
+        else if (LocalDateTimeUtils.LOCAL_DATE_TIME == cls)
+            return TIMESTAMP;
 
         return cls.isArray() && !cls.getComponentType().isPrimitive() ? ARRAY : OTHER;
     }
