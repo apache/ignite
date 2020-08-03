@@ -338,6 +338,11 @@ namespace ignite
             {
                 value = reader.ReadInt64();
             }
+
+            void Int32Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value = reader.ReadInt32();
+            }
         }
     }
 }

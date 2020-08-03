@@ -14,7 +14,11 @@ namespace ignite
                 class TransactionImpl
                 {
                 public:
-                    TransactionImpl();
+                    TransactionImpl(void * _impl, int32_t _txId)
+                    {
+                        impl = _impl;
+                        txId = _txId;
+                    }
                     
                     ~TransactionImpl() {}
                     
@@ -23,6 +27,10 @@ namespace ignite
                     void rollback() {}
     
                     void close() {}
+                private:
+                    void* impl;
+
+                    int32_t txId;
                 };
             
                 class TransactionsImpl
@@ -42,6 +50,8 @@ namespace ignite
 
                     TransactionImpl* txStart();
 
+                    template<typename ReqT, typename RspT>
+                    void SyncMessage(const ReqT& req, RspT& rsp);
                 private:
                     /** Data router. */
                     SP_DataRouter router;

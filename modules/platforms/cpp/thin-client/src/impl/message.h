@@ -28,6 +28,8 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
+#include <ignite/thin/transactions/transaction_consts.h>
+
 #include "impl/protocol_version.h"
 #include "impl/affinity/affinity_topology_version.h"
 #include "impl/affinity/partition_awareness_group.h"
@@ -151,6 +153,12 @@ namespace ignite
 
                     /** Put binary type info. */
                     PUT_BINARY_TYPE = 3003,
+
+                    /** Start new transaction. */
+                    OP_TX_START = 4000,
+
+                    /** Commit transaction. */
+                    OP_TX_END = 4001,
                 };
             };
 
@@ -567,6 +575,110 @@ namespace ignite
 
                 /** Value 3. */
                 const Writable& val3;
+            };
+
+            /**
+             * Tx start request.
+             */
+            template<int32_t OpCode>
+            class TxStartRequest : public CacheRequest<OpCode>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
+                               ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
+                               int64_t _timeout, int32_t _size) :
+                    CacheRequest<OpCode>(1, false),
+                    concurrency(conc),
+                    isolation(isolationLvl),
+                    timeout(_timeout),
+                    size(_size)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxStartRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const                {
+                    //CacheRequest<OpCode>::Write(writer, ver);
+                    //writer.WriteInt64(11);
+
+                    writer.WriteInt8(concurrency);
+                    writer.WriteInt8(isolation);
+                    writer.WriteInt64(timeout);
+                    writer.WriteString("");
+                }
+
+            private:
+                /** Cncurrency. */
+                ignite::thin::transactions::TransactionConcurrency::Type concurrency;
+
+                /** Isolation. */
+                ignite::thin::transactions::TransactionIsolation::Type isolation;
+
+                /** Timeout. */
+                const int64_t timeout;
+
+                /** Size. */
+                const int32_t size;
+            };
+
+            /**
+             * Tx start request.
+             */
+            template<int32_t OpCode>
+            class TxEndRequest : public CacheRequest<OpCode>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                TxEndRequest(int32_t _txId, bool _commited) :
+                    CacheRequest<OpCode>(1, false),
+                    commited(_commited),
+                    txId(_txId)
+                {
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxEndRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const                {
+                    //CacheRequest<OpCode>::Write(writer, ver);
+                    //writer.WriteInt64(11);
+
+                    writer.WriteInt32(txId);
+                    writer.WriteBool(true);
+                }
+
+            private:
+                /** Tx id. */
+                const int32_t txId;
+
+                const bool commited;
             };
 
             /**
@@ -1009,6 +1121,51 @@ namespace ignite
             private:
                 /** Value. */
                 int64_t value;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class Int32Response : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Int32Response() :
+                    value(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Int32Response()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get received value.
+                 *
+                 * @return Received bool value.
+                 */
+                int64_t GetValue() const
+                {
+                    return value;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                int32_t value;
             };
         }
     }

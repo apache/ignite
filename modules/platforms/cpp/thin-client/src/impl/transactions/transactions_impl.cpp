@@ -25,17 +25,36 @@ namespace ignite
 
                 TransactionImpl* TransactionsImpl::txStart()
                 {
-                    std::cout << "txStart" << std::endl;
+                    TxStartRequest<RequestType::OP_TX_START> req(ignite::thin::transactions::TransactionConcurrency::PESSIMISTIC,
+                                                                 ignite::thin::transactions::TransactionIsolation::READ_COMMITTED,
+                                                                 0, 0);
 
-                    return new TransactionImpl();
+                    Int32Response rsp;
+
+                    //Response rsp;
+
+                    SyncMessage(req, rsp);
+
+                    std::cout << "!!! " << rsp.GetValue() << std::endl;
+
+                    return new TransactionImpl(this, rsp.GetValue());
                 }
 
-                TransactionImpl::TransactionImpl() {
-                    std::cout << "TransactionImpl" << std::endl;
+                template<typename ReqT, typename RspT>
+                void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
+                {
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
                 void TransactionImpl::commit() {
-                    std::cout << "commit!!!" << std::endl;
+                    TxEndRequest<RequestType::OP_TX_END> req(txId, true);
+
+                    Response rsp;
+
+                    reinterpret_cast<TransactionsImpl *>(impl)->SyncMessage(req, rsp);
                 }
             }
         }
