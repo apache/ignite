@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.net.URL;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -35,21 +39,21 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.net.URL;
 
 /**
  */
 public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
+
     private static final String ENUM_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Color";
+
     private static final String ORGANIZATION_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Organization";
+
     private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
 
     private static final String[] enumVals = {"GREY", "RED", "GREEN", "PURPLE", "LIGHTBLUE"};
+
     public static final int CLIENT_ID = 1;
 
     /** {@inheritDoc} */

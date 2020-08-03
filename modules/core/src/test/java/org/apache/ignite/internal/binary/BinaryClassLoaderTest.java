@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.net.URL;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -31,17 +34,17 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.net.URL;
 
 /**
  */
 public class BinaryClassLoaderTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
+
     private static final String ENUM_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Color";
+
     private static final String ORGANIZATION_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Organization";
+
     private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
 
     private static final String[] enumVals = {"GREY", "RED", "GREEN", "PURPLE", "LIGHTBLUE"};
@@ -65,7 +68,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
     }
 
-    public void  testLoadClassFromBinary() throws Exception {
+    public void testLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
@@ -95,7 +98,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
         }
     }
 
-    public void  testClientLoadClassFromBinary() throws Exception {
+    public void testClientLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
@@ -137,11 +140,11 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
-        for (int i =0; i< 100; i++) {
+        for (int i = 0; i < 100; i++) {
 
             BinaryObject binaryVal = binaryCache.get(i);
 
-            if (i%50 == 0)
+            if (i % 50 == 0)
                 try {
                     info("Val: " + binaryVal.toString());
                 } catch (IgniteException e) {
@@ -180,7 +183,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache("SomeCache");
 
-        for (int i =0; i< 100; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, personConstructor.newInstance("Persone name " + i));
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
@@ -200,7 +203,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache("OrganizationCache");
 
-        for (int i =0; i< 100; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, organizationConstructor.newInstance("Organization " + i,
                 personConstructor.newInstance("Persone name " + i),
                 addressConstructor.newInstance("Street " + i, i)));
@@ -217,7 +220,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache("SomeCacheEnum");
 
-        for (int i =0; i< 100; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, factoryMethod.invoke(null, enumVals[i % enumVals.length]));
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);

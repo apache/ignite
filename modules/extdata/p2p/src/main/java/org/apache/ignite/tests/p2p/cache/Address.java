@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
  */
 public class Address implements Externalizable {
     private String street;
+
     private int house;
 
     public Address() {

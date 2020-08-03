@@ -8917,7 +8917,6 @@ public abstract class IgniteUtils {
             return cls;
         }
 
-
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
         if (ldrMap == null) {
