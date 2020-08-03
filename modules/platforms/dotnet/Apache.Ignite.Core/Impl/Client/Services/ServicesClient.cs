@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Client.Services
 {
     using System.Diagnostics;
+    using System.Reflection;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Services;
 
     /// <summary>
     /// Services client.
@@ -40,22 +43,38 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
 
         /** <inheritdoc /> */
-        public T GetServiceProxy<T>(string name) where T : class
+        public T GetServiceProxy<T>(string serviceName) where T : class
         {
-            // TODO: Can we support async invocation with proxies?
-            throw new System.NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
+
+            return ServiceProxyFactory<T>.CreateProxy((method, args) => InvokeProxyMethod(serviceName, method, args));
         }
 
-        private T InvokeService<T>(string name, params object[] args)
+        /// <summary>
+        /// Invokes the proxy method.
+        /// </summary>
+        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args)
         {
-            // TODO: Can we handle the types properly here?
             return _ignite.Socket.DoOutInOp(
                 ClientOp.ServiceInvoke,
                 ctx =>
                 {
+                    var w = ctx.Writer;
 
+                    w.WriteString(serviceName);
+                    w.WriteByte(0); // TODO: Flags - keepBinary, hasTypes
+                    w.WriteLong(0); // TODO: Timeout
+                    w.WriteInt(0); // TODO: Cluster nodes
+
+                    w.WriteString(method.Name);
+
+                    w.WriteInt(args.Length);
+                    foreach (var arg in args)
+                    {
+                        w.WriteObjectDetached(arg);
+                    }
                 },
-                ctx => ctx.Reader.ReadObject<T>());
+                ctx => ctx.Reader.ReadObject<object>());
         }
     }
 }

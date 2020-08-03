@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Client.Services
 {
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Ignite distributed services client.
     /// </summary>
@@ -28,8 +26,8 @@ namespace Apache.Ignite.Core.Client.Services
         /// Gets a proxy for the service with the specified name.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
-        /// <param name="name">Service name.</param>
+        /// <param name="serviceName">Service name.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
-        T GetServiceProxy<T>(string name) where T : class;
+        T GetServiceProxy<T>(string serviceName) where T : class;
     }
 }
