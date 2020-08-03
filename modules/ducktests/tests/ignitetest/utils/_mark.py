@@ -19,7 +19,7 @@ Module contains useful test decorators.
 import six
 from ducktape.mark._mark import Ignore, Mark
 
-from ignitetest.tests.utils.version import IgniteVersion
+from ignitetest.utils.version import IgniteVersion
 
 
 class VersionIf(Ignore):

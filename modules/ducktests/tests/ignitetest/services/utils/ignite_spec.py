@@ -23,7 +23,7 @@ import json
 
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.ignite_config import IgniteClientConfig, IgniteServerConfig
-from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
@@ -59,7 +59,11 @@ class IgniteSpec(object):
     This class is a basic Spec
     """
     def __init__(self, version, project, client_mode, jvm_opts):
-        self.version = IgniteVersion(version)
+        if isinstance(version, IgniteVersion):
+            self.version = version
+        else:
+            self.version = IgniteVersion(version)
+
         self.path = IgnitePath(self.version, project)
         self.envs = {}
         self.jvm_opts = jvm_opts or []
@@ -194,7 +198,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         ])
 
         self.args = [
-            start_ignite,
+            str(start_ignite),
             java_class_name,
             self.CONFIG_FILE,
             str(base64.b64encode(json.dumps(params).encode("UTF-8")))

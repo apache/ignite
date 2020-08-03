@@ -20,7 +20,7 @@ This module contains the base class to build Ignite aware application written on
 import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteApplicationService(IgniteAwareService):
@@ -28,7 +28,7 @@ class IgniteApplicationService(IgniteAwareService):
     The base class to build Ignite aware application written on java.
     """
 
-    SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteApplicationService"
+    SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
     def __init__(self, context, java_class_name, params="", properties="", timeout_sec=60, modules=None,
