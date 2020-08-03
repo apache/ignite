@@ -32,6 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,7 +87,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceStatistics() throws Exception {
-        IgniteEx crd = createCluster(3);
+        createCluster(3);
 
         ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(3)).setGridLogger(listeningTestLog);
@@ -128,12 +131,31 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             for (GridDhtPartitionSupplyMessage msg : msgs) {
                 Map<Integer, CacheEntryInfoCollection> infos = U.field(msg, "infos");
 
+                CacheGroupContext grpCtx = node.context().cache().cacheGroup(msg.groupId());
+
+                long bytes = 0;
+
+                for (CacheEntryInfoCollection c : infos.values()) {
+                    for (GridCacheEntryInfo i : c.infos()) {
+                        CacheObjectContext cacheObjCtx = grpCtx.cacheObjectContext();
+
+                        bytes += i.key().valueBytes(cacheObjCtx).length + i.value().valueBytes(cacheObjCtx).length;
+                    }
+                }
+
                 String[] checVals = {
-                    "grp=" + node.context().cache().cacheGroup(msg.groupId()).cacheOrGroupName(),
+                    "grp=" + grpCtx.cacheOrGroupName(),
                     "partitions=" + infos.size(),
                     "entries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
                     "topVer=" + msg.topologyVersion(),
-                    "rebalanceId=" + U.field(msg, "rebalanceId")
+                    "rebalanceId=" + U.field(msg, "rebalanceId"),
+                    "bytesRcvd=" + U.humanReadableByteCount(bytes),
+                    "fullPartitions=" + infos.size(),
+                    "fullEntries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
+                    "fullBytesRcvd=" + U.humanReadableByteCount(bytes),
+                    "histPartitions=0",
+                    "histEntries=0",
+                    "histBytesRcvd=0",
                 };
 
                 assertTrue(supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains)));
@@ -145,6 +167,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         long rebId = -1;
         int parts = 0;
         int entries = 0;
+        long bytes = 0;
 
         for (List<GridDhtPartitionSupplyMessage> msgs : supplyMsgs.values()) {
             for (GridDhtPartitionSupplyMessage msg : msgs) {
@@ -153,13 +176,21 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                 rebId = U.field(msg, "rebalanceId");
                 parts += infos.size();
                 entries += infos.values().stream().mapToInt(i -> i.infos().size()).sum();
+
+                CacheObjectContext cacheObjCtx = node.context().cache().cacheGroup(msg.groupId()).cacheObjectContext();
+
+                for (CacheEntryInfoCollection c : infos.values()) {
+                    for (GridCacheEntryInfo i : c.infos())
+                        bytes += i.key().valueBytes(cacheObjCtx).length + i.value().valueBytes(cacheObjCtx).length;
+                }
             }
         }
 
         String[] checVals = {
             "partitions=" + parts,
             "entries=" + entries,
-            "rebalanceId=" + rebId
+            "rebalanceId=" + rebId,
+            "bytesRcvd=" + U.humanReadableByteCount(bytes),
         };
 
         assertTrue(Stream.of(checVals).allMatch(rebChainMsg::contains));
