@@ -101,6 +101,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_STOPPED);
 
+        EncryptionConfiguration encrCfg = new EncryptionConfiguration()
+            .setReencryptionBatchSize(pageScanBatchSize)
+            .setReencryptionDisabled(pageScanDisabled)
+            .setReencryptionRateLimit(pageScanRate)
+            .setReencryptionThreadCnt(pageScanThreadCnt);
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -112,17 +118,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             .setMaxWalArchiveSize(100 * 1024 * 1024L)
             .setCheckpointFrequency(30 * 1000L)
             .setWalMode(LOG_ONLY)
-            .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failing));
+            .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failing))
+            .setEncryptionConfiguration(encrCfg);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        EncryptionConfiguration encrCfg = new EncryptionConfiguration()
-            .setReencryptionBatchSize(pageScanBatchSize)
-            .setReencryptionDisabled(pageScanDisabled)
-            .setReencryptionRateLimit(pageScanRate)
-            .setReencryptionThreadCnt(pageScanThreadCnt);
-
-        cfg.setEncryptionConfiguration(encrCfg);
 
         return cfg;
     }

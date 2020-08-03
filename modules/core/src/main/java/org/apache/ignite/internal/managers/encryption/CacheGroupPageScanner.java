@@ -96,7 +96,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         log = ctx.log(getClass());
 
-        encrCfg = ctx.config().getEncryptionConfiguration();
+        encrCfg = ctx.config().getDataStorageConfiguration().getEncryptionConfiguration();
 
         execSvc = new IgniteThreadPoolExecutor(REENCRYPT_THREAD_PREFIX,
             ctx.igniteInstanceName(),

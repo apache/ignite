@@ -555,9 +555,6 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
-    /** Encryption configuration. */
-    private EncryptionConfiguration encrCfg = new EncryptionConfiguration();
-
     /**
      * Directory where will be stored all results of snapshot operations. The internal
      * {@link U#resolveWorkDirectory(String, String, boolean)} is used to configure
@@ -741,7 +738,6 @@ public class IgniteConfiguration {
         warmupClos = cfg.getWarmupClosure();
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
-        encrCfg = cfg.getEncryptionConfiguration();
     }
 
     /**
@@ -3641,27 +3637,6 @@ public class IgniteConfiguration {
         A.ensure(sqlCfg != null, "SQL configuration cannot be null");
 
         this.sqlCfg = sqlCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets encryyption configuration.
-     *
-     * @return Encryption configuration.
-     */
-    public EncryptionConfiguration getEncryptionConfiguration() {
-        return encrCfg;
-    }
-
-    /**
-     * Sets encryption configuration.
-     *
-     * @param encrCfg Encryption configuration.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setEncryptionConfiguration(EncryptionConfiguration encrCfg) {
-        this.encrCfg = encrCfg;
 
         return this;
     }
