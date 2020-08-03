@@ -2700,30 +2700,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 completeProxyInitialize(cctx.name());
 
                 jCacheProxies.remove(cctx.name());
-//                prepareCacheStop(cctx.name(), false, false);
-//
+
                 sharedCtx.removeCacheContext(cctx, false);
-
-//                caches.remove(cctx.name());
-
-//                cachesInfo.registeredCaches().remove(cctx.name());
-
-//                final CacheGroupDescriptor grpDesc = cachesInfo.registeredCacheGroups().remove(CU.cacheGroupId(cctx.name(), cctx.group().name()));
-//                ctx.discovery().removeCacheGroup(grpDesc);
             }
             finally {
                 sharedCtx.io().writeUnlock();
             }
         }
-//        if (cctx.affinityNode()) {
-//            GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
-//
-//            assert cache != null : cctx.name();
-//
-//            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
-//
-//            completeProxyInitialize(cctx.name());
-//        }
         else {
             cctx.gate().onStopped();
 
@@ -4533,11 +4516,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (proxy == null) {
             final GridCacheAdapter<?, ?> cache = caches.get(cacheName);
             if (cache != null && sharedCtx.cacheContext(cache.context().cacheId()) == null) {
-//                ccfg = cacheConfiguration(cacheName);
                 addjCacheProxy(cacheName, new IgniteCacheProxyImpl(cache.context(), cache, false));
                 sharedCtx.addCacheContext(cache.context());
-//                sharedCtx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
-//                    mana::processAffinityAssignmentResponse);
                 completeProxyInitialize(cacheName);
             }
             else {

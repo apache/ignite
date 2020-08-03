@@ -3231,9 +3231,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             checkClusterState();
-            final IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(name, false, true);
-            if (!cache.isClosed())
-                return cache;
 
             return ctx.cache().publicJCache(name, false, true);
         }
