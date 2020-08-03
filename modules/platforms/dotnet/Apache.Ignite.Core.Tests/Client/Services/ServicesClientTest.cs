@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using NUnit.Framework;
 
@@ -31,7 +32,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestNonExistentServiceNameCausesClientException()
         {
+            var svc = Client.GetServices().GetServiceProxy<ITestService1>("SVC_NAME");
 
+            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
     }
 }
