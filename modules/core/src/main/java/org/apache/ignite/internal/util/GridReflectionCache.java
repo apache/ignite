@@ -43,18 +43,10 @@ public class GridReflectionCache implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Compares fields by name. */
-    private static final Comparator<Field> FIELD_NAME_COMPARATOR = new Comparator<Field>() {
-        @Override public int compare(Field f1, Field f2) {
-            return f1.getName().compareTo(f2.getName());
-        }
-    };
+    private static final Comparator<Field> FIELD_NAME_COMPARATOR = Comparator.comparing(Field::getName);
 
     /** Compares methods by name. */
-    private static final Comparator<Method> METHOD_NAME_COMPARATOR = new Comparator<Method>() {
-        @Override public int compare(Method m1, Method m2) {
-            return m1.getName().compareTo(m2.getName());
-        }
-    };
+    private static final Comparator<Method> METHOD_NAME_COMPARATOR = Comparator.comparing(Method::getName);
 
     /** Cache size. */
     private static final int CACHE_SIZE = Integer.getInteger(IGNITE_REFLECTION_CACHE_SIZE, 128);

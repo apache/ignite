@@ -31,7 +31,6 @@ import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -54,11 +53,7 @@ public class DirectMessageWriter implements MessageWriter {
      * @param protoVer Protocol version.
      */
     public DirectMessageWriter(final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-            @Override public StateItem apply() {
-                return new StateItem(protoVer);
-            }
-        });
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(protoVer));
 
         this.protoVer = protoVer;
     }

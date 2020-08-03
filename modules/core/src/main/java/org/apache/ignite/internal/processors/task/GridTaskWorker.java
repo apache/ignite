@@ -80,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -1000,15 +999,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
 
             if (waitForAffTop && affFut != null) {
-                affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> fut0) {
-                        ctx.closure().runLocalSafe(new Runnable() {
-                            @Override public void run() {
-                                onResponse(failoverRes);
-                            }
-                        }, false);
-                    }
-                });
+                affFut.listen(future -> ctx.closure()
+                    .runLocalSafe(() -> onResponse(failoverRes), false)
+                );
             }
         }
     }
@@ -1019,28 +1012,24 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param resp Job responce.
      */
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
-        ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
-                                mapTopVer);
+        ctx.timeout().schedule(
+            () -> ctx.closure().runLocalSafe(() -> {
+                try {
+                    ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
+                        mapTopVer);
 
-                            if (!checkTargetNode(resp, jRes, newNode))
-                                return;
+                    if (!checkTargetNode(resp, jRes, newNode))
+                        return;
 
-                            sendRequest(jRes);
-                        }
-                        catch (Exception e) {
-                            U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+                    sendRequest(jRes);
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
 
-                            finishTask(null, e);
-                        }
-                    }
-                }, false);
-            }
-        }, waitms, -1);
+                    finishTask(null, e);
+                }
+            }, false),
+            waitms, -1);
     }
 
     /**

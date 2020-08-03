@@ -104,12 +104,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * They are already transformed so we simply return transformed value for event.
      */
     private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
-        new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, Object>() {
-            @Override public Object apply(CacheEntryEvent<? extends K, ? extends V> evt) {
-                assert evt.getKey() == null;
+        event -> {
+            assert event.getKey() == null;
 
-                return evt.getValue();
-            }
+            return event.getValue();
         };
 
     /** Cache name. */
@@ -553,18 +551,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     if (!evts.isEmpty()) {
                         if (asyncCb) {
-                            ctx.asyncCallbackPool().execute(new Runnable() {
-                                @Override public void run() {
-                                    notifyLocalListener(evts, getTransformer());
-                                }
-                            }, part);
+                            ctx.asyncCallbackPool().execute(() -> notifyLocalListener(evts, getTransformer()), part);
                         }
                         else
-                            skipCtx.addProcessClosure(new Runnable() {
-                                @Override public void run() {
-                                    notifyLocalListener(evts, getTransformer());
-                                }
-                            });
+                            skipCtx.addProcessClosure(() -> notifyLocalListener(evts, getTransformer()));
                     }
 
                     return skipCtx;
@@ -575,25 +565,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 final Object entryOrList = buf.processEntry(skipCtx.entry(), !primary);
 
                 if (entryOrList != null) {
-                    skipCtx.addProcessClosure(new Runnable() {
-                        @Override public void run() {
-                            try {
-                                ctx.continuous().addNotification(nodeId,
-                                    routineId,
-                                    entryOrList,
-                                    topic,
-                                    false,
-                                    true);
-                            }
-                            catch (ClusterTopologyCheckedException ex) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send event notification to node, node left cluster " +
-                                        "[node=" + nodeId + ", err=" + ex + ']');
-                            }
-                            catch (IgniteCheckedException ex) {
-                                U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
-                                    "Failed to send event notification to node: " + nodeId, ex);
-                            }
+                    skipCtx.addProcessClosure(() -> {
+                        try {
+                            ctx.continuous().addNotification(nodeId,
+                                routineId,
+                                entryOrList,
+                                topic,
+                                false,
+                                true);
+                        }
+                        catch (ClusterTopologyCheckedException ex) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send event notification to node, node left cluster " +
+                                    "[node=" + nodeId + ", err=" + ex + ']');
+                        }
+                        catch (IgniteCheckedException ex) {
+                            U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                                "Failed to send event notification to node: " + nodeId, ex);
                         }
                     });
                 }
@@ -884,12 +872,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             final int startIdx0 = startIdx;
 
-            asyncPool.execute(new Runnable() {
-                @Override public void run() {
-                    notifyCallback0(nodeId, ctx,
-                        startIdx0 == 0 ? entries : entries.subList(startIdx0, entries.size()));
-                }
-            }, threadId);
+            asyncPool.execute(() ->
+                    notifyCallback0(nodeId, ctx, startIdx0 == 0 ? entries : entries.subList(startIdx0, entries.size())),
+                threadId);
         }
         else
             notifyCallback0(nodeId, ctx, (Collection)objs);
@@ -1516,11 +1501,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             if (f.error() != null)
                                 evt.entry().markFiltered();
 
-                            ctx.asyncCallbackPool().execute(new Runnable() {
-                                @Override public void run() {
-                                    onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
-                                }
-                            }, evt.entry().partition());
+                            ctx.asyncCallbackPool().execute(
+                                () -> onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt),
+                                evt.entry().partition());
                         }
                     });
                 }

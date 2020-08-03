@@ -31,8 +31,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.JobContextResource;
 
 /**
@@ -82,11 +80,7 @@ public class VisorIdleAnalyzeTask extends VisorOneNodeTask<VisorIdleAnalyzeTaskA
                 if (!conflictKeysFut.isDone()) {
                     jobCtx.holdcc();
 
-                    conflictKeysFut.listen(new IgniteInClosure<IgniteFuture<Map<PartitionHashRecord, List<PartitionEntryHashRecord>>>>() {
-                        @Override public void apply(IgniteFuture<Map<PartitionHashRecord, List<PartitionEntryHashRecord>>> f) {
-                            jobCtx.callcc();
-                        }
-                    });
+                    conflictKeysFut.listen(future -> jobCtx.callcc());
 
                     return null;
                 }
@@ -103,11 +97,7 @@ public class VisorIdleAnalyzeTask extends VisorOneNodeTask<VisorIdleAnalyzeTaskA
                 if (!conflictValsFut.isDone()) {
                     jobCtx.holdcc();
 
-                    conflictKeysFut.listen(new IgniteInClosure<IgniteFuture<Map<PartitionHashRecord, List<PartitionEntryHashRecord>>>>() {
-                        @Override public void apply(IgniteFuture<Map<PartitionHashRecord, List<PartitionEntryHashRecord>>> f) {
-                            jobCtx.callcc();
-                        }
-                    });
+                    conflictKeysFut.listen(future -> jobCtx.callcc());
 
                     return null;
                 }

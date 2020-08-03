@@ -21,15 +21,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -117,12 +114,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
 
         KEEP_BINARIES.set(false);
 
-        return withReconnectHandling(new ClientProjectionClosure<R>() {
-            @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
-            }
-        });
+        return withReconnectHandling((conn, destNodeId) -> conn.execute(taskName, taskArg, destNodeId, keepBinaries));
     }
 
     /** {@inheritDoc} */
@@ -140,12 +132,8 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
 
         KEEP_BINARIES.set(false);
 
-        return withReconnectHandling(new ClientProjectionClosure<R>() {
-            @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
-            }
-        }, cacheName, affKey);
+        return withReconnectHandling((conn, destNodeId) -> conn.execute(taskName, taskArg, destNodeId, keepBinaries),
+            cacheName, affKey);
     }
 
     /** {@inheritDoc} */
@@ -196,12 +184,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         final boolean includeMetrics) {
         A.notNull(id, "id");
 
-        return withReconnectHandling(new ClientProjectionClosure<GridClientNode>() {
-            @Override public GridClientFuture<GridClientNode> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.node(id, includeAttrs, includeMetrics, destNodeId);
-            }
-        });
+        return withReconnectHandling((conn, destNodeId) -> conn.node(id, includeAttrs, includeMetrics, destNodeId));
     }
 
     /** {@inheritDoc} */
@@ -215,12 +198,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         final boolean includeMetrics) {
         A.notNull(ip, "ip");
 
-        return withReconnectHandling(new ClientProjectionClosure<GridClientNode>() {
-            @Override public GridClientFuture<GridClientNode> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.node(ip, inclAttrs, includeMetrics, destNodeId);
-            }
-        });
+        return withReconnectHandling((conn, destNodeId) -> conn.node(ip, inclAttrs, includeMetrics, destNodeId));
     }
 
     /** {@inheritDoc} */
@@ -232,13 +210,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     /** {@inheritDoc} */
     @Override public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(final boolean inclAttrs,
         final boolean includeMetrics) {
-        return withReconnectHandling(new ClientProjectionClosure<List<GridClientNode>>() {
-            @Override public GridClientFuture<List<GridClientNode>> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException,
-                GridClientClosedException {
-                return conn.topology(inclAttrs, includeMetrics, destNodeId);
-            }
-        });
+        return withReconnectHandling((conn, destNodeId) -> conn.topology(inclAttrs, includeMetrics, destNodeId));
     }
 
     /** {@inheritDoc} */

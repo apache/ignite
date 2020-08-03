@@ -38,13 +38,10 @@ import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServi
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
-import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -205,16 +202,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Collection<Service> svcs = services.services(reader.readString());
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
-                    new PlatformWriterClosure<Service>() {
-                        @Override public void write(BinaryRawWriterEx writer, Service svc) {
-                            writer.writeLong(((PlatformService) svc).pointer());
-                        }
-                    },
-                    new IgnitePredicate<Service>() {
-                        @Override public boolean apply(Service svc) {
-                            return svc instanceof PlatformDotNetService;
-                        }
-                    }
+                    (wr, svc) -> wr.writeLong(((PlatformService) svc).pointer()),
+                    svc -> svc instanceof PlatformDotNetService
                 );
 
                 return;
@@ -301,41 +290,37 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx binaryRawWriterEx) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
 
-                PlatformUtils.writeCollection(writer, descs, new PlatformWriterClosure<ServiceDescriptor>() {
-                    @Override public void write(BinaryRawWriterEx writer, ServiceDescriptor d) {
-                        writer.writeString(d.name());
-                        writer.writeString(d.cacheName());
-                        writer.writeInt(d.maxPerNodeCount());
-                        writer.writeInt(d.totalCount());
-                        writer.writeUuid(d.originNodeId());
-                        writer.writeObject(d.affinityKey());
+                PlatformUtils.writeCollection(binaryRawWriterEx, descs, (writer, d) -> {
+                    writer.writeString(d.name());
+                    writer.writeString(d.cacheName());
+                    writer.writeInt(d.maxPerNodeCount());
+                    writer.writeInt(d.totalCount());
+                    writer.writeUuid(d.originNodeId());
+                    writer.writeObject(d.affinityKey());
 
-                        // Write platform. There are only 2 platforms now.
-                        byte platform = d.serviceClass().equals(PlatformDotNetServiceImpl.class)
-                            ? PLATFORM_DOTNET : PLATFORM_JAVA;
-                        writer.writeByte(platform);
+                    // Write platform. There are only 2 platforms now.
+                    byte platform = d.serviceClass().equals(PlatformDotNetServiceImpl.class)
+                        ? PLATFORM_DOTNET : PLATFORM_JAVA;
+                    writer.writeByte(platform);
 
-                        Map<UUID, Integer> top = d.topologySnapshot();
+                    Map<UUID, Integer> top = d.topologySnapshot();
 
-                        PlatformUtils.writeMap(writer, top, new PlatformWriterBiClosure<UUID, Integer>() {
-                            @Override public void write(BinaryRawWriterEx writer, UUID key, Integer val) {
-                                writer.writeUuid(key);
-                                writer.writeInt(val);
-                            }
-                        });
-                    }
+                    PlatformUtils.writeMap(writer, top, (wr, key, val) -> {
+                        wr.writeUuid(key);
+                        wr.writeInt(val);
+                    });
                 });
 
                 return;
             }
 
             default:
-                super.processOutStream(type, writer);
+                super.processOutStream(type, binaryRawWriterEx);
         }
     }
 
@@ -776,11 +761,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             failedCfgs = ((ServiceDeploymentException)err).getFailedConfigurations();
 
         // write a collection of failed service configurations
-        PlatformUtils.writeNullableCollection(writer, failedCfgs, new PlatformWriterClosure<ServiceConfiguration>() {
-            @Override public void write(BinaryRawWriterEx writer, ServiceConfiguration svcCfg) {
-                writeFailedConfiguration(writer, svcCfg);
-            }
-        });
+        PlatformUtils.writeNullableCollection(writer, failedCfgs, PlatformServices::writeFailedConfiguration);
     }
 
     /**

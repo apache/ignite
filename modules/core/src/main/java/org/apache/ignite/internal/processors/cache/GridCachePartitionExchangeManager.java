@@ -145,8 +145,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -420,11 +418,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture cur = lastTopologyFuture();
 
                         if (!cur.isDone() && cur.changedAffinity() && !msg.restoreState()) {
-                            cur.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                                    if (fut.error() == null)
-                                        processSinglePartitionUpdate(node, msg);
-                                }
+                            cur.listen(future -> {
+                                if (future.error() == null)
+                                    processSinglePartitionUpdate(node, msg);
                             });
 
                             return;
@@ -2353,38 +2349,36 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 try {
                     compute
                         .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                String traceDump = null;
+                        .listen(strIgniteFut -> {
+                            String traceDump = null;
 
-                                try {
-                                    traceDump = strIgniteFut.get();
-                                }
-                                catch (ClusterGroupEmptyException e) {
-                                    U.error(
-                                        diagnosticLog,
-                                        "Could not get thread dump from transaction owner because near node " +
-                                                "is out of topology now. " + txRequestInfo
-                                    );
-                                }
-                                catch (Exception e) {
-                                    U.error(
-                                        diagnosticLog,
-                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
-                                        e
-                                    );
-                                }
+                            try {
+                                traceDump = strIgniteFut.get();
+                            }
+                            catch (ClusterGroupEmptyException e) {
+                                U.error(
+                                    diagnosticLog,
+                                    "Could not get thread dump from transaction owner because near node " +
+                                        "is out of topology now. " + txRequestInfo
+                                );
+                            }
+                            catch (Exception e) {
+                                U.error(
+                                    diagnosticLog,
+                                    "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                    e
+                                );
+                            }
 
-                                if (traceDump != null) {
-                                    U.warn(
-                                        diagnosticLog,
-                                        String.format(
-                                            "Dumping the near node thread that started transaction %s\n%s",
-                                            txRequestInfo,
-                                            traceDump
-                                        )
-                                    );
-                                }
+                            if (traceDump != null) {
+                                U.warn(
+                                    diagnosticLog,
+                                    String.format(
+                                        "Dumping the near node thread that started transaction %s\n%s",
+                                        txRequestInfo,
+                                        traceDump
+                                    )
+                                );
                             }
                         });
                 }
@@ -3549,16 +3543,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
                             long rebId = cnt;
 
-                            rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                                @Override public void apply(IgniteInternalFuture<Boolean> f) {
-                                    U.log(log, "Rebalancing scheduled [order=" + rebList +
-                                        ", top=" + finalR.topologyVersion() +
-                                        ", rebalanceId=" + rebId +
-                                        ", evt=" + exchId.discoveryEventName() +
-                                        ", node=" + exchId.nodeId() + ']');
+                            rebFut.listen(future -> {
+                                U.log(log, "Rebalancing scheduled [order=" + rebList +
+                                    ", top=" + finalR.topologyVersion() +
+                                    ", rebalanceId=" + rebId +
+                                    ", evt=" + exchId.discoveryEventName() +
+                                    ", node=" + exchId.nodeId() + ']');
 
-                                    finalR.requestPartitions();
-                                }
+                                finalR.requestPartitions();
                             });
                         }
                         else {

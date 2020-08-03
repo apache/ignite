@@ -105,9 +105,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -1830,13 +1828,11 @@ public class IgnitionEx {
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
             WorkersRegistry workerRegistry = new WorkersRegistry(
-                new IgniteBiInClosure<GridWorker, FailureType>() {
-                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
-                    }
+                (deadWorker, failureType) -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(
+                            failureType,
+                            new IgniteException(S.toString(GridWorker.class, deadWorker))));
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
                     cfg.getSystemWorkerBlockedTimeout() != null
@@ -1849,11 +1845,9 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "sys",
                 log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
+                t -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 workerRegistry,
                 cfg.getFailureDetectionTimeout());
@@ -1898,11 +1892,9 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
+                t -> {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 true,
                 workerRegistry,

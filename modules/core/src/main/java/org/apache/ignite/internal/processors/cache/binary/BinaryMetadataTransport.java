@@ -37,7 +37,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -451,11 +449,7 @@ final class BinaryMetadataTransport {
         MetadataUpdateResultFuture oldFut = syncMap.putIfAbsent(key, fut);
 
         if (oldFut != null) {
-            oldFut.listen(new IgniteInClosure<IgniteInternalFuture<MetadataUpdateResult>>() {
-                @Override public void apply(IgniteInternalFuture<MetadataUpdateResult> doneFut) {
-                    fut.onDone(doneFut.result(), doneFut.error());
-                }
-            });
+            oldFut.listen(doneFut -> fut.onDone(doneFut.result(), doneFut.error()));
         }
 
         fut.key(key);

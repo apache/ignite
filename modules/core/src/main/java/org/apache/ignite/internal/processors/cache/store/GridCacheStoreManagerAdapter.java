@@ -516,24 +516,22 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             boolean threwEx = true;
 
             try {
-                store.loadCache(new IgniteBiInClosure<Object, Object>() {
-                    @Override public void apply(Object k, Object o) {
-                        Object v;
-                        GridCacheVersion ver = null;
+                store.loadCache((k, o) -> {
+                    Object v;
+                    GridCacheVersion ver = null;
 
-                        if (locStore) {
-                            IgniteBiTuple<Object, GridCacheVersion> t = (IgniteBiTuple<Object, GridCacheVersion>)o;
+                    if (locStore) {
+                        IgniteBiTuple<Object, GridCacheVersion> t = (IgniteBiTuple<Object, GridCacheVersion>)o;
 
-                            v = t.get1();
-                            ver = t.get2();
-                        }
-                        else
-                            v = o;
-
-                        KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
-
-                        vis.apply(cacheKey, v, ver);
+                        v = t.get1();
+                        ver = t.get2();
                     }
+                    else
+                        v = o;
+
+                    KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
+
+                    vis.apply(cacheKey, v, ver);
                 }, args);
 
                 threwEx = false;

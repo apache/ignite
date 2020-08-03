@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -652,11 +651,7 @@ public class ClusterCachesInfo {
                         if (fut == null || fut.isDone())
                             ctx.cache().completeCacheStartFuture(req, false, null);
                         else {
-                            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    ctx.cache().completeCacheStartFuture(req, false, null);
-                                }
-                            });
+                            fut.listen(future -> ctx.cache().completeCacheStartFuture(req, false, null));
                         }
                     }
 

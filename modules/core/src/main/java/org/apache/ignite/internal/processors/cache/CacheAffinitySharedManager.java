@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -102,18 +101,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, 10_000);
 
     /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE_TO_ID = new IgniteClosure<ClusterNode, UUID>() {
-        @Override public UUID apply(ClusterNode node) {
-            return node.id();
-        }
-    };
+    private static final IgniteClosure<ClusterNode, UUID> NODE_TO_ID = ClusterNode::id;
 
     /** */
-    private static final IgniteClosure<ClusterNode, Long> NODE_TO_ORDER = new IgniteClosure<ClusterNode, Long>() {
-        @Override public Long apply(ClusterNode node) {
-            return node.order();
-        }
-    };
+    private static final IgniteClosure<ClusterNode, Long> NODE_TO_ORDER = ClusterNode::order;
 
     /** Affinity information for all started caches (initialized on coordinator). */
     private ConcurrentMap<Integer, CacheGroupHolder> grpHolders = new ConcurrentHashMap<>();
@@ -2351,14 +2342,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (initFut != null && !initFut.isDone()) {
             final GridFutureAdapter<Map<Integer, Map<Integer, List<UUID>>>> resFut = new GridFutureAdapter<>();
 
-            initFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> initFut) {
-                    try {
-                        resFut.onDone(initAffinityBasedOnPartitionsAvailability(fut.initialVersion(), fut, NODE_TO_ID, false));
-                    }
-                    catch (Exception e) {
-                        resFut.onDone(e);
-                    }
+            initFut.listen(initFuture -> {
+                try {
+                    resFut.onDone(initAffinityBasedOnPartitionsAvailability(fut.initialVersion(), fut, NODE_TO_ID, false));
+                }
+                catch (Exception e) {
+                    resFut.onDone(e);
                 }
             });
 

@@ -179,11 +179,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObject(key);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    val.set((V)reader.readObjectDetached());
-                }
-            });
+            }, reader -> val.set((V) reader.readObjectDetached()));
 
             return val.get();
         }
@@ -210,13 +206,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     for (Object o : keys0)
                         writer.writeObject(o);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    int cnt = reader.readInt();
+            }, reader -> {
+                int cnt = reader.readInt();
 
-                    for (int i = 0; i < cnt; i++)
-                        loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-                }
+                for (int i = 0; i < cnt; i++)
+                    loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
             });
 
             return loaded;
@@ -236,13 +230,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObjectArray(args);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
-                    int cnt = reader.readInt();
+            }, reader -> {
+                int cnt = reader.readInt();
 
-                    for (int i = 0; i < cnt; i++)
-                        clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-                }
+                for (int i = 0; i < cnt; i++)
+                    clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
             });
         }
         catch (IgniteCheckedException e) {
