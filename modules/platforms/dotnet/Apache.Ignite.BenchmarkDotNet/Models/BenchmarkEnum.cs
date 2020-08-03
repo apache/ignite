@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+namespace Apache.Ignite.BenchmarkDotNet.Models
 {
-    using Apache.Ignite.BenchmarkDotNet.ThinClient;
-    using global::BenchmarkDotNet.Running;
-
     /// <summary>
-    /// Benchmark runner.
+    /// Benchmark model: custom enum.
     /// </summary>
-    public static class Program
+    public enum BenchmarkEnum
     {
-        /// <summary>
-        /// Main.
-        /// </summary>
-        public static void Main()
-        {
-            BenchmarkRunner.Run<ThinClientCachePutBenchmark>();
-        }
+        Foo,
+        Bar,
+        Baz
     }
 }

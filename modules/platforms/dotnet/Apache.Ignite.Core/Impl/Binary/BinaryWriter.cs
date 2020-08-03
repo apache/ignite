@@ -902,8 +902,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             WriteEnum(val, desc.TypeId);
 
-            var metaHnd = _marsh.GetBinaryTypeHandler(desc);
-            SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+            var binaryTypeHolder = Marshaller.GetCachedBinaryTypeHolder(desc.TypeId);
+            if (binaryTypeHolder == null || !binaryTypeHolder.IsSaved)
+            {
+                // Save enum fields only once - they can't change locally at runtime.
+                var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+                var binaryFields = metaHnd.OnObjectWriteFinished();
+                
+                SaveMetadata(desc, binaryFields);
+            }
         }
 
         /// <summary>
