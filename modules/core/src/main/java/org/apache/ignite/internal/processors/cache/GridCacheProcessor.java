@@ -2699,9 +2699,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 completeProxyInitialize(cctx.name());
 
-//                jCacheProxies.remove(cctx.name());
+                jCacheProxies.remove(cctx.name());
+//                prepareCacheStop(cctx.name(), false, false);
+//
+                sharedCtx.removeCacheContext(cctx, false);
 
-                sharedCtx.removeCacheContext(cctx);
+//                caches.remove(cctx.name());
+
+//                cachesInfo.registeredCaches().remove(cctx.name());
+
+//                final CacheGroupDescriptor grpDesc = cachesInfo.registeredCacheGroups().remove(CU.cacheGroupId(cctx.name(), cctx.group().name()));
+//                ctx.discovery().removeCacheGroup(grpDesc);
             }
             finally {
                 sharedCtx.io().writeUnlock();
@@ -4523,7 +4531,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Try to start cache, there is no guarantee that cache will be instantiated.
         if (proxy == null) {
-            dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
+            final GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+            if (cache != null && sharedCtx.cacheContext(cache.context().cacheId()) == null) {
+//                ccfg = cacheConfiguration(cacheName);
+                addjCacheProxy(cacheName, new IgniteCacheProxyImpl(cache.context(), cache, false));
+                sharedCtx.addCacheContext(cache.context());
+//                sharedCtx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
+//                    mana::processAffinityAssignmentResponse);
+                completeProxyInitialize(cacheName);
+            }
+            else {
+                dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
+            }
 
             proxy = jcacheProxy(cacheName, true);
         }
