@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -87,7 +89,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceStatistics() throws Exception {
-        createCluster(3);
+        IgniteEx crd = createCluster(3);
 
         ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(3)).setGridLogger(listeningTestLog);
@@ -120,6 +122,17 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         // +1 because one message about end of rebalance for all groups.
         assertEquals(supplyMsgs.values().stream().mapToInt(List::size).sum() + 1, logMsgs.size());
 
+        boolean mvccEnabled = crd.context().cache().cacheGroups().stream().anyMatch(CacheGroupContext::mvccEnabled);
+
+        IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long> getSize =
+            new IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long>() {
+                @Override
+                public Long applyx(GridCacheEntryInfo info, CacheObjectContext ctx) throws IgniteCheckedException {
+                    return mvccEnabled ? info.marshalledSize(ctx) :
+                        (long)(info.key().valueBytes(ctx).length + info.value().valueBytes(ctx).length);
+                }
+            };
+
         for (Map.Entry<Ignite, List<GridDhtPartitionSupplyMessage>> supplyMsg : supplyMsgs.entrySet()) {
             List<String> supplierMsgs = logMsgs.stream()
                 .filter(s -> s.contains("supplier=" + supplyMsg.getKey().cluster().localNode().id()))
@@ -136,11 +149,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                 long bytes = 0;
 
                 for (CacheEntryInfoCollection c : infos.values()) {
-                    for (GridCacheEntryInfo i : c.infos()) {
-                        CacheObjectContext cacheObjCtx = grpCtx.cacheObjectContext();
-
-                        bytes += i.key().valueBytes(cacheObjCtx).length + i.value().valueBytes(cacheObjCtx).length;
-                    }
+                    for (GridCacheEntryInfo i : c.infos())
+                        bytes += getSize.apply(i, grpCtx.cacheObjectContext());
                 }
 
                 String[] checVals = {
@@ -158,7 +168,10 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                     "histBytesRcvd=0",
                 };
 
-                assertTrue(supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains)));
+                assertTrue(
+                    supplierMsgs.toString(),
+                    supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains))
+                );
             }
         }
 
@@ -181,7 +194,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
                 for (CacheEntryInfoCollection c : infos.values()) {
                     for (GridCacheEntryInfo i : c.infos())
-                        bytes += i.key().valueBytes(cacheObjCtx).length + i.value().valueBytes(cacheObjCtx).length;
+                        bytes += getSize.apply(i, cacheObjCtx);
                 }
             }
         }
@@ -193,7 +206,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             "bytesRcvd=" + U.humanReadableByteCount(bytes),
         };
 
-        assertTrue(Stream.of(checVals).allMatch(rebChainMsg::contains));
+        assertTrue(rebChainMsg, Stream.of(checVals).allMatch(rebChainMsg::contains));
     }
 
     /**
