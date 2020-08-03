@@ -2391,6 +2391,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         try {
             IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
 
+            if (locPort != -1 && addrs.get1().isEmpty() && addrs.get2().isEmpty())
+                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
