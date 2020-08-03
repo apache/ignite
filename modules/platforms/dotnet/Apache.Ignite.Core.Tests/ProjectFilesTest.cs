@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
                 .GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x => !x.FullName.ToLower().Contains("dotnetcore") && !x.FullName.Contains("Benchmark"))
                 .ToArray();
-            
+
             Assert.GreaterOrEqual(projFiles.Length, 7);
             CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
         }
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojReleaseDocs()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"), 
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"),
                 "Missing XML doc in release mode: ");
         }
 
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojBuildSettings()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"), 
+            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"),
                 "Invalid constants in release mode: ");
         }
 
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojPdbSettings()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"), 
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"),
                 "Invalid DebugType in release mode: ");
         }
 
@@ -80,8 +80,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojOptimizeCode()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"), 
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"),
                 "Invalid optimize setting in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that all .cs files are included in the project.
+        /// </summary>
+        [Test]
+        public void TestAllCsharpFilesAreIncludedInProject()
+        {
+            // TODO: Test Core and Core.Tests projects (since they are shared across .NET Framework & .NET Core)
+            Assert.Fail("TODO");
         }
 
         /// <summary>
@@ -102,7 +112,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static string GetReleaseSection(string csproj)
         {
-            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>", 
+            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>",
                 RegexOptions.Singleline).Value;
         }
 
@@ -130,7 +140,7 @@ namespace Apache.Ignite.Core.Tests
             var allowedFiles = new[]
             {
                 "BinaryStringTest.cs",
-                "BinarySelfTest.cs", 
+                "BinarySelfTest.cs",
                 "CacheDmlQueriesTest.cs",
                 "CacheTest.cs"
             };
