@@ -24,7 +24,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteService(IgniteAwareService):

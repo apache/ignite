@@ -25,8 +25,8 @@ from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
+from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7
 
 
 # pylint: disable=W0223

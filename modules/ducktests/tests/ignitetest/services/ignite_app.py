@@ -18,7 +18,7 @@ This module contains the ignite application service allows to perform custom log
 """
 
 from ignitetest.services.utils.ignite_aware_app import IgniteAwareApplicationService
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteApplicationService(IgniteAwareApplicationService):

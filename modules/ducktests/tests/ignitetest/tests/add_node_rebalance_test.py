@@ -22,8 +22,8 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion, LATEST
+from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
 # pylint: disable=W0223

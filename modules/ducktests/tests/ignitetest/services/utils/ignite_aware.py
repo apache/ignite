@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteSe
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 
-from ignitetest.tests.utils.version import IgniteVersion
+from ignitetest.utils.version import IgniteVersion
 
 
 class IgniteAwareService(BackgroundThreadService):
