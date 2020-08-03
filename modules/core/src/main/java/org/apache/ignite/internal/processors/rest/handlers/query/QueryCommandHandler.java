@@ -62,7 +62,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.FETCH_S
  */
 public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /** Supported commands. */
-    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXECUTE_SQL_QUERY,
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
+        EXECUTE_SQL_QUERY,
         EXECUTE_SQL_FIELDS_QUERY,
         EXECUTE_SCAN_QUERY,
         FETCH_SQL_QUERY,
@@ -227,6 +228,14 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                 );
         }
 
+        if (req.command() != FETCH_SQL_QUERY && req.command() != CLOSE_SQL_QUERY) {
+            if (((RestQueryRequest)req).cacheName() == null) {
+                return new GridFinishedFuture<>(
+                    new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("cacheName"))
+                );
+            }
+        }
+
         switch (req.command()) {
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY:
@@ -314,13 +323,12 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteException("Incorrect query type [type=" + req.queryType() + "]");
                 }
 
-                String cacheName = req.cacheName() == null ? DFLT_CACHE_NAME : req.cacheName();
+                IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
-                IgniteCache<Object, Object> cache = ctx.grid().cache(cacheName);
-
-                if (cache == null)
+                if (cache == null) {
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Failed to find cache with name: " + cacheName);
+                        "Failed to find cache with name: " + req.cacheName());
+                }
 
                 if (req.keepBinary())
                     cache = cache.withKeepBinary();

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="IgniteConfiguration"/> has all properties from Java configuration APIs.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class IgniteConfigurationParityTest
     {
         /** Known property name mappings Java -> .NET. */
@@ -37,7 +37,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] UnneededProperties =
         {
             "PeerClassLoadingThreadPoolSize",
-            "IgfsThreadPoolSize",
             "UtilityCacheKeepAliveTime",
             "MBeanServer",
             "isPeerClassLoadingEnabled",
@@ -100,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         public void TestIgniteConfiguration()
         {
             ParityTest.CheckConfigurationParity(
-                @"modules\core\src\main\java\org\apache\ignite\configuration\IgniteConfiguration.java", 
+                @"modules\core\src\main\java\org\apache\ignite\configuration\IgniteConfiguration.java",
                 typeof(IgniteConfiguration),
                 UnneededProperties,
                 MissingProperties,
