@@ -110,6 +110,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** String mode. */
         public static readonly bool UseStringSerializationVer2 =
             (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
+        
+        /** Cached maps of enum members per type. */
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues = 
+            new CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>>();
 
         /// <summary>
         /// Default marshaller.
@@ -1748,6 +1752,76 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return TimeSpan.MinValue;
 
             return TimeSpan.FromMilliseconds(ms);
+        }
+        
+        /// <summary>
+        /// Gets the enum values.
+        /// </summary>
+        public static IDictionary<string, int> GetEnumValues(Type enumType)
+        {
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsEnum);
+            
+            Dictionary<string,int> res;
+            if (EnumValues.TryGetValue(enumType, out res))
+            {
+                return res;
+            }
+
+            var values = Enum.GetValues(enumType);
+            res = new Dictionary<string, int>(values.Length);
+
+            var underlyingType = Enum.GetUnderlyingType(enumType);
+
+            foreach (var value in values)
+            {
+                var name = Enum.GetName(enumType, value);
+                Debug.Assert(name != null);
+
+                res[name] = GetEnumValueAsInt(underlyingType, value);
+            }
+
+            EnumValues.Set(enumType, res);
+            
+            return res;
+        }
+        
+        /// <summary>
+        /// Gets the enum value as int.
+        /// </summary>
+        private static int GetEnumValueAsInt(Type underlyingType, object value)
+        {
+            if (underlyingType == typeof(int))
+            {
+                return (int) value;
+            }
+
+            if (underlyingType == typeof(byte))
+            {
+                return (byte) value;
+            }
+
+            if (underlyingType == typeof(sbyte))
+            {
+                return (sbyte) value;
+            }
+
+            if (underlyingType == typeof(short))
+            {
+                return (short) value;
+            }
+
+            if (underlyingType == typeof(ushort))
+            {
+                return (ushort) value;
+            }
+
+            if (underlyingType == typeof(uint))
+            {
+                return unchecked((int) (uint) value);
+            }
+
+            throw new BinaryObjectException("Unexpected enum underlying type: " + underlyingType);
         }
 
         /// <summary>

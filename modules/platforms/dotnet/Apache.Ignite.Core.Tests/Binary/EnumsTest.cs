@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Linq;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
@@ -85,6 +86,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     Assert.AreEqual(string.Format("{0} [typeId={1}, enumValue={2}, enumValueName={3}]",
                         typeof(T).FullName, binRes.GetBinaryType().TypeId, binRes.EnumValue, val), binRes.ToString());
+
+                    var expectedEnumNames = Enum.GetValues(typeof(T)).OfType<T>().Select(x => x.ToString()).ToList();
+                    var actualEnumNames = binRes.GetBinaryType().GetEnumValues().Select(v => v.EnumName).ToList();
+                    
+                    CollectionAssert.AreEquivalent(expectedEnumNames, actualEnumNames);
                 }
                 else
                 {

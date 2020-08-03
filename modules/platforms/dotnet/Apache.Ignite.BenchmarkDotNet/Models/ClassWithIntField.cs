@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+namespace Apache.Ignite.BenchmarkDotNet.Models
 {
-    using Apache.Ignite.BenchmarkDotNet.ThinClient;
-    using global::BenchmarkDotNet.Running;
-
     /// <summary>
-    /// Benchmark runner.
+    /// Benchmark model: class with an int field.
     /// </summary>
-    public static class Program
+    public class ClassWithIntField
     {
-        /// <summary>
-        /// Main.
-        /// </summary>
-        public static void Main()
-        {
-            BenchmarkRunner.Run<ThinClientCachePutBenchmark>();
-        }
+        public int Foo { get; set; }
     }
 }
