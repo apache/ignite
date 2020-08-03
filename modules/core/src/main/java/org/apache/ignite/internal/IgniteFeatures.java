@@ -127,7 +127,7 @@ public enum IgniteFeatures {
     SPECIFIED_SEQ_PK_KEYS(45),
 
     /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
-    CACHE_GROUP_KEY_CHANGE(41);
+    CACHE_GROUP_KEY_CHANGE(43);
 
     /**
      * Unique feature identifier.
