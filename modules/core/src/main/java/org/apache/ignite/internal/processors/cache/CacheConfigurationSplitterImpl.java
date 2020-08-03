@@ -29,7 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
- *
+ * Splits cache configuration into two parts that can be serialized, deserialized separately.
+ * This eliminates the need to deserialize part of the configuration and therefore,
+ * it does not require user classes on non-affinity nodes.
  */
 public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitter {
     /** Cache configuration to hold default field values. */
@@ -42,15 +44,15 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
     private final Marshaller marshaller;
 
     /**
-     * @param marshaller Marshaller.
+     * Creates a new instance of splitter.
+     *
+     * @param marshaller Marshaller to be used for seserialization.
      */
     public CacheConfigurationSplitterImpl(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 
-    /**
-     * @param ccfg Cache configuration.
-     */
+    /** {@inheritDoc} */
     @Override public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg) {
         try {
             CacheConfiguration cfgCp = new CacheConfiguration(ccfg);
@@ -105,7 +107,10 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
     }
 
     /**
-     * @param val Value.
+     * @param fieldName Field name to serialize.
+     * @param val Field value.
+     *
+     * @return Serialized value.
      */
     private byte[] serialize(String fieldName, Object val) {
         try {
