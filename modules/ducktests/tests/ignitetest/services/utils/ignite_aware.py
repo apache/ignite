@@ -66,7 +66,7 @@ class IgniteAwareService(BackgroundThreadService):
         libs = modules or []
         libs.extend(["ignite-log4j"])
 
-        self.user_libs = map(lambda m: self.path.module(m) + "/*", libs)
+        self.user_libs = list(map(lambda m: self.path.module(m) + "/*", libs))
 
     def start_node(self, node):
         self.init_persistent(node)
