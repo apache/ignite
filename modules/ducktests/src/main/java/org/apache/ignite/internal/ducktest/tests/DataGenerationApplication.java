@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -35,13 +35,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** {@inheritDoc} */
-    @Override protected void run(Map<String, String> args) {
+    @Override protected void run(JsonNode jsonNode) {
         log.info("Creating cache...");
 
-        IgniteCache<Integer, Integer> cache = ignite.createCache(args.get("cacheName"));
+        IgniteCache<Integer, Integer> cache = ignite.createCache(jsonNode.get("cacheName").asText());
 
         try (IgniteDataStreamer<Integer, Integer> stmr = ignite.dataStreamer(cache.getName())) {
-            for (int i = 0; i < Integer.parseInt(args.get("range")); i++) {
+            for (int i = 0; i < jsonNode.get("range").asInt(); i++) {
                 stmr.addData(i, i);
 
                 if (i % 10_000 == 0)

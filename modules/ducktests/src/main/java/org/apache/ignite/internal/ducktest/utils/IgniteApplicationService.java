@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -61,12 +61,14 @@ public class IgniteApplicationService {
         try (Ignite ignite = Ignition.start(cfg)) {
             IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor(Ignite.class).newInstance(ignite);
 
-            ObjectReader reader = new ObjectMapper().readerFor(Map.class);
+            ObjectMapper mapper = new ObjectMapper();
 
-            Map<String, String> map = params.length > 2 ?
-                reader.readValue(new String(Base64.getDecoder().decode(params[2]), UTF_8)) : new HashMap<>();
+            ObjectReader reader = mapper.readerFor(Map.class);
 
-            app.start(map);
+            JsonNode jsonNode = params.length > 2 ?
+                reader.readTree(new String(Base64.getDecoder().decode(params[2]), UTF_8)) : mapper.createObjectNode();
+
+            app.start(jsonNode);
         }
     }
 }

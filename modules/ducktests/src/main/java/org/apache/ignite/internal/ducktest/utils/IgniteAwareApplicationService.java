@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.log4j.LogManager;
@@ -45,12 +47,15 @@ public class IgniteAwareApplicationService {
 
         IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
-        ObjectReader reader = new ObjectMapper().readerFor(Map.class);
+        ObjectMapper mapper = new ObjectMapper();
 
-        Map<String, String> map = reader.readValue(new String(Base64.getDecoder().decode(params[2]), UTF_8));
+        ObjectReader reader = mapper.readerFor(Map.class);
 
-        map.put("cfgPath", params[1]);
+        JsonNode jsonNode = params.length > 2 ?
+            reader.readTree(new String(Base64.getDecoder().decode(params[2]), UTF_8)) : mapper.createObjectNode();
 
-        app.start(map);
+        ((ObjectNode)jsonNode).put("cfgPath", params[1]);
+
+        app.start(jsonNode);
     }
 }
