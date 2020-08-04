@@ -38,5 +38,9 @@ public class IgniteCacheCloseTest extends GridCommonAbstractTest {
         cache.close();
 
         assertTrue(cache.isClosed());
+
+        IgniteCache<Object, Object> cacheNew = node.cache(DEFAULT_CACHE_NAME);
+
+        assertFalse(cacheNew.isClosed());
     }
 }

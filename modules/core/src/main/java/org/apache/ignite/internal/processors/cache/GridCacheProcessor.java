@@ -2695,17 +2695,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cache != null : cctx.name();
 
-            sharedCtx.io().writeLock();
-            try {
-                completeProxyInitialize(cctx.name());
+            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
 
-                jCacheProxies.remove(cctx.name());
-
-                sharedCtx.removeCacheContext(cctx, false);
-            }
-            finally {
-                sharedCtx.io().writeUnlock();
-            }
+            completeProxyInitialize(cctx.name());
         }
         else {
             cctx.gate().onStopped();
@@ -4514,15 +4506,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Try to start cache, there is no guarantee that cache will be instantiated.
         if (proxy == null) {
-            final GridCacheAdapter<?, ?> cache = caches.get(cacheName);
-            if (cache != null && sharedCtx.cacheContext(cache.context().cacheId()) == null) {
-                addjCacheProxy(cacheName, new IgniteCacheProxyImpl(cache.context(), cache, false));
-                sharedCtx.addCacheContext(cache.context());
-                completeProxyInitialize(cacheName);
-            }
-            else {
-                dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
-            }
+            dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
 
             proxy = jcacheProxy(cacheName, true);
         }
