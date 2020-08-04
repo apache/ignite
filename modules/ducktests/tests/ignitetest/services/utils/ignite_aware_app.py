@@ -28,6 +28,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
     """
     The base class to build Ignite aware application written on java.
     """
+
     # pylint: disable=R0913
     def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
@@ -105,26 +106,16 @@ class IgniteAwareApplicationService(IgniteAwareService):
         """
         :return: Export string of additional environment variables.
         """
+        if not self.version.is_dev:
+            # Jackson requred to parse application params at java side. Release's version should be used.
+            for line in self.nodes[0].account.ssh_capture(
+                    "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home):
+                self.user_libs.extend([line])
+
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
                "export EXCLUDE_TEST_CLASSES=true; " + \
                "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=self.PERSISTENT_ROOT) + \
-               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*%s; " % \
-               (self.user_libs, self.app_service_libs())
-
-    def app_service_libs(self):
-        """
-        :return: Libs required to start IgniteAwareApplication java implementation.
-        """
-        if self.version.is_dev:
-            return ""
-
-        libs = ""
-
-        for line in self.nodes[0].account.ssh_capture(
-                "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home):
-            libs += ":" + line
-
-        return libs
+               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*; " % (":".join(self.user_libs))
 
     def extract_result(self, name):
         """
