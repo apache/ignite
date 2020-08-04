@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.binary.BinaryClassLoaderMultiJvmTest;
 import org.apache.ignite.internal.binary.BinaryClassLoaderTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
@@ -66,6 +67,7 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, BinaryClassLoaderTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, BinaryClassLoaderMultiJvmTest.class, ignoredTests);
 
         return suite;
     }

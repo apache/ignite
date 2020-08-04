@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
@@ -68,6 +69,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
     }
 
+    @Test
     public void testLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
@@ -98,6 +100,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
     public void testClientLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});

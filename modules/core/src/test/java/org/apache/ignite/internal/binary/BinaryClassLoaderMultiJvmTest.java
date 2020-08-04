@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
@@ -81,6 +82,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
@@ -132,6 +134,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testClientLoadClassFromBinary() throws Exception {
         ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
