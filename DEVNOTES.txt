@@ -52,28 +52,6 @@ Apache Ignite with LGPL Maven Build Instructions
    Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
 
-Ignite Hadoop Accelerator Maven Build Instructions
-==================================================
-1) Compile and install:
-
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests
-
-   Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
-   Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
-   For example:
-
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
-
-2) Assembly Hadoop Accelerator:
-
-        mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
-
-   Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
-   assembly will also include integration module for Apache Spark.
-
-   NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
-
-
 Ignite C++ Build Instructions
 =============================
 Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
@@ -164,10 +142,6 @@ Ignite Release Instructions
    3.3) Assembly Apache Ignite:
 
                 mvn initialize -Prelease
-
-   3.4) Assembly Hadoop Accelerator:
-
-                mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
 
    NOTE: Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
    release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.
