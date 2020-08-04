@@ -21,6 +21,7 @@
 #include "impl/response_status.h"
 
 #include "impl/ignite_client_impl.h"
+#include "impl/transactions/transactions_impl.h"
 
 namespace ignite
 {

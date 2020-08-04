@@ -5,6 +5,8 @@
 
 #include "string"
 
+using namespace ignite::common::concurrent;
+
 namespace ignite
 {
     namespace impl
@@ -13,7 +15,10 @@ namespace ignite
         {
             namespace transactions
             {
-                TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) : router(router)
+                TransactionImpl::TL_SP_TransactionsImpl TransactionImpl::threadTx;
+
+                TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
+                    router(router)
                 {
                     // No-op.
                 }
@@ -23,28 +28,59 @@ namespace ignite
                     // No-op.
                 }
 
-                TransactionImpl* TransactionsImpl::txStart()
+                SharedPointer<TransactionImpl> TransactionsImpl::TxStart()
                 {
-                    TxStartRequest<RequestType::OP_TX_START> req(ignite::thin::transactions::TransactionConcurrency::PESSIMISTIC,
-                                                                 ignite::thin::transactions::TransactionIsolation::READ_COMMITTED,
-                                                                 0, 0);
+                    TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC;
+
+                    TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED;
+
+                    int64_t timeout = 0;
+
+                    int32_t txSize = 0;
+
+                    //return new TransactionImpl(new DataRouter(cfg), rsp.GetValue());
+
+                    //IgniteError err = IgniteError();
+
+                    SharedPointer<TransactionImpl> tx = TransactionImpl::Create(this,
+                        concurrency, isolation, timeout, txSize);
+
+                    return tx;
+                }
+
+                TransactionImpl::SP_TransactionImpl TransactionImpl::Create(
+                    SP_TransactionsImpl txs, TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize)
+                {
+                    TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize);
 
                     Int32Response rsp;
 
-                    //Response rsp;
-
-                    SyncMessage(req, rsp);
+                    txs.Get()->SyncMessage(req, rsp);
 
                     std::cout << "!!! " << rsp.GetValue() << std::endl;
 
-                    return new TransactionImpl(this, rsp.GetValue());
+                    int64_t id = rsp.GetValue();
+
+                    SP_TransactionImpl tx;
+
+                    if (rsp.GetError().empty())
+                    {
+                        tx = SP_TransactionImpl(new TransactionImpl(txs, id, concurrency,
+                            isolation, timeout, txSize));
+
+                        threadTx.Set(tx);
+                    }
+
+                    return tx;
                 }
 
                 template<typename ReqT, typename RspT>
                 void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
                 {
+                    std::cout << "!!! SyncMessage1: " << router.Get() << std::endl;
                     router.Get()->SyncMessage(req, rsp);
 
+                    std::cout << "!!! SyncMessage2: " << std::endl;
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
@@ -54,7 +90,9 @@ namespace ignite
 
                     Response rsp;
 
-                    reinterpret_cast<TransactionsImpl *>(impl)->SyncMessage(req, rsp);
+                    std::cout << "!!! " << std::endl;
+
+                    //std::cout << "!!! " << rsp.GetStatus() << " " << rsp.GetError() << std::endl;
                 }
             }
         }

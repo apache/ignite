@@ -33,6 +33,10 @@ public:
     IgniteClientTestSuiteFixture1()
     {
         serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
+
+        //int i;
+
+        //std::cin >> i;
     }
 
     ~IgniteClientTestSuiteFixture1()
@@ -62,11 +66,9 @@ BOOST_AUTO_TEST_CASE(TestTx)
 
     cache.Put(1, 2);
 
-    BOOST_REQUIRE_EQUAL(2, cache.Get(1));
-
     //tx->commit();
 
-    //BOOST_REQUIRE_EQUAL(2, cache.Get(1));
+    BOOST_REQUIRE_EQUAL(2, cache.Get(1));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

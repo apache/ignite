@@ -37,7 +37,7 @@ namespace ignite
             {
                 TransactionProxy* TransactionsProxy::txStart()
                 {
-                    return new TransactionProxy(GetTxsImpl(impl).txStart());
+                    return new TransactionProxy(GetTxsImpl(impl).TxStart());
                     //return GetTxImpl((void*)GetTxsImpl(impl).txStart());
                 }
 

@@ -612,10 +612,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const                {
-                    //CacheRequest<OpCode>::Write(writer, ver);
-                    //writer.WriteInt64(11);
-
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const {
                     writer.WriteInt8(concurrency);
                     writer.WriteInt8(isolation);
                     writer.WriteInt64(timeout);
@@ -651,6 +648,7 @@ namespace ignite
                     commited(_commited),
                     txId(_txId)
                 {
+                    std::cout << "!!!111 TxEndRequest" << std::endl;
                 }
 
                 /**
@@ -666,9 +664,8 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const                {
-                    //CacheRequest<OpCode>::Write(writer, ver);
-                    //writer.WriteInt64(11);
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const {
+                    std::cout << "!!!111" << std::endl;
 
                     writer.WriteInt32(txId);
                     writer.WriteBool(true);

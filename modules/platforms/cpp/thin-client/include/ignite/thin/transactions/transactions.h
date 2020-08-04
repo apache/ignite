@@ -31,8 +31,6 @@ namespace ignite
 
                 void commit()
                 {
-                    //std::cout << "commit2" << std::endl;
-
                     proxy.commit();
                 }
 
@@ -65,7 +63,6 @@ namespace ignite
                 ClientTransaction* txStart()
                 {
                     return new ClientTransaction(proxy.txStart());
-                    //return reinterpret_cast<ClientTransaction*>(proxy.txStart());
                 }
 
                 ClientTransaction* txStart(TransactionConcurrency, TransactionIsolation);
