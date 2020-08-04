@@ -301,20 +301,12 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
-        /**
-         * Writes message to the socket.
-         *
-         * @param sock Socket.
-         * @param msg Message.
-         * @param data Raw data to write.
-         * @param timeout Socket write timeout.
-         * @throws IOException If IO failed or write timed out.
-         */
-        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, byte[] data,
             long timeout) throws IOException {
             assertNotFailedNode(sock);
 
-            if (isDrop(msg))
+            if (isDrop(null))
                 return;
 
             super.writeToSocket(sock, data, timeout);
@@ -359,7 +351,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
             boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
 
-            if (drop)
+            if (drop && msg != null)
                 ignite.log().info(">> Drop message " + msg);
 
             return drop;

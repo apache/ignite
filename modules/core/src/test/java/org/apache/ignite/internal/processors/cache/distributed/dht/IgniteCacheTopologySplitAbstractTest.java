@@ -217,9 +217,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-                Socket sock,
-                byte[] data,
-                long timeout
+            Socket sock,
+            byte[] data,
+            long timeout
         ) throws IOException {
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 

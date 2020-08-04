@@ -2578,20 +2578,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 afterWrite.apply(msg, sock);
         }
 
-        /**
-         * Writes message to the socket.
-         *
-         * @param sock Socket.
-         * @param msg Message.
-         * @param data Raw data to write.
-         * @param timeout Socket write timeout.
-         * @throws IOException If IO failed or write timed out.
-         */
-        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] msgBytes,
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock,  byte[] msgBytes,
                                                long timeout) throws IOException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(sock, null))
                 return;
 
             super.writeToSocket(sock, msgBytes, timeout);

@@ -449,16 +449,15 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         private Exception err;
 
         /**  */
-        protected void writeToSocket(
+        @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException {
             if (writeToSocketDelay > 0) {
                 try {
-                    U.dumpStack(log, "Before sleep [msg=" + msg +
-                        ", arrLen=" + (data != null ? data.length : "n/a") + ']');
+                    U.dumpStack(log, "Before sleep [" +
+                        "arrLen=" + (data != null ? data.length : "n/a") + ']');
 
                     Thread.sleep(writeToSocketDelay);
                 }
