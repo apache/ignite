@@ -35,6 +35,7 @@ public class GridSandboxedClientWithoutNetworkTest extends GridCommonAbstractTes
     /** */
     private int locPort;
 
+    /** */
     private boolean useAnyLocAddress;
 
     /** {@inheritDoc} */
@@ -50,6 +51,8 @@ public class GridSandboxedClientWithoutNetworkTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        IgniteUtils.INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
+
         super.afterTest();
 
         stopAllGrids();

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
@@ -105,7 +106,8 @@ import org.junit.runners.Suite;
     TooManyOpenFilesTcpCommunicationSpiTest.class,
 
     GridTcpCommunicationInverseConnectionEstablishingTest.class,
-    GridTotallyUnreachableClientTest.class
+    GridTotallyUnreachableClientTest.class,
+    GridSandboxedClientWithoutNetworkTest.class
 
     //GridCacheDhtLockBackupSelfTest.class,
 })
