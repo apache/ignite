@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 
 import static org.junit.Assert.assertNotNull;
@@ -80,6 +81,10 @@ public class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
         byte[] data,
         long timeout
     ) throws IOException {
+        // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+        // connRecoveryTimeout.
+        TcpDiscoveryAbstractMessage msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 
