@@ -41,7 +41,8 @@ import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,8 +63,8 @@ public class CassandraSessionImplTest {
     public void executeFailureTest() {
         Session session1 = mock(Session.class);
         Session session2 = mock(Session.class);
-        when(session1.prepare(any(String.class))).thenReturn(preparedStatement1);
-        when(session2.prepare(any(String.class))).thenReturn(preparedStatement2);
+        when(session1.prepare(nullable(String.class))).thenReturn(preparedStatement1);
+        when(session2.prepare(nullable(String.class))).thenReturn(preparedStatement2);
 
         ResultSetFuture rsFuture = mock(ResultSetFuture.class);
         ResultSet rs = mock(ResultSet.class);
@@ -100,8 +101,8 @@ public class CassandraSessionImplTest {
         cassandraSession.execute(batchExecutionAssistant, data);
 
         verify(cluster, times(2)).connect();
-        verify(session1, times(1)).prepare(any(String.class));
-        verify(session2, times(1)).prepare(any(String.class));
+        verify(session1, times(1)).prepare(nullable(String.class));
+        verify(session2, times(1)).prepare(nullable(String.class));
         assertEquals(10, batchExecutionAssistant.processedCount());
     }
 
