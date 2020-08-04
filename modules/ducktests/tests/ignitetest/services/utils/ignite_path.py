@@ -36,7 +36,7 @@ class IgnitePath:
         self.project = context.globals.get("project", "ignite")
 
         home_dir = "%s-%s" % (self.project, str(self.version))
-        self._home = os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
+        self.home = os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
 
     def module(self, module_name):
         """
@@ -48,17 +48,11 @@ class IgnitePath:
         else:
             module_path = os.path.join("libs", "optional", module_name)
 
-        return os.path.join(self._home, module_path)
+        return os.path.join(self.home, module_path)
 
     def script(self, script_name):
         """
         :param script_name: name of Ignite script
         :return: absolute path to the specified script
         """
-        return os.path.join(self._home, "bin", script_name)
-
-    def home(self):
-        """
-        :return: home directory
-        """
-        return self._home
+        return os.path.join(self.home, "bin", script_name)

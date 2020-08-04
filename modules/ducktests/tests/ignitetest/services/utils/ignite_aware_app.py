@@ -121,7 +121,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         libs = ""
 
         for line in self.nodes[0].account.ssh_capture(
-                "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home()):
+                "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home):
             libs += ":" + line
 
         return libs
