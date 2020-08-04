@@ -15,17 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.storm;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Apache Storm streamer tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StormIgniteStreamerSelfTest.class
-})
-public class IgniteStormStreamerSelfTestSuite {
+namespace Apache.Ignite.BenchmarkDotNet.Models
+{
+    /// <summary>
+    /// Benchmark model: class with a custom enum field.
+    /// </summary>
+    public class ClassWithEnumField
+    {
+        public BenchmarkEnum BenchmarkEnum { get; set; } 
+    }
 }

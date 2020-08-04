@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -147,9 +146,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final ThreadLocal<SimpleDateFormat> TIME_FORMAT =
         ThreadLocal.withInitial(() -> new SimpleDateFormat("HH:mm:ss.SSS"));
 
@@ -229,6 +225,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private final AtomicLong commitOrRollbackTime = new AtomicLong(0);
 
     /** */
+    @GridToStringExclude
     private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
@@ -253,13 +250,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private long crdVer;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxLocal() {
-        // No-op.
-    }
 
     /**
      * @param ctx Cache registry.

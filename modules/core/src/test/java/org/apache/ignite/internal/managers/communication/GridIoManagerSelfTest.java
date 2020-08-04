@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -201,7 +201,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * Mockito argument matcher to compare collections produced by {@code F.view()} methods.
      */
-    private static class IsEqualCollection extends ArgumentMatcher<Collection<? extends ClusterNode>> {
+    private static class IsEqualCollection implements ArgumentMatcher<Collection<? extends ClusterNode>> {
         /** Expected collection. */
         private final Collection<? extends ClusterNode> expCol;
 
@@ -221,8 +221,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
          * @param colToCheck Collection to be matched against the expected one.
          * @return True if collections matches.
          */
-        @Override public boolean matches(Object colToCheck) {
-            return CollectionUtils.isEqualCollection(expCol, (Collection)colToCheck);
+        @Override public boolean matches(Collection<? extends ClusterNode> colToCheck) {
+            return CollectionUtils.isEqualCollection(expCol, colToCheck);
         }
     }
 
