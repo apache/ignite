@@ -280,9 +280,9 @@ Ignite does not support the following sub-features:
 | `E171` SQLSTATE support
 | Ignite provides partial support for this feature implementing a subset of standard error codes and introducing custom ones. A full list of errors​ supported by Ignite can be found here:
 
-link:developers-guide/SQL/JDBC/jdbc-driver#error-codes[JDBC Error Codes]
+link:SQL/JDBC/jdbc-driver#error-codes[JDBC Error Codes]
 
-link:developers-guide/SQL/ODBC/error-codes[ODBC Error Codes]
+link:SQL/ODBC/error-codes[ODBC Error Codes]
 
 | `E182` Host language Binding (previously "Module Language")
 | Ignite does not support this feature.

@@ -378,11 +378,11 @@ NOTE: Be cautious: if the cache contains a large set of data, the dictionary may
 
 == Executing SQL Statements
 
-The Python thin client supports all link:sql-reference/sql-reference-overview[SQL commands] that are supported by Ignite.
+The Python thin client supports all link:sql-reference[SQL commands] that are supported by Ignite.
 The commands are executed via the `sql()` method of the cache object.
 The `sql()` method returns a generator that yields the resulting rows.
 
-Refer to the link:sql-reference/sql-reference-overview[SQL Reference] section for the list of supported commands.
+Refer to the link:sql-reference[SQL Reference] section for the list of supported commands.
 
 [source, python]
 -------------------------------------------------------------------------------

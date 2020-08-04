@@ -258,9 +258,6 @@ This view contains information about the SQL queries currently executing on the 
 | DURATION| BIGINT | The duration of the query up to the current moment.
 | MEMORY_CURRENT| BIGINT | The amount of memory the query uses at the current moment, in bytes.
 | MEMORY_MAX| BIGINT | The maximum amount of memory the query has used during its execution, in bytes.
-| DISK_ALLOCATION_CURRENT| BIGINT | The amount of disk space the query uses at the moment, in bytes. See link:memory-configuration/memory-quotas#query-offloading[Query Offloading] for details.
-| DISK_ALLOCATION_MAX| BIGINT | Maximum amount of disk space the query has used during its execution, in bytes.
-| DISK_ALLOCATION_TOTAL| BIGINT | The query can allocate different amount of disk space at different stages of execution (because query execution follows the map-reduce pattern). This column returns the sum of those amounts, in bytes.
 | INITIATOR_ID| VARCHAR a| A string identifying the entity that started the query. By default, the `initiator_id` has different format depending on where the query was started:
 
 * link:SQL/JDBC/jdbc-driver[JDBC thin driver]: `jdbc-thin:<client_IP_host>:<client_IP_port>@<user_name>`
@@ -268,7 +265,7 @@ This view contains information about the SQL queries currently executing on the 
 * link:SQL/JDBC/jdbc-client-driver[JDBC client driver]: `jdbc-v2:<client_IP_host>:sqlGrid-ignite-jdbc-driver-<UUID>`
 * link:distributed-computing/distributed-computing#executing-tasks[Task]: `<job_class_name>:<job_ID>`
 
-The query initiator can be set via SQL API: link:{javadoc_base_url}/org/apache/ignite/cache/query/SqlFieldsQuery.html[SqlFieldsQuery].
+The query initiator can be set via SQL API: javadoc:org.apache.ignite.cache.query.SqlFieldsQuery[].
 
 |===
 
@@ -291,10 +288,6 @@ This system view contains the list of SQL queries executed on the node where the
 | LAST_START_TIME| TIMESTAMP| The timestamp when the query was started last time.
 | MEMORY_MIN| BIGINT| Minimum amount of memory the query has used, in bytes.
 | MEMORY_MAX| BIGINT| Maximum amount of memory the query has used, in bytes.
-| DISK_ALLOCATION_MIN| BIGINT| Minimum allocated disk space the query has used. See link:memory-configuration/memory-quotas#query-offloading[Query Offloading] for details.
-| DISK_ALLOCATION_MAX| BIGINT| Maximum allocated disk space the query has used.
-| DISK_ALLOCATION_TOTAL_MIN| BIGINT| Minimum total allocated disk space the query has used. See the explanation for the `DISK_ALLOCATION_TOTAL` column in <<LOCAL_SQL_RUNNING_QUERIES>>.
-| DISK_ALLOCATION_TOTAL_MAX| BIGINT |Maximum total allocated disk space the query has used.
 
 |===
 
@@ -318,14 +311,14 @@ The INDEXES view contains information about SQL indexes.
 | CACHE_GROUP_NAME |VARCHAR |  The cache group name.
 | CACHE_NAME |VARCHAR |  The cache name.
 | CACHE_ID | INT | Cache ID.
-|INLINE_SIZE | INT | The link:perf-troubleshooting-guide/sql-tuning#increasing-index-inline-size[inline size] in bytes.
+|INLINE_SIZE | INT | The link:SQL/sql-tuning#increasing-index-inline-size[inline size] in bytes.
 | IS_PK | BOOLEAN | Indicates whether the index is for the primary key.
 | IS_UNIQUE | BOOLEAN | Indicates if the index is unique.
 |===
 
 == Examples
 
-To query the system views using the link:tools-analytics/sqlline[SQLLine] tool, connect to the SYS schema as follows:
+To query the system views using the link:sqlline[SQLLine] tool, connect to the SYS schema as follows:
 
 [source, shell]
 ----

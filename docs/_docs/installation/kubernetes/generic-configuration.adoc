@@ -159,7 +159,7 @@ Our Deployment configuration will deploy a ReplicaSet with two pods running Igni
 
 In the container's configuration, we will:
 
-* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installing-using-docker#enabling-modules[modules].
+* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation/installing-using-docker#enabling-modules[modules].
 * Use the configuration file from the ConfigMap we created earlier.
 * Open a number of ports:
 ** 47100 — the communication port

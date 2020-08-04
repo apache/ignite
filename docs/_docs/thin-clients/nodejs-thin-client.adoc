@@ -187,7 +187,7 @@ include::{source_code_dir}/scanquery.js[tag="scan-query", indent=0]
 ----
 
 == Executing SQL Statements
-The Node.js thin client supports all link:sql-reference/sql-reference-overview[SQL commands] that are supported by Ignite.
+The Node.js thin client supports all link:sql-reference[SQL commands] that are supported by Ignite.
 The commands are executed via the `query(SqlFieldQuery)` method of the cache object.
 The method accepts an instance of `SqlFieldsQuery` that represents a SQL statement and returns an instance of the `SqlFieldsCursor` class. Use the cursor to iterate over the result set or get all results at once.
 

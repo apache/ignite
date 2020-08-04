@@ -311,6 +311,7 @@ They allow you to get notification about different stages of transaction executi
 |===
 
 
+////
 == Management Task Events
 
 Management task events represent the tasks that are executed by Visor or Web Console.
@@ -323,3 +324,4 @@ This event type can be used to monitor a link:security/cluster-monitor-audit[Web
 |===
 
 
+////

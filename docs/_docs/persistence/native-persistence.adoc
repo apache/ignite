@@ -192,7 +192,7 @@ If a node is terminated abruptly during update operations, it is very likely tha
 === WAL Archive
 The WAL archive is used to store WAL segments that may be needed to recover the node after a crash. The number of segments kept in the archive is such that the total size of all segments does not exceed the specified size of the WAL archive.
 
-By default, the maximum size of the WAL archive (total space it occupies on disk) is defined as 4 times the size of the link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer]. You can change that value in the <<Configuration Properties,configuration>>.
+By default, the maximum size of the WAL archive (total space it occupies on disk) is defined as 4 times the size of the link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer]. You can change that value in the <<Configuration Properties,configuration>>.
 
 CAUTION: Setting the WAL archive size to a value lower than the default may impact performance and should be tested before being used in production.
 
@@ -265,6 +265,32 @@ If the segments are needed (for example, to re-balance data between nodes), they
 
 See the <<Configuration Properties>> section below to learn how to enable WAL archive compaction.
 
+=== WAL Records Compression
+
+As described in the link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-WAL[design document], physical and logical records that represent data updates are written to the WAL files before the user operation is acknowledged.
+Ignite can compress WAL records in memory before they are written to disk to save space.
+
+WAL Records Compression requires that the 'ignite-compress' module be enabled. See link:setup#enabling-modules[Enabling Modules].
+
+By default WAL records compression is disabled.
+To enable it, set the compression algorithm and compression level in the data storage configuration:
+
+[tabs]
+--
+tab:XML[]
+
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=wal-records-compression, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[unsupported]
+--
+
+The supported compression algorithms are listed in javadoc:org.apache.ignite.configuration.DiskPageCompression[].
+
 === Disabling WAL Archive
 
 In some cases, you may want to disable WAL archiving, for example, to reduce the overhead associated with copying of WAL segments to the archive. There can be a situation where Ignite writes data to WAL segments faster than the segments are copied to the archive. This may create an I/O bottleneck that can freeze the operation of the node. If you experience such problems, try disabling WAL archiving.
@@ -297,7 +323,7 @@ This process helps to utilize disk space frugally by keeping pages in the most u
 See the following related documentation:
 
 * link:monitoring-metrics/metrics#monitoring-checkpointing-operations[Monitoring Checkpointing Operations].
-* link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size]
+* link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size]
 
 == Configuration Properties
 
@@ -318,5 +344,5 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 
 | `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
-|`maxWalArchiveSize`  | The maximum size (in bytes) the WAL archive can occupy on the file system. | Four times the size of the link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer].
+|`maxWalArchiveSize`  | The maximum size (in bytes) the WAL archive can occupy on the file system. | Four times the size of the link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer].
 |=======================================================================

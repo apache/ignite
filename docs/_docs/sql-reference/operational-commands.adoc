@@ -33,7 +33,7 @@ COPY FROM '/path/to/local/file.csv' INTO city (
   ID, Name, CountryCode, District, Population) FORMAT CSV
 ----
 
-In the above command, substitute `/path/to/local/file.csv` with the actual path to your CSV file. For instance, you can use `city.csv` which is shipped with the latest Ignite. 
+In the above command, substitute `/path/to/local/file.csv` with the actual path to your CSV file. For instance, you can use `city.csv` which is shipped with the latest Ignite.
 You can find it in your `{IGNITE_HOME}/examples/src/main/resources/sql/` directory.
 
 == SET STREAMING
@@ -101,7 +101,7 @@ While streaming mode allows you to load data much faster than other data loading
 2. Due to streaming mode's asynchronous nature, you cannot know update counts for every statement executed; all JDBC/ODBC commands returning update counts will return 0.
 
 === Example
-As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from link:tools-analytics/sqlline[SQLLine, window=_blank], as shown below:
+As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from link:sqlline[SQLLine, window=_blank], as shown below:
 
 [source,shell]
 ----

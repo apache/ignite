@@ -226,7 +226,7 @@ Refer to the link:sql-reference/ddl#create-index[CREATE INDEX] section.
 
 Proper index inline size can help speed up queries on indexed fields.
 //For primitive types and BinaryObjects, Ignite uses a predefined inline index size
-Refer to the dedicated section in the link:perf-troubleshooting-guide/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
+Refer to the dedicated section in the link:SQL/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
 
 In most cases, you will only need to set the inline size for indexes on variable-length fields, such as strings or arrays.
 The default value is 10.

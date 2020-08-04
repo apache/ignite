@@ -5,8 +5,6 @@
 
 The Java thin client is a lightweight client that connects to the cluster via a standard socket connection. It does not become a part of the cluster topology, never holds any data, and is not used as a destination for compute calculations. The thin client simply establishes a socket connection to a standard node​ and performs all operations through that node.
 
-To start a single node cluster that you can use to run examples, refer to the link:getting-started/quick-start/java[Java Quick Start Guide].
-
 == Setting Up
 If you use maven or gradle, add the `ignite-core` dependency to your application:
 

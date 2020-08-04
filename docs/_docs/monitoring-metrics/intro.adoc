@@ -26,7 +26,7 @@ Note that a node consists of several layers: hardware, the operating system, the
       * For log based monitoring, the key is that you can act proactively, watch the logs for trends/etc., don't just wait to check the logs until something breaks.
   - Network: ping monitoring, network hardware monitoring, TCP dumps
 
-This should give you a good place to start for setting up monitoring of your hardware, operating system, and network. To monitor the application layer (the nodes that make up your in-memory computing solution), you'll need to perform Ignite-specific monitoring via metrics you access with JMX/Beans or Web Console, or programmatically.
+This should give you a good place to start for setting up monitoring of your hardware, operating system, and network. To monitor the application layer (the nodes that make up your in-memory computing solution), you'll need to perform Ignite-specific monitoring via metrics you access with JMX/Beans or programmatically.
 
 
 == Global vs. Node-specific Metrics

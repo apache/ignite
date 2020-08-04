@@ -1,11 +1,11 @@
 = JDBC Client Driver
 :javaFile: {javaCodeDir}/JDBCClientDriver.java
 
-JDBC Client Driver interacts with the cluster by means of a link:getting-started/concepts#clustering-servers-and-clients[client node].
+JDBC Client Driver interacts with the cluster by means of a client node.
 
 == JDBC Client Driver
 
-The JDBC Client Driver connects to the cluster by using a link:getting-started/concepts#clustering-servers-and-clients[client node] connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
+The JDBC Client Driver connects to the cluster by using a lclient node connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
 
 - All the JARs under `{IGNITE_HOME}\libs` directory.
 - All the JARs under `{IGNITE_HOME}\ignite-indexing` and `{IGNITE_HOME}\ignite-spring` directories.

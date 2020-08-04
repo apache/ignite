@@ -177,7 +177,7 @@ Checkpointing may slow down cluster operations.
 You may want to monitor how much time each checkpoint operation takes, so that you can tune the properties that affect checkpointing.
 You may also want to monitor the disk performance to see if the slow-down is caused by external reasons.
 
-See link:perf-troubleshooting-guide/persistence-tuning#pages-writes-throttling[Pages Writes Throttling] and link:perf-troubleshooting-guide/persistence-tuning#adjusting-checkpointing-buffer-size[Checkpointing Buffer Size] for performance tips.
+See link:persistence/persistence-tuning#pages-writes-throttling[Pages Writes Throttling] and link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Checkpointing Buffer Size] for performance tips.
 
 Mbean's Object Name: ::
 +
