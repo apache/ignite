@@ -514,13 +514,14 @@ public class CheckpointHistory {
      *
      * @param groupsAndPartitions Groups and partitions to find and reserve earliest valid checkpoint.
      *
-     * @return Map (groupId, Map (partitionId, earliest valid checkpoint to history search)).
+     * @return Checkpoint history result: Map (groupId, Map (partitionId, earliest valid checkpoint to history search))
+     *  and reserved checkpoint.
      */
-    public Map<Integer, Map<Integer, CheckpointEntry>> searchAndReserveCheckpoints(
+    public CheckpointHistoryResult searchAndReserveCheckpoints(
         final Map<Integer, Set<Integer>> groupsAndPartitions
     ) {
         if (F.isEmpty(groupsAndPartitions))
-            return Collections.emptyMap();
+            return new CheckpointHistoryResult(Collections.emptyMap(), null);
 
         final Map<Integer, Map<Integer, CheckpointEntry>> res = new HashMap<>();
 
@@ -555,11 +556,11 @@ public class CheckpointHistory {
             if (!cctx.wal().reserve(oldestCpForReservation.checkpointMark())) {
                 log.warning("Could not reserve cp " + oldestCpForReservation.checkpointMark());
 
-                return Collections.emptyMap();
+                return new CheckpointHistoryResult(Collections.emptyMap(), null);
             }
         }
 
-        return res;
+        return new CheckpointHistoryResult(res, oldestCpForReservation);
     }
 
     /**

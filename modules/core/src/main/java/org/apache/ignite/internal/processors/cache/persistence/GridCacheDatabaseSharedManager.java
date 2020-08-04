@@ -126,6 +126,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistoryResult;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -382,8 +383,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed. */
     private WALPointer reservedForExchange;
 
-    /** */
-    private final ConcurrentMap<T2</*grpId*/Integer, /*partId*/Integer>, T2</*updCntr*/Long, WALPointer>> reservedForPreloading = new ConcurrentHashMap<>();
+    /** This is the earliest WAL pointer that was reserved during preloading. */
+    private volatile WALPointer reservedForPreloading;
 
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
@@ -1898,7 +1899,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            earliestValidCheckpoints = cpHistory.searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+            CheckpointHistoryResult checkpointHistRes =
+                cpHistory.searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+
+            earliestValidCheckpoints = checkpointHistRes.earliestValidCheckpoints();
+
+            if (checkpointHistRes.reservedCheckoint() != null)
+                reservedForExchange = checkpointHistRes.reservedCheckoint().checkpointMark();
         }
         finally {
             checkpointReadUnlock();
@@ -1919,12 +1926,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Long updCntr = cpEntry.partitionCounter(cctx, grpId, partId);
 
-                if (updCntr != null) {
-                    if (reservedForExchange == null || ((FileWALPointer)cpEntry.checkpointMark()).index() < ((FileWALPointer)reservedForExchange).index())
-                        reservedForExchange = cpEntry.checkpointMark();
-
+                if (updCntr != null)
                     grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
-                }
             }
         }
 
@@ -1976,20 +1979,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         reservedForExchange = null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
         Map<GroupPartitionId, CheckpointEntry> entries = cpHistory.searchCheckpointEntry(reservationMap);
 
         if (F.isEmpty(entries))
             return false;
 
+        WALPointer oldestWALPointerToReserve = null;
+
         for (GroupPartitionId key : entries.keySet()) {
             WALPointer ptr = entries.get(key).checkpointMark();
 
-            if (ptr == null || !cctx.wal().reserve(ptr))
+            if (ptr == null)
                 return false;
+
+            if (oldestWALPointerToReserve == null ||
+                ((FileWALPointer)ptr).index() < ((FileWALPointer)oldestWALPointerToReserve).index())
+                oldestWALPointerToReserve = ptr;
         }
 
-        return true;
+        if (cctx.wal().reserve(oldestWALPointerToReserve)) {
+            reservedForPreloading = oldestWALPointerToReserve;
+
+            return true;
+        }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
@@ -1997,18 +2013,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         releaseHistForPreloadingLock.lock();
 
         try {
-            for (Map.Entry<T2<Integer, Integer>, T2<Long, WALPointer>> e : reservedForPreloading.entrySet()) {
-                try {
-                    cctx.wal().release(e.getValue().get2());
-                }
-                catch (IgniteCheckedException ex) {
-                    U.error(log, "Could not release WAL reservation", ex);
+            if (reservedForPreloading != null) {
+                cctx.wal().release(reservedForPreloading);
 
-                    throw new IgniteException(ex);
-                }
+                reservedForPreloading = null;
             }
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(log, "Could not release WAL reservation", ex);
 
-            reservedForPreloading.clear();
+            throw new IgniteException(ex);
         }
         finally {
             releaseHistForPreloadingLock.unlock();
