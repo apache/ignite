@@ -5,6 +5,8 @@
 
 #include <ignite/thin/transactions/transaction_consts.h>
 
+#include "string"
+
 using namespace ignite::thin::transactions;
 
 namespace ignite
@@ -24,10 +26,10 @@ namespace ignite
                     typedef ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> TL_SP_TransactionsImpl;
 
                 public:
-                    TransactionImpl(SP_TransactionsImpl txs, int64_t id,
+                    TransactionImpl(SP_TransactionsImpl _txs, int64_t id,
                         TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize) :
                         txId(id),
-                        txs(txs),
+                        txs(_txs),
                         concurrency(concurrency),
                         isolation(isolation),
                         timeout(timeout),
@@ -36,15 +38,19 @@ namespace ignite
                         closed(false)
                     {
                         // No-op.
+                        std::cout << "Create1!!! " << txs.Get() << std::endl;
                     }
                     
                     ~TransactionImpl() {}
                     
                     void commit();
     
-                    void rollback() {}
+                    void rollback();
     
                     void close() {}
+
+                    /** Transactions. */
+                    SP_TransactionsImpl txs;
 
                     static SP_TransactionImpl Create(
                             SP_TransactionsImpl txs, TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize);
@@ -53,9 +59,6 @@ namespace ignite
 
                     /** Thread local instance of the transaction. */
                     static TL_SP_TransactionsImpl threadTx;
-
-                    /** Transactions. */
-                    SP_TransactionsImpl txs;
 
                     /** Concurrency. */
                     int concurrency;
@@ -96,11 +99,16 @@ namespace ignite
 
                     SP_TransactionImpl TxStart();
 
+                    void TxCommit(int64_t);
+
+                    void TxRollback(int64_t);
+
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);
-                private:
+
                     /** Data router. */
                     SP_DataRouter router;
+                private:
                 };
 
                 typedef common::concurrent::SharedPointer<TransactionsImpl> SP_TransactionsImpl;

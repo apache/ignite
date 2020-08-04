@@ -66,7 +66,9 @@ BOOST_AUTO_TEST_CASE(TestTx)
 
     cache.Put(1, 2);
 
-    //tx->commit();
+    BOOST_REQUIRE_EQUAL(2, cache.Get(1));
+
+    tx->commit();
 
     BOOST_REQUIRE_EQUAL(2, cache.Get(1));
 }

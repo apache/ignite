@@ -57,15 +57,13 @@ namespace ignite
 
                     txs.Get()->SyncMessage(req, rsp);
 
-                    std::cout << "!!! " << rsp.GetValue() << std::endl;
-
                     int64_t id = rsp.GetValue();
 
                     SP_TransactionImpl tx;
 
                     if (rsp.GetError().empty())
                     {
-                        tx = SP_TransactionImpl(new TransactionImpl(txs, id, concurrency,
+                        tx = SP_TransactionImpl(new TransactionImpl(SP_TransactionsImpl(txs), id, concurrency,
                             isolation, timeout, txSize));
 
                         threadTx.Set(tx);
@@ -77,22 +75,36 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
                 {
-                    std::cout << "!!! SyncMessage1: " << router.Get() << std::endl;
                     router.Get()->SyncMessage(req, rsp);
 
-                    std::cout << "!!! SyncMessage2: " << std::endl;
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
-                void TransactionImpl::commit() {
+                void TransactionsImpl::TxCommit(int64_t txId)
+                {
                     TxEndRequest<RequestType::OP_TX_END> req(txId, true);
 
                     Response rsp;
 
-                    std::cout << "!!! " << std::endl;
+                    SyncMessage(req, rsp);
+                }
 
-                    //std::cout << "!!! " << rsp.GetStatus() << " " << rsp.GetError() << std::endl;
+                void TransactionsImpl::TxRollback(int64_t txId)
+                {
+                    TxEndRequest<RequestType::OP_TX_END> req(txId, false);
+
+                    Response rsp;
+
+                    SyncMessage(req, rsp);
+                }
+
+                void TransactionImpl::commit() {
+                    txs.Get()->TxCommit(txId);
+                }
+
+                void TransactionImpl::rollback() {
+                    txs.Get()->TxRollback(txId);
                 }
             }
         }

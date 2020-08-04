@@ -125,13 +125,15 @@ namespace ignite
 
                     SP_DataChannel channel = GetRandomChannel();
 
+                    std::cout << "SyncMessage02" << std::endl;
+
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    std::cout << "SyncMessage02" << std::endl;
+                    std::cout << "SyncMessage03" << std::endl;
 
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
-                    std::cout << "SyncMessage03" << std::endl;
+                    std::cout << "SyncMessage04" << std::endl;
 
                     ProcessMeta(metaVer);
                 }

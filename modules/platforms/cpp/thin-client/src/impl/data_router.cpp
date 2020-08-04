@@ -215,6 +215,8 @@ namespace ignite
                 if (channels.empty() && legacyChannels.empty())
                     return SP_DataChannel();
 
+                std::cout << "GetRandomChannelUnsafe " << channels.size() << " " << legacyChannels.size() << std::endl;
+
                 int r = rand();
 
                 size_t idx = r % (channels.size() + legacyChannels.size());
@@ -226,9 +228,13 @@ namespace ignite
                     return legacyChannels[legacyIdx];
                 }
 
+                std::cout << "GetRandomChannelUnsafe1" << std::endl;
+
                 ChannelsGuidMap::iterator it = channels.begin();
 
                 std::advance(it, idx);
+
+                std::cout << "GetRandomChannelUnsafe2" << std::endl;
 
                 return it->second;
             }
