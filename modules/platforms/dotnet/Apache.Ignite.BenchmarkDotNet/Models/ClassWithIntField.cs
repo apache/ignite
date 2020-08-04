@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * StormStreamer -- integration with Apache Storm.
- */
-package org.apache.ignite.stream.storm;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+namespace Apache.Ignite.BenchmarkDotNet.Models
+{
+    /// <summary>
+    /// Benchmark model: class with an int field.
+    /// </summary>
+    public class ClassWithIntField
+    {
+        public int Foo { get; set; }
+    }
+}

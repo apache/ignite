@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.service.ServicePredicateAccessCache
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -119,4 +121,9 @@ import org.junit.runners.Suite;
     GridServiceClusterReadOnlyModeTest.class,
 })
 public class IgniteServiceGridTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
+    }
 }
