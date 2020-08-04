@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import java.util.Base64;
+import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Base64;
-import java.util.Map;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 

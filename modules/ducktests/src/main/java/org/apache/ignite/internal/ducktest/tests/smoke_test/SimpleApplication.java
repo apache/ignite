@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.smoke_test;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;

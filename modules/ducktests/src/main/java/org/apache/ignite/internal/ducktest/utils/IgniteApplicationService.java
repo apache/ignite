@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import java.util.Base64;
+import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import java.util.Base64;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
