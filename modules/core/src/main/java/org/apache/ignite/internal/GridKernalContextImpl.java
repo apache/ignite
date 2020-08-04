@@ -43,7 +43,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.IgniteEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
@@ -169,7 +169,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridEncryptionManager encryptionMgr;
+    private IgniteEncryptionManager encryptionMgr;
 
     /** */
     @GridToStringExclude
@@ -607,8 +607,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
-        else if (comp instanceof GridEncryptionManager)
-            encryptionMgr = (GridEncryptionManager)comp;
+        else if (comp instanceof IgniteEncryptionManager)
+            encryptionMgr = (IgniteEncryptionManager)comp;
         else if (comp instanceof GridTracingManager)
             tracingMgr = (GridTracingManager) comp;
 
@@ -888,7 +888,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEncryptionManager encryption() {
+    @Override public IgniteEncryptionManager encryption() {
         return encryptionMgr;
     }
 

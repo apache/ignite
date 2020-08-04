@@ -51,7 +51,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.IgniteEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -985,7 +985,7 @@ public class ClusterCachesInfo {
             err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(), registeredCaches.values());
 
         if (err == null) {
-            GridEncryptionManager encMgr = ctx.encryption();
+            IgniteEncryptionManager encMgr = ctx.encryption();
 
             if (ccfg.isEncryptionEnabled()) {
                 if (encMgr.isMasterKeyChangeInProgress())

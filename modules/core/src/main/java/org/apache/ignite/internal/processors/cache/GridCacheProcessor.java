@@ -3602,7 +3602,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
-        IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
+        IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = keyCnt > 0 ?
+            ctx.encryption().generateKeys(keyCnt) : new GridFinishedFuture<>(new T2<>(Collections.emptyList(), null));;
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 

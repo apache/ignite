@@ -120,6 +120,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.IgniteEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
@@ -1211,7 +1212,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start the encryption manager after assigning the discovery manager to context, so it will be
             // able to register custom event listener.
-            startManager(new GridEncryptionManager(ctx));
+            startManager(CU.isPersistenceEnabled(ctx.config()) ? new GridEncryptionManager(ctx) : new IgniteEncryptionManager(ctx));
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.

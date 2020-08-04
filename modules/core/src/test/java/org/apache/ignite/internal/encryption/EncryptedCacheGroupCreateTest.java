@@ -20,7 +20,7 @@ package org.apache.ignite.internal.encryption;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.IgniteEncryptionManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
@@ -69,7 +69,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         IgniteInternalCache<Object, Object> encrypted2 = grid.cachex(ENCRYPTED_CACHE + "2");
 
-        GridEncryptionManager encMgr = encrypted2.context().kernalContext().encryption();
+        IgniteEncryptionManager encMgr = encrypted2.context().kernalContext().encryption();
 
         KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)encMgr.groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
 

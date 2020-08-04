@@ -25,7 +25,7 @@ import org.apache.ignite.mxbean.EncryptionMXBean;
  */
 public class EncryptionMXBeanImpl implements EncryptionMXBean {
     /** Encryption manager. */
-    private final GridEncryptionManager encryptionMgr;
+    private final IgniteEncryptionManager encryptionMgr;
 
     /** @param ctx Context. */
     public EncryptionMXBeanImpl(GridKernalContextImpl ctx) {

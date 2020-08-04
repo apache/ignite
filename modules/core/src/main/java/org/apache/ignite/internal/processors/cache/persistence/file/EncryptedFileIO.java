@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.IgniteEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -56,7 +56,7 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Shared database manager.
      */
-    private final GridEncryptionManager encMgr;
+    private final IgniteEncryptionManager encMgr;
 
     /**
      * Shared database manager.
@@ -86,7 +86,7 @@ public class EncryptedFileIO implements FileIO {
      * @param encMgr Encryption manager.
      */
     EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize,
-        GridEncryptionManager encMgr, EncryptionSpi encSpi) {
+        IgniteEncryptionManager encMgr, EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;

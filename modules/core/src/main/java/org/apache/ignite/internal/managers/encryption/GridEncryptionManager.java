@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,7 +43,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -72,9 +69,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP;
@@ -129,8 +123,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * @see #prepareMKChangeProc
  * @see #performMKChangeProc
  */
-public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener,
-    IgniteChangeGlobalStateSupport, IgniteEncryption {
+public class GridEncryptionManager extends IgniteEncryptionManager implements MetastorageLifecycleListener {
     /**
      * Cache encryption introduced in this Ignite version.
      */
@@ -336,11 +329,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Callback for local join.
-     */
-    public void onLocalJoin() {
-        if (!isCoordinator())
+    /** {@inheritDoc} */
+    @Override public void onLocalJoin() {
+        if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return;
 
         //We can't store keys before node join to cluster(on statically configured cache registration).
@@ -524,13 +515,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Returns group encryption key.
-     *
-     * @param grpId Group id.
-     * @return Group encryption key.
-     */
-    @Nullable public Serializable groupKey(int grpId) {
+    /** {@inheritDoc} */
+    @Override @Nullable public Serializable groupKey(int grpId) {
         if (grpEncKeys.isEmpty())
             return null;
 
@@ -543,7 +529,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      * @param encGrpKey Encrypted group key.
      */
-    public void groupKey(int grpId, byte[] encGrpKey) {
+    private void groupKey(int grpId, byte[] encGrpKey) {
         assert !grpEncKeys.containsKey(grpId);
 
         Serializable encKey = withMasterKeyChangeReadLock(() -> getSpi().decryptKey(encGrpKey));
@@ -653,23 +639,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Callback for cache group start event.
-     * @param grpId Group id.
-     * @param encKey Encryption key
-     */
-    public void beforeCacheGroupStart(int grpId, @Nullable byte[] encKey) {
+    /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(int grpId, @Nullable byte[] encKey) {
         if (encKey == null || ctx.clientNode())
             return;
 
         groupKey(grpId, encKey);
     }
 
-    /**
-     * Callback for cache group destroy event.
-     * @param grpId Group id.
-     */
-    public void onCacheGroupDestroyed(int grpId) {
+    /** {@inheritDoc} */
+    @Override public void onCacheGroupDestroyed(int grpId) {
         if (groupKey(grpId) == null)
             return;
 
@@ -747,7 +726,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) {
         withMasterKeyChangeReadLock(() -> {
             synchronized (metaStorageMux) {
                 writeToMetaStoreEnabled = metaStorage != null;
@@ -767,12 +746,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * @param keyCnt Count of keys to generate.
-     * @return Future that will contain results of generation.
-     */
-    public IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> generateKeys(int keyCnt) {
-        if (keyCnt == 0 || !ctx.clientNode())
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> generateKeys(int keyCnt) {
+        assert keyCnt > 0;
+
+        if (!ctx.clientNode())
             return new GridFinishedFuture<>(createKeys(keyCnt));
 
         synchronized (opsMux) {
@@ -829,12 +807,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Checks cache encryption supported by all nodes in cluster.
-     *
-     * @throws IgniteCheckedException If check fails.
-     */
-    public void checkEncryptedCacheSupported() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void checkEncryptedCacheSupported() throws IgniteCheckedException {
         Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
 
         for (ClusterNode node : nodes) {
@@ -986,12 +960,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         assert ptr != null;
     }
 
-    /**
-     * Apply keys from WAL record during the recovery phase.
-     *
-     * @param rec Record.
-     */
-    public void applyKeys(MasterKeyChangeRecord rec) {
+    /** {@inheritDoc} */
+    @Override public void applyKeys(MasterKeyChangeRecord rec) {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
 
         log.info("Master key name loaded from WAL [masterKeyName=" + rec.getMasterKeyName() + ']');
@@ -1061,7 +1031,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             completeMasterKeyChangeFuture(id, err);
         }
-        else if (isCoordinator())
+        else if (U.isLocalNodeCoordinator(ctx.discovery()))
             performMKChangeProc.start(id, masterKeyChangeRequest);
     }
 
@@ -1137,37 +1107,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             masterKeyChangeFut.onDone(new IgniteFutureCancelledException(msg));
     }
 
-    /**
-     * Checks whether local node is coordinator. Nodes that are leaving or failed
-     * (but are still in topology) are removed from search.
-     *
-     * @return {@code true} if local node is coordinator.
-     */
-    private boolean isCoordinator() {
-        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
-
-        if (spi instanceof TcpDiscoverySpi)
-            return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
-        else {
-            ClusterNode crd = U.oldest(ctx.discovery().aliveServerNodes(), null);
-
-            return crd != null && F.eq(ctx.localNodeId(), crd.id());
-        }
-    }
-
-    /** @return {@code True} if the master key change process in progress. */
-    public boolean isMasterKeyChangeInProgress() {
+    /** {@inheritDoc} */
+    @Override public boolean isMasterKeyChangeInProgress() {
         return masterKeyChangeRequest != null;
     }
 
-    /**
-     * Digest of last changed master key or {@code null} if master key was not changed.
-     * <p>
-     * Used to verify the digest on a client node in case of cache start after master key change.
-     *
-     * @return Digest of last changed master key or {@code null} if master key was not changed.
-     */
-    public byte[] masterKeyDigest() {
+    /** {@inheritDoc} */
+    @Override public byte[] masterKeyDigest() {
         return masterKeyDigest;
     }
 
@@ -1342,28 +1288,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private static class MasterKeyChangeResult implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
-    }
-
-    /** */
-    public static class NodeEncryptionKeys implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        NodeEncryptionKeys(Map<Integer, byte[]> knownKeys, Map<Integer, byte[]> newKeys, byte[] masterKeyDigest) {
-            this.knownKeys = knownKeys;
-            this.newKeys = newKeys;
-            this.masterKeyDigest = masterKeyDigest;
-        }
-
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
-        Map<Integer, byte[]> knownKeys;
-
-        /**  New keys i.e. keys for a local statically configured caches. */
-        Map<Integer, byte[]> newKeys;
-
-        /** Master key digest. */
-        byte[] masterKeyDigest;
     }
 
     /** */
