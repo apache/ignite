@@ -251,8 +251,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      */
     private class DyingDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, byte[] data,
-                                               long timeout) throws IOException {
+        @Override protected void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException {
             if (!blockMsgs)
                 super.writeToSocket(sock, data, timeout);
         }

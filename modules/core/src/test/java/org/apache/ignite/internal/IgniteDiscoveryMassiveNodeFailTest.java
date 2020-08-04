@@ -303,8 +303,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, byte[] data,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException {
             assertNotFailedNode(sock);
 
             // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on

@@ -354,8 +354,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      */
     private class DiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, byte[] data,
-                                               long timeout) throws IOException {
+        @Override protected void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException {
             if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
