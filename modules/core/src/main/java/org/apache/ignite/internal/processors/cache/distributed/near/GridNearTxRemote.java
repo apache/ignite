@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,9 +47,6 @@ import org.jetbrains.annotations.Nullable;
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Evicted keys. */
     private Collection<IgniteTxKey> evicted = new LinkedList<>();
 
@@ -62,13 +58,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** Owned versions. */
     private Map<IgniteTxKey, GridCacheVersion> owned;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxRemote() {
-        // No-op.
-    }
 
     /**
      * This constructor is meant for optimistic transactions.
