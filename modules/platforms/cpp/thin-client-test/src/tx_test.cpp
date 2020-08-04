@@ -59,18 +59,23 @@ BOOST_AUTO_TEST_CASE(TestTx)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClient<int64_t, int64_t> cache =
-        client.GetCache<int64_t, int64_t>("partitioned2");
+    cache::CacheClient<int, int> cache =
+        client.GetCache<int, int>("partitioned");
 
-    ignite::thin::transactions::ClientTransaction tx = client.ClientTransactions().txStart();
+    cache.Put(1, 1);
+    cache.Put(2, 2);
 
-    cache.Put(1, 2);
+    transactions::ClientTransactions transactions = client.ClientTransactions();
 
-    BOOST_REQUIRE_EQUAL(2, cache.Get(1));
+    transactions::ClientTransaction tx = transactions.txStart();
 
-    tx.commit();
+    cache.Put(1, 10);
+    cache.Put(2, 20);
 
-    BOOST_REQUIRE_EQUAL(2, cache.Get(1));
+    tx.rollback();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

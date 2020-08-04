@@ -31,7 +31,8 @@ namespace ignite
         {
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
                 cfg(cfg),
-                router(new DataRouter(cfg))
+                router(new DataRouter(cfg)),
+                txImpl(new transactions::TransactionsImpl(router))
             {
                 // No-op.
             }
@@ -44,13 +45,6 @@ namespace ignite
             void IgniteClientImpl::Start()
             {
                 router.Get()->Connect();
-            }
-
-            transactions::SP_TransactionsImpl IgniteClientImpl::ClientTransactions() const
-            {
-                transactions::SP_TransactionsImpl transactions(new transactions::TransactionsImpl(router));
-
-                return transactions;
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::GetCache(const char* name) const

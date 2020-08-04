@@ -581,7 +581,7 @@ namespace ignite
              * Tx start request.
              */
             template<int32_t OpCode>
-            class TxStartRequest : public CacheRequest<OpCode>
+            class TxStartRequest : public Request<OpCode>
             {
             public:
                 /**
@@ -590,7 +590,6 @@ namespace ignite
                 TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
                                ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
                                int64_t _timeout, int32_t _size) :
-                    CacheRequest<OpCode>(1, false),
                     concurrency(conc),
                     isolation(isolationLvl),
                     timeout(_timeout),
@@ -637,18 +636,16 @@ namespace ignite
              * Tx start request.
              */
             template<int32_t OpCode>
-            class TxEndRequest : public CacheRequest<OpCode>
+            class TxEndRequest : public Request<OpCode>
             {
             public:
                 /**
                  * Constructor.
                  */
                 TxEndRequest(int32_t _txId, bool _commited) :
-                    CacheRequest<OpCode>(1, false),
                     commited(_commited),
                     txId(_txId)
                 {
-                    std::cout << "!!!111 TxEndRequest" << std::endl;
                 }
 
                 /**
@@ -665,10 +662,8 @@ namespace ignite
                  * @param ver Version.
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const {
-                    std::cout << "!!!111" << std::endl;
-
                     writer.WriteInt32(txId);
-                    writer.WriteBool(true);
+                    writer.WriteBool(commited);
                 }
 
             private:
@@ -1148,7 +1143,7 @@ namespace ignite
                  *
                  * @return Received bool value.
                  */
-                int64_t GetValue() const
+                int32_t GetValue() const
                 {
                     return value;
                 }

@@ -34,7 +34,10 @@ namespace ignite
                     proxy.commit();
                 }
 
-                void rollback();
+                void rollback()
+                {
+                    proxy.rollback();
+                }
 
                 void close();
             private:
@@ -65,9 +68,9 @@ namespace ignite
                     return ClientTransaction(proxy.txStart());
                 }
 
-                ClientTransaction* txStart(TransactionConcurrency, TransactionIsolation);
+                ClientTransaction txStart(TransactionConcurrency, TransactionIsolation);
 
-                ClientTransaction* txStart(TransactionConcurrency, TransactionIsolation, long);
+                ClientTransaction txStart(TransactionConcurrency, TransactionIsolation, long);
 
                 ClientTransactions withLabel(std::string&);
 

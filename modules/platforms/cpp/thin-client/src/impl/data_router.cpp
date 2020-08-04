@@ -201,11 +201,7 @@ namespace ignite
 
             SP_DataChannel DataRouter::GetRandomChannel()
             {
-                std::cout << "GetRandomChannel0" << std::endl;
-
                 common::concurrent::CsLockGuard lock(channelsMutex);
-
-                std::cout << "GetRandomChannel" << std::endl;
 
                 return GetRandomChannelUnsafe();
             }
@@ -228,13 +224,9 @@ namespace ignite
                     return legacyChannels[legacyIdx];
                 }
 
-                std::cout << "GetRandomChannelUnsafe1" << std::endl;
-
                 ChannelsGuidMap::iterator it = channels.begin();
 
                 std::advance(it, idx);
-
-                std::cout << "GetRandomChannelUnsafe2" << std::endl;
 
                 return it->second;
             }

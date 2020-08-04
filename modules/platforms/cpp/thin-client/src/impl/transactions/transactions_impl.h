@@ -101,9 +101,9 @@ namespace ignite
 
                     SP_TransactionImpl TxStart();
 
-                    void TxCommit(int64_t);
+                    void TxCommit(int32_t);
 
-                    void TxRollback(int64_t);
+                    void TxRollback(int32_t);
 
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);

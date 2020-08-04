@@ -84,7 +84,10 @@ namespace ignite
                 common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name);
 
                 /** */
-                transactions::SP_TransactionsImpl ClientTransactions() const;
+                transactions::SP_TransactionsImpl ClientTransactions() const
+                {
+                    return txImpl;
+                }
 
                 /**
                  * Destroy cache by name.
@@ -129,6 +132,9 @@ namespace ignite
 
                 /** Data router. */
                 SP_DataRouter router;
+
+                /** Transactions. */
+                transactions::SP_TransactionsImpl txImpl;
             };
         }
     }

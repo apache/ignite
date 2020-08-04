@@ -32,7 +32,7 @@ namespace ignite
                 {
                     TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC;
 
-                    TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED;
+                    TransactionIsolation::Type isolation = TransactionIsolation::REPEATABLE_READ;
 
                     int64_t timeout = 0;
 
@@ -60,6 +60,8 @@ namespace ignite
                         threadTx.Remove();
                     }*/
 
+                    std::cout << " txId requested: " << tx.Get() << std::endl;
+
                     return tx;
                 }
 
@@ -77,14 +79,15 @@ namespace ignite
 
                     txs.Get()->SyncMessage(req, rsp);
 
-                    int64_t id = rsp.GetValue();
+                    int32_t txId = rsp.GetValue();
 
                     SP_TransactionImpl tx;
 
                     if (rsp.GetError().empty())
                     {
-                        tx = SP_TransactionImpl(new TransactionImpl(SP_TransactionsImpl(txs), id, concurrency,
-                            isolation, timeout, txSize));
+                        tx = SP_TransactionImpl(new TransactionImpl(txs, txId, concurrency, isolation, timeout, txSize));
+
+                        std::cout << txId << " txId  create: " << tx.Get() << std::endl;
 
                         threadTx.Set(tx);
                     }
@@ -101,7 +104,7 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
-                void TransactionsImpl::TxCommit(int64_t txId)
+                void TransactionsImpl::TxCommit(int32_t txId)
                 {
                     TxEndRequest<RequestType::OP_TX_END> req(txId, true);
 
@@ -110,13 +113,17 @@ namespace ignite
                     SyncMessage(req, rsp);
                 }
 
-                void TransactionsImpl::TxRollback(int64_t txId)
+                void TransactionsImpl::TxRollback(int32_t txId)
                 {
                     TxEndRequest<RequestType::OP_TX_END> req(txId, false);
 
                     Response rsp;
 
+                    std::cout << txId << " txId  rollback:" << std::endl;
+
                     SyncMessage(req, rsp);
+
+                    std::cout << txId << " rollback: " << rsp.GetStatus() << std::endl;
                 }
 
                 void TransactionImpl::commit() {

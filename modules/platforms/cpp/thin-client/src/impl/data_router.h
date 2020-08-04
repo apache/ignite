@@ -121,19 +121,11 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void SyncMessage(const ReqT& req, RspT& rsp)
                 {
-                    std::cout << "SyncMessage01" << std::endl;
-
                     SP_DataChannel channel = GetRandomChannel();
-
-                    std::cout << "SyncMessage02" << std::endl;
 
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    std::cout << "SyncMessage03" << std::endl;
-
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
-
-                    std::cout << "SyncMessage04" << std::endl;
 
                     ProcessMeta(metaVer);
                 }
