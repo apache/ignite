@@ -202,10 +202,6 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
     /** */
     private static class MockGridNearTxLocal extends GridNearTxLocal {
-        /** Empty constructor. */
-        public MockGridNearTxLocal() {
-        }
-
         /**
          * @param ctx Context.
          * @param implicit Implicit.
