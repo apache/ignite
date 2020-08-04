@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -306,7 +307,10 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
             long timeout) throws IOException {
             assertNotFailedNode(sock);
 
-            if (isDrop(null))
+            // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+            // connRecoveryTimeout.
+            TcpDiscoveryAbstractMessage msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            if (isDrop(msg))
                 return;
 
             super.writeToSocket(sock, data, timeout);

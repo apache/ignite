@@ -67,11 +67,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -2583,7 +2579,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                                                long timeout) throws IOException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, null))
+            // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+            // connRecoveryTimeout.
+            TcpDiscoveryAbstractMessage msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            if (!onMessage(sock, msg))
                 return;
 
             super.writeToSocket(sock, msgBytes, timeout);
