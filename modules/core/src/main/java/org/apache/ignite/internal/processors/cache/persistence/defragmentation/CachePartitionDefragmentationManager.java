@@ -67,9 +67,10 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
                 File workDir = defrgCtx.workDirForGroupId(grpId);
                 Collection<Integer> parts = defrgCtx.partitionsForGroupId(grpId);
 
+                boolean encrypted = defrgCtx.groupContextByGroupId(grpId).config().isEncryptionEnabled();
+
                 if (workDir != null && parts != null) {
-                    //TODO do not forget about encrypted PageStores, this should be addressed
-                    FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, false);
+                    FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
                     for (Integer p : parts) {
                         PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA, () -> new File(workDir, String.format(DEFRAGMENTED_PARTITION_FILE_TEMPLATE, p)).toPath(), allocatedMetric);
@@ -156,6 +157,7 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
             long link = row.link();
 
             newTree.put(newRow);
+
             long newLink = newRow.link();
 
             m.put(link, newLink);
