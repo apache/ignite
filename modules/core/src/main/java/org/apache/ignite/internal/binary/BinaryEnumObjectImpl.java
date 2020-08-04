@@ -190,6 +190,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
+        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+
         if (ord >= 0) {
             Object[] vals = cls.getEnumConstants();
 

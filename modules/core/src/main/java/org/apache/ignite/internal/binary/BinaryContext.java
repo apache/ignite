@@ -688,7 +688,7 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-                cls = U.forName(clsName, ldr, null,false);
+                cls = U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
 
                 desc = descByCls.get(cls);
 

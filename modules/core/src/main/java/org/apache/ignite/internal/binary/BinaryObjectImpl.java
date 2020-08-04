@@ -634,6 +634,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (ldr == null)
             return deserialize();
 
+        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+
         return (T)reader(null, ldr, true).deserialize();
     }
 

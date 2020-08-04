@@ -419,6 +419,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (ldr == null)
             return deserialize();
 
+        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+
         return (T)reader(null, ldr, true).deserialize();
     }
 
