@@ -52,6 +52,8 @@ namespace ignite
                     /** Transactions. */
                     SP_TransactionsImpl txs;
 
+                    static SP_TransactionImpl GetCurrent();
+
                     static SP_TransactionImpl Create(
                             SP_TransactionsImpl txs, TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize);
                 private:
@@ -105,6 +107,8 @@ namespace ignite
 
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);
+
+                    SP_TransactionImpl GetTx();
 
                     /** Data router. */
                     SP_DataRouter router;

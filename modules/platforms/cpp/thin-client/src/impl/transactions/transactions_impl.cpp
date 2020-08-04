@@ -48,6 +48,26 @@ namespace ignite
                     return tx;
                 }
 
+                TransactionImpl::SP_TransactionImpl TransactionImpl::GetCurrent()
+                {
+                    SP_TransactionImpl tx = threadTx.Get();
+                    TransactionImpl* ptr = tx.Get();
+
+                    /*if (ptr && ptr->IsClosed())
+                    {
+                        tx = SP_TransactionImpl();
+
+                        threadTx.Remove();
+                    }*/
+
+                    return tx;
+                }
+
+                ignite::common::concurrent::SharedPointer<TransactionImpl> TransactionsImpl::GetTx()
+                {
+                    return TransactionImpl::GetCurrent();
+                }
+
                 TransactionImpl::SP_TransactionImpl TransactionImpl::Create(
                     SP_TransactionsImpl txs, TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize)
                 {

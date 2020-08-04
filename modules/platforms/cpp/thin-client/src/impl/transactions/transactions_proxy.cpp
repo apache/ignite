@@ -16,14 +16,9 @@ namespace
         return *reinterpret_cast<TransactionsImpl*>(ptr.Get());
     }
 
-    TransactionImpl& GetTxssImpl(SharedPointer<void>& ptr)
+    TransactionProxy& GetTxssImpl(SharedPointer<TransactionImpl>& ptr)
     {
-        return *reinterpret_cast<TransactionImpl*>(ptr.Get());
-    }
-
-    TransactionProxy* GetTxImpl(void* ptr)
-    {
-        return reinterpret_cast<TransactionProxy*>(ptr);
+        return *reinterpret_cast<TransactionProxy*>(ptr.Get());
     }
 }
 
@@ -35,15 +30,16 @@ namespace ignite
         {
             namespace transactions
             {
-                TransactionProxy* TransactionsProxy::txStart()
+                TransactionProxy TransactionsProxy::txStart()
                 {
-                    return new TransactionProxy(GetTxsImpl(impl).TxStart());
-                    //return GetTxImpl((void*)GetTxsImpl(impl).txStart());
+                    common::concurrent::SharedPointer<TransactionImpl> tx = GetTxsImpl(impl).TxStart();
+
+                    return GetTxssImpl(tx);
                 }
 
                 void TransactionProxy::commit()
                 {
-                    GetTxssImpl(impl).commit();
+                    GetTxsImpl(impl).GetTx().Get()->commit();
                 }
             }
         }

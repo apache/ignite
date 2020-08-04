@@ -76,7 +76,7 @@ namespace ignite
                     }
 
                     /** */
-                    TransactionProxy* txStart();
+                    TransactionProxy txStart();
 
                 private:
                     /** Implementation. */

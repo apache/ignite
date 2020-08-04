@@ -19,7 +19,7 @@ namespace ignite
             class ClientTransaction {
 
             public:                
-                ClientTransaction(common::concurrent::SharedPointer<void> impl) :
+                ClientTransaction(TransactionProxy impl) :
                     proxy(impl)
                 {
 
@@ -60,9 +60,9 @@ namespace ignite
 
                 ~ClientTransactions() {}
 
-                ClientTransaction* txStart()
+                ClientTransaction txStart()
                 {
-                    return new ClientTransaction(proxy.txStart());
+                    return ClientTransaction(proxy.txStart());
                 }
 
                 ClientTransaction* txStart(TransactionConcurrency, TransactionIsolation);
