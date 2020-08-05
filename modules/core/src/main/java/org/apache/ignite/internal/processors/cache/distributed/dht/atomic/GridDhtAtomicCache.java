@@ -124,6 +124,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_AC
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -698,6 +701,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
+
         if (map != null && keyCheck)
             validateCacheKeys(conflictMap.keySet());
 
@@ -1816,6 +1820,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = null;
 
+        boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
+
         ctx.shared().database().checkpointReadLock();
 
         try {
@@ -1932,7 +1942,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     }
                                 }
 
-                                update(node, locked, req, res, updDhtRes);
+                                update(node, locked, req, res, updDhtRes, taskName);
 
                                 dhtFut = updDhtRes.dhtFuture();
                                 deleted = updDhtRes.deleted();
@@ -2052,6 +2062,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Request.
      * @param res Response.
      * @param dhtUpdRes DHT update result
+     * @param taskName Task name.
      * @return Operation result.
      * @throws GridCacheEntryRemovedException If got obsolete entry.
      */
@@ -2060,12 +2071,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         List<GridDhtCacheEntry> locked,
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
-        DhtAtomicUpdateResult dhtUpdRes)
+        DhtAtomicUpdateResult dhtUpdRes,
+        String taskName
+    )
         throws GridCacheEntryRemovedException
     {
         GridDhtPartitionTopology top = topology();
-
-        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         boolean hasNear = req.nearCache();
 
@@ -3397,7 +3408,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
-        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+        boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
 
         ctx.shared().database().checkpointReadLock();
 
