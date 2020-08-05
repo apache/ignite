@@ -938,10 +938,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near,
-        ClassLoader clsLdr) throws IgniteCheckedException {
-
-        CacheObjectValueContext coctx;
+    public void unmarshal(
+        GridCacheSharedContext<?, ?> ctx,
+        boolean near,
+        ClassLoader clsLdr
+    ) throws IgniteCheckedException {
 
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
@@ -955,12 +956,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             else if (!cacheCtx.isNear() && near)
                 cacheCtx = cacheCtx.dht().near().context();
 
-            coctx = cacheCtx.cacheObjectContext();
-
             this.ctx = cacheCtx;
         }
-        else
-            coctx = context().cacheObjectContext();
+
+        CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
 
         if (coctx == null)
             throw new CacheInvalidStateException(
@@ -975,7 +974,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         else {
             for (CacheEntryPredicate p : filters) {
                 if (p != null)
-                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+                    p.finishUnmarshal(this.ctx, clsLdr);
             }
         }
 
