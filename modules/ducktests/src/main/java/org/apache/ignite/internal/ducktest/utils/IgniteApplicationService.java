@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Arrays;
+import java.util.Base64;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,9 +57,12 @@ public class IgniteApplicationService {
         try (Ignite ignite = Ignition.start(cfg)) {
             IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor(Ignite.class).newInstance(ignite);
 
-            String[] appParams = Arrays.copyOfRange(params, 2, params.length);
+            ObjectMapper mapper = new ObjectMapper();
 
-            app.start(appParams);
+            JsonNode jsonNode = params.length > 2 ?
+                mapper.readTree(Base64.getDecoder().decode(params[2])) : mapper.createObjectNode();
+
+            app.start(jsonNode);
         }
     }
 }

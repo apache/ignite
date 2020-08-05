@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,9 +52,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -67,13 +63,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** Store write through flag. */
     private boolean storeWriteThrough;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxRemote() {
-        // No-op.
-    }
 
     /**
      * This constructor is meant for optimistic transactions.

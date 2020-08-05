@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * IGFS IPC endpoint used for point-to-point communication.
+ * IPC endpoint used for point-to-point communication.
  */
 public interface IpcEndpoint extends Closeable {
     /**

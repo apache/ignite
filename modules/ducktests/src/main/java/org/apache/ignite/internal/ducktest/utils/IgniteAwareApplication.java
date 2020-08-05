@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -159,18 +159,18 @@ public abstract class IgniteAwareApplication {
     }
 
     /**
-     *
+     * @param jsonNode JSON node.
      */
-    protected abstract void run(String[] args) throws Exception;
+    protected abstract void run(JsonNode jsonNode) throws Exception;
 
     /**
-     * @param args Args.
+     * @param jsonNode JSON node.
      */
-    public void start(String[] args) {
+    public void start(JsonNode jsonNode) {
         try {
-            log.info("Application params: " + Arrays.toString(args));
+            log.info("Application params: " + jsonNode);
 
-            run(args);
+            run(jsonNode);
 
             assert inited : "Was not properly initialized.";
             assert finished : "Was not properly finished.";

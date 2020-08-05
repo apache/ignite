@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
@@ -47,8 +48,8 @@ public class LongTxStreamerApplication extends IgniteAwareApplication {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(String[] args) throws InterruptedException {
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(args[0]);
+    @Override public void run(JsonNode jsonNode) throws InterruptedException {
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(jsonNode.get("cacheName").asText());
 
         log.info("Starting Long Tx...");
 

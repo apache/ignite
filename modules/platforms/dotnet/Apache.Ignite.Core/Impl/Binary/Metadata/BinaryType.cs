@@ -407,60 +407,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 return null;
             }
 
-            var enumType = desc.Type;
-
-            var values = Enum.GetValues(enumType);
-            var res = new Dictionary<string, int>(values.Length);
-
-            var underlyingType = Enum.GetUnderlyingType(enumType);
-
-            foreach (var value in values)
-            {
-                var name = Enum.GetName(enumType, value);
-                Debug.Assert(name != null);
-
-                res[name] = GetEnumValueAsInt(underlyingType, value);
-            }
-
-            return res;
-        }
-
-        /// <summary>
-        /// Gets the enum value as int.
-        /// </summary>
-        private static int GetEnumValueAsInt(Type underlyingType, object value)
-        {
-            if (underlyingType == typeof(int))
-            {
-                return (int) value;
-            }
-
-            if (underlyingType == typeof(byte))
-            {
-                return (byte) value;
-            }
-
-            if (underlyingType == typeof(sbyte))
-            {
-                return (sbyte) value;
-            }
-
-            if (underlyingType == typeof(short))
-            {
-                return (short) value;
-            }
-
-            if (underlyingType == typeof(ushort))
-            {
-                return (ushort) value;
-            }
-
-            if (underlyingType == typeof(uint))
-            {
-                return unchecked((int) (uint) value);
-            }
-
-            throw new BinaryObjectException("Unexpected enum underlying type: " + underlyingType);
+            return BinaryUtils.GetEnumValues(desc.Type);
         }
     }
 }

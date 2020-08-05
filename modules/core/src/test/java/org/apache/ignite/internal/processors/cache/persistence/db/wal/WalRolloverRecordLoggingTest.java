@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -57,12 +57,12 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(40 * 1024 * 1024))
+                .setMaxSize(128 * 1024 * 1024))
             .setWalMode(walMode())
             .setWalSegmentSize(4 * 1024 * 1024)
         );
 
-        cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(false, 0));
+        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
     }

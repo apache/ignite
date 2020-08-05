@@ -15,6 +15,7 @@
 
 import re
 import sys
+
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
@@ -41,6 +42,7 @@ class PyTest(TestCommand):
         print(self.pytest_args)
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
+
 
 # Note: when changing the version of ducktape, also revise tests/docker/Dockerfile
 setup(name="ignitetest",

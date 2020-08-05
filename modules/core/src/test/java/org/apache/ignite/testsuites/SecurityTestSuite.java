@@ -53,11 +53,17 @@ import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySan
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
+import org.apache.ignite.internal.processors.security.sandbox.EventsSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.PrivilegedProxyTest;
+import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
+import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -91,6 +97,7 @@ import org.junit.runners.Suite;
     ThinClientSecurityContextOnRemoteNodeTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
     EventsRemoteSecurityContextCheckTest.class,
+    SchedulerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
@@ -108,9 +115,17 @@ import org.junit.runners.Suite;
     MessagingSandboxTest.class,
     ContinuousQuerySandboxTest.class,
     ContinuousQueryWithTransformerSandboxTest.class,
+    EventsSandboxTest.class,
+    PrivilegedProxyTest.class,
+    SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class
 })
 public class SecurityTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
+    }
 }

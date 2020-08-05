@@ -29,6 +29,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
+@Deprecated
 public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<VisorIgfsResetMetricsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,15 +56,7 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<VisorIgfsResetMe
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorIgfsResetMetricsTaskArg arg) {
-            for (String igfsName : arg.getIgfsNames())
-                try {
-                    ignite.fileSystem(igfsName).resetMetrics();
-                }
-                catch (IllegalArgumentException iae) {
-                    throw new IgniteException("Failed to reset metrics for IGFS: " + igfsName, iae);
-                }
-
-            return null;
+            throw new IgniteException("IGFS operations are not supported in current version of Ignite");
         }
 
         /** {@inheritDoc} */

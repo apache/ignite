@@ -576,7 +576,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (discoClusterState.lastState() == ACTIVE_READ_ONLY || globalState.state() == ACTIVE_READ_ONLY)
                 ctx.cache().context().readOnlyMode(globalState.state() == ACTIVE_READ_ONLY);
 
-            log.info("Cluster state was changed from " + discoClusterState.lastState() + " to " + globalState.state());
+            if (log.isInfoEnabled())
+                log.info("Cluster state was changed from " + discoClusterState.lastState() + " to " + globalState.state());
 
             if (!globalState.state().active())
                 ctx.cache().context().readOnlyMode(false);
@@ -1403,8 +1404,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     }
 
                     ctx.dataStructures().onActivate(ctx);
-
-                    ctx.igfs().onActivate(ctx);
 
                     ctx.task().onActivate(ctx);
 

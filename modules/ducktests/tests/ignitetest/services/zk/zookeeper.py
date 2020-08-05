@@ -20,6 +20,7 @@ This module contains classes and utilities to start zookeeper cluster for testin
 import os.path
 
 from ducktape.services.service import Service
+from ducktape.utils.util import wait_until
 
 
 class ZookeeperSettings:
@@ -88,17 +89,9 @@ class ZookeeperService(Service):
         node.account.ssh(start_cmd)
 
     def wait_node(self, node, timeout_sec=20):
-        idx = self.idx(node)
+        wait_until(lambda: not self.alive(node), timeout_sec=timeout_sec)
 
-        with node.account.monitor_log(self.LOG_FILE) as monitor:
-            monitor.offset = 0
-            monitor.wait_until(
-                "binding to port",
-                timeout_sec=timeout_sec,
-                err_msg="Zookeeper service didn't finish startup on %s" % node.account.hostname
-            )
-
-        self.logger.info("Zookeeper node %d started on %s", idx, node.account.hostname)
+        return not self.alive(node)
 
     def await_quorum(self, node, timeout):
         """

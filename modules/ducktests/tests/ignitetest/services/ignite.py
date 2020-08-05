@@ -66,8 +66,8 @@ class IgniteService(IgniteAwareService):
     }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, client_mode=False, version=DEV_BRANCH, properties=""):
-        super(IgniteService, self).__init__(context, num_nodes, client_mode, version, properties)
+    def __init__(self, context, num_nodes, modules=None, client_mode=False, version=DEV_BRANCH, properties=""):
+        super(IgniteService, self).__init__(context, num_nodes, modules, client_mode, version, properties)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
@@ -85,9 +85,9 @@ class IgniteService(IgniteAwareService):
 
         cmd = "export EXCLUDE_TEST_CLASSES=true; "
         cmd += "export IGNITE_LOG_DIR=" + IgniteService.PERSISTENT_ROOT + "; "
-        cmd += "export USER_LIBS=%s/libs/optional/ignite-log4j/*; " % self.path.home(self.version)
+        cmd += "export USER_LIBS=%s; " % ":".join(self.user_libs)
         cmd += "%s %s %s 1>> %s 2>> %s &" % \
-               (self.path.script("ignite.sh", node),
+               (self.path.script("ignite.sh"),
                 jvm_opts,
                 IgniteService.CONFIG_FILE,
                 IgniteService.STDOUT_STDERR_CAPTURE,

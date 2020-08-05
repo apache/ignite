@@ -18,7 +18,6 @@ Module contains ignite version utility class.
 """
 
 from distutils.version import LooseVersion
-from ducktape.cluster.cluster import ClusterNode
 
 from ignitetest import __version__
 
@@ -55,20 +54,8 @@ class IgniteVersion(LooseVersion):
 
         return LooseVersion.__str__(self)
 
-
-def get_version(node=None):
-    """
-    Return the version attached to the given node.
-    Default to DEV_BRANCH if node or node.version is undefined (aka None)
-    """
-    if isinstance(node, ClusterNode) and hasattr(node, 'version'):
-        return getattr(node, 'version')
-
-    # pylint: disable=E0602
-    if isinstance(node, (str, unicode)):
-        return node
-
-    return DEV_BRANCH
+    def __repr__(self):
+        return "IgniteVersion ('%s')" % str(self)
 
 
 DEV_BRANCH = IgniteVersion("dev")

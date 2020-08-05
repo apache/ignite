@@ -35,12 +35,16 @@ class SparkService(IgniteAwareService):
 
     logs = {}
 
-    def __init__(self, context, version=DEV_BRANCH, num_nodes=3, properties=""):
+    # pylint: disable=R0913
+    def __init__(self, context, modules=None, version=DEV_BRANCH, num_nodes=3, properties=""):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        IgniteAwareService.__init__(self, context, num_nodes, False, version, properties)
+        modules = modules or []
+        modules.extend(["ignite-spark"])
+
+        IgniteAwareService.__init__(self, context, num_nodes, modules, False, version, properties)
 
         self.log_level = "DEBUG"
 
