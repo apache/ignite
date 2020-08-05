@@ -19,7 +19,9 @@ package org.apache.ignite.internal.encryption;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -463,11 +465,10 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         node1.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-        Map<Integer, Integer> keys1 = node1.context().encryption().groupKeysInfo(grpId);
-        Map<Integer, Integer> keys2 = node2.context().encryption().groupKeysInfo(grpId);
+        Set<Integer> keys1 = new TreeSet<>(node1.context().encryption().groupKeyIds(grpId));
+        Set<Integer> keys2 = new TreeSet<>(node2.context().encryption().groupKeyIds(grpId));
 
         assertEquals(2, keys1.size());
-        assertEquals(2, keys2.size());
 
         assertEquals(keys1, keys2);
 
@@ -488,14 +489,14 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                 streamer.addData(i, String.valueOf(i));
 
                 if (i % 1_000 == 0 &&
-                    node1.context().encryption().groupKeysInfo(grpId).size() == 1 &&
-                    node2.context().encryption().groupKeysInfo(grpId).size() == 1)
+                    node1.context().encryption().groupKeyIds(grpId).size() == 1 &&
+                    node2.context().encryption().groupKeyIds(grpId).size() == 1)
                     break;
             }
         }
 
-        assertEquals(1, node1.context().encryption().groupKeysInfo(grpId).size());
-        assertEquals(1, node2.context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(1, node1.context().encryption().groupKeyIds(grpId).size());
+        assertEquals(1, node2.context().encryption().groupKeyIds(grpId).size());
     }
 
     /**
@@ -539,8 +540,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
 
-        Map<Integer, Integer> keys1 = node0.context().encryption().groupKeysInfo(grpId);
-        Map<Integer, Integer> keys2 = node1.context().encryption().groupKeysInfo(grpId);
+        Set<Integer> keys1 = new TreeSet<>(node0.context().encryption().groupKeyIds(grpId));
+        Set<Integer> keys2 = new TreeSet<>(node1.context().encryption().groupKeyIds(grpId));
 
         assertEquals(keys1, keys2);
 
@@ -570,8 +571,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                 streamer.addData(n, String.valueOf(n));
 
                 if (n % 1000 == 0 &&
-                    node0.context().encryption().groupKeysInfo(grpId).size() == 1 &&
-                    node1.context().encryption().groupKeysInfo(grpId).size() == 1)
+                    node0.context().encryption().groupKeyIds(grpId).size() == 1 &&
+                    node1.context().encryption().groupKeyIds(grpId).size() == 1)
                     break;
 
                 if (n - start == 500_000)
@@ -579,8 +580,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             }
         }
 
-        assertEquals(1, node0.context().encryption().groupKeysInfo(grpId).size());
-        assertEquals(1, node1.context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
+        assertEquals(1, node1.context().encryption().groupKeyIds(grpId).size());
     }
 
     /**
@@ -635,8 +636,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        assertEquals(2, node1.context().encryption().groupKeysInfo(grpId).size());
-        assertEquals(2, node2.context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(2, node1.context().encryption().groupKeyIds(grpId).size());
+        assertEquals(2, node2.context().encryption().groupKeyIds(grpId).size());
 
         stopAllGrids();
 
@@ -652,8 +653,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         node1 = grid(GRID_0);
         node2 = grid(GRID_1);
 
-        assertEquals(2, node1.context().encryption().groupKeysInfo(grpId).size());
-        assertEquals(2, node2.context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(2, node1.context().encryption().groupKeyIds(grpId).size());
+        assertEquals(2, node2.context().encryption().groupKeyIds(grpId).size());
 
         stopLoad.set(false);
 
@@ -673,14 +674,14 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         try {
             waitForCondition(() -> {
-                Map<Integer, Integer> keys1 = grid(GRID_0).context().encryption().groupKeysInfo(grpId);
-                Map<Integer, Integer> keys2 = grid(GRID_1).context().encryption().groupKeysInfo(grpId);
+                List<Integer> keys1 = grid(GRID_0).context().encryption().groupKeyIds(grpId);
+                List<Integer> keys2 = grid(GRID_1).context().encryption().groupKeyIds(grpId);
 
                 return keys1.size() == 1 && keys2.size() == 1;
             }, MAX_AWAIT_MILLIS);
 
-            assertEquals(1, node1.context().encryption().groupKeysInfo(grpId).size());
-            assertEquals(1, node2.context().encryption().groupKeysInfo(grpId).size());
+            assertEquals(1, node1.context().encryption().groupKeyIds(grpId).size());
+            assertEquals(1, node2.context().encryption().groupKeyIds(grpId).size());
         } finally {
             stopLoad.set(true);
 
@@ -814,7 +815,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         for (long segment = startIdx; segment <= endIdx; segment++)
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
-        assertEquals(1, grid(GRID_1).context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
     }
 
     /**

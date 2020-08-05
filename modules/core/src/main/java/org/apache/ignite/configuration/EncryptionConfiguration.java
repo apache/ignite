@@ -17,10 +17,15 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
+
 /**
  * Encryption configuration.
  */
-public class EncryptionConfiguration {
+public class EncryptionConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default number of threads used for re-encryption (equal to the number of available processors). */
     public static final int DFLT_REENCRYPTION_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 

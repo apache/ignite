@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -203,14 +204,14 @@ class GroupKeyChangeProcess {
                         new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
                 }
 
-                Map<Integer, Integer> keysInfo = ctx.encryption().groupKeysInfo(grpId);
+                List<Integer> keyIds = ctx.encryption().groupKeyIds(grpId);
 
-                if (keysInfo == null) {
+                if (keyIds == null) {
                     return new GridFinishedFuture<>(
                         new IgniteException("Encrypted cache group not found [grpId=" + grpId + "]"));
                 }
 
-                for (int locKeyId : keysInfo.keySet()) {
+                for (int locKeyId : keyIds) {
                     if (locKeyId != keyId)
                         continue;
 

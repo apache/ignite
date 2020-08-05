@@ -335,8 +335,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        assertNull(node0.context().encryption().groupKeysInfo(grpId));
-        assertNull(node1.context().encryption().groupKeysInfo(grpId));
+        assertNull(node0.context().encryption().groupKeyIds(grpId));
+        assertNull(node1.context().encryption().groupKeyIds(grpId));
     }
 
     /** @throws Exception If failed. */
@@ -518,19 +518,19 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
 
-        assertEquals(2, grid(GRID_0).context().encryption().groupKeysInfo(grpId).size());
-        assertEquals(2, grid(GRID_1).context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(2, grid(GRID_0).context().encryption().groupKeyIds(grpId).size());
+        assertEquals(2, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
 
         // Simulate that wal was removed.
         for (long segment = startIdx1; segment <= endIdx1; segment++)
             grid(GRID_0).context().encryption().onWalSegmentRemoved(segment);
 
-        assertEquals(1, grid(GRID_0).context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(1, grid(GRID_0).context().encryption().groupKeyIds(grpId).size());
 
         for (long segment = startIdx2; segment <= endIdx2; segment++)
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
-        assertEquals(1, grid(GRID_1).context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
     }
 
     /**

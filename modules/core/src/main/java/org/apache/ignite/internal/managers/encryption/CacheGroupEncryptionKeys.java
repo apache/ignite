@@ -19,12 +19,10 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,23 +93,30 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * Gets information about existing encryption keys for the specified cache group.
+     * Gets the existing encryption key IDs for the specified cache group.
      *
      * @param grpId Cache group ID.
-     * @return Map of the key identifier with hash code of encryption key.
+     * @return List of the key identifiers.
      */
-    Map<Integer, Integer> info(int grpId) {
+    List<Integer> keyIds(int grpId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (keys == null)
             return null;
 
-        Map<Integer, Integer> keysInfo = new LinkedHashMap<>();
+        List<Integer> keyIds = new ArrayList<>(keys.size());
 
         for (GroupKey groupKey : keys)
-            keysInfo.put(groupKey.unsignedId(), Arrays.hashCode(U.toBytes(groupKey.key())));
+            keyIds.add(groupKey.unsignedId());
 
-        return keysInfo;
+        return keyIds;
+    }
+
+    /**
+     * @return Cache group IDs for which encryption keys are stored.
+     */
+    Set<Integer> groupIds() {
+        return grpKeys.keySet();
     }
 
     /**
@@ -200,13 +205,6 @@ class CacheGroupEncryptionKeys {
             keys.add(new GroupKey(encrKey.id(), encSpi.decryptKey(encrKey.key())));
 
         grpKeys.put(grpId, keys);
-    }
-
-    /**
-     * @return Cache group identifiers for which encryption keys are stored.
-     */
-    Set<Integer> groups() {
-        return grpKeys.keySet();
     }
 
     /**

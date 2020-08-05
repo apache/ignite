@@ -614,17 +614,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Gets information about existing encryption keys for the specified cache group.
+     * Gets the existing encryption key IDs for the specified cache group.
      *
      * @param grpId Cache group ID.
-     * @return Map of the key identifier with hash code of encryption key.
+     * @return List of the key identifiers.
      */
-    @Nullable public Map<Integer, Integer> groupKeysInfo(int grpId) {
-        return grpKeys.info(grpId);
+    @Nullable public List<Integer> groupKeyIds(int grpId) {
+        return grpKeys.keyIds(grpId);
     }
 
     /**
-     * Add new cache group encryption key.
+     * Adds new cache group encryption key.
      *
      * @param grpId Cache group ID.
      * @param key Encryption key.
@@ -943,14 +943,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             metastorage.iterate(ENCRYPTION_KEYS_PREFIX, (key, val) -> {
                 int grpId = Integer.parseInt(key.replace(ENCRYPTION_KEYS_PREFIX, ""));
 
-                if (grpKeys.groups().contains(grpId))
+                if (grpKeys.groupIds().contains(grpId))
                     return;
 
                 grpKeys.put(grpId, (List<GroupKeyEncrypted>)val);
             }, true);
 
             // Try to read keys in previous format.
-            if (grpKeys.groups().isEmpty()) {
+            if (grpKeys.groupIds().isEmpty()) {
                 metastorage.iterate(ENCRYPTION_KEY_PREFIX, (key, val) -> {
                     int grpId = Integer.parseInt(key.replace(ENCRYPTION_KEY_PREFIX, ""));
 
@@ -965,9 +965,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (savedSegments != null)
                 grpKeys.trackedWalSegments((Map<Long, Map<Integer, Set<Integer>>>)savedSegments);
 
-            if (grpKeys.groups().isEmpty()) {
+            if (grpKeys.groupIds().isEmpty()) {
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. " +
-                    "[grps=" + F.concat(grpKeys.groups(), ",") +
+                    "[grps=" + F.concat(grpKeys.groupIds(), ",") +
                     ", masterKeyName=" + getSpi().getMasterKeyName() + ']');
             }
         }
@@ -1194,7 +1194,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!reencryptGroupsForced.isEmpty())
             writeToMetaStore(0, false, true);
 
-        for (Integer grpId : grpKeys.groups()) {
+        for (Integer grpId : grpKeys.groupIds()) {
             if (!writeAll && !reencryptGroupsForced.containsKey(grpId) &&
                 metaStorage.read(ENCRYPTION_KEYS_PREFIX + grpId) != null)
                 continue;
