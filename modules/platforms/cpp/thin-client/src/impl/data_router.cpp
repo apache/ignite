@@ -211,8 +211,6 @@ namespace ignite
                 if (channels.empty() && legacyChannels.empty())
                     return SP_DataChannel();
 
-                std::cout << "GetRandomChannelUnsafe " << channels.size() << " " << legacyChannels.size() << std::endl;
-
                 int r = rand();
 
                 size_t idx = r % (channels.size() + legacyChannels.size());

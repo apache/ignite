@@ -53,16 +53,19 @@ namespace ignite
                     SP_TransactionImpl tx = threadTx.Get();
                     TransactionImpl* ptr = tx.Get();
 
-                    /*if (ptr && ptr->IsClosed())
+                    if (ptr && ptr->IsClosed())
                     {
                         tx = SP_TransactionImpl();
 
                         threadTx.Remove();
-                    }*/
-
-                    std::cout << " txId requested: " << tx.Get() << std::endl;
+                    }
 
                     return tx;
+                }
+
+                bool TransactionImpl::IsClosed() const
+                {
+                    return closed;
                 }
 
                 ignite::common::concurrent::SharedPointer<TransactionImpl> TransactionsImpl::GetTx()
@@ -87,8 +90,6 @@ namespace ignite
                     {
                         tx = SP_TransactionImpl(new TransactionImpl(txs, txId, concurrency, isolation, timeout, txSize));
 
-                        std::cout << txId << " txId  create: " << tx.Get() << std::endl;
-
                         threadTx.Set(tx);
                     }
 
@@ -104,34 +105,46 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
-                void TransactionsImpl::TxCommit(int32_t txId)
+                int32_t TransactionsImpl::TxCommit(int32_t txId)
                 {
                     TxEndRequest<RequestType::OP_TX_END> req(txId, true);
 
                     Response rsp;
 
                     SyncMessage(req, rsp);
+
+                    return rsp.GetStatus();
                 }
 
-                void TransactionsImpl::TxRollback(int32_t txId)
+                int32_t TransactionsImpl::TxRollback(int32_t txId)
                 {
                     TxEndRequest<RequestType::OP_TX_END> req(txId, false);
 
                     Response rsp;
 
-                    std::cout << txId << " txId  rollback:" << std::endl;
-
                     SyncMessage(req, rsp);
 
-                    std::cout << txId << " rollback: " << rsp.GetStatus() << std::endl;
+                    return rsp.GetStatus();
                 }
 
                 void TransactionImpl::commit() {
-                    txs.Get()->TxCommit(txId);
+                    int32_t rsp = txs.Get()->TxCommit(txId);
+
+                    if (rsp == ResponseStatus::SUCCESS)
+                    {
+                        //state = newState;
+
+                        closed = true;
+                    }
                 }
 
                 void TransactionImpl::rollback() {
-                    txs.Get()->TxRollback(txId);
+                    int32_t rsp = txs.Get()->TxRollback(txId);
+
+                    if (rsp == ResponseStatus::SUCCESS)
+                    {
+                        closed = true;
+                    }
                 }
             }
         }

@@ -116,6 +116,7 @@ namespace ignite
                  */
                 static common::concurrent::SharedPointer<cache::CacheClientImpl> MakeCacheImpl(
                         const SP_DataRouter& router,
+                        const transactions::SP_TransactionsImpl& tx,
                         const std::string& name,
                         int32_t id);
 

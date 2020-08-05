@@ -53,7 +53,7 @@ namespace ignite
 
                 int32_t cacheId = utility::GetCacheId(name);
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::GetOrCreateCache(const char* name)
@@ -70,7 +70,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::CreateCache(const char* name)
@@ -87,7 +87,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                return MakeCacheImpl(router, name, cacheId);
+                return MakeCacheImpl(router, txImpl, name, cacheId);
             }
 
             void IgniteClientImpl::DestroyCache(const char* name)
@@ -118,10 +118,11 @@ namespace ignite
 
             common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::MakeCacheImpl(
                 const SP_DataRouter& router,
+                const transactions::SP_TransactionsImpl& tx,
                 const std::string& name,
                 int32_t id)
             {
-                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, id));
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, tx, name, id));
 
                 return cache;
             }

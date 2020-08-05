@@ -40,6 +40,11 @@ namespace ignite
     {
         namespace thin
         {
+            /** "Transactional" flag mask. */
+            #define TRANSACTIONAL_FLAG_MASK 0x02;
+
+            #define KEEP_BINARY_FLAG_MASK 0x01;
+
             /* Forward declaration. */
             class Readable;
 
@@ -352,7 +357,8 @@ namespace ignite
                  */
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
-                    binary(binary)
+                    binary(binary),
+                    actTx(false)
                 {
                     // No-op.
                 }
@@ -365,6 +371,16 @@ namespace ignite
                     // No-op.
                 }
 
+                void activeTx(bool tx, int32_t _txId) {
+                    actTx = tx;
+
+                    txId = _txId;
+                }
+
+                bool activeTx() const {
+                    return actTx;
+                }
+
                 /**
                  * Write request using provided writer.
                  * @param writer Writer.
@@ -372,7 +388,19 @@ namespace ignite
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
                 {
                     writer.WriteInt32(cacheId);
-                    writer.WriteBool(binary);
+
+                    int8_t flags = 0;
+
+                    if (binary)
+                        flags |= KEEP_BINARY_FLAG_MASK;
+
+                    if (actTx)
+                        flags |= TRANSACTIONAL_FLAG_MASK;
+
+                    writer.WriteInt8(flags);
+
+                    if (actTx)
+                        writer.WriteInt32(txId);
                 }
 
             private:
@@ -381,6 +409,10 @@ namespace ignite
 
                 /** Binary flag. */
                 bool binary;
+
+                bool actTx;
+
+                int32_t txId;
             };
 
             /**
@@ -495,6 +527,10 @@ namespace ignite
                 virtual ~Cache2ValueRequest()
                 {
                     // No-op.
+                }
+
+                void activeTx(bool tx, int32_t txId) {
+                    CacheRequest<OpCode>::activeTx(tx, txId);
                 }
 
                 /**
@@ -661,7 +697,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const {
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
                     writer.WriteInt32(txId);
                     writer.WriteBool(commited);
                 }

@@ -31,12 +31,14 @@ namespace ignite
             {
                 CacheClientImpl::CacheClientImpl(
                         const SP_DataRouter& router,
+                        const transactions::SP_TransactionsImpl& tx,
                         const std::string& name,
                         int32_t id) :
                     router(router),
                     name(name),
                     id(id),
-                    binary(false)
+                    binary(false),
+                    tx(tx)
                 {
                     // No-op.
                 }
@@ -93,7 +95,12 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
+                    bool activeTx = tx.Get()->GetTx().IsValid();
+
+                    int32_t txId = activeTx ? tx.Get()->GetTx().Get()->TxId() : 0;
+
                     Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
+                    req.activeTx(activeTx, txId);
                     Response rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -101,7 +108,12 @@ namespace ignite
 
                 void CacheClientImpl::Get(const WritableKey& key, Readable& value)
                 {
+                    bool activeTx = tx.Get()->GetTx().IsValid();
+
+                    int32_t txId = activeTx ? tx.Get()->GetTx().Get()->TxId() : 0;
+
                     CacheValueRequest<RequestType::CACHE_GET> req(id, binary, key);
+                    req.activeTx(activeTx, txId);
                     CacheValueResponse rsp(value);
 
                     SyncCacheKeyMessage(key, req, rsp);

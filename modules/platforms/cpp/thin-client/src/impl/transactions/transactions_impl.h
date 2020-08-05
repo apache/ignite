@@ -26,10 +26,10 @@ namespace ignite
                     typedef ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> TL_SP_TransactionsImpl;
 
                 public:
-                    TransactionImpl(SP_TransactionsImpl _txs, int64_t id,
+                    TransactionImpl(SP_TransactionsImpl _txs, int32_t id,
                         TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize) :
-                        txId(id),
                         txs(_txs),
+                        txId(id),
                         concurrency(concurrency),
                         isolation(isolation),
                         timeout(timeout),
@@ -38,7 +38,6 @@ namespace ignite
                         closed(false)
                     {
                         // No-op.
-                        std::cout << "Create1!!! " << txs.Get() << std::endl;
                     }
                     
                     ~TransactionImpl() {}
@@ -49,15 +48,27 @@ namespace ignite
     
                     void close() {}
 
+                    int32_t TxId()
+                    {
+                        return txId;
+                    }
+
                     /** Transactions. */
                     SP_TransactionsImpl txs;
 
                     static SP_TransactionImpl GetCurrent();
 
+                    /**
+                     * Check if the transaction has been closed.
+                     *
+                     * @return True if the transaction has been closed.
+                     */
+                    bool IsClosed() const;
+
                     static SP_TransactionImpl Create(
                             SP_TransactionsImpl txs, TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize);
                 private:
-                    int64_t txId;
+                    int32_t txId;
 
                     /** Thread local instance of the transaction. */
                     static TL_SP_TransactionsImpl threadTx;
@@ -101,9 +112,9 @@ namespace ignite
 
                     SP_TransactionImpl TxStart();
 
-                    void TxCommit(int32_t);
+                    int32_t TxCommit(int32_t);
 
-                    void TxRollback(int32_t);
+                    int32_t TxRollback(int32_t);
 
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);
