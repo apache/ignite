@@ -469,6 +469,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final String RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC =
         "Total number of messages received by current node from the given node";
 
+    /** Client nodes might have port {@code 0} if they have no server socket opened. */
+    public static final Integer DISABLED_CLIENT_PORT = 0;
+
     /** */
     private ConnectGateway connectGate;
 
@@ -2405,7 +2408,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
             res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
-            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort == -1 ? 0 : boundTcpPort);
+            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort == -1 ? DISABLED_CLIENT_PORT : boundTcpPort);
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), usePairedConnections);
@@ -3142,7 +3145,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         if (getLocalNode().isClient()) {
             if (node.isClient()) {
-                if (Integer.valueOf(0).equals(node.attribute(createSpiAttributeName(ATTR_PORT))))
+                if (DISABLED_CLIENT_PORT.equals(node.attribute(createSpiAttributeName(ATTR_PORT))))
                     throw new IgniteSpiException("Cannot send message to the client node with no server socket opened.");
             }
         }
