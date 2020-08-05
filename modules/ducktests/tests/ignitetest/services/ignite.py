@@ -21,32 +21,16 @@ import functools
 import operator
 import os
 import signal
-import threading
+import time
+from threading import Thread
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils.concurrent import CountDownLatch
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.tests.utils.version import DEV_BRANCH
 
-
-# class Latch:
-#     def __init__(self, count):
-#         self.cond_var = threading.Condition()
-#         self.count = count
-#
-#     def wait(self):
-#         with self.cond_var:
-#             while self.count > 0:
-#                 self.cond_var.wait()
-#
-#     def count_down(self):
-#         with self.cond_var:
-#             if self.count > 0:
-#                 self.count -= 1
-#
-#             if self.count == 0:
-#                 self.cond_var.notify_all()
 
 class IgniteService(IgniteAwareService):
     """
@@ -111,7 +95,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            node.account.signal(pid, sig, allow_fail=False)
+            self.__stop_node__(node, pid, sig)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -120,56 +104,20 @@ class IgniteService(IgniteAwareService):
             self.thread_dump(node)
             raise
 
-    def stop_nodes(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20):
+    def stop_nodes_async(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20):
+        """
+        Stops nodes asynchronously.
+        """
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
-        #
-        # latch = Latch(len(nodes))
-        #
-        # threads = []
-        # for node in nodes:
-        #     thread = threading.Thread(target=self.__stop_node__, args=(node, next(iter(self.pids(node))), sig, latch))
-        #     self.logger.warn("Starting thread")
-        #     threads.append(thread)
-        #     thread.start()
-        #     self.logger.warn("Started thread")
-        #
-        # for thread in threads:
-        #     thread.join()
 
+        sem = CountDownLatch(len(nodes))
 
-    # for thread in threads:
-        #     thread.join()
+        delay = 0
 
-        # return {"activate_res": " ".join(activate_res), "baseline_res": baseline_res}
+        for node in nodes:
+            Thread(target=self.__stop_node__, args=(node, next(iter(self.pids(node))), sig, sem, delay)).start()
 
-
-        sem = threading.Semaphore(len(nodes))
-        # for node in nodes:
-        #     sem.acquire()
-
-        # sem = RLock()
-        # sem.acquire()
-        #
-        # sem = Condition(RLock())
-        # sem.acquire()
-        #
-        # sem = Event()
-        # sem.set()
-
-        try:
-            for node in nodes:
-                thread = threading.Thread(target=self.__stop_node__,args=(node, next(iter(self.pids(node))), sig, sem))
-
-                self.logger.warn("Starting stop thread for pid " + str(next(iter(self.pids(node)))))
-
-                thread.start()
-
-                self.logger.warn("Started stop thread for pid " + str(next(iter(self.pids(node)))))
-        finally:
-            pass
-            #for node in nodes:
-                #sem.release()
-            # sem.release()
+            delay += delay_ms
 
         try:
             wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
@@ -179,32 +127,16 @@ class IgniteService(IgniteAwareService):
                 self.thread_dump(node)
             raise
 
-    # def __stop_node__(self, node, pid, sig, latch):
-    #     self.logger.warn("__stop_node__ launched, countdown the latch")
-    #     latch.count_down()
-    #     self.logger.warn("__stop_node__ launched, waiting for the latch")
-    #     latch.wait()
-    #
-    #     self.logger.info("Killing on %s" % node.account.externally_routable_ip)
-    #
-    #     node.account.signal(pid, sig)
-    #
-    #     self.logger.info("Killed on %s" % node.account.externally_routable_ip)
+    @staticmethod
+    def __stop_node__(node, pid, sig, start_waiter=None, delay_ms=0):
+        if start_waiter:
+            start_waiter.count_down()
+            start_waiter.wait()
 
-    def __stop_node__(self, node, pid, sig,  sem):
-        if sem:
-            self.logger.warn("Started stop thread for pid " + str(pid) + " on node " + node.discovery_info().node_id + ". Waiting for the sem.")
+        if delay_ms > 0:
+            time.sleep(delay_ms/1000.0)
 
-            #sem.acquire()
-            sem.release()
-
-            self.logger.warn("Released stop thread for pid " + str(pid) + " on node " + node.discovery_info().node_id + ". Waited for the sem.")
-
-        self.logger.warn("Stopping " + str(pid) + " on node " + node.discovery_info().node_id)
-
-        node.account.signal(pid, sig, True)
-
-        self.logger.warn("Stopped " + str(pid))
+        node.account.signal(pid, sig, False)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)

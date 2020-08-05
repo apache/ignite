@@ -26,7 +26,7 @@ from jinja2 import Template
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import LATEST_2_7
+from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 
 
 # pylint: disable=W0223
@@ -37,7 +37,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 3
+    NUM_NODES = 7
 
     CONFIG_TEMPLATE = """
         {% if zookeeper_settings %}
@@ -78,43 +78,53 @@ class DiscoveryTest(IgniteTest):
         if self.servers:
             self.servers.stop()
 
-    # @cluster(num_nodes=NUM_NODES)
-    # # @parametrize(version=str(DEV_BRANCH))
-    # @parametrize(version=str(LATEST_2_7))
-    # def test_tcp_not_coordinator_single(self, version):
-    #     """
-    #     Test basic discovery scenario with TcpDiscoverySpi.
-    #     """
-    #     return self.__basic_test__(version)
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_tcp_not_coordinator_single(self, version):
+        """
+        Test single-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
+        """
+        return self.__nodes_failure_test__(version, nodes_to_kill=1)
 
     @cluster(num_nodes=NUM_NODES)
-    # @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
     def test_tcp_not_coordinator_two(self, version):
         """
-        Test basic discovery scenario with TcpDiscoverySpi.
+        Test two-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
         """
-        return self.__basic_test__(version, nodes_to_kill=2)
+        return self.__nodes_failure_test__(version, nodes_to_kill=2)
 
-    # @cluster(num_nodes=NUM_NODES)
-    # # @parametrize(version=str(DEV_BRANCH))
-    # @parametrize(version=str(LATEST_2_7))
-    # def test_tcp_coordinator(self, version):
-    #     """
-    #     Test basic discovery scenario with TcpDiscoverySpi.
-    #     """
-    #     return self.__basic_test__(version, True)
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_tcp_coordinator(self, version):
+        """
+        Test coordinator-failure scenario with TcpDiscoverySpi.
+        """
+        return self.__nodes_failure_test__(version, True)
 
-    # @cluster(num_nodes=NUM_NODES + 3)
-    # @parametrize(version=str(DEV_BRANCH))
-    # @parametrize(version=str(LATEST_2_7))
-    # def test_zk(self, version):
-    #     """
-    #     Test basic discovery scenario with ZookeeperDiscoverySpi.
-    #     """
-    #     return self.__basic_test__(version, False, True)
+    @cluster(num_nodes=NUM_NODES + 3)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_zk_single(self, version):
+        """
+        Test single node failure scenario (not the coordinator) with ZooKeeper.
+        """
+        return self.__nodes_failure_test__(version, nodes_to_kill=1, coordinator=False, with_zk=True)
 
-    def __basic_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
+    @cluster(num_nodes=NUM_NODES + 3)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_zk_two(self, version):
+        """
+        Test two-node-failure scenario (not the coordinator) with ZooKeeper.
+        """
+        return self.__nodes_failure_test__(version, nodes_to_kill=1, coordinator=False, with_zk=True)
+
+    # pylint: disable=R0913,R0914
+    def __nodes_failure_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
         if with_zk:
             self.zk_quorum = ZookeeperService(self.test_context, 3)
             self.stage("Starting Zookeper quorum")
@@ -140,6 +150,11 @@ class DiscoveryTest(IgniteTest):
 
         if nodes_to_kill > self.servers.num_nodes - 1:
             raise Exception("Too many nodes to kill: " + str(nodes_to_kill))
+
+        test = [random.sample([n for n in self.servers.nodes if n.discovery_info().node_id
+                               != self.servers.nodes[0].discovery_info().coordinator], 1)]
+
+        self.logger.warn("The nodes are: " + str(test))
 
         if with_zk:
             node_chooser = lambda nodes: random.sample(nodes, nodes_to_kill)
@@ -173,7 +188,7 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        self.servers.stop_nodes(failed_nodes, clean_shutdown=False)
+        self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, delay_ms=delay_ms)
 
         for failed_id in ids_to_wait:
             self.stage("Waiting for stopping " + failed_id)
@@ -188,11 +203,14 @@ class DiscoveryTest(IgniteTest):
     @staticmethod
     def choose_node_to_kill(nodes, chooser):
         """
+        :param nodes: node set.
         :param chooser: chooser of node to kill.
-        :return: Tuple of nodes to kill and survived nodes
+        :return: Tuple of nodes to kill and survived nodes.
         """
-        kill = chooser(nodes)
+        to_kill = chooser(nodes)
 
-        survive = random.choice([node for node in nodes if node not in kill])
+        to_kill = [to_kill] if not isinstance(to_kill, list) else to_kill
 
-        return kill, survive
+        survive = random.choice([node for node in nodes if node not in to_kill])
+
+        return to_kill, survive
