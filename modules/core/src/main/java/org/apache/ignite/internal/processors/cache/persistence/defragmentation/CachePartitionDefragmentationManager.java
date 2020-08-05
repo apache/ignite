@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDataStore;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
@@ -112,7 +112,7 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
 
         newContext.start();
 
-        GridCacheDataStore cacheDataStore = new GridCacheDataStore(newContext, p, true, defrgCtx.busyLock(), defrgCtx.log);
+        GridCacheOffheapManager.GridCacheDataStore cacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newContext, p, true, defrgCtx.busyLock(), defrgCtx.log);
 
         cacheDataStore.init();
 
