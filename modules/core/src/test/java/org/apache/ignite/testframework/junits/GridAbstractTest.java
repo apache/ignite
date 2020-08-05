@@ -1685,6 +1685,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Returns a new instance of ignite configuration.
+     * Be aware that this method is not called by {@link #startGrid(int)}.
+     *
      * @return Grid test configuration.
      * @throws Exception If failed.
      */
