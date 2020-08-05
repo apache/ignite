@@ -17,6 +17,8 @@
 This module contains the base class to build Ignite aware application written on java.
 """
 
+import base64
+import json
 import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
@@ -26,6 +28,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
     """
     The base class to build Ignite aware application written on java.
     """
+
     # pylint: disable=R0913
     def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
@@ -82,7 +85,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         args = self.java_class_name + "," + IgniteAwareApplicationService.CONFIG_FILE
 
         if self.params != "":
-            args += "," + self.params
+            args += "," + str(base64.b64encode(json.dumps(self.params).encode("UTF-8")))
 
         return args
 
@@ -103,10 +106,16 @@ class IgniteAwareApplicationService(IgniteAwareService):
         """
         :return: Export string of additional environment variables.
         """
+        if not self.version.is_dev:
+            # Jackson requred to parse application params at java side. Release's version should be used.
+            for line in self.nodes[0].account.ssh_capture(
+                    "ls -d %s/libs/optional/ignite-aws/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % self.path.home):
+                self.user_libs.extend([line])
+
         return "export MAIN_CLASS={main_class}; ".format(main_class=self.servicejava_class_name) + \
                "export EXCLUDE_TEST_CLASSES=true; " + \
                "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=self.PERSISTENT_ROOT) + \
-               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*; " % self.user_libs
+               "export USER_LIBS=%s:/opt/ignite-dev/modules/ducktests/target/*; " % (":".join(self.user_libs))
 
     def extract_result(self, name):
         """
