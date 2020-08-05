@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
-import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,8 +28,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -63,10 +59,8 @@ public class IgniteApplicationService {
 
             ObjectMapper mapper = new ObjectMapper();
 
-            ObjectReader reader = mapper.readerFor(Map.class);
-
             JsonNode jsonNode = params.length > 2 ?
-                reader.readTree(new String(Base64.getDecoder().decode(params[2]), UTF_8)) : mapper.createObjectNode();
+                mapper.readTree(Base64.getDecoder().decode(params[2])) : mapper.createObjectNode();
 
             app.start(jsonNode);
         }
