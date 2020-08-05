@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -1231,20 +1232,20 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 int keysCnt = in.readInt();
 
-                List<T3<Integer, Byte, byte[]>> grpKeys = new ArrayList<>(keysCnt);
+                List<T2<Integer, GroupKeyEncrypted>> grpKeys = new ArrayList<>(keysCnt);
 
                 boolean readKeyId = type == MASTER_KEY_CHANGE_RECORD_V2;
 
                 for (int i = 0; i < keysCnt; i++) {
                     int grpId = in.readInt();
-                    byte keyId = readKeyId ? in.readByte() : 0;
+                    int keyId = readKeyId ? in.readByte() & 0xff : 0;
 
                     int grpKeySize = in.readInt();
                     byte[] grpKey = new byte[grpKeySize];
 
                     in.readFully(grpKey);
 
-                    grpKeys.add(new T3<>(grpId, keyId, grpKey));
+                    grpKeys.add(new T2<>(grpId, new GroupKeyEncrypted(keyId, grpKey)));
                 }
 
                 res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
@@ -1868,16 +1869,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(keyIdBytes.length);
                 buf.put(keyIdBytes);
 
-                List<T3<Integer, Byte, byte[]>> grpKeys = mkChangeRec.getGrpKeys();
+                List<T2<Integer, GroupKeyEncrypted>> grpKeys = mkChangeRec.getGrpKeys();
 
                 buf.putInt(grpKeys.size());
 
-                for (T3<Integer, Byte, byte[]> entry : grpKeys) {
-                    buf.putInt(entry.get1());
-                    buf.put(entry.get2());
+                for (T2<Integer, GroupKeyEncrypted> entry : grpKeys) {
+                    GroupKeyEncrypted grpKey = entry.get2();
 
-                    buf.putInt(entry.get3().length);
-                    buf.put(entry.get3());
+                    buf.putInt(entry.get1());
+                    buf.put((byte)grpKey.id());
+
+                    buf.putInt(grpKey.key().length);
+                    buf.put(grpKey.key());
                 }
 
                 break;
