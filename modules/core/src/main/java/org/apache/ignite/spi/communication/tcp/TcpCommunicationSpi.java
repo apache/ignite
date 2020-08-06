@@ -1164,14 +1164,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             else
                 connIdx = connPlc.connectionIndex();
 
-            if (msg instanceof TcpConnectionIndexAwareMessage) {
-                int msgConnIdx = ((TcpConnectionIndexAwareMessage)msg).connectionIndex();
-
-                connIdx = msgConnIdx == UNDEFINED_CONNECTION_INDEX ? connPlc.connectionIndex() : msgConnIdx;
-            }
-            else
-                connIdx = connPlc.connectionIndex();
-
             try {
                 boolean retry;
 
