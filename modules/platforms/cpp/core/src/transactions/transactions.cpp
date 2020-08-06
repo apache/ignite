@@ -23,7 +23,7 @@ using namespace ignite::impl::transactions;
 namespace ignite
 {
     namespace transactions
-    {
+    {    
         Transactions::Transactions(SharedPointer<TransactionsImpl> impl) :
             impl(impl)
         {

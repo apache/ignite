@@ -95,12 +95,12 @@ namespace ignite
                     /**
                      * Ends the transaction. Transaction will be rolled back if it has not been committed.
                      */
-                    void Close() {}
+                    void Close();
 
                     /**
                      * @return Current transaction Id.
                      */
-                    int32_t TxId()
+                    int32_t TxId() const
                     {
                         return txId;
                     }
@@ -160,6 +160,9 @@ namespace ignite
                     /** Closed flag. */
                     bool closed;
 
+                    /** Access lock. */
+                    CriticalSection accessLock;
+
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
                 };
             
@@ -191,22 +194,43 @@ namespace ignite
                     SP_TransactionImpl TxStart();
 
                     /**
+                     * Start new transaction.
+                     *
+                     * @param concurrency Concurrency.
+                     * @param isolation Isolation.
+                     * @param timeout Timeout in milliseconds. Zero if for infinite timeout.
+                     * @param txSize Number of entries participating in transaction (may be approximate).
+                     * @param err Error.
+                     * @return Transaction ID on success.
+                     */
+                    int64_t TxStart(int concurrency, int isolation, int64_t timeout,
+                        int32_t txSize, IgniteError& err);
+
+                    /**
                      * Commit Transaction.
                      *
                      * @param id Transaction ID.
-                     * @param err Error.
                      * @return Resulting state.
                      */
-                    int32_t TxCommit(int32_t);
+                    int32_t TxCommit(int32_t id);
 
                     /**
                      * Rollback Transaction.
                      *
                      * @param id Transaction ID.
-                     * @param err Error.
                      * @return Resulting state.
                      */
-                    int32_t TxRollback(int32_t);
+                    int32_t TxRollback(int32_t id);
+
+
+                    /**
+                     * Close the transaction.
+                     *
+                     * This method should only be used on the valid instance.
+                     *
+                     * @param id Transaction ID.
+                     */
+                    int32_t TxClose(int32_t id);
 
                     /**
                      * Get active transaction for the current thread.
