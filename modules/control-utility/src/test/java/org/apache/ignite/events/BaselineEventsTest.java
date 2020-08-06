@@ -252,7 +252,6 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
                 return true;
             },
-            EventType.EVT_BASELINE_CHANGED,
             EventType.EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED,
             EventType.EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED
         );
