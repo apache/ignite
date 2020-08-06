@@ -106,7 +106,7 @@ class IgniteService(IgniteAwareService):
 
     def stop_nodes_async(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20):
         """
-        Stops nodes asynchronously.
+        Stops the nodes asynchronously.
         """
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 

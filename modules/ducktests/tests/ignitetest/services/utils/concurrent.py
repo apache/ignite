@@ -22,7 +22,7 @@ import threading
 
 class CountDownLatch(object):
     """
-    Java-like CountDownLatch
+    A count-down latch.
     """
     def __init__(self, count=1):
         self.count = count
@@ -40,7 +40,7 @@ class CountDownLatch(object):
 
     def wait(self):
         """
-        Blocks thread if the latch is not free.
+        Blocks current thread if the latch is not free.
         """
         self.lock.acquire()
         while self.count > 0:

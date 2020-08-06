@@ -121,7 +121,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test two-node-failure scenario (not the coordinator) with ZooKeeper.
         """
-        return self.__nodes_failure_test__(version, nodes_to_kill=1, coordinator=False, with_zk=True)
+        return self.__nodes_failure_test__(version, nodes_to_kill=2, coordinator=False, with_zk=True)
 
     # pylint: disable=R0913,R0914
     def __nodes_failure_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
@@ -150,11 +150,6 @@ class DiscoveryTest(IgniteTest):
 
         if nodes_to_kill > self.servers.num_nodes - 1:
             raise Exception("Too many nodes to kill: " + str(nodes_to_kill))
-
-        test = [random.sample([n for n in self.servers.nodes if n.discovery_info().node_id
-                               != self.servers.nodes[0].discovery_info().coordinator], 1)]
-
-        self.logger.warn("The nodes are: " + str(test))
 
         if with_zk:
             node_chooser = lambda nodes: random.sample(nodes, nodes_to_kill)
@@ -203,9 +198,9 @@ class DiscoveryTest(IgniteTest):
     @staticmethod
     def choose_node_to_kill(nodes, chooser):
         """
-        :param nodes: node set.
-        :param chooser: chooser of node to kill.
-        :return: Tuple of nodes to kill and survived nodes.
+        :param nodes: the node set.
+        :param chooser: chooser of node(s) to stop.
+        :return: Tuple of nodes to stop and survived nodes.
         """
         to_kill = chooser(nodes)
 
