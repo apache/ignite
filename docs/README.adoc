@@ -57,21 +57,20 @@ Open `http://localhost:4000/docs[window=_blank]` in your browser.
 == How to Contribute
 
 If you want to contribute to the documentation, add or modify the relevant page in the `docs/_docs` directory.
-This directory contains all .adoc files, which are rendered into HTML.
+This directory contains all .adoc files (which are then rendered into HTML pages and published on the web-site).
 
-
-Because we use asciidoc for documentation, get familiar with the following resources:
+Because we use asciidoc for documentation, consider the following points:
 
 * Get familiar with the asciidoc format: https://asciidoctor.org/docs/user-manual/. You don’t have to read the entire manual. Search through it when you want to learn how to create a numbered list, or insert an image, or use italics.
-* Please read the link:https://asciidoctor.org/docs/asciidoc-recommended-practices:[AsciiDoc Recommended Practices] and try to adhere to those when editing the source files.
+* Please read the link:https://asciidoctor.org/docs/asciidoc-recommended-practices:[AsciiDoc Recommended Practices] and try to adhere to those when editing the .adoc source files.
 
 
+The following sections explain specific asciidoc syntax that we use.
 
 === Table of content
 
 The table of content is defined in the `_data/toc.yaml` file.
 If you want to add a new page, make sure to update the TOC.
-
 
 === Links to other sections in the docs
 All .adoc files are located in the "docs/_docs" directory.
@@ -139,7 +138,9 @@ tab:C++[unsupported]
 
 === Code Snippets
 
-Compilable source code files are located in the `docs/_docs/code-snippets/{language}` folders.
+Code snippets must be taken from a compilable source code file (e.g. java, cs, js, etc).
+We use the `include` feature of asciidoc.
+Source code files are located in the `docs/_docs/code-snippets/{language}` folders.
 
 
 To add a code snippet to a page, follow these steps:
