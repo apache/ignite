@@ -32,12 +32,12 @@ namespace ignite
 
                 void TransactionProxy::commit()
                 {
-                    GetTxsImpl(impl).GetTx().Get()->commit();
+                    GetTxsImpl(impl).GetCurrent().Get()->Commit();
                 }
 
                 void TransactionProxy::rollback()
                 {
-                    GetTxsImpl(impl).GetTx().Get()->rollback();
+                    GetTxsImpl(impl).GetCurrent().Get()->Rollback();
                 }
             }
         }

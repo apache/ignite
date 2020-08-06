@@ -95,9 +95,9 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
-                    bool activeTx = tx.Get()->GetTx().IsValid();
+                    bool activeTx = tx.Get()->GetCurrent().IsValid();
 
-                    int32_t txId = activeTx ? tx.Get()->GetTx().Get()->TxId() : 0;
+                    int32_t txId = activeTx ? tx.Get()->GetCurrent().Get()->TxId() : 0;
 
                     Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
                     req.activeTx(activeTx, txId);
@@ -108,9 +108,9 @@ namespace ignite
 
                 void CacheClientImpl::Get(const WritableKey& key, Readable& value)
                 {
-                    bool activeTx = tx.Get()->GetTx().IsValid();
+                    bool activeTx = tx.Get()->GetCurrent().IsValid();
 
-                    int32_t txId = activeTx ? tx.Get()->GetTx().Get()->TxId() : 0;
+                    int32_t txId = activeTx ? tx.Get()->GetCurrent().Get()->TxId() : 0;
 
                     CacheValueRequest<RequestType::CACHE_GET> req(id, binary, key);
                     req.activeTx(activeTx, txId);

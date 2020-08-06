@@ -33,10 +33,6 @@ public:
     IgniteClientTestSuiteFixture1()
     {
         serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
-
-        //int i;
-
-        //std::cin >> i;
     }
 
     ~IgniteClientTestSuiteFixture1()
