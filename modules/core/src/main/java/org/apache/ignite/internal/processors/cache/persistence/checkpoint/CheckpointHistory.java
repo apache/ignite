@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -164,9 +165,10 @@ public class CheckpointHistory {
      * is not finished yet.
      *
      * @param entry Entry to add.
+     * @param cacheStates Cache states map.
      */
-    public void addCheckpoint(CheckpointEntry entry) {
-        addCpToEarliestCpMap(entry);
+    public void addCheckpoint(CheckpointEntry entry, Map<Integer, CacheState> cacheStates) {
+        addCpCacheStatesToEarliestCpMap(entry, cacheStates);
 
         histMap.put(entry.timestamp(), entry);
     }
@@ -201,7 +203,7 @@ public class CheckpointHistory {
                     iter.remove();
             }
 
-            addCpToEarliestCpMap(entry);
+            addCpGroupStatesToEarliestCpMap(entry, states);
         }
         catch (IgniteCheckedException ex) {
             U.warn(log, "Failed to process checkpoint: " + (entry != null ? entry : "none"), ex);
@@ -230,36 +232,54 @@ public class CheckpointHistory {
      * Add last checkpoint to map of the earliest checkpoints.
      *
      * @param entry Checkpoint entry.
+     * @param cacheStates Cache states map.
      */
-    private void addCpToEarliestCpMap(CheckpointEntry entry) {
-        try {
-            Map<Integer, CheckpointEntry.GroupState> states = entry.groupState(cctx);
+    private void addCpCacheStatesToEarliestCpMap(CheckpointEntry entry, Map<Integer, CacheState> cacheStates) {
+        for (Integer grpId : cacheStates.keySet()) {
+            CacheState cacheState = cacheStates.get(grpId);
 
-            for (Integer grpId : states.keySet()) {
-                CheckpointEntry.GroupState grpState = states.get(grpId);
+            for (int pIdx = 0; pIdx < cacheState.size(); pIdx++) {
+                int part = cacheState.partitionByIndex(pIdx);
 
-                for (int pIdx = 0; pIdx < grpState.size(); pIdx++) {
-                    int part = grpState.getPartitionByIndex(pIdx);
+                GroupPartitionId grpPartKey = new GroupPartitionId(grpId, part);
 
-                    GroupPartitionId grpPartKey = new GroupPartitionId(grpId, part);
-
-                    if (!earliestCp.containsKey(grpPartKey))
-                        earliestCp.put(grpPartKey, entry);
-                }
+                addPartitionToEarliestCheckpoints(grpPartKey, entry);
             }
-        }
-        catch (IgniteCheckedException ex) {
-            U.warn(log, "Failed to process checkpoint: " + (entry != null ? entry : "none"), ex);
-
-            earliestCp.clear();
         }
     }
 
     /**
-     * @return {@code true} if there is space for next checkpoint.
+     * Add last checkpoint to map of the earliest checkpoints.
+     *
+     * @param entry Checkpoint entry.
+     * @param cacheGrpStates Group states map.
      */
-    public boolean hasSpace() {
-        return histMap.size() + 1 <= maxCpHistMemSize;
+    private void addCpGroupStatesToEarliestCpMap(
+        CheckpointEntry entry,
+        Map<Integer, CheckpointEntry.GroupState> cacheGrpStates
+    ) {
+        for (Integer grpId : cacheGrpStates.keySet()) {
+            CheckpointEntry.GroupState grpState = cacheGrpStates.get(grpId);
+
+            for (int pIdx = 0; pIdx < grpState.size(); pIdx++) {
+                int part = grpState.getPartitionByIndex(pIdx);
+
+                GroupPartitionId grpPartKey = new GroupPartitionId(grpId, part);
+
+                addPartitionToEarliestCheckpoints(grpPartKey, entry);
+            }
+        }
+    }
+
+    /**
+     * Add entry to earliest checkpoint map. Ignore is such key is already present.
+     *
+     * @param grpPartKey Key that consists of cache group id and partition index.
+     * @param entry Checkpoint entry.
+     */
+    private void addPartitionToEarliestCheckpoints(GroupPartitionId grpPartKey, CheckpointEntry entry) {
+        if (!earliestCp.containsKey(grpPartKey))
+            earliestCp.put(grpPartKey, entry);
     }
 
     /**
