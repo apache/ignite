@@ -365,11 +365,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
 
-        mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
-
-            return fut != null && !fut.isDone();
-        }, "True if index rebuild is in progress.");
+        mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
+            "True if index rebuild is in progress.");
 
         getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
 
@@ -399,6 +396,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         cacheSize = mreg.register("CacheSize",
             () -> getEntriesStat().cacheSize(), "Local cache size.");
+
+        mreg.register("IndexRebuildKeyProcessed", this::getIndexRebuildKeyProcessed,
+            "Number of keys processed during index rebuilding.");
     }
 
     /**
@@ -1541,6 +1541,19 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
+
+        return fut != null && !fut.isDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeyProcessed() {
+        // TODO: 05.08.2020
+        return 0;
     }
 
     /** {@inheritDoc} */

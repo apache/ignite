@@ -720,4 +720,18 @@ public interface CacheMetrics {
      * @return Key collisions and appropriate queue size string representation.
      */
     @NotNull public String getTxKeyCollisions();
+
+    /**
+     * Return {@code true} if index rebuild is in progress.
+     *
+     * @return {@code true} if index rebuild is in progress.
+     */
+    public boolean isIndexRebuildInProgress();
+
+    /**
+     * Return number of keys processed during index rebuilding.
+     *
+     * @return Number of keys processed during index rebuilding.
+     */
+    public long getIndexRebuildKeyProcessed();
 }

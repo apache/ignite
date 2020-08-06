@@ -343,4 +343,12 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
      */
     @MXBeanDescription("Disable statistic collection for the cache.")
     public void disableStatistics();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True if index rebuilding in progress.")
+    @Override public boolean isIndexRebuildInProgress();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of keys processed during index rebuilding.")
+    @Override public long getIndexRebuildKeyProcessed();
 }

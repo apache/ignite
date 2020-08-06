@@ -518,4 +518,14 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return cache.clusterMetrics().isIndexRebuildInProgress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeyProcessed() {
+        return cache.clusterMetrics().getIndexRebuildKeyProcessed();
+    }
 }

@@ -516,4 +516,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public String getTxKeyCollisions() {
         return cache.metrics0().getTxKeyCollisions();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return cache.metrics0().isIndexRebuildInProgress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeyProcessed() {
+        return cache.metrics0().getIndexRebuildKeyProcessed();
+    }
 }
