@@ -106,6 +106,8 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
     private OptimizedObjectStreamRegistry registry = new OptimizedObjectSharedStreamRegistry();
 
+    private OptimizedObjectSharedStreamRegistry nonCachedRegistry = new OptimizedObjectSharedStreamRegistry();
+
     /**
      * Creates new marshaller will all defaults.
      *
@@ -242,7 +244,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = registry.in();
+            objIn = !useCache ? nonCachedRegistry.in() : registry.in();
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, useCache);
 
@@ -261,7 +263,10 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
                 "[clsLdr=" + clsLdr + ", err=" + e.getMessage() + "]", e);
         }
         finally {
-            registry.closeIn(objIn);
+            if (!useCache)
+                nonCachedRegistry.closeNotCachedIn(objIn);
+            else
+                registry.closeIn(objIn);
         }
     }
 
