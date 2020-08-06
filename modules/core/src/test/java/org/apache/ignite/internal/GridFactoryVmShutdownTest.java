@@ -70,18 +70,16 @@ public class GridFactoryVmShutdownTest {
         // Grid will start and add shutdown hook.
         G.start();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override public void run() {
-                IgniteConfiguration cfg = new IgniteConfiguration();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
-                cfg.setIgniteInstanceName("test1");
+            cfg.setIgniteInstanceName("test1");
 
-                try {
-                    G.start(cfg);
-                }
-                finally {
-                    X.println("States: " + states);
-                }
+            try {
+                G.start(cfg);
+            }
+            finally {
+                X.println("States: " + states);
             }
         }));
 

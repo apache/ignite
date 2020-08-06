@@ -263,17 +263,15 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         cache.put(key, new TestValue("1"));
 
-        multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    latch.await();
-                }
-                catch (InterruptedException e) {
-                    fail();
-                }
-
-                cache.put(key, new TestValue("2"));
+        multithreadedAsync(() -> {
+            try {
+                latch.await();
             }
+            catch (InterruptedException e) {
+                fail();
+            }
+
+            cache.put(key, new TestValue("2"));
         }, 1);
 
         Transaction tx = ignite(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);

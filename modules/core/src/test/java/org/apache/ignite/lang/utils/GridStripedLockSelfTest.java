@@ -57,30 +57,28 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIntLocking() throws Exception {
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
+        GridTestUtils.runMultiThreaded(() -> {
+            try {
+                barrier.await();
+            }
+            catch (Exception e) {
+                fail("Failed to await other threads: " + e.getMessage());
+            }
+
+            for (int i = 0; i < STRIPE_COUNT * 10000; i++) {
+                lock.lock(i);
+
                 try {
-                    barrier.await();
+                    int holdCnt = 0;
+
+                    for (int lockNum = 0; lockNum < STRIPE_COUNT; lockNum++)
+                        if (((ReentrantLock)lock.getLock(lockNum)).isHeldByCurrentThread())
+                            holdCnt++;
+
+                    assertEquals(1, holdCnt);
                 }
-                catch (Exception e) {
-                    fail("Failed to await other threads: " + e.getMessage());
-                }
-
-                for (int i = 0; i < STRIPE_COUNT * 10000; i++) {
-                    lock.lock(i);
-
-                    try {
-                        int holdCnt = 0;
-
-                        for (int lockNum = 0; lockNum < STRIPE_COUNT; lockNum++)
-                            if (((ReentrantLock)lock.getLock(lockNum)).isHeldByCurrentThread())
-                                holdCnt++;
-
-                        assertEquals(1, holdCnt);
-                    }
-                    finally {
-                        lock.unlock(i);
-                    }
+                finally {
+                    lock.unlock(i);
                 }
             }
         }, THREAD_COUNT, "GridStripedLock-test");
@@ -125,34 +123,32 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectLocking() throws Exception {
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
+        GridTestUtils.runMultiThreaded(() -> {
+            try {
+                barrier.await();
+            }
+            catch (Exception e) {
+                fail("Failed to await other threads: " + e.getMessage());
+            }
+
+            for (Object o : testObjects((int)ITERATION_COUNT)) {
+                lock.lock(o);
+
                 try {
-                    barrier.await();
+                    int holdCnt = 0;
+
+                    for (Object lockObject : testObjects(STRIPE_COUNT))
+                        if (((ReentrantLock)lock.getLock(lockObject)).isHeldByCurrentThread())
+                            holdCnt++;
+
+                    // null object considered 0-hash code, so they should appear twicely.
+                    if (o == null || o.hashCode() % STRIPE_COUNT == 0)
+                        assertEquals(2, holdCnt);
+                    else
+                        assertEquals("Test object " + o.hashCode(), 1, holdCnt);
                 }
-                catch (Exception e) {
-                    fail("Failed to await other threads: " + e.getMessage());
-                }
-
-                for (Object o : testObjects((int)ITERATION_COUNT)) {
-                    lock.lock(o);
-
-                    try {
-                        int holdCnt = 0;
-
-                        for (Object lockObject : testObjects(STRIPE_COUNT))
-                            if (((ReentrantLock)lock.getLock(lockObject)).isHeldByCurrentThread())
-                                holdCnt++;
-
-                        // null object considered 0-hash code, so they should appear twicely.
-                        if (o == null || o.hashCode() % STRIPE_COUNT == 0)
-                            assertEquals(2, holdCnt);
-                        else
-                            assertEquals("Test object " + o.hashCode(), 1, holdCnt);
-                    }
-                    finally {
-                        lock.unlock(o);
-                    }
+                finally {
+                    lock.unlock(o);
                 }
             }
         }, THREAD_COUNT, "GridStripedLock-test");

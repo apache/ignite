@@ -31,12 +31,10 @@ public class RestartProcessFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
     @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
         new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    U.error(ignite.log(), "Restarting JVM on Ignite failure: [failureCtx=" + failureCtx + ']');
+            () -> {
+                U.error(ignite.log(), "Restarting JVM on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                    G.restart(true);
-                }
+                G.restart(true);
             },
             "node-restarter"
         ).start();

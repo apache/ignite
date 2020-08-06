@@ -253,11 +253,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                 }
             }, 1);
 
-            ignite.scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    stop.set(true);
-                }
-            }, 10, TimeUnit.SECONDS);
+            ignite.scheduler().runLocal(() -> stop.set(true), 10, TimeUnit.SECONDS);
 
             fut.get();
         } finally {

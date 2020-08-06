@@ -327,23 +327,21 @@ public class AboutDialog extends JDialog {
      */
     public static void centerShow(final String appName, final String bannerSpec,
         final String ver, final Date release, final String copyright) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override public void run() {
-                if (aboutDlg == null) {
-                    try {
-                        aboutDlg = new AboutDialog(appName, bannerSpec, ver, release, copyright);
+        SwingUtilities.invokeLater(() -> {
+            if (aboutDlg == null) {
+                try {
+                    aboutDlg = new AboutDialog(appName, bannerSpec, ver, release, copyright);
 
-                        aboutDlg.setLocationRelativeTo(null);
-                        aboutDlg.setVisible(true);
-                    }
-                    finally {
-                        aboutDlg = null;
-                    }
-                }
-                else {
                     aboutDlg.setLocationRelativeTo(null);
-                    aboutDlg.toFront();
+                    aboutDlg.setVisible(true);
                 }
+                finally {
+                    aboutDlg = null;
+                }
+            }
+            else {
+                aboutDlg.setLocationRelativeTo(null);
+                aboutDlg.toFront();
             }
         });
     }

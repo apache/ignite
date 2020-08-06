@@ -139,33 +139,25 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
             }
         });
 
-        comp.broadcast(new IgniteClosure<Object, Object>() {
-            @Override public Object apply(Object o) {
-                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                return null;
-            }
+        comp.broadcast(o -> {
+            assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            return null;
         }, 0);
 
-        comp.apply(new IgniteClosure<Object, Object>() {
-            @Override public Object apply(Object o) {
-                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                return null;
-            }
+        comp.apply(o -> {
+            assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            return null;
         }, 0);
 
-        comp.apply(new IgniteClosure<Integer, Object>() {
-            @Override public Object apply(Integer o) {
-                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                return null;
-            }
+        comp.apply((IgniteClosure<Integer, Object>) o -> {
+            assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            return null;
         }, Collections.singletonList(0));
 
-        comp.apply(new IgniteClosure<Integer, Object>() {
-                       @Override public Object apply(Integer o) {
-                           assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                           return null;
-                       }
-                   }, Collections.singletonList(0),
+        comp.apply(o -> {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }, Collections.singletonList(0),
             new IgniteReducer<Object, Object>() {
                 @Override public boolean collect(@Nullable Object o) {
                     return true;

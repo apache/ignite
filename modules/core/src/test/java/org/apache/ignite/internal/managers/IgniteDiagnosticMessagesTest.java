@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -716,14 +715,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
 
-                    ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
-                        @Override public void apply(IgniteInternalFuture<String> diagFut) {
-                            try {
-                                fut.onDone(diagFut.get());
-                            }
-                            catch (Exception e) {
-                                fut.onDone(e);
-                            }
+                    ctx.send(node.context(), diagnosticFuture -> {
+                        try {
+                            fut.onDone(diagnosticFuture.get());
+                        }
+                        catch (Exception e) {
+                            fut.onDone(e);
                         }
                     });
 

@@ -723,11 +723,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @return Closure.
      */
     private static IgniteClosure<Integer, Integer> closure(@Nullable final Integer i) {
-        return new IgniteClosure<Integer, Integer>() {
-            @Override public Integer apply(Integer e) {
-                return e == null ? i : e + i;
-            }
-        };
+        return e -> e == null ? i : e + i;
     }
 
     /**
@@ -737,13 +733,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @return Closure.
      */
     private static <T> IgniteClosure<T, T> fixedClosure(@Nullable final T obj) {
-        return new IgniteClosure<T, T>() {
-            @Override public T apply(T e) {
-                assert e == null || obj == null || e.getClass() == obj.getClass() :
-                    "Expects the same types [e=" + e + ", obj=" + obj + ']';
+        return e -> {
+            assert e == null || obj == null || e.getClass() == obj.getClass() :
+                "Expects the same types [e=" + e + ", obj=" + obj + ']';
 
-                return obj;
-            }
+            return obj;
         };
     }
 
@@ -754,13 +748,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @return Remove expected cache value closure.
      */
     private static <T> IgniteClosure<T, T> removeClosure(@Nullable final T exp) {
-        return new IgniteClosure<T, T>() {
-            @Override public T apply(T act) {
-                if (exp == null ? act == null : exp.equals(act))
-                    return null;
+        return act -> {
+            if (exp == null ? act == null : exp.equals(act))
+                return null;
 
-                throw new AssertionError("Unexpected value [exp=" + exp + ", act=" + act + ']');
-            }
+            throw new AssertionError("Unexpected value [exp=" + exp + ", act=" + act + ']');
         };
     }
 

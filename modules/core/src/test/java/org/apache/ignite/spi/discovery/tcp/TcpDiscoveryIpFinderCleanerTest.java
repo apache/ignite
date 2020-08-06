@@ -93,14 +93,12 @@ public class TcpDiscoveryIpFinderCleanerTest extends GridCommonAbstractTest {
     private static CountDownLatch stopNodeAsync(final Ignite node) {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    node.close();
-                }
-                finally {
-                    latch.countDown();
-                }
+        GridTestUtils.runAsync(() -> {
+            try {
+                node.close();
+            }
+            finally {
+                latch.countDown();
             }
         });
 

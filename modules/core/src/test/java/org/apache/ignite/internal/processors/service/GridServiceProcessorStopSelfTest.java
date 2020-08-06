@@ -64,26 +64,24 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         final Ignite ignite = startGrid(0);
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                IgniteServices svcs = ignite.services();
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            IgniteServices svcs = ignite.services();
 
-                IgniteFuture f = svcs.deployClusterSingletonAsync("myClusterSingletonService", new TestServiceImpl());
+            IgniteFuture f = svcs.deployClusterSingletonAsync("myClusterSingletonService", new TestServiceImpl());
 
-                depLatch.countDown();
+            depLatch.countDown();
 
-                try {
-                    f.get();
-                }
-                catch (IgniteException ignored) {
-                    finishLatch.countDown();
-                }
-                finally {
-                    finishLatch.countDown();
-                }
-
-                return null;
+            try {
+                f.get();
             }
+            catch (IgniteException ignored) {
+                finishLatch.countDown();
+            }
+            finally {
+                finishLatch.countDown();
+            }
+
+            return null;
         }, "deploy-thread");
 
         depLatch.await();
@@ -137,18 +135,16 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         }, "top-change-thread");
 
         // Stop node on unstable topology.
-        GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                depLatch.await();
+        GridTestUtils.runAsync(() -> {
+            depLatch.await();
 
-                Thread.sleep(1000);
+            Thread.sleep(1000);
 
-                node0.close();
+            node0.close();
 
-                finishLatch.countDown();
+            finishLatch.countDown();
 
-                return null;
-            }
+            return null;
         }, "stopping-node-thread");
 
         assertNotNull(node0.services().service("myService"));
@@ -178,16 +174,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
         runServiceProcessorStoppingTest(
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onKernalStop(true);
-                }
-            },
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
-                }
-            }
+            serviceProcessor -> serviceProcessor.onKernalStop(true),
+            serviceProcessor -> serviceProcessor.onDisconnected(new IgniteFinishedFutureImpl<>())
         );
     }
 
@@ -199,16 +187,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
         runServiceProcessorStoppingTest(
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
-                }
-            },
-            new IgniteInClosure<IgniteServiceProcessor>() {
-                @Override public void apply(IgniteServiceProcessor srvcProc) {
-                    srvcProc.onKernalStop(true);
-                }
-            }
+            serviceProcessor -> serviceProcessor.onDisconnected(new IgniteFinishedFutureImpl<>()),
+            serviceProcessor -> serviceProcessor.onKernalStop(true)
         );
     }
 

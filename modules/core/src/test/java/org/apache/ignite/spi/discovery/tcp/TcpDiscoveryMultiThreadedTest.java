@@ -50,7 +50,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -676,40 +675,38 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         final long stopTime = System.currentTimeMillis() + 60_000;
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                try {
-                    while (System.currentTimeMillis() < stopTime) {
-                        Ignite ignite = startGrid(idx + 1);
+        GridTestUtils.runMultiThreaded(idx -> {
+            try {
+                while (System.currentTimeMillis() < stopTime) {
+                    Ignite ig = startGrid(idx + 1);
 
-                        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
-                        int qryCnt = ThreadLocalRandom.current().nextInt(10) + 1;
+                    int qryCnt = ThreadLocalRandom.current().nextInt(10) + 1;
 
-                        for (int i = 0; i < qryCnt; i++) {
-                            ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+                    for (int i = 0; i < qryCnt; i++) {
+                        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-                            qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-                                @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
-                                    // No-op.
-                                }
-                            });
+                        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                                // No-op.
+                            }
+                        });
 
-                            QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry);
+                        QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry);
 
-                            cur.close();
-                        }
-
-                        GridTestUtils.invoke(ignite.configuration().getDiscoverySpi(), "simulateNodeFailure");
-
-                        ignite.close();
+                        cur.close();
                     }
-                }
-                catch (Exception e) {
-                    log.error("Unexpected error: " + e, e);
 
-                    throw new IgniteException(e);
+                    GridTestUtils.invoke(ig.configuration().getDiscoverySpi(), "simulateNodeFailure");
+
+                    ig.close();
                 }
+            }
+            catch (Exception e) {
+                log.error("Unexpected error: " + e, e);
+
+                throw new IgniteException(e);
             }
         }, 5, "node-restart");
     }

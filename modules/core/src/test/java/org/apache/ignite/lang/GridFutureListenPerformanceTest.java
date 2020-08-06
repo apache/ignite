@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
@@ -79,17 +78,15 @@ public class GridFutureListenPerformanceTest {
                             futs.add(fut);
 
                             for (int k = 1; k < rnd.nextInt(3); k++) {
-                                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                                    @Override public void apply(IgniteInternalFuture<Object> t) {
-                                        try {
-                                            t.get();
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            e.printStackTrace();
-                                        }
-
-                                        cnt.increment();
+                                fut.listen(t -> {
+                                    try {
+                                        t.get();
                                     }
+                                    catch (IgniteCheckedException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    cnt.increment();
                                 });
                             }
                         }

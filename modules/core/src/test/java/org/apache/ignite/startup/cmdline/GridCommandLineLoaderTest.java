@@ -104,19 +104,17 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
 
                 System.out.println("Ignite instance seen, will shut it down. Name=" + name);
 
-                new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            INIT_TWO_NODES_LATCH.await();
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        System.out.println("Shutdown imminent. Name=" + name);
-
-                        Ignition.stop(name, true);
+                new Thread(() -> {
+                    try {
+                        INIT_TWO_NODES_LATCH.await();
                     }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    System.out.println("Shutdown imminent. Name=" + name);
+
+                    Ignition.stop(name, true);
                 }).start();
 
                 INIT_TWO_NODES_LATCH.countDown();

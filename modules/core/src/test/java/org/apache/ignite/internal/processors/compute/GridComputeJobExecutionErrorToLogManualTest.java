@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.compute;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,19 +40,15 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
     public void testRuntimeException() throws Exception {
         Ignite ignite = grid(0);
 
-        ignite.compute().runAsync(new IgniteRunnable() {
-            @Override public void run() {
-                try {
-                    Thread.sleep(500);
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+        ignite.compute().runAsync(() -> {
+            try {
+                Thread.sleep(500);
             }
-        }).listen(new IgniteInClosure<IgniteFuture<Void>>() {
-            @Override public void apply(IgniteFuture<Void> future) {
-                throw new RuntimeException();
+            catch (InterruptedException ignored) {
+                // No-op.
             }
+        }).listen(future -> {
+            throw new RuntimeException();
         });
     }
 }
