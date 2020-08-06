@@ -49,21 +49,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 import static java.lang.System.setOut;
-import static java.lang.System.setProperty;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.development.utils.IgniteWalConverter.PRINT_RECORDS;
-import static org.apache.ignite.development.utils.IgniteWalConverter.SENSITIVE_DATA;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.MD5;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.SHOW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.wal.record.RecordUtils.isIncludeIntoLog;
@@ -193,44 +184,13 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Test checks that by default {@link WALRecord} will not be output without
-     * system option {@link IgniteWalConverter#PRINT_RECORDS}.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotPrintRecordsByDefault() throws Exception {
-        exeWithCheck(false, false, identity());
-    }
-
-    /**
      * Test checks that by default sensitive data is displayed.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testShowSensitiveDataByDefault() throws Exception {
-        withSystemProperty(PRINT_RECORDS, TRUE.toString());
-
-        exeWithCheck(true, true, identity());
-    }
-
-    /**
-     * Test checks that sensitive data is displayed.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testShowSensitiveData() throws Exception {
-        withSystemProperty(PRINT_RECORDS, TRUE.toString());
-        withSystemProperty(SENSITIVE_DATA, SHOW.name());
-
-        exeWithCheck(true, true, identity());
-
-        setProperty(SENSITIVE_DATA, getName());
-        resetTestOut();
-
-        exeWithCheck(true, true, identity());
+        exeWithCheck(null, true, true, identity());
     }
 
     /**
@@ -240,11 +200,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
      */
     @Test
     public void testHideSensitiveData() throws Exception {
-        withSystemProperty(PRINT_RECORDS, TRUE.toString());
-        withSystemProperty(SENSITIVE_DATA, HIDE.name());
-        withSystemProperty(IGNITE_TO_STRING_INCLUDE_SENSITIVE, TRUE.toString());
-
-        exeWithCheck(false, false, identity());
+        exeWithCheck(ProcessSensitiveData.HIDE, false, false, identity());
     }
 
     /**
@@ -254,10 +210,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
      */
     @Test
     public void testHashSensitiveData() throws Exception {
-        withSystemProperty(PRINT_RECORDS, TRUE.toString());
-        withSystemProperty(SENSITIVE_DATA, HASH.name());
-
-        exeWithCheck(true, false, s -> valueOf(s.hashCode()));
+        exeWithCheck(ProcessSensitiveData.HASH, true, false, s -> valueOf(s.hashCode()));
     }
 
     /**
@@ -267,21 +220,20 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
      */
     @Test
     public void testMd5HashSensitiveData() throws Exception {
-        withSystemProperty(PRINT_RECORDS, TRUE.toString());
-        withSystemProperty(SENSITIVE_DATA, MD5.name());
-
-        exeWithCheck(true, false, ProcessSensitiveDataUtils::md5);
+        exeWithCheck(ProcessSensitiveData.MD5, true, false, ProcessSensitiveDataUtils::md5);
     }
 
     /**
      * Executing {@link IgniteWalConverter} with checking the content of its output.
      *
-     * @param containsData Contains or not elements {@link #sensitiveValues} in utility output.
-     * @param containsPrefix Contains or not {@link #SENSITIVE_DATA_VALUE_PREFIX} in utility output.
-     * @param converter Converting elements {@link #sensitiveValues} for checking in utility output.
+     * @param processSensitiveData Strategy for the processing of sensitive data.
+     * @param containsData         Contains or not elements {@link #sensitiveValues} in utility output.
+     * @param containsPrefix       Contains or not {@link #SENSITIVE_DATA_VALUE_PREFIX} in utility output.
+     * @param converter            Converting elements {@link #sensitiveValues} for checking in utility output.
      * @throws Exception If failed.
      */
     private void exeWithCheck(
+        ProcessSensitiveData processSensitiveData,
         boolean containsData,
         boolean containsPrefix,
         Function<String, String> converter
@@ -290,7 +242,13 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         injectTestSystemOut();
 
-        IgniteWalConverter.main(new String[] {valueOf(pageSize), walDirPath});
+        List<String> args = new ArrayList<>();
+        args.add("pageSize=" + pageSize);
+        args.add("walDir=" + walDirPath);
+        if (processSensitiveData != null)
+            args.add("processSensitiveData=" + processSensitiveData.name());
+
+        IgniteWalConverter.main(args.toArray(new String[args.size()]));
 
         String testOutStr = testOut.toString();
 
@@ -382,7 +340,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
          * Constructor.
          *
          * @param orgId Organization id.
-         * @param name Organization name.
+         * @param name  Organization name.
          */
         Person(int orgId, String name) {
             this.orgId = orgId;

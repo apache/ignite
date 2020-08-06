@@ -17,19 +17,45 @@
 
 package org.apache.ignite.development.utils;
 
-import org.apache.ignite.development.utils.indexreader.IgniteIndexReaderTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.Objects;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * Test suite for dev utils.
+ * A person entity used for the tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteIndexReaderTest.class,
-    IgniteWalConverterTest.class,
-    IgniteWalConverterArgumentsTest.class,
-    IgniteWalConverterSensitiveDataTest.class
-})
-public class DevUtilsTestSuite {
+public class PersonKey {
+    /**
+     * Id.
+     */
+    @QuerySqlField(index = true)
+    private final Integer id;
+
+    /**
+     * Constructor.
+     */
+    public PersonKey(Integer id) {
+        this.id = id;
+    }
+
+    /**
+     * @return id.
+     */
+    public Integer getId() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (!(obj instanceof PersonKey))
+            return false;
+
+        PersonKey other = (PersonKey)obj;
+
+        return Objects.equals(other.id, id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id);
+    }
 }
