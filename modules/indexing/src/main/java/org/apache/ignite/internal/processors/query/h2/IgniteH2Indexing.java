@@ -967,8 +967,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         res.setSchema(schemaName);
         res.setSql(sql);
 
-        if (qry.getTimeout() > 0)
-            res.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
+        QueryUtils.copyQueryTimeout(res, qry.getTimeout(), TimeUnit.MILLISECONDS);
 
         return res;
     }
@@ -1569,6 +1568,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setPageSize(pageSize);
         fldsQry.setLocal(true);
 
+        QueryUtils.copyQueryTimeout(fldsQry, timeout, TimeUnit.MILLISECONDS);
+
         boolean loc = true;
 
         final boolean replicated = U.isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
@@ -1608,6 +1609,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setLocal(fldsQry.isLocal())
             .setPageSize(fldsQry.getPageSize())
             .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS);
+
+        QueryUtils.copyQueryTimeout(selectFieldsQry, fldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
         QueryCursorImpl<List<?>> cur;
 
@@ -2843,10 +2846,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setDistributedJoins(qryDesc.distributedJoins())
             .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
             .setLocal(qryDesc.local())
-            .setPageSize(qryParams.pageSize());
-
-        if (qryParams.timeout() > 0)
-            selectFieldsQry.setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
+            .setPageSize(qryParams.pageSize())
+            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
         Iterable<List<?>> cur;
 

@@ -310,9 +310,12 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /**
      * @param explicitTimeout Explicit timeout flag.
+     * @return {@code this}.
      */
-    public void explicitTimeout(boolean explicitTimeout) {
+    public GridH2DmlRequest explicitTimeout(boolean explicitTimeout) {
         this.explicitTimeout = explicitTimeout;
+
+        return this;
     }
 
     /** {@inheritDoc} */

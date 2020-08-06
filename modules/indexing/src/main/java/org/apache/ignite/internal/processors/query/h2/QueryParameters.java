@@ -59,8 +59,6 @@ public class QueryParameters {
      */
     private final int updateBatchSize;
 
-
-
     /**
      * Constructor.
      *
