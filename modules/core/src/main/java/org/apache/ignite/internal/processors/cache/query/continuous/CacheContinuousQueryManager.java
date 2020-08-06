@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -78,6 +79,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -87,6 +89,7 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 
 /**
  * Continuous queries manager.
@@ -750,8 +753,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         hnd.keepBinary(keepBinary);
         hnd.localOnly(locOnly);
 
-        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
-            F.nodeForNodeId(cctx.localNodeId()) : cctx.group().nodeFilter();
+        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
+            ? F.nodeForNodeId(cctx.localNodeId())
+            : new IsAllPredicate<>(cctx.group().nodeFilter(), new AttributeNodeFilter(ATTR_CLIENT_MODE, false));
 
         assert pred != null : cctx.config();
 
