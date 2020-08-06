@@ -157,10 +157,6 @@ If an application does not explicitly specify an Ignite type for a field, the cl
 The default mapping is explained link:https://www.gridgain.com/sdk/nodejs-thin-client/latest/ObjectType.html[here].
 
 
-////
-*TODO: explain ComplexObjectType*
-////
-
 === Basic Key-Value Operations
 The `CacheClient` class provides methods for working with the cache entries using key-value operations - put, get, put all, get all, replace and others.
 The following example shows how to do that:

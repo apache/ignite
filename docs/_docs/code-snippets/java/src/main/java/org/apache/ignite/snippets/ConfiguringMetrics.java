@@ -6,6 +6,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.junit.jupiter.api.Test;
 
 public class ConfiguringMetrics {
@@ -80,6 +82,18 @@ public class ConfiguringMetrics {
         Ignite ignite = Ignition.start(cfg);
         // end::data-region-metrics[]
         ignite.close();
+    }
+
+    @Test
+    void newMetrics() {
+
+        //tag::new-metric-framework[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setMetricExporterSpi(new JmxMetricExporterSpi(), new SqlViewMetricExporterSpi());
+
+        Ignition.start(cfg);
+        //end::new-metric-framework[]
 
     }
 }

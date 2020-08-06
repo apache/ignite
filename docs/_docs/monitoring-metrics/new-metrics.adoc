@@ -1,0 +1,19 @@
+= Metrics
+
+:javaFile: {javaCodeDir}/ConfiguringMetrics.java
+
+[tabs]
+--
+tab:XML[]
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=, indent=0]
+----
+
+
+tab:C#/.NET[]
+tab:C++[]
+--
