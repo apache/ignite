@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -31,9 +32,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
 /**
  * Class that holds mappings of old links to new links.
@@ -72,8 +74,8 @@ public class LinkMap {
             new AtomicLong(),
             metaPageId,
             null,
-            new IOVersions<>(new LinkMappingInnerIO()),
-            new IOVersions<>(new LinkMappingLeafIO()),
+            LinkMappingInnerIO.VERSIONS,
+            LinkMappingLeafIO.VERSIONS,
             null,
             null
         );
@@ -135,6 +137,11 @@ public class LinkMap {
         @Override public LinkMapping getRow(BPlusIO<LinkMapping> io, long pageAddr, int idx, Object x) throws IgniteCheckedException {
             return io.getLookupRow(this, pageAddr, idx);
         }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            return pageMem.allocatePage(grpId, PageIdUtils.partId(metaPageId), FLAG_DATA);
+        }
     }
 
     /**
@@ -180,7 +187,7 @@ public class LinkMap {
 
         /** */
         protected LinkMappingInnerIO() {
-            super(PageIO.LINK_MAPPING_INNER, 1, true, Long.BYTES * 2);
+            super(PageIO.T_DEFRAG_LINK_MAPPING_INNER, 1, true, Long.BYTES * 2);
         }
 
         /** {@inheritDoc} */
@@ -214,7 +221,7 @@ public class LinkMap {
 
         /** */
         protected LinkMappingLeafIO() {
-            super(PageIO.LINK_MAPPING_LEAF, 1, Long.BYTES * 2);
+            super(PageIO.T_DEFRAG_LINK_MAPPING_LEAF, 1, Long.BYTES * 2);
         }
 
         /** {@inheritDoc} */

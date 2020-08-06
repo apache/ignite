@@ -85,6 +85,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -244,7 +245,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** */
-    public static final String DEFRAGMENTATION_DATA_REGION_NAME = "defrgMemPlc";
+    public static final String DEFRAGMENTATION_PART_REGION_NAME = "defragPartitionsDataRegion";
+
+    /** */
+    public static final String DEFRAGMENTATION_MAPPING_REGION_NAME = "defragMappingDataRegion";
 
     /**
      * Threshold to calculate limit for pages list on-heap caches.
@@ -597,9 +601,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         DataRegionConfiguration dfltDataRegionCfg = storageCfg.getDefaultDataRegionConfiguration();
 
-        cfg.setName(DEFRAGMENTATION_DATA_REGION_NAME);
-        cfg.setInitialSize(dfltDataRegionCfg.getInitialSize());
-        cfg.setMaxSize(dfltDataRegionCfg.getMaxSize());
+        cfg.setName(DEFRAGMENTATION_PART_REGION_NAME);
+        cfg.setInitialSize(dfltDataRegionCfg.getInitialSize()); //TODO use proper configuration.
+        cfg.setMaxSize(dfltDataRegionCfg.getMaxSize()); //TODO Use proper configuration.
+        cfg.setPersistenceEnabled(true);
+        cfg.setLazyMemoryAllocation(false);
+
+        return cfg;
+    }
+
+    private DataRegionConfiguration createDefragmentationMappingRegionConfig(DataStorageConfiguration storageCfg) {
+        DataRegionConfiguration cfg = new DataRegionConfiguration();
+
+        cfg.setName(DEFRAGMENTATION_MAPPING_REGION_NAME);
+        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize()); //TODO use proper configuration.
+        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize()); //TODO Use proper configuration.
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -857,10 +873,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void prepareCacheDefragmentation() throws IgniteCheckedException {
         DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
-        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), false);
+        defrgCtx = new CacheDefragmentationContext(
+            cctx.kernalContext(),
+            this,
+            log
+        );
 
-        defrgCtx = new CacheDefragmentationContext(dataRegion(DEFRAGMENTATION_DATA_REGION_NAME), log);
-        defrgMgr = new CachePartitionDefragmentationManager(cctx);
+        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), false, defrgCtx.partPageStoreManager());
+        addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), false, defrgCtx.mappingPageStoreManager());
+
+        defrgMgr = new CachePartitionDefragmentationManager(cctx, defrgCtx);
     }
 
     /** */
@@ -1229,10 +1251,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
-        final boolean trackable
+        final boolean trackable,
+        @Nullable IgnitePageStoreManager storeMgr
     ) {
         if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
+            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, storeMgr);
 
         memMetrics.persistenceEnabled(true);
 
@@ -1273,6 +1296,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 chpBufSize
             ),
             cctx,
+            storeMgr,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
                 memMetrics.onPageWritten();
@@ -2119,6 +2143,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointReadLock();
 
+        RestoreLogicalState logicalState;
+
         try {
             // Preform early regions startup before restoring state.
             initAndStartRegions(kctx.config().getDataStorageConfiguration());
@@ -2141,15 +2167,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
-            RestoreLogicalState logicalState = applyLogicalUpdates(
+            logicalState = applyLogicalUpdates(
                 status,
                 groupsWithEnabledWal(),
                 logicalRecords(),
                 true
             );
-
-            if (defrgMgr != null)
-                defrgMgr.executeDefragmentation();
 
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");
@@ -2158,10 +2181,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             startTimer.finishGlobalStage("Restore logical state");
-
-            walTail = tailPointer(logicalState);
-
-            cctx.wal().onDeActivate(kctx);
         }
         catch (IgniteCheckedException e) {
             releaseFileLock();
@@ -2171,6 +2190,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             checkpointReadUnlock();
         }
+
+        ((GridKernalContextImpl)kctx).recoveryMode(false); //TODO Oooo, this is shit!
+
+        onStateRestored(null);
+
+        walTail = tailPointer(logicalState);
+
+        cctx.wal().onDeActivate(kctx);
+
+        if (defrgMgr != null)
+            defrgMgr.executeDefragmentation();
     }
 
     /**
@@ -2261,6 +2291,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If first checkpoint has failed.
      */
     @Override public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        if (checkpointerThread != null)
+            return;
+
         IgniteThread cpThread = new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer);
 
         cpThread.start();

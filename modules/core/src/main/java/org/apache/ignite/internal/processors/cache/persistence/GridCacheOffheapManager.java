@@ -213,9 +213,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         CacheDefragmentationContext defrgCtx = ctx.database().defragmentationContext();
 
-        if (defrgCtx != null) {
+        if (defrgCtx != null)
             defrgCtx.onCacheStoreCreated(grp, p, busyLock);
-        }
 
         return new GridCacheDataStore(grp, p, exists, busyLock, log);
     }

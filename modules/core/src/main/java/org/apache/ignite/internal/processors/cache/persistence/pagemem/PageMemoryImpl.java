@@ -273,6 +273,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param directMemoryProvider Memory allocator to use.
      * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
+     * @param storeMgr Page store manager.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
@@ -285,6 +286,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         DirectMemoryProvider directMemoryProvider,
         long[] sizes,
         GridCacheSharedContext<?, ?> ctx,
+        IgnitePageStoreManager storeMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
@@ -312,7 +314,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
 
-        storeMgr = ctx.pageStore();
+        this.storeMgr = storeMgr;
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
         encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof NoopEncryptionSpi;

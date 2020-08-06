@@ -642,6 +642,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -661,6 +662,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {

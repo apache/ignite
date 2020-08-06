@@ -48,6 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -70,11 +71,11 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -386,7 +387,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
+    @Override public void initialize(int cacheId, int partitions, String workingDir, LongConsumer tracker)
         throws IgniteCheckedException {
         assert storeWorkDir != null;
 
@@ -433,7 +434,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 new File(storeWorkDir, META_STORAGE_NAME),
                 grpId,
                 PageIdAllocator.METASTORE_PARTITION + 1,
-                dataRegion.memoryMetrics().totalAllocatedPages(),
+                dataRegion.memoryMetrics().totalAllocatedPages()::add,
                 false);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
@@ -681,7 +682,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             cacheWorkDir,
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
-            allocatedTracker,
+            allocatedTracker::add,
             ccfg.isEncryptionEnabled()
         );
     }
@@ -739,7 +740,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
         int partitions,
-        LongAdderMetric allocatedTracker,
+        LongConsumer allocatedTracker,
         boolean encrypted) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
@@ -757,9 +758,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     idxFile,
                     allocatedTracker);
 
-            PageStore[] partStores = new PageStore[partitions];
-
             CacheDefragmentationContext defrgCtx = cctx.database().defragmentationContext();
+
+            if (defrgCtx != null && idxStore.exists())
+                defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, INDEX_PARTITION, idxStore);
+
+            PageStore[] partStores = new PageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
                 final int p = partId;
@@ -772,10 +776,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     partStores[partId] = partStore;
 
-                    if (defrgCtx != null) {
-                        if (partStore.exists())
-                            defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, p);
-                    }
+                if (defrgCtx != null && partStore.exists())
+                    defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, p, partStore);
             }
 
             return new CacheStoreHolder(idxStore, partStores);

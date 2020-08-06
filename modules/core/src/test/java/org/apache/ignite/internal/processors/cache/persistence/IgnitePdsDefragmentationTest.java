@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
+/** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_2_NAME = "cache2";
@@ -170,7 +171,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
             @Override
             public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(DEFAULT_CACHE_NAME)) {
+                if (path.toString().contains("cacheGroup-group")) {
                     if (path.toFile().getName().contains("part-dfrg-"))
                         cachePartFile.set(path.toFile());
                     else if (path.toFile().getName().contains("part-"))
@@ -217,7 +218,5 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             addedKeys.remove(key);
             cache.remove(key);
         }
-
-        System.out.println("");
     }
 }

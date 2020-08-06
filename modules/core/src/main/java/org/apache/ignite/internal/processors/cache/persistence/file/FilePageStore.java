@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -88,7 +88,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final LongAdderMetric allocatedTracker;
+    private final LongConsumer allocatedTracker;
 
     /** List of listeners for current page store to handle. */
     private final List<PageWriteListener> lsnrs = new CopyOnWriteArrayList<>();
@@ -117,7 +117,7 @@ public class FilePageStore implements PageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        LongAdderMetric allocatedTracker
+        LongConsumer allocatedTracker
     ) {
         this.type = type;
         this.pathProvider = pathProvider;
@@ -344,7 +344,7 @@ public class FilePageStore implements PageStore {
             }
         }
         finally {
-            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.accept(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -393,7 +393,7 @@ public class FilePageStore implements PageStore {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
         }
         finally {
-            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.accept(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -430,7 +430,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0 : delta;
 
-                allocatedTracker.add(delta / pageSize);
+                allocatedTracker.accept(delta / pageSize);
             }
 
             recover = false;
@@ -579,7 +579,7 @@ public class FilePageStore implements PageStore {
 
                         // Order is important, update of total allocated pages must be called after allocated update
                         // and setting inited to true, because it affects pages() returned value.
-                        allocatedTracker.add(pages());
+                        allocatedTracker.accept(pages());
                     }
                     catch (IOException e) {
                         err = new StorageException(
@@ -826,7 +826,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracker.increment();
+                allocatedTracker.accept(1);
 
                 break;
             }

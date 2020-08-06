@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -36,49 +37,141 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
+import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
-public class CachePartitionDefragmentationManager implements PageStoreCollection {
+/** */
+public class CachePartitionDefragmentationManager {
+    /** */
+    private static final String DEFRAGMENTED_INDEX_TMP_FILE_NAME = "index-dfrg.bin.tmp";
+
+    /** Defragmented partition file template. */
     public static final String DEFRAGMENTED_PARTITION_FILE_TEMPLATE = "part-dfrg-%d.bin";
 
-    /** */
-    private final LongAdderMetric allocatedMetric = new LongAdderMetric("defragmentedAllocatedTracker", null);
+    /** Defragmented partition temp file template. */
+    private static final String DEFRAGMENTED_PARTITION_TMP_FILE_TEMPLATE = DEFRAGMENTED_PARTITION_FILE_TEMPLATE + ".tmp";
 
     /** */
-    private final GridCacheSharedContext sharedCtx;
+    public static final String DEFRAGMENTATION_MAPPING_FILE_TEMPLATE = "part-map-%d.bin";
 
-    public CachePartitionDefragmentationManager(GridCacheSharedContext sharedCtx) {
+    /** */
+    private final GridCacheSharedContext<?, ?> sharedCtx;
+
+    /** */
+    private CacheDefragmentationContext defrgCtx;
+
+    /** */
+    private final IgniteLogger log;
+
+
+    /**
+     * @param sharedCtx Cache shared context.
+     * @param defrgCtx Defragmentation context.
+     */
+    public CachePartitionDefragmentationManager(
+        GridCacheSharedContext<?, ?> sharedCtx,
+        CacheDefragmentationContext defrgCtx
+    ) {
         this.sharedCtx = sharedCtx;
+        this.defrgCtx = defrgCtx;
+
+        log = sharedCtx.logger(getClass());
     }
 
     /** */
     public void executeDefragmentation() {
-        CacheDefragmentationContext defrgCtx = sharedCtx.database().defragmentationContext();
-
         FilePageStoreManager filePageStoreMgr = (FilePageStoreManager)sharedCtx.pageStore();
 
         try {
-            for (Integer grpId : defrgCtx.groupIdsForDefragmentation()) {
+            for (int grpId : defrgCtx.groupIdsForDefragmentation()) {
                 File workDir = defrgCtx.workDirForGroupId(grpId);
-                Collection<Integer> parts = defrgCtx.partitionsForGroupId(grpId);
+                int[] parts = defrgCtx.partitionsForGroupId(grpId);
 
                 boolean encrypted = defrgCtx.groupContextByGroupId(grpId).config().isEncryptionEnabled();
 
                 if (workDir != null && parts != null) {
                     FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
-                    for (Integer p : parts) {
-                        PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA, () -> new File(workDir, String.format(DEFRAGMENTED_PARTITION_FILE_TEMPLATE, p)).toPath(), allocatedMetric);
+                    PageStore idxPageStore = pageStoreFactory.createPageStore(
+                        FLAG_DATA,
+                        () -> defragmentedIndexTmpFile(workDir).toPath(),
+                        val -> {}
+                    );
 
-                        pageStore.sync();
+                    idxPageStore.sync();
 
-                        createCacheGroupContext(defrgCtx.groupContextByGroupId(grpId), p);
+                    defrgCtx.addPartPageStore(grpId, PageIdAllocator.INDEX_PARTITION, idxPageStore);
+
+                    for (int partIdx : parts) {
+                        File defragmentedPartFile = defragmentedPartFile(workDir, partIdx);
+
+                        if (defragmentedPartFile.exists()) {
+                            if (log.isInfoEnabled()) {
+                                log.info(S.toString(
+                                    "Already defragmented partition found, skipping.",
+                                    "partIdx", partIdx, false,
+                                    "absolutePath", defragmentedPartFile.getAbsolutePath(), false
+                                ));
+                            }
+
+                            continue;
+                        }
+
+                        AtomicLong partPagesAllocated = new AtomicLong();
+
+                        PageStore partPageStore = pageStoreFactory.createPageStore(
+                            FLAG_DATA,
+                            () -> defragmentedPartTmpFile(workDir, partIdx).toPath(),
+                            partPagesAllocated::addAndGet
+                        );
+
+                        partPageStore.sync();
+
+                        defrgCtx.addPartPageStore(grpId, partIdx, partPageStore);
+
+                        AtomicLong mappingPagesAllocated = new AtomicLong();
+
+                        PageStore mappingPageStore = pageStoreFactory.createPageStore(
+                            FLAG_DATA,
+                            () -> partMappingFile(workDir, partIdx).toPath(),
+                            mappingPagesAllocated::addAndGet
+                        );
+
+                        mappingPageStore.sync();
+
+                        defrgCtx.addMappingPageStore(grpId, partIdx, mappingPageStore);
+
+                        sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
+
+                        try {
+                            defragmentSinglePartition(defrgCtx.groupContextByGroupId(grpId), partIdx);
+                        }
+                        finally {
+                            sharedCtx.database().checkpointReadUnlock();
+                        }
+
+                        log.info(S.toString(
+                            "Partition defragmented, temp file prepared.",
+                            "partIdx", partIdx, false,
+                            "oldPages", defrgCtx.pageStore(grpId, partIdx).pages(), false,
+                            "newPages", partPagesAllocated.get(), false,
+                            "mappingPages", mappingPagesAllocated.get(), false,
+                            "tmpFilePath", defragmentedPartTmpFile(workDir, partIdx).getAbsolutePath(), false
+                        ));
                     }
+
+                    if (sharedCtx.pageStore().hasIndexStore(grpId)) {
+                        // Defragment index file.
+                        // Leave marker.
+                        // Batch rename.
+                    }
+
+                    defrgCtx.onCacheGroupDefragmented(grpId);
                 }
             }
         }
@@ -88,10 +181,30 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
         }
     }
 
-    private void createCacheGroupContext(CacheGroupContext grpCtx, Integer p) throws IgniteCheckedException {
-        CacheDefragmentationContext defrgCtx = sharedCtx.database().defragmentationContext();
+    /** */
+    private File defragmentedIndexTmpFile(File workDir) {
+        return new File(workDir, DEFRAGMENTED_INDEX_TMP_FILE_NAME);
+    }
 
-        DataRegion region = defrgCtx.defragmenationDataRegion();
+    /** */
+    private File defragmentedPartTmpFile(File workDir, int partIdx) {
+        return new File(workDir, String.format(DEFRAGMENTED_PARTITION_TMP_FILE_TEMPLATE, partIdx));
+    }
+
+    /** */
+    private File defragmentedPartFile(File workDir, int partIdx) {
+        return new File(workDir, String.format(DEFRAGMENTED_PARTITION_FILE_TEMPLATE, partIdx));
+    }
+
+    /** */
+    private File partMappingFile(File workDir, int partIdx) {
+        return new File(workDir, String.format(DEFRAGMENTATION_MAPPING_FILE_TEMPLATE, partIdx));
+    }
+
+    /** */
+    private void defragmentSinglePartition(CacheGroupContext grpCtx, int partId) throws IgniteCheckedException {
+        DataRegion partRegion = defrgCtx.partitionsDataRegion();
+        DataRegion mappingRegion = defrgCtx.mappingDataRegion();
 
         CacheGroupContext newContext = new CacheGroupContext(
             sharedCtx,
@@ -100,10 +213,10 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
             CacheType.USER,
             grpCtx.config(),
             grpCtx.affinityNode(),
-            region,
+            partRegion,
             grpCtx.cacheObjectContext(),
-            grpCtx.freeList(),
-            grpCtx.reuseList(),
+            grpCtx.freeList(), //TODO Why do we use old freelist here?
+            grpCtx.reuseList(), //TODO Why do we use old reuselist here?
             grpCtx.localStartVersion(),
             true,
             false,
@@ -112,15 +225,15 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
 
         newContext.start();
 
-        GridCacheOffheapManager.GridCacheDataStore cacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newContext, p, true, defrgCtx.busyLock(), defrgCtx.log);
+        GridCacheOffheapManager.GridCacheDataStore cacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newContext, partId, true, defrgCtx.busyLock(), defrgCtx.log);
 
         cacheDataStore.init();
 
-        PageMemory memory = region.pageMemory();
+        PageMemory memory = mappingRegion.pageMemory();
 
-        FullPageId id = new FullPageId(memory.allocatePage(grpCtx.groupId(), PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX), grpCtx.groupId());
+        FullPageId linkMapMetaPageId = new FullPageId(memory.allocatePage(grpCtx.groupId(), partId, FLAG_DATA), grpCtx.groupId());
 
-        LinkMap m = new LinkMap(grpCtx, memory, id.pageId());
+        LinkMap m = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId());
 
         Iterable<IgniteCacheOffheapManager.CacheDataStore> stores = grpCtx.offheap().cacheDataStores();
 
@@ -133,13 +246,14 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
         CacheDataTree tree = store.tree();
 
         CacheDataTree newTree = cacheDataStore.tree();
+        PendingEntriesTree newPendingTree = cacheDataStore.pendingTree();
 
         CacheDataRow lower = tree.findFirst();
         CacheDataRow upper = tree.findLast();
 
         List<GridCacheContext> cacheContexts = grpCtx.caches();
 
-        tree.iterate(lower, upper, (t, io, pageAddr, idx) -> {
+        tree.iterate(lower, upper, (tree0, io, pageAddr, idx) -> {
             CacheDataRow row = tree.getRow(io, pageAddr, idx);
             int cacheId = row.cacheId();
 
@@ -152,6 +266,7 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
 
             assert context != null;
 
+            //TODO mvcc?
             CacheDataRow newRow = cacheDataStore.createRow(context, row.key(), row.value(), row.version(), row.expireTime(), null);
 
             long link = row.link();
@@ -162,17 +277,16 @@ public class CachePartitionDefragmentationManager implements PageStoreCollection
 
             m.put(link, newLink);
 
+            if (row.expireTime() != 0)
+                newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
+
             return true;
         });
-    }
 
-    /** {@inheritDoc} */
-    @Override public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
-        return null;
+        // Trigger checkpoint.
+        // Invalidate partition in partitions region.
+        // Invalidate mapping in mapping region?
+        // Invalidate PageStore for this partition.
+        // Rename partition file.
     }
 }
