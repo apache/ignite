@@ -86,8 +86,13 @@ class IgniteAwareService(BackgroundThreadService):
         logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
 
         node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.create_file(self.CONFIG_FILE, self.config().render(
-            config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR, properties=self.properties))
+
+        node_config = self.config().render(config_dir=self.PERSISTENT_ROOT,
+                                           work_dir=self.WORK_DIR,
+                                           properties=self.properties,
+                                           consistent_id=node.account.externally_routable_ip)
+
+        node.account.create_file(self.CONFIG_FILE, node_config)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
 
     @abstractmethod
@@ -157,9 +162,8 @@ class IgniteAwareService(BackgroundThreadService):
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        assert len(self.nodes) == 1
-
-        self.await_event_on_node(evt_message, self.nodes[0], timeout_sec, from_the_beginning=from_the_beginning,
+        for node in self.nodes:
+            self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                  backoff_sec=backoff_sec)
 
     def execute(self, command):

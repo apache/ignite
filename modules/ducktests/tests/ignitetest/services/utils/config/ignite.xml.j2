@@ -30,7 +30,9 @@
         </property>
 
         <property name="clientMode" value="{{ client_mode or False | lower }}"/>
-
+        {% if consistent_id %}
+            <property name="consistentId" value="{{ consistent_id }}"/>
+        {% endif %}
         {{ properties }}
     </bean>
 </beans>
