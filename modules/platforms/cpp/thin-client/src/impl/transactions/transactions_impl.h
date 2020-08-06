@@ -186,14 +186,6 @@ namespace ignite
                     ~TransactionsImpl();
 
                     /**
-                     * Start new transaction with default isolation, concurrency
-                     * and timeout.
-                     *
-                     * @return New transaction instance.
-                     */
-                    SP_TransactionImpl TxStart();
-
-                    /**
                      * Start new transaction.
                      *
                      * @param concurrency Concurrency.
@@ -203,8 +195,12 @@ namespace ignite
                      * @param err Error.
                      * @return Transaction ID on success.
                      */
-                    int64_t TxStart(int concurrency, int isolation, int64_t timeout,
-                        int32_t txSize, IgniteError& err);
+                    SharedPointer<TransactionImpl> TxStart(
+                            TransactionConcurrency::Type concurrency,
+                            TransactionIsolation::Type isolation,
+                            int64_t timeout,
+                            int32_t txSize/*,
+                            IgniteError& err*/);
 
                     /**
                      * Commit Transaction.

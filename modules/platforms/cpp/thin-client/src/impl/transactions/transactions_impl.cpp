@@ -31,11 +31,6 @@ namespace ignite
         {
             namespace transactions
             {
-                #define DEFAULT_CONCURRENCY TransactionConcurrency::PESSIMISTIC
-                #define DEFAULT_ISOLATION TransactionIsolation::READ_COMMITTED
-                #define DEFAULT_TIMEOUT 0
-                #define DEFAULT_TX_SIZE 0
-
                 TransactionImpl::TL_SP_TransactionsImpl TransactionImpl::threadTx;
 
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
@@ -58,12 +53,16 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
-                SharedPointer<TransactionImpl> TransactionsImpl::TxStart()
+                SharedPointer<TransactionImpl> TransactionsImpl::TxStart(
+                        TransactionConcurrency::Type concurrency,
+                        TransactionIsolation::Type isolation,
+                        int64_t timeout,
+                        int32_t txSize)
                 {
                     //IgniteError err = IgniteError(); !!! ???
 
                     SharedPointer<TransactionImpl> tx = TransactionImpl::Create(this,
-                        DEFAULT_CONCURRENCY, DEFAULT_ISOLATION, DEFAULT_TIMEOUT, DEFAULT_TX_SIZE);
+                        concurrency, isolation, timeout, txSize);
 
                     return tx;
                 }
