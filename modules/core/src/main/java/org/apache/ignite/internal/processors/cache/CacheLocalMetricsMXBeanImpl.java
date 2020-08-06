@@ -29,7 +29,7 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
  * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
-class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
+public class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 

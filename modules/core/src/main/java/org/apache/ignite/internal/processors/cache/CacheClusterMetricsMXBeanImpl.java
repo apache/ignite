@@ -24,7 +24,7 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  */
-class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
+public class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 
