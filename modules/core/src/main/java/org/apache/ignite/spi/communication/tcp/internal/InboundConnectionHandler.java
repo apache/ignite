@@ -542,7 +542,9 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 ", msg=" + msg0 + ']');
         }
 
-        if (cfg.usePairedConnections() && usePairedConnections(rmtNode, attributeNames.pairedConnection())) {
+        if (isChannelConnIdx(msg0.connectionIndex()))
+            ses.send(new RecoveryLastReceivedMessage(0));
+        else if (cfg.usePairedConnections() && usePairedConnections(rmtNode, attributeNames.pairedConnection())) {
             final GridNioRecoveryDescriptor recoveryDesc = nioSrvWrapper.inRecoveryDescriptor(rmtNode, connKey);
 
             ConnectClosureNew c = new ConnectClosureNew(ses, recoveryDesc, rmtNode);
