@@ -135,7 +135,7 @@ public interface BinaryObject extends Serializable, Cloneable {
 
     /**
      * Gets fully deserialized instance of binary object. If <code>ldr</code> was not specified, configured class loader
-     * will be used {@link org.apache.ignite.configuration.IgniteConfiguration#getClassLoader()).
+     * will be used {@link org.apache.ignite.configuration.IgniteConfiguration#getClassLoader}.
      *
      * @param ldr Class loader.
      * @return Fully deserialized instance of binary object.
