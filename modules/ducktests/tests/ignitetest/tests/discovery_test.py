@@ -133,7 +133,7 @@ class DiscoveryTest(IgniteTest):
         return self.__simulate_nodes_failure(version, coordinator=True, with_zk=True)
 
     # pylint: disable=R0913,R0914
-    def __simulate_nodes_failure(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
+    def __simulate_nodes_failure(self, version, coordinator=False, with_zk=False, nodes_to_kill=1):
         if with_zk:
             self.zk_quorum = ZookeeperService(self.test_context, 3)
             self.stage("Starting ZooKeeper quorum")
@@ -190,12 +190,12 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, delay_ms=delay_ms)
+        self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False)
 
         for failed_id in ids_to_wait:
             self.stage("Waiting for stopping " + failed_id)
 
-            self.servers.await_event_on_node("Node FAILED: TcpDiscoveryNode \\[id=" + failed_id, survived_node, 30,
+            self.servers.await_event_on_node("Node FAILED: TcpDiscoveryNode \\[id=" + failed_id, survived_node, 60,
                                              from_the_beginning=True)
 
         data['Node(s) failure detected in time (s)'] = self.monotonic() - start
