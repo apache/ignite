@@ -26,23 +26,22 @@ class CountDownLatch(object):
     """
     def __init__(self, count=1):
         self.count = count
-        self.lock = threading.Condition()
+        self.cond_var = threading.Condition()
 
     def count_down(self):
         """
         Decreases the latch counter.
         """
-        self.lock.acquire()
-        self.count -= 1
-        if self.count <= 0:
-            self.lock.notifyAll()
-        self.lock.release()
+        with self.cond_var:
+            if self.count > 0:
+                self.count -= 1
+            if self.count == 0:
+                self.cond_var.notifyAll()
 
     def wait(self):
         """
         Blocks current thread if the latch is not free.
         """
-        self.lock.acquire()
-        while self.count > 0:
-            self.lock.wait()
-        self.lock.release()
+        with self.cond_var:
+            while self.count > 0:
+                self.cond_var.wait()

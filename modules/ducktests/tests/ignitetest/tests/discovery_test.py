@@ -108,7 +108,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
-    def test_zk_single(self, version):
+    def test_zk_not_coordinator_single(self, version):
         """
         Test single node failure scenario (not the coordinator) with ZooKeeper.
         """
@@ -117,20 +117,29 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
-    def test_zk_two(self, version):
+    def test_zk_not_coordinator_two(self, version):
         """
         Test two-node-failure scenario (not the coordinator) with ZooKeeper.
         """
         return self.__nodes_failure_test__(version, nodes_to_kill=2, coordinator=False, with_zk=True)
 
+    @cluster(num_nodes=NUM_NODES+3)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_zk_coordinator(self, version):
+        """
+        Test coordinator-failure scenario with ZooKeeper.
+        """
+        return self.__nodes_failure_test__(version, coordinator=True, with_zk=True)
+
     # pylint: disable=R0913,R0914
     def __nodes_failure_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
         if with_zk:
             self.zk_quorum = ZookeeperService(self.test_context, 3)
-            self.stage("Starting Zookeper quorum")
+            self.stage("Starting ZooKeeper quorum")
             self.zk_quorum.start()
             properties = self.properties(zookeeper_settings={'connection_string': self.zk_quorum.connection_string()})
-            self.stage("Zookeper quorum started")
+            self.stage("ZooKeeper quorum started")
         else:
             properties = self.properties()
 
@@ -148,18 +157,16 @@ class DiscoveryTest(IgniteTest):
         data = {'Ignite cluster start time (s)': self.monotonic() - start}
         self.stage("Topology is ready")
 
-        if nodes_to_kill > self.servers.num_nodes - 1:
+        if nodes_to_kill > self.servers.num_nodes - 1 or coordinator and nodes_to_kill > 1:
             raise Exception("Too many nodes to kill: " + str(nodes_to_kill))
 
-        if with_zk:
-            node_chooser = lambda nodes: random.sample(nodes, nodes_to_kill)
-        elif coordinator:
+        if coordinator:
             node_chooser = lambda nodes: \
                 next(node for node in nodes if node.discovery_info().node_id == nodes[0].discovery_info().coordinator)
         else:
             node_chooser = lambda nodes: \
-                random.sample([n for n in self.servers.nodes if n.discovery_info().node_id
-                               != self.servers.nodes[0].discovery_info().coordinator], nodes_to_kill)
+                random.sample([n for n in self.servers.nodes if n.discovery_info().node_id !=
+                               self.servers.nodes[0].discovery_info().coordinator], nodes_to_kill)
 
         failed_nodes, survived_node = self.choose_node_to_kill(self.servers.nodes, node_chooser)
 
@@ -191,7 +198,8 @@ class DiscoveryTest(IgniteTest):
             self.servers.await_event_on_node("Node FAILED: TcpDiscoveryNode \\[id=" + failed_id, survived_node, 30,
                                              from_the_beginning=True)
 
-        data['Failure of node detected in time (s)'] = self.monotonic() - start
+        data['Node(s) failure detected in time (s)'] = self.monotonic() - start
+        data['Nodes failed'] = len(failed_nodes)
 
         return data
 
