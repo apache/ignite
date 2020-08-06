@@ -95,7 +95,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            self.__stop_node__(node, pid, sig)
+            self.__stop_node(node, pid, sig)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -115,7 +115,7 @@ class IgniteService(IgniteAwareService):
         delay = 0
 
         for node in nodes:
-            Thread(target=self.__stop_node__, args=(node, next(iter(self.pids(node))), sig, sem, delay)).start()
+            Thread(target=self.__stop_node, args=(node, next(iter(self.pids(node))), sig, sem, delay)).start()
 
             delay += delay_ms
 
@@ -128,7 +128,7 @@ class IgniteService(IgniteAwareService):
             raise
 
     @staticmethod
-    def __stop_node__(node, pid, sig, start_waiter=None, delay_ms=0):
+    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()

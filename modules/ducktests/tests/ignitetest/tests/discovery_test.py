@@ -85,7 +85,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test single-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
         """
-        return self.__nodes_failure_test__(version, nodes_to_kill=1)
+        return self.__nodes_failure_test(version, nodes_to_kill=1)
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
@@ -94,7 +94,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test two-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
         """
-        return self.__nodes_failure_test__(version, nodes_to_kill=2)
+        return self.__nodes_failure_test(version, nodes_to_kill=2)
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
@@ -103,7 +103,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test coordinator-failure scenario with TcpDiscoverySpi.
         """
-        return self.__nodes_failure_test__(version, True)
+        return self.__nodes_failure_test(version, True)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
@@ -112,7 +112,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test single node failure scenario (not the coordinator) with ZooKeeper.
         """
-        return self.__nodes_failure_test__(version, nodes_to_kill=1, coordinator=False, with_zk=True)
+        return self.__nodes_failure_test(version, nodes_to_kill=1, coordinator=False, with_zk=True)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
@@ -121,7 +121,7 @@ class DiscoveryTest(IgniteTest):
         """
         Test two-node-failure scenario (not the coordinator) with ZooKeeper.
         """
-        return self.__nodes_failure_test__(version, nodes_to_kill=2, coordinator=False, with_zk=True)
+        return self.__nodes_failure_test(version, nodes_to_kill=2, coordinator=False, with_zk=True)
 
     @cluster(num_nodes=NUM_NODES+3)
     @parametrize(version=str(DEV_BRANCH))
@@ -130,10 +130,10 @@ class DiscoveryTest(IgniteTest):
         """
         Test coordinator-failure scenario with ZooKeeper.
         """
-        return self.__nodes_failure_test__(version, coordinator=True, with_zk=True)
+        return self.__nodes_failure_test(version, coordinator=True, with_zk=True)
 
     # pylint: disable=R0913,R0914
-    def __nodes_failure_test__(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
+    def __nodes_failure_test(self, version, coordinator=False, with_zk=False, nodes_to_kill=1, delay_ms=100):
         if with_zk:
             self.zk_quorum = ZookeeperService(self.test_context, 3)
             self.stage("Starting ZooKeeper quorum")
