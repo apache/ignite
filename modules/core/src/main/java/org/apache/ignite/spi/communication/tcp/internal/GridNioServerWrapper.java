@@ -355,8 +355,6 @@ public class GridNioServerWrapper {
                 String msg = "Failed to connect to node " + node.id() + " because it is started" +
                     " in 'forceClientToServerConnections' mode; inverse connection will be requested.";
 
-                GridFutureAdapter<?> fut = clientPool.getFut(new ConnectionKey(node.id(), connIdx, -1));
-
                 throw new NodeUnreachableException(msg);
             }
         }
