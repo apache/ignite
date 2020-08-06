@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
@@ -228,6 +229,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Cache size. */
     private final LongGauge cacheSize;
 
+    /** Number of keys processed during index rebuilding. */
+    private final LongAdderMetric idxRebuildKeyProcessed;
+
     /**
      * Creates cache metrics.
      *
@@ -397,7 +401,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         cacheSize = mreg.register("CacheSize",
             () -> getEntriesStat().cacheSize(), "Local cache size.");
 
-        mreg.register("IndexRebuildKeyProcessed", this::getIndexRebuildKeyProcessed,
+        idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during index rebuilding.");
     }
 
@@ -714,6 +718,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.clear();
 
         txKeyCollisionInfo = null;
+
+        idxRebuildKeyProcessed.reset();
     }
 
     /** {@inheritDoc} */
@@ -898,7 +904,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.onRead(isHit);
     }
 
-    /** Set callback for tx key collisions detection.
+    /**
+     * Set callback for tx key collisions detection.
      *
      * @param coll Key collisions info holder.
      */
@@ -1552,8 +1559,21 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getIndexRebuildKeyProcessed() {
-        // TODO: 05.08.2020
-        return 0;
+        return idxRebuildKeyProcessed.value();
+    }
+
+    /** Reset metric - number of keys processed during index rebuilding. */
+    public void resetIndexRebuildKeyProcessed() {
+        idxRebuildKeyProcessed.reset();
+    }
+
+    /**
+     * Increase number of keys processed during index rebuilding.
+     *
+     * @param val Number of processed keys.
+     */
+    public void addIndexRebuildKeyProcessed(long val) {
+        idxRebuildKeyProcessed.add(val);
     }
 
     /** {@inheritDoc} */
