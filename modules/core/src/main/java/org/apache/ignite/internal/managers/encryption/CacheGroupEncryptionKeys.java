@@ -26,13 +26,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -44,8 +42,11 @@ class CacheGroupEncryptionKeys {
     /** Group encryption keys. */
     private final Map<Integer, List<GroupKey>> grpKeys = new ConcurrentHashMap<>();
 
-    /** WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key IDs. */
-    private final Queue<T3<Long, Integer, Integer>> trackedWalSegments = new ConcurrentLinkedQueue<>();
+    /**
+     * WAL segments encrypted with previous encryption keys prevent keys from being deleted
+     * until the associated segment is deleted.
+     */
+    private final Collection<TrackedWalSegment> trackedWalSegments = new ConcurrentLinkedQueue<>();
 
     /** Encryption spi. */
     private final EncryptionSpi encSpi;
@@ -159,15 +160,13 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * Put new encryption key and set it for writing.
+     * Adds new encryption key and set it for writing.
      *
      * @param grpId Cache group ID.
      * @param newEncKey New encrypted key for writing.
      * @return Previous encryption key for writing.
      */
     GroupKey changeActiveKey(int grpId, GroupKeyEncrypted newEncKey) {
-        assert newEncKey != null;
-
         List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
 
         GroupKey prevKey = F.first(keys);
@@ -183,13 +182,17 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * Put new unused key.
+     * Adds new encryption key.
      *
      * @param grpId Cache group ID.
      * @param newEncKey New encrypted key for writing.
      */
     void addKey(int grpId, GroupKeyEncrypted newEncKey) {
-        grpKeys.get(grpId).add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
+        List<GroupKey> keys = grpKeys.get(grpId);
+
+        assert keys != null : grpId;
+
+        keys.add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
     }
 
     /**
@@ -240,11 +243,11 @@ class CacheGroupEncryptionKeys {
 
         rmvKeyIds.addAll(F.viewReadOnly(keys.subList(1, keys.size()), GroupKey::unsignedId));
 
-        for (T3<Long, Integer, Integer> entry : trackedWalSegments) {
-            if (entry.get2() != grpId)
+        for (TrackedWalSegment segment : trackedWalSegments) {
+            if (segment.grpId != grpId)
                 continue;
 
-            rmvKeyIds.remove(entry.get3());
+            rmvKeyIds.remove(segment.keyId);
         }
 
         if (keys.removeIf(key -> rmvKeyIds.contains(key.unsignedId())))
@@ -263,7 +266,7 @@ class CacheGroupEncryptionKeys {
     /**
      * @param segments WAL segments, mapped to cache group encryption key IDs.
      */
-    void trackedWalSegments(Collection<T3<Long, Integer, Integer>> segments) {
+    void trackedWalSegments(Collection<TrackedWalSegment> segments) {
         trackedWalSegments.addAll(segments);
     }
 
@@ -276,7 +279,7 @@ class CacheGroupEncryptionKeys {
      * @param walIdx WAL segment index.
      */
     void reserveWalKey(int grpId, int keyId, long walIdx) {
-        trackedWalSegments.add(new T3<>(walIdx, grpId, keyId));
+        trackedWalSegments.add(new TrackedWalSegment(walIdx, grpId, keyId));
     }
 
     /**
@@ -285,12 +288,12 @@ class CacheGroupEncryptionKeys {
      * @return Wal segment index or null if there no segment associated with the specified cache group ID and key ID.
      */
     @Nullable Long reservedSegment(int grpId, int keyId) {
-        for (T3<Long, Integer, Integer> entry : trackedWalSegments) {
-            if (entry.get2() != grpId)
+        for (TrackedWalSegment segment : trackedWalSegments) {
+            if (segment.grpId != grpId)
                 continue;
 
-            if (entry.get3() == keyId)
-                return entry.get1();
+            if (segment.keyId == keyId)
+                return segment.idx;
         }
 
         return null;
@@ -304,19 +307,47 @@ class CacheGroupEncryptionKeys {
      */
     Map<Integer, Set<Integer>> releaseWalKeys(long walIdx) {
         Map<Integer, Set<Integer>> rmvKeys = new HashMap<>();
-        Iterator<T3<Long, Integer, Integer>> iter = trackedWalSegments.iterator();
+        Iterator<TrackedWalSegment> iter = trackedWalSegments.iterator();
 
         while (iter.hasNext()) {
-            T3<Long, Integer, Integer> entry = iter.next();
+            TrackedWalSegment segment = iter.next();
 
-            if (entry.get1() > walIdx)
+            if (segment.idx > walIdx)
                 break;
 
             iter.remove();
 
-            rmvKeys.computeIfAbsent(entry.get2(), v -> new HashSet<>()).add(entry.get3());
+            rmvKeys.computeIfAbsent(segment.grpId, v -> new HashSet<>()).add(segment.keyId);
         }
 
         return rmvKeys;
+    }
+
+    /**
+     * A WAL segment encrypted with a specific encryption key ID.
+     */
+    protected static final class TrackedWalSegment implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** WAL segment index. */
+        private final long idx;
+
+        /** Cache group ID. */
+        private final int grpId;
+
+        /** Encryption key ID. */
+        private final int keyId;
+
+        /**
+         * @param idx WAL segment index.
+         * @param grpId Cache group ID.
+         * @param keyId Encryption key ID.
+         */
+        public TrackedWalSegment(long idx, int grpId, int keyId) {
+            this.idx = idx;
+            this.grpId = grpId;
+            this.keyId = keyId;
+        }
     }
 }

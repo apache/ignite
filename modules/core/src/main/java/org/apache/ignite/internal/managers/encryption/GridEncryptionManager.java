@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -965,7 +964,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             Serializable savedSegments = metastorage.read(REENCRYPTED_WAL_SEGMENTS);
 
             if (savedSegments != null)
-                grpKeys.trackedWalSegments((Collection<T3<Long, Integer, Integer>>)savedSegments);
+                grpKeys.trackedWalSegments((Collection<CacheGroupEncryptionKeys.TrackedWalSegment>)savedSegments);
 
             if (grpKeys.groupIds().isEmpty()) {
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. " +
