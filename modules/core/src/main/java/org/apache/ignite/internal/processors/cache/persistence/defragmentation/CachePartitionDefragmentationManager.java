@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -33,10 +34,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
@@ -155,6 +158,8 @@ public class CachePartitionDefragmentationManager {
                             sharedCtx.database().checkpointReadUnlock();
                         }
 
+                        sharedCtx.database().forceCheckpoint("part-" + partIdx).futureFor(CheckpointState.FINISHED).get();
+
                         log.info(S.toString(
                             "Partition defragmented, temp file prepared.",
                             "partIdx", partIdx, false,
@@ -202,7 +207,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    private void defragmentSinglePartition(CacheGroupContext grpCtx, int partId) throws IgniteCheckedException {
+    private void defragmentSinglePartition(CacheGroupContext grpCtx, int partIdx) throws IgniteCheckedException {
         DataRegion partRegion = defrgCtx.partitionsDataRegion();
         DataRegion mappingRegion = defrgCtx.mappingDataRegion();
 
@@ -215,8 +220,8 @@ public class CachePartitionDefragmentationManager {
             grpCtx.affinityNode(),
             partRegion,
             grpCtx.cacheObjectContext(),
-            grpCtx.freeList(), //TODO Why do we use old freelist here?
-            grpCtx.reuseList(), //TODO Why do we use old reuselist here?
+            null,
+            null,
             grpCtx.localStartVersion(),
             true,
             false,
@@ -225,13 +230,13 @@ public class CachePartitionDefragmentationManager {
 
         newContext.start();
 
-        GridCacheOffheapManager.GridCacheDataStore cacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newContext, partId, true, defrgCtx.busyLock(), defrgCtx.log);
+        GridCacheOffheapManager.GridCacheDataStore cacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newContext, partIdx, true, defrgCtx.busyLock(), defrgCtx.log);
 
         cacheDataStore.init();
 
         PageMemory memory = mappingRegion.pageMemory();
 
-        FullPageId linkMapMetaPageId = new FullPageId(memory.allocatePage(grpCtx.groupId(), partId, FLAG_DATA), grpCtx.groupId());
+        FullPageId linkMapMetaPageId = new FullPageId(memory.allocatePage(grpCtx.groupId(), partIdx, FLAG_DATA), grpCtx.groupId());
 
         LinkMap m = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId());
 
@@ -247,6 +252,7 @@ public class CachePartitionDefragmentationManager {
 
         CacheDataTree newTree = cacheDataStore.tree();
         PendingEntriesTree newPendingTree = cacheDataStore.pendingTree();
+        AbstractFreeList freeList = cacheDataStore.getCacheStoreFreeList();
 
         CacheDataRow lower = tree.findFirst();
         CacheDataRow upper = tree.findLast();
@@ -282,6 +288,8 @@ public class CachePartitionDefragmentationManager {
 
             return true;
         });
+
+        freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
         // Trigger checkpoint.
         // Invalidate partition in partitions region.

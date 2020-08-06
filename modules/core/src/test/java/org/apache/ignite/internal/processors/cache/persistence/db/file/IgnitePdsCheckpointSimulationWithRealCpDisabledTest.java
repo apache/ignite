@@ -1014,7 +1014,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                     long writeStart = System.nanoTime();
 
-                    storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
+                    storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag, false);
 
                     long writeEnd = System.nanoTime();
 

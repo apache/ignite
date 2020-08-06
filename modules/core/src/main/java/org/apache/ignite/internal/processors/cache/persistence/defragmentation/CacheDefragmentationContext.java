@@ -49,17 +49,14 @@ public class CacheDefragmentationContext {
     /** */
     private final PageStoreMap mappingPageStoresMap = new PageStoreMap();
 
+    /** */
+    private final PageStoreMap oldPageStoresMap = new PageStoreMap();
+
     /** GroupId -> { PartIdx } */
     private IntMap<IntSet> partitionsByGroupId = new IntHashMap<>();
 
     /** GroupId -> WorkDir */
     private IntMap<File> cacheWorkDirsByGroupId = new IntHashMap<>();
-
-    /** GroupId -> PartIdx -> PageStore */
-    private IntMap<IntMap<PageStore>> pageStoresByGrpId = new IntHashMap<>();
-
-    //TODO Find a proper place for this map. Currently we have it in manager.
-//    private Map<Integer, List> cacheStoresByGroupId = new HashMap<>();
 
     /** GroupId -> CacheGroupContext */
     private IntMap<CacheGroupContext> groupContextsByGroupId = new IntHashMap<>();
@@ -135,18 +132,13 @@ public class CacheDefragmentationContext {
 
     /** */
     public PageStore pageStore(int grpId, int partIdx) {
-        return pageStoresByGrpId.get(grpId).get(partIdx);
+        return oldPageStoresMap.getStore(grpId, partIdx);
     }
 
     public void onPageStoreCreated(int grpId, File cacheWorkDir, int partIdx, PageStore partStore) {
         cacheWorkDirsByGroupId.putIfAbsent(grpId, cacheWorkDir);
 
-        IntMap<PageStore> pageStores = pageStoresByGrpId.get(grpId);
-
-        if (pageStores == null)
-            pageStoresByGrpId.put(grpId, pageStores = new IntHashMap<>());
-
-        pageStores.put(partIdx, partStore);
+        oldPageStoresMap.addPageStore(grpId, partIdx, partStore);
     }
 
     public DataRegion partitionsDataRegion() throws IgniteCheckedException {

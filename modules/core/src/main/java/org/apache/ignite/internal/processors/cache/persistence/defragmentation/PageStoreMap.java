@@ -45,7 +45,7 @@ class PageStoreMap implements PageStoreCollection {
     }
 
     /** {@inheritDoc} */
-    @Override public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
+    @Override public PageStore getStore(int grpId, int partId) {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);
 
         assert partPageStoresMap != null; //TODO Throw meaningful exception?
@@ -58,7 +58,7 @@ class PageStoreMap implements PageStoreCollection {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
+    @Override public Collection<PageStore> getStores(int grpId) {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);
 
         assert partPageStoresMap != null; //TODO Throw meaningful exception?

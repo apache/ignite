@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -153,6 +154,9 @@ public interface PageMemoryEx extends PageMemory {
          PageStoreWriter pageWriter,
          CheckpointMetricsTracker tracker
      ) throws IgniteCheckedException;
+
+     /** */
+     public IgnitePageStoreManager pageStoreManager();
 
     /**
      * Marks partition as invalid / outdated.

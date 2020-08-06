@@ -1305,7 +1305,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr.beforePageWrite(fullId);
 
                 // Write page to disk.
-                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
+                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, false);
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
@@ -4704,7 +4704,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointMetricsTracker tracker = persStoreMetrics.metricsEnabled() ? this.tracker : null;
 
-            PageStoreWriter pageStoreWriter = createPageStoreWriter(pagesToRetry);
+            Map<PageMemoryEx, PageStoreWriter> pageStoreWriters = new HashMap<>();
 
             ByteBuffer tmpWriteBuf = threadBuf.get();
 
@@ -4726,6 +4726,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr.beforePageWrite(fullId);
 
                 tmpWriteBuf.rewind();
+
+                PageStoreWriter pageStoreWriter = pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
                 pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
 
@@ -4753,17 +4755,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * Factory method for create {@link PageStoreWriter}.
          *
+         * @param pageMemEx
          * @param pagesToRetry List pages for retry.
          * @return Checkpoint page write context.
          */
-        private PageStoreWriter createPageStoreWriter(Map<PageMemoryEx, List<FullPageId>> pagesToRetry) {
+        private PageStoreWriter createPageStoreWriter(
+            PageMemoryEx pageMemEx,
+            Map<PageMemoryEx, List<FullPageId>> pagesToRetry
+        ) {
             return new PageStoreWriter() {
                 /** {@inheritDoc} */
                 @Override public void writePage(FullPageId fullPageId, ByteBuffer buf, int tag) throws IgniteCheckedException {
                     if (tag == PageMemoryImpl.TRY_AGAIN_TAG) {
-                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullPageId.groupId());
-
-                        pagesToRetry.computeIfAbsent(pageMem, k -> new ArrayList<>()).add(fullPageId);
+                        pagesToRetry.computeIfAbsent(pageMemEx, k -> new ArrayList<>()).add(fullPageId);
 
                         return;
                     }
@@ -4783,7 +4787,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     getCheckpointer().currentProgress().updateWrittenPages(1);
 
-                    PageStore store = storeMgr.writeInternal(groupId, pageId, buf, tag, true);
+                    PageStore store = pageMemEx.pageStoreManager().write(groupId, pageId, buf, tag, true);
+
+                    assert store != null;
 
                     updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
                 }

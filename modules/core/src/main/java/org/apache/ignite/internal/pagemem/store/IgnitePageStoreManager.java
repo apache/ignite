@@ -139,7 +139,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
+    public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.

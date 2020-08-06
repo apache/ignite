@@ -1179,6 +1179,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgnitePageStoreManager pageStoreManager() {
+        return storeMgr;
+    }
+
+    /** {@inheritDoc} */
     @Override public void checkpointWritePage(
         FullPageId fullId,
         ByteBuffer buf,
