@@ -211,8 +211,6 @@ do
 
     ERRORCODE="$?"
 
-    echo "ERRORCODE $ERRORCODE"
-
     if [ ! -f "${RESTART_SUCCESS_FILE}" ] ; then
         break
     else
