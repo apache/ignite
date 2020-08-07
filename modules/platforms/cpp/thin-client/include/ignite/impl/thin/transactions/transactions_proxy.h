@@ -51,6 +51,12 @@ namespace ignite
                         impl(impl)
                     {}
 
+                    /**
+                     * Assignment operator.
+                     *
+                     * @param other Another instance.
+                     * @return *this.
+                     */
                     TransactionProxy& operator=(const TransactionProxy& other)
                     {
                         impl = other.impl;

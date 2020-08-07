@@ -62,23 +62,37 @@ BOOST_AUTO_TEST_CASE(TestGetPut)
 
     transactions::ClientTransactions transactions = client.ClientTransactions();
 
-    transactions::ClientTransaction tx = transactions.txStart();
+    transactions::ClientTransaction tx = transactions.TxStart();
 
     cache.Put(1, 10);
 
     BOOST_CHECK_EQUAL(10, cache.Get(1));
 
-    tx.rollback();
+    tx.Rollback();
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
 
-    tx = transactions.txStart();
+    //---
+
+    tx = transactions.TxStart();
 
     cache.Put(1, 10);
 
     BOOST_CHECK_EQUAL(10, cache.Get(1));
 
-    tx.close();
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE);
+
+    cache.Put(1, 10);
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    tx.Close();
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
 }
