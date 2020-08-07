@@ -92,6 +92,7 @@ class IgniteAwareService(BackgroundThreadService):
                                            properties=self.properties,
                                            consistent_id=node.account.externally_routable_ip)
 
+        setattr(node, "consistent_id", node.account.externally_routable_ip)
         node.account.create_file(self.CONFIG_FILE, node_config)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
 
@@ -164,7 +165,7 @@ class IgniteAwareService(BackgroundThreadService):
         """
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
-                                 backoff_sec=backoff_sec)
+                                     backoff_sec=backoff_sec)
 
     def execute(self, command):
         """

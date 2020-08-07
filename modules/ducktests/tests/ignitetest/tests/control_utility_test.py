@@ -16,22 +16,16 @@
 """
 This module contains control.sh utility tests.
 """
-import random
-import re
-import time
-from collections import namedtuple
-
-from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
+from ducktape.utils.util import wait_until
 from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7
+from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
 
-BaselineNode = namedtuple("BaselineNode", ["consistent_id", "state", "order"])
-ClusterState = namedtuple("ClusterState", ["state", "topology_version", "baseline"])
 
 # pylint: disable=W0223
 class BaselineTests(IgniteTest):
@@ -60,6 +54,9 @@ class BaselineTests(IgniteTest):
 
     @staticmethod
     def properties(version):
+        """
+        Render properties for ignite node configuration.
+        """
         return Template(BaselineTests.CONFIG_TEMPLATE) \
             .render(version=version)
 
@@ -71,9 +68,44 @@ class BaselineTests(IgniteTest):
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_8))
     @parametrize(version=str(LATEST_2_7))
-    def test_baseline(self, version):
+    def test_baseline_set(self, version):
         """
-        Test setting baseline.
+        Test baseline set.
+        """
+        self.servers = self.__start_ignite_nodes(version, self.NUM_NODES - 2)
+
+        control_utility = ControlUtility(self.servers, self.test_context)
+        control_utility.activate()
+
+        # Check baseline of activated cluster.
+        baseline = control_utility.baseline()
+        self.__check_baseline_size(baseline, 1)
+        self.__check_nodes_in_baseline(self.servers.nodes, baseline)
+
+        # Set baseline using list of conststent ids.
+        new_node = self.__start_ignite_nodes(version, 1)
+        control_utility.set_baseline(self.servers.nodes + new_node.nodes)
+
+        baseline = control_utility.baseline()
+        self.__check_baseline_size(baseline, 2)
+        self.__check_nodes_in_baseline(new_node.nodes, baseline)
+
+        # Set baseline using topology version.
+        new_node = self.__start_ignite_nodes(version, 1)
+        _, version, _ = control_utility.cluster_state()
+        control_utility.set_baseline(version)
+
+        baseline = control_utility.baseline()
+        self.__check_baseline_size(baseline, 3)
+        self.__check_nodes_in_baseline(new_node.nodes, baseline)
+
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_8))
+    @parametrize(version=str(LATEST_2_7))
+    def test_baseline_add_remove(self, version):
+        """
+        Test add and remove nodes from baseline.
         """
         self.servers = self.__start_ignite_nodes(version, self.NUM_NODES - 1)
 
@@ -81,27 +113,41 @@ class BaselineTests(IgniteTest):
 
         control_utility.activate()
 
+        # Add node to baseline.
         new_node = self.__start_ignite_nodes(version, 1)
+        control_utility.add_to_baseline(new_node.nodes)
 
-        baseline = control_utility.set_baseline(self.servers.nodes + new_node.nodes)
+        baseline = control_utility.baseline()
+        self.__check_baseline_size(baseline, 3)
+        self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
+        # Expected failure (remove of online node is not allowed).
+        try:
+            control_utility.remove_from_baseline(new_node.nodes)
+
+            assert False, "Remove of online node from baseline should fail!"
+        except ControlUtilityError:
+            pass
+
+        # Remove of offline node from baseline.
         new_node.stop()
 
         self.servers.await_event("Node left topology", timeout_sec=30, from_the_beginning=True)
 
-        baseline = control_utility.remove_from_baseline(new_node.nodes)
+        control_utility.remove_from_baseline(new_node.nodes)
 
-        new_node.start(timeout_sec=30)
-
-        baseline = control_utility.add_to_baseline(new_node.nodes)
-
-        return {"new_baseline": ", ".join([str(n) for n in baseline])}
+        baseline = control_utility.baseline()
+        self.__check_baseline_size(baseline, 2)
+        self.__check_nodes_not_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_8))
     @parametrize(version=str(LATEST_2_7))
     def test_activate_deactivate(self, version):
+        """
+        Test activate and deactivate cluster.
+        """
         self.servers = self.__start_ignite_nodes(version, self.NUM_NODES)
 
         control_utility = ControlUtility(self.servers, self.test_context)
@@ -118,6 +164,58 @@ class BaselineTests(IgniteTest):
 
         assert state.lower() == 'inactive', 'Unexpected state %s' % state
 
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_8))
+    def test_baseline_autoadjust(self, version):
+        """
+        Test activate and deactivate cluster.
+        """
+        if version < V_2_8_0:
+            self.logger.info("Skipping test because this feature is not supported for version %s" % version)
+            return
+
+        self.servers = self.__start_ignite_nodes(version, self.NUM_NODES - 2)
+
+        control_utility = ControlUtility(self.servers, self.test_context)
+        control_utility.activate()
+
+        # Add node.
+        control_utility.enable_baseline_auto_adjust(2000)
+        new_node = self.__start_ignite_nodes(version, 1)
+
+        wait_until(lambda: len(control_utility.baseline()) == 2, timeout_sec=5)
+
+        baseline = control_utility.baseline()
+        self.__check_nodes_in_baseline(new_node.nodes, baseline)
+
+        # Add node when auto adjust disabled.
+        control_utility.disable_baseline_auto_adjust()
+        old_topology = control_utility.cluster_state().topology_version
+        new_node = self.__start_ignite_nodes(version, 1)
+
+        wait_until(lambda: control_utility.cluster_state().topology_version != old_topology, timeout_sec=5)
+        baseline = control_utility.baseline()
+        self.__check_nodes_not_in_baseline(new_node.nodes, baseline)
+
+    @staticmethod
+    def __check_nodes_in_baseline(nodes, baseline):
+        blset = set(node.consistent_id for node in baseline)
+
+        for node in nodes:
+            assert node.consistent_id in blset
+
+    @staticmethod
+    def __check_nodes_not_in_baseline(nodes, baseline):
+        blset = set(node.consistent_id for node in baseline)
+
+        for node in nodes:
+            assert node.consistent_id not in blset
+
+    @staticmethod
+    def __check_baseline_size(baseline, size):
+        assert len(baseline) == size, 'Unexpected size of baseline %d, %d expected' % (len(baseline), size)
+
     def __start_ignite_nodes(self, version, num_nodes, timeout_sec=30):
         ignite_version = IgniteVersion(version)
 
@@ -127,105 +225,3 @@ class BaselineTests(IgniteTest):
         servers.start(timeout_sec=timeout_sec)
 
         return servers
-
-
-class ControlUtility:
-    """
-    Control utility (control.sh) wrapper.
-    """
-    BASE_COMMAND = "control.sh"
-
-    def __init__(self, cluster, text_context):
-        self._cluster = cluster
-        self.logger = text_context.logger
-
-    def baseline(self):
-        """
-        Print current baseline nodes.
-        """
-        return self.cluster_state().baseline
-
-    def cluster_state(self):
-        output = self.__run("--baseline")
-
-        return self.__parse_cluster_state(output)
-
-    def set_baseline(self, baseline):
-        if type(baseline) == int:
-            result = self.__run("--baseline version %d --yes" % baseline)
-        else:
-            result = self.__run("--baseline set %s --yes" % ",".join([node.account.externally_routable_ip for node in baseline]))
-
-        return self.__parse_cluster_state(result)
-
-    def add_to_baseline(self, nodes):
-        result = self.__run("--baseline add %s --yes" % ",".join([node.account.externally_routable_ip for node in nodes]))
-
-        return self.__parse_cluster_state(result)
-
-    def remove_from_baseline(self, nodes):
-        result = self.__run("--baseline remove %s --yes" % ",".join([node.account.externally_routable_ip for node in nodes]))
-
-        return self.__parse_cluster_state(result)
-
-    def activate(self):
-        return self.__run("--activate --yes")
-
-    def deactivate(self):
-        return self.__run("--deactivate --yes")
-
-    @staticmethod
-    def __parse_cluster_state(output):
-        state_pattern = re.compile("Cluster state: ([^\\s]+)")
-        topology_pattern = re.compile("Current topology version: (\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=([^\\s]+),\\sS(tate|TATE)=([^\\s]+),?(\\sOrder=(\\d+))?")
-
-        match = state_pattern.search(output)
-        state = match.group(1) if match else None
-
-        match = topology_pattern.search(output)
-        topology = int(match.group(1)) if match else None
-
-        baseline = [BaselineNode(consistent_id=match[1], state=match[3], order=int(match[5]) if match[5] else None)
-                for match in baseline_pattern.findall(output)]
-
-        return ClusterState(state=state, topology_version=topology, baseline=baseline)
-
-    def __run(self, cmd):
-        node = random.choice(self.__alives())
-
-        self.logger.debug("Run command %s on node %s", cmd, node.name)
-
-        raw_output = node.account.ssh_capture(self.__form_cmd(node, cmd), allow_fail=True)
-        code, output = self.__parse_output(raw_output)
-
-        self.logger.debug("Output of command %s on node %s, exited with code %d, is %s", cmd, node.name, code, output)
-
-        if code != 0:
-            raise ControlUtilityError(node.account, cmd, code, output)
-
-        return output
-
-    def __form_cmd(self, node, cmd):
-        return self._cluster.path.script("%s --host %s %s" % (self.BASE_COMMAND, node.account.externally_routable_ip,
-                                                              cmd))
-
-    @staticmethod
-    def __parse_output(raw_output):
-        exit_code = raw_output.channel_file.channel.recv_exit_status()
-        output = "".join(raw_output)
-
-        pattern = re.compile("Command \\[[^\\s]*\\] finished with code: (\\d+)")
-        match = pattern.search(output)
-
-        if match:
-            return int(match.group(1)), output
-        return exit_code, output
-
-    def __alives(self):
-        return [node for node in self._cluster.nodes if self._cluster.alive(node)]
-
-
-class ControlUtilityError(RemoteCommandError):
-    def __init__(self, account, cmd, exit_status, output):
-        super(ControlUtilityError, self).__init__(account, cmd, exit_status,"".join(output))
