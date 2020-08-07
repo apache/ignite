@@ -88,7 +88,7 @@ class ControlUtility:
         Enable baseline auto adjust.
         :param timeout: Auto adjust timeout in millis.
         """
-        timeout_str = "timeout %d" % timeout
+        timeout_str = "timeout %d" % timeout if timeout else ""
         return self.__run("--baseline auto_adjust enable %s --yes" % timeout_str)
 
     def activate(self):
