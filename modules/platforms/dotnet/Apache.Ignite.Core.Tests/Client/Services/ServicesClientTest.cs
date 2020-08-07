@@ -77,6 +77,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual("Failed to invoke platform service, see server logs for details", ex.Message);
         }
 
+        // TODO: Binary mode
+        // TODO: All argument types
+        // TODO: Timeout
+        // TODO: Cluster group
+        // TODO: See Java thin client services tests for more ideas
+
         /// <summary>
         /// Deploys test service and returns client-side proxy.
         /// </summary>
