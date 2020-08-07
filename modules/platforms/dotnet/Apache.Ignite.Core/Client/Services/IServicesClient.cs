@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Client.Services
 {
+    using System;
+
     /// <summary>
     /// Ignite distributed services client.
     /// </summary>
@@ -34,5 +36,24 @@ namespace Apache.Ignite.Core.Client.Services
         /// <param name="serviceName">Service name.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
         T GetServiceProxy<T>(string serviceName) where T : class;
+
+        /// <summary>
+        /// Returns an instance with binary mode enabled.
+        /// Service method results will be kept in binary form.
+        /// </summary>
+        /// <returns>Instance with binary mode enabled.</returns>
+        IServicesClient WithKeepBinary();
+
+        /// <summary>
+        /// Returns an instance with server-side binary mode enabled.
+        /// Service method arguments will be kept in binary form.
+        /// </summary>
+        /// <returns>Instance with server-side binary mode enabled.</returns>
+        IServicesClient WithServerKeepBinary();
+
+        /// <summary>
+        /// Returns an instance with specified timeout that applies to all service calls.
+        /// </summary>
+        IServicesClient WithTimeout(TimeSpan timeout);
     }
 }

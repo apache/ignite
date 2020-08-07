@@ -33,22 +33,41 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /** */
         private readonly IgniteClient _ignite;
 
+        /** */
+        private readonly IClientClusterGroup _clusterGroup;
+
+        /** */
+        private readonly bool _keepBinary;
+
+        /** */
+        private readonly bool _serverKeepBinary;
+
+        /** */
+        private readonly TimeSpan _timeout;
+
         /// <summary>
         /// Initializes a new instance of <see cref="ServicesClient"/> class.
         /// </summary>
-        /// <param name="ignite">Ignite.</param>
-        public ServicesClient(IgniteClient ignite)
+        public ServicesClient(
+            IgniteClient ignite,
+            IClientClusterGroup clusterGroup = null,
+            bool keepBinary = false,
+            bool serverKeepBinary = false,
+            TimeSpan timeout = default(TimeSpan))
         {
             Debug.Assert(ignite != null);
 
             _ignite = ignite;
+            _clusterGroup = clusterGroup;
+            _keepBinary = keepBinary;
+            _serverKeepBinary = serverKeepBinary;
+            _timeout = timeout;
         }
 
         /** <inheritdoc /> */
         public IClientClusterGroup ClusterGroup
         {
-            // TODO
-            get { throw new NotImplementedException(); }
+            get { return _clusterGroup ?? _ignite.GetCluster(); }
         }
 
         /** <inheritdoc /> */
@@ -57,6 +76,26 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) => InvokeProxyMethod(serviceName, method, args));
+        }
+
+        /** <inheritdoc /> */
+        public IServicesClient WithKeepBinary()
+        {
+            return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _timeout);
+        }
+
+        /** <inheritdoc /> */
+        public IServicesClient WithServerKeepBinary()
+        {
+            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _timeout);
+        }
+
+        /** <inheritdoc /> */
+        public IServicesClient WithTimeout(TimeSpan timeout)
+        {
+            IgniteArgumentCheck.Ensure(timeout > TimeSpan.Zero, "timeout", "Timeout should be greater than zero");
+
+            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, _serverKeepBinary, timeout);
         }
 
         /// <summary>
