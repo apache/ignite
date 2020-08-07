@@ -344,6 +344,7 @@ public class JavaThinClient {
         //tag::client-cluster[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
             ClientCluster clientCluster = client.cluster();
+            clientCluster.state(ClusterState.ACTIVE);
         }
         //end::client-cluster[]
     }
@@ -371,5 +372,23 @@ public class JavaThinClient {
 
         Ignite ignite = Ignition.start(igniteCfg);
         //end::client-compute-setup[]
+
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-compute-task[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            // Suppose MyTask class is already deployed to the cluster
+            client.compute().execute(MyTask.class.getName(), "argument");
+        }
+        //end::client-compute-task[]
+    }
+
+    void clientServices() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-services[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            // Suppose implementation of MyService interface is already deployed to the cluster as a service with name "MyService"
+            client.services().serviceProxy("MyService", MyService.class).myServiceMethod();
+        }
+        //end::client-services[]
     }
 }

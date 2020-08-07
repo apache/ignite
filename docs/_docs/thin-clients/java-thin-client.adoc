@@ -242,6 +242,10 @@ include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
 Compute tasks execution functionality provided by `ClientCompute` interface, which can be obtained from `IgniteClient` instance.
 
 Currently, thin client only have an ability to run already deployed tasks by task name. To run some custom task users should deploy classes related to this task to the server manually.
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-compute-task,indent=0]
+-------------------------------------------------------------------------------
 
 Nodes set to execute compute tasks can be limited using cluster groups and corresponding `IgniteClient.compute(ClientClusterGroup)` method.
 
@@ -252,6 +256,10 @@ See link:distributed-computing/distributed-computing[distributed computing] for 
 The Java thin client is able to invoke grid-managed services. API for this functionality is provided by `ClientServices` interface, which can be obtained from `IgniteClient` instance.
 
 Only already deployed to cluster services can be invoked, there is no functionality to deploy services by thin clients.
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-services,indent=0]
+-------------------------------------------------------------------------------
 
 ////
 *TODO: fix link*
