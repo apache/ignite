@@ -66,8 +66,6 @@ namespace ignite
 
                 void TransactionProxy::rollback()
                 {
-                    std::cout << "proxy roll" << std::endl;
-
                     GetTxsImpl(impl).GetCurrent().Get()->Rollback();
                 }
 

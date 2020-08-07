@@ -19,8 +19,6 @@
 #include "impl/transactions/transactions_impl.h"
 #include "impl/response_status.h"
 
-#include <iostream>
-
 using namespace ignite::common::concurrent;
 using namespace ignite::impl::thin;
 
@@ -37,14 +35,11 @@ namespace ignite
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
-                    std::cout << "router" << std::endl;
                 }
 
                 template<typename ReqT, typename RspT>
                 void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
                 {
-
-                    std::cout << "router SyncMessage: " << router.Get() << std::endl;
                     router.Get()->SyncMessage(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
@@ -59,18 +54,14 @@ namespace ignite
                 {
                     //IgniteError err = IgniteError(); !!! ???
 
-                    SharedPointer<TransactionImpl> tx = TransactionImpl::Create(this,
+                    SharedPointer<TransactionImpl> tx = TransactionImpl::Create(*this,
                         concurrency, isolation, timeout, txSize);
-
-                    std::cout << "router TxStart " << router.Get() << std::endl;
-
-                    std::cout << "router TxStart " << tx.Get()->txs.Get()->router.Get() << std::endl;
 
                     return tx;
                 }
 
                 SP_TransactionImpl TransactionImpl::Create(
-                    SP_TransactionsImpl txs,
+                    TransactionsImpl& txs,
                     TransactionConcurrency::Type concurrency,
                     TransactionIsolation::Type isolation,
                     int64_t timeout,
@@ -80,13 +71,11 @@ namespace ignite
 
                     Int32Response rsp;
 
-                    txs.Get()->SyncMessage(req, rsp);
+                    txs.SyncMessage(req, rsp);
 
                     int32_t txId = rsp.GetValue();
 
-                    SP_TransactionImpl tx = SP_TransactionImpl(new TransactionImpl(txs, txId, concurrency, isolation, timeout, txSize));
-
-                    std::cout << "router Create " << txs.Get()->router.Get() << std::endl;
+                    SP_TransactionImpl tx = SP_TransactionImpl(new TransactionImpl(&txs, txId, concurrency, isolation, timeout, txSize));
 
                     threadTx.Set(tx);
 
@@ -105,8 +94,6 @@ namespace ignite
 
                         threadTx.Remove();
                     }
-                    if (ptr)
-                    std::cout << "router GetCurrent " << ptr->txs.Get()->router.Get() << std::endl;
 
                     return tx;
                 }
@@ -118,8 +105,6 @@ namespace ignite
 
                 SP_TransactionImpl TransactionsImpl::GetCurrent()
                 {
-                    std::cout << "GetCurrent " << router.Get() <<  std::endl;
-
                     return TransactionImpl::GetCurrent();
                 }
 
@@ -136,7 +121,6 @@ namespace ignite
 
                 int32_t TransactionsImpl::TxRollback(int32_t txId)
                 {
-                    std::cout << "12" <<  std::endl;
                     TxEndRequest<RequestType::OP_TX_END> req(txId, false);
 
                     Response rsp;
@@ -155,7 +139,7 @@ namespace ignite
                 {
                     common::concurrent::CsLockGuard guard(accessLock);
 
-                    int32_t rsp = txs.Get()->TxCommit(txId);
+                    int32_t rsp = txs->TxCommit(txId);
 
                     if (rsp == ResponseStatus::SUCCESS)
                     {
@@ -167,7 +151,7 @@ namespace ignite
                 {
                     common::concurrent::CsLockGuard guard(accessLock);
 
-                    int32_t rsp = txs.Get()->TxRollback(txId);
+                    int32_t rsp = txs->TxRollback(txId);
 
                     if (rsp == ResponseStatus::SUCCESS)
                     {
@@ -184,7 +168,7 @@ namespace ignite
                         return;
                     }
 
-                    int32_t rsp = txs.Get()->TxClose(txId);
+                    int32_t rsp = txs->TxClose(txId);
 
                     if (rsp == ResponseStatus::SUCCESS)
                     {

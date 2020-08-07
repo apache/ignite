@@ -46,7 +46,10 @@ namespace ignite
                     return *this;
                 }
 
-                void close();
+                void close()
+                {
+                    proxy.close();
+                }
             private:
                 /** Implementation. */
                 impl::thin::transactions::TransactionProxy proxy;

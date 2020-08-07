@@ -62,7 +62,7 @@ namespace ignite
                      * @param size Number of entries participating in transaction (may be approximate).
                      */
                     TransactionImpl(
-                            SP_TransactionsImpl txImpl,
+                            TransactionsImpl* txImpl,
                             int32_t txid,
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
@@ -128,14 +128,14 @@ namespace ignite
                      * @param txSize Number of entries participating in transaction (may be approximate).
                      */
                     static SP_TransactionImpl Create(
-                            SP_TransactionsImpl txs,
+                            TransactionsImpl& txs,
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize);
 
                     /** Transactions implementation. */
-                    SP_TransactionsImpl txs;
+                    TransactionsImpl* txs;
                 private:
 
                     /** Current transaction Id. */
@@ -248,10 +248,9 @@ namespace ignite
                      */
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);
-
+                private:
                     /** Data router. */
                     SP_DataRouter router;
-                private:
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
                 };
