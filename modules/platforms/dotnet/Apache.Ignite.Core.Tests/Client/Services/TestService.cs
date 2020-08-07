@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         public void VoidMethod()
         {
-            throw new System.NotImplementedException();
+            // No-op.
         }
 
         public int IntMethod()

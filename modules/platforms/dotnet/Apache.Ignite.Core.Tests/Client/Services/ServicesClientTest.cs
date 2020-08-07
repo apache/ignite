@@ -81,6 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         // TODO: All argument types
         // TODO: Timeout
         // TODO: Cluster group
+        // TODO: Call Java services
 
         /// <summary>
         /// Deploys test service and returns client-side proxy.
