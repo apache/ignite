@@ -51,6 +51,13 @@ namespace ignite
                         impl(impl)
                     {}
 
+                    TransactionProxy& operator=(const TransactionProxy& other)
+                    {
+                        impl = other.impl;
+
+                        return *this;
+                    }
+
                     /**
                      * Destructor.
                      */

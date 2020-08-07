@@ -39,6 +39,13 @@ namespace ignite
                     proxy.rollback();
                 }
 
+                ClientTransaction& operator=(const ClientTransaction& other)
+                {
+                    proxy = other.proxy;
+
+                    return *this;
+                }
+
                 void close();
             private:
                 /** Implementation. */
