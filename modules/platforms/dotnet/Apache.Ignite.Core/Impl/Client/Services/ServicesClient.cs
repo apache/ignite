@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using System.Reflection;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
 
@@ -30,6 +31,14 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     /// </summary>
     internal class ServicesClient : IServicesClient
     {
+        /** */
+        [Flags]
+        private enum ServiceFlags : byte
+        {
+            KeepBinary = 1,
+            HasParameterTypes = 2
+        }
+
         /** */
         private readonly IgniteClient _ignite;
 
@@ -110,8 +119,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     var w = ctx.Writer;
 
                     w.WriteString(serviceName);
-                    w.WriteByte(0); // TODO: Flags - keepBinary, hasTypes
-                    w.WriteLong(0); // TODO: Timeout
+                    w.WriteByte(_serverKeepBinary ? (byte) ServiceFlags.KeepBinary : (byte) 0);
+                    w.WriteLong((long) _timeout.TotalMilliseconds);
                     w.WriteInt(0); // TODO: Cluster nodes
 
                     w.WriteString(method.Name);
@@ -122,7 +131,14 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         w.WriteObjectDetached(arg);
                     }
                 },
-                ctx => ctx.Reader.ReadObject<object>());
+                ctx =>
+                {
+                    var reader = _keepBinary
+                        ? ctx.Marshaller.StartUnmarshal(ctx.Stream, BinaryMode.ForceBinary)
+                        : ctx.Reader;
+
+                    return reader.ReadObject<object>();
+                });
         }
     }
 }
