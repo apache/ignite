@@ -195,8 +195,9 @@ class DiscoveryTest(IgniteTest):
         for failed_id in ids_to_wait:
             self.stage("Waiting for stopping " + failed_id)
 
-            self.servers.await_event_on_node("Node FAILED: TcpDiscoveryNode \\[id=" + failed_id, survived_node, 60,
-                                             from_the_beginning=True)
+            self.servers.await_event_on_node("Node FAILED: " +
+                                             ("ZookeeperClusterNode" if with_zk else "TcpDiscoveryNode") +
+                                             " \\[id=" + failed_id, survived_node, 60, from_the_beginning=True)
 
         data['Node(s) failure detected in time (s)'] = self.monotonic() - start
         data['Nodes failed'] = len(failed_nodes)
