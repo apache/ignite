@@ -323,4 +323,53 @@ public class JavaThinClient {
 
         //end::system-views[]
     }
+
+    void partitionAwareness() {
+        //tag::partition-awareness[]
+        ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
+                .setPartitionAwareness(true);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // Put, get or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::partition-awareness[]
+    }
+
+    void cientCluster() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-cluster[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            ClientCluster clientCluster = client.cluster();
+        }
+        //end::client-cluster[]
+    }
+
+    void clientClusterGroups() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-cluster-groups[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            ClientClusterGroup servers = client.cluster().forServers();
+            servers.nodes().forEach(n -> System.out.println("Server node: " + n.id()));
+        }
+        //end::client-cluster-groups[]
+    }
+
+    void clientCompute() {
+        //tag::client-compute-setup[]
+        ThinClientConfiguration thinClientCfg = new ThinClientConfiguration()
+                .setMaxActiveComputeTasksPerConnection(100);
+
+        ClientConnectorConfiguration clientConnectorCfg = new ClientConnectorConfiguration()
+                .setThinClientConfiguration(thinClientCfg);
+
+        IgniteConfiguration igniteCfg = new IgniteConfiguration()
+                .setClientConnectorConfiguration(clientConnectorCfg);
+
+        Ignite ignite = Ignition.start(igniteCfg);
+        //end::client-compute-setup[]
+    }
 }

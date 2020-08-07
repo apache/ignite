@@ -59,7 +59,18 @@ You can provide addresses of multiple nodes. In this case, the thin client rando
 include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 -------------------------------------------------------------------------------
 
-Note that the code above provides a failover mechanism in case of server node failures but with a caveat that cache queries may return duplicate results. Refer to the <<Handling Node Failures>> section for more information.
+Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
+
+== Partition Awareness
+
+include::includes/partition-awareness.adoc[]
+
+The following code sample illustrates how to use the partition awareness feature with the java thin client.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=partition-awareness,indent=0]
+----
 
 == Using Key-Value API
 
@@ -170,18 +181,95 @@ NOTE: The `getAll()` method retrieves the results from the cursor and closes it.
 
 Read more about using `SqlFieldsQuery` and SQL API in the link:SQL/sql-api[Using SQL API] section.
 
+== Cluster API
+
+Cluster functionality (APIs for accessing cluster and nodes) is provided via the `ClientCluster` interface. You can get an instance of `ClientCluster` from `IgniteClient` as follows:
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster,indent=0]
+-------------------------------------------------------------------------------
+
+Through the `ClientCluster` interface you can:
+
+* Get or set cluster state
+* Get a list of all cluster members
+* Create logical Cluster Groups
+
+== Cluster groups
+
+API to create logical groups of cluster nodes within your cluster is provided by `ClientClusterGroup` interface. Instance of this interface can be obtained from a parent `ClientClusterGroup` instance using node-filtering methods.
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster-groups,indent=0]
+-------------------------------------------------------------------------------
+
+The `ClientCluster` instance (see link:#cluster-api[Cluster API]) it's a root cluster group, which includes all nodes in the cluster.
+
+////
+*TODO: fix link*
+////
+
+Refer to link:clustering/cluster-groups[Cluster groups] to get more information about logical nodes grouping.
+
+== Executing compute tasks
+
+The Java thin client has basic functionality to execute compute tasks. By default this feature is disabled on server-side. To enable this functionality server-side configuration property `maxActiveComputeTasksPerConnection` should be set excplicitly to value more than 0:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
+    <property name="clientConnectorConfiguration">
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+            <property name="thinClientConfiguration">
+                <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+                    <property name="maxActiveComputeTasksPerConnection" value="100" />
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
+----
+--
+
+Compute tasks execution functionality provided by `ClientCompute` interface, which can be obtained from `IgniteClient` instance.
+
+Currently, thin client only have an ability to run already deployed tasks by task name. To run some custom task users should deploy classes related to this task to the server manually.
+
+Nodes set to execute compute tasks can be limited using cluster groups and corresponding `IgniteClient.compute(ClientClusterGroup)` method.
+
+See link:distributed-computing/distributed-computing[distributed computing] for more information about compute grid functionality.
+
+== Service invocation
+
+The Java thin client is able to invoke grid-managed services. API for this functionality is provided by `ClientServices` interface, which can be obtained from `IgniteClient` instance.
+
+Only already deployed to cluster services can be invoked, there is no functionality to deploy services by thin clients.
+
+////
+*TODO: fix link*
+////
+
+See link:service-grid/service-grid[Service Grid] for more information about grid-managed services.
+
 == Handling Exceptions
 
 === Handling Node Failures
 
 When you provide the addresses of multiple nodes in the client configuration, the client automatically switches to the next node if the current connection fails and retries any ongoing operation.
 
-In the case of atomic operations, failover to another node is transparent to the user.  However, if you execute a scan query or a SELECT query, it may return duplicate results. This can happen because queries return data in pages, and if the node that the client is connected to goes down while the client retrieves the pages, the client connects to another node and executes the query again. To avoid this, you have to write some code in your application that checks if the entries returned by the client are duplicated. Consider the following code:
+In the case of atomic operations, failover to another node is transparent to the user. However, if you execute a scan query or a SELECT query, iteration over query cursor may throw an `ClientConnectionException`. This can happen because queries return data in pages, and if the node that the client is connected to goes down while the client retrieves the pages, to keep query result consistent exception is thrown.
 
-[source, java]
--------------------------------------------------------------------------------
-include::{sourceCodeFile}[tag=results-to-map,indent=0]
--------------------------------------------------------------------------------
+If explicit transaction is started, cache operations binded to this transaction also can throw an `ClientException` in case of failed connection to server node.
+
+User code should handle these exceptions and implement retry logic accordingly.
 
 == Security
 
