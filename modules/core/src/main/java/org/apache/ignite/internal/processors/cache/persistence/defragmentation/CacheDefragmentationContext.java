@@ -52,7 +52,7 @@ public class CacheDefragmentationContext {
     /** */
     private final PageStoreMap oldPageStoresMap = new PageStoreMap();
 
-    /** GroupId -> { PartIdx } */
+    /** GroupId -> { PartId } */
     private IntMap<IntSet> partitionsByGroupId = new IntHashMap<>();
 
     /** GroupId -> WorkDir */
@@ -96,12 +96,12 @@ public class CacheDefragmentationContext {
 
     /** */
     public IgnitePageStoreManager partPageStoreManager() {
-        return new DefragmentationPageStoreManager(ctx, partPageStoresMap);
+        return new DefragmentationPageStoreManager(ctx, partPageStoresMap, "defrgPartitionsStore");
     }
 
     /** */
     public IgnitePageStoreManager mappingPageStoreManager() {
-        return new DefragmentationPageStoreManager(ctx, mappingPageStoresMap);
+        return new DefragmentationPageStoreManager(ctx, mappingPageStoresMap, "defrgLinkMappingStore");
     }
 
     public File workDirForGroupId(int grpId) {
@@ -131,14 +131,14 @@ public class CacheDefragmentationContext {
     }
 
     /** */
-    public PageStore pageStore(int grpId, int partIdx) {
-        return oldPageStoresMap.getStore(grpId, partIdx);
+    public PageStore pageStore(int grpId, int partId) {
+        return oldPageStoresMap.getStore(grpId, partId);
     }
 
-    public void onPageStoreCreated(int grpId, File cacheWorkDir, int partIdx, PageStore partStore) {
+    public void onPageStoreCreated(int grpId, File cacheWorkDir, int partId, PageStore partStore) {
         cacheWorkDirsByGroupId.putIfAbsent(grpId, cacheWorkDir);
 
-        oldPageStoresMap.addPageStore(grpId, partIdx, partStore);
+        oldPageStoresMap.addPageStore(grpId, partId, partStore);
     }
 
     public DataRegion partitionsDataRegion() throws IgniteCheckedException {
@@ -149,7 +149,7 @@ public class CacheDefragmentationContext {
         return dbMgr.dataRegion(DEFRAGMENTATION_MAPPING_REGION_NAME);
     }
 
-    public void onCacheStoreCreated(CacheGroupContext grp, int partIdx, GridSpinBusyLock busyLock) {
+    public void onCacheStoreCreated(CacheGroupContext grp, int partId, GridSpinBusyLock busyLock) {
         if (!grp.userCache())
             return;
 
@@ -160,7 +160,7 @@ public class CacheDefragmentationContext {
         groupContextsByGroupId.putIfAbsent(grpId, grp);
 
         try {
-            if (!grp.shared().pageStore().exists(grpId, partIdx))
+            if (!grp.shared().pageStore().exists(grpId, partId))
                 return;
 
             IntSet partitions = partitionsByGroupId.get(grpId);
@@ -168,7 +168,7 @@ public class CacheDefragmentationContext {
             if (partitions == null)
                 partitionsByGroupId.put(grpId, partitions = new BitSetIntSet());
 
-            partitions.add(partIdx);
+            partitions.add(partId);
         }
         catch (IgniteCheckedException ignore) {
             // No-op.

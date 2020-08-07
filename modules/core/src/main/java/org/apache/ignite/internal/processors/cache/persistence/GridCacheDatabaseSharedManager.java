@@ -97,6 +97,7 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -873,14 +874,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void prepareCacheDefragmentation() throws IgniteCheckedException {
         DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
+        assert CU.isPersistenceEnabled(dsCfg);
+
         defrgCtx = new CacheDefragmentationContext(
             cctx.kernalContext(),
             this,
             log
         );
 
-        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), false, defrgCtx.partPageStoreManager());
-        addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), false, defrgCtx.mappingPageStoreManager());
+        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), true, defrgCtx.partPageStoreManager());
+        addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), true, defrgCtx.mappingPageStoreManager());
 
         defrgMgr = new CachePartitionDefragmentationManager(cctx, defrgCtx);
     }
@@ -907,7 +910,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 notifyMetastorageReadyForRead();
 
-                if (IgniteSystemProperties.getBoolean("DEFRAGMENTATION", false))
+                if (IgniteSystemProperties.getBoolean(CachePartitionDefragmentationManager.DEFRAGMENTATION, false))
                     prepareCacheDefragmentation();
             }
             finally {
@@ -3310,6 +3313,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws StorageException If failed to write checkpoint entry.
      */
     public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws StorageException {
+        if (System.getProperty(CachePartitionDefragmentationManager.SKIP_CP_ENTRIES) != null)
+            return;
+
         String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
 
@@ -4788,6 +4794,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     getCheckpointer().currentProgress().updateWrittenPages(1);
 
                     PageStore store = pageMemEx.pageStoreManager().write(groupId, pageId, buf, tag, true);
+
+                    // Temporary debug logs.
+                    log.info(S.toString(
+                        "Page checkpointed",
+                        "grpId", Integer.toHexString(groupId), false,
+                        "partition", (short)PageIdUtils.partId(pageId), false,
+                        "idx", PageIdUtils.pageIndex(pageId), false,
+                        "io", PageIO.getPageIO(buf).getClass().getSimpleName(), false,
+                        "pageStore", pageMemEx.pageStoreManager(), false
+                    ));
 
                     assert store != null;
 

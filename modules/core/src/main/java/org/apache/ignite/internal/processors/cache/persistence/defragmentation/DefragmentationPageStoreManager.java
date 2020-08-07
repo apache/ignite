@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +39,8 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -51,10 +54,15 @@ public class DefragmentationPageStoreManager implements IgnitePageStoreManager {
     private final GridKernalContext ctx;
 
     /** */
+    @GridToStringExclude
     private final PageStoreCollection pageStores;
 
     /** */
+    @GridToStringExclude
     private final long metaPageId = PageIdUtils.pageId(INDEX_PARTITION, PageMemory.FLAG_IDX, 0);
+
+    /** */
+    private final String name;
 
     /**
      * @param ctx Kernal context.
@@ -62,10 +70,12 @@ public class DefragmentationPageStoreManager implements IgnitePageStoreManager {
      */
     public DefragmentationPageStoreManager(
         GridKernalContext ctx,
-        PageStoreCollection pageStores
+        PageStoreCollection pageStores,
+        String name
     ) {
         this.ctx = ctx;
         this.pageStores = pageStores;
+        this.name = name;
     }
 
     /** {@inheritDoc} */
@@ -329,5 +339,15 @@ public class DefragmentationPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         throw new UnsupportedOperationException("onDeActivate");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hashCode(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DefragmentationPageStoreManager.class, this);
     }
 }
