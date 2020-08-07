@@ -44,7 +44,7 @@ class SparkService(IgniteAwareService):
         modules = modules or []
         modules.extend(["ignite-spark"])
 
-        IgniteAwareService.__init__(self, context, num_nodes, modules, False, version, properties)
+        IgniteAwareService.__init__(self, context, num_nodes, modules, False, version, properties, None)
 
         self.log_level = "DEBUG"
 
