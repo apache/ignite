@@ -34,6 +34,10 @@ class CellularAffinity(IgniteTest):
     """
     NUM_NODES = 3
 
+    ATTRIBUTE = "CELL"
+
+    CACHE_NAME = "test-cache"
+
     CONFIG_TEMPLATE = """
             <property name="cacheConfiguration">
                 <list>
@@ -42,12 +46,12 @@ class CellularAffinity(IgniteTest):
                             <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                                 <property name="affinityBackupFilter">
                                     <bean class="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularAffinityBackupFilter">
-                                        <constructor-arg value="CELL"/>
+                                        <constructor-arg value="{{ attr }}"/>
                                     </bean>
                                 </property>
                             </bean>
                         </property>
-                        <property name="name" value="test-cache"/>
+                        <property name="name" value="{{ cacheName }}"/>
                         <property name="backups" value="{{ nodes }}"/> 
                     </bean>
                 </list>
@@ -60,7 +64,9 @@ class CellularAffinity(IgniteTest):
         :return: Configuration properties.
         """
         return Template(CellularAffinity.CONFIG_TEMPLATE) \
-            .render(nodes=CellularAffinity.NUM_NODES)  # bigger than cell capacity (to handle single cell useless test)
+            .render(nodes=CellularAffinity.NUM_NODES,  # bigger than cell capacity (to handle single cell useless test)
+                    attr=CellularAffinity.ATTRIBUTE,
+                    cacheName=CellularAffinity.CACHE_NAME)
 
     def __init__(self, test_context):
         super(CellularAffinity, self).__init__(test_context=test_context)
@@ -84,7 +90,7 @@ class CellularAffinity(IgniteTest):
             num_nodes=CellularAffinity.NUM_NODES,
             version=ignite_version,
             properties=self.properties(),
-            jvm_opts=['-DCELL=1'])
+            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=1'])
 
         ignites1.start()
 
@@ -93,7 +99,7 @@ class CellularAffinity(IgniteTest):
             num_nodes=CellularAffinity.NUM_NODES,
             version=ignite_version,
             properties=self.properties(),
-            jvm_opts=['-DCELL=2'])
+            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=2'])
 
         ignites2.start()
 
@@ -102,14 +108,16 @@ class CellularAffinity(IgniteTest):
             num_nodes=CellularAffinity.NUM_NODES,
             version=ignite_version,
             properties=self.properties(),
-            jvm_opts=['-DCELL=XXX', '-DRANDOM=42'])
+            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'])
 
         ignites3.start()
 
         checker = IgniteApplicationService(
             self.test_context,
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.DistributionChecker",
-            params={"cacheName": "test-cache", "attr": "CELL", "nodesPerCell": self.NUM_NODES},
+            params={"cacheName": CellularAffinity.CACHE_NAME,
+                    "attr": CellularAffinity.ATTRIBUTE,
+                    "nodesPerCell": self.NUM_NODES},
             version=ignite_version)
 
         checker.start()
