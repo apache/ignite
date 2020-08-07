@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System.Linq;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,16 +28,49 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public class ServicesClientTest : ClientTestBase
     {
+        /** */
+        private const string ServiceName = "SVC_NAME";
+
+        [TearDown]
+        public void TestTearDown()
+        {
+            ServerServices.CancelAll();
+
+            TestUtils.AssertHandleRegistryIsEmpty(1000, Ignition.GetAll().ToArray());
+        }
+
         /// <summary>
         /// Tests that invoking a service that does not exist causes a correct exception.
         /// </summary>
         [Test]
         public void TestNonExistentServiceNameCausesClientException()
         {
-            var svc = Client.GetServices().GetServiceProxy<ITestService1>("SVC_NAME");
+            var svc = Client.GetServices().GetServiceProxy<ITestService1>(ServiceName);
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests the basic success path.
+        /// </summary>
+        [Test]
+        public void TestBasicServiceCall()
+        {
+            ServerServices.DeployNodeSingleton(ServiceName, new TestService1());
+
+            var svc = Client.GetServices().GetServiceProxy<ITestService1>(ServiceName);
+            var res = svc.IntMethod();
+
+            Assert.AreEqual(42, res);
+        }
+
+        /// <summary>
+        /// Gets server-side Services.
+        /// </summary>
+        private static IServices ServerServices
+        {
+            get { return Ignition.GetIgnite().GetServices(); }
         }
     }
 }
