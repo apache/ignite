@@ -77,8 +77,68 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual("Failed to invoke platform service, see server logs for details", ex.Message);
         }
 
+        /// <summary>
+        /// Tests that <see cref="IServicesClient.WithKeepBinary"/> call causes service invocation results to be
+        /// returned in serialized form.
+        /// </summary>
+        [Test]
+        public void TestClientKeepBinaryReturnsServiceInvocationResultInBinaryMode()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that <see cref="IServicesClient.WithServerKeepBinary"/> call causes service invocation arguments
+        /// to be passed to the service (on server node) in serialized form.
+        /// </summary>
+        [Test]
+        public void TestServerKeepBinaryPassesServerSideArgumentsInBinaryMode()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that <see cref="IServicesClient.WithServerKeepBinary"/> combined with
+        /// <see cref="IServicesClient.WithKeepBinary"/> uses binary objects both on client and server sides.
+        /// </summary>
+        [Test]
+        public void TestServerAndClientKeepBinaryPassesBinaryObjectsOnServerAndClient()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests various basic argument types passing.
+        /// </summary>
+        [Test]
+        public void TestAllArgumentTypes()
+        {
+            // TODO
+
+        }
+
+        /// <summary>
+        /// Tests async method calls.
+        /// </summary>
+        [Test]
+        public void TestAsyncServiceCalls()
+        {
+            // TODO: Async methods (returning Task) must be handled asynchronously internally.
+        }
+
+        /// <summary>
+        /// Tests that thin client can call Java services.
+        /// </summary>
+        [Test]
+        public void TestJavaServiceCall()
+        {
+            // TODO
+        }
+
         // TODO: Binary mode
         // TODO: All argument types
+        // TODO: Overloads
+        // TODO: Async calls
         // TODO: Timeout
         // TODO: Cluster group
         // TODO: Call Java services
