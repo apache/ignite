@@ -7,6 +7,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.junit.jupiter.api.Test;
 
@@ -92,8 +93,62 @@ public class ConfiguringMetrics {
 
         cfg.setMetricExporterSpi(new JmxMetricExporterSpi(), new SqlViewMetricExporterSpi());
 
-        Ignition.start(cfg);
+        Ignite ignite = Ignition.start(cfg);
         //end::new-metric-framework[]
 
+        ignite.close();
+    }
+    
+    @Test
+    void sqlExporter() {
+
+        //tag::sql-exporter[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        SqlViewMetricExporterSpi jmxExporter = new SqlViewMetricExporterSpi();
+
+        //export cache metrics only
+        jmxExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
+
+        cfg.setMetricExporterSpi(jmxExporter);
+        //end::sql-exporter[]
+
+        Ignition.start(cfg).close();
+    }
+
+    @Test
+    void jmxExporter() {
+
+        //tag::metrics-filter[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        JmxMetricExporterSpi jmxExporter = new JmxMetricExporterSpi();
+
+        //export cache metrics only
+        jmxExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
+
+        cfg.setMetricExporterSpi(jmxExporter);
+        //end::metrics-filter[]
+
+        Ignition.start(cfg).close();
+    }
+
+    @Test
+    void logExporter() {
+
+        //tag::log-exporter[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        LogExporterSpi logExporter = new LogExporterSpi();
+
+        //export cache metrics only
+        logExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
+
+        cfg.setMetricExporterSpi(logExporter);
+
+        Ignite ignite = Ignition.start(cfg);
+        //end::log-exporter[]
+
+        ignite.close();
     }
 }

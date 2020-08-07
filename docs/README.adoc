@@ -95,7 +95,6 @@ link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProvider
 ----
 
 
-
 === Tabs
 
 We use custom syntax to insert tabs. Tabs are used to provide code samples for different programming languages.

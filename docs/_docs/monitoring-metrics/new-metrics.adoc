@@ -2,18 +2,126 @@
 
 :javaFile: {javaCodeDir}/ConfiguringMetrics.java
 
+WARNING: Experimental
+
+Ignite 2.8 introduced a new mechanism for collecting metrics which is intended to replace the legacy metrics system.
+
+Let's first explore the basic concepts of the new metrics mechanism in Ignite.
+
+There are different metrics, and then there are different ways to export the metrics — what we call _exporters_.
+To put it another way, the exporter are different ways you can access the metrics.
+
+Each metric has a name and a return value.
+The return value can be a simple value like `String`, `long`, or `double`, or can represent a Java object.
+Some metrics represent <<histograms>>.
+
+Ignite includes the following exporters:
+
+* JMX
+* SQL Views
+* Log files
+* Open Census
+
+You can create a custom exporter by implementing the javadoc:org.apache.ignite.spi.metric.MetricExporterSpi[] interface.
+
+
+== Configuring Metric Exporters
+
+If you want to enable metrics, configure one or multiple metric exporters in the node configuration.
+This is a node-specific configuration, which means it enables metrics only on the node where it is specified.
+
 [tabs]
 --
 tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/metrics.xml[tags=ignite-config;!discovery, indent=0]
+----
 
 tab:Java[]
 
 [source, java]
 ----
-include::{javaFile}[tags=, indent=0]
+include::{javaFile}[tags=new-metric-framework, indent=0]
 ----
 
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+The following sections describe the exporters available in Ignite by default.
+
+
+=== JMX
+
+`org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi` exposes metrics via JMX beans.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=metrics-filter, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+
+=== SQL View
+
+`org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi` exposes metrics via the `SYS.METRICS` view.
+Each metric is displayed as a single record.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/metrics.xml[tags=!*;ignite-config;sql-exporter, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=sql-exporter, indent=0]
+----
 
 tab:C#/.NET[]
 tab:C++[]
 --
+
+=== Log
+
+`org.apache.ignite.spi.metric.log.LogExporterSpi` prints the metrics to the log file at regular intervals (1 min by default) at INFO level.
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/metrics.xml[tags=!*;ignite-config;log-exporter, indent=0]
+----
+
+
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=log-exporter, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+=== OpenCensus
+
+`org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi`
+
+== Histograms
+
