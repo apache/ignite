@@ -26,7 +26,6 @@ from ducktape.utils.util import wait_until
 from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteServerConfig, IgniteClientConfig
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
-
 from ignitetest.tests.utils.version import IgniteVersion
 
 
@@ -66,8 +65,8 @@ class IgniteAwareService(BackgroundThreadService):
 
         libs = modules or []
         libs.extend(["ignite-log4j"])
-        libs = map(lambda m: self.path.module(m) + "/*", libs)
-        self.user_libs = ":".join(libs)
+
+        self.user_libs = list(map(lambda m: self.path.module(m) + "/*", libs))
 
     def start_node(self, node):
         self.init_persistent(node)

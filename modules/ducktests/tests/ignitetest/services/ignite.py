@@ -64,7 +64,7 @@ class IgniteService(IgniteAwareService):
 
         cmd = "export EXCLUDE_TEST_CLASSES=true; "
         cmd += "export IGNITE_LOG_DIR=" + IgniteService.PERSISTENT_ROOT + "; "
-        cmd += "export USER_LIBS=%s; " % self.user_libs
+        cmd += "export USER_LIBS=%s; " % ":".join(self.user_libs)
         cmd += "%s %s %s 1>> %s 2>> %s &" % \
                (self.path.script("ignite.sh"),
                 jvm_opts,
