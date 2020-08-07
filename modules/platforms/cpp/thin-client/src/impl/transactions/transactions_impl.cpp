@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-#include "impl/response_status.h"
 #include "impl/message.h"
-#include "impl/utility.h"
 #include "impl/transactions/transactions_impl.h"
+#include "impl/response_status.h"
+
+#include <iostream>
 
 using namespace ignite::common::concurrent;
 using namespace ignite::impl::thin;
@@ -36,17 +37,13 @@ namespace ignite
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
-                    // No-op.
-                }
-
-                TransactionsImpl::~TransactionsImpl()
-                {
-                    // No-op.
                 }
 
                 template<typename ReqT, typename RspT>
                 void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
                 {
+
+                    std::cout << "router SyncMessage: " << router.Get() << std::endl;
                     router.Get()->SyncMessage(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
@@ -64,10 +61,14 @@ namespace ignite
                     SharedPointer<TransactionImpl> tx = TransactionImpl::Create(this,
                         concurrency, isolation, timeout, txSize);
 
+                    std::cout << "router TxStart " << router.Get() << std::endl;
+
+                    std::cout << "router TxStart " << tx.Get()->txs.Get()->router.Get() << std::endl;
+
                     return tx;
                 }
 
-                TransactionImpl::SP_TransactionImpl TransactionImpl::Create(
+                SP_TransactionImpl TransactionImpl::Create(
                     SP_TransactionsImpl txs,
                     TransactionConcurrency::Type concurrency,
                     TransactionIsolation::Type isolation,
@@ -84,14 +85,17 @@ namespace ignite
 
                     SP_TransactionImpl tx = SP_TransactionImpl(new TransactionImpl(txs, txId, concurrency, isolation, timeout, txSize));
 
+                    std::cout << "router Create " << txs.Get()->router.Get() << std::endl;
+
                     threadTx.Set(tx);
 
                     return tx;
                 }
 
-                TransactionImpl::SP_TransactionImpl TransactionImpl::GetCurrent()
+                SP_TransactionImpl TransactionImpl::GetCurrent()
                 {
                     SP_TransactionImpl tx = threadTx.Get();
+
                     TransactionImpl* ptr = tx.Get();
 
                     if (ptr && ptr->IsClosed())
@@ -100,6 +104,8 @@ namespace ignite
 
                         threadTx.Remove();
                     }
+                    if (ptr)
+                    std::cout << "router GetCurrent " << ptr->txs.Get()->router.Get() << std::endl;
 
                     return tx;
                 }
@@ -109,8 +115,10 @@ namespace ignite
                     return closed;
                 }
 
-                SharedPointer<TransactionImpl> TransactionsImpl::GetCurrent()
+                SP_TransactionImpl TransactionsImpl::GetCurrent()
                 {
+                    std::cout << "GetCurrent " << router.Get() <<  std::endl;
+
                     return TransactionImpl::GetCurrent();
                 }
 
@@ -127,6 +135,7 @@ namespace ignite
 
                 int32_t TransactionsImpl::TxRollback(int32_t txId)
                 {
+                    std::cout << "12" <<  std::endl;
                     TxEndRequest<RequestType::OP_TX_END> req(txId, false);
 
                     Response rsp;

@@ -27,15 +27,15 @@
 using namespace ignite::thin;
 using namespace boost::unit_test;
 
-class IgniteClientTestSuiteFixture1
+class IgniteTxTestSuiteFixture
 {
 public:
-    IgniteClientTestSuiteFixture1()
+    IgniteTxTestSuiteFixture()
     {
         serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
     }
 
-    ~IgniteClientTestSuiteFixture1()
+    ~IgniteTxTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
     }
@@ -45,9 +45,9 @@ private:
     ignite::Ignite serverNode;
 };
 
-BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteClientTestSuiteFixture1)
+BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteTxTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestTx)
+BOOST_AUTO_TEST_CASE(TestGetPut)
 {
     IgniteClientConfiguration cfg;
 
@@ -71,6 +71,18 @@ BOOST_AUTO_TEST_CASE(TestTx)
     tx.rollback();
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.txStart();
+
+    cache.Put(1, 10);
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    //tx.rollback();
+
+    //BOOST_CHECK_EQUAL(1, cache.Get(1));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

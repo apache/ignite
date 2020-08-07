@@ -377,9 +377,9 @@ namespace ignite
                     txId = _txId;
                 }
 
-                bool activeTx() const {
-                    return actTx;
-                }
+                //bool activeTx() const {
+                //    return actTx;
+                //}
 
                 /**
                  * Write request using provided writer.
@@ -647,7 +647,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const {
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
                     writer.WriteInt8(concurrency);
                     writer.WriteInt8(isolation);
                     writer.WriteInt64(timeout);
@@ -669,7 +669,7 @@ namespace ignite
             };
 
             /**
-             * Tx start request.
+             * Tx end request.
              */
             template<int32_t OpCode>
             class TxEndRequest : public Request<OpCode>
@@ -677,10 +677,13 @@ namespace ignite
             public:
                 /**
                  * Constructor.
+                 *
+                 * @param id Transaction id.
+                 * @param comm Need to commit flag.
                  */
-                TxEndRequest(int32_t _txId, bool _commited) :
-                    commited(_commited),
-                    txId(_txId)
+                TxEndRequest(int32_t id, bool comm) :
+                    commited(comm),
+                    txId(id)
                 {
                 }
 
@@ -706,6 +709,7 @@ namespace ignite
                 /** Tx id. */
                 const int32_t txId;
 
+                /** Need to commit flag. */
                 const bool commited;
             };
 

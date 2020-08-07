@@ -299,6 +299,9 @@ namespace ignite
                     template<typename ReqT, typename RspT>
                     void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
 
+                    template<typename ReqT>
+                    void checkTransactional(ReqT& req);
+
                     /**
                      * Synchronously send message and receive response.
                      *

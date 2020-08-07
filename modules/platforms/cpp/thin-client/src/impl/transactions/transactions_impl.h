@@ -20,7 +20,6 @@
 
 #include "impl/data_router.h"
 #include "ignite/thin/transactions/transaction_consts.h"
-#include "impl/response_status.h"
 
 using namespace ignite::thin::transactions;
 using namespace ignite::common::concurrent;
@@ -36,7 +35,11 @@ namespace ignite
                 /* Forward declaration. */
                 class TransactionsImpl;
 
+                /* Forward declaration. */
+                class TransactionImpl;
+
                 typedef SharedPointer<TransactionsImpl> SP_TransactionsImpl;
+                typedef SharedPointer<TransactionImpl> SP_TransactionImpl;
 
                 /**
                  * Ignite transactions implementation.
@@ -45,8 +48,6 @@ namespace ignite
                  */
                 class TransactionImpl
                 {
-                    typedef SharedPointer<TransactionImpl> SP_TransactionImpl;
-                    typedef SharedPointer<TransactionsImpl> SP_TransactionsImpl;
                     typedef ThreadLocalInstance<SP_TransactionImpl> TL_SP_TransactionsImpl;
 
                 public:
@@ -132,9 +133,10 @@ namespace ignite
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize);
-                private:
+
                     /** Transactions implementation. */
                     SP_TransactionsImpl txs;
+                private:
 
                     /** Current transaction Id. */
                     int32_t txId;
@@ -183,7 +185,7 @@ namespace ignite
                     /**
                      * Destructor.
                      */
-                    ~TransactionsImpl();
+                    ~TransactionsImpl() {}
 
                     /**
                      * Start new transaction.
@@ -246,9 +248,10 @@ namespace ignite
                      */
                     template<typename ReqT, typename RspT>
                     void SyncMessage(const ReqT& req, RspT& rsp);
-                private:
+
                     /** Data router. */
                     SP_DataRouter router;
+                private:
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
                 };
