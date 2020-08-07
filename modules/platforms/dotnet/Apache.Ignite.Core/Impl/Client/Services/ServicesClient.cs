@@ -36,6 +36,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         private enum ServiceFlags : byte
         {
             KeepBinary = 1,
+
+            // ReSharper disable once UnusedMember.Local
             HasParameterTypes = 2
         }
 
@@ -121,7 +123,21 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     w.WriteString(serviceName);
                     w.WriteByte(_serverKeepBinary ? (byte) ServiceFlags.KeepBinary : (byte) 0);
                     w.WriteLong((long) _timeout.TotalMilliseconds);
-                    w.WriteInt(0); // TODO: Cluster nodes
+
+                    if (_clusterGroup != null)
+                    {
+                        var nodes = _clusterGroup.GetNodes();
+                        w.WriteInt(nodes.Count);
+
+                        foreach (var node in nodes)
+                        {
+                            BinaryUtils.WriteGuid(node.Id, ctx.Stream);
+                        }
+                    }
+                    else
+                    {
+                        w.WriteInt(0);
+                    }
 
                     w.WriteString(method.Name);
 
