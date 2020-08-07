@@ -29,6 +29,11 @@ namespace
     {
         return *reinterpret_cast<TransactionsImpl*>(ptr.Get());
     }
+
+    TransactionImpl& GetTxImpl(SharedPointer<void>& ptr)
+    {
+        return *reinterpret_cast<TransactionImpl*>(ptr.Get());
+    }
 }
 
 namespace ignite
@@ -61,17 +66,17 @@ namespace ignite
 
                 void TransactionProxy::commit()
                 {
-                    GetTxsImpl(impl).GetCurrent().Get()->Commit();
+                    GetTxImpl(impl).GetCurrent().Get()->Commit();
                 }
 
                 void TransactionProxy::rollback()
                 {
-                    GetTxsImpl(impl).GetCurrent().Get()->Rollback();
+                    GetTxImpl(impl).GetCurrent().Get()->Rollback();
                 }
 
                 void TransactionProxy::close()
                 {
-                    GetTxsImpl(impl).GetCurrent().Get()->Close();
+                    GetTxImpl(impl).GetCurrent().Get()->Close();
                 }
             }
         }

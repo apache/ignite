@@ -21,6 +21,7 @@
 
 #include <ignite/thin/ignite_client_configuration.h>
 #include <ignite/thin/ignite_client.h>
+#include <ignite/thin/cache/cache_peek_mode.h>
 
 #include <test_utils.h>
 
@@ -47,7 +48,7 @@ private:
 
 BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteTxTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestGetPut)
+BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 {
     IgniteClientConfiguration cfg;
 
@@ -78,6 +79,18 @@ BOOST_AUTO_TEST_CASE(TestGetPut)
 
     cache.Put(1, 10);
 
+    tx.Commit();
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    cache.Put(1, 1);
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Put(1, 10);
+
     BOOST_CHECK_EQUAL(10, cache.Get(1));
 
     tx.Close();
@@ -95,6 +108,92 @@ BOOST_AUTO_TEST_CASE(TestGetPut)
     tx.Close();
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, 1000, 100);
+
+    cache.Put(1, 10);
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Replace(1, 10);
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Replace(1, 1, 10);
+
+    BOOST_CHECK_EQUAL(10, cache.Get(1));
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Put(2, 20);
+
+    BOOST_CHECK_EQUAL(cache.ContainsKey(2), true);
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(cache.ContainsKey(2), false);
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Put(2, 20);
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(cache.GetSize(cache::CachePeekMode::ALL), 1);
+
+    //---
+
+    tx = transactions.TxStart();
+
+    int res1 = cache.GetAndPutIfAbsent(1, 10);
+
+    int res2 = cache.GetAndPutIfAbsent(2, 20);
+
+    BOOST_CHECK_EQUAL(1, res1);
+
+    BOOST_CHECK_EQUAL(cache.Get(2), 20);
+
+    BOOST_CHECK_EQUAL(0, res2);
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(cache.Get(2), 0);
+
+    //---
+
+    tx = transactions.TxStart();
+
+    cache.Remove(1);
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(cache.ContainsKey(1), true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
