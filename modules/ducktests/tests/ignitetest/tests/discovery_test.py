@@ -32,15 +32,18 @@ from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 # pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
     """
-    Test basic discovery scenarious (TCP and Zookeeper).
+    Test various node failure scenarios (TCP and ZooKeeper).
     1. Start of ignite cluster.
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
     NUM_NODES = 7
 
+    FAILURE_DETECTION_TIMEOUT = 2000
+
     CONFIG_TEMPLATE = """
-        {% if zookeeper_settings %}
+    <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
+    {% if zookeeper_settings %}
         {% with zk = zookeeper_settings %}
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
@@ -51,7 +54,7 @@ class DiscoveryTest(IgniteTest):
             </bean>
         </property>
         {% endwith %}
-        {% endif %}
+    {% endif %}
     """
 
     def __init__(self, test_context):
@@ -62,11 +65,12 @@ class DiscoveryTest(IgniteTest):
     @staticmethod
     def properties(zookeeper_settings=None):
         """
-        :param zookeeper_settings: ZookeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
+        :param zookeeper_settings: ZooKeeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
         :return: Rendered node's properties.
         """
         return Template(DiscoveryTest.CONFIG_TEMPLATE) \
-            .render(zookeeper_settings=zookeeper_settings)
+            .render(failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                    zookeeper_settings=zookeeper_settings)
 
     def setUp(self):
         pass
@@ -154,7 +158,7 @@ class DiscoveryTest(IgniteTest):
 
         start = self.monotonic()
         self.servers.start()
-        data = {'Ignite cluster start time (s)': self.monotonic() - start}
+        data = {'Ignite cluster start time (s)': round(self.monotonic() - start, 1)}
         self.stage("Topology is ready")
 
         if nodes_to_kill > self.servers.num_nodes - 1 or coordinator and nodes_to_kill > 1:
@@ -170,37 +174,26 @@ class DiscoveryTest(IgniteTest):
 
         failed_nodes, survived_node = self.choose_node_to_kill(self.servers.nodes, node_chooser)
 
-        data["nodes"] = [node.node_id() for node in self.servers.nodes]
-
-        disco_infos = []
-        for node in self.servers.nodes:
-            disco_info = node.discovery_info()
-            disco_infos.append({
-                "id": disco_info.node_id,
-                "consistent_id": disco_info.consistent_id,
-                "coordinator": disco_info.coordinator,
-                "order": disco_info.order,
-                "int_order": disco_info.int_order,
-                "is_client": disco_info.is_client
-            })
-
-        data["node_disco_info"] = disco_infos
-
-        start = self.monotonic()
-
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False)
+        self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
+
+        start = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
+
+        self.stage("Waiting for failure detection of " + str(len(failed_nodes)) + " nodes.")
 
         for failed_id in ids_to_wait:
-            self.stage("Waiting for stopping " + failed_id)
-
             self.servers.await_event_on_node("Node FAILED: " +
                                              ("ZookeeperClusterNode" if with_zk else "TcpDiscoveryNode") +
-                                             " \\[id=" + failed_id, survived_node, 60, from_the_beginning=True)
+                                             " \\[id=" + failed_id, survived_node, 10, from_the_beginning=True,
+                                             backoff_sec=0.01)
 
-        data['Node(s) failure detected in time (s)'] = self.monotonic() - start
+        failure_detection_delay = self.monotonic() - start
+
+        self.stage("Failure detection measured.")
+
         data['Nodes failed'] = len(failed_nodes)
+        data['Node(s) failure detected in time (ms)'] = int(failure_detection_delay * 1000)
 
         return data
 

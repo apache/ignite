@@ -45,3 +45,27 @@ class CountDownLatch(object):
         with self.cond_var:
             while self.count > 0:
                 self.cond_var.wait()
+
+
+# pylint: disable=C0116
+class AtomicInteger:
+    """
+    A count-down latch.
+    """
+    def __init__(self, value=0):
+        self.value = value
+        self.cond_var = threading.Lock()
+
+    def set(self, value):
+        with self.cond_var:
+            self.value = value
+
+    def get(self):
+        with self.cond_var:
+            return self.value
+
+    def compare_and_set(self, expected, value):
+        with self.cond_var:
+            if self.value == expected:
+                self.value = value
+            return self.value

@@ -24,10 +24,11 @@ import signal
 import time
 from threading import Thread
 
+import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.concurrent import CountDownLatch
+from ignitetest.services.utils.concurrent import CountDownLatch, AtomicInteger
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.tests.utils.version import DEV_BRANCH
 
@@ -104,31 +105,44 @@ class IgniteService(IgniteAwareService):
             self.thread_dump(node)
             raise
 
-    def stop_nodes_async(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20):
+    def stop_nodes_async(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
         """
         Stops the nodes asynchronously.
         """
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         sem = CountDownLatch(len(nodes))
+        first_stopped = AtomicInteger()
 
         delay = 0
+        threads = []
 
         for node in nodes:
-            Thread(target=self.__stop_node, args=(node, next(iter(self.pids(node))), sig, sem, delay)).start()
+            thread = Thread(target=self.__stop_node,
+                            args=(node, next(iter(self.pids(node))), sig, sem, delay, first_stopped))
+
+            threads.append(thread)
+
+            thread.start()
 
             delay += delay_ms
 
-        try:
-            wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
-                       timeout_sec=timeout_sec, err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-        except Exception:
-            for node in nodes:
-                self.thread_dump(node)
-            raise
+        for thread in threads:
+            thread.join(timeout_sec)
+
+        if wait_for_stop:
+            try:
+                wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
+                           timeout_sec=timeout_sec, err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
+            except Exception:
+                for node in nodes:
+                    self.thread_dump(node)
+                raise
+
+        return first_stopped.get()
 
     @staticmethod
-    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0):
+    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, stop_time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
@@ -137,6 +151,9 @@ class IgniteService(IgniteAwareService):
             time.sleep(delay_ms/1000.0)
 
         node.account.signal(pid, sig, False)
+
+        if stop_time_holder:
+            stop_time_holder.compare_and_set(0, monotonic.monotonic())
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
