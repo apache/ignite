@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,9 +109,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Transaction adapter for cache transactions.
  */
 public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Commit error updater. */
     protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
@@ -157,13 +153,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     protected volatile boolean qryEnlisted;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    protected IgniteTxLocalAdapter() {
-        // No-op.
-    }
 
     /**
      * @param cctx Cache registry.
