@@ -23,6 +23,11 @@ namespace Apache.Ignite.Core.Client.Services
     public interface IServicesClient
     {
         /// <summary>
+        /// Gets the cluster group for this <see cref="IServicesClient"/> instance.
+        /// </summary>
+        IClientClusterGroup ClusterGroup { get; }
+
+        /// <summary>
         /// Gets a proxy for the service with the specified name.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>

@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Services
 {
+    using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
@@ -40,6 +42,13 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             Debug.Assert(ignite != null);
 
             _ignite = ignite;
+        }
+
+        /** <inheritdoc /> */
+        public IClientClusterGroup ClusterGroup
+        {
+            // TODO
+            get { throw new NotImplementedException(); }
         }
 
         /** <inheritdoc /> */
