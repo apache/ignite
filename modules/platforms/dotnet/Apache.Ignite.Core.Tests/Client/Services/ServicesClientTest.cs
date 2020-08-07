@@ -135,6 +135,38 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // TODO
         }
 
+        /// <summary>
+        /// Tests that specifying custom cluster group causes service calls to be routed to selected servers.
+        /// </summary>
+        [Test]
+        public void TestServicesWithCustomClusterGroupInvokeOnSpecifiedNodes()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [Test]
+        public void TestEmptyClusterGroupThrowsError()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that a custom cluster group that does not have any server nodes with specified service produces
+        /// a correct exception.
+        ///
+        /// - Deploy the service to node X
+        /// - Create client cluster group with node Y
+        /// - Call service, verify exception
+        /// </summary>
+        [Test]
+        public void TestClusterGroupWithoutMatchingServiceNodesCausesError()
+        {
+            // TODO
+        }
+
         // TODO: Binary mode
         // TODO: All argument types
         // TODO: Overloads
