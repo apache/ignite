@@ -17,33 +17,18 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using Apache.Ignite.Core.Services;
-
-    public class TestService1 : ITestService1, IService
+    /// <summary>
+    /// Test service interface.
+    /// </summary>
+    public interface ITestService
     {
-        public void VoidMethod()
-        {
-            throw new System.NotImplementedException();
-        }
+        /** */
+        void VoidMethod();
 
-        public int IntMethod()
-        {
-            return 42;
-        }
+        /** */
+        int IntMethod();
 
-        public void Init(IServiceContext context)
-        {
-            // No-op.
-        }
-
-        public void Execute(IServiceContext context)
-        {
-            // No-op.
-        }
-
-        public void Cancel(IServiceContext context)
-        {
-            // No-op.
-        }
+        /** */
+        void ExceptionalMethod();
     }
 }

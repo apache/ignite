@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestNonExistentServiceNameCausesClientException()
         {
-            var svc = Client.GetServices().GetServiceProxy<ITestService1>(ServiceName);
+            var svc = Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
@@ -57,12 +57,34 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestBasicServiceCall()
         {
-            ServerServices.DeployNodeSingleton(ServiceName, new TestService1());
+            var svc = DeployAndGetTestService();
 
-            var svc = Client.GetServices().GetServiceProxy<ITestService1>(ServiceName);
             var res = svc.IntMethod();
 
             Assert.AreEqual(42, res);
+        }
+
+        /// <summary>
+        /// Tests that exception in service is propagated to the client and service is still operational.
+        /// </summary>
+        [Test]
+        public void TestExceptionInServiceIsPropagatedToClient()
+        {
+            var svc = DeployAndGetTestService();
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.ExceptionalMethod());
+
+            Assert.AreEqual(TestService.ExceptionText, ex.Message);
+        }
+
+        /// <summary>
+        /// Deploys test service and returns client-side proxy.
+        /// </summary>
+        private ITestService DeployAndGetTestService()
+        {
+            ServerServices.DeployNodeSingleton(ServiceName, new TestService());
+
+            return Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
         }
 
         /// <summary>
