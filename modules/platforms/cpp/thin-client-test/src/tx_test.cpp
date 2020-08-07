@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(TestGetPut)
 
     BOOST_CHECK_EQUAL(10, cache.Get(1));
 
-    //tx.rollback();
+    tx.rollback();
 
     //BOOST_CHECK_EQUAL(1, cache.Get(1));
 }

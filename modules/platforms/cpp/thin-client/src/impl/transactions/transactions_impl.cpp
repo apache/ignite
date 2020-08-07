@@ -37,6 +37,7 @@ namespace ignite
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
+                    std::cout << "router" << std::endl;
                 }
 
                 template<typename ReqT, typename RspT>
