@@ -371,10 +371,15 @@ namespace ignite
                     // No-op.
                 }
 
-                void activeTx(bool tx, int32_t _txId) {
-                    actTx = tx;
+                /**
+                 * Sets transaction active flag and appropriate txId.
+                 * @param active Transaction activity flag.
+                 * @param id Transaction id.
+                 */
+                void activeTx(bool active, int32_t id) {
+                    actTx = active;
 
-                    txId = _txId;
+                    txId = id;
                 }
 
                 /**
@@ -525,8 +530,13 @@ namespace ignite
                     // No-op.
                 }
 
-                void activeTx(bool tx, int32_t txId) {
-                    CacheRequest<OpCode>::activeTx(tx, txId);
+                /**
+                 * Sets transaction active flag and appropriate txId.
+                 * @param active Transaction activity flag.
+                 * @param id Transaction id.
+                 */
+                void activeTx(bool active, int32_t id) {
+                    CacheRequest<OpCode>::activeTx(active, id);
                 }
 
                 /**

@@ -69,5 +69,4 @@ BOOST_AUTO_TEST_CASE(AuthReject)
     BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
 }
 
-
 BOOST_AUTO_TEST_SUITE_END()

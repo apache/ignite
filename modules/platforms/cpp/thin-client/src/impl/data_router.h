@@ -130,8 +130,6 @@ namespace ignite
                     ProcessMeta(metaVer);
                 }
 
-                #include <iostream>
-
                 /**
                  * Synchronously send request message and receive response.
                  *

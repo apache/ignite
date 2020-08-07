@@ -24,6 +24,7 @@
 #include <ignite/thin/cache/cache_peek_mode.h>
 
 #include <test_utils.h>
+#include <ignite/ignite_error.h>
 
 using namespace ignite::thin;
 using namespace boost::unit_test;
@@ -194,6 +195,28 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
     tx.Rollback();
 
     BOOST_CHECK_EQUAL(cache.ContainsKey(1), true);
+}
+
+BOOST_AUTO_TEST_CASE(TestTxOps)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int, int> cache =
+        client.GetCache<int, int>("partitioned");
+
+    cache.Put(1, 1);
+
+    transactions::ClientTransactions transactions = client.ClientTransactions();
+
+    transactions::ClientTransaction tx1 = transactions.TxStart();
+
+    BOOST_CHECK_THROW( transactions.TxStart(), ignite::IgniteError );
+
+    tx1.Close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

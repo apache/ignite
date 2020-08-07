@@ -67,6 +67,15 @@ namespace ignite
                     int64_t timeout,
                     int32_t txSize)
                 {
+                    SP_TransactionImpl tx = threadTx.Get();
+
+                    TransactionImpl* ptr = tx.Get();
+
+                    if (ptr && !ptr->IsClosed())
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "A transaction has already been started by the current thread.");
+                    }
+
                     TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize);
 
                     Int32Response rsp;
@@ -75,7 +84,7 @@ namespace ignite
 
                     int32_t txId = rsp.GetValue();
 
-                    SP_TransactionImpl tx = SP_TransactionImpl(new TransactionImpl(&txs, txId, concurrency, isolation, timeout, txSize));
+                    tx = SP_TransactionImpl(new TransactionImpl(&txs, txId, concurrency, isolation, timeout, txSize));
 
                     threadTx.Set(tx);
 
