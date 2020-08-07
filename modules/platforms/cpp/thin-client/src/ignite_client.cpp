@@ -21,8 +21,6 @@
 #include "impl/ignite_client_impl.h"
 #include "impl/cache/cache_client_impl.h"
 
-#include "string"
-
 using namespace ignite::impl::thin;
 using namespace cache;
 using namespace ignite::common::concurrent;

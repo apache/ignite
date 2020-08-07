@@ -377,10 +377,6 @@ namespace ignite
                     txId = _txId;
                 }
 
-                //bool activeTx() const {
-                //    return actTx;
-                //}
-
                 /**
                  * Write request using provided writer.
                  * @param writer Writer.

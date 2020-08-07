@@ -143,8 +143,6 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void SyncMessage(const ReqT& req, RspT& rsp, const Guid& hint)
                 {
-
-                    std::cout << "static constructor\n";
                     SP_DataChannel channel = GetBestChannel(hint);
 
                     int32_t metaVer = typeMgr.GetVersion();

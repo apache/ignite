@@ -133,10 +133,9 @@ namespace ignite
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize);
-
+                private:
                     /** Transactions implementation. */
                     TransactionsImpl* txs;
-                private:
 
                     /** Current transaction Id. */
                     int32_t txId;
