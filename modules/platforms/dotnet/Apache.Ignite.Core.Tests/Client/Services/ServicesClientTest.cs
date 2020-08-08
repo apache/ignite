@@ -65,6 +65,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that void method can be called and the lack of result is handled correctly.  
+        /// </summary>
+        [Test]
+        public void TestVoidMethodCall()
+        {
+            var svc = DeployAndGetTestService();
+            var expectedCallCount = TestService.CallCount + 1;
+            
+            svc.VoidMethod();
+            
+            Assert.AreEqual(expectedCallCount, TestService.CallCount);
+        }
+
+        /// <summary>
         /// Tests that exception in service is propagated to the client and service is still operational.
         /// </summary>
         [Test]

@@ -24,10 +24,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     public class TestService : ITestService, IService
     {
         public const string ExceptionText = "Some error";
+        
+        public static int CallCount { get; set; }
 
         public void VoidMethod()
         {
-            // No-op.
+            CallCount++;
         }
 
         public int IntMethod()
