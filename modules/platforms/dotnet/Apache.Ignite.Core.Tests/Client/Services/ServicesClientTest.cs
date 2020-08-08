@@ -124,6 +124,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public void TestAsyncServiceCalls()
         {
             // TODO: Async methods (returning Task) must be handled asynchronously internally.
+            var svc = DeployAndGetTestService();
+
+            var task = svc.AsyncMethod();
+            task.Wait();
+            
+            Assert.AreEqual(1, task.Result);
         }
 
         /// <summary>

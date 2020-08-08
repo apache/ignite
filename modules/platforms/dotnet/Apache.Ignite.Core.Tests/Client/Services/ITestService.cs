@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System.Threading.Tasks;
+
     /// <summary>
     /// Test service interface.
     /// </summary>
@@ -30,5 +32,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         void ExceptionalMethod();
+
+        Task<int> AsyncMethod();
     }
 }

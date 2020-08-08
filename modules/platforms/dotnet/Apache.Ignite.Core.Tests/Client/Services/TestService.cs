@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Services;
 
     public class TestService : ITestService, IService
@@ -37,6 +38,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public void ExceptionalMethod()
         {
             throw new ArithmeticException(ExceptionText);
+        }
+
+        public Task<int> AsyncMethod()
+        {
+            return Task.Delay(500).ContinueWith(_ => 1);
         }
 
         public void Init(IServiceContext context)
