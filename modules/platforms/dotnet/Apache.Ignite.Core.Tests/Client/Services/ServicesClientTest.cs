@@ -135,9 +135,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// Tests async method calls.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-13343")]
         public void TestAsyncServiceCalls()
         {
-            // TODO: Async methods (returning Task) must be handled asynchronously internally.
             var svc = DeployAndGetTestService();
 
             var task = svc.AsyncMethod();
