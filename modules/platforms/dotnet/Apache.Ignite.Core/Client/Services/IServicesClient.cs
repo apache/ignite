@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Client.Services
 
         /// <summary>
         /// Gets a proxy for the service with the specified name.
+        /// <para />
+        /// Note: service proxies are not "sticky" - there is no guarantee that all calls will be made to the same
+        /// remote service instance.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="serviceName">Service name.</param>
