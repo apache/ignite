@@ -25,26 +25,37 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public interface ITestServiceOverloads
     {
-        void Foo();
+        /** */
+        bool Foo();
 
+        /** */
         int Foo(int x);
         
+        /** */
         int Foo(uint x);
         
+        /** */
         int Foo(byte x);
         
+        /** */
         int Foo(short x);
         
+        /** */
         int Foo(ushort x);
         
+        /** */
         int Foo(Person x);
         
+        /** */
         int Foo(IBinaryObject x);
         
+        /** */
         int Foo(int[] x);
         
+        /** */
         int Foo(object[] x);
         
+        /** */
         int Foo(Person[] x);
     }
 }
