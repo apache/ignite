@@ -850,7 +850,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallJavaService()
         {
             // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
             // Verify descriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
@@ -966,8 +966,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallJavaServiceDynamicProxy()
         {
             // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
-
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
             var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
             // Basics
