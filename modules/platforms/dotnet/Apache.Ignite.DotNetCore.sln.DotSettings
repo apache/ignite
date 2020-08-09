@@ -12,4 +12,22 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Multithreaded/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Reentrancy/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=reentrant/@EntryIndexedValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">
+/*&#xD;
+ * Licensed to the Apache Software Foundation (ASF) under one or more&#xD;
+ * contributor license agreements.  See the NOTICE file distributed with&#xD;
+ * this work for additional information regarding copyright ownership.&#xD; 
+ * The ASF licenses this file to You under the Apache License, Version 2.0&#xD; 
+ * (the "License"); you may not use this file except in compliance with&#xD;
+ * the License.  You may obtain a copy of the License at&#xD;
+ *&#xD;
+ *      http://www.apache.org/licenses/LICENSE-2.0&#xD; 
+ *&#xD;
+ * Unless required by applicable law or agreed to in writing, software&#xD; 
+ * distributed under the License is distributed on an "AS IS" BASIS,&#xD;
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.&#xD;
+ * See the License for the specific language governing permissions and&#xD;
+ * limitations under the License.&#xD;
+ */&#xD;
+ </s:String>
 </wpf:ResourceDictionary>
