@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
+    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
@@ -77,13 +78,15 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** <inheritdoc /> */
         public Person[] PersonArrayMethod(Person[] persons)
         {
-            throw new NotImplementedException();
+            return persons.Select(p => new Person(p.Id + 2)).ToArray();
         }
 
         /** <inheritdoc /> */
         public IBinaryObject[] PersonArrayMethodBinary(IBinaryObject[] persons)
         {
-            throw new NotImplementedException();
+            return persons
+                .Select(p => p.ToBuilder().SetIntField("Id", p.GetField<int>("Id") + 2).Build())
+                .ToArray();
         }
 
         /** <inheritdoc /> */

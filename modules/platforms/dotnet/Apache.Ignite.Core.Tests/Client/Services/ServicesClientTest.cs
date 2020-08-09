@@ -144,6 +144,28 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that object array can be passed to and from the remote service.
+        /// </summary>
+        [Test]
+        public void TestObjectArray()
+        {
+            var svc = DeployAndGetTestService();
+
+            var res = svc.PersonArrayMethod(new[] {new Person(10), new Person(20)});
+            
+            Assert.AreEqual(new[]{12, 22}, res.Select(p => p.Id));
+        }
+
+        /// <summary>
+        /// Tests that object array can be passed to and from the remote service in binary mode.
+        /// </summary>
+        [Test]
+        public void TestObjectArrayBinary()
+        {
+            
+        }
+
+        /// <summary>
         /// Tests various basic argument types passing.
         /// </summary>
         [Test]
