@@ -29,31 +29,43 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         
         public static int CallCount { get; set; }
 
+        /** <inheritdoc /> */
+        public int IntProperty { get; set; }
+        
+        /** <inheritdoc /> */
+        public Person PersonProperty { get; set; }
+
+        /** <inheritdoc /> */
         public void VoidMethod()
         {
             CallCount++;
         }
 
+        /** <inheritdoc /> */
         public int IntMethod()
         {
             return 42;
         }
 
+        /** <inheritdoc /> */
         public void ExceptionalMethod()
         {
             throw new ArithmeticException(ExceptionText);
         }
 
+        /** <inheritdoc /> */
         public Task<int> AsyncMethod()
         {
             return Task.Delay(500).ContinueWith(_ => 1);
         }
 
+        /** <inheritdoc /> */
         public Person PersonMethod(Person person)
         {
             return new Person(person.Id + 1);
         }
 
+        /** <inheritdoc /> */
         public IBinaryObject PersonMethodBinary(IBinaryObject person)
         {
             return person
@@ -62,16 +74,31 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 .Build();
         }
 
+        /** <inheritdoc /> */
+        public Person[] PersonArrayMethod(Person[] persons)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public IBinaryObject[] PersonArrayMethodBinary(IBinaryObject[] persons)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
         public void Init(IServiceContext context)
         {
             // No-op.
         }
 
+        /** <inheritdoc /> */
         public void Execute(IServiceContext context)
         {
             // No-op.
         }
 
+        /** <inheritdoc /> */
         public void Cancel(IServiceContext context)
         {
             // No-op.

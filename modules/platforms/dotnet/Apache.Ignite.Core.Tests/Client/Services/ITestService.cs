@@ -27,6 +27,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     public interface ITestService
     {
         /** */
+        int IntProperty { get; set; }
+        
+        /** */
+        Person PersonProperty { get; set; }
+        
+        /** */
         void VoidMethod();
 
         /** */
@@ -35,10 +41,19 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** */
         void ExceptionalMethod();
 
+        /** */
         Task<int> AsyncMethod();
 
+        /** */
         Person PersonMethod(Person person);
         
+        /** */
         IBinaryObject PersonMethodBinary(IBinaryObject person);
+
+        /** */
+        Person[] PersonArrayMethod(Person[] persons);
+
+        /** */
+        IBinaryObject[] PersonArrayMethodBinary(IBinaryObject[] persons);
     }
 }

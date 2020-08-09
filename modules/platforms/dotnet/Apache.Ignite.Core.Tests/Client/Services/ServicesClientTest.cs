@@ -217,10 +217,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
         
-        // TODO: Binary mode
         // TODO: All argument types
         // TODO: Overloads
-        // TODO: Async calls
         // TODO: Timeout
         // TODO: Cluster group
         // TODO: Call Java services
