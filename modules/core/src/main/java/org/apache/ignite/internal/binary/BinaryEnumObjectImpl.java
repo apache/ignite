@@ -177,9 +177,18 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
+        if (ldr != null)
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
 
-        return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+        try {
+            Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
+
+            return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+        }
+        finally {
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+        }
+
     }
 
     /**
@@ -190,7 +199,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
-        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+        assert !GridBinaryMarshaller.USE_CACHE.get();
 
         if (ord >= 0) {
             Object[] vals = cls.getEnumConstants();

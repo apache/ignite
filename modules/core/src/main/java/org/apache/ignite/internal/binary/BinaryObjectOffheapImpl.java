@@ -421,7 +421,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
         GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
 
-        return (T)reader(null, ldr, true).deserialize();
+        try {
+            return (T)reader(null, ldr, true).deserialize();
+        }
+        finally {
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+        }
     }
 
     /** {@inheritDoc} */
