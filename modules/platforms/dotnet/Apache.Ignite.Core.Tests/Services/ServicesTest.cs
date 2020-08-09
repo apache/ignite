@@ -850,10 +850,9 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallJavaService()
         {
             // Deploy Java service
-            const string javaSvcName = "javaService";
-            DeployJavaService(javaSvcName);
+            var javaSvcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
 
-            // Verify decriptor
+            // Verify descriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
@@ -966,8 +965,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            const string javaSvcName = "javaService";
-            DeployJavaService(javaSvcName);
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
 
             var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
@@ -1040,17 +1039,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
-        }
-
-        /// <summary>
-        /// Deploys the java service.
-        /// </summary>
-        private void DeployJavaService(string javaSvcName)
-        {
-            Grid1.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
-
-            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
         }
 
         /// <summary>

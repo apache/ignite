@@ -210,21 +210,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests async method calls.
-        /// </summary>
-        [Test]
-        [Ignore("IGNITE-13343")]
-        public void TestAsyncServiceCalls()
-        {
-            var svc = DeployAndGetTestService();
-
-            var task = svc.AsyncMethod();
-            task.Wait();
-            
-            Assert.AreEqual(1, task.Result);
-        }
-
-        /// <summary>
         /// Tests that thin client can call Java services.
         /// </summary>
         [Test]
@@ -290,6 +275,21 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
         
+        /// <summary>
+        /// Tests async method calls.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-13343")]
+        public void TestAsyncServiceCalls()
+        {
+            var svc = DeployAndGetTestService();
+
+            var task = svc.AsyncMethod();
+            task.Wait();
+            
+            Assert.AreEqual(1, task.Result);
+        }
+
         // TODO: All argument types
         // TODO: Overloads
         // TODO: Timeout
