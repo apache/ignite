@@ -69,12 +69,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /** <inheritdoc /> */ 
-        public int Foo(IBinaryObject x)
-        {
-            return 7;
-        }
-
-        /** <inheritdoc /> */ 
         public int Foo(int[] x)
         {
             return 8;

@@ -47,9 +47,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         int Foo(Person x);
         
         /** */
-        int Foo(IBinaryObject x);
-        
-        /** */
         int Foo(int[] x);
         
         /** */

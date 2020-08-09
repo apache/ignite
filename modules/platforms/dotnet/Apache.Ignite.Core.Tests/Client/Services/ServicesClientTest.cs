@@ -191,17 +191,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             var svcName = TestUtils.TestName;
             ServerServices.DeployClusterSingleton(svcName, new TestServiceOverloads());
-            var svc =  Client.GetServices().GetServiceProxy<ITestServiceOverloads>(svcName);
+            var svc = Client.GetServices().GetServiceProxy<ITestServiceOverloads>(svcName);
 
             Assert.AreEqual(true, svc.Foo());
             Assert.AreEqual(1, svc.Foo(default(int)));
             Assert.AreEqual(3, svc.Foo(default(byte)));
             Assert.AreEqual(4, svc.Foo(default(short)));
             Assert.AreEqual(6, svc.Foo(new Person()));
-            
+            Assert.AreEqual(8, svc.Foo(new[] {1}));
+            Assert.AreEqual(9, svc.Foo(new[] {new object()}));
+            Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
+
             // Unsigned types are not preserved by the binary protocol and resolve to signed counterparts.
-            Assert.AreEqual(1, svc.Foo(default(uint))); 
-            Assert.AreEqual(4, svc.Foo(default(ushort))); 
+            Assert.AreEqual(1, svc.Foo(default(uint)));
+            Assert.AreEqual(4, svc.Foo(default(ushort)));
         }
 
         /// <summary>
