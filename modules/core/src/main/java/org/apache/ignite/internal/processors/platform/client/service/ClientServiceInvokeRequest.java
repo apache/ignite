@@ -165,7 +165,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             if (PlatformService.class.isAssignableFrom(svcCls)) {
                 PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), !keepBinary(), args);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args);
             }
             else {
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
