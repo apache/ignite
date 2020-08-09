@@ -200,11 +200,13 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(6, svc.Foo(new Person()));
             Assert.AreEqual(8, svc.Foo(new[] {1}));
             Assert.AreEqual(9, svc.Foo(new[] {new object()}));
-            Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
 
             // Unsigned types are not preserved by the binary protocol and resolve to signed counterparts.
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
+            
+            // Array types are not distinguished.
+            Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
         }
 
         /// <summary>

@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
