@@ -118,7 +118,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestServerAndClientKeepBinaryPassesBinaryObjectsOnServerAndClient()
         {
-            // TODO
+            var svc = DeployAndGetTestService(s => s.WithKeepBinary().WithServerKeepBinary());
+            
+            var person = Client.GetBinary().ToBinary<IBinaryObject>(new Person(-2));
+            var res = svc.PersonMethodBinary(person);
+            
+            Assert.AreEqual(-1, res.GetField<int>("Id"));
         }
 
         /// <summary>
