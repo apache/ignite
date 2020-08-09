@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
     /// Test service interface.
@@ -34,5 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         void ExceptionalMethod();
 
         Task<int> AsyncMethod();
+
+        Person PersonMethod();
     }
 }

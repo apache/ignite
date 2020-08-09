@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using System;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Client.Cache;
 
     public class TestService : ITestService, IService
     {
@@ -45,6 +46,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public Task<int> AsyncMethod()
         {
             return Task.Delay(500).ContinueWith(_ => 1);
+        }
+
+        public Person PersonMethod()
+        {
+            return new Person(11);
         }
 
         public void Init(IServiceContext context)
