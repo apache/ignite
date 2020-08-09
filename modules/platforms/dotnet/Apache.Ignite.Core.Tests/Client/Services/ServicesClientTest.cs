@@ -184,6 +184,15 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that overloaded methods are resolved correctly.
+        /// </summary>
+        [Test]
+        public void TestOverloadResolution()
+        {
+            
+        }
+
+        /// <summary>
         /// Tests async method calls.
         /// </summary>
         [Test]
