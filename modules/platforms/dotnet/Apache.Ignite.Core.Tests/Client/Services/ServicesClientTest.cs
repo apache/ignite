@@ -197,6 +197,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, svc.Foo(default(int)));
             Assert.AreEqual(3, svc.Foo(default(byte)));
             Assert.AreEqual(4, svc.Foo(default(short)));
+            Assert.AreEqual(6, svc.Foo(new Person()));
             
             // Unsigned types are not preserved by the binary protocol and resolve to signed counterparts.
             Assert.AreEqual(1, svc.Foo(default(uint))); 
