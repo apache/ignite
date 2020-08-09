@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Services;
@@ -99,9 +98,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestServerKeepBinaryPassesServerSideArgumentsInBinaryMode()
         {
-            var svc = DeployAndGetTestService(s => s.WithServerKeepBinary());
+            var svc = DeployAndGetTestService<ITestServiceClient>(s => s.WithServerKeepBinary());
 
-            var res = svc.PersonMethodServerBinary(Client.GetBinary().ToBinary<IBinaryObject>(new Person(1)));
+            var res = svc.PersonMethodBinary(new Person(1));
             
             Assert.AreEqual(2, res.Id);
         }
@@ -220,6 +219,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// </summary>
         private ITestService DeployAndGetTestService(Func<IServicesClient, IServicesClient> transform = null)
         {
+            return DeployAndGetTestService<ITestService>(transform);
+        }
+
+        /// <summary>
+        /// Deploys test service and returns client-side proxy.
+        /// </summary>
+        private T DeployAndGetTestService<T>(Func<IServicesClient, IServicesClient> transform = null) where T : class
+        {
             ServerServices.DeployNodeSingleton(ServiceName, new TestService());
 
             var services = Client.GetServices();
@@ -229,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 services = transform(services);
             }
             
-            return services.GetServiceProxy<ITestService>(ServiceName);
+            return services.GetServiceProxy<T>(ServiceName);
         }
 
         /// <summary>

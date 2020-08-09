@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Tests.Client.Cache;
+
     /// <summary>
     /// Client-side counterpart for <see cref="ITestService"/>.
     /// <para />
@@ -24,6 +27,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public interface ITestServiceClient
     {
-        
+        /// <summary>
+        /// Counterpart for <see cref="ITestService.PersonMethodBinary"/>.
+        /// <para />
+        /// Client-side interface operates on <see cref="Person"/>,
+        /// but server-side method uses <see cref="IBinaryObject"/>: 
+        /// </summary>
+        Person PersonMethodBinary(Person person);
     }
 }
