@@ -17,28 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Tests.Client.Cache;
-
     /// <summary>
-    /// Test service interface.
+    /// Client-side counterpart for <see cref="ITestService"/>.
+    /// <para />
+    /// Clients can use a different service interface. Method signatures can also differ.
     /// </summary>
-    public interface ITestService
+    public interface ITestServiceClient
     {
-        /** */
-        void VoidMethod();
-
-        /** */
-        int IntMethod();
-
-        /** */
-        void ExceptionalMethod();
-
-        Task<int> AsyncMethod();
-
-        Person PersonMethod(Person person);
         
-        IBinaryObject PersonMethodBinary(IBinaryObject person);
     }
 }

@@ -54,9 +54,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             return new Person(person.Id + 1);
         }
 
-        public Person PersonMethodServerBinary(IBinaryObject person)
+        public IBinaryObject PersonMethodBinary(IBinaryObject person)
         {
-            return new Person(person.GetField<int>("Id") + 1);
+            return person
+                .ToBuilder()
+                .SetField("Id", person.GetField<int>("Id") + 1)
+                .Build();
         }
 
         public void Init(IServiceContext context)
