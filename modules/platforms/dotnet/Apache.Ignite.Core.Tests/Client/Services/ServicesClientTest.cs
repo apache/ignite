@@ -189,7 +189,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestOverloadResolution()
         {
-            
+            var svcName = TestUtils.TestName;
+            ServerServices.DeployClusterSingleton(svcName, new TestServiceOverloads());
+            var svc =  Client.GetServices().GetServiceProxy<ITestServiceOverloads>(svcName);
+
+            Assert.AreEqual(true, svc.Foo());
         }
 
         /// <summary>

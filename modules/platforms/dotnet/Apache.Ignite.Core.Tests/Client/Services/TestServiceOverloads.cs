@@ -18,12 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
     /// Tests service with overloaded methods.
     /// </summary>
-    public class TestServiceOverloads : ITestServiceOverloads
+    public class TestServiceOverloads : ITestServiceOverloads, IService
     {
         /** <inheritdoc /> */ 
         public bool Foo()
@@ -89,6 +90,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public int Foo(Person[] x)
         {
             return 10;
+        }
+
+        /** <inheritdoc /> */ 
+        public void Init(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */ 
+        public void Execute(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */ 
+        public void Cancel(IServiceContext context)
+        {
+            // No-op.
         }
     }
 }
