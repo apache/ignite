@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestClientKeepBinaryReturnsServiceInvocationResultInBinaryMode()
         {
-            var svc = DeployAndGetTestService<ITestServiceClient>(s => s.WithServerKeepBinary());
+            var svc = DeployAndGetTestService<ITestServiceClient>(s => s.WithKeepBinary());
 
             var person = Client.GetBinary().ToBinary<IBinaryObject>(new Person(5));
             var res = svc.PersonMethod(person);
