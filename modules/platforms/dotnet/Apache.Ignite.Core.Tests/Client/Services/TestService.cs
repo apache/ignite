@@ -48,9 +48,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             return Task.Delay(500).ContinueWith(_ => 1);
         }
 
-        public Person PersonMethod()
+        public Person PersonMethod(Person person)
         {
-            return new Person(11);
+            return new Person(person.Id + 1);
         }
 
         public void Init(IServiceContext context)

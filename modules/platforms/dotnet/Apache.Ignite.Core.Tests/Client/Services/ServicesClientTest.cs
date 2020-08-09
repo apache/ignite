@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -76,6 +77,19 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             svc.VoidMethod();
             
             Assert.AreEqual(expectedCallCount, TestService.CallCount);
+        }
+
+        /// <summary>
+        /// Tests that objects can be passed to and from service methods.
+        /// </summary>
+        [Test]
+        public void TestObjectMethodCall()
+        {
+            var svc = DeployAndGetTestService();
+
+            var res = svc.PersonMethod(new Person(1));
+            
+            Assert.AreEqual(2, res.Id);
         }
 
         /// <summary>

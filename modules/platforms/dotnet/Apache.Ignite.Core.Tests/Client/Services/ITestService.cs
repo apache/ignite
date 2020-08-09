@@ -36,6 +36,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         Task<int> AsyncMethod();
 
-        Person PersonMethod();
+        Person PersonMethod(Person person);
     }
 }
