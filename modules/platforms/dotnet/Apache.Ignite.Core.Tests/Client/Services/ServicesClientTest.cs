@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Services;
@@ -38,18 +40,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             ServerServices.CancelAll();
 
             TestUtils.AssertHandleRegistryIsEmpty(1000, Ignition.GetAll().ToArray());
-        }
-
-        /// <summary>
-        /// Tests that invoking a service that does not exist causes a correct exception.
-        /// </summary>
-        [Test]
-        public void TestNonExistentServiceNameCausesClientException()
-        {
-            var svc = Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
-
-            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
-            Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
 
         /// <summary>
@@ -93,19 +83,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests that exception in service is propagated to the client and service is still operational.
-        /// </summary>
-        [Test]
-        public void TestExceptionInServiceIsPropagatedToClient()
-        {
-            var svc = DeployAndGetTestService();
-
-            var ex = Assert.Throws<IgniteClientException>(() => svc.ExceptionalMethod());
-
-            Assert.AreEqual("Failed to invoke platform service, see server logs for details", ex.Message);
-        }
-
-        /// <summary>
         /// Tests that <see cref="IServicesClient.WithKeepBinary"/> call causes service invocation results to be
         /// returned in serialized form.
         /// </summary>
@@ -122,7 +99,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestServerKeepBinaryPassesServerSideArgumentsInBinaryMode()
         {
-            // TODO
+            var svc = DeployAndGetTestService(s => s.WithServerKeepBinary());
+
+            var res = svc.PersonMethodServerBinary(Client.GetBinary().ToBinary<IBinaryObject>(new Person(1)));
+            
+            Assert.AreEqual(2, res.Id);
         }
 
         /// <summary>
@@ -200,7 +181,32 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             // TODO
         }
+        
+        /// <summary>
+        /// Tests that exception in service is propagated to the client and service is still operational.
+        /// </summary>
+        [Test]
+        public void TestExceptionInServiceIsPropagatedToClient()
+        {
+            var svc = DeployAndGetTestService();
 
+            var ex = Assert.Throws<IgniteClientException>(() => svc.ExceptionalMethod());
+
+            Assert.AreEqual("Failed to invoke platform service, see server logs for details", ex.Message);
+        }
+        
+        /// <summary>
+        /// Tests that invoking a service that does not exist causes a correct exception.
+        /// </summary>
+        [Test]
+        public void TestNonExistentServiceNameCausesClientException()
+        {
+            var svc = Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
+        }
+        
         // TODO: Binary mode
         // TODO: All argument types
         // TODO: Overloads
@@ -212,11 +218,18 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Deploys test service and returns client-side proxy.
         /// </summary>
-        private ITestService DeployAndGetTestService()
+        private ITestService DeployAndGetTestService(Func<IServicesClient, IServicesClient> transform = null)
         {
             ServerServices.DeployNodeSingleton(ServiceName, new TestService());
 
-            return Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
+            var services = Client.GetServices();
+
+            if (transform != null)
+            {
+                services = transform(services);
+            }
+            
+            return services.GetServiceProxy<ITestService>(ServiceName);
         }
 
         /// <summary>

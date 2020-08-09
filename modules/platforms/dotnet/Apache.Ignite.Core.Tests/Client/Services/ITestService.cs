@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
@@ -37,5 +38,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         Task<int> AsyncMethod();
 
         Person PersonMethod(Person person);
+        
+        Person PersonMethodServerBinary(IBinaryObject person);
     }
 }

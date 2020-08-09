@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
@@ -51,6 +52,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public Person PersonMethod(Person person)
         {
             return new Person(person.Id + 1);
+        }
+
+        public Person PersonMethodServerBinary(IBinaryObject person)
+        {
+            return new Person(person.GetField<int>("Id") + 1);
         }
 
         public void Init(IServiceContext context)
