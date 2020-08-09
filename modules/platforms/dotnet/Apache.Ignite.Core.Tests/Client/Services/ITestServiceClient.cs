@@ -34,5 +34,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// but server-side method uses <see cref="IBinaryObject"/>: 
         /// </summary>
         Person PersonMethodBinary(Person person);
+        
+        /// <summary>
+        /// Counterpart for <see cref="ITestService.PersonMethod"/>.
+        /// </summary>
+        IBinaryObject PersonMethod(IBinaryObject person);
     }
 }

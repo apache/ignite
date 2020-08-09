@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Services;
@@ -88,7 +89,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestClientKeepBinaryReturnsServiceInvocationResultInBinaryMode()
         {
-            // TODO
+            var svc = DeployAndGetTestService<ITestServiceClient>(s => s.WithServerKeepBinary());
+
+            var person = Client.GetBinary().ToBinary<IBinaryObject>(new Person(5));
+            var res = svc.PersonMethod(person);
+            
+            Assert.AreEqual(6, res.GetField<int>("Id"));
         }
 
         /// <summary>
