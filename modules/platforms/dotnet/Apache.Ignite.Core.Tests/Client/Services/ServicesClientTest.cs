@@ -127,6 +127,23 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that property getters/setters can be invoked on a remote service.
+        /// </summary>
+        [Test]
+        public void TestPropertyCalls()
+        {
+            var svc = DeployAndGetTestService();
+
+            // Primitive.
+            svc.IntProperty = 99;
+            Assert.AreEqual(99, svc.IntProperty);
+            
+            // Object.
+            svc.PersonProperty= new Person(123);
+            Assert.AreEqual(123, svc.PersonProperty.Id);
+        }
+
+        /// <summary>
         /// Tests various basic argument types passing.
         /// </summary>
         [Test]
@@ -236,7 +253,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// </summary>
         private T DeployAndGetTestService<T>(Func<IServicesClient, IServicesClient> transform = null) where T : class
         {
-            ServerServices.DeployNodeSingleton(ServiceName, new TestService());
+            ServerServices.DeployClusterSingleton(ServiceName, new TestService());
 
             var services = Client.GetServices();
 
