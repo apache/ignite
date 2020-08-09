@@ -194,6 +194,13 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var svc =  Client.GetServices().GetServiceProxy<ITestServiceOverloads>(svcName);
 
             Assert.AreEqual(true, svc.Foo());
+            Assert.AreEqual(1, svc.Foo(default(int)));
+            Assert.AreEqual(3, svc.Foo(default(byte)));
+            Assert.AreEqual(4, svc.Foo(default(short)));
+            
+            // Unsigned types are not preserved by the binary protocol and resolve to signed counterparts.
+            Assert.AreEqual(1, svc.Foo(default(uint))); 
+            Assert.AreEqual(4, svc.Foo(default(ushort))); 
         }
 
         /// <summary>
