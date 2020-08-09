@@ -152,8 +152,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var svc = DeployAndGetTestService();
 
             var res = svc.PersonArrayMethod(new[] {new Person(10), new Person(20)});
-            
-            Assert.AreEqual(new[]{12, 22}, res.Select(p => p.Id));
+
+            Assert.AreEqual(new[] {12, 22}, res.Select(p => p.Id));
         }
 
         /// <summary>
@@ -162,7 +162,15 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestObjectArrayBinary()
         {
+            var svc = DeployAndGetTestService(s => s.WithKeepBinary().WithServerKeepBinary());
+
+            var persons = new[] {new Person(10), new Person(20)}
+                .Select(p => Client.GetBinary().ToBinary<IBinaryObject>(p))
+                .ToArray();
             
+            var res = svc.PersonArrayMethodBinary(persons);
+
+            Assert.AreEqual(new[] {12, 22}, res.Select(p => p.GetField<int>("Id")));
         }
 
         /// <summary>
