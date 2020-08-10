@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 
 /**
- * TODO: broken tests should pass after supporting thin java client compatibility for default query timeout
+ *
  */
 public class DefaultQueryTimeoutThinJavaTest extends AbstractDefaultQueryTimeoutTest {
     /** {@inheritDoc} */
