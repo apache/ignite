@@ -87,9 +87,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int pageScanBatchSize = EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 
-    /** The number of threads used to scan partitions during re-encryption. */
-    private int pageScanThreadCnt = EncryptionConfiguration.DFLT_REENCRYPTION_THREAD_POOL_SIZE;
-
     /** Disable background re-encryption flag. */
     private boolean pageScanDisabled = EncryptionConfiguration.DFLT_REENCRYPTION_DISABLED;
 
@@ -104,8 +101,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         EncryptionConfiguration encrCfg = new EncryptionConfiguration()
             .setReencryptionBatchSize(pageScanBatchSize)
             .setReencryptionDisabled(pageScanDisabled)
-            .setReencryptionRateLimit(pageScanRate)
-            .setReencryptionThreadCnt(pageScanThreadCnt);
+            .setReencryptionRateLimit(pageScanRate);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -199,7 +195,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     @Test
     public void testPhysicalRecoveryWithUpdates() throws Exception {
         pageScanRate = 1.5;
-        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -313,7 +308,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         loadData(100_000);
 
-        IgniteCache cache = node0.cache(cacheName());
+        IgniteCache<?, ?> cache = node0.cache(cacheName());
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
@@ -395,7 +390,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         backups = 1;
         pageScanRate = 1;
         pageScanBatchSize = 10;
-        pageScanThreadCnt = 2;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -430,7 +424,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         backups = 1;
         pageScanRate = 1;
-        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -484,7 +477,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         backups = 1;
         pageScanRate = 1;
         pageScanBatchSize = 10;
-        pageScanThreadCnt = 2;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -581,7 +573,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     public void testReencryptionOnUnstableTopology() throws Exception {
         backups = 1;
         pageScanRate = 2;
-        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -638,7 +629,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     public void testChangeBaseline() throws Exception {
         backups = 1;
         pageScanRate = 2;
-        pageScanThreadCnt = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -780,7 +770,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
 
-        assertEquals(finished, reencryptionFinished.value());;
+        assertEquals(finished, reencryptionFinished.value());
     }
 
     /**

@@ -26,9 +26,6 @@ public class EncryptionConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default number of threads used for re-encryption (equal to the number of available processors). */
-    public static final int DFLT_REENCRYPTION_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
-
     /** Default re-encryption rate limit. The value is {@code 0}, which means that scan speed is not limited. */
     public static final double DFLT_REENCRYPTION_RATE_MBPS = 0.0;
 
@@ -37,9 +34,6 @@ public class EncryptionConfiguration implements Serializable {
 
     /** By default background re-encryption is enabled. */
     public static final boolean DFLT_REENCRYPTION_DISABLED = false;
-
-    /** The number of threads used to scan partitions during re-encryption. */
-    private int reencryptionThreadCnt = DFLT_REENCRYPTION_THREAD_POOL_SIZE;
 
     /** Re-encryption rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
     private double reencryptionRateLimit = DFLT_REENCRYPTION_RATE_MBPS;
@@ -68,28 +62,6 @@ public class EncryptionConfiguration implements Serializable {
         reencryptionBatchSize = cfg.getReencryptionBatchSize();
         reencryptionDisabled = cfg.isReencryptionDisabled();
         reencryptionRateLimit = cfg.getReencryptionRateLimit();
-        reencryptionThreadCnt = cfg.getReencryptionThreadCnt();
-    }
-
-    /**
-     * Gets the number of threads used for re-encryption.
-     *
-     * @return The number of threads used to scan partitions during re-encryption.
-     */
-    public int getReencryptionThreadCnt() {
-        return reencryptionThreadCnt;
-    }
-
-    /**
-     * Sets the number of threads used for re-encryption.
-     *
-     * @param reencryptionThreadCnt The number of threads used to scan partitions during re-encryption.
-     * @return {@code this} for chaining.
-     */
-    public EncryptionConfiguration setReencryptionThreadCnt(int reencryptionThreadCnt) {
-        this.reencryptionThreadCnt = reencryptionThreadCnt;
-
-        return this;
     }
 
     /**

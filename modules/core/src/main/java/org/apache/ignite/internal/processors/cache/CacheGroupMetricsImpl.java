@@ -188,7 +188,7 @@ public class CacheGroupMetricsImpl {
 
             mreg.register("ReencryptionPagesLeft",
                 this::getPagesLeftForReencryption,
-                "Total pages left for reencryption.");
+                "Number of pages left for reencryption.");
         }
     }
 
