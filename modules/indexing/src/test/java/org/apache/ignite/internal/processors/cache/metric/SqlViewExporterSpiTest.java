@@ -65,10 +65,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -85,7 +83,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -112,13 +109,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
-
-        SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
-
-        if (igniteInstanceName.endsWith("1"))
-            sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
-
-        cfg.setMetricExporterSpi(sqlSpi);
 
         return cfg;
     }
@@ -174,29 +164,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String attr : EXPECTED_ATTRIBUTES)
             assertTrue(attr + " should be exported via SQL view", names.contains(attr));
-    }
-
-    /** */
-    @Test
-    public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite1);
-
-        List<List<?>> res = execute(ignite1,
-            "SELECT name, value, description FROM SYS.METRICS " +
-                "WHERE name LIKE 'other.prefix%' OR name LIKE '" + FILTERED_PREFIX + "%'");
-
-        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
-            t("other.prefix.test", "42"),
-            t("other.prefix.test2", "43"),
-            t("other.prefix2.test3", "44")
-        ));
-
-        Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
-
-        for (List<?> row : res)
-            vals.add(t((String)row.get(0), (String)row.get(1)));
-
-        assertEquals(expVals, vals);
     }
 
     /** */
