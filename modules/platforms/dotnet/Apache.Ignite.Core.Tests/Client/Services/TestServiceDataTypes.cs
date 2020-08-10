@@ -18,11 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System.Linq;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Service for testing various data types passing.
     /// </summary>
-    public class TestServiceDataTypes : ITestServiceDataTypes
+    public class TestServiceDataTypes : ITestServiceDataTypes, IService
     {
         /** <inheritdoc /> */
         public byte GetByte(byte x)
@@ -58,6 +59,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public char[] GetCharArray(char[] x)
         {
             return x.Select(b => (char) (b + 1)).ToArray();
+        }
+
+        /** <inheritdoc /> */
+        public void Init(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void Execute(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void Cancel(IServiceContext context)
+        {
+            // No-op.
         }
     }
 }

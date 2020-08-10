@@ -179,8 +179,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestAllArgumentTypes()
         {
-            // TODO
-
+            ServerServices.DeployClusterSingleton(ServiceName, new TestServiceDataTypes());
+            var svc = Client.GetServices().GetServiceProxy<ITestServiceDataTypes>(ServiceName);
+            
+            // TODO:
+            Assert.AreEqual(2, svc.GetByte(1));
         }
 
         /// <summary>
