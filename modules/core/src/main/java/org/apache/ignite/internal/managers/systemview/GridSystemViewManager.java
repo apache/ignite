@@ -29,11 +29,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
@@ -53,6 +57,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+    /** Class name for a SQL view exporter of system views. */
+    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
+
     /** Name of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
 
@@ -75,7 +82,26 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param ctx Kernal context.
      */
     public GridSystemViewManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getSystemViewExporterSpi());
+        super(ctx, ((Supplier<SystemViewExporterSpi[]>)() -> {
+            SystemViewExporterSpi[] spi = ctx.config().getSystemViewExporterSpi();
+
+            if (!IgniteComponentType.INDEXING.inClassPath())
+                return spi;
+
+            SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spi != null ? spi.length + 1 : 1];
+
+            if (!F.isEmpty(spi))
+                System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
+
+            try {
+                spiWithSql[spiWithSql.length - 1] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return spiWithSql;
+        }).get());
     }
 
     /** {@inheritDoc} */

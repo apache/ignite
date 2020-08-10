@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -52,7 +52,7 @@ import org.h2.value.ValueUuid;
 /**
  * SQL system view to export {@link SystemView} data.
  */
-public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
+class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */
     protected final SystemView<R> sysView;
 

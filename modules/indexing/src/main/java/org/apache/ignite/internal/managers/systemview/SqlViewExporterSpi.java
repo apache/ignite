@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
@@ -36,12 +37,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
  * This SPI implementation exports metrics as SQL views.
  *
  * Note, instance of this class created with reflection.
- * @see IgnitionEx#SYSTEM_VIEW_SQL_SPI
+ * @see GridSystemViewManager#SYSTEM_VIEW_SQL_SPI
  */
-public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
-    /** System view filter. */
-    @Nullable private Predicate<SystemView<?>> filter;
-
+class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
     /** System view registry. */
     private ReadOnlySystemViewRegistry sysViewReg;
 
@@ -66,13 +64,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
      * @param sysView System view.
      */
     private void register(SystemView<?> sysView) {
-        if (filter != null && !filter.test(sysView)) {
-            if (log.isDebugEnabled())
-                log.debug("System view filtered and will not be registered [name=" + sysView.name() + ']');
-
-            return;
-        }
-        else if (log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Found new system view [name=" + sysView.name() + ']');
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
@@ -100,6 +92,6 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
 
     /** {@inheritDoc} */
     @Override public void setExportFilter(Predicate<SystemView<?>> filter) {
-        this.filter = filter;
+        // No-op.
     }
 }
