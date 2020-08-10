@@ -532,13 +532,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static Expression Convert(Expression value, Type targetType)
         {
-            // TODO: This won't work for value types
-            // Different logic is required for primitives and custom value types.
             if (targetType.IsArray && targetType.GetElementType() != typeof(object))
             {
                 var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
 
-                var objArray = Expression.Convert(value, typeof(object[]));
+                var objArray = Expression.Convert(value, typeof(Array));
 
                 return Expression.Call(null, convertMethod, objArray);
             }
@@ -550,7 +548,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Converts object array to typed array.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection).
-        private static T[] ConvertArray<T>(object[] arr)
+        private static T[] ConvertArray<T>(Array arr)
         {
             if (arr == null)
             {
