@@ -197,6 +197,20 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
     BOOST_CHECK_EQUAL(cache.ContainsKey(1), true);
 }
 
+bool correctCloseMessage(const ignite::IgniteError& ex)
+{
+    BOOST_CHECK_EQUAL(ex.what(), std::string("The transaction is already closed."));
+
+    return true;
+}
+
+bool separateThreadMessage(const ignite::IgniteError& ex)
+{
+    BOOST_CHECK_EQUAL(ex.what(), std::string("You can commit transaction only from the thread it was started."));
+
+    return true;
+}
+
 BOOST_AUTO_TEST_CASE(TestTxOps)
 {
     IgniteClientConfiguration cfg;
@@ -218,15 +232,33 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
     tx.Close();
 
-    //---
+    //Test end of already completed transaction.
 
     tx = transactions.TxStart();
 
     tx.Close();
 
-    BOOST_CHECK_THROW( tx.Commit(), ignite::IgniteError );
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, correctCloseMessage);
 
-    BOOST_CHECK_THROW( tx.Rollback(), ignite::IgniteError );
+    BOOST_CHECK_EXCEPTION(tx.Rollback(), ignite::IgniteError, correctCloseMessage);
+
+    // Test end of outdated transaction.
+
+    transactions::ClientTransaction tx1 = transactions.TxStart();
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, separateThreadMessage);
+
+    tx1.Close();
+
+    // Test end of outdated transaction.
+
+    tx = transactions.TxStart();
+
+    tx.Commit();
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, correctCloseMessage);
+
+    tx.Close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -48,7 +48,7 @@ namespace ignite
                  */
                 class TransactionImpl
                 {
-                    typedef ThreadLocalInstance<SP_TransactionImpl> TL_SP_TransactionsImpl;
+                    typedef ThreadLocalInstance<int32_t> TL_TXID;
 
                 public:
                     /**
@@ -114,6 +114,11 @@ namespace ignite
                     bool IsClosed() const;
 
                     /**
+                     * Sets close flag to tx.
+                     */
+                    void Closed();
+
+                    /**
                      * @return Current transaction.
                      */
                     static SP_TransactionImpl GetCurrent();
@@ -133,6 +138,13 @@ namespace ignite
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize);
+                protected:
+                    /** Checks current thread state. */
+                    static void txThreadCheck(const TransactionImpl& tx);
+
+                    /** Completes tc and clear state from storage. */
+                    static void txThreadEnd(TransactionImpl& tx);
+
                 private:
                     /** Transactions implementation. */
                     TransactionsImpl* txs;
@@ -141,7 +153,7 @@ namespace ignite
                     int32_t txId;
 
                     /** Thread local instance of the transaction. */
-                    static TL_SP_TransactionsImpl threadTx;
+                    static TL_TXID threadTx;
 
                     /** Concurrency. */
                     int concurrency;
@@ -163,6 +175,12 @@ namespace ignite
 
                     /** Access lock. */
                     CriticalSection accessLock;
+
+                    /** Cache affinity mapping read-write lock. */
+                    static ReadWriteLock txToIdRWLock;
+
+                    /** TxId to transaction map. */
+                    static std::map<int32_t, SP_TransactionImpl> txToId;
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
                 };
@@ -252,6 +270,8 @@ namespace ignite
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
                 };
+
+                void txThreadCheck();
             }
         }
     }
