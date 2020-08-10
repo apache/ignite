@@ -18,10 +18,11 @@ This module contains the base class to build services aware of Ignite.
 """
 
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
+from six import add_metaclass
 
 from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteServerConfig, IgniteClientConfig
 from ignitetest.services.utils.ignite_path import IgnitePath
@@ -29,6 +30,7 @@ from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.tests.utils.version import IgniteVersion
 
 
+@add_metaclass(ABCMeta)
 class IgniteAwareService(BackgroundThreadService):
     """
     The base class to build services aware of Ignite.
