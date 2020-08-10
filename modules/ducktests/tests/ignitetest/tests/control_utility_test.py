@@ -137,7 +137,7 @@ class BaselineTests(IgniteTest):
         control_utility.remove_from_baseline(new_node.nodes)
 
         baseline = control_utility.baseline()
-        self.__check_baseline_size(baseline, 2)
+        self.__check_baseline_size(baseline, self.NUM_NODES - 1)
         self.__check_nodes_not_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
