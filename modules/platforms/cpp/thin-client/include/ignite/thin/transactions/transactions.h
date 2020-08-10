@@ -160,7 +160,7 @@ namespace ignite
                  *
                  * @return ClientTransaction implementation.
                  */
-                ClientTransaction TxStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize)
+                ClientTransaction TxStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize = 0)
                 {
                     return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize));
                 }

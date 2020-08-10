@@ -103,7 +103,7 @@ namespace ignite
 
                     int32_t curTxId = rsp.GetValue();
 
-                    tx = SP_TransactionImpl(new TransactionImpl(&txs, curTxId, concurrency, isolation, timeout, txSize));
+                    tx = SP_TransactionImpl(new TransactionImpl(txs, curTxId, concurrency, isolation, timeout, txSize));
 
                     threadTx.Set(curTxId);
 
@@ -188,30 +188,24 @@ namespace ignite
 
                 void TransactionImpl::Commit()
                 {
-                    common::concurrent::CsLockGuard guard(accessLock);
-
                     txThreadCheck(*this);
 
-                    txs->TxCommit(txId);
+                    txs.TxCommit(txId);
 
                     txThreadEnd(*this);
                 }
 
                 void TransactionImpl::Rollback()
                 {
-                    common::concurrent::CsLockGuard guard(accessLock);
-
                     txThreadCheck(*this);
 
-                    txs->TxRollback(txId);
+                    txs.TxRollback(txId);
 
                     txThreadEnd(*this);
                 }
 
                 void TransactionImpl::Close()
                 {
-                    common::concurrent::CsLockGuard guard(accessLock);
-
                     txThreadCheck(*this);
 
                     if (IsClosed())
@@ -219,7 +213,7 @@ namespace ignite
                         return;
                     }
 
-                    txs->TxClose(txId);
+                    txs.TxClose(txId);
 
                     txThreadEnd(*this);
                 }

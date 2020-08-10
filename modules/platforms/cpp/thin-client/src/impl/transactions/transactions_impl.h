@@ -62,7 +62,7 @@ namespace ignite
                      * @param size Number of entries participating in transaction (may be approximate).
                      */
                     TransactionImpl(
-                            TransactionsImpl* txImpl,
+                            TransactionsImpl& txImpl,
                             int32_t txid,
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
@@ -74,7 +74,6 @@ namespace ignite
                         isolation(isolation),
                         timeout(timeout),
                         txSize(size),
-                        state(TransactionState::UNKNOWN),
                         closed(false)
                     {}
                     
@@ -147,7 +146,7 @@ namespace ignite
 
                 private:
                     /** Transactions implementation. */
-                    TransactionsImpl* txs;
+                   TransactionsImpl& txs;
 
                     /** Current transaction Id. */
                     int32_t txId;
@@ -172,9 +171,6 @@ namespace ignite
 
                     /** Closed flag. */
                     bool closed;
-
-                    /** Access lock. */
-                    CriticalSection accessLock;
 
                     /** Cache affinity mapping read-write lock. */
                     static ReadWriteLock txToIdRWLock;

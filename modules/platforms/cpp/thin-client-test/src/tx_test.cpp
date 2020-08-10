@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/ignition.h>
@@ -47,7 +49,26 @@ private:
     ignite::Ignite serverNode;
 };
 
-BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteTxTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(IgniteTxTestSuite, IgniteTxTestSuiteFixture)
+
+bool correctCloseMessage(const ignite::IgniteError& ex)
+{
+    BOOST_CHECK_EQUAL(ex.what(), std::string("The transaction is already closed."));
+
+    return true;
+}
+
+bool separateThreadMessage(const ignite::IgniteError& ex)
+{
+    BOOST_CHECK_EQUAL(ex.what(), std::string("You can commit transaction only from the thread it was started."));
+
+    return true;
+}
+
+bool checkTxTimeoutMessage(const ignite::IgniteError& ex)
+{
+    return std::string(ex.what()).find("Cache transaction timed out") != std::string::npos;
+}
 
 BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 {
@@ -195,20 +216,46 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
     tx.Rollback();
 
     BOOST_CHECK_EQUAL(cache.ContainsKey(1), true);
+
+    // Test transaction with a timeout.
+
+    const uint TX_TIMEOUT = 200L;
+
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+    cache.Put(1, 10);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
+
+    BOOST_CHECK_EXCEPTION(cache.Put(1, 20);, ignite::IgniteError, checkTxTimeoutMessage);
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxTimeoutMessage);
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
 }
 
-bool correctCloseMessage(const ignite::IgniteError& ex)
+void startAnotherClientAndTx(SharedPointer<SingleLatch>& l)
 {
-    BOOST_CHECK_EQUAL(ex.what(), std::string("The transaction is already closed."));
+    IgniteClientConfiguration cfg;
 
-    return true;
-}
+    cfg.SetEndPoints("127.0.0.1:11110");
 
-bool separateThreadMessage(const ignite::IgniteError& ex)
-{
-    BOOST_CHECK_EQUAL(ex.what(), std::string("You can commit transaction only from the thread it was started."));
+    IgniteClient client = IgniteClient::Start(cfg);
 
-    return true;
+    cache::CacheClient<int, int> cache =
+        client.GetCache<int, int>("partitioned");
+
+    transactions::ClientTransactions transactions = client.ClientTransactions();
+
+    transactions::ClientTransaction tx = transactions.TxStart();
+
+    l.Get()->CountDown();
+
+    cache.Put(2, 20);
+
+    tx.Commit();
 }
 
 BOOST_AUTO_TEST_CASE(TestTxOps)
@@ -259,6 +306,26 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
     BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, correctCloseMessage);
 
     tx.Close();
+
+    // Check multi threads.
+
+    SharedPointer<SingleLatch> latch = SharedPointer<SingleLatch>(new SingleLatch());
+
+    tx = transactions.TxStart();
+
+    cache.Put(1, 10);
+
+    boost::thread t2(startAnotherClientAndTx, latch);
+
+    t2.join();
+
+    latch.Get()->Await();
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+
+    BOOST_CHECK_EQUAL(20, cache.Get(2));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
