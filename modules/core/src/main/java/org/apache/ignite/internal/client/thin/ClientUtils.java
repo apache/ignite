@@ -555,8 +555,7 @@ final class ClientUtils {
     /**
      * Unwrap binary object.
      */
-    @SuppressWarnings("rawtypes")
-    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class clazz) {
+    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class<?> clazz) {
         if (obj instanceof BinaryObjectImpl) {
             BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
 
@@ -601,13 +600,15 @@ final class ClientUtils {
     /**
      * Unwrap array with binary objects.
      */
-    @SuppressWarnings("rawtypes")
-    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds, Class arrayClass) {
+    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds, Class<?> arrayClass) {
         if (BinaryUtils.knownArray(arr))
             return arr;
 
-        // TODO: Create array of the given type.
-        Object[] res = (Object[])Array.newInstance(arr.getClass().getComponentType(), arr.length);
+        Class<?> componentType = arrayClass != null && arrayClass.isArray()
+                ? arrayClass.getComponentType()
+                : arr.getClass().getComponentType();
+
+        Object[] res = (Object[])Array.newInstance(componentType, arr.length);
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i], hnds, null);
