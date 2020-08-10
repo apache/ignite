@@ -532,6 +532,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static Expression Convert(Expression value, Type targetType)
         {
+            // TODO: This won't work for value types
+            // Different logic is required for primitives and custom value types.
             if (targetType.IsArray && targetType.GetElementType() != typeof(object))
             {
                 var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
