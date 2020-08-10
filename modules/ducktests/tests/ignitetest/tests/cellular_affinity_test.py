@@ -24,7 +24,7 @@ from jinja2 import Template
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.tests.utils.version import DEV_BRANCH
 
 
 # pylint: disable=W0223
@@ -83,34 +83,9 @@ class CellularAffinity(IgniteTest):
         """
         Test Cellular Affinity scenario (partition distribution).
         """
-        ignite_version = IgniteVersion(version)
-
-        ignites1 = IgniteService(
-            self.test_context,
-            num_nodes=CellularAffinity.NUM_NODES,
-            version=ignite_version,
-            properties=self.properties(),
-            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=1'])
-
-        ignites1.start()
-
-        ignites2 = IgniteService(
-            self.test_context,
-            num_nodes=CellularAffinity.NUM_NODES,
-            version=ignite_version,
-            properties=self.properties(),
-            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=2'])
-
-        ignites2.start()
-
-        ignites3 = IgniteService(
-            self.test_context,
-            num_nodes=CellularAffinity.NUM_NODES,
-            version=ignite_version,
-            properties=self.properties(),
-            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'])
-
-        ignites3.start()
+        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
+        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'])
+        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'])
 
         checker = IgniteApplicationService(
             self.test_context,
@@ -118,6 +93,16 @@ class CellularAffinity(IgniteTest):
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "nodesPerCell": self.NUM_NODES},
-            version=ignite_version)
+            version=version)
 
-        checker.start()
+        checker.run()
+
+    def start_cell(self, ignite_version, jvm_opts):
+        ignites = IgniteService(
+            self.test_context,
+            num_nodes=CellularAffinity.NUM_NODES,
+            version=ignite_version,
+            properties=self.properties(),
+            jvm_opts=jvm_opts)
+
+        ignites.start()
