@@ -4511,6 +4511,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 }
 
                                 crd = node; // Do not allow to process FullMessage from old coordinator.
+
+                                processNonLocalCoordinatorChange(crd, node);
                             }
                             else {
                                 if (log.isInfoEnabled()) {
@@ -5189,38 +5191,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             }
                         }
                         else {
-                            if (crdChanged) {
-                                for (Map.Entry<ClusterNode, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet()) {
-                                    if (crd0.equals(m.getKey())) {
-                                        if (log.isInfoEnabled()) {
-                                            log.info("Coordinator changed, process pending full message [" +
-                                                "ver=" + initialVersion() +
-                                                ", crd=" + node.id() +
-                                                ", pendingMsgNode=" + m.getKey() + ']');
-                                        }
-
-                                        processFullMessage(true, m.getKey(), m.getValue());
-
-                                        if (isDone())
-                                            return;
-                                    }
-                                }
-
-                                if (log.isInfoEnabled()) {
-                                    log.info("Coordinator changed, send partitions to new coordinator [" +
-                                        "ver=" + initialVersion() +
-                                        ", crd=" + node.id() +
-                                        ", newCrd=" + crd0.id() + ']');
-                                }
-
-                                final ClusterNode newCrd = crd0;
-
-                                cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
-                                    @Override public void run() {
-                                        sendPartitions(newCrd);
-                                    }
-                                });
-                            }
+                            if (crdChanged && processNonLocalCoordinatorChange(crd0, node))
+                                return;
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -5680,6 +5652,48 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         synchronized (mux) {
             clearingPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
         }
+    }
+
+    /**
+     * Process coordinator change on non local node.
+     *
+     * @param crd New coordinator.
+     * @param node Left node.
+     * @return {@code true} if exchange {@code isDone}
+     */
+    private boolean processNonLocalCoordinatorChange(ClusterNode crd, ClusterNode node) {
+        for (Map.Entry<ClusterNode, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet()) {
+            if (crd.equals(m.getKey())) {
+                if (log.isInfoEnabled()) {
+                    log.info("Coordinator changed, process pending full message [" +
+                        "ver=" + initialVersion() +
+                        ", crd=" + node.id() +
+                        ", pendingMsgNode=" + m.getKey() + ']');
+                }
+
+                processFullMessage(true, m.getKey(), m.getValue());
+
+                if (isDone())
+                    return true;
+            }
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Coordinator changed, send partitions to new coordinator [" +
+                "ver=" + initialVersion() +
+                ", crd=" + node.id() +
+                ", newCrd=" + crd.id() + ']');
+        }
+
+        final ClusterNode newCrd = crd;
+
+        cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
+            @Override public void run() {
+                sendPartitions(newCrd);
+            }
+        });
+
+        return false;
     }
 
     /**
