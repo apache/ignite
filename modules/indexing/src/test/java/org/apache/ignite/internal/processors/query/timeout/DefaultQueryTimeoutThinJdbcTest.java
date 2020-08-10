@@ -61,11 +61,11 @@ public class DefaultQueryTimeoutThinJdbcTest extends AbstractDefaultQueryTimeout
 
         String sql = helper.buildTimedQuery();
 
-        int [] hugeTimeouts = new int[] {Integer.MAX_VALUE / 1000 + 1, Integer.MAX_VALUE};
+        int[] hugeTimeouts = new int[] {Integer.MAX_VALUE / 1000 + 1, Integer.MAX_VALUE};
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             for (int timeout: hugeTimeouts) {
-                try(Statement stmt = conn.createStatement()) {
+                try (Statement stmt = conn.createStatement()) {
                     stmt.setQueryTimeout(timeout);
 
                     ResultSet rs = stmt.executeQuery(sql);
