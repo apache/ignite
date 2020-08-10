@@ -79,7 +79,7 @@ class BaselineTests(IgniteTest):
 
         # Check baseline of activated cluster.
         baseline = control_utility.baseline()
-        self.__check_baseline_size(baseline, 1)
+        self.__check_baseline_size(baseline, self.NUM_NODES - 2)
         self.__check_nodes_in_baseline(self.servers.nodes, baseline)
 
         # Set baseline using list of conststent ids.
@@ -87,7 +87,7 @@ class BaselineTests(IgniteTest):
         control_utility.set_baseline(self.servers.nodes + new_node.nodes)
 
         baseline = control_utility.baseline()
-        self.__check_baseline_size(baseline, 2)
+        self.__check_baseline_size(baseline, self.NUM_NODES - 1)
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
         # Set baseline using topology version.
@@ -96,7 +96,7 @@ class BaselineTests(IgniteTest):
         control_utility.set_baseline(version)
 
         baseline = control_utility.baseline()
-        self.__check_baseline_size(baseline, 3)
+        self.__check_baseline_size(baseline, self.NUM_NODES)
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
@@ -118,7 +118,7 @@ class BaselineTests(IgniteTest):
         control_utility.add_to_baseline(new_node.nodes)
 
         baseline = control_utility.baseline()
-        self.__check_baseline_size(baseline, 3)
+        self.__check_baseline_size(baseline, self.NUM_NODES)
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
         # Expected failure (remove of online node is not allowed).
@@ -184,7 +184,7 @@ class BaselineTests(IgniteTest):
         control_utility.enable_baseline_auto_adjust(2000)
         new_node = self.__start_ignite_nodes(version, 1)
 
-        wait_until(lambda: len(control_utility.baseline()) == 2, timeout_sec=5)
+        wait_until(lambda: len(control_utility.baseline()) == self.NUM_NODES - 1, timeout_sec=5)
 
         baseline = control_utility.baseline()
         self.__check_nodes_in_baseline(new_node.nodes, baseline)

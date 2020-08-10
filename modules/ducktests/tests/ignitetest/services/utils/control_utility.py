@@ -115,8 +115,8 @@ class ControlUtility:
         match = topology_pattern.search(output)
         topology = int(match.group(1)) if match else None
 
-        baseline = [BaselineNode(consistent_id=match[1], state=match[3], order=int(match[5]) if match[5] else None)
-                    for match in baseline_pattern.findall(output)]
+        baseline = [BaselineNode(consistent_id=m[1], state=m[3], order=int(m[5]) if m[5] else None)
+                    for m in baseline_pattern.findall(output)]
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 
