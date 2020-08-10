@@ -541,6 +541,11 @@ namespace Apache.Ignite.Core.Impl.Common
                 return Expression.Call(null, convertMethod, objArray);
             }
 
+            // TODO: For byte/sbyte and the like, this cast fails
+            // E.g. the following does not work:   (sbyte)(object)((byte)1)
+            // But this does:                      (sbyte)(byte)(object)((byte)1)
+            // So for every "unsupported" type like sbyte, ushort, uint, ulong
+            // we have to do an additional conversion
             return Expression.Convert(value, targetType);
         }
 
