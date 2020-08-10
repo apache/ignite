@@ -546,6 +546,11 @@ namespace Apache.Ignite.Core.Impl.Common
             // But this does:                      (sbyte)(byte)(object)((byte)1)
             // So for every "unsupported" type like sbyte, ushort, uint, ulong
             // we have to do an additional conversion
+            if (targetType == typeof(sbyte))
+            {
+                value = Expression.Convert(value, typeof(byte));
+            }
+            
             return Expression.Convert(value, targetType);
         }
 
