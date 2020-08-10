@@ -24,6 +24,7 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
@@ -106,8 +107,7 @@ class PmeFreeSwitchTest(IgniteTest):
         single_key_tx_streamer.start()
 
         if ignite_version >= V_2_8_0:
-            long_tx_streamer.execute(
-                "control.sh --host %s --baseline auto_adjust disable --yes" % ignites.nodes[0].account.hostname)
+            ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
 
         self.stage("Stopping server node")
 

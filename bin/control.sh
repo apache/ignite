@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
-then
-    set -o nounset
-    set -o errexit
-    set -o pipefail
-    set -o errtrace
-    set -o functrace
-fi
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
