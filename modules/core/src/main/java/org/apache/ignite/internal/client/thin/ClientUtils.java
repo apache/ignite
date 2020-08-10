@@ -538,19 +538,25 @@ final class ClientUtils {
 
     /** Read Ignite binary object from input stream. */
     <T> T readObject(BinaryInputStream in, boolean keepBinary) {
+        return readObject(in, keepBinary, null);
+    }
+
+    /** Read Ignite binary object from input stream. */
+    <T> T readObject(BinaryInputStream in, boolean keepBinary, Class<T> clazz) {
         if (keepBinary)
             return (T)marsh.unmarshal(in);
         else {
             BinaryReaderHandles hnds = new BinaryReaderHandles();
 
-            return (T)unwrapBinary(marsh.deserialize(in, hnds), hnds);
+            return (T)unwrapBinary(marsh.deserialize(in, hnds), hnds, clazz);
         }
     }
 
     /**
      * Unwrap binary object.
      */
-    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds) {
+    @SuppressWarnings("rawtypes")
+    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class clazz) {
         if (obj instanceof BinaryObjectImpl) {
             BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
 
@@ -563,7 +569,7 @@ final class ClientUtils {
         else if (BinaryUtils.knownMap(obj))
             return unwrapMap((Map<Object, Object>)obj, hnds);
         else if (obj instanceof Object[])
-            return unwrapArray((Object[])obj, hnds);
+            return unwrapArray((Object[])obj, hnds, clazz);
         else
             return obj;
     }
@@ -575,7 +581,7 @@ final class ClientUtils {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         for (Object obj0 : col)
-            col0.add(unwrapBinary(obj0, hnds));
+            col0.add(unwrapBinary(obj0, hnds, null));
 
         return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
@@ -587,7 +593,7 @@ final class ClientUtils {
         Map<Object, Object> map0 = BinaryUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
-            map0.put(unwrapBinary(e.getKey(), hnds), unwrapBinary(e.getValue(), hnds));
+            map0.put(unwrapBinary(e.getKey(), hnds, null), unwrapBinary(e.getValue(), hnds, null));
 
         return map0;
     }
@@ -595,14 +601,16 @@ final class ClientUtils {
     /**
      * Unwrap array with binary objects.
      */
-    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds) {
+    @SuppressWarnings("rawtypes")
+    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds, Class arrayClass) {
         if (BinaryUtils.knownArray(arr))
             return arr;
 
+        // TODO: Create array of the given type.
         Object[] res = (Object[])Array.newInstance(arr.getClass().getComponentType(), arr.length);
 
         for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapBinary(arr[i], hnds);
+            res[i] = unwrapBinary(arr[i], hnds, null);
 
         return res;
     }
