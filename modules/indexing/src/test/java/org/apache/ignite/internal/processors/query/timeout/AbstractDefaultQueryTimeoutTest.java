@@ -123,7 +123,7 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
     public void testConcurrent() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        setDefaultQueryTimeout(1000L);
+        setDefaultQueryTimeout(1000);
 
         prepareQueryExecution();
 
@@ -151,19 +151,19 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
     }
 
     /** */
-    private void checkQueryNoExplicitTimeout(long execTime, long defaultTimeout, boolean expectCancelled)
+    private void checkQueryNoExplicitTimeout(long execTime, int defaultTimeout, boolean expectCancelled)
         throws Exception {
         checkQuery0(execTime, null, defaultTimeout, expectCancelled);
     }
 
     /** */
-    private void checkQuery(long execTime, long explicitTimeout, long defaultTimeout, boolean expectCancelled)
+    protected void checkQuery(long execTime, int explicitTimeout, int defaultTimeout, boolean expectCancelled)
         throws Exception {
         checkQuery0(execTime, explicitTimeout, defaultTimeout, expectCancelled);
     }
 
     /** */
-    private void checkQuery0(long execTime, Long explicitTimeout, long defaultTimeout, boolean expectCancelled)
+    private void checkQuery0(long execTime, Integer explicitTimeout, int defaultTimeout, boolean expectCancelled)
         throws Exception {
         startGrid(0);
 
@@ -200,14 +200,15 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
     protected abstract void executeQuery(String sql) throws Exception;
 
     /** */
-    protected abstract void executeQuery(String sql, long timeout) throws Exception;
+    protected abstract void executeQuery(String sql, int timeout) throws Exception;
 
     /** */
     protected abstract void assertQueryCancelled(Callable<?> c);
 
     /** */
-    private void setDefaultQueryTimeout(final long timeout) throws IgniteCheckedException {
-        ((IgniteH2Indexing)grid(0).context().query().getIndexing()).distributedConfiguration().defaultQueryTimeout(timeout);
+    protected void setDefaultQueryTimeout(final int timeout) throws IgniteCheckedException {
+        ((IgniteH2Indexing)grid(0).context().query().getIndexing())
+            .distributedConfiguration().defaultQueryTimeout(timeout);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (Ignite ign : G.allGrids()) {

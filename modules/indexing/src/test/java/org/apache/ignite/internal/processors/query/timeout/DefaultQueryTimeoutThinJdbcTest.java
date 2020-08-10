@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.query.timeout;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinStatement;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 /**
  *
@@ -36,15 +39,48 @@ public class DefaultQueryTimeoutThinJdbcTest extends AbstractDefaultQueryTimeout
     }
 
     /** {@inheritDoc} */
-    @Override protected void executeQuery(String sql, long timeout) throws Exception {
+    @Override protected void executeQuery(String sql, int timeout) throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             JdbcThinStatement stmt = (JdbcThinStatement)conn.createStatement();
 
-            stmt.timeout((int)timeout);
+            stmt.timeout(timeout);
 
             stmt.executeQuery(sql);
         }
     }
+
+    /** */
+    @Test
+    public void testExplicitTimeoutMoreThenMaxValue() throws Exception {
+        startGrid(0);
+
+        setDefaultQueryTimeout(500);
+
+        TimedQueryHelper helper = new TimedQueryHelper(1000, DEFAULT_CACHE_NAME);
+        helper.createCache(grid(0));
+
+        String sql = helper.buildTimedQuery();
+
+        int [] hugeTimeouts = new int[] {Integer.MAX_VALUE / 1000 + 1, Integer.MAX_VALUE};
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            for (int timeout: hugeTimeouts) {
+                try(Statement stmt = conn.createStatement()) {
+                    stmt.setQueryTimeout(timeout);
+
+                    ResultSet rs = stmt.executeQuery(sql);
+
+                    int cnt = 0;
+
+                    while (rs.next())
+                        cnt++;
+
+                    assertTrue(cnt > 0);
+                }
+            }
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override protected void assertQueryCancelled(Callable<?> c) {

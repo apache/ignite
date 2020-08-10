@@ -58,14 +58,14 @@ public class DistributedSqlConfiguration {
     }).collect(Collectors.toSet());
 
     /** Default value of the default query timeout. */
-    public static final long DFLT_QRY_TIMEOUT = 0;
+    public static final int DFLT_QRY_TIMEOUT = 0;
 
     /** Disabled SQL functions. */
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs
         = new SimpleDistributedProperty<>("sql.disabledFunctions");
 
     /** Query timeout. */
-    private final SimpleDistributedProperty<Long> dfltQueryTimeout
+    private final SimpleDistributedProperty<Integer> dfltQueryTimeout
         = new SimpleDistributedProperty<>("sql.defaultQueryTimeout");
 
     /**
@@ -95,7 +95,7 @@ public class DistributedSqlConfiguration {
 
                         setDefaultValue(
                             dfltQueryTimeout,
-                            ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
+                            (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
                             log);
                     }
                     else {
@@ -137,8 +137,8 @@ public class DistributedSqlConfiguration {
     /**
      * @return Disabled SQL functions.
      */
-    public long defaultQueryTimeout() {
-        Long t = dfltQueryTimeout.get();
+    public int defaultQueryTimeout() {
+        Integer t = dfltQueryTimeout.get();
 
         return t != null ? t : DFLT_QRY_TIMEOUT;
     }
@@ -147,16 +147,16 @@ public class DistributedSqlConfiguration {
      * @param timeout Default query timeout.
      * @throws IgniteCheckedException if failed.
      */
-    public GridFutureAdapter<?> defaultQueryTimeout(long timeout)
+    public GridFutureAdapter<?> defaultQueryTimeout(int timeout)
         throws IgniteCheckedException {
-        A.ensure(timeout >= 0 && timeout <= Integer.MAX_VALUE,
-            "default query timeout value should be valid Integer.");
+        A.ensure(timeout >= 0,
+            "default query timeout value must not be negative.");
 
         return dfltQueryTimeout.propagateAsync(timeout);
     }
 
     /** */
-    public void listenDefaultQueryTimeout(DistributePropertyListener<Long> lsnr) {
+    public void listenDefaultQueryTimeout(DistributePropertyListener<Integer> lsnr) {
         dfltQueryTimeout.addListener(lsnr);
     }
 }

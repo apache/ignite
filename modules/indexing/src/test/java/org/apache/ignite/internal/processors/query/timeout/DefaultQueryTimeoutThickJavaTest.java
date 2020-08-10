@@ -55,10 +55,10 @@ public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeou
     }
 
     /** {@inheritDoc} */
-    @Override protected void executeQuery(String sql, long timeout) throws Exception {
+    @Override protected void executeQuery(String sql, int timeout) throws Exception {
         executeQuery0(new SqlFieldsQuery(sql)
             .setLazy(lazy)
-            .setTimeout((int)timeout, TimeUnit.MILLISECONDS));
+            .setTimeout(timeout, TimeUnit.MILLISECONDS));
     }
 
     /** {@inheritDoc} */
