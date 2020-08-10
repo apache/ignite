@@ -200,8 +200,7 @@ namespace ignite
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
-                            int32_t txSize/*,
-                            IgniteError& err*/);
+                            int32_t txSize);
 
                     /**
                      * Commit Transaction.

@@ -66,17 +66,32 @@ namespace ignite
 
                 void TransactionProxy::commit()
                 {
-                    GetTxImpl(impl).GetCurrent().Get()->Commit();
+                    SP_TransactionImpl tx = GetTxImpl(impl).GetCurrent();
+
+                    if (!tx.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "The transaction is already closed");
+
+                    tx.Get()->Commit();
                 }
 
                 void TransactionProxy::rollback()
                 {
-                    GetTxImpl(impl).GetCurrent().Get()->Rollback();
+                    SP_TransactionImpl tx = GetTxImpl(impl).GetCurrent();
+
+                    if (!tx.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "The transaction is already closed");
+
+                    tx.Get()->Rollback();
                 }
 
                 void TransactionProxy::close()
                 {
-                    GetTxImpl(impl).GetCurrent().Get()->Close();
+                    SP_TransactionImpl tx = GetTxImpl(impl).GetCurrent();
+
+                    if (!tx.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "The transaction is already closed");
+
+                    tx.Get()->Close();
                 }
             }
         }

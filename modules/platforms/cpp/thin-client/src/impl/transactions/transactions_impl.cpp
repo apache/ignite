@@ -43,7 +43,7 @@ namespace ignite
                     router.Get()->SyncMessage(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX, rsp.GetError().c_str());
                 }
 
                 SharedPointer<TransactionImpl> TransactionsImpl::TxStart(
@@ -52,8 +52,6 @@ namespace ignite
                         int64_t timeout,
                         int32_t txSize)
                 {
-                    //IgniteError err = IgniteError(); !!! ???
-
                     SharedPointer<TransactionImpl> tx = TransactionImpl::Create(*this,
                         concurrency, isolation, timeout, txSize);
 

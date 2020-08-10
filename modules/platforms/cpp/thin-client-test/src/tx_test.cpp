@@ -212,11 +212,21 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
     transactions::ClientTransactions transactions = client.ClientTransactions();
 
-    transactions::ClientTransaction tx1 = transactions.TxStart();
+    transactions::ClientTransaction tx = transactions.TxStart();
 
     BOOST_CHECK_THROW( transactions.TxStart(), ignite::IgniteError );
 
-    tx1.Close();
+    tx.Close();
+
+    //---
+
+    tx = transactions.TxStart();
+
+    tx.Close();
+
+    BOOST_CHECK_THROW( tx.Commit(), ignite::IgniteError );
+
+    BOOST_CHECK_THROW( tx.Rollback(), ignite::IgniteError );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
