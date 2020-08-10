@@ -184,6 +184,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             
             // TODO:
             Assert.AreEqual(2, svc.GetByte(1));
+            Assert.AreEqual(new byte[] {1, 2, 3}, svc.GetByteArray(new byte[] {2, 3, 4}));
+            
+            Assert.AreEqual(3, svc.GetSbyte(2));
+            Assert.AreEqual(new sbyte[] {-5, 5}, svc.GetSbyteArray(new sbyte[] {-5, 6}));
         }
 
         /// <summary>
