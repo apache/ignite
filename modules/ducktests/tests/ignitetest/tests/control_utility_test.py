@@ -216,7 +216,7 @@ class BaselineTests(IgniteTest):
     def __check_baseline_size(baseline, size):
         assert len(baseline) == size, 'Unexpected size of baseline %d, %d expected' % (len(baseline), size)
 
-    def __start_ignite_nodes(self, version, num_nodes, timeout_sec=30):
+    def __start_ignite_nodes(self, version, num_nodes, timeout_sec=180):
         ignite_version = IgniteVersion(version)
 
         servers = IgniteService(self.test_context, num_nodes=num_nodes, version=ignite_version,
