@@ -126,127 +126,127 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** <inheritdoc /> */
         public ulong GetULong(ulong x)
         {
-            throw new NotImplementedException();
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public ulong[] GetULongArray(ulong[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public Guid GetGuid(Guid x)
         {
-            throw new NotImplementedException();
+            return x;
         }
 
         /** <inheritdoc /> */
         public Guid[] GetGuidArray(Guid[] x)
         {
-            throw new NotImplementedException();
+            return x.ToArray();
         }
 
         /** <inheritdoc /> */
         public DateTime GetDateTime(DateTime x)
         {
-            throw new NotImplementedException();
+            return x.AddDays(1);
         }
 
         /** <inheritdoc /> */
-        public DateTime[] GetDateTimeArray(Guid[] x)
+        public DateTime[] GetDateTimeArray(DateTime[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(d => d.AddDays(1)).ToArray();
         }
 
         /** <inheritdoc /> */
         public TimeSpan GetTimeSpan(TimeSpan x)
         {
-            throw new NotImplementedException();
+            return x.Add(TimeSpan.FromMinutes(1));
         }
 
         /** <inheritdoc /> */
         public TimeSpan[] GetTimeSpanArray(TimeSpan[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => b.Add(TimeSpan.FromMinutes(1))).ToArray();
         }
 
         /** <inheritdoc /> */
         public bool GetBool(bool x)
         {
-            throw new NotImplementedException();
+            return !x;
         }
 
         /** <inheritdoc /> */
         public bool[] GetBoolArray(bool[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => !b).ToArray();
         }
 
         /** <inheritdoc /> */
         public float GetFloat(float x)
         {
-            throw new NotImplementedException();
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public float[] GetFloatArray(float[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public double GetDouble(double x)
         {
-            throw new NotImplementedException();
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public double[] GetDoubleArray(double[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public decimal GetDecimal(decimal x)
         {
-            throw new NotImplementedException();
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public decimal[] GetDecimalArray(decimal[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public string GetString(string x)
         {
-            throw new NotImplementedException();
+            return x.ToLowerInvariant();
         }
 
         /** <inheritdoc /> */
         public string[] GetStringArray(string[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(b => b.ToLowerInvariant()).ToArray();
         }
 
         /** <inheritdoc /> */
         public T GetGeneric<T>(T x)
         {
-            throw new NotImplementedException();
+            return x;
         }
 
         /** <inheritdoc /> */
         public T[] GetGenericArray<T>(T x)
         {
-            throw new NotImplementedException();
+            return new[] {x};
         }
 
         /** <inheritdoc /> */
         public List<T> GetGenericList<T>(T x)
         {
-            throw new NotImplementedException();
+            return new List<T> {x};
         }
 
         /** <inheritdoc /> */

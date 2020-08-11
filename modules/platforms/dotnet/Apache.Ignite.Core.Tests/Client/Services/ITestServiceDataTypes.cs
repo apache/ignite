@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         DateTime GetDateTime(DateTime x);
         
         /** */
-        DateTime[] GetDateTimeArray(Guid[] x);
+        DateTime[] GetDateTimeArray(DateTime[] x);
 
         /** */
         TimeSpan GetTimeSpan(TimeSpan x);
