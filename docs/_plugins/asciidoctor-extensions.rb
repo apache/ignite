@@ -135,9 +135,18 @@ class ImageTreeProcessor < Extensions::Treeprocessor
 
     image_width = (document.attr 'image_width', "")
 
+    imagedir =    document.attributes['docdir'] 
+
     #scan for images
     (document.find_by context: :image).each do |img| 
-      if  !(img.attributes['width'] || image_width.empty?)
+
+        imagefile = imagedir + '/' + img.attributes['target']
+
+       if !File.file?(imagefile) 
+          warn 'Image does not exist: ' +imagefile 
+       end
+
+       if !(img.attributes['width'] || image_width.empty?)
            img.attributes['width'] = image_width
        end
     end
