@@ -66,47 +66,71 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** <inheritdoc /> */
         public short GetShort(short x)
         {
-            throw new NotImplementedException();
+            return (short) (x + 1);
         }
 
         /** <inheritdoc /> */
         public short[] GetShortArray(short[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(s => (short) (s + 1)).ToArray();
         }
 
         /** <inheritdoc /> */
         public ushort GetUShort(ushort x)
         {
-            throw new NotImplementedException();
+            return (ushort) (x + 1);
         }
 
         /** <inheritdoc /> */
         public ushort[] GetUShortArray(ushort[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(s => (ushort) (s + 1)).ToArray();
         }
 
         /** <inheritdoc /> */
         public int GetInt(int x)
         {
-            throw new NotImplementedException();
+            return x + 1;
         }
 
         /** <inheritdoc /> */
         public int[] GetIntArray(int[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(s => s + 1).ToArray();
         }
 
         /** <inheritdoc /> */
         public uint GetUInt(uint x)
         {
-            throw new NotImplementedException();
+            return x + 1;
         }
 
         /** <inheritdoc /> */
         public uint[] GetUIntArray(uint[] x)
+        {
+            return x.Select(s => s + 1).ToArray();
+        }
+
+        /** <inheritdoc /> */
+        public long GetLong(long x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public long[] GetLongArray(long[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ulong GetULong(ulong x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ulong[] GetULongArray(ulong[] x)
         {
             throw new NotImplementedException();
         }

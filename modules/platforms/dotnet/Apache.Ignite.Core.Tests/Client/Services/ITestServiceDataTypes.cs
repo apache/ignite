@@ -68,6 +68,18 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         uint[] GetUIntArray(uint[] x);
 
         /** */
+        long GetLong(long x);
+        
+        /** */
+        long[] GetLongArray(long[] x);
+        
+        /** */
+        ulong GetULong(ulong x);
+        
+        /** */
+        ulong[] GetULongArray(ulong[] x);
+
+        /** */
         Guid GetGuid(Guid x);
         
         /** */
