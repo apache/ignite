@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -78,6 +79,9 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.warmup.NoOpWarmUp;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -112,6 +116,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -2098,6 +2103,34 @@ public class GridCacheUtils {
                 .setSqlSchema(sqlSchema)
                 .setSqlEscapeAll(isSqlEscape)
                 .setQueryParallelism(qryParallelism);
+    }
+
+    /**
+     * Getting available warming strategies.
+     *
+     * @param kernalCtx Kernal context.
+     * @return Mapping configuration to strategy.
+     */
+    public static Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies(
+        GridKernalContext kernalCtx
+    ) {
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> strategies = new HashMap<>();
+
+        // Adding default strategies.
+        for (WarmUpStrategy<?> strategy : new WarmUpStrategy[] {new NoOpWarmUp()})
+            strategies.putIfAbsent(strategy.configClass(), strategy);
+
+        // Adding strategies from plugins.
+        WarmUpStrategySupplier[] suppliers = kernalCtx.plugins().extensions(WarmUpStrategySupplier.class);
+
+        if (nonNull(suppliers)) {
+            for (WarmUpStrategySupplier supplier : suppliers) {
+                for (WarmUpStrategy<?> strategy : supplier.strategies())
+                    strategies.putIfAbsent(strategy.configClass(), strategy);
+            }
+        }
+
+        return strategies;
     }
 
     /**
