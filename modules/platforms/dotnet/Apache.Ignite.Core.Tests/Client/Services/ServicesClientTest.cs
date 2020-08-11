@@ -182,14 +182,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             ServerServices.DeployClusterSingleton(ServiceName, new TestServiceDataTypes());
             var svc = Client.GetServices().GetServiceProxy<ITestServiceDataTypes>(ServiceName);
             
-            // TODO: Test properties with all the types as well.
+            Assert.AreEqual(2, svc.GetByte(1));
+            Assert.AreEqual(new byte[] {3, 4, 5}, svc.GetByteArray(new byte[] {2, 3, 4}));
             
-            // TODO:
-            // Assert.AreEqual(2, svc.GetByte(1));
-            // Assert.AreEqual(new byte[] {3, 4, 5}, svc.GetByteArray(new byte[] {2, 3, 4}));
-            //
-            // Assert.AreEqual(3, svc.GetSbyte(2));
+            Assert.AreEqual(3, svc.GetSbyte(2));
             Assert.AreEqual(new sbyte[] {-4, 6}, svc.GetSbyteArray(new sbyte[] {-5, 5}));
+            
+            Assert.AreEqual('d', svc.GetChar('c'));
+            Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
         }
 
         /// <summary>
