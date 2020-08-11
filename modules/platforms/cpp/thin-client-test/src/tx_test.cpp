@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 
     boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
 
-    BOOST_CHECK_EXCEPTION(cache.Put(1, 20);, ignite::IgniteError, checkTxTimeoutMessage);
+    BOOST_CHECK_EXCEPTION(cache.Put(1, 20), ignite::IgniteError, checkTxTimeoutMessage);
 
     BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxTimeoutMessage);
 
@@ -327,6 +327,39 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
     BOOST_CHECK_EQUAL(1, cache.Get(1));
 
     BOOST_CHECK_EQUAL(20, cache.Get(2));
+}
+
+const std::string label = std::string("label_2_check");
+
+bool checkTxLabelMessage(const ignite::IgniteError& ex)
+{
+    return std::string(ex.what()).find(label) != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(TestTxWithLabel)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int, int> cache =
+        client.GetCache<int, int>("partitioned");
+
+    const uint TX_TIMEOUT = 200L;
+
+    transactions::ClientTransactions transactions = client.ClientTransactions();
+
+    transactions::ClientTransaction tx = transactions.withLabel(label.c_str()).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+    cache.Put(1, 10);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxLabelMessage);
+
+    tx.Close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

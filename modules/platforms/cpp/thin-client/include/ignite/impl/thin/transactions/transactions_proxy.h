@@ -94,17 +94,17 @@ namespace ignite
                  */
                 class IGNITE_IMPORT_EXPORT TransactionsProxy
                 {
+                    #define DEFAULT_CONCURRENCY TransactionConcurrency::PESSIMISTIC
+                    #define DEFAULT_ISOLATION TransactionIsolation::READ_COMMITTED
+                    #define DEFAULT_TIMEOUT 0
+                    #define DEFAULT_TX_SIZE 0
                 public:
-                    /**
-                     * Default constructor.
-                     */
-                    TransactionsProxy() {}
-
                     /**
                      * Constructor.
                      */
                     TransactionsProxy(const SharedPointer<void>& impl) :
-                        impl(impl)
+                        impl(impl),
+                        label("")
                     {
                         // No-op.
                     }
@@ -115,42 +115,42 @@ namespace ignite
                     ~TransactionsProxy() {}
 
                     /**
-                     * Start new transaction with default isolation, concurrency
-                     * and timeout.
-                     *
-                     * @return Proxy implementation.
-                     */
-                    TransactionProxy txStart();
-
-                    /**
-                     * Start new transaction with defined concurrency and isolation.
-                     *
-                     * @param concurrency Transaction concurrency.
-                     * @param isolation Transaction isolation.
-                     *
-                     * @return Proxy implementation.
-                     */
-                    TransactionProxy txStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation);
-
-                    /**
                      * Start new transaction with completely clarify parameters.
                      *
                      * @param concurrency Transaction concurrency.
                      * @param isolation Transaction isolation.
                      * @param timeout Transaction timeout.
                      * @param txSize Number of entries participating in transaction (may be approximate).
+                     * @param label Transaction specific label.
                      *
                      * @return Proxy implementation.
                      */
                     TransactionProxy txStart(
-                            TransactionConcurrency::Type concurrency,
-                            TransactionIsolation::Type isolation,
-                            int64_t timeout,
-                            int32_t txSize);
+                            TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC,
+                            TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED,
+                            int64_t timeout = 0,
+                            int32_t txSize = 0);
 
+                    /**
+                     * Sets specific label.
+                     *
+                     * @param lbl Transaction specific label.
+                     */
+                    void withLabel(const char *lbl)
+                    {
+                        label = lbl;
+                    }
                 private:
                     /** Implementation. */
                     SharedPointer<void> impl;
+
+                    /** Transaction label. */
+                    const char* label;
+
+                    /**
+                     * Default constructor.
+                     */
+                    TransactionsProxy() {}
                 };
             }
         }

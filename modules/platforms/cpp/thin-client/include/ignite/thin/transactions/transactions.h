@@ -18,8 +18,6 @@
 #ifndef TRANSACTIONS_H
 #define TRANSACTIONS_H
 
-#include <string>
-
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/transactions/transactions_proxy.h>
 
@@ -127,30 +125,6 @@ namespace ignite
                 ~ClientTransactions() {}
 
                 /**
-                 * Start new transaction with default isolation, concurrency
-                 * and timeout.
-                 *
-                 * @return ClientTransaction implementation.
-                 */
-                ClientTransaction TxStart()
-                {
-                    return ClientTransaction(proxy.txStart());
-                }
-
-                /**
-                 * Start new transaction with defined concurrency and isolation.
-                 *
-                 * @param concurrency Transaction concurrency.
-                 * @param isolation Transaction isolation.
-                 *
-                 * @return ClientTransaction implementation.
-                 */
-                ClientTransaction TxStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation)
-                {
-                    return ClientTransaction(proxy.txStart(concurrency, isolation));
-                }
-
-                /**
                  * Start new transaction with completely clarify parameters.
                  *
                  * @param concurrency Transaction concurrency.
@@ -160,18 +134,27 @@ namespace ignite
                  *
                  * @return ClientTransaction implementation.
                  */
-                ClientTransaction TxStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize = 0)
+                ClientTransaction TxStart(
+                        TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC,
+                        TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED,
+                        int64_t timeout = 0,
+                        int32_t txSize = 0)
                 {
                     return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize));
                 }
 
                 /**
-                 * Sets label.
+                 * Returns instance of {@code ClientTransactions} to mark each new transaction with a specified label.
                  *
                  * @param label Transaction label.
-                 * @return ClientTransaction implementation.
+                 * @return ClientTransactions implementation.
                  */
-                ClientTransactions withLabel(std::string& label);
+                ClientTransactions withLabel(const char* lbl)
+                {
+                    proxy.withLabel(lbl);
+
+                    return *this;
+                }
             private:
                 /** Implementation. */
                 TransactionsProxy proxy;
@@ -179,7 +162,7 @@ namespace ignite
                 /**
                  * Default constructor.
                  */
-                ClientTransactions() {}
+                ClientTransactions();
             };
         }
     }

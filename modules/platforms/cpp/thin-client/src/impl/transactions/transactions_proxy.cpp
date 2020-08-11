@@ -44,24 +44,13 @@ namespace ignite
         {
             namespace transactions
             {
-                #define DEFAULT_CONCURRENCY TransactionConcurrency::PESSIMISTIC
-                #define DEFAULT_ISOLATION TransactionIsolation::READ_COMMITTED
-                #define DEFAULT_TIMEOUT 0
-                #define DEFAULT_TX_SIZE 0
-
-                TransactionProxy TransactionsProxy::txStart()
+                TransactionProxy TransactionsProxy::txStart(
+                        TransactionConcurrency::Type concurrency,
+                        TransactionIsolation::Type isolation,
+                        int64_t timeout,
+                        int32_t txSize)
                 {
-                    return TransactionProxy(GetTxsImpl(impl).TxStart(DEFAULT_CONCURRENCY, DEFAULT_ISOLATION, DEFAULT_TIMEOUT, DEFAULT_TX_SIZE));
-                }
-
-                TransactionProxy TransactionsProxy::txStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation)
-                {
-                    return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, DEFAULT_TIMEOUT, DEFAULT_TX_SIZE));
-                }
-
-                TransactionProxy TransactionsProxy::txStart(TransactionConcurrency::Type concurrency, TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize)
-                {
-                    return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, timeout, txSize));
+                    return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, timeout, txSize, label));
                 }
 
                 void TransactionProxy::commit()

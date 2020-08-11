@@ -54,9 +54,10 @@ namespace ignite
                         TransactionConcurrency::Type concurrency,
                         TransactionIsolation::Type isolation,
                         int64_t timeout,
-                        int32_t txSize)
+                        int32_t txSize,
+                        const char* label)
                 {
-                    SP_TransactionImpl tx = TransactionImpl::Create(*this, concurrency, isolation, timeout, txSize);
+                    SP_TransactionImpl tx = TransactionImpl::Create(*this, concurrency, isolation, timeout, txSize, label);
 
                     return tx;
                 }
@@ -66,7 +67,8 @@ namespace ignite
                     TransactionConcurrency::Type concurrency,
                     TransactionIsolation::Type isolation,
                     int64_t timeout,
-                    int32_t txSize)
+                    int32_t txSize,
+                    const char* label)
                 {
                     int32_t txId = threadTx.Get();
 
@@ -95,7 +97,7 @@ namespace ignite
                         }
                     }
 
-                    TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize);
+                    TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize, label);
 
                     Int32Response rsp;
 

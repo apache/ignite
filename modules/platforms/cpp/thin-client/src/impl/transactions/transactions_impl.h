@@ -130,13 +130,15 @@ namespace ignite
                      * @param isolation Transaction isolation.
                      * @param timeout Transaction timeout.
                      * @param txSize Number of entries participating in transaction (may be approximate).
+                     * @param label Transaction specific label.
                      */
                     static SP_TransactionImpl Create(
                             TransactionsImpl& txs,
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
-                            int32_t txSize);
+                            int32_t txSize,
+                            const char* label);
                 protected:
                     /** Checks current thread state. */
                     static void txThreadCheck(const TransactionImpl& tx);
@@ -207,14 +209,15 @@ namespace ignite
                      * @param isolation Isolation.
                      * @param timeout Timeout in milliseconds. Zero if for infinite timeout.
                      * @param txSize Number of entries participating in transaction (may be approximate).
-                     * @param err Error.
+                     * @param label Transaction specific label.
                      * @return Transaction ID on success.
                      */
                     SharedPointer<TransactionImpl> TxStart(
                             TransactionConcurrency::Type concurrency,
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
-                            int32_t txSize);
+                            int32_t txSize,
+                            const char* label);
 
                     /**
                      * Commit Transaction.

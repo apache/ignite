@@ -122,7 +122,9 @@ namespace ignite
              */
             void GetCacheNames(std::vector<std::string>& cacheNames);
 
-            /** */
+            /**
+             * Starts transactions.
+             */
             transactions::ClientTransactions ClientTransactions()
             {
                 return transactions::ClientTransactions(InternalTransactions());
