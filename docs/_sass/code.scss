@@ -22,6 +22,12 @@ pre.rouge .tok-err {
   	border: none !important;
   }
 
+
+.highlight .err {
+  background: initial !important;
+  color: initial !important;
+}
+
 code-tabs.code-tabs__initialized {
     display: block;
     margin-bottom: 1.5em;
