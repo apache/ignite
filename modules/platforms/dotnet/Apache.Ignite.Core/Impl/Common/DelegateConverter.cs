@@ -565,6 +565,12 @@ namespace Apache.Ignite.Core.Impl.Common
                 return null;
             }
 
+            var resDirect = arr as T[];
+            if (resDirect != null)
+            {
+                return resDirect;
+            }
+
             var res = new T[arr.Length];
 
             Array.Copy(arr, res, arr.Length);
