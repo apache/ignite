@@ -276,8 +276,19 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load result.
             if (method.ReturnType != typeof(void))
             {
+                // TODO: Additional cast for sbyte, ushort, ulong, uint
                 if (method.ReturnType.IsValueType)
-                    gen.Emit(OpCodes.Unbox_Any, method.ReturnType);
+                {
+                    if (method.ReturnType == typeof(sbyte))
+                    {
+                        gen.Emit(OpCodes.Unbox_Any, typeof(byte));
+                        gen.Emit(OpCodes.Conv_I1);
+                    }
+                    else
+                    {
+                        gen.Emit(OpCodes.Unbox_Any, method.ReturnType);
+                    }
+                }
             }
             else
             {
