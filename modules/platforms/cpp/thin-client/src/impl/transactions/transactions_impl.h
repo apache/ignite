@@ -168,9 +168,6 @@ namespace ignite
                     /** Transaction size. */
                     int32_t txSize;
 
-                    /** Transaction state. */
-                    TransactionState::Type state;
-
                     /** Closed flag. */
                     bool closed;
 
