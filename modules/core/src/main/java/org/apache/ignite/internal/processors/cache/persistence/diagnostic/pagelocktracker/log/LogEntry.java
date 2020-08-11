@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -17,29 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log;
 
-import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
-
 /**
- * Page lock log snapshot.
+ * Log entry.
  */
-public class PageLockLogSnapshot extends PageLockDump {
-    /** List of log entries. */
-    public final List<LogEntry> locklog;
+public class LogEntry {
+    /** */
+    public final long pageId;
 
-    /**
-     *
-     */
-    public PageLockLogSnapshot(
-        String name,
-        long time,
-        int headIdx,
-        List<LogEntry> locklog,
-        int nextOp,
-        int nextOpStructureId,
-        long nextOpPageId
-    ) {
-        super(name, time, headIdx, nextOp, nextOpStructureId, nextOpPageId);
-        this.locklog = locklog;
+    /** */
+    public final int structureId;
+
+    /** */
+    public final int operation;
+
+    /** */
+    public final int holdedLocks;
+
+    /** */
+    LogEntry(long pageId, int structureId, int operation, int holdedLock) {
+        this.pageId = pageId;
+        this.structureId = structureId;
+        this.operation = operation;
+        this.holdedLocks = holdedLock;
     }
 }
