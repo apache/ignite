@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -27,13 +26,6 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
-    /**
-     * @param ignite Ignite.
-     */
-    public DataGenerationApplication(Ignite ignite) {
-        super(ignite);
-    }
-
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
         log.info("Creating cache...");

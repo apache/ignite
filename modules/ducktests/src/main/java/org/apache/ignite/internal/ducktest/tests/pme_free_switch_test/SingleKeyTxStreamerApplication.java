@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -26,13 +25,6 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
-    /**
-     * @param ignite Ignite.
-     */
-    public SingleKeyTxStreamerApplication(Ignite ignite) {
-        super(ignite);
-    }
-
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(jsonNode.get("cacheName").asText());

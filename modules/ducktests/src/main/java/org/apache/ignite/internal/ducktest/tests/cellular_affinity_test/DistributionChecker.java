@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -29,13 +28,6 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class DistributionChecker extends IgniteAwareApplication {
-    /**
-     * @param ignite Ignite.
-     */
-    public DistributionChecker(Ignite ignite) {
-        super(ignite);
-    }
-
     /**
      * {@inheritDoc}
      */

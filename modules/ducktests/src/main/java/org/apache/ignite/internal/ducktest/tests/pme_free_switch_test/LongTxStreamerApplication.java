@@ -20,7 +20,6 @@ package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -39,13 +38,6 @@ public class LongTxStreamerApplication extends IgniteAwareApplication {
 
     /** Started. */
     private static final CountDownLatch started = new CountDownLatch(TX_CNT);
-
-    /**
-     * @param ignite Ignite.
-     */
-    public LongTxStreamerApplication(Ignite ignite) {
-        super(ignite);
-    }
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws InterruptedException {

@@ -50,21 +50,15 @@ public abstract class IgniteAwareApplication {
     private static volatile boolean terminated;
 
     /** Ignite. */
-    protected final Ignite ignite;
+    protected Ignite ignite;
+
+    /** Cfg path. */
+    protected String cfgPath;
 
     /**
      * Default constructor.
      */
     protected IgniteAwareApplication() {
-        ignite = null;
-    }
-
-    /**
-     *
-     */
-    protected IgniteAwareApplication(Ignite ignite) {
-        this.ignite = ignite;
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             terminate();
 
@@ -169,6 +163,8 @@ public abstract class IgniteAwareApplication {
     public void start(JsonNode jsonNode) {
         try {
             log.info("Application params: " + jsonNode);
+
+            assert cfgPath != null;
 
             run(jsonNode);
 
