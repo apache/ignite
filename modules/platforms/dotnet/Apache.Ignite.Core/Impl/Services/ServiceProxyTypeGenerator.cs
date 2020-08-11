@@ -276,8 +276,6 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load result.
             if (method.ReturnType != typeof(void))
             {
-                // TODO: Convert arrays (byte -> sbyte, etc)
-                // TODO: Additional cast for sbyte, ushort, ulong, uint
                 if (method.ReturnType.IsValueType)
                 {
                     if (method.ReturnType == typeof(sbyte))
@@ -285,10 +283,29 @@ namespace Apache.Ignite.Core.Impl.Services
                         gen.Emit(OpCodes.Unbox_Any, typeof(byte));
                         gen.Emit(OpCodes.Conv_I1);
                     }
+                    else if (method.ReturnType == typeof(ushort))
+                    {
+                        gen.Emit(OpCodes.Unbox_Any, typeof(short));
+                        gen.Emit(OpCodes.Conv_U2);
+                    }
+                    else if (method.ReturnType == typeof(uint))
+                    {
+                        gen.Emit(OpCodes.Unbox_Any, typeof(int));
+                        gen.Emit(OpCodes.Conv_U4);
+                    }
+                    else if (method.ReturnType == typeof(ulong))
+                    {
+                        gen.Emit(OpCodes.Unbox_Any, typeof(long));
+                        gen.Emit(OpCodes.Conv_U8);
+                    }
                     else
                     {
                         gen.Emit(OpCodes.Unbox_Any, method.ReturnType);
                     }
+                }
+                else if (method.ReturnType.IsArray)
+                {
+                    // TODO: Convert value type arrays.
                 }
             }
             else
