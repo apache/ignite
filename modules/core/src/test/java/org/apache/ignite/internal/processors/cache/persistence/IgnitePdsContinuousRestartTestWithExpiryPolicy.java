@@ -65,4 +65,9 @@ public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsCon
 
         super.beforeTest();
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean validatePartitions() {
+        return false; // Validation is broken with enabled expiration.
+    }
 }

@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -515,6 +517,41 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<IBinaryObject>(loc, true);
+        }
+
+        /// <summary>
+        /// Checks that scan query is thread-safe and throws correct exception when disposed from another thread.
+        /// </summary>
+        [Test]
+        public void TestScanQueryDisposedFromAnotherThreadThrowsObjectDisposedException()
+        {
+            var cache = GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            const int totalCount = 10000;
+            cache.PutAll(Enumerable.Range(1, totalCount).ToDictionary(x => x, x => x));
+
+            var scanQuery = new ScanQuery<int, int>
+            {
+                Filter = new ScanQueryFilter<int> {AcceptAll = true}
+            };
+
+            var cursor = cache.Query(scanQuery);
+
+            long count = 0;
+            Task.Factory.StartNew(() =>
+            {
+                // ReSharper disable once AccessToModifiedClosure
+                while (Interlocked.Read(ref count) < totalCount / 10) { }
+                cursor.Dispose();
+            });
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                foreach (var unused in cursor)
+                {
+                    Interlocked.Increment(ref count);
+                }
+            });
         }
 
         /// <summary>
@@ -1116,6 +1153,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Error flag
+        public bool AcceptAll { get; set; }
+
         // Injection test
         [InstanceResource]
         public IIgnite Ignite { get; set; }
@@ -1128,7 +1168,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
-            return entry.Key < 50;
+            return entry.Key < 50 || AcceptAll;
         }
     }
 

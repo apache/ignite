@@ -32,8 +32,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -120,6 +123,9 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
+    /** Tracing. */
+    protected Tracing tracing;
+
     /**
      * Upcasts collection type.
      *
@@ -139,6 +145,11 @@ abstract class TcpDiscoveryImpl {
         this.spi = spi;
 
         log = spi.log;
+
+        if (spi.ignite() instanceof IgniteEx)
+            tracing = ((IgniteEx) spi.ignite()).context().tracing();
+        else
+            tracing = new NoopTracing();
     }
 
     /**

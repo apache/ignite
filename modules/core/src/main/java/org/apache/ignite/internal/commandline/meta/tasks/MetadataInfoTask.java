@@ -21,9 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes;
-import org.apache.ignite.internal.commandline.meta.subcommands.MetadataDetailsCommand;
-import org.apache.ignite.internal.commandline.meta.subcommands.MetadataListCommand;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -31,7 +28,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for {@link MetadataListCommand} and {@link MetadataDetailsCommand} commands.
+ * Task for getting binary metadata.
  */
 @GridInternal
 public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, MetadataListResult, MetadataListResult> {
@@ -58,7 +55,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, Metad
     }
 
     /**
-     * Job for {@link CheckIndexInlineSizes} command.
+     * Job for getting binary metadata.
      */
     private static class MetadataListJob extends VisorJob<MetadataTypeArgs, MetadataListResult> {
         /** */

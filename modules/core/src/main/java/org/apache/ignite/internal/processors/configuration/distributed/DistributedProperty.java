@@ -85,5 +85,5 @@ public interface DistributedProperty<T extends Serializable> {
     /**
      * @param listener Update listener.
      */
-    void addListener(DistributePropertyListener<T> listener);
+    void addListener(DistributePropertyListener<? super T> listener);
 }

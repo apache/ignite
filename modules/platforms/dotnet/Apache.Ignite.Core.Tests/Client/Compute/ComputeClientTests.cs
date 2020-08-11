@@ -80,6 +80,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     Assert.Fail(entry.Message);
                 }
             }
+
+            Assert.IsEmpty(Client.GetActiveNotificationListeners());
         }
 
         /// <summary>
@@ -137,8 +139,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 var task = client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, (long) 10000);
                 ignite.Dispose();
 
-                var ex = Assert.Throws<AggregateException>(() => task.Wait()).GetInnermostException();
-                StringAssert.StartsWith("Task cancelled due to stopping of the grid", ex.Message);
+                Assert.Throws<AggregateException>(() => task.Wait());
             }
             finally
             {
