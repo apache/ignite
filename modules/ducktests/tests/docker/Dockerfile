@@ -20,7 +20,8 @@ MAINTAINER Apache Ignite dev@ignite.apache.org
 VOLUME ["/opt/ignite-dev"]
 
 # Set the timezone.
-ENV TZ="/usr/share/zoneinfo/Europe/Moscow"
+ENV TZ=Europe/Moscow
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Do not ask for confirmations when running apt-get, etc.
 ENV DEBIAN_FRONTEND noninteractive

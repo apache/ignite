@@ -48,11 +48,11 @@ class CountDownLatch(object):
 
 
 # pylint: disable=C0116
-class AtomicInteger:
+class AtomicValue:
     """
-    A count-down latch.
+    An atomic reference holder.
     """
-    def __init__(self, value=0):
+    def __init__(self, value=None):
         self.value = value
         self.cond_var = threading.Lock()
 
@@ -65,7 +65,10 @@ class AtomicInteger:
             return self.value
 
     def compare_and_set(self, expected, value):
+        return self.check_and_set(lambda: self.value == expected, value)
+
+    def check_and_set(self, condition, value):
         with self.cond_var:
-            if self.value == expected:
+            if condition():
                 self.value = value
             return self.value

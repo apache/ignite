@@ -17,13 +17,18 @@
 Module contains discovery tests.
 """
 
+import os
 import random
+import re
+from datetime import datetime
 
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
@@ -178,22 +183,47 @@ class DiscoveryTest(IgniteTest):
 
         self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
 
-        start = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
+        first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
 
         self.stage("Waiting for failure detection of " + str(len(failed_nodes)) + " nodes.")
 
+        # Keeps dates of logged node failures.
+        last_failure_detected = 0
+        logged_timestamps = []
+
         for failed_id in ids_to_wait:
-            self.servers.await_event_on_node("Node FAILED: " +
-                                             ("ZookeeperClusterNode" if with_zk else "TcpDiscoveryNode") +
-                                             " \\[id=" + failed_id, survived_node, 10, from_the_beginning=True,
-                                             backoff_sec=0.01)
+            pattern = "Node FAILED: " + ("ZookeeperClusterNode" if with_zk else "TcpDiscoveryNode") + " \\[id=" \
+                      + failed_id
 
-        failure_detection_delay = self.monotonic() - start
+            self.servers.await_event_on_node(pattern, survived_node, 10, from_the_beginning=True, backoff_sec=0.01)
 
-        self.stage("Failure detection measured.")
+            last_failure_detected = self.monotonic()
 
+            self.stage("Failure detection measured.")
+
+        for failed_id in ids_to_wait:
+            pattern = "Node FAILED: " + ("ZookeeperClusterNode" if with_zk else "TcpDiscoveryNode") + " \\[id=" \
+                  + failed_id
+
+            _, stdout, _ = survived_node.account.ssh_client.exec_command("grep '%s' %s" % (pattern, os.path.join(
+                IgniteAwareService.PERSISTENT_ROOT, "console.log")))
+
+            logged_timestamps.append(
+                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read()).group(), "[%Y-%m-%d %H:%M:%S,%f]"))
+
+        logged_timestamps.sort(reverse=True)
+
+        measured = int((last_failure_detected - first_terminated[0]) * 1000)
+        by_log = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1])
+
+        assert by_log > 0, "Negative node failure detection delay: " + by_log + ". Probably it is a timezone issue."
+        assert by_log <= measured, "Value of node failure detection delay taken from by the node log (" + \
+                                   str(by_log) + "ms) must be lesser than measured value (" + str(measured) + "ms) " + \
+                                   "because watching this event consumes extra time."
+
+        data['Detection of node(s) failure, measured (ms)'] = measured
+        data['Detection of node(s) failure, by the log (ms)'] = by_log
         data['Nodes failed'] = len(failed_nodes)
-        data['Node(s) failure detected in time (ms)'] = int(failure_detection_delay * 1000)
 
         return data
 

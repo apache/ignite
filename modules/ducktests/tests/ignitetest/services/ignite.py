@@ -22,13 +22,14 @@ import operator
 import os
 import signal
 import time
+from datetime import datetime
 from threading import Thread
 
 import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.concurrent import CountDownLatch, AtomicInteger
+from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.tests.utils.version import DEV_BRANCH
 
@@ -112,14 +113,14 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         sem = CountDownLatch(len(nodes))
-        first_stopped = AtomicInteger()
+        time_holder = AtomicValue()
 
         delay = 0
         threads = []
 
         for node in nodes:
             thread = Thread(target=self.__stop_node,
-                            args=(node, next(iter(self.pids(node))), sig, sem, delay, first_stopped))
+                            args=(node, next(iter(self.pids(node))), sig, sem, delay, time_holder))
 
             threads.append(thread)
 
@@ -139,10 +140,10 @@ class IgniteService(IgniteAwareService):
                     self.thread_dump(node)
                 raise
 
-        return first_stopped.get()
+        return time_holder.get()
 
     @staticmethod
-    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, stop_time_holder=None):
+    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
@@ -150,10 +151,13 @@ class IgniteService(IgniteAwareService):
         if delay_ms > 0:
             time.sleep(delay_ms/1000.0)
 
-        node.account.signal(pid, sig, False)
+        if time_holder:
+            mono = monotonic.monotonic()
+            timestamp = datetime.now()
 
-        if stop_time_holder:
-            stop_time_holder.compare_and_set(0, monotonic.monotonic())
+            time_holder.compare_and_set(None, (mono, timestamp))
+
+        node.account.signal(pid, sig, False)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
