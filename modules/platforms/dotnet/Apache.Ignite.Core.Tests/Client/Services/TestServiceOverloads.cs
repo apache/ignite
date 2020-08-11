@@ -25,79 +25,79 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public class TestServiceOverloads : ITestServiceOverloads, IService
     {
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public bool Foo()
         {
             return true;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(int x)
         {
             return 1;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(uint x)
         {
             return 2;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(byte x)
         {
             return 3;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(short x)
         {
             return 4;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(ushort x)
         {
             return 5;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(Person x)
         {
             return 6;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(int[] x)
         {
             return 8;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(object[] x)
         {
             return 9;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public int Foo(Person[] x)
         {
             return 10;
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public void Init(IServiceContext context)
         {
             // No-op.
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public void Execute(IServiceContext context)
         {
             // No-op.
         }
 
-        /** <inheritdoc /> */ 
+        /** <inheritdoc /> */
         public void Cancel(IServiceContext context)
         {
             // No-op.

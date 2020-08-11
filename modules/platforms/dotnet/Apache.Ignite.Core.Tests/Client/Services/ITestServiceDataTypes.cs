@@ -32,97 +32,97 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         sbyte GetSbyte(sbyte x);
-        
+
         /** */
         sbyte[] GetSbyteArray(sbyte[] x);
-        
+
         /** */
         char GetChar(char x);
-        
+
         /** */
         char[] GetCharArray(char[] x);
-        
+
         /** */
         short GetShort(short x);
-        
+
         /** */
         short[] GetShortArray(short[] x);
-        
+
         /** */
         ushort GetUShort(ushort x);
-        
+
         /** */
         ushort[] GetUShortArray(ushort[] x);
-        
+
         /** */
         int GetInt(int x);
-        
+
         /** */
         int[] GetIntArray(int[] x);
-        
+
         /** */
         uint GetUInt(uint x);
-        
+
         /** */
         uint[] GetUIntArray(uint[] x);
 
         /** */
         long GetLong(long x);
-        
+
         /** */
         long[] GetLongArray(long[] x);
-        
+
         /** */
         ulong GetULong(ulong x);
-        
+
         /** */
         ulong[] GetULongArray(ulong[] x);
 
         /** */
         Guid GetGuid(Guid x);
-        
+
         /** */
         Guid[] GetGuidArray(Guid[] x);
 
         /** */
         DateTime GetDateTime(DateTime x);
-        
+
         /** */
         DateTime[] GetDateTimeArray(DateTime[] x);
 
         /** */
         TimeSpan GetTimeSpan(TimeSpan x);
-        
+
         /** */
         TimeSpan[] GetTimeSpanArray(TimeSpan[] x);
 
         /** */
         bool GetBool(bool x);
-        
+
         /** */
         bool[] GetBoolArray(bool[] x);
 
         /** */
         float GetFloat(float x);
-        
+
         /** */
         float[] GetFloatArray(float[] x);
 
         /** */
         double GetDouble(double x);
-        
+
         /** */
         double[] GetDoubleArray(double[] x);
 
         /** */
         decimal GetDecimal(decimal x);
-        
+
         /** */
         decimal[] GetDecimalArray(decimal[] x);
 
         /** */
         string GetString(string x);
-        
+
         /** */
         string[] GetStringArray(string[] x);
     }
