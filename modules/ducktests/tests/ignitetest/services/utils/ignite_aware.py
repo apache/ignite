@@ -18,10 +18,11 @@ This module contains the base class to build services aware of Ignite.
 """
 
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
+from six import add_metaclass
 
 from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteServerConfig, IgniteClientConfig
 from ignitetest.services.utils.ignite_path import IgnitePath
@@ -29,6 +30,7 @@ from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.tests.utils.version import IgniteVersion
 
 
+@add_metaclass(ABCMeta)
 class IgniteAwareService(BackgroundThreadService):
     """
     The base class to build services aware of Ignite.
@@ -47,10 +49,14 @@ class IgniteAwareService(BackgroundThreadService):
     }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, modules, client_mode, version, properties):
+    def __init__(self, context, num_nodes, modules, client_mode, version, properties, jvm_options):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
-        self.jvm_options = context.globals.get("jvm_opts", "")
+        global_jvm_options = context.globals.get("jvm_opts", "")
+
+        service_jvm_options = " ".join(map(lambda x: '-J' + x, jvm_options)) if jvm_options else ""
+
+        self.jvm_options = " ".join(filter(None, [global_jvm_options, service_jvm_options]))
 
         self.log_level = "DEBUG"
         self.properties = properties
@@ -85,8 +91,14 @@ class IgniteAwareService(BackgroundThreadService):
         logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
 
         node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.create_file(self.CONFIG_FILE, self.config().render(
-            config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR, properties=self.properties))
+
+        node_config = self.config().render(config_dir=self.PERSISTENT_ROOT,
+                                           work_dir=self.WORK_DIR,
+                                           properties=self.properties,
+                                           consistent_id=node.account.externally_routable_ip)
+
+        setattr(node, "consistent_id", node.account.externally_routable_ip)
+        node.account.create_file(self.CONFIG_FILE, node_config)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
 
     @abstractmethod
@@ -156,10 +168,9 @@ class IgniteAwareService(BackgroundThreadService):
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        assert len(self.nodes) == 1
-
-        self.await_event_on_node(evt_message, self.nodes[0], timeout_sec, from_the_beginning=from_the_beginning,
-                                 backoff_sec=backoff_sec)
+        for node in self.nodes:
+            self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
+                                     backoff_sec=backoff_sec)
 
     def execute(self, command):
         """

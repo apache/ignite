@@ -87,3 +87,4 @@ packages
 *.pyc
 /tests/venv
 modules/ducktests/tests/docker/build/**
+modules/ducktests/tests/.tox

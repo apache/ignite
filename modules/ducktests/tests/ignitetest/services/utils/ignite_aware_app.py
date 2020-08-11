@@ -30,9 +30,11 @@ class IgniteAwareApplicationService(IgniteAwareService):
     """
 
     # pylint: disable=R0913
-    def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, timeout_sec,
+    def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, jvm_options,
+                 timeout_sec,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
-        super(IgniteAwareApplicationService, self).__init__(context, 1, modules, client_mode, version, properties)
+        super(IgniteAwareApplicationService, self).__init__(context, 1, modules, client_mode, version, properties,
+                                                            jvm_options)
 
         self.servicejava_class_name = service_java_class_name
         self.java_class_name = java_class_name
