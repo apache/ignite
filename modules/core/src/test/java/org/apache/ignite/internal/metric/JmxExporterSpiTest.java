@@ -210,6 +210,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String metricName : res)
             assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
+
+        DataRegionConfiguration cfg =
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+        assertEquals(cfg.getInitialSize(), dataRegionMBean.getAttribute("InitialSize"));
+        assertEquals(cfg.getMaxSize(), dataRegionMBean.getAttribute("MaxSize"));
     }
 
     /** */
