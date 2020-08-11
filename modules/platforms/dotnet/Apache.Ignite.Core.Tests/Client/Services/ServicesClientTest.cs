@@ -83,6 +83,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that generic method can be called on a service.
+        /// </summary>
+        [Test]
+        public void TestGenericMethodCall()
+        {
+            var svcName = TestUtils.TestName;
+            ServerServices.DeployClusterSingleton(svcName, new TestServiceGenericMethods());
+
+            var svc = Client.GetServices().GetServiceProxy<ITestServiceGenericMethods>(svcName);
+            
+            Assert.AreEqual("1", svc.GetGeneric("1"));
+        }
+
+        /// <summary>
         /// Tests that <see cref="IServicesClient.WithKeepBinary"/> call causes service invocation results to be
         /// returned in serialized form.
         /// </summary>
