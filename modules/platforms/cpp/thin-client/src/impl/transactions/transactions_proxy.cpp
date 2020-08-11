@@ -48,9 +48,10 @@ namespace ignite
                         TransactionConcurrency::Type concurrency,
                         TransactionIsolation::Type isolation,
                         int64_t timeout,
-                        int32_t txSize)
+                        int32_t txSize,
+                        const char *lbl)
                 {
-                    return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, timeout, txSize, label));
+                    return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, timeout, txSize, lbl));
                 }
 
                 void TransactionProxy::commit()

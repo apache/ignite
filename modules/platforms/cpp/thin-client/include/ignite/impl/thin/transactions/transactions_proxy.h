@@ -103,8 +103,7 @@ namespace ignite
                      * Constructor.
                      */
                     TransactionsProxy(const SharedPointer<void>& impl) :
-                        impl(impl),
-                        label("")
+                        impl(impl)
                     {
                         // No-op.
                     }
@@ -121,7 +120,7 @@ namespace ignite
                      * @param isolation Transaction isolation.
                      * @param timeout Transaction timeout.
                      * @param txSize Number of entries participating in transaction (may be approximate).
-                     * @param label Transaction specific label.
+                     * @param lbl Transaction specific label.
                      *
                      * @return Proxy implementation.
                      */
@@ -129,23 +128,11 @@ namespace ignite
                             TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC,
                             TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED,
                             int64_t timeout = 0,
-                            int32_t txSize = 0);
-
-                    /**
-                     * Sets specific label.
-                     *
-                     * @param lbl Transaction specific label.
-                     */
-                    void withLabel(const char *lbl)
-                    {
-                        label = lbl;
-                    }
+                            int32_t txSize = 0,
+                            const char* lbl = "");
                 private:
                     /** Implementation. */
                     SharedPointer<void> impl;
-
-                    /** Transaction label. */
-                    const char* label;
 
                     /**
                      * Default constructor.

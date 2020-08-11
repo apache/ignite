@@ -114,7 +114,20 @@ namespace ignite
                  * @param impl Implementation.
                  */
                 ClientTransactions(common::concurrent::SharedPointer<void> impl) :
-                    proxy(impl)
+                    proxy(impl),
+                    label("")
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Constructor.
+                 *
+                 * @param impl Implementation.
+                 */
+                ClientTransactions(TransactionsProxy& impl) :
+                    proxy(impl),
+                    label("")
                 {
                     // No-op.
                 }
@@ -140,7 +153,7 @@ namespace ignite
                         int64_t timeout = 0,
                         int32_t txSize = 0)
                 {
-                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize));
+                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize, label));
                 }
 
                 /**
@@ -151,13 +164,17 @@ namespace ignite
                  */
                 ClientTransactions withLabel(const char* lbl)
                 {
-                    proxy.withLabel(lbl);
+                    ClientTransactions copy = ClientTransactions(proxy);
 
-                    return *this;
+                    copy.label = lbl;
+
+                    return copy;
                 }
             private:
                 /** Implementation. */
                 TransactionsProxy proxy;
+
+                const char* label;
 
                 /**
                  * Default constructor.

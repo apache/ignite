@@ -360,6 +360,18 @@ BOOST_AUTO_TEST_CASE(TestTxWithLabel)
     BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxLabelMessage);
 
     tx.Close();
+
+    // New label
+
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+    cache.Put(1, 10);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, !checkTxLabelMessage);
+
+    tx.Close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
