@@ -573,6 +573,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var res = new T[arr.Length];
 
+            // TODO: Use Buffer.BlockCopy instead for value types?
             Array.Copy(arr, res, arr.Length);
 
             return res;
