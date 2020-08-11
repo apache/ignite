@@ -188,8 +188,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(3, svc.GetSbyte(2));
             Assert.AreEqual(new sbyte[] {-4, 6}, svc.GetSbyteArray(new sbyte[] {-5, 5}));
             
+            Assert.AreEqual(3, svc.GetShort(2));
+            Assert.AreEqual(new short[] {-4, 6}, svc.GetShortArray(new short[] {-5, 5}));
+            
             Assert.AreEqual('d', svc.GetChar('c'));
             Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
+
+            var dt = DateTime.Now;
+            Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
         }
 
         /// <summary>
