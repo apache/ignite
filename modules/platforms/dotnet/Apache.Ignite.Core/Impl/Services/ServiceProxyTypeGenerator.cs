@@ -315,6 +315,7 @@ namespace Apache.Ignite.Core.Impl.Services
             else if (method.ReturnType == typeof(sbyte[]))
             {
                 // TODO: Convert value type arrays.
+                // gen.EmitCall();
             }
             else if (method.ReturnType.IsValueType)
             {

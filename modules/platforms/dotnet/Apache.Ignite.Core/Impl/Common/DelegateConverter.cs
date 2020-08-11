@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Reflection;
     using System.Reflection.Emit;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Converts generic and non-generic delegates.
@@ -39,7 +40,28 @@ namespace Apache.Ignite.Core.Impl.Common
         private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
         /** */
-        private static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod("ConvertArray",
+        public static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        /** */
+        public static readonly MethodInfo ConvertToSbyteArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToSbyteArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        /** */
+        public static readonly MethodInfo ConvertToUshortArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUshortArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        /** */
+        public static readonly MethodInfo ConvertToUintArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUintArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        /** */
+        public static readonly MethodInfo ConvertToUlongArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUlongArray",
             BindingFlags.Static | BindingFlags.NonPublic);
 
         /// <summary>
@@ -532,11 +554,39 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static Expression Convert(Expression value, Type targetType)
         {
-            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
+            if (targetType.IsArray)
             {
-                var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+                var elType = targetType.GetElementType();
+                Debug.Assert(elType != null);
 
-                return Expression.Call(null, convertMethod, value);
+                if (!elType.IsValueType && elType != typeof(object))
+                {
+                    var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+
+                    return Expression.Call(null, convertMethod, value);
+                }
+
+                if (elType == typeof(sbyte))
+                {
+                    return Expression.Call(null, ConvertToSbyteArrayMethod, value);
+                }
+                
+                if (elType == typeof(ushort))
+                {
+                    return Expression.Call(null, ConvertToUshortArrayMethod, value);
+                }
+                
+                if (elType == typeof(uint))
+                {
+                    return Expression.Call(null, ConvertToUintArrayMethod, value);
+                }
+                
+                if (elType == typeof(ulong))
+                {
+                    return Expression.Call(null, ConvertToUlongArrayMethod, value);
+                }
+                
+                return Expression.Convert(value, targetType);
             }
 
             // For byte/sbyte and the like, simple Convert fails
@@ -576,26 +626,64 @@ namespace Apache.Ignite.Core.Impl.Common
                 return null;
             }
 
-            // Do not use as/is: it allows byte <-> sbyte conversions and the like,
-            // but this is semantically incorrect, can cause exceptions in user code, and values may differ
-            // due to signed/unsigned conversion.
-            if (arr.GetType() == typeof(T[]))
-            {
-                return arr as T[];
-            }
-
             var res = new T[arr.Length];
 
-            if (typeof(T).IsValueType)
+            Array.Copy(arr, res, arr.Length);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Converts to sbyte array.
+        /// </summary>
+        private static sbyte[] ConvertToSbyteArray(object arrObj)
+        {
+            return ConvertValueTypeArray<byte, sbyte>(arrObj, 1);
+        }
+
+        /// <summary>
+        /// Converts to ushort array.
+        /// </summary>
+        private static ushort[] ConvertToUshortArray(object arrObj)
+        {
+            return ConvertValueTypeArray<short, ushort>(arrObj, 2);
+        }
+
+        /// <summary>
+        /// Converts to uint array.
+        /// </summary>
+        private static uint[] ConvertToUintArray(object arrObj)
+        {
+            return ConvertValueTypeArray<int, uint>(arrObj, 4);
+        }
+
+        /// <summary>
+        /// Converts to ulong array.
+        /// </summary>
+        private static ulong[] ConvertToUlongArray(object arrObj)
+        {
+            return ConvertValueTypeArray<long, ulong>(arrObj, 8);
+        }
+
+        /// <summary>
+        /// Converts value type array to another type using direct copy.
+        /// </summary>
+        private static T[] ConvertValueTypeArray<TFrom, T>(object arrObj, int elementSize)
+        {
+            if (arrObj == null)
             {
-                // Use BlockCopy for value types.
-                // We only expect byte -> sbyte, short -> ushort, int -> uint, long -> ulong here.
-                Buffer.BlockCopy(arr, 0, res, 0, arr.Length);
+                return null;
             }
-            else
+            
+            var arr = arrObj as TFrom[];
+            if (arr == null)
             {
-                Array.Copy(arr, res, arr.Length);
+                throw new IgniteException(string.Format("Can't convert '{0}' to '{1}'", arrObj.GetType(), typeof(T[])));
             }
+            
+            var res = new T[arr.Length];
+            
+            Buffer.BlockCopy(arr, 0, res, 0, arr.Length * elementSize);
 
             return res;
         }
