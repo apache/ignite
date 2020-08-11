@@ -216,7 +216,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private GroupKeyChangeProcess grpKeyChangeProc;
 
     /** Cache groups for which encryption key was changed, and they must be re-encrypted. */
-    private final Map<Integer, Map<Integer, Long>> reencryptGroups = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, ReencryptState>> reencryptGroups = new ConcurrentHashMap<>();
 
     /** Cache groups for which encryption key was changed on node join. */
     private final Map<Integer, Integer> reencryptGroupsForced = new ConcurrentHashMap<>();
@@ -778,7 +778,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStore(grpId, true, true);
             }
 
-            Map<Integer, Long> partStates = pageScanner.pagesCount(grp);
+            Map<Integer, ReencryptState> partStates = pageScanner.pagesCount(grp);
 
             reencryptGroups.put(grpId, new ConcurrentHashMap<>(partStates));
 
@@ -879,7 +879,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             pageScanner.cancel(grpId, partId);
 
-            setEncryptionState(grpId, partId, 0, 0);
+            resetEncryptionState(grpId, partId);
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to cancel reencryption [grpId=" + grpId + ", partId=" + partId + "]", e);
@@ -1028,7 +1028,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (grp == null)
                 continue;
 
-            Map<Integer, Long> offsets = pageScanner.pagesCount(grp);
+            Map<Integer, ReencryptState> offsets = pageScanner.pagesCount(grp);
 
             reencryptGroups.put(grpId, new ConcurrentHashMap<>(offsets));
         }
@@ -1067,7 +1067,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void setEncryptionState(int grpId, int partId, int idx, int total) {
         reencryptGroups.computeIfAbsent(grpId,
-            v -> new ConcurrentHashMap<>()).put(partId, ((long)idx) << Integer.SIZE | (total & 0xffffffffL));
+            v -> new ConcurrentHashMap<>()).put(partId, new ReencryptState(idx, total));
     }
 
     /**
@@ -1077,18 +1077,26 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param partId Parttiion ID.
      * @return Index and count of pages to be reencrypted.
      */
-    public long getEncryptionState(int grpId, int partId) {
-        Map<Integer, Long> offsets = reencryptGroups.get(grpId);
+    @Nullable public ReencryptState getEncryptionState(int grpId, int partId) {
+        Map<Integer, ReencryptState> offsets = reencryptGroups.get(grpId);
 
         if (offsets == null)
-            return 0;
+            return null;
 
-        Long val = offsets.get(partId);
+        return offsets.get(partId);
+    }
 
-        if (val == null)
-            return 0;
+    /**
+     * Remove encryption state.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     */
+    public void resetEncryptionState(int grpId, int partId) {
+        Map<Integer, ReencryptState> partStates = reencryptGroups.get(grpId);
 
-        return val;
+        if (partStates != null)
+            partStates.remove(partId);
     }
 
     /**

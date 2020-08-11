@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.ReencryptState;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -390,12 +391,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 if (!pageStore.exists())
                     continue;
 
-                long val = grid.context().encryption().getEncryptionState(grpId, p);
+                ReencryptState state = grid.context().encryption().getEncryptionState(grpId, p);
 
-                String msg = String.format("p=%d, off=%d, total=%d", p, (int)(val >> 32), (int)val);
+                if (state != null) {
+                    String msg = String.format("p=%d, off=%d, total=%d", p, state.pageIndex(), state.pageCount());
 
-                assertEquals(msg, 0, (int)val);
-                assertEquals(msg, 0, (int)(val >> 32));
+                    assertEquals(msg, 0, state.pageCount());
+                    assertEquals(msg, 0, state.pageIndex());
+                }
 
                 long startPageId = PageIdUtils.pageId(p, PageIdAllocator.FLAG_DATA, 0);
 
@@ -409,18 +412,18 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 try (FileChannel ch = FileChannel.open(path, StandardOpenOption.READ)) {
                     for (int n = 0; n < pagesCnt; n++) {
                         long pageId = startPageId + n;
-                        long pageOffset = pageStore.pageOffset(pageId);
+                        long pageOff = pageStore.pageOffset(pageId);
 
                         pageBuf.position(0);
 
-                        ch.position(pageOffset);
+                        ch.position(pageOff);
                         ch.read(pageBuf);
 
                         pageBuf.position(realPageSize + encryptionBlockSize);
 
                         // If crc present
                         if (pageBuf.getInt() != 0) {
-                            msg = String.format("Path=%s, page=%d", pageStore.getFileAbsolutePath(), n);
+                            String msg = String.format("Path=%s, page=%d", pageStore.getFileAbsolutePath(), n);
 
                             assertEquals(msg, keyId, pageBuf.get() & 0xff);
                         }
@@ -471,14 +474,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         CacheGroupContext grp = node.context().cache().cacheGroup(grpId);
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            long val = node.context().encryption().getEncryptionState(grpId, p);
+            ReencryptState state = node.context().encryption().getEncryptionState(grpId, p);
 
-            if ((int)(val >> 32) != (int)val)
+            if (state != null && state.pageIndex() != state.pageCount())
                 return true;
         }
 
-        long val = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
+        ReencryptState state = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
 
-        return (int)(val >> 32) != (int)val;
+        return state != null && state.pageIndex () != state.pageCount();
     }
 }

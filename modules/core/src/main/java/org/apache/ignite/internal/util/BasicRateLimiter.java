@@ -74,8 +74,8 @@ public class BasicRateLimiter {
     /**
      * Updates the stable rate.
      *
-     * @param permitsPerSecond the new stable rate of this {@code RateLimiter}
-     * @throws IllegalArgumentException if {@code permitsPerSecond} is negative or zero
+     * @param permitsPerSecond The new stable rate of this {@code RateLimiter}.
+     * @throws IllegalArgumentException If {@code permitsPerSecond} is negative or zero.
      */
     public void setRate(double permitsPerSecond) {
         A.ensure(permitsPerSecond > 0, "Requested permits (" + permitsPerSecond + ") must be positive");
@@ -100,9 +100,8 @@ public class BasicRateLimiter {
      * Acquires the given number of permits from this {@code RateLimiter}, blocking until the request
      * can be granted. Tells the amount of time slept, if any.
      *
-     * @param permits the number of permits to acquire
-     * @throws IllegalArgumentException if the requested number of permits is negative or zero
-     * @since 16.0 (present in 13.0 with {@code void} return type})
+     * @param permits The number of permits to acquire.
+     * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
     public void acquire(int permits) throws IgniteInterruptedCheckedException {
         long microsToWait = reserve(permits);
@@ -121,7 +120,7 @@ public class BasicRateLimiter {
      * Reserves the given number of permits for future use.
      *
      * @param permits The number of permits.
-     * @return time in microseconds to wait until the resource can be acquired, never negative
+     * @return Time in microseconds to wait until the resource can be acquired, never negative.
      */
     private long reserve(int permits) {
         A.ensure(permits > 0, "Requested permits (" + permits + ") must be positive");

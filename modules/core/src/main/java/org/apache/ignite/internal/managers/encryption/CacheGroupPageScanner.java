@@ -192,7 +192,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
             forEachPageStore(grp, new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
-                    if (ctx.encryption().getEncryptionState(grpId, partId) == 0) {
+                    if (ctx.encryption().getEncryptionState(grpId, partId) == null) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
@@ -269,8 +269,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @return Map of partitions with current page count.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, Long> pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
-        Map<Integer, Long> partStates = new HashMap<>();
+    public Map<Integer, ReencryptState> pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
+        Map<Integer, ReencryptState> partStates = new HashMap<>();
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -279,7 +279,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
-                    partStates.put(partId, (long)pagesCnt);
+                    partStates.put(partId, new ReencryptState(0, pagesCnt));
                 }
             });
         } finally {
@@ -358,12 +358,12 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
         @Override public void run() {
             try {
                 for (int partId : parts) {
-                    long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
+                    ReencryptState state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
 
-                    int off = (int)(state >> Integer.SIZE);
-                    int cnt = (int)state;
+                    if (state == null)
+                        continue;
 
-                    scanPartition(partId, off, cnt);
+                    scanPartition(partId, state.pageIndex(), state.pageCount());
 
                     if (isDone())
                         return;
