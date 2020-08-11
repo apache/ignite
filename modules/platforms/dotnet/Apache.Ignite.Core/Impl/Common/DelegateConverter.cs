@@ -565,16 +565,26 @@ namespace Apache.Ignite.Core.Impl.Common
                 return null;
             }
 
-            var resDirect = arr as T[];
-            if (resDirect != null)
+            // Do not use as/is: it allows byte <-> sbyte conversions and the like,
+            // but this is semantically incorrect, can cause exceptions in user code, and values may differ
+            // due to signed/unsigned conversion.
+            if (arr.GetType() == typeof(T[]))
             {
-                return resDirect;
+                return arr as T[];
             }
 
             var res = new T[arr.Length];
 
-            // TODO: Use Buffer.BlockCopy instead for value types?
-            Array.Copy(arr, res, arr.Length);
+            if (typeof(T).IsValueType)
+            {
+                // Use BlockCopy for value types.
+                // We only expect byte -> sbyte, short -> ushort, int -> uint, long -> ulong here.
+                Buffer.BlockCopy(arr, 0, res, 0, arr.Length);
+            }
+            else
+            {
+                Array.Copy(arr, res, arr.Length);
+            }
 
             return res;
         }
