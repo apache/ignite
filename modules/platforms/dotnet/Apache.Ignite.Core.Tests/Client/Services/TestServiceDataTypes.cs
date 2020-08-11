@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Services;
 
@@ -59,6 +61,168 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public char[] GetCharArray(char[] x)
         {
             return x.Select(b => (char) (b + 1)).ToArray();
+        }
+
+        /** <inheritdoc /> */
+        public short GetShort(short x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public short[] GetShortArray(short[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ushort GetUShort(ushort x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ushort[] GetUShortArray(ushort[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public int GetInt(int x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public int[] GetIntArray(int[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public uint GetUInt(uint x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public uint[] GetUIntArray(uint[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public Guid GetGuid(Guid x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public Guid[] GetGuidArray(Guid[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public DateTime GetDateTime(DateTime x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public DateTime[] GetDateTimeArray(Guid[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public TimeSpan GetTimeSpan(TimeSpan x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public TimeSpan[] GetTimeSpanArray(TimeSpan[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public bool GetBool(bool x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public bool[] GetBoolArray(bool[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public float GetFloat(float x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public float[] GetFloatArray(float[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public double GetDouble(double x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public double[] GetDoubleArray(double[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public decimal GetDecimal(decimal x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public decimal[] GetDecimalArray(decimal[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public string GetString(string x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public string[] GetStringArray(string[] x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public T GetGeneric<T>(T x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public T[] GetGenericArray<T>(T x)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public List<T> GetGenericList<T>(T x)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
