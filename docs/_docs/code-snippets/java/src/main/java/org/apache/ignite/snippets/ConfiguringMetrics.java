@@ -47,7 +47,6 @@ public class ConfiguringMetrics {
         Ignite ignite = Ignition.start(cfg);
         // end::data-storage-metrics[]
         ignite.close();
-
     }
 
     @Test
@@ -140,6 +139,7 @@ public class ConfiguringMetrics {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         LogExporterSpi logExporter = new LogExporterSpi();
+        logExporter.setPeriod(600_000);
 
         //export cache metrics only
         logExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
@@ -148,7 +148,6 @@ public class ConfiguringMetrics {
 
         Ignite ignite = Ignition.start(cfg);
         //end::log-exporter[]
-
         ignite.close();
     }
 }
