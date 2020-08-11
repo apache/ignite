@@ -880,6 +880,11 @@ public interface EventType {
     public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
 
     /**
+     * TODO add comment
+     */
+    public static final int EVT_SSL_CONNECTION_FAILED = 149;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
