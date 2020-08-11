@@ -47,22 +47,22 @@ namespace Apache.Ignite.Core.Impl.Common
         /** */
         public static readonly MethodInfo ConvertToSbyteArrayMethod = typeof(DelegateConverter).GetMethod(
             "ConvertToSbyteArray",
-            BindingFlags.Static | BindingFlags.NonPublic);
+            BindingFlags.Static | BindingFlags.Public);
 
         /** */
         public static readonly MethodInfo ConvertToUshortArrayMethod = typeof(DelegateConverter).GetMethod(
             "ConvertToUshortArray",
-            BindingFlags.Static | BindingFlags.NonPublic);
+            BindingFlags.Static | BindingFlags.Public);
 
         /** */
         public static readonly MethodInfo ConvertToUintArrayMethod = typeof(DelegateConverter).GetMethod(
             "ConvertToUintArray",
-            BindingFlags.Static | BindingFlags.NonPublic);
+            BindingFlags.Static | BindingFlags.Public);
 
         /** */
         public static readonly MethodInfo ConvertToUlongArrayMethod = typeof(DelegateConverter).GetMethod(
             "ConvertToUlongArray",
-            BindingFlags.Static | BindingFlags.NonPublic);
+            BindingFlags.Static | BindingFlags.Public);
 
         /// <summary>
         /// Compiles a function without arguments.
@@ -636,7 +636,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Converts to sbyte array.
         /// </summary>
-        private static sbyte[] ConvertToSbyteArray(object arrObj)
+        // ReSharper disable once UnusedMember.Global
+        public static sbyte[] ConvertToSbyteArray(object arrObj)
         {
             return ConvertValueTypeArray<byte, sbyte>(arrObj, 1);
         }
@@ -644,7 +645,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Converts to ushort array.
         /// </summary>
-        private static ushort[] ConvertToUshortArray(object arrObj)
+        // ReSharper disable once UnusedMember.Global
+        public static ushort[] ConvertToUshortArray(object arrObj)
         {
             return ConvertValueTypeArray<short, ushort>(arrObj, 2);
         }
@@ -652,7 +654,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Converts to uint array.
         /// </summary>
-        private static uint[] ConvertToUintArray(object arrObj)
+        // ReSharper disable once UnusedMember.Global
+        public static uint[] ConvertToUintArray(object arrObj)
         {
             return ConvertValueTypeArray<int, uint>(arrObj, 4);
         }
@@ -660,7 +663,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Converts to ulong array.
         /// </summary>
-        private static ulong[] ConvertToUlongArray(object arrObj)
+        // ReSharper disable once UnusedMember.Global
+        public static ulong[] ConvertToUlongArray(object arrObj)
         {
             return ConvertValueTypeArray<long, ulong>(arrObj, 8);
         }

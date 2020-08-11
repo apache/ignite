@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Reflection.Emit;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
     /// <summary>
@@ -314,8 +315,19 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else if (method.ReturnType == typeof(sbyte[]))
             {
-                // TODO: Convert value type arrays.
-                // gen.EmitCall();
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToSbyteArrayMethod);
+            }
+            else if (method.ReturnType == typeof(ushort[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUshortArrayMethod);
+            }
+            else if (method.ReturnType == typeof(uint[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUintArrayMethod);
+            }
+            else if (method.ReturnType == typeof(ulong[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUlongArrayMethod);
             }
             else if (method.ReturnType.IsValueType)
             {
