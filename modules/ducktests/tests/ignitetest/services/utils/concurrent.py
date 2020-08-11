@@ -54,21 +54,21 @@ class AtomicValue:
     """
     def __init__(self, value=None):
         self.value = value
-        self.cond_var = threading.Lock()
+        self.lock = threading.Lock()
 
     def set(self, value):
-        with self.cond_var:
+        with self.lock:
             self.value = value
 
     def get(self):
-        with self.cond_var:
+        with self.lock:
             return self.value
 
     def compare_and_set(self, expected, value):
         return self.check_and_set(lambda: self.value == expected, value)
 
     def check_and_set(self, condition, value):
-        with self.cond_var:
+        with self.lock:
             if condition():
                 self.value = value
             return self.value
