@@ -31,7 +31,7 @@ namespace ignite
         namespace thin
         {
             namespace transactions
-            {          
+            {
                 /* Forward declaration. */
                 class TransactionsImpl;
 

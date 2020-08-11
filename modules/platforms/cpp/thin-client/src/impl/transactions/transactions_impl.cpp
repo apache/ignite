@@ -85,13 +85,13 @@ namespace ignite
                         if (it != txToId.end())
                             tx = it->second;
                         else
-                           throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "The transaction is already closed.");
+                            throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
 
                         TransactionImpl* ptr = tx.Get();
 
                         if (ptr && !ptr->IsClosed())
                         {
-                            throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "A transaction has already been started by the current thread.");
+                            throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
                         }
                     }
 
@@ -239,10 +239,10 @@ namespace ignite
                     int32_t currentTxId = threadTx.Get();
 
                     if (currentTxId == 0)
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "The transaction is already closed.");
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
 
                     if (currentTxId != tx.TxId())
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, "You can commit transaction only from the thread it was started.");
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_DIFFERENT_THREAD);
                 }
             }
         }

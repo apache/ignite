@@ -21,9 +21,10 @@
 
 #include <ignite/ignition.h>
 
-#include <ignite/thin/ignite_client_configuration.h>
-#include <ignite/thin/ignite_client.h>
-#include <ignite/thin/cache/cache_peek_mode.h>
+#include "ignite/thin/ignite_client_configuration.h"
+#include "ignite/thin/ignite_client.h"
+#include "ignite/thin/cache/cache_peek_mode.h"
+#include "ignite/thin/transactions/transaction_consts.h"
 
 #include <test_utils.h>
 #include <ignite/ignite_error.h>
@@ -53,14 +54,14 @@ BOOST_FIXTURE_TEST_SUITE(IgniteTxTestSuite, IgniteTxTestSuiteFixture)
 
 bool correctCloseMessage(const ignite::IgniteError& ex)
 {
-    BOOST_CHECK_EQUAL(ex.what(), std::string("The transaction is already closed."));
+    BOOST_CHECK_EQUAL(ex.what(), std::string(TX_ALREADY_CLOSED));
 
     return true;
 }
 
 bool separateThreadMessage(const ignite::IgniteError& ex)
 {
-    BOOST_CHECK_EQUAL(ex.what(), std::string("You can commit transaction only from the thread it was started."));
+    BOOST_CHECK_EQUAL(ex.what(), std::string(TX_DIFFERENT_THREAD));
 
     return true;
 }
@@ -317,11 +318,11 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
     boost::thread t2(startAnotherClientAndTx, latch);
 
-    t2.join();
-
     latch.Get()->Await();
 
     tx.Rollback();
+
+    t2.join();
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
 

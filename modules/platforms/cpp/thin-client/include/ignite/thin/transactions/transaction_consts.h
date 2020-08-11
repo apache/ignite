@@ -7,6 +7,10 @@ namespace ignite
     {
         namespace transactions
         {
+            #define TX_ALREADY_CLOSED "The transaction is already closed."
+            #define TX_ALREADY_STARTED "A transaction has already been started by the current thread."
+            #define TX_DIFFERENT_THREAD "You can commit transaction only from the thread it was started."
+
             /**
              * Transaction concurrency control model.
              */
