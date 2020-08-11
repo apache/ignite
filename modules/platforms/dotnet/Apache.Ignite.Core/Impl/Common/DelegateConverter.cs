@@ -536,12 +536,10 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
 
-                var objArray = Expression.Convert(value, typeof(Array));
-
-                return Expression.Call(null, convertMethod, objArray);
+                return Expression.Call(null, convertMethod, value);
             }
 
-            // TODO: For byte/sbyte and the like, this cast fails
+            // For byte/sbyte and the like, simple Convert fails
             // E.g. the following does not work:   (sbyte)(object)((byte)1)
             // But this does:                      (sbyte)(byte)(object)((byte)1)
             // So for every "unsupported" type like sbyte, ushort, uint, ulong
@@ -549,6 +547,18 @@ namespace Apache.Ignite.Core.Impl.Common
             if (targetType == typeof(sbyte))
             {
                 value = Expression.Convert(value, typeof(byte));
+            }
+            else if (targetType == typeof(ushort))
+            {
+                value = Expression.Convert(value, typeof(short));
+            }
+            else if (targetType == typeof(uint))
+            {
+                value = Expression.Convert(value, typeof(short));
+            }
+            else if (targetType == typeof(ulong))
+            {
+                value = Expression.Convert(value, typeof(short));
             }
             
             return Expression.Convert(value, targetType);
@@ -558,14 +568,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Converts object array to typed array.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection).
-        private static T[] ConvertArray<T>(Array arr)
+        private static T[] ConvertArray<T>(object arrObj)
         {
+            var arr = arrObj as Array;
             if (arr == null)
             {
                 return null;
             }
 
-            // TODO: Make this decision logic when compiling the expression.
             // Do not use as/is: it allows byte <-> sbyte conversions and the like,
             // but this is semantically incorrect, can cause exceptions in user code, and values may differ
             // due to signed/unsigned conversion.
