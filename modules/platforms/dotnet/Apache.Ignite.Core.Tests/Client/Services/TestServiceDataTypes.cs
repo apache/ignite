@@ -30,97 +30,97 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** <inheritdoc /> */
         public byte GetByte(byte x)
         {
-            return (byte) (x + 1);
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public byte[] GetByteArray(byte[] x)
         {
-            return x.Select(b => (byte) (b + 1)).ToArray();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public sbyte GetSbyte(sbyte x)
         {
-            return (sbyte) (x + 1);
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public sbyte[] GetSbyteArray(sbyte[] x)
         {
-            return x.Select(b => (sbyte) (b + 1)).ToArray();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public char GetChar(char x)
         {
-            return (char) (x + 1);
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public char[] GetCharArray(char[] x)
         {
-            return x.Select(b => (char) (b + 1)).ToArray();
+            return x.Select(b => ++b).ToArray();
         }
 
         /** <inheritdoc /> */
         public short GetShort(short x)
         {
-            return (short) (x + 1);
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public short[] GetShortArray(short[] x)
         {
-            return x.Select(s => (short) (s + 1)).ToArray();
+            return x.Select(s => ++s).ToArray();
         }
 
         /** <inheritdoc /> */
         public ushort GetUShort(ushort x)
         {
-            return (ushort) (x + 1);
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public ushort[] GetUShortArray(ushort[] x)
         {
-            return x.Select(s => (ushort) (s + 1)).ToArray();
+            return x.Select(s => ++s).ToArray();
         }
 
         /** <inheritdoc /> */
         public int GetInt(int x)
         {
-            return x + 1;
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public int[] GetIntArray(int[] x)
         {
-            return x.Select(s => s + 1).ToArray();
+            return x.Select(s => ++s).ToArray();
         }
 
         /** <inheritdoc /> */
         public uint GetUInt(uint x)
         {
-            return x + 1;
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public uint[] GetUIntArray(uint[] x)
         {
-            return x.Select(s => s + 1).ToArray();
+            return x.Select(s => ++s).ToArray();
         }
 
         /** <inheritdoc /> */
         public long GetLong(long x)
         {
-            throw new NotImplementedException();
+            return ++x;
         }
 
         /** <inheritdoc /> */
         public long[] GetLongArray(long[] x)
         {
-            throw new NotImplementedException();
+            return x.Select(s => ++s).ToArray();
         }
 
         /** <inheritdoc /> */
