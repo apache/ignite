@@ -68,7 +68,7 @@ public class SslConnectionFailedEventTest extends AbstractSecurityTest {
 
         cfg.setSslContextFactory(sslFactory);
 
-        int[] events =  new int[]{EVT_SSL_CONNECTION_FAILED};
+        int[] events = new int[]{EVT_SSL_CONNECTION_FAILED};
 
         IgnitePredicate<? extends Event> lsnr = (IgnitePredicate<Event>)evt -> {
             evts.add(evt);
