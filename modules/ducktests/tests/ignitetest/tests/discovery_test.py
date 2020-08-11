@@ -213,7 +213,9 @@ class DiscoveryTest(IgniteTest):
 
         logged_timestamps.sort(reverse=True)
 
+        # Failure detection delay.
         time_holder = int((time_holder - first_terminated[0]) * 1000)
+        # Failure detection delay by log.
         by_log = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1])
 
         assert by_log > 0, "Negative node failure detection delay: " + by_log + ". Probably it is a timezone issue."
