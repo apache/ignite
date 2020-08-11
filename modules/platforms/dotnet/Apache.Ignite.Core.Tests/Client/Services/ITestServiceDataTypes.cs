@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
     /// Service interface for testing various data types passing.
     /// </summary>
@@ -39,5 +42,86 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         
         /** */
         char[] GetCharArray(char[] x);
+        
+        /** */
+        short GetShort(short x);
+        
+        /** */
+        short[] GetShortArray(short[] x);
+        
+        /** */
+        ushort GetUShort(ushort x);
+        
+        /** */
+        ushort[] GetUShortArray(ushort[] x);
+        
+        /** */
+        int GetInt(int x);
+        
+        /** */
+        int[] GetIntArray(int[] x);
+        
+        /** */
+        uint GetUInt(uint x);
+        
+        /** */
+        uint[] GetUIntArray(uint[] x);
+
+        /** */
+        Guid GetGuid(Guid x);
+        
+        /** */
+        Guid[] GetGuidArray(Guid[] x);
+
+        /** */
+        DateTime GetDateTime(DateTime x);
+        
+        /** */
+        DateTime[] GetDateTimeArray(Guid[] x);
+
+        /** */
+        TimeSpan GetTimeSpan(TimeSpan x);
+        
+        /** */
+        TimeSpan[] GetTimeSpanArray(TimeSpan[] x);
+
+        /** */
+        bool GetBool(bool x);
+        
+        /** */
+        bool[] GetBoolArray(bool[] x);
+
+        /** */
+        float GetFloat(float x);
+        
+        /** */
+        float[] GetFloatArray(float[] x);
+
+        /** */
+        double GetDouble(double x);
+        
+        /** */
+        double[] GetDoubleArray(double[] x);
+
+        /** */
+        decimal GetDecimal(decimal x);
+        
+        /** */
+        decimal[] GetDecimalArray(decimal[] x);
+
+        /** */
+        string GetString(string x);
+        
+        /** */
+        string[] GetStringArray(string[] x);
+
+        /** */
+        T GetGeneric<T>(T x);
+
+        /** */
+        T[] GetGenericArray<T>(T x);
+
+        /** */
+        List<T> GetGenericList<T>(T x);
     }
 }
