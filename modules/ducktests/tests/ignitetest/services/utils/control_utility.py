@@ -43,9 +43,9 @@ class ControlUtility:
         """
         :return: Cluster state.
         """
-        output = self.__run("--baseline")
+        result = self.__run("--baseline")
 
-        return self.__parse_cluster_state(output)
+        return self.__parse_cluster_state(result)
 
     def set_baseline(self, baseline):
         """
@@ -105,18 +105,22 @@ class ControlUtility:
 
     @staticmethod
     def __parse_cluster_state(output):
-        state_pattern = re.compile("Cluster state: ([^\\s]+)")
-        topology_pattern = re.compile("Current topology version: (\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=([^\\s]+),\\sS(tate|TATE)=([^\\s]+),?(\\sOrder=(\\d+))?")
+        state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
+        topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+),\\sS(tate|TATE)=(?P<state>[^\\s]+),"
+                                      "?(\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)
-        state = match.group(1) if match else None
+        state = match.group("cluster_state") if match else None
 
         match = topology_pattern.search(output)
-        topology = int(match.group(1)) if match else None
+        topology = int(match.group("topology_version")) if match else None
 
-        baseline = [BaselineNode(consistent_id=m[1], state=m[3], order=int(m[5]) if m[5] else None)
-                    for m in baseline_pattern.findall(output)]
+        baseline = []
+        for match in baseline_pattern.finditer(output):
+            node = BaselineNode(consistent_id=match.group("consistent_id"), state=match.group("state"),
+                                order=int(match.group("order")) if match.group("order") else None)
+            baseline.append(node)
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 

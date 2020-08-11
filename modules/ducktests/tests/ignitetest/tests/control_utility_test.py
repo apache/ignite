@@ -23,6 +23,7 @@ from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
+from ignitetest.tests.utils import version_if
 from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
 
@@ -171,16 +172,13 @@ class BaselineTests(IgniteTest):
         assert state.lower() == 'inactive', 'Unexpected state %s' % state
 
     @cluster(num_nodes=NUM_NODES)
+    @version_if(lambda version: version >= V_2_8_0)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_8))
     def test_baseline_autoadjust(self, version):
         """
         Test activate and deactivate cluster.
         """
-        if version < V_2_8_0:
-            self.logger.info("Skipping test because this feature is not supported for version %s" % version)
-            return
-
         blt_size = self.NUM_NODES - 2
         self.servers = self.__start_ignite_nodes(version, blt_size)
 
