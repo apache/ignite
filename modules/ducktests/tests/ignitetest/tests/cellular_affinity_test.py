@@ -98,6 +98,9 @@ class CellularAffinity(IgniteTest):
         checker.run()
 
     def start_cell(self, ignite_version, jvm_opts):
+        """
+        Starts cell.
+        """
         ignites = IgniteService(
             self.test_context,
             num_nodes=CellularAffinity.NUM_NODES,
