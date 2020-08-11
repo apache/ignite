@@ -276,6 +276,7 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load result.
             if (method.ReturnType != typeof(void))
             {
+                // TODO: Convert arrays (byte -> sbyte, etc)
                 // TODO: Additional cast for sbyte, ushort, ulong, uint
                 if (method.ReturnType.IsValueType)
                 {

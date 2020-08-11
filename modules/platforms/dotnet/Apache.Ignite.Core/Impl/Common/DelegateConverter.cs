@@ -565,6 +565,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 return null;
             }
 
+            // TODO: Make this decision logic when compiling the expression.
             // Do not use as/is: it allows byte <-> sbyte conversions and the like,
             // but this is semantically incorrect, can cause exceptions in user code, and values may differ
             // due to signed/unsigned conversion.
