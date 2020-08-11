@@ -86,6 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// Tests that generic method can be called on a service.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-13351")]
         public void TestGenericMethodCall()
         {
             var svcName = TestUtils.TestName;

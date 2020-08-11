@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Services;
 
@@ -229,24 +228,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public string[] GetStringArray(string[] x)
         {
             return x.Select(b => b.ToLowerInvariant()).ToArray();
-        }
-
-        /** <inheritdoc /> */
-        public T GetGeneric<T>(T x)
-        {
-            return x;
-        }
-
-        /** <inheritdoc /> */
-        public T[] GetGenericArray<T>(T x)
-        {
-            return new[] {x};
-        }
-
-        /** <inheritdoc /> */
-        public List<T> GetGenericList<T>(T x)
-        {
-            return new List<T> {x};
         }
 
         /** <inheritdoc /> */

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Service interface for testing various data types passing.
@@ -126,14 +125,5 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         
         /** */
         string[] GetStringArray(string[] x);
-
-        /** */
-        T GetGeneric<T>(T x);
-
-        /** */
-        T[] GetGenericArray<T>(T x);
-
-        /** */
-        List<T> GetGenericList<T>(T x);
     }
 }
