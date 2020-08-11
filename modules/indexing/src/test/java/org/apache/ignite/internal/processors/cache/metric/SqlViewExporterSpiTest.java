@@ -166,8 +166,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         Set<String> names = new HashSet<>();
 
+        DataRegionConfiguration cfg =
+            ignite0.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
         for (List<?> row : res) {
-            names.add((String)row.get(0));
+            String name = (String)row.get(0);
+
+            names.add(name);
+
+            if ("InitialSize".equals(name))
+                assertEquals(Long.toString(cfg.getInitialSize()), row.get(1));
+            else if ("MaxSize".equals(name))
+                assertEquals(Long.toString(cfg.getMaxSize()), row.get(1));
 
             assertNotNull("Metric value must be not null [name=" + row.get(0) + ']', row.get(1));
         }
