@@ -49,10 +49,14 @@ class IgniteAwareService(BackgroundThreadService):
     }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, modules, client_mode, version, properties):
+    def __init__(self, context, num_nodes, modules, client_mode, version, properties, jvm_options):
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
-        self.jvm_options = context.globals.get("jvm_opts", "")
+        global_jvm_options = context.globals.get("jvm_opts", "")
+
+        service_jvm_options = " ".join(map(lambda x: '-J' + x, jvm_options)) if jvm_options else ""
+
+        self.jvm_options = " ".join(filter(None, [global_jvm_options, service_jvm_options]))
 
         self.log_level = "DEBUG"
         self.properties = properties
