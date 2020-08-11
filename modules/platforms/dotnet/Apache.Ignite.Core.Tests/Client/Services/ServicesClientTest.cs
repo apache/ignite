@@ -211,6 +211,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             var dt = DateTime.Now;
             Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
+            
+            // TODO: Pass generic collections (with a non-generic method)
         }
 
         /// <summary>
