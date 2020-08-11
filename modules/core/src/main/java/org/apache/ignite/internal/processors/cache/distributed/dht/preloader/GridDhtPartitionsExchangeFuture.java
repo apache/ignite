@@ -133,6 +133,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptySet;
+import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
@@ -1230,7 +1232,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         top.update(null,
                             clientTop.partitionMap(true),
                             clientTop.fullUpdateCounters(),
-                            Collections.emptySet(),
+                            emptySet(),
                             null,
                             null,
                             null,
@@ -3874,7 +3876,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
 
                 if (activateCluster() || changedBaseline())
-                    assignPartitionsStates(true);
+                    assignPartitionsStates(null);
 
                 DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
@@ -3885,20 +3887,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (!F.isEmpty(caches))
                             resetLostPartitions(caches);
 
-                        assignPartitionsStates(true);
+                        Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
+                                .map(grp -> grp.descriptor().groupId()),
+                            exchActions.cachesToResetLostPartitions().stream()
+                                .map(CU::cacheId))
+                            .collect(Collectors.toSet());
+
+                        assignPartitionsStates(cacheGroupsToResetOwners);
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions()) {
                     markAffinityReassign();
 
-                    assignPartitionsStates(true);
+                    assignPartitionsStates(null);
                 }
             }
             else if (exchCtx.events().hasServerJoin())
-                assignPartitionsStates(true);
+                assignPartitionsStates(null);
             else if (exchCtx.events().hasServerLeft())
-                assignPartitionsStates(false);
+                assignPartitionsStates(emptySet());
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
@@ -4186,9 +4194,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param resetOwners True if reset partitions state needed, false otherwise.
+     * @param cacheGroupsToResetOwners Set of cache groups which need to reset partitions state,
+     *                                 null if reset partitions state for all cache groups needed
      */
-    private void assignPartitionsStates(boolean resetOwners) {
+    private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners) {
         Map<String, List<SupplyPartitionInfo>> supplyInfoMap = log.isInfoEnabled() ?
             new ConcurrentHashMap<>() : null;
 
@@ -4204,12 +4213,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
                     if (CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                        List<SupplyPartitionInfo> list = assignPartitionStates(top, resetOwners);
+                        List<SupplyPartitionInfo> list;
+
+                        if (cacheGroupsToResetOwners == null || cacheGroupsToResetOwners.contains(grpDesc.groupId()))
+                            list = assignPartitionStates(top, true);
+                        else
+                            list = assignPartitionStates(top, false);
 
                         if (supplyInfoMap != null && !F.isEmpty(list))
                             supplyInfoMap.put(grpDesc.cacheOrGroupName(), list);
                     }
-                    else if (resetOwners)
+                    else if (cacheGroupsToResetOwners == null)
                         assignPartitionSizes(top);
 
                     return null;
