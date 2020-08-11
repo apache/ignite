@@ -2,6 +2,7 @@ package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -21,7 +22,7 @@ public class IgnitePersistence {
 
         Ignite ignite = Ignition.start(cfg);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "myCache";
 

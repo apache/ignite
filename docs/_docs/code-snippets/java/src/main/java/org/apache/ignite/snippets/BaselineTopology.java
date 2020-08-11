@@ -2,6 +2,7 @@ package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 
 public class BaselineTopology {
 
@@ -9,7 +10,7 @@ public class BaselineTopology {
         //tag::activate[]
         Ignite ignite = Ignition.start();
 
-        ignite.cluster().active(true); 
+        ignite.cluster().state(ClusterState.ACTIVE);; 
         //end::activate[]
     }
     

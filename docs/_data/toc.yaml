@@ -165,8 +165,14 @@
       url: /monitoring-metrics/intro
     - title: Configuring Metrics
       url: /monitoring-metrics/configuring-metrics
-    - title: JMX Metrics 
+    - title: JMX Metrics
       url: /monitoring-metrics/metrics
+    - title: New Metrics System 
+      items:
+        - title: Introduction 
+          url: /monitoring-metrics/new-metrics-system
+        - title: Metrics
+          url: /monitoring-metrics/new-metrics
     - title: System Views
       url: /monitoring-metrics/system-views
 - title: Security
