@@ -16,8 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;

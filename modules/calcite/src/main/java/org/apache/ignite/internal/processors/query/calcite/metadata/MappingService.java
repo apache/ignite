@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.function.Predicate;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;

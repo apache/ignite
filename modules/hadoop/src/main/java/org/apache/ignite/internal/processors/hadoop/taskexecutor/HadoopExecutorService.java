@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.util.worker.GridWorkerListenerAdapter;
 import org.apache.ignite.thread.IgniteThread;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.newSetFromMap;
 

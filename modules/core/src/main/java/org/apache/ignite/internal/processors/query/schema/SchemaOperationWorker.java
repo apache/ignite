@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -24,14 +25,13 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Schema operation executor.
@@ -95,7 +95,7 @@ public class SchemaOperationWorker extends GridWorker {
 
         if (err != null)
             fut.onDone(err);
-        else if (nop || !cacheRegistered)
+        else if (nop || (!cacheRegistered && !(op instanceof SchemaAddQueryEntityOperation)))
             fut.onDone();
 
         pubFut = publicFuture(fut);

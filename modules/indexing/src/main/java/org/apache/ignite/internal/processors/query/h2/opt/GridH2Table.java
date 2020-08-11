@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -751,6 +753,8 @@ public class GridH2Table extends TableBase {
         if (prevRow0 != null)
             prevRow0.prepareValuesCache();
 
+        IgniteCheckedException err = null;
+
         try {
             lock(false);
 
@@ -774,12 +778,12 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                        err = addToIndex((GridH2IndexBase)idx, row0, prevRow0, err);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row0, prevRow0);
+                        err = addToIndex(idx, row0, prevRow0, err);
                 }
             }
             finally {
@@ -792,6 +796,9 @@ public class GridH2Table extends TableBase {
             if (prevRow0 != null)
                 prevRow0.clearValuesCache();
         }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -839,13 +846,38 @@ public class GridH2Table extends TableBase {
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
+     * @param prevErr Error on index add.
      */
-    private void addToIndex(GridH2IndexBase idx, H2CacheRow row, H2CacheRow prevRow) {
-        boolean replaced = idx.putx(row);
+    private IgniteCheckedException addToIndex(
+        GridH2IndexBase idx,
+        H2CacheRow row,
+        H2CacheRow prevRow,
+        IgniteCheckedException prevErr
+    ) {
+        try {
+            boolean replaced = idx.putx(row);
 
-        // Row was not replaced, need to remove manually.
-        if (!replaced && prevRow != null)
-            idx.removex(prevRow);
+            // Row was not replaced, need to remove manually.
+            if (!replaced && prevRow != null)
+                idx.removex(prevRow);
+
+            return prevErr;
+        }
+        catch (Throwable t) {
+            IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+            if (ex != null && ex.statusCode() == IgniteQueryErrorCode.FIELD_TYPE_MISMATCH) {
+                if (prevErr != null) {
+                    prevErr.addSuppressed(t);
+
+                    return prevErr;
+                }
+                else
+                    return new IgniteCheckedException("Error on add row to index '" + getName() + '\'', t);
+            }
+            else
+                throw t;
+        }
     }
 
     /**
@@ -854,7 +886,7 @@ public class GridH2Table extends TableBase {
      * @param clo Closure.
      */
     public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
-        for (int i = sysIdxsCnt; i < idxs.size(); i++) {
+        for (int i = 0; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
             if (idx instanceof H2TreeIndex) {

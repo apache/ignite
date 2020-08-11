@@ -22,10 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Test invoke methods with collections and arrays as arguments and return type.
@@ -38,11 +36,6 @@ public class PlatformServiceCallCollectionsTask extends AbstractPlatformServiceC
 
     /** */
     public static class PlatformServiceCallCollectionsJob extends AbstractServiceCallJob {
-        /** */
-        @SuppressWarnings("unused")
-        @IgniteInstanceResource
-        private transient Ignite ignite;
-
         /**
          * @param svcName Service name.
          */
@@ -52,7 +45,7 @@ public class PlatformServiceCallCollectionsTask extends AbstractPlatformServiceC
 
         /** {@inheritDoc} */
         @Override void runTest() {
-            TestPlatformService srv = ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
+            TestPlatformService srv = serviceProxy();
 
             {
                 TestValue[] exp = IntStream.range(0, 10).mapToObj(i -> new TestValue(i, "name_" + i))

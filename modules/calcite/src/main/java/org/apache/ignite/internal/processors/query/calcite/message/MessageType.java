@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 
@@ -58,45 +59,10 @@ public enum MessageType {
         return (short) directType;
     }
 
-    /** */
-    private CalciteMessage newMessage() {
-        CalciteMessage msg = factory.get();
-
-        assert msg.type() == this;
-
-        return msg;
-    }
-
     /**
-     * Message factory method.
-     *
-     * @param directType Message direct type.
-     * @return new message or {@code null} in case of unknown message direct type.
+     * @return Message factory.
      */
-    public static CalciteMessage newMessage(short directType) {
-        switch (directType) {
-            case 300:
-                return QUERY_START_REQUEST.newMessage();
-            case 301:
-                return QUERY_START_RESPONSE.newMessage();
-            case 302:
-                return QUERY_BATCH_MESSAGE.newMessage();
-            case 303:
-                return QUERY_ACKNOWLEDGE_MESSAGE.newMessage();
-            case 304:
-                return QUERY_INBOX_CANCEL_MESSAGE.newMessage();
-            case 305:
-                return QUERY_OUTBOX_CANCEL_MESSAGE.newMessage();
-            case 306:
-                return QUERY_ERROR_MESSAGE.newMessage();
-            case 307:
-                return GENERIC_ROW_MESSAGE.newMessage();
-            case 350:
-                return NODES_MAPPING.newMessage();
-            case 351:
-                return FRAGMENT_DESCRIPTION.newMessage();
-            default:
-                return null;
-        }
+    public Supplier<CalciteMessage> factory() {
+        return factory;
     }
 }

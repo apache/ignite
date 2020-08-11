@@ -42,4 +42,9 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
         if (fut.isDone())
             fut.get();
     }
+
+    /** {@inheritDoc} */
+    @Override public void cancelSnapshot(String snpName) {
+        mgr.cancelSnapshot(snpName).get();
+    }
 }

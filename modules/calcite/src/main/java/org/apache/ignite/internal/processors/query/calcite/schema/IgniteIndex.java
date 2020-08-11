@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.function.Predicate;
+
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;

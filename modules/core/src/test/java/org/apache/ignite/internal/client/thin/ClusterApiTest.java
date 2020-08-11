@@ -18,25 +18,18 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Checks cluster state/WAL state operations for thin client.
  */
-public class ClusterApiTest extends GridCommonAbstractTest {
-    /** Client connector address. */
-    private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
-
+public class ClusterApiTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -69,7 +62,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterState() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+        try (IgniteClient client = startClient(0)) {
             ClientCluster clientCluster = client.cluster();
             IgniteCluster igniteCluster = grid(0).cluster();
 
@@ -85,7 +78,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalState() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+        try (IgniteClient client = startClient(0)) {
             ClientCluster clientCluster = client.cluster();
             IgniteCluster igniteCluster = grid(0).cluster();
 

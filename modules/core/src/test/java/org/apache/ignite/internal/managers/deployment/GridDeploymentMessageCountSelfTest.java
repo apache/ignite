@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /** Test p2p task. */
-    private static final String TEST_TASK = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
+    private static final String TEST_TASK = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask";
 
     /** SPIs. */
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap<>();

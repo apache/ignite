@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.testframework.junits;
 
-import com.thoughtworks.xstream.XStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
+import com.thoughtworks.xstream.XStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;

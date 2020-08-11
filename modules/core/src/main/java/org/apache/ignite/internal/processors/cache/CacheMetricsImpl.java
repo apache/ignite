@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -35,8 +38,11 @@ import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -203,6 +209,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
+    /** Tx collisions info. */
+    private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
+
     /**
      * Creates cache metrics.
      *
@@ -341,7 +350,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Number of partitions need to be cleared before actual rebalance start.");
 
         mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().database().indexRebuildFuture(cctx.cacheId());
+            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
 
             return fut != null && !fut.isDone();
         }, "True if index rebuild is in progress.");
@@ -355,6 +364,10 @@ public class CacheMetricsImpl implements CacheMetrics {
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 
         rollbackTime = mreg.histogram("RollbackTime", HISTOGRAM_BUCKETS, "Rollback time in nanoseconds.");
+
+        mreg.register("TxKeyCollisions", this::getTxKeyCollisions, String.class, "Tx key collisions. " +
+            "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
+            "corresponding keys.");
     }
 
     /**
@@ -668,6 +681,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.clear();
+
+        txKeyCollisionInfo = null;
     }
 
     /** {@inheritDoc} */
@@ -850,6 +865,51 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onRead(isHit);
+    }
+
+    /** Set callback for tx key collisions detection.
+     *
+     * @param coll Key collisions info holder.
+     */
+    public void keyCollisionsInfo(Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> coll) {
+        txKeyCollisionInfo = coll;
+
+        if (delegate != null)
+            delegate.keyCollisionsInfo(coll);
+    }
+
+    /** Callback representing current key collisions state.
+     *
+     * @return Key collisions info holder.
+     */
+    public @Nullable Supplier<List<Map.Entry<GridCacheMapEntry, Integer>>> keyCollisionsInfo() {
+        return txKeyCollisionInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTxKeyCollisions() {
+        SB sb = null;
+
+        Supplier<List<Map.Entry<GridCacheMapEntry, Integer>>> collInfo = keyCollisionsInfo();
+
+        if (collInfo != null) {
+            List<Map.Entry<GridCacheMapEntry, Integer>> result = collInfo.get();
+
+            if (!F.isEmpty(result)) {
+                sb = new SB();
+
+                for (Map.Entry<GridCacheMapEntry, Integer> info : result) {
+                    if (sb.length() > 0)
+                        sb.a(U.nl());
+                    sb.a("key=");
+                    sb.a(info.getKey().key());
+                    sb.a(", queueSize=");
+                    sb.a(info.getValue());
+                }
+            }
+        }
+
+        return sb != null ? sb.toString() : "";
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
+
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**

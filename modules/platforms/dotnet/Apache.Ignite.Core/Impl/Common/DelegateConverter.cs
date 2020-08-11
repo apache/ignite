@@ -38,6 +38,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /** */
         private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
+        /** */
+        private static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod("ConvertArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
         /// <summary>
         /// Compiles a function without arguments.
         /// </summary>
@@ -95,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Compiled function that calls specified method on specified target.
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static T CompileFunc<T>(Type targetType, MethodInfo method, Type[] argTypes, 
+        public static T CompileFunc<T>(Type targetType, MethodInfo method, Type[] argTypes,
             bool[] convertToObject = null)
             where T : class
         {
@@ -114,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Common
             targetType = method.IsStatic ? null : (targetType ?? method.DeclaringType);
 
             var targetParam = Expression.Parameter(typeof(object));
-            
+
             Expression targetParamConverted = null;
             ParameterExpression[] argParams;
             int argParamsOffset = 0;
@@ -178,9 +182,9 @@ namespace Apache.Ignite.Core.Impl.Common
             for (var i = 0; i < methodParams.Length; i++)
             {
                 var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
-                argParams[i] = Expression.Convert(arrElem, methodParams[i].ParameterType);
+                argParams[i] = Convert(arrElem, methodParams[i].ParameterType);
             }
-            
+
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
 
             if (callExpr.Type == typeof(void))
@@ -203,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Compiles a generic ctor with arbitrary number of arguments.
         /// </summary>
         /// <typeparam name="T">Result func type.</typeparam>
-        /// <param name="ctor">Contructor info.</param>
+        /// <param name="ctor">Constructor info.</param>
         /// <param name="argTypes">Argument types.</param>
         /// <param name="convertResultToObject">
         /// Flag that indicates whether ctor return value should be converted to object.</param>
@@ -248,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// that takes an uninitialized object as a first arguments.
         /// </summary>
         /// <typeparam name="T">Result func type.</typeparam>
-        /// <param name="ctor">Contructor info.</param>
+        /// <param name="ctor">Constructor info.</param>
         /// <param name="argTypes">Argument types.</param>
         /// <returns>
         /// Compiled generic constructor.
@@ -308,15 +312,15 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Compiles a contructor that reads all arguments from a binary reader.
+        /// Compiles a constructor that reads all arguments from a binary reader.
         /// </summary>
         /// <typeparam name="T">Result type</typeparam>
         /// <param name="ctor">The ctor.</param>
-        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument. 
+        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument.
         /// Can be null or return null, in this case the argument will be read directly via ReadObject.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, 
+        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor,
             Func<Type, ConstructorInfo> innerCtorFunc)
         {
             Debug.Assert(ctor != null);
@@ -338,7 +342,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Ctor call expression.
         /// </returns>
-        private static Expression GetConstructorExpression(ConstructorInfo ctor, 
+        private static Expression GetConstructorExpression(ConstructorInfo ctor,
             Func<Type, ConstructorInfo> innerCtorFunc, Expression readerParam, Type resultType)
         {
             var ctorParams = ctor.GetParameters();
@@ -480,11 +484,11 @@ namespace Apache.Ignite.Core.Impl.Common
 
             Debug.Assert(declaringType != null);
 
-            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
+            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType },
                 declaringType, true);
 
             var il = method.GetILGenerator();
-            
+
             il.Emit(OpCodes.Ldarg_0);
 
             if (declaringType.IsValueType)
@@ -521,6 +525,41 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Converts expression to a given type.
+        /// </summary>
+        private static Expression Convert(Expression value, Type targetType)
+        {
+            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
+            {
+                var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+
+                var objArray = Expression.Convert(value, typeof(object[]));
+
+                return Expression.Call(null, convertMethod, objArray);
+            }
+
+            return Expression.Convert(value, targetType);
+        }
+
+        /// <summary>
+        /// Converts object array to typed array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Local (used by reflection).
+        private static T[] ConvertArray<T>(object[] arr)
+        {
+            if (arr == null)
+            {
+                return null;
+            }
+
+            var res = new T[arr.Length];
+
+            Array.Copy(arr, res, arr.Length);
+
+            return res;
         }
     }
 }

@@ -234,7 +234,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -415,13 +414,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
-
-    /**
-     * The instance of scheduled long operation checker. {@code null} means that the operations checker is disabled
-     * by the value of {@link IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT} system property.
-     */
-    @GridToStringExclude
-    private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
     /** {@code true} if an error occurs at Ignite instance stop. */
     @GridToStringExclude
@@ -1366,6 +1358,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startTimer.finishGlobalStage("Await transition");
 
+            ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
+                p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
+                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
+
+            registerMetrics();
+
+            // Register MBeans.
+            mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
+                mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
+                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
+
+            ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
+
             boolean recon = false;
 
             // Callbacks.
@@ -1408,19 +1413,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (recon)
                 reconnectState.waitFirstReconnect();
-
-            ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
-                p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
-                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
-
-            registerMetrics();
-
-            // Register MBeans.
-            mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
-                mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
-                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
-
-            ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1530,8 +1522,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        scheduleLongOperationsDumpTask(ctx.cache().context().tm().longOperationsDumpTimeout());
-
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
         ctx.performance().logSuggestions(log, igniteInstanceName);
@@ -1553,36 +1543,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static DecimalFormat doubleFormat() {
         return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
-    }
-
-    /**
-     * Scheduling tasks for dumping long operations. Closes current task
-     * (if any) and if the {@code longOpDumpTimeout > 0} schedules a new task
-     * with a new timeout, delay and start period equal to
-     * {@code longOpDumpTimeout}, otherwise task is deleted.
-     *
-     * @param longOpDumpTimeout Long operations dump timeout.
-     */
-    public void scheduleLongOperationsDumpTask(long longOpDumpTimeout) {
-        if (isStopping())
-            return;
-
-        synchronized (this) {
-            GridTimeoutProcessor.CancelableTask task = longOpDumpTask;
-
-            if (nonNull(task))
-                task.close();
-
-            if (longOpDumpTimeout > 0) {
-                longOpDumpTask = ctx.timeout().schedule(
-                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
-                    longOpDumpTimeout,
-                    longOpDumpTimeout
-                );
-            }
-            else
-                longOpDumpTask = null;
-        }
     }
 
     /**
@@ -2643,9 +2603,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (metricsLogTask != null)
                 metricsLogTask.close();
-
-            if (longOpDumpTask != null)
-                longOpDumpTask.close();
 
             if (longJVMPauseDetector != null)
                 longJVMPauseDetector.stop();

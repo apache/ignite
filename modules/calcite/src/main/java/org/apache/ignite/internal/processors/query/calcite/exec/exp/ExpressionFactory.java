@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;

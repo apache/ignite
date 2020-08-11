@@ -316,16 +316,21 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public boolean isReadThrough();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache is in write-through mode.")
-    public boolean isWriteThrough();
+    @MXBeanDescription("True when a cache is in write-through mode.")
+    @Override public boolean isWriteThrough();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache topology is valid for read operations.")
-    public boolean isValidForReading();
+    @MXBeanDescription("True when a cache topology is valid for read operations.")
+    @Override public boolean isValidForReading();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("True when a cache topology is valid for write operations.")
-    public boolean isValidForWriting();
+    @MXBeanDescription("True when a cache topology is valid for write operations.")
+    @Override public boolean isValidForWriting();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Tx key collisions. Show key and appropriate collisions queue size for the last " +
+        "IGNITE_DUMP_TX_COLLISIONS_INTERVAL.")
+    @Override public String getTxKeyCollisions();
 
     /**
      * Enable statistic collection for the cache.

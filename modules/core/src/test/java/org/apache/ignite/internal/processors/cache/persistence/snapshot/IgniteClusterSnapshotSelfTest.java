@@ -100,7 +100,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** Cache configuration for test. */
-    private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
+    private static final CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
         .setBackups(2)
         .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
@@ -578,7 +578,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            "Execution of local snapshot tasks fails");
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
@@ -630,7 +630,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            "Execution of local snapshot tasks fails");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
             !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());
@@ -1099,6 +1099,51 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             IgniteException.class,
             "Client disconnected. Snapshot result is unknown");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInProgressCancelled() throws Exception {
+        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(1);
+        IgniteEx killCli = startClientGrid(2);
+
+        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
+            snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFinishedTryCancel() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snpIg = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInMemoryFail() throws Exception {
+        persistence = false;
+
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteEx clnt = startClientGrid(1);
+
+        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "Snapshots on an in-memory clusters are not allowed.");
     }
 
     /**

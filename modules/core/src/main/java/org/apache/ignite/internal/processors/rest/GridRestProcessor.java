@@ -607,14 +607,15 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
             boolean interrupted = Thread.interrupted();
 
-            while (workersCnt.sum() != 0) {
-                try {
-                    Thread.sleep(200);
+            if (!cancel)
+                while (workersCnt.sum() != 0) {
+                    try {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException ignored) {
+                        interrupted = true;
+                    }
                 }
-                catch (InterruptedException ignored) {
-                    interrupted = true;
-                }
-            }
 
             U.interrupt(sesTimeoutCheckerThread);
 

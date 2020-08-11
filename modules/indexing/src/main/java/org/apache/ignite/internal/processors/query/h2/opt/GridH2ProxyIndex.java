@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.internal.processors.query.h2.opt.join.ProxyDistributedLookupBatch;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -32,9 +34,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
-import java.util.List;
 
 /**
  * Allows to have 'free' index for alias columns

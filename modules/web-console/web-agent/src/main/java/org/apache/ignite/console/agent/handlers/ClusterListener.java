@@ -17,7 +17,6 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import io.socket.client.Socket;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -30,11 +29,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteLogger;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.socket.client.Socket;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;

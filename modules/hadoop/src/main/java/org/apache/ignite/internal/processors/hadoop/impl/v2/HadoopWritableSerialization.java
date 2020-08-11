@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 
 /**
  * Optimized serialization for Hadoop {@link Writable} types.

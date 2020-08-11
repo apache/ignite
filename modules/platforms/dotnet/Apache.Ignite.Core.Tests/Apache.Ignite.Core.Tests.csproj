@@ -117,6 +117,7 @@
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\NearCacheTest.cs" />
+    <Compile Include="Cache\OptimisticTransactionTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTestCreateDestroy.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTopologyChangeTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTest.cs" />
@@ -239,6 +240,8 @@
     <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
+    <Compile Include="IgniteLockFailoverTests.cs" />
+    <Compile Include="IgniteLockTests.cs" />
     <Compile Include="IgniteUtilsTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />

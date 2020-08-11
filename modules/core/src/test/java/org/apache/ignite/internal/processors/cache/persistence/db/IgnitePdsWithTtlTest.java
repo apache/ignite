@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.UUID;
+
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;

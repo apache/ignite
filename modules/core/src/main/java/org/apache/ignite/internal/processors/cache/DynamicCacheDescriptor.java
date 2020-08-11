@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -363,6 +365,24 @@ public class DynamicCacheDescriptor {
     public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
             schema.finish(msg);
+
+            if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
+                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg,
+                        (SchemaAddQueryEntityOperation)msg.operation());
+            }
+        }
+    }
+
+    /**
+     * Make schema patch for this cache.
+     *
+     * @param cacheData Stored cache by which current schema should be expanded.
+     * @return Patch which contains operations for expanding schema of this cache.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makeSchemaPatch(StoredCacheData cacheData) {
+        synchronized (schemaMux) {
+            return schema.makePatch(cacheData.config(), cacheData.queryEntities());
         }
     }
 
@@ -387,7 +407,16 @@ public class DynamicCacheDescriptor {
      */
     public boolean applySchemaPatch(QuerySchemaPatch patch) {
         synchronized (schemaMux) {
-            return schema.applyPatch(patch);
+            boolean res = schema.applyPatch(patch);
+
+            if (res) {
+                for (SchemaAbstractOperation op: patch.getPatchOperations()) {
+                    if (op instanceof SchemaAddQueryEntityOperation)
+                        cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, (SchemaAddQueryEntityOperation)op);
+                }
+            }
+
+            return res;
         }
     }
 

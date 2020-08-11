@@ -2799,6 +2799,20 @@ public class GridFunc {
     }
 
     /**
+     * Checks if key is contained in the map passed in. If the map
+     * is {@code null}, then {@code false} is returned.
+     *
+     * @param m Map to check.
+     * @param k Key to check for containment.
+     * @param <T> Key type.
+     * @return {@code true} if map is not {@code null} and contains given
+     *      key, {@code false} otherwise.
+     */
+    public static <T> boolean mapContainsKey(@Nullable final Map<T, ?> m, final T k) {
+        return m != null && m.containsKey(k);
+    }
+
+    /**
      * Check's that {@code val} contains ignore case in collection {@code col}.
      *
      * @param col Collection of values.

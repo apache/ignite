@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.state;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 
 /**
  * Sharead state for HadoopMapReduceEmbeddedSelfTest.

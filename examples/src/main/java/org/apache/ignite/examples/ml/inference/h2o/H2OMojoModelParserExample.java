@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.h2o.H2OMojoModelParser;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
@@ -33,7 +34,6 @@ import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.h2o.H2OMojoModelParser;
 
 /**
  * This example demonstrates how to import H2O MOJO model and use imported model for distributed inference in Apache

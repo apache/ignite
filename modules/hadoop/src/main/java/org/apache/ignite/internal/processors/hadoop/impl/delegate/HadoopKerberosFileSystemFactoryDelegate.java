@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
@@ -24,9 +26,6 @@ import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-
-import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
 
 /**
  * Kerberos Hadoop file system factory delegate.

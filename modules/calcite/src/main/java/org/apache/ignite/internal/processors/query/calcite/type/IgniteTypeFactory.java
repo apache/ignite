@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.util.List;
 import java.util.Objects;
+
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;

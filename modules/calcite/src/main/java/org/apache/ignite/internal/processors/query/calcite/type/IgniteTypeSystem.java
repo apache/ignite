@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
+
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 

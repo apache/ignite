@@ -17,15 +17,14 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
-import org.apache.ignite.hadoop.util.UserNameMapper;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
+import org.apache.ignite.hadoop.util.UserNameMapper;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Simple Hadoop file system factory which delegates to {@code FileSystem.get()} on each call.

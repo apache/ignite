@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;

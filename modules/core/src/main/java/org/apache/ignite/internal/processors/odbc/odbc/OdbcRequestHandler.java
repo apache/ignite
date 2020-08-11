@@ -39,8 +39,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.transactions.TransactionMixedModeException;
-import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -64,7 +62,9 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;

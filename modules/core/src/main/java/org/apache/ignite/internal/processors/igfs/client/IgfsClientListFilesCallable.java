@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import java.util.Collection;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * IGFS client list files callable.

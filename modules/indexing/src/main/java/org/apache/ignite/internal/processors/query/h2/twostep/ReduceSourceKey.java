@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Reduce source key for a specific remote data source (remote node + specific segment).

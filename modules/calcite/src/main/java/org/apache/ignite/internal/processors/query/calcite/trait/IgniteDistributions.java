@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;

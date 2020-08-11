@@ -17,13 +17,6 @@
 
 package org.apache.ignite.stream.camel;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
@@ -35,6 +28,13 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.function.ToIntFunction;
+
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;

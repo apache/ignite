@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIterator
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

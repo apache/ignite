@@ -625,25 +625,13 @@ public class QueryUtils {
         }
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
-        String keyFieldName = qryEntity.getKeyFieldName();
+        // Also if fields are not set then _KEY and _VAL will be created as visible,
+        // so we have to add binary properties for them
+        if ((qryEntity.getKeyFieldName() == null && F.mapContainsKey(precision, KEY_FIELD_NAME)) || F.isEmpty(fields))
+            addKeyValueProperty(ctx, qryEntity, d, KEY_FIELD_NAME, true);
 
-        if (keyFieldName == null)
-            keyFieldName = KEY_FIELD_NAME;
-
-        if (!F.isEmpty(precision) && precision.containsKey(keyFieldName) &&
-            !fields.containsKey(keyFieldName)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, keyFieldName, true);
-        }
-
-        String valFieldName = qryEntity.getValueFieldName();
-
-        if (valFieldName == null)
-            valFieldName = VAL_FIELD_NAME;
-
-        if (!F.isEmpty(precision) && precision.containsKey(valFieldName) &&
-            !fields.containsKey(valFieldName)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, valFieldName, false);
-        }
+        if ((qryEntity.getValueFieldName() == null && F.mapContainsKey(precision, VAL_FIELD_NAME)) || F.isEmpty(fields))
+            addKeyValueProperty(ctx, qryEntity, d, VAL_FIELD_NAME, false);
 
         processIndexes(qryEntity, d);
     }
@@ -657,7 +645,7 @@ public class QueryUtils {
      * @param name Field name.
      * @throws IgniteCheckedException
      */
-    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
+    private static void addKeyValueProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();

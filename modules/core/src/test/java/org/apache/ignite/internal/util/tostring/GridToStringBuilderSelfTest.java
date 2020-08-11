@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import com.sun.management.ThreadMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
+import com.sun.management.ThreadMXBean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;

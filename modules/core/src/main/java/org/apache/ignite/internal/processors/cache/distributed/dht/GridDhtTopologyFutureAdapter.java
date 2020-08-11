@@ -30,8 +30,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 
 /**
@@ -93,9 +95,9 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         CacheGroupContext grp = cctx.group();
 
         if (cctx.shared().readOnlyMode() && !read && !isSystemCache(cctx.name())) {
-            return new CacheInvalidStateException(
-                new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in " +
-                    "read-only mode) [cacheGrp=" + cctx.group().name() + ", cache=" + cctx.name() + ']'));
+            return new CacheInvalidStateException(new IgniteClusterReadOnlyException(
+                format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, "cache", cctx.group().name(), cctx.name())
+            ));
         }
 
         CacheGroupValidation validation = grpValidRes.get(grp.groupId());

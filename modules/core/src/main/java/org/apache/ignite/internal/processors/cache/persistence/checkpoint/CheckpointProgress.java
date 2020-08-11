@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Represents information of a progress of a given checkpoint and

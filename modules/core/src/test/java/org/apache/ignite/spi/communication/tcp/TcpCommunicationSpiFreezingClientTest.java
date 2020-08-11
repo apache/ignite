@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import javax.cache.Cache;
 import java.lang.management.ManagementFactory;
 import java.util.Iterator;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;

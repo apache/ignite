@@ -17,11 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -60,16 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
@@ -189,6 +189,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_THREAD_LOCAL = 37;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_LOCK = 38;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -724,6 +727,17 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 String lbl = reader.readString();
 
                 return new PlatformTransactions(platformCtx, lbl);
+            }
+
+            case OP_GET_OR_CREATE_LOCK: {
+                String name = reader.readString();
+                boolean failoverSafe = reader.readBoolean();
+                boolean fair = reader.readBoolean();
+                boolean create = reader.readBoolean();
+
+                IgniteLock lock = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
+
+                return lock == null ? null : new PlatformLock(platformCtx, lock);
             }
         }
 

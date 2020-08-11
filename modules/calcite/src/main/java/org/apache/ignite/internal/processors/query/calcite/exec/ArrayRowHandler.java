@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

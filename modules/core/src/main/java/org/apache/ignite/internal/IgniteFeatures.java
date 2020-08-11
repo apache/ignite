@@ -98,9 +98,17 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
-    /** Long operations dump timeout. */
-    LONG_OPERATIONS_DUMP_TIMEOUT(30);
+    /** Distributed change timeout for dump long operations. */
+    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
+    /** Check secondary indexes inline size on join/by control utility request. */
+    CHECK_INDEX_INLINE_SIZES(36),
+
+    /** Distributed propagation of tx collisions dump interval. */
+    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
+
+    /** Remove metadata from cluster for specified type. */
+    REMOVE_METADATA(39);
     /**
      * Unique feature identifier.
      */

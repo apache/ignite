@@ -38,7 +38,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
@@ -233,17 +232,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     if (node == null)
                                                         continue;
 
-                                                    if (ctx.config().isPeerClassLoadingEnabled()) {
-                                                        GridCacheContext cctx =
-                                                            ctx.cache().internalCache(cacheName).context();
+                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
+                                                        ctx.discovery().cacheNode(node, cacheName)) {
+                                                        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-                                                        if (cctx.deploymentEnabled() &&
-                                                            ctx.discovery().cacheNode(node, cacheName)) {
+                                                        if (cache != null && cache.context().deploymentEnabled()) {
                                                             wrapper.p2pMarshal(ctx.config().getMarshaller());
 
                                                             wrapper.cacheName = cacheName;
 
-                                                            cctx.deploy().prepare(wrapper);
+                                                            cache.context().deploy().prepare(wrapper);
                                                         }
                                                     }
                                                 }

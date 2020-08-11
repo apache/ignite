@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Map;
+
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;

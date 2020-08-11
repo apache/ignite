@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(ClientOp.CacheGetAll, ctx => ctx.Writer.WriteEnumerable(keys), 
+            return DoOutInOp(ClientOp.CacheGetAll, ctx => ctx.Writer.WriteEnumerable(keys),
                 s => ReadCacheEntries(s.Stream));
         }
 
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOpAsync(ClientOp.CacheGetAll, ctx => ctx.Writer.WriteEnumerable(keys), 
+            return DoOutInOpAsync(ClientOp.CacheGetAll, ctx => ctx.Writer.WriteEnumerable(keys),
                 s => ReadCacheEntries(s.Stream));
         }
 
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys), 
+            return DoOutInOp(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys),
                 ctx => ctx.Stream.ReadBool());
         }
 
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOpAsync(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys), 
+            return DoOutInOpAsync(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys),
                 ctx => ctx.Stream.ReadBool());
         }
 
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
             return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w.Writer, scanQuery),
                 ctx => new ClientQueryCursor<TK, TV>(
-                    _ignite, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QueryScanCursorGetPage));
+                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QueryScanCursorGetPage));
         }
 
         /** <inheritDoc /> */
@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             return DoOutInOp(ClientOp.QuerySql, w => WriteSqlQuery(w.Writer, sqlQuery),
                 ctx => new ClientQueryCursor<TK, TV>(
-                    _ignite, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QuerySqlCursorGetPage));
+                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QuerySqlCursorGetPage));
         }
 
         /** <inheritDoc /> */
@@ -281,7 +281,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             return DoOutInOp(ClientOp.QuerySqlFields,
                 ctx => WriteSqlFieldsQuery(ctx.Writer, sqlFieldsQuery, false),
-                ctx => GetFieldsCursorNoColumnNames(ctx.Stream, readerFunc));
+                ctx => GetFieldsCursorNoColumnNames(ctx, readerFunc));
         }
 
         /** <inheritDoc /> */
@@ -545,14 +545,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public long GetSize(params CachePeekMode[] modes)
         {
-            return DoOutInOp(ClientOp.CacheGetSize, w => WritePeekModes(modes, w.Stream), 
+            return DoOutInOp(ClientOp.CacheGetSize, w => WritePeekModes(modes, w.Stream),
                 ctx => ctx.Stream.ReadLong());
         }
 
         /** <inheritDoc /> */
         public Task<long> GetSizeAsync(params CachePeekMode[] modes)
         {
-            return DoOutInOpAsync(ClientOp.CacheGetSize, w => WritePeekModes(modes, w.Stream), 
+            return DoOutInOpAsync(ClientOp.CacheGetSize, w => WritePeekModes(modes, w.Stream),
                 ctx => ctx.Stream.ReadLong());
         }
 
@@ -892,20 +892,20 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var cursorId = ctx.Stream.ReadLong();
             var columnNames = ClientFieldsQueryCursor.ReadColumns(ctx.Reader);
 
-            return new ClientFieldsQueryCursor(_ignite, cursorId, _keepBinary, ctx.Stream,
+            return new ClientFieldsQueryCursor(ctx.Socket, cursorId, _keepBinary, ctx.Stream,
                 ClientOp.QuerySqlFieldsCursorGetPage, columnNames);
         }
 
         /// <summary>
         /// Gets the fields cursor.
         /// </summary>
-        private ClientQueryCursorBase<T> GetFieldsCursorNoColumnNames<T>(IBinaryStream stream,
+        private ClientQueryCursorBase<T> GetFieldsCursorNoColumnNames<T>(ClientResponseContext ctx,
             Func<IBinaryRawReader, int, T> readerFunc)
         {
-            var cursorId = stream.ReadLong();
-            var columnCount = stream.ReadInt();
+            var cursorId = ctx.Stream.ReadLong();
+            var columnCount = ctx.Stream.ReadInt();
 
-            return new ClientQueryCursorBase<T>(_ignite, cursorId, _keepBinary, stream,
+            return new ClientQueryCursorBase<T>(ctx.Socket, cursorId, _keepBinary, ctx.Stream,
                 ClientOp.QuerySqlFieldsCursorGetPage, r => readerFunc(r, columnCount));
         }
 

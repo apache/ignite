@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import com.google.common.collect.ImmutableMap;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;

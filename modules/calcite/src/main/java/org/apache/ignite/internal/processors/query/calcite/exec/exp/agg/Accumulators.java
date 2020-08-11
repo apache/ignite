@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
 import java.util.function.Supplier;
+
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;

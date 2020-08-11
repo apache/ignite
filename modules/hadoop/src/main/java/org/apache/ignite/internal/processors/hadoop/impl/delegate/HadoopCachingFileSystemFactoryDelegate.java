@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
+import java.io.IOException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
-
-import java.io.IOException;
 
 /**
  * Caching Hadoop file system factory delegate.

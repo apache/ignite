@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.security.AccessControlContext;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
@@ -255,7 +257,14 @@ public class SecurityUtils {
                 // Ignore.
             }
 
-            return sandbox.execute(() -> (T)mtd.invoke(original, args));
+            return sandbox.execute(() -> {
+                try {
+                    return (T)mtd.invoke(original, args);
+                }
+                catch (InvocationTargetException e) {
+                    throw new IgniteException(e.getTargetException());
+                }
+            });
         }
     }
 }
