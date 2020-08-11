@@ -56,16 +56,16 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests that void method can be called and the lack of result is handled correctly.  
+        /// Tests that void method can be called and the lack of result is handled correctly.
         /// </summary>
         [Test]
         public void TestVoidMethodCall()
         {
             var svc = DeployAndGetTestService();
             var expectedCallCount = TestService.CallCount + 1;
-            
+
             svc.VoidMethod();
-            
+
             Assert.AreEqual(expectedCallCount, TestService.CallCount);
         }
 
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var svc = DeployAndGetTestService();
 
             var res = svc.PersonMethod(new Person(1));
-            
+
             Assert.AreEqual(2, res.Id);
         }
 
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             ServerServices.DeployClusterSingleton(svcName, new TestServiceGenericMethods());
 
             var svc = Client.GetServices().GetServiceProxy<ITestServiceGenericMethods>(svcName);
-            
+
             Assert.AreEqual("1", svc.GetGeneric("1"));
         }
 
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             var person = Client.GetBinary().ToBinary<IBinaryObject>(new Person(5));
             var res = svc.PersonMethod(person);
-            
+
             Assert.AreEqual(6, res.GetField<int>("Id"));
         }
 
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var svc = DeployAndGetTestService<ITestServiceClient>(s => s.WithServerKeepBinary());
 
             var res = svc.PersonMethodBinary(new Person(1));
-            
+
             Assert.AreEqual(2, res.Id);
         }
 
@@ -134,10 +134,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public void TestServerAndClientKeepBinaryPassesBinaryObjectsOnServerAndClient()
         {
             var svc = DeployAndGetTestService(s => s.WithKeepBinary().WithServerKeepBinary());
-            
+
             var person = Client.GetBinary().ToBinary<IBinaryObject>(new Person(-2));
             var res = svc.PersonMethodBinary(person);
-            
+
             Assert.AreEqual(-1, res.GetField<int>("Id"));
         }
 
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // Primitive.
             svc.IntProperty = 99;
             Assert.AreEqual(99, svc.IntProperty);
-            
+
             // Object.
             svc.PersonProperty= new Person(123);
             Assert.AreEqual(123, svc.PersonProperty.Id);
@@ -182,13 +182,13 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var persons = new[] {new Person(10), new Person(20)}
                 .Select(p => Client.GetBinary().ToBinary<IBinaryObject>(p))
                 .ToArray();
-            
+
             var res = svc.PersonArrayMethodBinary(persons);
 
             Assert.AreEqual(new[] {12, 22}, res.Select(p => p.GetField<int>("Id")));
         }
 
-        /// <summary>
+        /// <summary>p
         /// Tests various basic argument types passing.
         /// </summary>
         [Test]
@@ -196,23 +196,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             ServerServices.DeployClusterSingleton(ServiceName, new TestServiceDataTypes());
             var svc = Client.GetServices().GetServiceProxy<ITestServiceDataTypes>(ServiceName);
-            
+
             Assert.AreEqual(2, svc.GetByte(1));
             Assert.AreEqual(new byte[] {3, 4, 5}, svc.GetByteArray(new byte[] {2, 3, 4}));
-            
+
             Assert.AreEqual(3, svc.GetSbyte(2));
             Assert.AreEqual(new sbyte[] {-4, 6}, svc.GetSbyteArray(new sbyte[] {-5, 5}));
-            
+
             Assert.AreEqual(3, svc.GetShort(2));
             Assert.AreEqual(new short[] {-4, 6}, svc.GetShortArray(new short[] {-5, 5}));
-            
+
             Assert.AreEqual('d', svc.GetChar('c'));
             Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
 
             var dt = DateTime.Now;
             Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
-            
+
             // TODO: Pass generic collections (with a non-generic method)
+            // TODO: Pass interfaces
         }
 
         /// <summary>
@@ -236,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // Unsigned types are not preserved by the binary protocol and resolve to signed counterparts.
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
-            
+
             // Array types are not distinguished.
             Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
         }
@@ -281,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             // TODO
         }
-        
+
         /// <summary>
         /// Tests that exception in service is propagated to the client and service is still operational.
         /// </summary>
@@ -294,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             Assert.AreEqual("Failed to invoke platform service, see server logs for details", ex.Message);
         }
-        
+
         /// <summary>
         /// Tests that invoking a service that does not exist causes a correct exception.
         /// </summary>
@@ -306,7 +307,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
-        
+
         /// <summary>
         /// Tests async method calls.
         /// </summary>
@@ -318,7 +319,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             var task = svc.AsyncMethod();
             task.Wait();
-            
+
             Assert.AreEqual(1, task.Result);
         }
 
@@ -349,7 +350,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             {
                 services = transform(services);
             }
-            
+
             return services.GetServiceProxy<T>(ServiceName);
         }
 
