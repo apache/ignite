@@ -62,6 +62,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -359,7 +361,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Marshaller marsh;
 
     /** Statistics. */
-    protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
+    protected TcpDiscoveryStatistics stats;
 
     /** Local port which node uses. */
     protected int locPort = DFLT_PORT;
@@ -2115,6 +2117,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         initializeImpl();
 
+        MetricRegistry discoReg =
+            ((IgniteEx)ignite()).context().metric().registry(MetricUtils.metricName("io", "discovery"));
+
+        stats = new TcpDiscoveryStatistics(discoReg);
+
+        discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
+            "Message worker queue current size");
+
+        discoReg.register("CurrentTopologyVersion", () -> impl.getCurrentTopologyVersion(),
+            "Current topology version");
+
+        discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class,
+            "Coordinator ID");
+
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         impl.spiStart(igniteInstanceName);
@@ -2671,7 +2687,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public long getPendingMessagesDiscarded() {
             return stats.pendingMessagesDiscarded();
-
         }
 
         /** {@inheritDoc} */
