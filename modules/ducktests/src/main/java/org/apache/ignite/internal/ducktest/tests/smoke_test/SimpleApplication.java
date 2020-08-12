@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests.smoke_test;
 
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -29,13 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Simple application that used in smoke tests
  */
 public class SimpleApplication extends IgniteAwareApplication {
-    /**
-     * @param ignite Ignite.
-     */
-    public SimpleApplication(Ignite ignite) {
-        super(ignite);
-    }
-
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(UUID.randomUUID().toString());

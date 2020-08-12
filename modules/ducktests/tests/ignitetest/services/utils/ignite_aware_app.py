@@ -31,7 +31,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
 
     # pylint: disable=R0913
     def __init__(self, context, java_class_name, modules, client_mode, version, properties, params, jvm_options,
-                 timeout_sec,
+                 timeout_sec, start_ignite=False,
                  service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"):
         super(IgniteAwareApplicationService, self).__init__(context, 1, modules, client_mode, version, properties,
                                                             jvm_options)
@@ -41,6 +41,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         self.timeout_sec = timeout_sec
         self.stop_timeout_sec = 10
         self.params = params
+        self.start_ignite = start_ignite
 
     def start(self):
         super(IgniteAwareApplicationService, self).start()
@@ -84,10 +85,10 @@ class IgniteAwareApplicationService(IgniteAwareService):
         """
         :return: Application arguments.
         """
-        args = self.java_class_name + "," + IgniteAwareApplicationService.CONFIG_FILE
+        args = ",".join([str(self.start_ignite), self.java_class_name, IgniteAwareApplicationService.CONFIG_FILE])
 
         if self.params != "":
-            args += "," + str(base64.b64encode(json.dumps(self.params).encode("UTF-8")))
+            args = ",".join([args, str(base64.b64encode(json.dumps(self.params).encode("UTF-8")))])
 
         return args
 

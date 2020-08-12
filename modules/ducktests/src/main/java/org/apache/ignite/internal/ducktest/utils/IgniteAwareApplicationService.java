@@ -20,7 +20,12 @@ package org.apache.ignite.internal.ducktest.utils;
 import java.util.Base64;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -39,17 +44,36 @@ public class IgniteAwareApplicationService {
 
         String[] params = args[0].split(",");
 
-        Class<?> clazz = Class.forName(params[0]);
+        boolean startIgnite = Boolean.parseBoolean(params[0]);
 
-        IgniteAwareApplication app = (IgniteAwareApplication)clazz.getConstructor().newInstance();
+        Class<?> clazz = Class.forName(params[1]);
+
+        String cfgPath = params[2];
 
         ObjectMapper mapper = new ObjectMapper();
 
-        JsonNode jsonNode = params.length > 2 ?
-            mapper.readTree(Base64.getDecoder().decode(params[2])) : mapper.createObjectNode();
+        JsonNode jsonNode = params.length > 3 ?
+            mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
-        ((ObjectNode)jsonNode).put("cfgPath", params[1]);
+        IgniteAwareApplication app =
+            (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
-        app.start(jsonNode);
+        app.cfgPath = cfgPath;
+
+        if (startIgnite) {
+            log.info("Starting Ignite node...");
+
+            IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(cfgPath);
+
+            IgniteConfiguration cfg = cfgs.get1();
+
+            try (Ignite ignite = Ignition.start(cfg)) {
+                app.ignite = ignite;
+
+                app.start(jsonNode);
+            }
+        }
+        else
+            app.start(jsonNode);
     }
 }
