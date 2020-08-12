@@ -157,6 +157,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
         nodeBuffers.values().forEach(b -> b.onError(e));
+
+        close();
     }
 
     /** {@inheritDoc} */

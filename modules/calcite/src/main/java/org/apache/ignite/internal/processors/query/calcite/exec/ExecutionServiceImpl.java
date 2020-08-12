@@ -905,15 +905,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         assert Objects.nonNull(info);
 
-        Commons.dbg("onCursorClose");
-
         info.close();
     }
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        Commons.dbg("onNodeLeft");
-
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
         final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
@@ -1068,8 +1064,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     state0 = state = QueryState.CLOSED;
             }
 
-            Commons.dbg("Info.close " + state0 + " " + waiting.isEmpty());
-
             if (state0 == QueryState.CLOSED) {
                 root.context().execute(root::closeExecutionTree);
 
@@ -1115,8 +1109,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         /** */
         private void onResponse(RemoteFragmentKey fragment, Throwable error) {
             boolean close;
-
-            Commons.dbg("onResponse " + fragment + ", " + error);
 
             synchronized (this) {
                 if (fragment != null && !waiting.remove(fragment))

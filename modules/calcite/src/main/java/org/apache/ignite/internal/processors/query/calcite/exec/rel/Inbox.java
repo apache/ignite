@@ -163,8 +163,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         if (isClosed())
             return;
 
-        Commons.dbg("Inbox.close");
-
         if (buffers != null)
             buffers.forEach(Buffer::sendOutboxClose);
 

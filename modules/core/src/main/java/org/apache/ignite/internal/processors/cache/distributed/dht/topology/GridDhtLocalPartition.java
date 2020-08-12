@@ -448,9 +448,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if reserved.
      */
     @Override public boolean reserve() {
-        if (id == 1)
-            System.out.println(Thread.currentThread().getName() + " +++ reserve " + id);
-
         while (true) {
             long state = this.state.get();
 
@@ -483,9 +480,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param sizeChange Size change delta.
      */
     private void release0(int sizeChange) {
-        if (id == 1)
-            System.out.println(Thread.currentThread().getName() + " +++ release " + id);
-
         while (true) {
             long state = this.state.get();
 

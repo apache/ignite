@@ -313,8 +313,4 @@ public final class Commons {
             throw new IgniteException(e);
         }
     }
-
-    public static void dbg(String msg) {
-        new Exception(Thread.currentThread().getName() + " +++ " + msg).printStackTrace();
-    }
 }

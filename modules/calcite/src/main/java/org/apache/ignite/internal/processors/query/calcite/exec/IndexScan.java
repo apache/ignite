@@ -171,8 +171,6 @@ public class IndexScan<Row> implements Iterable<Row> {
                 throw reservationException();
             }
         }
-
-        Commons.dbg("reserve parts " + partsToReserve);
     }
 
     /** */
@@ -207,8 +205,6 @@ public class IndexScan<Row> implements Iterable<Row> {
     /** */
     private void releasePartitions() {
         assert partsToReserve != null;
-
-        Commons.dbg("release parts " + partsToReserve);
 
         for (GridDhtLocalPartition part : partsToReserve)
             part.release();

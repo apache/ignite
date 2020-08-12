@@ -86,13 +86,11 @@ public class RootNode<Row> extends AbstractNode<Row>
     public void closeExecutionTree() {
         checkThread();
 
-        Commons.dbg("Root.closeExecutionTree 0");
         if (isClosed())
             return;
 
         buff.clear();
 
-        Commons.dbg("Root.closeExecutionTree 1");
         super.close();
     }
 
@@ -115,8 +113,6 @@ public class RootNode<Row> extends AbstractNode<Row>
         finally {
             lock.unlock();
         }
-
-        Commons.dbg("Root.close");
 
         onClose.accept(this);
     }
@@ -172,8 +168,6 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
         checkThread();
-
-        Commons.dbg("Root.onError");
 
         assert Objects.isNull(ex) : "The error has been handled. Previous error: " + ex;
 
