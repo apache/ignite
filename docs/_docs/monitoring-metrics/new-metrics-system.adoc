@@ -6,7 +6,7 @@
 
 WARNING: Experimental
 
-Ignite 2.8 introduced a new mechanism for collecting metrics which is intended to replace the legacy metrics system.
+Ignite 2.8 introduced a new mechanism for collecting metrics, which is intended to replace the link:monitoring-metrics/metrics[legacy metrics system].
 This section explains the new system and how you can use it to monitor your cluster.
 //the types of metrics and how to export them, but first let's explore the basic concepts of the new metrics mechanism in Ignite.
 
@@ -18,8 +18,7 @@ Some metrics represent <<histograms>>.
 
 And then there are different ways to export the metrics — what we call _exporters_.
 To put it another way, the exporter are different ways you can access the metrics.
-Each exporter gives access to all available metrics.
-
+Each exporter always gives access to all available metrics.
 
 Ignite includes the following exporters:
 
@@ -106,9 +105,6 @@ You can use any supported SQL tool to view the metrics:
 | cache.myCache.EstimatedRebalancingKeys | 0                         |
 | cache.myCache.CacheEvictions      | 0                              |
 | cache.myCache.CommitTime          | [J@2eb66498                    |
-| cache.myCache.OffHeapMisses       | 0                              |
-| cache.myCache.EntryProcessorMaxInvocationTime | 0                  |
-| cache.myCache.OffHeapGets         | 0                              |
 ....
 ----
 
@@ -163,7 +159,48 @@ tab:C++[]
 
 === OpenCensus
 
-`org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi`
+`org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi` adds integration with the OpenCensus library.
+
+To use the OpenCensus exporter:
+
+. link:setup#enabling-modules[Enable the 'ignite-opencensus' module].
+. Add `org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi` to the list of exporters in the node configuration.
+. Configure OpenCensus StatsCollector to export to a specific system. See link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/opencensus/OpenCensusMetricsExporterExample.java[OpenCensusMetricsExporterExample.java] for an example and OpenCensus documentation for additional information.
+
+
+Configuration parameters:
+
+* `filter` - predicate that filters metrics.
+* `period` - export period.
+* `sendInstanceName` - if enabled, a tag with the Ignite instance name is added to each metric.
+* `sendNodeId` - if enabled, a tag with the Ignite node id is added to each metric.
+* `sendConsistentId` - if enabled, a tag with the Ignite node consistent id is added to each metric.
+
+
+
 
 == Histograms
+
+The metrics that represent histograms are available in the JMX exporter only.
+Histogram metrics are exported as a set of values where each value corresponds to a specific bucket and is available through a separate JMX bean attribute.
+The attribute names of a histogram metric have the following format:
+
+```
+{metric_name}_{low_bound}_{high_bound}
+```
+
+where
+
+* `{metric_name}` - the name of the metric.
+* `{low_bound}` - start of the bound. `0` for the first bound.
+* `{high_bound}` - end of the bound. `inf` for the last bound.
+
+
+Example of the metric names if the bounds are [10,100]:
+
+* `histogram_0_10` - less than 10.
+* `histogram_10_100` - between 10 and 100.
+* `histogram_100_inf` - more than 100.
+
+
 

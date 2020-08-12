@@ -303,7 +303,7 @@ Field name aliases are used to give a convenient name for the full property name
 - `alias`: alias (str).
 
 ===== Query Fields
-Query fields define the fields that are queriable.
+Query fields define the fields that are queryable.
 
 - `name`: field name.
 - `type_name`: name of Java type or complex object.

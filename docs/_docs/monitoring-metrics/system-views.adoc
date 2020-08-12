@@ -82,7 +82,7 @@ include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
 |IS_MANAGEMENT_ENABLED | boolean|
 |IS_NEAR_CACHE_ENABLED |   boolean| True if near cache enabled
 |IS_ONHEAP_CACHE_ENABLED | boolean | True if on heap cache enabled
-|IS_READ_FROM_BACKUP | boolean | True if read operation should be perfromed from backup node
+|IS_READ_FROM_BACKUP | boolean | True if read operation should be performed from backup node
 |IS_READ_THROUGH | boolean | True if read from third party storage enabled
 |IS_SQL_ESCAPE_ALL | boolean | If true all the SQL table and field names will be escaped with double quotes
 |IS_SQL_ONHEAP_CACHE_ENABLED | boolean | If true SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or evicted.
@@ -634,7 +634,7 @@ If persistence is enabled page lists are created for each partition of each cach
 |IS_MANAGEMENT_ENABLED | boolean |
 |IS_NEAR_CACHE_ENABLED | boolean | True if near cache enabled
 |IS_ONHEAP_CACHE_ENABLED | boolean | True if on heap cache enabled
-|IS_READ_FROM_BACKUP | boolean | True if read operation should be perfromed from backup node
+|IS_READ_FROM_BACKUP | boolean | True if read operation should be performed from backup node
 |IS_READ_THROUGH | boolean | True if read from third party storage enabled
 |IS_SQL_ESCAPE_ALL | boolean | If true all the SQL table and field names will be escaped with double quotes
 |IS_SQL_ONHEAP_CACHE_ENABLED | boolean | If true SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or evicted.

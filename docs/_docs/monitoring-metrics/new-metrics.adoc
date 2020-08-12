@@ -26,7 +26,6 @@ Register name: `sys`
 |UpTime|  long  |  RuntimeMxBean.getUptime()
 |memory.heap.committed|   long|    MemoryUsage.getHeapMemoryUsage().getCommitted()
 |memory.heap.init |   long|    MemoryUsage.getHeapMemoryUsage().getInit()
-|memory.heap.max |long|    MemoryUsage.getHeapMemoryUsage().getMax()
 |memory.heap.used    |long|    MemoryUsage.getHeapMemoryUsage().getUsed()
 |memory.nonheap.committed|    long|    MemoryUsage.getNonHeapMemoryUsage().getCommitted()
 |memory.nonheap.init |long  |  MemoryUsage.getNonHeapMemoryUsage().getInit()

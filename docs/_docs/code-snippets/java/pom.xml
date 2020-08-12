@@ -56,6 +56,13 @@
 			<artifactId>ignite-zookeeper</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
+
+        <dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-opencensus</artifactId>
+			<version>${ignite.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-cloud</artifactId>

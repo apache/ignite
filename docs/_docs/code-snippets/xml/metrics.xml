@@ -7,12 +7,15 @@
                 <!-- tag::jmx-exporter[] -->
                 <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
                 <!-- end::jmx-exporter[] -->
-                 <!-- tag::sql-exporter[] -->
+                <!-- tag::sql-exporter[] -->
                 <bean class="org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi"/>
-                 <!-- end::sql-exporter[] -->
-                 <!-- tag::log-exporter[] -->
+                <!-- end::sql-exporter[] -->
+                <!-- tag::log-exporter[] -->
                 <bean class="org.apache.ignite.spi.metric.log.LogExporterSpi"/>
-                 <!-- end::log-exporter[] -->
+                <!-- end::log-exporter[] -->
+                <!-- tag::opencensus-exporter[] -->
+                <bean class="org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi"/>
+                <!-- end::opencensus-exporter[] -->
             </list>
         </property>
         <!-- tag::discovery[] -->

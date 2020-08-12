@@ -6,9 +6,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.junit.jupiter.api.Test;
 
 public class TDE {
 
+    @Test
     void configuration() {
         //tag::config[]
         IgniteConfiguration cfg = new IgniteConfiguration();
