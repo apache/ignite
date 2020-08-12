@@ -4,6 +4,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 
 public class TDE {
@@ -30,7 +31,15 @@ public class TDE {
         ignite.createCache(ccfg);
 
         //end::cache[]
-        
+
+        //tag::master-key-rotation[]
+        // Gets the current master key name.
+        String name = ignite.encryption().getMasterKeyName();
+
+        // Starts master key change process.
+        IgniteFuture<Void> future = ignite.encryption().changeMasterKey("newMasterKeyName");
+        //end::master-key-rotation[]
+
         ignite.close();
     }
 }

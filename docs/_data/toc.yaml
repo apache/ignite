@@ -183,7 +183,11 @@
     - title: SSL/TLS 
       url: /security/ssl-tls
     - title: Transparent Data Encryption
-      url: /security/tde
+      items:
+        - title: Introduction
+          url: /security/tde
+        - title: Master key rotation
+          url: /security/master-key-rotation
 
 - title: Thin Clients
   items: 
