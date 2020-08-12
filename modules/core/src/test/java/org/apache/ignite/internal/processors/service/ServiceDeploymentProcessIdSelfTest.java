@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -40,6 +41,9 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(Parameterized.class)
 public class ServiceDeploymentProcessIdSelfTest {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(ServiceDeploymentProcessIdSelfTest.class.getName());
+
     /** Tests discovery event type. */
     private final String testLabel;
 
@@ -94,9 +98,9 @@ public class ServiceDeploymentProcessIdSelfTest {
     /** */
     @Test
     public void topologyVersion() {
-        System.out.println("test with event type: " + testLabel);
-        System.out.println("event = " + evt);
-        System.out.println("topology version = " + topVer);
+        LOG.info("test with event type: " + testLabel);
+        LOG.info("event = " + evt);
+        LOG.info("topology version = " + topVer);
 
         AffinityTopologyVersion topVer = evt instanceof DiscoveryCustomEvent ? null : this.topVer;
 
@@ -106,9 +110,9 @@ public class ServiceDeploymentProcessIdSelfTest {
     /** */
     @Test
     public void requestId() {
-        System.out.println("test with event type: " + testLabel);
-        System.out.println("event = " + evt);
-        System.out.println("topology version = " + topVer);
+        LOG.info("test with event type: " + testLabel);
+        LOG.info("event = " + evt);
+        LOG.info("topology version = " + topVer);
 
         IgniteUuid reqId = evt instanceof DiscoveryCustomEvent ? ((DiscoveryCustomEvent)evt).customMessage().id() : null;
 
