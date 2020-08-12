@@ -1337,9 +1337,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
     /**
-     * When set to {@code true}, {@link DistributedMetaStorage} keys that values can't be unmarshalled will be skipped.
-     * {@link DistributedMetaStorageListener} and explicit reads will get {@code null} values.
-     * By default, {@code false}.
+     * Flag to disable {@link DistributedMetaStorage} marshalling validation. When set to {@code true}, keys that
+     * values can't be unmarshalled will be skipped. {@link DistributedMetaStorageListener} and explicit reads will get
+     * {@code null} values. By default, {@code false}.
      */
     public static final String IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS = "IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS";
 
