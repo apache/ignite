@@ -26,14 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
-
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -90,9 +88,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         long srcFragmentId
     ) {
         super(ctx);
-
-        System.out.println(Thread.currentThread().getName() + " +++ Inbox " + this);
-
         this.exchange = exchange;
         this.registry = registry;
 

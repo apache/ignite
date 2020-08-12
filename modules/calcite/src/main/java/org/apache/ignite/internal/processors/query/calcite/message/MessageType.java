@@ -30,10 +30,10 @@ public enum MessageType {
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
     QUERY_BATCH_MESSAGE(302, QueryBatchMessage::new),
     QUERY_ACKNOWLEDGE_MESSAGE(303, QueryBatchAcknowledgeMessage::new),
-    QUERY_INBOX_CANCEL_MESSAGE(304, InboxCloseMessage::new),
-    QUERY_OUTBOX_CANCEL_MESSAGE(305, OutboxCloseMessage::new),
-    QUERY_ERROR_MESSAGE(306, ErrorMessage::new),
-    GENERIC_ROW_MESSAGE(307, GenericRowMessage::new),
+    GENERIC_ROW_MESSAGE(304, GenericRowMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
+    QUERY_OUTBOX_CANCEL_MESSAGE(306, OutboxCloseMessage::new),
+    QUERY_ERROR_MESSAGE(307, ErrorMessage::new),
 
     NODES_MAPPING(350, NodesMapping::new),
     FRAGMENT_DESCRIPTION(351, FragmentDescription::new);

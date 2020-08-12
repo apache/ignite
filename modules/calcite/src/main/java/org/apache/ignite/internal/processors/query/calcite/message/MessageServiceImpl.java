@@ -131,7 +131,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         this.marsh = marsh;
     }
 
-
     /** {@inheritDoc} */
     @Override public Marshaller marshaller() {
         return marsh;

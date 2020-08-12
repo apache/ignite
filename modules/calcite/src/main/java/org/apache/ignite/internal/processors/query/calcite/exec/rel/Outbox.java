@@ -80,7 +80,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         Destination dest
     ) {
         super(ctx);
-
         this.exchange = exchange;
         this.registry = registry;
         this.targetFragmentId = targetFragmentId;
