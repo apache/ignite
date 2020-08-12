@@ -30,7 +30,7 @@ Ignite provide the ability to change the master key from the following interface
 
 === Command line tool
 
-Ignite ships a `control.sh|bat` script, located in the ``$IGNITE_HOME/bin` folder, that acts like a tool to manage the master key change process from the command line. The following commands can be used with `control.sh|bat`:
+Ignite ships a `control.sh|bat` script, located in the `$IGNITE_HOME/bin` folder, that acts like a tool to manage the master key change process from the command line. The following commands can be used with `control.sh|bat`:
 
 [source,shell]
 ----
@@ -45,7 +45,7 @@ control.sh|bat --encryption change_master_key newMasterKeyName
 
 You can also manage the master key change process via the `EncryptionMXBean` interface:
 
-[{table_opts}]
+[cols="1,1",opts="header"]
 |===
 |Method | Description
 |getMasterKeyName() | Gets the current master key name.
@@ -56,17 +56,15 @@ You can also manage the master key change process via the `EncryptionMXBean` int
 
 The master key change process can be managed programmatically:
 
-[source,java]
-----
-// Connect to the cluster.
-Ignite ignite = Ignition.start();
+[tabs]
+--
+tab:Java[]
 
-// Gets the current master key name.
-String name = ignite.encryption().getMasterKeyName();
-
-// Starts master key change process.
-IgniteFuture<Void> future = ignite.encryption().changeMasterKey(“newMasterKeyName”);
+[source, java]
 ----
+include::{javaCodeDir}/TDE.java[tags=masterKeyRotation, indent=0]
+----
+--
 
 == Recovery of the master key on failing node
 
