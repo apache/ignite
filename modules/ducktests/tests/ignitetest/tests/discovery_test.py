@@ -136,7 +136,7 @@ class DiscoveryTest(IgniteTest):
         """
         self.__start_zk_quorum()
 
-        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string), 1)
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 1)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
@@ -147,7 +147,7 @@ class DiscoveryTest(IgniteTest):
         """
         self.__start_zk_quorum()
 
-        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string), 2)
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 2)
 
     @cluster(num_nodes=NUM_NODES+3)
     @parametrize(version=str(DEV_BRANCH))
@@ -158,9 +158,11 @@ class DiscoveryTest(IgniteTest):
         """
         self.__start_zk_quorum()
 
-        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string), 0)
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 0)
 
     def __simulate_nodes_failure(self, version, properties, nodes_to_kill=1):
+        self.stage("Properties: " + str(properties))
+
         """
         :param nodes_to_kill: How many nodes to kill. If <1, the coordinator is the choice. Otherwise: not-coordinator
         nodes of given number.
