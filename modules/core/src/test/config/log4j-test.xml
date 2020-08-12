@@ -84,10 +84,6 @@
     </category>
     -->
 
-    <category name="org.apache.ignite.internal.managers.encryption">
-        <level value="DEBUG"/>
-    </category>
-
     <!--
         Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
     -->

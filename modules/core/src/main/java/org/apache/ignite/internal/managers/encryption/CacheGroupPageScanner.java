@@ -66,7 +66,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
-    /** Mapping of cache group ID to group scanning context. */
+    /** Mapping of cache group ID to group scanning task. */
     private final Map<Integer, GroupScanTask> grps = new ConcurrentHashMap<>();
 
     /** Collection of groups waiting for a checkpoint. */
