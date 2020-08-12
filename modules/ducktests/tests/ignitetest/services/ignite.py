@@ -107,7 +107,7 @@ class IgniteService(IgniteAwareService):
             self.thread_dump(node)
             raise
 
-    def stop_nodes_async(self, nodes, delay_ms=100, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
+    def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
         """
         Stops the nodes asynchronously.
         """
