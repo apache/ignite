@@ -79,6 +79,10 @@ public class TcpDiscoveryStatistics {
     public TcpDiscoveryStatistics(MetricRegistry discoReg) {
         discoReg.register("CoordinatorSince", crdSinceTs::get, "Coordinator since timestamp");
 
+        discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
+
+        discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
+
         joinedNodesCnt = discoReg.intMetric("JoinedNodes", "Joined nodes count");
 
         failedNodesCnt = discoReg.intMetric("FailedNodes", "Failed nodes count");
@@ -154,9 +158,9 @@ public class TcpDiscoveryStatistics {
     public synchronized void onMessageProcessingFinished(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
-        Long startTs = msgsProcStartTs.get(msg.id());
+        Long startTs = msgsProcStartTs.remove(msg.id());
 
-        if (startTs != null) {
+        if (startTs == null) {
             long duration = U.currentTimeMillis() - startTs;
 
             int totalProcMsgs = totalProcessedMessages();
@@ -166,8 +170,6 @@ public class TcpDiscoveryStatistics {
 
             if (duration > maxMsgProcTime)
                 maxMsgProcTime = duration;
-
-            msgsProcStartTs.remove(msg.id());
         }
     }
 

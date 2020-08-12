@@ -107,7 +107,16 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertEquals(0, discoReg.<IntMetric>findMetric("LeftNodes").value());
 
                 assertTrue(bean.getTotalReceivedMessages() > 0);
+                assertTrue(discoReg.<IntMetric>findMetric("TotalReceivedMessages").value() > 0);
+
                 assertTrue(bean.getTotalProcessedMessages() > 0);
+                assertTrue(discoReg.<IntMetric>findMetric("TotalProcessedMessages").value() > 0);
+
+                assertTrue(bean.getPendingMessagesRegistered() > 0);
+                assertTrue(discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value() > 0);
+
+                assertEquals(0, bean.getPendingMessagesDiscarded());
+                assertEquals(0, discoReg.<IntMetric>findMetric("PendingMessagesDiscarded").value());
 
                 bean.dumpRingStructure();
                 assertTrue(strLog.toString().contains("TcpDiscoveryNodesRing"));
