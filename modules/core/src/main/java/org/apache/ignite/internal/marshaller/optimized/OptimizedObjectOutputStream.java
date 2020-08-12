@@ -201,6 +201,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 OptimizedClassDescriptor desc = classDescriptor(
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    true,
                     ctx,
                     mapper);
 
@@ -228,6 +229,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
+                        true,
                         ctx,
                         mapper);
                 }

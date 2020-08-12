@@ -103,6 +103,9 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
     private OptimizedObjectStreamRegistry registry = new OptimizedObjectSharedStreamRegistry();
 
+    /** Non cached registry. */
+    private OptimizedObjectSharedStreamRegistry nonCachedRegistry = new OptimizedObjectSharedStreamRegistry();
+
     /**
      * Creates new marshaller will all defaults.
      *
@@ -218,14 +221,29 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        return unmarshal0(in, clsLdr, clsLdr == dfltClsLdr);
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param in Input stream.
+     * @param clsLdr Class loader to use.
+     * @param useCache True if class loader cache will be used, false otherwise.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
         assert in != null;
 
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = registry.in();
+            objIn = !useCache ? nonCachedRegistry.in() : registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, useCache);
 
             objIn.in().inputStream(in);
 
@@ -242,7 +260,10 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
                 "[clsLdr=" + clsLdr + ", err=" + e.getMessage() + "]", e);
         }
         finally {
-            registry.closeIn(objIn);
+            if (!useCache)
+                nonCachedRegistry.closeNotCachedIn(objIn);
+            else
+                registry.closeIn(objIn);
         }
     }
 
@@ -255,7 +276,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             objIn = registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, true);
 
             objIn.in().bytes(arr, arr.length);
 

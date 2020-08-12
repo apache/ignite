@@ -677,9 +677,25 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(typeId, ldr);
+            if (BinaryUtils.isClassCacheWillUsed(this, ldr)) {
+                cls = marshCtx.getClass(typeId, ldr);
 
-            desc = descByCls.get(cls);
+                desc = descByCls.get(cls);
+            }
+            else {
+                String clsName = marshCtx.getClassName(JAVA_ID, typeId);
+
+                if (clsName == null)
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+
+                cls = U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
+
+                desc = descByCls.get(cls);
+
+                if (desc == null)
+                    return createNoneCacheClassDescriptor(cls);
+            }
+
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
@@ -707,6 +723,39 @@ public class BinaryContext {
     }
 
     /**
+     * Creates descriptor, but not carry about registration.
+     *
+     * @param cls Class.
+     * @return Binary class descriptor.
+     */
+    @NotNull private BinaryClassDescriptor createNoneCacheClassDescriptor(Class cls) {
+        String clsName = cls.getName();
+
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+        int typeId = mapper.typeId(clsName);
+
+        String typeName = mapper.typeName(clsName);
+
+        BinarySerializer serializer = serializerForClass(cls);
+
+        String affFieldName = affinityFieldName(cls);
+
+        return new BinaryClassDescriptor(this,
+            cls,
+            true,
+            typeId,
+            typeName,
+            affFieldName,
+            mapper,
+            serializer,
+            true,
+            true,
+            false
+        );
+    }
+
+    /**
      * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster.
      *
      * @param desc Class descriptor to register.
@@ -724,11 +773,14 @@ public class BinaryContext {
         else {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
+            if (BinaryUtils.isClassCacheWillUsed(this, desc.describedClass().getClassLoader())) {
+                BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
-            return old != null
-                ? old
-                : regDesc;
+                if (old != null)
+                    return old;
+            }
+
+            return regDesc;
         }
     }
 

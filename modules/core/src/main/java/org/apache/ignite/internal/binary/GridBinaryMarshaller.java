@@ -36,6 +36,8 @@ public class GridBinaryMarshaller {
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);
 
+    public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
+
     /** */
     public static final byte OPTM_MARSH = -2;
 
