@@ -63,7 +63,6 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -120,6 +119,7 @@ import org.jetbrains.annotations.TestOnly;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -1881,8 +1881,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
                 ", rmtPort=" + sock.getPort() + ']');
 
-            stats.onAckTimeout();
-
             throw e;
         }
         finally {
@@ -2118,7 +2116,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         initializeImpl();
 
         MetricRegistry discoReg =
-            ((IgniteEx)ignite()).context().metric().registry(MetricUtils.metricName("io", "discovery"));
+            ((IgniteEx)ignite()).context().metric().registry(metricName("io", "discovery"));
 
         stats = new TcpDiscoveryStatistics(discoReg);
 
@@ -2516,8 +2514,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                             + sockTimeout) + ", connRecoveryTimeout=" + getConnectionRecoveryTimeout() + ", rmtAddr="
                     + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ", sockTimeout=" + sockTimeout
                     + ']');
-
-                stats.onSocketTimeout();
             }
         }
 
