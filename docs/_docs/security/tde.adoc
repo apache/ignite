@@ -10,7 +10,10 @@ When link:persistence/native-persistence[Ignite persistence] is turned on, encry
 - Data on disk
 - WAL records
 
-If you enable cache/table encryption, Ignite will generate a key (called _cache encryption key_) and will use this key to encrypt/decrypt the cache's data. The cache encryption key is held in the system cache and cannot be accessed by users. When the key needs to be sent to other nodes or saved to disk (when the node goes down), it is encrypted using the user provided key — the _master key_.
+If you enable cache/table encryption, Ignite will generate a key (called _cache encryption key_) and will use this key to encrypt/decrypt the data in the cache.
+The cache encryption key is held in the system cache and cannot be accessed by users.
+When the cache encryption key is sent to other nodes or saved to disk (when the node goes down), it is encrypted using the _master key_.
+The master key must be specified by the user in the configuration.
 
 The _same_ master key must be specified via the configuration in every server node. One way to ensure you're using the same key is to copy the JKS file from one node to the other nodes. If you try to enable TDE using different keys, the nodes with the different key will not be able to join the cluster (will be rejected based on differing digests).
 
@@ -18,7 +21,7 @@ Ignite uses JDK-provided encryption algorithms: "AES/CBC/PKCS5Padding" to encryp
 
 == Limitations
 
-Transparent Data Encryption has some limitations that you should be aware of before deploying it your production environment.
+Transparent Data Encryption has some limitations that you should be aware of before deploying it in your production environment.
 
 *Encryption*
 
@@ -52,7 +55,7 @@ include::{javaCodeDir}/TDE.java[tags=config, indent=0]
 ----
 
 tab:C#/.NET[]
-tab:C++[]
+tab:C++[unsupported]
 --
 
 
