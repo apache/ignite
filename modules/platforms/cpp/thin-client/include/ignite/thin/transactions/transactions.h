@@ -174,6 +174,7 @@ namespace ignite
                 /** Implementation. */
                 TransactionsProxy proxy;
 
+                /** Transaction specific label. */
                 const char* label;
 
                 /**

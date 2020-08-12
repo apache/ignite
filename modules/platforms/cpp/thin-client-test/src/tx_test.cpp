@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 
     // Test transaction with a timeout.
 
-    const uint TX_TIMEOUT = 200L;
+    const uint32_t TX_TIMEOUT = 200;
 
     tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
 
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(TestTxWithLabel)
     cache::CacheClient<int, int> cache =
         client.GetCache<int, int>("partitioned");
 
-    const uint TX_TIMEOUT = 200L;
+    const uint32_t TX_TIMEOUT = 200;
 
     transactions::ClientTransactions transactions = client.ClientTransactions();
 
