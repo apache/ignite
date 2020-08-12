@@ -34,7 +34,7 @@ class IgniteTest(Test):
         Print stage mark.
         :param msg: Stage mark message.
         """
-        self.logger.info("[TEST_STAGE] " + msg + "...")
+        self.logger.info("[TEST_STAGE] " + msg)
 
     @staticmethod
     def monotonic():
