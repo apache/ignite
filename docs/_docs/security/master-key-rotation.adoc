@@ -62,7 +62,7 @@ tab:Java[]
 
 [source, java]
 ----
-include::{javaCodeDir}/TDE.java[tags=masterKeyRotation, indent=0]
+include::{javaCodeDir}/TDE.java[tags=master-key-rotation, indent=0]
 ----
 --
 

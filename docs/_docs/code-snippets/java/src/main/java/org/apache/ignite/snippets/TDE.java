@@ -32,13 +32,13 @@ public class TDE {
 
         //end::cache[]
 
-        //tag::masterKeyRotation[]
+        //tag::master-key-rotation[]
         // Gets the current master key name.
         String name = ignite.encryption().getMasterKeyName();
 
         // Starts master key change process.
         IgniteFuture<Void> future = ignite.encryption().changeMasterKey("newMasterKeyName");
-        //end::masterKeyRotation[]
+        //end::master-key-rotation[]
 
         ignite.close();
     }
