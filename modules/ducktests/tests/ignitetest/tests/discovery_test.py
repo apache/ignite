@@ -18,12 +18,16 @@ Module contains discovery tests.
 """
 
 import random
+import re
+from datetime import datetime
 
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
@@ -32,26 +36,27 @@ from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 # pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
     """
-    Test basic discovery scenarious (TCP and Zookeeper).
+    Test various node failure scenarios (TCP and ZooKeeper).
     1. Start of ignite cluster.
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
     NUM_NODES = 7
 
+    FAILURE_DETECTION_TIMEOUT = 2000
+
     CONFIG_TEMPLATE = """
-        {% if zookeeper_settings %}
+    <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
+    {% if zookeeper_settings %}
         {% with zk = zookeeper_settings %}
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
                 <property name="zkConnectionString" value="{{ zk.connection_string }}"/>
-                <property name="sessionTimeout" value="{{ zk.session_timeout or 3000 }}"/>
                 <property name="zkRootPath" value="{{ zk.root_path or '/apacheIgnite' }}"/>
-                <property name="joinTimeout" value="{{ zk.join_timeout or 10000 }}"/>
             </bean>
         </property>
         {% endwith %}
-        {% endif %}
+    {% endif %}
     """
 
     def __init__(self, test_context):
@@ -59,14 +64,28 @@ class DiscoveryTest(IgniteTest):
         self.zk_quorum = None
         self.servers = None
 
+    def __start_zk_quorum(self):
+        self.zk_quorum = ZookeeperService(self.test_context, 3)
+
+        self.stage("Starting ZooKeeper quorum")
+
+        self.zk_quorum.start()
+
+        self.stage("ZooKeeper quorum started")
+
     @staticmethod
-    def properties(zookeeper_settings=None):
+    def __properties(zookeeper_settings=None):
         """
-        :param zookeeper_settings: ZookeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
+        :param zookeeper_settings: ZooKeeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
         :return: Rendered node's properties.
         """
         return Template(DiscoveryTest.CONFIG_TEMPLATE) \
-            .render(zookeeper_settings=zookeeper_settings)
+            .render(failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                    zookeeper_settings=zookeeper_settings)
+
+    @staticmethod
+    def __zk_properties(connection_string):
+        return DiscoveryTest.__properties(zookeeper_settings={'connection_string': connection_string})
 
     def setUp(self):
         pass
@@ -81,31 +100,68 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
-    def test_tcp(self, version):
+    def test_tcp_not_coordinator_single(self, version):
         """
-        Test basic discovery scenario with TcpDiscoverySpi.
+        Test single-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
         """
-        return self.__basic_test__(version, False)
+        return self.__simulate_nodes_failure(version, self.__properties(), 1)
+
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_tcp_not_coordinator_two(self, version):
+        """
+        Test two-node-failure scenario (not the coordinator) with TcpDiscoverySpi.
+        """
+        return self.__simulate_nodes_failure(version, self.__properties(), 2)
+
+    @cluster(num_nodes=NUM_NODES)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_tcp_coordinator(self, version):
+        """
+        Test coordinator-failure scenario with TcpDiscoverySpi.
+        """
+        return self.__simulate_nodes_failure(version, self.__properties(), 0)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))
-    def test_zk(self, version):
+    def test_zk_not_coordinator_single(self, version):
         """
-        Test basic discovery scenario with ZookeeperDiscoverySpi.
+        Test single node failure scenario (not the coordinator) with ZooKeeper.
         """
-        return self.__basic_test__(version, True)
+        self.__start_zk_quorum()
 
-    def __basic_test__(self, version, with_zk=False):
-        if with_zk:
-            self.zk_quorum = ZookeeperService(self.test_context, 3)
-            self.stage("Starting Zookeper quorum")
-            self.zk_quorum.start()
-            properties = self.properties(zookeeper_settings={'connection_string': self.zk_quorum.connection_string()})
-            self.stage("Zookeper quorum started")
-        else:
-            properties = self.properties()
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 1)
 
+    @cluster(num_nodes=NUM_NODES + 3)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_zk_not_coordinator_two(self, version):
+        """
+        Test two-node-failure scenario (not the coordinator) with ZooKeeper.
+        """
+        self.__start_zk_quorum()
+
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 2)
+
+    @cluster(num_nodes=NUM_NODES+3)
+    @parametrize(version=str(DEV_BRANCH))
+    @parametrize(version=str(LATEST_2_7))
+    def test_zk_coordinator(self, version):
+        """
+        Test coordinator-failure scenario with ZooKeeper.
+        """
+        self.__start_zk_quorum()
+
+        return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 0)
+
+    def __simulate_nodes_failure(self, version, properties, nodes_to_kill=1):
+        """
+        :param nodes_to_kill: How many nodes to kill. If <1, the coordinator is the choice. Otherwise: not-coordinator
+        nodes of given number.
+        """
         self.servers = IgniteService(
             self.test_context,
             num_nodes=self.NUM_NODES,
@@ -115,48 +171,76 @@ class DiscoveryTest(IgniteTest):
 
         self.stage("Starting ignite cluster")
 
-        start = self.monotonic()
+        time_holder = self.monotonic()
+
         self.servers.start()
-        data = {'Ignite cluster start time (s)': self.monotonic() - start}
+
+        if nodes_to_kill > self.servers.num_nodes - 1:
+            raise Exception("Too many nodes to kill: " + str(nodes_to_kill))
+
+        data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
         self.stage("Topology is ready")
 
-        # Node failure detection
-        fail_node, survived_node = self.choose_random_node_to_kill(self.servers)
+        failed_nodes, survived_node = self.__choose_node_to_kill(nodes_to_kill)
 
-        data["nodes"] = [node.node_id() for node in self.servers.nodes]
+        ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        disco_infos = []
-        for node in self.servers.nodes:
-            disco_info = node.discovery_info()
-            disco_infos.append({
-                "id": disco_info.node_id,
-                "consistent_id": disco_info.consistent_id,
-                "coordinator": disco_info.coordinator,
-                "order": disco_info.order,
-                "int_order": disco_info.int_order,
-                "is_client": disco_info.is_client
-            })
+        self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
 
-        data["node_disco_info"] = disco_infos
+        first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
 
-        self.servers.stop_node(fail_node, clean_shutdown=False)
+        self.stage("Waiting for failure detection of " + str(len(failed_nodes)) + " nodes.")
 
-        start = self.monotonic()
-        self.servers.await_event_on_node("Node FAILED", random.choice(survived_node), 60, True)
+        # Keeps dates of logged node failures.
+        logged_timestamps = []
 
-        data['Failure of node detected in time (s)'] = self.monotonic() - start
+        for failed_id in ids_to_wait:
+            self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 10,
+                                             from_the_beginning=True, backoff_sec=0.01)
+            # Save mono of last detected failure.
+            time_holder = self.monotonic()
+            self.stage("Failure detection measured.")
+
+        for failed_id in ids_to_wait:
+            _, stdout, _ = survived_node.account.ssh_client.exec_command(
+                "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+
+            logged_timestamps.append(
+                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read()).group(), "[%Y-%m-%d %H:%M:%S,%f]"))
+
+        logged_timestamps.sort(reverse=True)
+
+        # Failure detection delay.
+        time_holder = int((time_holder - first_terminated[0]) * 1000)
+        # Failure detection delay by log.
+        by_log = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1])
+
+        assert by_log > 0, "Negative node failure detection delay: " + by_log + ". Probably it is a timezone issue."
+        assert by_log <= time_holder, "Value of node failure detection delay taken from by the node log (" + \
+                                      str(by_log) + "ms) must be lesser than measured value (" + str(time_holder) + \
+                                      "ms) because watching this event consumes extra time."
+
+        data['Detection of node(s) failure, measured (ms)'] = time_holder
+        data['Detection of node(s) failure, by the log (ms)'] = by_log
+        data['Nodes failed'] = len(failed_nodes)
 
         return data
 
     @staticmethod
-    def choose_random_node_to_kill(service):
-        """
-        :param service: Service nodes to process.
-        :return: Tuple of random node to kill and survived nodes
-        """
-        idx = random.randint(0, len(service.nodes) - 1)
+    def __failed_pattern(failed_node_id):
+        return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
 
-        survive = [node for i, node in enumerate(service.nodes) if i != idx]
-        kill = service.nodes[idx]
+    def __choose_node_to_kill(self, nodes_to_kill):
+        nodes = self.servers.nodes
+        coordinator = nodes[0].discovery_info().coordinator
 
-        return kill, survive
+        if nodes_to_kill < 1:
+            to_kill = next(node for node in nodes if node.discovery_info().node_id == coordinator)
+        else:
+            to_kill = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
+
+        to_kill = [to_kill] if not isinstance(to_kill, list) else to_kill
+
+        survive = random.choice([node for node in self.servers.nodes if node not in to_kill])
+
+        return to_kill, survive

@@ -17,12 +17,19 @@
 This module contains class to start ignite cluster node.
 """
 
-import os.path
+import functools
+import operator
+import os
 import signal
+import time
+from datetime import datetime
+from threading import Thread
 
+import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.tests.utils.version import DEV_BRANCH
 
@@ -91,7 +98,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            node.account.signal(pid, sig, allow_fail=False)
+            self.__stop_node(node, pid, sig)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -99,6 +106,59 @@ class IgniteService(IgniteAwareService):
         except Exception:
             self.thread_dump(node)
             raise
+
+    def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
+        """
+        Stops the nodes asynchronously.
+        """
+        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
+
+        sem = CountDownLatch(len(nodes))
+        time_holder = AtomicValue()
+
+        delay = 0
+        threads = []
+
+        for node in nodes:
+            thread = Thread(target=self.__stop_node,
+                            args=(node, next(iter(self.pids(node))), sig, sem, delay, time_holder))
+
+            threads.append(thread)
+
+            thread.start()
+
+            delay += delay_ms
+
+        for thread in threads:
+            thread.join(timeout_sec)
+
+        if wait_for_stop:
+            try:
+                wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
+                           timeout_sec=timeout_sec, err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
+            except Exception:
+                for node in nodes:
+                    self.thread_dump(node)
+                raise
+
+        return time_holder.get()
+
+    @staticmethod
+    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
+        if start_waiter:
+            start_waiter.count_down()
+            start_waiter.wait()
+
+        if delay_ms > 0:
+            time.sleep(delay_ms/1000.0)
+
+        if time_holder:
+            mono = monotonic.monotonic()
+            timestamp = datetime.now()
+
+            time_holder.compare_and_set(None, (mono, timestamp))
+
+        node.account.signal(pid, sig, False)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
