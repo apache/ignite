@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosure;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -170,6 +171,8 @@ public class IndexScan<Row> implements Iterable<Row> {
                 throw reservationException();
             }
         }
+
+        Commons.dbg("reserve parts " + partsToReserve);
     }
 
     /** */
@@ -204,6 +207,8 @@ public class IndexScan<Row> implements Iterable<Row> {
     /** */
     private void releasePartitions() {
         assert partsToReserve != null;
+
+        Commons.dbg("release parts " + partsToReserve);
 
         for (GridDhtLocalPartition part : partsToReserve)
             part.release();

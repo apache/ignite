@@ -75,11 +75,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         ExecutionContext<Row> ctx,
         ExchangeService exchange,
         MailboxRegistry registry,
-        long exchangeId, long
-        targetFragmentId,
+        long exchangeId,
+        long targetFragmentId,
         Destination dest
     ) {
         super(ctx);
+
         this.exchange = exchange;
         this.registry = registry;
         this.targetFragmentId = targetFragmentId;
@@ -200,7 +201,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void sendCancel(UUID nodeId, int batchId) {
+    private void sendInboxClose(UUID nodeId, int batchId) {
         try {
             exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
         }
@@ -318,7 +319,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             hwm = Integer.MAX_VALUE;
 
             curr = null;
-            sendCancel(nodeId, batchId);
+
+            sendInboxClose(nodeId, batchId);
         }
 
         /** */

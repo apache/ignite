@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -116,12 +115,12 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
-        closeInbox(nodeId, qryId, fragmentId, exchangeId, -1);
+        messageService().send(nodeId, new OutboxCloseMessage(qryId, fragmentId, exchangeId));
     }
 
     /** {@inheritDoc} */
     @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new OutboxCloseMessage(qryId, fragmentId, exchangeId));
+        messageService().send(nodeId, new InboxCloseMessage(qryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */

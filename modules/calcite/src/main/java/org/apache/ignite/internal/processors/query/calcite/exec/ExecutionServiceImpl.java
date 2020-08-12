@@ -905,12 +905,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         assert Objects.nonNull(info);
 
+        Commons.dbg("onCursorClose");
+
         info.close();
     }
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        log.info("+++ onNodeLeft");
+        Commons.dbg("onNodeLeft");
 
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
@@ -1066,6 +1068,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     state0 = state = QueryState.CLOSED;
             }
 
+            Commons.dbg("Info.close " + state0 + " " + waiting.isEmpty());
+
             if (state0 == QueryState.CLOSED) {
                 root.context().execute(root::closeExecutionTree);
 
@@ -1077,6 +1081,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private void onNodeLeft(UUID nodeId) {
             List<RemoteFragmentKey> fragments = null;
 
+            // TODO: send error for running
             synchronized (this) {
                 for (RemoteFragmentKey fragment : waiting) {
                     if (!fragment.nodeId.equals(nodeId))
@@ -1096,6 +1101,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 for (RemoteFragmentKey fragment : fragments)
                     onResponse(fragment, ex);
             }
+            else {
+                root.context().execute(() -> root.onError(
+                    new ClusterTopologyCheckedException("Failed to execute query, node left. nodeId=" + nodeId)));
+            }
         }
 
         /** */
@@ -1105,10 +1114,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         /** */
         private void onResponse(RemoteFragmentKey fragment, Throwable error) {
-            boolean cancel;
+            boolean close;
+
+            Commons.dbg("onResponse " + fragment + ", " + error);
 
             synchronized (this) {
-                if (!waiting.remove(fragment))
+                if (fragment != null && !waiting.remove(fragment))
                     return;
 
                 if (error != null) {
@@ -1120,13 +1131,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                 boolean empty = waiting.isEmpty();
 
-                cancel = empty && this.error != null;
+                close = empty && (state == QueryState.CLOSING || this.error != null);
 
                 if (empty)
                     notifyAll();
             }
 
-            if (cancel)
+            if (close)
                 close();
         }
     }

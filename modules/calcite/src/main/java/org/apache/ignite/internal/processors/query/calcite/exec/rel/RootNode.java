@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -85,11 +86,13 @@ public class RootNode<Row> extends AbstractNode<Row>
     public void closeExecutionTree() {
         checkThread();
 
+        Commons.dbg("Root.closeExecutionTree 0");
         if (isClosed())
             return;
 
         buff.clear();
 
+        Commons.dbg("Root.closeExecutionTree 1");
         super.close();
     }
 
@@ -112,6 +115,8 @@ public class RootNode<Row> extends AbstractNode<Row>
         finally {
             lock.unlock();
         }
+
+        Commons.dbg("Root.close");
 
         onClose.accept(this);
     }
@@ -168,7 +173,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void onError(Throwable e) {
         checkThread();
 
-        System.out.println("+++ onError");
+        Commons.dbg("Root.onError");
 
         assert Objects.isNull(ex) : "The error has been handled. Previous error: " + ex;
 

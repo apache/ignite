@@ -37,7 +37,9 @@ public class OutboxCloseMessage implements ExecutionContextAware {
     private long exchangeId;
 
     /** */
-    public OutboxCloseMessage(){}
+    public OutboxCloseMessage() {
+        // No-op.
+    }
 
     /** */
     public OutboxCloseMessage(UUID queryId, long fragmentId, long exchangeId) {

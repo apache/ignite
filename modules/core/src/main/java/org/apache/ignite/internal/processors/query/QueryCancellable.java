@@ -23,7 +23,6 @@ package org.apache.ignite.internal.processors.query;
  */
 @FunctionalInterface
 public interface QueryCancellable {
-
     /** Query cancel handler. */
     void doCancel();
 }

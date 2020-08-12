@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -87,6 +90,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         long srcFragmentId
     ) {
         super(ctx);
+
+        System.out.println(Thread.currentThread().getName() + " +++ Inbox " + this);
+
         this.exchange = exchange;
         this.registry = registry;
 
@@ -142,6 +148,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
 
         if (buffers == null) {
             nodes.forEach(this::getOrCreateBuffer);
+
             buffers = new ArrayList<>(perNodeBuffers.values());
 
             assert buffers.size() == nodes.size();
@@ -156,7 +163,10 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         if (isClosed())
             return;
 
-        buffers.forEach(Buffer::cancel);
+        Commons.dbg("Inbox.close");
+
+        if (buffers != null)
+            buffers.forEach(Buffer::sendOutboxClose);
 
         registry.unregister(this);
 
@@ -208,11 +218,14 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     }
 
     /**
-     * @param ex Error.
+     * @param e Error.
      */
-    public void onError(Throwable ex) {
+    public void onError(Throwable e) {
+        U.error(context().planningContext().logger(),
+            "Error occurred during execution: " + X.getFullStackTrace(e));
+
         if (downstream != null)
-            downstream.onError(ex);
+            downstream.onError(e);
     }
 
     /** */
@@ -438,7 +451,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         }
 
         /** */
-        private void cancel() {
+        private void sendOutboxClose() {
             try {
                 exchange.closeOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
             }

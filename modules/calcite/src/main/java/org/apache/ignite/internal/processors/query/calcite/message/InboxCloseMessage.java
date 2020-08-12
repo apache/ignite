@@ -40,7 +40,9 @@ public class InboxCloseMessage implements ExecutionContextAware {
     private int batchId;
 
     /** */
-    public InboxCloseMessage(){}
+    public InboxCloseMessage() {
+        // No-op.
+    }
 
     /** */
     public InboxCloseMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
