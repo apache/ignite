@@ -61,7 +61,6 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -550,7 +549,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memCfg.getSystemRegionMaxSize()
         );
 
-        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies =
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
             CU.warmUpStrategies(cctx.kernalContext());
 
         if (regCfgs != null) {
@@ -604,7 +603,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg,
         Set<String> regNames,
         DataRegionConfiguration regCfg,
-        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
     ) throws IgniteCheckedException {
         assert regCfg != null;
 
@@ -792,10 +791,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return collection of all configured {@link DataRegion policies}.
+     * Getting registered data regions.
+     *
+     * @return Collection of all configured {@link DataRegion policies}.
      */
     public Collection<DataRegion> dataRegions() {
-        return dataRegionMap != null ? dataRegionMap.values() : null;
+        return dataRegionMap.values();
     }
 
     /**
@@ -838,11 +839,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName data region name.
-     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration}.
+     * Getting data region by name.
+     *
+     * @param memPlcName Data region name. In case of {@code null}, default data region will be returned.
+     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration},
+     *      or {@code null} if there are no registered data regions.
      * @throws IgniteCheckedException in case of request for unknown DataRegion.
      */
-    public DataRegion dataRegion(String memPlcName) throws IgniteCheckedException {
+    @Nullable public DataRegion dataRegion(@Nullable String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
             return dfltDataRegion;
 
@@ -925,7 +929,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * Clean checkpoint directory {@code GridCacheDatabaseSharedManager#cpDir}. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
@@ -1139,7 +1143,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * See {@link GridCacheMapEntry#ensureFreeSpace()}
+     * See {@code GridCacheMapEntry#ensureFreeSpace()}
      *
      * @param memPlc data region.
      */
@@ -1520,7 +1524,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void checkExistenceWarmUpConfiguration(
         @Nullable WarmUpConfiguration warmUpCfg,
-        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies,
         IgniteClosure<WarmUpConfiguration, String> errMsgSupplier
     ) throws IgniteCheckedException {
         if (nonNull(warmUpCfg) && !warmUpStrategies.containsKey(warmUpCfg.getClass()))
@@ -1536,7 +1540,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void checkRegionWarmUpConfiguration(
         DataRegionConfiguration regCfg,
-        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
     ) throws IgniteCheckedException {
         WarmUpConfiguration warmUpCfg = regCfg.getWarmUpConfiguration();
 

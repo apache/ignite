@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.warmup;
 
 import org.apache.ignite.configuration.WarmUpConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Noop warm-up configuration. Can be used to disable warm-up.
  */
 public class NoOpWarmUpConfiguration implements WarmUpConfiguration {
-    // No-op.
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoOpWarmUpConfiguration.class, this);
+    }
 }

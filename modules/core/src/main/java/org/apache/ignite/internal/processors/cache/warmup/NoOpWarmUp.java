@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.warmup;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Noop warming up strategy.
@@ -42,5 +43,10 @@ public class NoOpWarmUp implements WarmUpStrategy<NoOpWarmUpConfiguration> {
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoOpWarmUp.class, this);
     }
 }

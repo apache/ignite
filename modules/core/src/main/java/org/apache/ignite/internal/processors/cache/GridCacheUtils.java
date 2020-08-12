@@ -2111,10 +2111,10 @@ public class GridCacheUtils {
      * @param kernalCtx Kernal context.
      * @return Mapping configuration to strategy.
      */
-    public static Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies(
+    public static Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies(
         GridKernalContext kernalCtx
     ) {
-        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> strategies = new HashMap<>();
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> strategies = new HashMap<>();
 
         // Adding default strategies.
         for (WarmUpStrategy<?> strategy : new WarmUpStrategy[] {new NoOpWarmUp()})
