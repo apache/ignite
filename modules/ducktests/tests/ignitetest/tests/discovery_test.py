@@ -17,7 +17,6 @@
 Module contains discovery tests.
 """
 
-import os
 import random
 import re
 from datetime import datetime
@@ -45,8 +44,6 @@ class DiscoveryTest(IgniteTest):
     NUM_NODES = 7
 
     FAILURE_DETECTION_TIMEOUT = 2000
-
-    __LOG_PATH = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "console.log")
 
     CONFIG_TEMPLATE = """
     <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
@@ -206,7 +203,7 @@ class DiscoveryTest(IgniteTest):
 
         for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (self.__failed_pattern(failed_id), self.__LOG_PATH))
+                "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
             logged_timestamps.append(
                 datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read()).group(), "[%Y-%m-%d %H:%M:%S,%f]"))
