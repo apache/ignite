@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -155,11 +154,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
             info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
 
             for (int i = 0; i < restarts; i++) {
-                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                    @Override public void apply(Integer threadIdx) {
-                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                    }
-                }, srvs, "stop-server");
+                GridTestUtils.runMultiThreaded(threadIdx -> stopGrid(getTestIgniteInstanceName(threadIdx), true, false), srvs, "stop-server");
 
                 startGridsMultiThreaded(0, srvs);
             }

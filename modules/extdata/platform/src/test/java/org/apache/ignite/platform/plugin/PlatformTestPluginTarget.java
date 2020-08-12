@@ -153,14 +153,12 @@ class PlatformTestPluginTarget implements PlatformTarget {
                     }
                 };
 
-                new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            Thread.sleep(500L);
-                            fa.onDone(val.toUpperCase());
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(500L);
+                        fa.onDone(val.toUpperCase());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }).start();
 

@@ -83,16 +83,14 @@ public class IgniteCacheQueryReservationOnUnstableTopologyTest extends GridCommo
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> qryFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (!stop.get()) {
-                    SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
+        IgniteInternalFuture<?> qryFut = multithreadedAsync(() -> {
+            while (!stop.get()) {
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 
-                    if (smallPage)
-                        qry.setPageSize(1);
+                if (smallPage)
+                    qry.setPageSize(1);
 
-                    assertEquals(keys, grid(0).cache(DEFAULT_CACHE_NAME).query(qry).getAll().size());
-                }
+                assertEquals(keys, grid(0).cache(DEFAULT_CACHE_NAME).query(qry).getAll().size());
             }
         }, 3, "qry-thread");
 

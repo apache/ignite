@@ -133,92 +133,90 @@ final class TestBinaryClient {
         }
 
         // Start socket reader thread.
-        rdr = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        rdr = new Thread(() -> {
+            try {
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-                    int len = 0;
+                int len = 0;
 
-                    boolean running = true;
+                boolean running = true;
 
-                    while (running) {
-                        // Header.
-                        int symbol = input.read();
+                while (running) {
+                    // Header.
+                    int symbol = input.read();
 
-                        if (symbol == -1)
-                            break;
+                    if (symbol == -1)
+                        break;
 
-                        if ((byte)symbol != (byte)0x90) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to parse incoming packet (invalid packet start): " +
-                                    Integer.toHexString(symbol & 0xFF));
+                    if ((byte)symbol != (byte)0x90) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to parse incoming packet (invalid packet start): " +
+                                Integer.toHexString(symbol & 0xFF));
+
+                        break;
+                    }
+
+                    // Packet.
+                    while (true) {
+                        symbol = input.read();
+
+                        if (symbol == -1) {
+                            running = false;
 
                             break;
                         }
 
-                        // Packet.
-                        while (true) {
-                            symbol = input.read();
+                        byte b = (byte)symbol;
 
-                            if (symbol == -1) {
-                                running = false;
+                        buf.write(b);
+
+                        if (len == 0) {
+                            if (buf.size() == 4) {
+                                len = U.bytesToInt(buf.toByteArray(), 0);
+
+                                if (log.isInfoEnabled())
+                                    log.info("Read length: " + len);
+
+                                buf.reset();
+                            }
+                        }
+                        else {
+                            if (buf.size() == len) {
+                                byte[] bytes = buf.toByteArray();
+                                byte[] hdrBytes = Arrays.copyOfRange(bytes, 0, 40);
+                                byte[] msgBytes = Arrays.copyOfRange(bytes, 40, bytes.length);
+
+                                GridClientResponse msg = marsh.unmarshal(msgBytes);
+
+                                long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
+                                UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
+                                UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
+
+                                msg.requestId(reqId);
+                                msg.clientId(clientId);
+                                msg.destinationId(destId);
+
+                                buf.reset();
+
+                                len = 0;
+
+                                queue.offer(new Response(msg.requestId(), msg.successStatus(), msg.result(),
+                                    msg.errorMessage()));
 
                                 break;
-                            }
-
-                            byte b = (byte)symbol;
-
-                            buf.write(b);
-
-                            if (len == 0) {
-                                if (buf.size() == 4) {
-                                    len = U.bytesToInt(buf.toByteArray(), 0);
-
-                                    if (log.isInfoEnabled())
-                                        log.info("Read length: " + len);
-
-                                    buf.reset();
-                                }
-                            }
-                            else {
-                                if (buf.size() == len) {
-                                    byte[] bytes = buf.toByteArray();
-                                    byte[] hdrBytes = Arrays.copyOfRange(bytes, 0, 40);
-                                    byte[] msgBytes = Arrays.copyOfRange(bytes, 40, bytes.length);
-
-                                    GridClientResponse msg = marsh.unmarshal(msgBytes);
-
-                                    long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                                    UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                                    UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
-
-                                    msg.requestId(reqId);
-                                    msg.clientId(clientId);
-                                    msg.destinationId(destId);
-
-                                    buf.reset();
-
-                                    len = 0;
-
-                                    queue.offer(new Response(msg.requestId(), msg.successStatus(), msg.result(),
-                                        msg.errorMessage()));
-
-                                    break;
-                                }
                             }
                         }
                     }
                 }
-                catch (IOException e) {
-                    if (!Thread.currentThread().isInterrupted())
-                        U.error(log, e);
-                }
-                finally {
-                    U.closeQuiet(sock);
+            }
+            catch (IOException e) {
+                if (!Thread.currentThread().isInterrupted())
+                    U.error(log, e);
+            }
+            finally {
+                U.closeQuiet(sock);
 
-                    queue.add(QUIT_RESP);
-                }
+                queue.add(QUIT_RESP);
             }
         });
 

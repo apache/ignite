@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
@@ -181,14 +180,12 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
                             idxs.add(startedNodes.get(stopIdx));
                     }
 
-                    GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                        @Override public void apply(Integer threadIdx) {
-                            int stopNodeIdx = idxs.get(threadIdx);
+                    GridTestUtils.runMultiThreaded(threadIdx -> {
+                        int stopNodeIdx = idxs.get(threadIdx);
 
-                            info("Stop node: " + stopNodeIdx);
+                        info("Stop node: " + stopNodeIdx);
 
-                            stopGrid(stopNodeIdx);
-                        }
+                        stopGrid(stopNodeIdx);
                     }, stopNodes, "stop-node");
 
                     startedNodes.removeAll(idxs);

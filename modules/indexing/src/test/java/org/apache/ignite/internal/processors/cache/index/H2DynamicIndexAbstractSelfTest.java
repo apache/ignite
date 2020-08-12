@@ -123,12 +123,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
             + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
-        assertSqlException(new Runnable() {
-            @Override public void run() {
-                cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
-                    TBL_NAME_ESCAPED + "\"(\"id\" ASC)"));
-            }
-        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
+        assertSqlException(() -> cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
+                TBL_NAME_ESCAPED + "\"(\"id\" ASC)")),
+            IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
     }
 
     /**
@@ -188,11 +185,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     public void testDropMissingIndex() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        assertSqlException(new Runnable() {
-            @Override public void run() {
-                cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
-            }
-        }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
+        assertSqlException(() -> cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\"")),
+            IgniteQueryErrorCode.INDEX_NOT_FOUND);
     }
 
     /**

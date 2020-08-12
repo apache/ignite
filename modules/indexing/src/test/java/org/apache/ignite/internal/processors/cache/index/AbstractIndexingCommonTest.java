@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -108,15 +107,13 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     protected void checkThereAreNotUsedConnections() throws Exception {
-        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (Ignite ign : G.allGrids()) {
-                    if (!usedConnections(ign).isEmpty())
-                        return false;
-                }
-
-                return true;
+        boolean notLeak = GridTestUtils.waitForCondition(() -> {
+            for (Ignite ign : G.allGrids()) {
+                if (!usedConnections(ign).isEmpty())
+                    return false;
             }
+
+            return true;
         }, 5000);
 
         if (!notLeak) {

@@ -238,24 +238,22 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             // set up the scheduler service for committing batches
             if (batched && batchClosureMillis > 0) {
                 scheduler = Executors.newScheduledThreadPool(1);
-                scheduler.schedule(new Runnable() {
-                    @Override public void run() {
-                        for (Session session : sessions) {
-                            try {
-                                session.commit();
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Committing session from time-based batch completion [session=" +
-                                        session + "]");
-                                }
-                            }
-                            catch (JMSException ignored) {
-                                log.warning("Error while committing session: from batch time-based completion " +
-                                    "[session=" + session + "]");
+                scheduler.schedule(() -> {
+                    for (Session session : sessions) {
+                        try {
+                            session.commit();
+                            if (log.isDebugEnabled()) {
+                                log.debug("Committing session from time-based batch completion [session=" +
+                                    session + "]");
                             }
                         }
-                        for (IgniteJmsMessageListener ml : listeners) {
-                            ml.resetBatchCounter();
+                        catch (JMSException ignored) {
+                            log.warning("Error while committing session: from batch time-based completion " +
+                                "[session=" + session + "]");
                         }
+                    }
+                    for (IgniteJmsMessageListener ml : listeners) {
+                        ml.resetBatchCounter();
                     }
                 }, batchClosureMillis, TimeUnit.MILLISECONDS);
             }

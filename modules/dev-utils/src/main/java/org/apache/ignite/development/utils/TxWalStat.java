@@ -17,8 +17,6 @@
 package org.apache.ignite.development.utils;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -187,11 +185,7 @@ public class TxWalStat {
 
         final List<? extends Map.Entry<?, Integer>> entries = new ArrayList<>(map.entrySet());
 
-        Collections.sort(entries, new Comparator<Map.Entry<?, Integer>>() {
-            @Override public int compare(Map.Entry<?, Integer> o1, Map.Entry<?, Integer> o2) {
-                return -Integer.compare(o1.getValue(), o2.getValue());
-            }
-        });
+        entries.sort(((o1, o2) -> -Integer.compare(o1.getValue(), o2.getValue())));
 
         int othersCnt = 0;
         int othersSum = 0;
