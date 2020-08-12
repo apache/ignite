@@ -47,7 +47,6 @@ class CountDownLatch(object):
                 self.cond_var.wait()
 
 
-# pylint: disable=C0116
 class AtomicValue:
     """
     An atomic reference holder.
@@ -57,17 +56,34 @@ class AtomicValue:
         self.lock = threading.Lock()
 
     def set(self, value):
+        """
+        Sets new value to hold.
+        :param value: New value to hold.
+        """
         with self.lock:
             self.value = value
 
     def get(self):
+        """
+        Gives current value.
+        """
         with self.lock:
             return self.value
 
     def compare_and_set(self, expected, value):
+        """
+        Sets new value to hold if current one equals expected.
+        :param expected: The value to compare with.
+        :param value: New value to hold.
+        """
         return self.check_and_set(lambda: self.value == expected, value)
 
     def check_and_set(self, condition, value):
+        """
+        Sets new value to hold by condition.
+        :param condition: The condition to check.
+        :param value: New value to hold.
+        """
         with self.lock:
             if condition():
                 self.value = value
