@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Class for testing warm-up.
@@ -60,7 +60,12 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         cfg.getDataStorageConfiguration().setDefaultWarmUpConfiguration(new WarmUpConfiguration() {
         });
 
-        assertThrows(log, () -> startGrid(cfg), IgniteCheckedException.class, null);
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(cfg),
+            IgniteCheckedException.class,
+            "Unknown default warm-up configuration"
+        );
     }
 
     /**
@@ -76,13 +81,52 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
     public void testUnknownDataRegionWarmUpConfiguration() throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
+        String regName = "error";
+
         cfg.getDataStorageConfiguration()
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
-                    .setName("error")
+                    .setName(regName)
+                    .setPersistenceEnabled(true)
                     .setWarmUpConfiguration(new WarmUpConfiguration() {
-                    }));
+                    })
+            );
 
-        assertThrows(log, () -> startGrid(cfg), IgniteCheckedException.class, null);
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(cfg),
+            IgniteCheckedException.class,
+            "Unknown data region warm-up configuration: [name=" + regName
+        );
+    }
+
+    /**
+     * Test checks that an unknown data region warm-up configuration cannot be passed.
+     *
+     * Steps:
+     * 1)Adding an warm-up configuration to non-persistent {@link DataRegionConfiguration}.
+     * 2)Starting node and getting an error.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNonPersistentDataRegionWarmUpConfiguration() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        String regName = "error";
+
+        cfg.getDataStorageConfiguration()
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(regName)
+                    .setWarmUpConfiguration(new NoOpWarmUpConfiguration())
+            );
+
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(cfg),
+            IgniteCheckedException.class,
+            "Warm-up setting is not expected for a non-persistent data region: [name=" + regName
+        );
     }
 }

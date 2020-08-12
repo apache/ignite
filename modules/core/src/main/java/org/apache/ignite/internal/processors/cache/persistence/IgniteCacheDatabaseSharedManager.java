@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
@@ -93,6 +94,7 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -616,12 +618,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         checkRegionMemoryStorageType(regCfg);
 
-        checkExistenceWarmUpConfiguration(
-            regCfg.getWarmUpConfiguration(),
-            warmUpStrategies,
-            (warmUpCfg) -> "Unknown data region warm-up configuration: [name=" + regCfg.getName() + ", warmUpConfig="
-                + warmUpCfg + ']'
-        );
+        checkRegionWarmUpConfiguration(regCfg, warmUpStrategies);
     }
 
     /**
@@ -1528,5 +1525,35 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) throws IgniteCheckedException {
         if (nonNull(warmUpCfg) && !warmUpStrategies.containsKey(warmUpCfg.getClass()))
             throw new IgniteCheckedException(errMsgSupplier.apply(warmUpCfg));
+    }
+
+    /**
+     * Checking data region warm-up configuration.
+     *
+     * @param regCfg DataRegionConfiguration to validate.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkRegionWarmUpConfiguration(
+        DataRegionConfiguration regCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy<?>> warmUpStrategies
+    ) throws IgniteCheckedException {
+        WarmUpConfiguration warmUpCfg = regCfg.getWarmUpConfiguration();
+
+        if (isNull(warmUpCfg))
+            return;
+
+        Supplier<String> errPostfix = () -> "[name=" + regCfg.getName() + ", warmUpConfig=" + warmUpCfg + ']';
+
+        if (!regCfg.isPersistenceEnabled()) {
+            throw new IgniteCheckedException("Warm-up setting is not expected for a non-persistent data region: " +
+                errPostfix.get());
+        }
+
+        checkExistenceWarmUpConfiguration(
+            regCfg.getWarmUpConfiguration(),
+            warmUpStrategies,
+            (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
+        );
     }
 }
