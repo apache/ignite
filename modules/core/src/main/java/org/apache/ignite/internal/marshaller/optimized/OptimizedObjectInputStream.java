@@ -344,7 +344,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter(), useCache), useCache, ctx, mapper) :
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter()), useCache, ctx, mapper) :
                     classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
 
                 curCls = desc.describedClass();

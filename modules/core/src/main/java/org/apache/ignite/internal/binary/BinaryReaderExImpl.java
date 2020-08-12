@@ -1409,7 +1409,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls, BinaryUtils.isClassCacheWillUsed(ctx, ldr));
+            return BinaryUtils.doReadEnum(in, cls, GridBinaryMarshaller.USE_CACHE.get());
         }
         else
             return null;
@@ -1931,7 +1931,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case ENUM:
                 obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr),
-                    BinaryUtils.isClassCacheWillUsed(ctx, ldr));
+                    GridBinaryMarshaller.USE_CACHE.get());
 
                 break;
 

@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
@@ -221,7 +222,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        return unmarshal0(in, clsLdr, clsLdr == dfltClsLdr);
+        return unmarshal0(in, clsLdr, GridBinaryMarshaller.USE_CACHE.get());
     }
 
     /**
@@ -276,7 +277,8 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             objIn = registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, true);
+            objIn.context(clsMap, ctx, mapper,
+                clsLdr != null ? clsLdr : dfltClsLdr, GridBinaryMarshaller.USE_CACHE.get());
 
             objIn.in().bytes(arr, arr.length);
 

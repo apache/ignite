@@ -677,7 +677,7 @@ public class BinaryContext {
         Class cls;
 
         try {
-            if (BinaryUtils.isClassCacheWillUsed(this, ldr)) {
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
                 cls = marshCtx.getClass(typeId, ldr);
 
                 desc = descByCls.get(cls);
@@ -688,7 +688,7 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-                cls = U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
+                cls = U.forName(clsName, ldr, null);
 
                 desc = descByCls.get(cls);
 
@@ -773,7 +773,7 @@ public class BinaryContext {
         else {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            if (BinaryUtils.isClassCacheWillUsed(this, desc.describedClass().getClassLoader())) {
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
                 BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
                 if (old != null)

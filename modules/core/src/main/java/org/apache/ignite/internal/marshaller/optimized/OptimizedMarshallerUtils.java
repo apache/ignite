@@ -301,7 +301,7 @@ class OptimizedMarshallerUtils {
             throw new IOException("Failed to resolve class for ID: " + typeId, e);
         }
 
-        Class cls = U.forName(clsName, ldr, null, false);
+        Class cls = U.forName(clsName, ldr, null);
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 

@@ -1641,10 +1641,10 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = isClassCacheWillUsed(ctx, ldr);
+            boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
 
             try {
-                cls = U.forName(clsName, ldr, null, useCache);
+                cls = U.forName(clsName, ldr, null);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1675,7 +1675,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = U.forName(clsName, ldr, null, isClassCacheWillUsed(ctx, ldr));
+                cls = U.forName(clsName, ldr, null);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1793,8 +1793,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr),
-                    isClassCacheWillUsed(ctx, ldr));
+                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), GridBinaryMarshaller.USE_CACHE.get());
         }
 
         return arr;
@@ -2025,14 +2024,6 @@ public class BinaryUtils {
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);
         }
-    }
-
-    /**
-     * @param ctx Context.
-     * @param clsLdr Class loader.
-     */
-    public static boolean isClassCacheWillUsed(BinaryContext ctx, ClassLoader clsLdr) {
-        return clsLdr == null || clsLdr == U.gridClassLoader() || clsLdr == ctx.configuration().getClassLoader();
     }
 
     /**
