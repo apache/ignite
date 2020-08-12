@@ -216,7 +216,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private GroupKeyChangeProcess grpKeyChangeProc;
 
     /** Cache groups for which encryption key was changed, and they must be re-encrypted. */
-    private final Map<Integer, Map<Integer, ReencryptState>> reencryptGroups = new ConcurrentHashMap<>();
+    private final Map<Integer, long[]> reencryptGroups = new ConcurrentHashMap<>();
 
     /** Cache groups for which encryption key was changed on node join. */
     private final Map<Integer, Integer> reencryptGroupsForced = new ConcurrentHashMap<>();
@@ -778,9 +778,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStore(grpId, true, true);
             }
 
-            Map<Integer, ReencryptState> partStates = pageScanner.pagesCount(grp);
-
-            reencryptGroups.put(grpId, new ConcurrentHashMap<>(partStates));
+            reencryptGroups.put(grpId, pageScanner.pagesCount(grp));
 
             if (log.isInfoEnabled())
                 log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + key.id() + "]");
@@ -872,17 +870,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @param grpId Cache group ID.
+     * @param grp Cache group.
      * @param partId Partition ID.
      */
-    public void onDestroyPartitionStore(int grpId, int partId) {
+    public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
         try {
-            pageScanner.cancel(grpId, partId);
+            pageScanner.cancel(grp.groupId(), partId);
 
-            resetEncryptionState(grpId, partId);
+            setEncryptionState(grp, partId, 0, 0);
         }
         catch (IgniteCheckedException e) {
-            log.warning("Unable to cancel reencryption [grpId=" + grpId + ", partId=" + partId + "]", e);
+            log.warning("Unable to cancel reencryption [grpId=" + grp.groupId() + ", partId=" + partId + "]", e);
         }
     }
 
@@ -1028,9 +1026,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (grp == null)
                 continue;
 
-            Map<Integer, ReencryptState> offsets = pageScanner.pagesCount(grp);
+            long[] offsets = pageScanner.pagesCount(grp);
 
-            reencryptGroups.put(grpId, new ConcurrentHashMap<>(offsets));
+            reencryptGroups.put(grpId, offsets);
         }
 
         startReencryption(reencryptGroups.keySet());
@@ -1060,14 +1058,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * Set reencryption status for partition.
      *
-     * @param grpId Cache group ID.
+     * @param grp Cache group.
      * @param partId Partition ID.
      * @param idx Index of the last reencrypted page.
      * @param total Total pages to be reencrypted.
      */
-    public void setEncryptionState(int grpId, int partId, int idx, int total) {
-        reencryptGroups.computeIfAbsent(grpId,
-            v -> new ConcurrentHashMap<>()).put(partId, new ReencryptState(idx, total));
+    public void setEncryptionState(CacheGroupContext grp, int partId, int idx, int total) {
+        long[] states = reencryptGroups.computeIfAbsent(grp.groupId(), v -> new long[grp.affinity().partitions() + 1]);
+
+        states[Math.min(partId, states.length - 1)] = ReencryptStateUtils.state(idx, total);
     }
 
     /**
@@ -1077,26 +1076,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param partId Parttiion ID.
      * @return Index and count of pages to be reencrypted.
      */
-    @Nullable public ReencryptState getEncryptionState(int grpId, int partId) {
-        Map<Integer, ReencryptState> offsets = reencryptGroups.get(grpId);
+    public long getEncryptionState(int grpId, int partId) {
+        long[] states = reencryptGroups.get(grpId);
 
-        if (offsets == null)
-            return null;
+        if (states == null)
+            return 0;
 
-        return offsets.get(partId);
-    }
-
-    /**
-     * Remove encryption state.
-     *
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     */
-    public void resetEncryptionState(int grpId, int partId) {
-        Map<Integer, ReencryptState> partStates = reencryptGroups.get(grpId);
-
-        if (partStates != null)
-            partStates.remove(partId);
+        return states[Math.min(partId, states.length - 1)];
     }
 
     /**

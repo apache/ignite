@@ -32,7 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.managers.encryption.ReencryptState;
+import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -520,14 +520,14 @@ public class CacheGroupMetricsImpl {
                 if (!pageStore.exists())
                     continue;
 
-                ReencryptState state = encrMgr.getEncryptionState(ctx.groupId(), p);
+                long state = encrMgr.getEncryptionState(ctx.groupId(), p);
 
-                pagesLeft += state.pageCount() - state.pageIndex();
+                pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
             }
 
-            ReencryptState state = encrMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
+            long state = encrMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
 
-            pagesLeft += state.pageCount() - state.pageIndex();
+            pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

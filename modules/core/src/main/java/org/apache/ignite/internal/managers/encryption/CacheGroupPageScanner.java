@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -192,7 +191,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
             forEachPageStore(grp, new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
-                    if (ctx.encryption().getEncryptionState(grpId, partId) == null) {
+                    if (ctx.encryption().getEncryptionState(grpId, partId) == 0) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
@@ -266,11 +265,11 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * Collect current number of pages in the specified cache group.
      *
      * @param grp Cache group.
-     * @return Map of partitions with current page count.
+     * @return Partitions with current page count.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, ReencryptState> pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
-        Map<Integer, ReencryptState> partStates = new HashMap<>();
+    public long[] pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
+        long[] partStates = new long[grp.affinity().partitions() + 1];
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -279,7 +278,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
-                    partStates.put(partId, new ReencryptState(0, pagesCnt));
+                    partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });
         } finally {
@@ -358,12 +357,12 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
         @Override public void run() {
             try {
                 for (int partId : parts) {
-                    ReencryptState state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
+                    long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
 
-                    if (state == null)
+                    if (state == 0)
                         continue;
 
-                    scanPartition(partId, state.pageIndex(), state.pageCount());
+                    scanPartition(partId, ReencryptStateUtils.pageIndex(state), ReencryptStateUtils.pageCount(state));
 
                     if (isDone())
                         return;
@@ -412,7 +411,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                     }
                 }
 
-                ctx.encryption().setEncryptionState(grp.groupId(), partId, off, cnt);
+                ctx.encryption().setEncryptionState(grp, partId, off, cnt);
             }
 
             if (log.isDebugEnabled()) {

@@ -18,33 +18,29 @@
 package org.apache.ignite.internal.managers.encryption;
 
 /** */
-public class ReencryptState {
-    /** Index of the last reencrypted page. */
-    private final int idx;
-
-    /** Total pages to be reencrypted. */
-    private final int cnt;
-
+public class ReencryptStateUtils {
     /**
      * @param idx Index of the last reencrypted page.
-     * @param cnt Total pages to be reencrypted.
+     * @param total Total pages to be reencrypted.
+     * @return Reencryption status.
      */
-    public ReencryptState(int idx, int cnt) {
-        this.idx = idx;
-        this.cnt = cnt;
+    public static long state(int idx, int total) {
+        return ((long)idx) << Integer.SIZE | (total & 0xffffffffL);
     }
 
     /**
-     * @return Total pages to be reencrypted.
-     */
-    public int pageCount() {
-        return cnt;
-    }
-
-    /**
+     * @param state Reencryption status.
      * @return Index of the last reencrypted page.
      */
-    public int pageIndex() {
-        return idx;
+    public static int pageIndex(long state) {
+        return (int)(state >> Integer.SIZE);
+    }
+
+    /**
+     * @param state Reencryption status.
+     * @return Total pages to be reencrypted.
+     */
+    public static int pageCount(long state) {
+        return (int)state;
     }
 }

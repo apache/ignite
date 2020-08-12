@@ -40,7 +40,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.managers.encryption.ReencryptState;
+import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -406,8 +406,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridEncryptionManager encrypt = this.ctx.kernalContext().encryption();
 
             if (size > 0 || updCntr > 0 || !store.partUpdateCounter().sequential() ||
-                (grp.config().isEncryptionEnabled() &&
-                    encrypt.getEncryptionState(grp.groupId(), store.partId()) != null)) {
+                (grp.config().isEncryptionEnabled() && encrypt.getEncryptionState(grp.groupId(), store.partId()) > 0)) {
                 GridDhtPartitionState state = null;
 
                 // localPartition will not acquire writeLock here because create=false.
@@ -495,17 +494,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         int encryptCnt = 0;
 
                         if (grp.config().isEncryptionEnabled()) {
-                            ReencryptState reencryptState =
-                                encrypt.getEncryptionState(grpId, store.partId());
+                            long reencryptState = encrypt.getEncryptionState(grpId, store.partId());
 
-                            if (reencryptState != null) {
-                                encryptIdx = reencryptState.pageIndex();
-                                encryptCnt = reencryptState.pageCount();
+                            if (reencryptState != 0) {
+                                encryptIdx = ReencryptStateUtils.pageIndex(reencryptState);
+                                encryptCnt = ReencryptStateUtils.pageCount(reencryptState);
 
                                 if (encryptIdx == encryptCnt) {
-                                    encryptIdx = encryptCnt = 0;
+                                    encrypt.setEncryptionState(grp, store.partId(), 0, 0);
 
-                                    encrypt.resetEncryptionState(grpId, store.partId());
+                                    encryptIdx = encryptCnt = 0;
                                 }
 
                                 changed |= io.setEncryptedPageIndex(partMetaPageAddr, encryptIdx);
@@ -991,7 +989,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
         if (grp.config().isEncryptionEnabled())
-            ctx.kernalContext().encryption().onDestroyPartitionStore(grpId, partId);
+            ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId);
 
         int tag = pageMemory.invalidate(grp.groupId(), partId);
 
@@ -1103,7 +1101,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     int encrPageCnt = pageIO.getEncryptedPageCount(pageAddr);
 
                     if (encrPageCnt > 0) {
-                        ctx.kernalContext().encryption().setEncryptionState(grpId, PageIdAllocator.INDEX_PARTITION,
+                        ctx.kernalContext().encryption().setEncryptionState(grp, PageIdAllocator.INDEX_PARTITION,
                             pageIO.getEncryptedPageIndex(pageAddr), encrPageCnt);
                     }
 
@@ -1316,10 +1314,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private void saveIndexReencryptionStatus(int grpId) throws IgniteCheckedException {
-        ReencryptState state =
-            ctx.kernalContext().encryption().getEncryptionState(grpId, PageIdAllocator.INDEX_PARTITION);
+        long state = ctx.kernalContext().encryption().getEncryptionState(grpId, PageIdAllocator.INDEX_PARTITION);
 
-        if (state == null)
+        if (state == 0)
             return;
 
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -1335,11 +1332,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
-                int encryptIdx = state.pageIndex();
-                int encryptCnt = state.pageCount();
+                int encryptIdx = ReencryptStateUtils.pageIndex(state);
+                int encryptCnt = ReencryptStateUtils.pageCount(state);
 
                 if (encryptIdx == encryptCnt) {
-                    ctx.kernalContext().encryption().resetEncryptionState(grpId, PageIdAllocator.INDEX_PARTITION);
+                    ctx.kernalContext().encryption().setEncryptionState(grp, PageIdAllocator.INDEX_PARTITION, 0, 0);
 
                     encryptIdx = encryptCnt = 0;
                 }
@@ -2078,7 +2075,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 if (encrPageCnt > 0) {
                                     ctx.kernalContext().encryption().setEncryptionState(
-                                        grpId, partId, io.getEncryptedPageIndex(pageAddr), encrPageCnt);
+                                        grp, partId, io.getEncryptedPageIndex(pageAddr), encrPageCnt);
                                 }
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
