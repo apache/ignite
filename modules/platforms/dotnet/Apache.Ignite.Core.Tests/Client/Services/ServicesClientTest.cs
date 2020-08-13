@@ -403,7 +403,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// TODO
+        /// Tests that empty cluster group causes exception on service call.
+        ///
+        /// - Create an empty cluster group
+        /// - Get services over that group
+        /// - Execute service method, verify exception
         /// </summary>
         [Test]
         public void TestEmptyClusterGroupThrowsError()
@@ -426,9 +430,23 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// - Call service, verify exception
         /// </summary>
         [Test]
-        public void TestClusterGroupWithoutMatchingServiceNodesCausesError()
+        public void TestClusterGroupWithoutMatchingServiceNodesThrowsError()
         {
-            // TODO
+            var ignite = Ignition.GetIgnite();
+            var node = ignite.GetCluster().GetLocalNode();
+
+            ignite.GetCluster()
+                .ForNodes(node)
+                .GetServices()
+                .DeployClusterSingleton(ServiceName, new TestService());
+
+            var svc = Client.GetCluster()
+                .ForPredicate(n => n.Id != node.Id)
+                .GetServices()
+                .GetServiceProxy<ITestService>(ServiceName);
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            Assert.AreEqual("Failed to find deployed service: " + ServiceName, ex.Message);
         }
 
         /// <summary>
@@ -509,11 +527,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             Assert.AreEqual(1, task.Result);
         }
-
-        // TODO: All argument types
-        // TODO: Overloads
-        // TODO: Timeout
-        // TODO: Cluster group
 
         /// <summary>
         /// Deploys test service and returns client-side proxy.
