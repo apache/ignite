@@ -249,6 +249,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1.666m, svc.GetDecimal(0.666m));
             Assert.AreEqual(new[] {-7.66m, 1.33m}, svc.GetDecimalArray(new[] {-8.66m, 0.33m}));
 
+            Assert.AreEqual("foo", svc.GetString("FOO"));
+            Assert.AreEqual(new[]{"foo", "bar"}, svc.GetStringArray(new[]{"FoO", "bAr"}));
+
 
             // TODO: Pass generic collections (with a non-generic method)
             // TODO: Pass interfaces
