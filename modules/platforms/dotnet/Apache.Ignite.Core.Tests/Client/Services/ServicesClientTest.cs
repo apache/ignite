@@ -237,6 +237,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(ts.Add(minuteTs), svc.GetTimeSpan(ts));
             Assert.AreEqual(new[] {ts.Add(minuteTs), minuteTs}, svc.GetTimeSpanArray(new[] {ts, TimeSpan.Zero}));
 
+            Assert.AreEqual(true, svc.GetBool(false));
+            Assert.AreEqual(new[] {true, false}, svc.GetBoolArray(new[] {false, true}));
+
+            Assert.AreEqual(1.5f, svc.GetFloat(0.5f));
+            Assert.AreEqual(new[] {-0.5f, 1.1f}, svc.GetFloatArray(new[] {-1.5f, 0.1f}));
+
+            Assert.AreEqual(1.5d, svc.GetDouble(0.5d));
+            Assert.AreEqual(new[] {-7.02d, 1.1d}, svc.GetDoubleArray(new[] {-8.02d, 0.1d}));
 
 
             // TODO: Pass generic collections (with a non-generic method)
