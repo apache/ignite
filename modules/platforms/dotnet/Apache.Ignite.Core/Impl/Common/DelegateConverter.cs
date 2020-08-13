@@ -559,19 +559,6 @@ namespace Apache.Ignite.Core.Impl.Common
                 var elType = targetType.GetElementType();
                 Debug.Assert(elType != null);
 
-                if (!elType.IsValueType && elType != typeof(object))
-                {
-                    var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
-
-                    return Expression.Call(null, convertMethod, value);
-                }
-
-                if (elType.IsValueType)
-                {
-                    // TODO: Predefined arrays (byte[] and so on) do not need a conversion.
-                    // Custom value types do, like DateTime, and user-defined structs
-                }
-
                 if (elType == typeof(sbyte))
                 {
                     return Expression.Call(null, ConvertToSbyteArrayMethod, value);
@@ -590,6 +577,13 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (elType == typeof(ulong))
                 {
                     return Expression.Call(null, ConvertToUlongArrayMethod, value);
+                }
+
+                if (elType != typeof(object))
+                {
+                    var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+
+                    return Expression.Call(null, convertMethod, value);
                 }
 
                 return Expression.Convert(value, targetType);
