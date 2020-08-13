@@ -17,16 +17,18 @@
 Module contains discovery tests.
 """
 
+import datetime
 import random
 import re
-from datetime import datetime
+import time
 
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 from jinja2 import Template
 
+from ignitetest.services.ignite import IgniteAwareService
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
@@ -41,9 +43,11 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 7
+    NUM_NODES = 3
 
     FAILURE_DETECTION_TIMEOUT = 2000
+
+    __DATA_AMOUNT = 100000
 
     CONFIG_TEMPLATE = """
     <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
@@ -63,6 +67,7 @@ class DiscoveryTest(IgniteTest):
         super(DiscoveryTest, self).__init__(test_context=test_context)
         self.zk_quorum = None
         self.servers = None
+        self.loader = None
 
     def __start_zk_quorum(self):
         self.zk_quorum = ZookeeperService(self.test_context, 3)
@@ -96,6 +101,9 @@ class DiscoveryTest(IgniteTest):
 
         if self.servers:
             self.servers.stop()
+
+        if self.loader:
+            self.loader.stop()
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
@@ -157,14 +165,14 @@ class DiscoveryTest(IgniteTest):
 
         return self.__simulate_nodes_failure(version, self.__zk_properties(self.zk_quorum.connection_string()), 0)
 
-    def __simulate_nodes_failure(self, version, properties, nodes_to_kill=1):
+    def __simulate_nodes_failure(self, version, properties, nodes_to_kill, with_load=True):
         """
         :param nodes_to_kill: How many nodes to kill. If <1, the coordinator is the choice. Otherwise: not-coordinator
         nodes of given number.
         """
         self.servers = IgniteService(
             self.test_context,
-            num_nodes=self.NUM_NODES,
+            num_nodes=self.NUM_NODES - 1 if with_load else self.NUM_NODES,
             modules=["ignite-zookeeper"],
             properties=properties,
             version=version)
@@ -184,6 +192,9 @@ class DiscoveryTest(IgniteTest):
         failed_nodes, survived_node = self.__choose_node_to_kill(nodes_to_kill)
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+
+        if with_load:
+            self.start_loading(version, 3)
 
         self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
 
@@ -244,3 +255,18 @@ class DiscoveryTest(IgniteTest):
         survive = random.choice([node for node in self.servers.nodes if node not in to_kill])
 
         return to_kill, survive
+
+    def start_loading(self, ignite_version, wait_sec=0):
+        self.stage("Start loading")
+
+        self.loader = IgniteApplicationService(
+            self.test_context,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
+            version=ignite_version,
+            params={"cacheName": "test-cache", "range": self.__DATA_AMOUNT, "infinite": True})
+
+        self.loader.start()
+
+        if wait_sec > 0:
+            self.logger.info("Waiting for the data load for " + str(wait_sec) + " seconds...")
+            time.sleep(wait_sec * 1000)

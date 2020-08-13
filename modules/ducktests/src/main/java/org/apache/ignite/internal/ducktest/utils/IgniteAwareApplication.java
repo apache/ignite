@@ -60,10 +60,16 @@ public abstract class IgniteAwareApplication {
      */
     protected IgniteAwareApplication() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if(log.isDebugEnabled())
+                log.debug("Caught shutdown signal.");
+
             terminate();
 
+            log.info("Waiting for graceful termination.");
+
             while (!finished()) {
-                log.info("Waiting for graceful termnation.");
+                if(log.isDebugEnabled())
+                    log.debug("Cycled waiting for graceful termination...");
 
                 try {
                     U.sleep(100);
@@ -76,7 +82,8 @@ public abstract class IgniteAwareApplication {
             log.info("SIGTERM recorded.");
         }));
 
-        log.info("ShutdownHook registered.");
+        if(log.isDebugEnabled())
+            log.debug("ShutdownHook registered.");
     }
 
     /**
@@ -90,9 +97,7 @@ public abstract class IgniteAwareApplication {
         inited = true;
     }
 
-    /**
-     *
-     */
+    /** */
     protected void markFinished() {
         assert !finished;
 
@@ -101,24 +106,18 @@ public abstract class IgniteAwareApplication {
         finished = true;
     }
 
-    /**
-     *
-     */
+    /** */
     protected void markSyncExecutionComplete() {
         markInitialized();
         markFinished();
     }
 
-    /**
-     *
-     */
-    private boolean finished() {
+    /** */
+    protected boolean finished() {
         return finished;
     }
 
-    /**
-     *
-     */
+    /** */
     private void terminate() {
         assert !terminated;
 
@@ -127,11 +126,14 @@ public abstract class IgniteAwareApplication {
         terminated = true;
     }
 
-    /**
-     *
-     */
+    /** */
     protected boolean terminated() {
         return terminated;
+    }
+
+    /** */
+    protected boolean stopped() {
+        return terminated() || finished();
     }
 
     /**
@@ -162,20 +164,25 @@ public abstract class IgniteAwareApplication {
      */
     public void start(JsonNode jsonNode) {
         try {
-            log.info("Application params: " + jsonNode);
+            log.warn("REMOVETHIS. Application params: " + jsonNode);
+
+            if(log.isDebugEnabled())
+                log.debug("Application params: " + jsonNode);
 
             assert cfgPath != null;
 
             run(jsonNode);
 
             assert inited : "Was not properly initialized.";
-            assert finished : "Was not properly finished.";
         }
         catch (Throwable th) {
             log.error("Unexpected Application failure... ", th);
         }
         finally {
-            log.info("Application finished.");
+            if (finished())
+                log.info("Application finished.");
+            else if (terminated())
+                log.warn("Application terminated.");
         }
     }
 }
