@@ -154,12 +154,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             Object res;
 
             if (PlatformService.class.isAssignableFrom(svcCls)) {
-                // Never deserialize platform service arguments.
+                // Never deserialize platform service arguments and result: may contain platform-only types.
                 PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
 
-                // TODO: deserializeResult must be always false for non-Java clients,
-                // and `!keepBinary()` for Java thin client - why?
-                // Deserializing the result seems to be always wrong - we just write it to the response stream.
                 res = proxy.invokeMethod(methodName, keepBinary(), false, args);
             }
             else {
