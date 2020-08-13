@@ -405,6 +405,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
+        /// Tests that lingering service calls cause timeout exception when <see cref="IServicesClient.WithTimeout"/>
+        /// is used.
+        ///
+        /// - Deploy the service
+        /// - Get a service proxy with a timeout
+        /// - Execute a method that takes a long time, verify that timeout setting takes effect
+        /// </summary>
+        [Test]
+        public void TestLingeringServiceCallCausesTimeoutExceptionWhenTimeoutIsSet()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests that exception in service is propagated to the client and service is still operational.
         /// </summary>
         [Test]
