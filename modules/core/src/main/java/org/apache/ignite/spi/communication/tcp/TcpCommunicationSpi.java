@@ -784,7 +784,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             throw new IgniteSpiException("Failed to initialize TCP server: " + cfg.localHost(), e);
         }
 
-        boolean forceClientToSrvConnections = forceClientToServerConnections() || locPort == -1;
+        boolean forceClientToSrvConnections = forceClientToServerConnections() || cfg.localPort() == -1;
 
         if (cfg.usePairedConnections() && forceClientToSrvConnections) {
             throw new IgniteSpiException("Node using paired connections " +
