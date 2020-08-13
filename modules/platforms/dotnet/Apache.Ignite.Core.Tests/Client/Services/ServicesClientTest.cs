@@ -408,7 +408,13 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestEmptyClusterGroupThrowsError()
         {
-            // TODO
+            ServerServices.DeployNodeSingleton(ServiceName, new TestService());
+
+            var clusterGroup = Client.GetCluster().ForPredicate(_ => false);
+            var svc = clusterGroup.GetServices().GetServiceProxy<ITestService>(ServiceName);
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            Assert.AreEqual("todo", ex.Message);
         }
 
         /// <summary>
@@ -440,7 +446,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.Sleep(TimeSpan.FromSeconds(3)));
 
-            Assert.AreEqual("1", ex.Message);
+            Assert.AreEqual("timed out", ex.Message);
         }
 
         /// <summary>
