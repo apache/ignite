@@ -144,7 +144,7 @@ public final class DataRegionConfiguration implements Serializable {
     private boolean lazyMemoryAllocation = true;
 
     /** Warm-up configuration. */
-    @Nullable private WarmUpConfiguration warmUpCfg;
+    @Nullable private transient WarmUpConfiguration warmUpCfg;
 
     /**
      * Gets data region name.

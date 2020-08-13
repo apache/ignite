@@ -17,36 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Noop warming up strategy.
+ * Warm-up strategy that only records which regions have visited it and how many times.
  */
-public class NoOpWarmUp implements WarmUpStrategy<NoOpWarmUpConfiguration> {
+class SimpleObservableWarmUp implements WarmUpStrategy<SimpleObservableWarmUpConfiguration> {
+    /** Visited regions with a counter. */
+    final Map<String, AtomicInteger> visitRegions = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
-    @Override public Class<NoOpWarmUpConfiguration> configClass() {
-        return NoOpWarmUpConfiguration.class;
+    @Override public Class<SimpleObservableWarmUpConfiguration> configClass() {
+        return SimpleObservableWarmUpConfiguration.class;
     }
 
     /** {@inheritDoc} */
     @Override public void warmUp(
         GridKernalContext kernalCtx,
-        NoOpWarmUpConfiguration cfg,
+        SimpleObservableWarmUpConfiguration cfg,
         DataRegion region
     ) throws IgniteCheckedException {
-        // No-op.
+        visitRegions.computeIfAbsent(region.config().getName(), s -> new AtomicInteger()).incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpWarmUp.class, this);
     }
 }

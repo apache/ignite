@@ -44,10 +44,10 @@ public interface WarmUpStrategy<T extends WarmUpConfiguration> {
     void warmUp(GridKernalContext kernalCtx, T cfg, DataRegion region) throws IgniteCheckedException;
 
     /**
-     * Closing warm up.
+     * Stop warming up.
      *
      * @throws IgniteCheckedException if faild.
      */
-    void close() throws IgniteCheckedException;
+    void stop() throws IgniteCheckedException;
 }
 

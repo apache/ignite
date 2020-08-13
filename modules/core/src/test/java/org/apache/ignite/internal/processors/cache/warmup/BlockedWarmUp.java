@@ -17,36 +17,40 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Noop warming up strategy.
+ * Warm-up strategy that only waits for {@link #stop} call.
  */
-public class NoOpWarmUp implements WarmUpStrategy<NoOpWarmUpConfiguration> {
+class BlockedWarmUp implements WarmUpStrategy<BlockedWarmUpConfiguration> {
+    /** Stop latch. */
+    final CountDownLatch stopLatch = new CountDownLatch(1);
+
+    /** Start latch. */
+    final CountDownLatch startLatch = new CountDownLatch(1);
+
     /** {@inheritDoc} */
-    @Override public Class<NoOpWarmUpConfiguration> configClass() {
-        return NoOpWarmUpConfiguration.class;
+    @Override public Class<BlockedWarmUpConfiguration> configClass() {
+        return BlockedWarmUpConfiguration.class;
     }
 
     /** {@inheritDoc} */
     @Override public void warmUp(
         GridKernalContext kernalCtx,
-        NoOpWarmUpConfiguration cfg,
+        BlockedWarmUpConfiguration cfg,
         DataRegion region
     ) throws IgniteCheckedException {
-        // No-op.
+        startLatch.countDown();
+
+        U.await(stopLatch);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpWarmUp.class, this);
+        stopLatch.countDown();
     }
 }

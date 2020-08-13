@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WarmUpConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -67,7 +62,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
                             .setPersistenceEnabled(true)
                             .setWarmUpConfiguration(new NoOpWarmUpConfiguration())
                     )
-            );
+            ).setPluginProviders(new WarmUpTestPluginProvider());
     }
 
     /**
@@ -184,9 +179,9 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        WarmUpTestPluginProvider pluginProvider = new WarmUpTestPluginProvider();
+        n = startGrid(0);
 
-        n = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(pluginProvider));
+        WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)n.configuration().getPluginProviders()[0];
 
         pluginProvider.strats.forEach(strat -> assertNull(expStrats.put(strat.configClass(), strat)));
 
@@ -209,10 +204,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExecutionStrategies() throws Exception {
-        WarmUpTestPluginProvider pluginProvider = new WarmUpTestPluginProvider();
-
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setPluginProviders(pluginProvider)
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDataRegionConfigurations(
@@ -225,6 +217,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
 
         startGrid(cfg);
 
+        WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
         SimpleObservableWarmUp observableWarmUp = (SimpleObservableWarmUp)pluginProvider.strats.get(0);
 
         assertEquals(1, observableWarmUp.visitRegions.size());
@@ -234,7 +227,6 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setPluginProviders((pluginProvider = new WarmUpTestPluginProvider()))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDefaultWarmUpConfiguration(new SimpleObservableWarmUpConfiguration())
@@ -250,6 +242,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
 
         startGrid(cfg);
 
+        pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
         observableWarmUp = (SimpleObservableWarmUp)pluginProvider.strats.get(0);
 
         assertEquals(2, observableWarmUp.visitRegions.size());
@@ -259,6 +252,42 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, observableWarmUp.visitRegions.get("1").get());
         assertEquals(1, observableWarmUp.visitRegions.get("3").get());
+    }
+
+    /**
+     * Test checks to stop warming up.
+     * <p>
+     * Steps:
+     * 1)Running a node in a separate thread with {@link BlockedWarmUpConfiguration} for one region;
+     * 2)Stop warm-up;
+     * 3)Make sure that warm-up is stopped and node has started successfully.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWarmUp() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDataRegionConfigurations(
+                        new DataRegionConfiguration().setName("1").setPersistenceEnabled(true)
+                            .setWarmUpConfiguration(new BlockedWarmUpConfiguration())
+                    )
+            );
+
+        IgniteInternalFuture<IgniteEx> stratFut = GridTestUtils.runAsync(() -> startGrid(cfg));
+
+        WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
+        BlockedWarmUp strat = (BlockedWarmUp)pluginProvider.strats.get(1);
+
+        strat.startLatch.await(1, TimeUnit.MINUTES);
+
+        IgniteKernal n = IgnitionEx.gridx(cfg.getIgniteInstanceName());
+
+        assertTrue(n.context().cache().stopWarmUp());
+        assertFalse(n.context().cache().stopWarmUp());
+
+        assertNotNull(stratFut.get(TimeUnit.MINUTES.toMillis(1)));
     }
 
     /**
@@ -279,62 +308,4 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         });
     }
 
-    /**
-     * Test plugin provider for test strategies.
-     */
-    private static class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
-        /** Collection of strategies. */
-        private final List<WarmUpStrategy<?>> strats = Arrays.asList(new SimpleObservableWarmUp());
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return getClass().getSimpleName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            super.initExtensions(ctx, registry);
-
-            registry.registerExtension(WarmUpStrategySupplier.class, new WarmUpStrategySupplier() {
-                /** {@inheritDoc} */
-                @Override public Collection<WarmUpStrategy<?>> strategies() {
-                    return strats;
-                }
-            });
-        }
-    }
-
-    /**
-     * Simple observable warm-up configuration.
-     */
-    private static class SimpleObservableWarmUpConfiguration implements WarmUpConfiguration {
-        // No-op.
-    }
-
-    /**
-     * Simple observable warm-up strategy.
-     */
-    private static class SimpleObservableWarmUp implements WarmUpStrategy<SimpleObservableWarmUpConfiguration> {
-        /** Visited regions with a counter. */
-        private final Map<String, AtomicInteger> visitRegions = new ConcurrentHashMap<>();
-
-        /** {@inheritDoc} */
-        @Override public Class<SimpleObservableWarmUpConfiguration> configClass() {
-            return SimpleObservableWarmUpConfiguration.class;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void warmUp(
-            GridKernalContext kernalCtx,
-            SimpleObservableWarmUpConfiguration cfg,
-            DataRegion region
-        ) throws IgniteCheckedException {
-            visitRegions.computeIfAbsent(region.config().getName(), s -> new AtomicInteger()).incrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
-            // No-op.
-        }
-    }
 }

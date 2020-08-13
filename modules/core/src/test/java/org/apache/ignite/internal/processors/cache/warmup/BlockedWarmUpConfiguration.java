@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.cache.warmup;
+
+import org.apache.ignite.configuration.WarmUpConfiguration;
 
 /**
- * Warm-up configuration marker interface.
+ * Configuration for {@link BlockedWarmUp}.
  */
-public interface WarmUpConfiguration {
+class BlockedWarmUpConfiguration implements WarmUpConfiguration {
     // No-op.
 }

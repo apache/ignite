@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -5365,6 +5366,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private final Map<Integer, QuerySchema> querySchemas = new ConcurrentHashMap<>();
 
+        /** Flag for stopping warm-up. */
+        private final AtomicBoolean stopWarmUp = new AtomicBoolean();
+
+        /** Currently running warm-up strategy. */
+        private volatile WarmUpStrategy curWarmUpStrat;
+
         /** {@inheritDoc} */
         @Override public void onBaselineChange() {
             onKernalStopCaches(true);
@@ -5494,47 +5501,86 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @throws IgniteCheckedException If failed.
          */
         private void startWarmUp() throws IgniteCheckedException {
-            // Collecting custom and default data regions.
-            DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+            boolean start = false;
 
-            List<DataRegionConfiguration> regCfgs = new ArrayList<>(asList(dsCfg.getDefaultDataRegionConfiguration()));
+            try {
+                // Collecting custom and default data regions.
+                DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-            if (nonNull(dsCfg.getDataRegionConfigurations()))
-                regCfgs.addAll(asList(dsCfg.getDataRegionConfigurations()));
+                List<DataRegionConfiguration> regCfgs =
+                    new ArrayList<>(asList(dsCfg.getDefaultDataRegionConfiguration()));
 
-            // Warm-up start.
-            Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrats = CU.warmUpStrategies(ctx);
+                if (nonNull(dsCfg.getDataRegionConfigurations()))
+                    regCfgs.addAll(asList(dsCfg.getDataRegionConfigurations()));
 
-            WarmUpConfiguration dfltWarmUpCfg = dsCfg.getDefaultWarmUpConfiguration();
+                // Warm-up start.
+                Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrats = CU.warmUpStrategies(ctx);
 
-            for (DataRegionConfiguration regCfg : regCfgs) {
-                if (!regCfg.isPersistenceEnabled())
-                    continue;
+                WarmUpConfiguration dfltWarmUpCfg = dsCfg.getDefaultWarmUpConfiguration();
 
-                WarmUpConfiguration warmUpCfg = nonNull(regCfg.getWarmUpConfiguration()) ?
-                    regCfg.getWarmUpConfiguration() : dfltWarmUpCfg;
+                for (DataRegionConfiguration regCfg : regCfgs) {
+                    if (stopWarmUp.get())
+                        return;
 
-                if (isNull(warmUpCfg))
-                    continue;
+                    if (!regCfg.isPersistenceEnabled())
+                        continue;
 
-                WarmUpStrategy warmUpStrat = warmUpStrats.get(warmUpCfg.getClass());
+                    WarmUpConfiguration warmUpCfg = nonNull(regCfg.getWarmUpConfiguration()) ?
+                        regCfg.getWarmUpConfiguration() : dfltWarmUpCfg;
 
-                DataRegion region = sharedCtx.database().dataRegion(regCfg.getName());
+                    if (isNull(warmUpCfg))
+                        continue;
 
-                if (log.isInfoEnabled()) {
-                    log.info("Start of warm-up for data region: [name=" + regCfg.getName() + ", warmUpStrategy="
-                        + warmUpStrat + ", warmUpConfig=" + warmUpCfg + ", isDefault=" + (warmUpCfg == dfltWarmUpCfg)
-                        + ']');
-                }
+                    WarmUpStrategy warmUpStrat = (curWarmUpStrat = warmUpStrats.get(warmUpCfg.getClass()));
 
-                try {
-                    warmUpStrat.warmUp(ctx, warmUpCfg, region);
-                }
-                finally {
-                    warmUpStrat.close();
+                    DataRegion region = sharedCtx.database().dataRegion(regCfg.getName());
+
+                    if (!stopWarmUp.get()) {
+                        if (!start && (start = true) && log.isInfoEnabled())
+                            log.info("Warm-up start.");
+
+                        if (log.isInfoEnabled()) {
+                            log.info("Start warm-up for data region: [name=" + regCfg.getName()
+                                + ", warmUpStrategy=" + warmUpStrat + ", warmUpConfig=" + warmUpCfg + ", isDefault="
+                                + (warmUpCfg == dfltWarmUpCfg) + ']');
+                        }
+
+                        warmUpStrat.warmUp(ctx, warmUpCfg, region);
+                    }
                 }
             }
+            finally {
+                if (stopWarmUp.get() && log.isInfoEnabled())
+                    log.info("Warm-up stop.");
+                else if (start && log.isInfoEnabled())
+                    log.info("Warm-up finish.");
+
+                stopWarmUp.set(true);
+                curWarmUpStrat = null;
+            }
         }
+    }
+
+    /**
+     * Stop warming up and current running strategy.
+     *
+     * @return {@code true} if stopped by this call.
+     * @throws IgniteCheckedException If there is an error when stopping warm-up.
+     */
+    public boolean stopWarmUp() throws IgniteCheckedException {
+        if (recovery.stopWarmUp.compareAndSet(false, true)) {
+            WarmUpStrategy strat = recovery.curWarmUpStrat;
+
+            if (log.isInfoEnabled())
+                log.info("Stopping warm-up strategy: " + strat);
+
+            if (nonNull(strat))
+                strat.stop();
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
