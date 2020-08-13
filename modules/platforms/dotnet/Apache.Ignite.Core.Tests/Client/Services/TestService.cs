@@ -62,8 +62,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** <inheritdoc /> */
         public Task<int> AsyncMethod()
         {
-            return Task.Delay(500).ContinueWith(_ => 1);
-        }
+            var tcs = new TaskCompletionSource<int>();
+            new Timer(_ => tcs.SetResult(1)).Change(500, -1);
+            return tcs.Task;        }
 
         /** <inheritdoc /> */
         public Person PersonMethod(Person person)
