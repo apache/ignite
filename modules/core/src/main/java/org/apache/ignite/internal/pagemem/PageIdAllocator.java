@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.intellij.lang.annotations.MagicConstant;
 
 /**
  * Allocates page ID's.
@@ -48,7 +49,7 @@ public interface PageIdAllocator {
      * @param partId Partition ID.
      * @return Allocated page ID.
      */
-    public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
+    public long allocatePage(int grpId, int partId, @MagicConstant(intValues = {FLAG_DATA, FLAG_IDX}) byte flags) throws IgniteCheckedException;
 
     /**
      * The given page is free now.

@@ -80,6 +80,4 @@ public class LinkMapTest extends GridCommonAbstractTest {
 
         return pageMem;
     }
-
-
 }

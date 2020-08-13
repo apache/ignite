@@ -1517,8 +1517,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccApplyChanges = new MvccApplyChangesHandler(grp);
         }
 
-        @Override
-        public CacheDataTree tree() {
+        @Override public CacheDataTree tree() {
             return dataTree;
         }
 

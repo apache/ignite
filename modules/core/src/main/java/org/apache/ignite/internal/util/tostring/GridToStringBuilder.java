@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -1661,6 +1661,51 @@ public class GridToStringBuilder {
 
         try {
             return toStringImpl(str, sb, propNames, propVals, propSens, 7);
+        }
+        finally {
+            if (newStr)
+                sb.reset();
+        }
+    }
+
+    /**
+     * Produces uniformed output of string with context properties
+     *
+     * @param str Output prefix or {@code null} if empty.
+     * @param triplets Triplets {@code {name, value, sencitivity}}.
+     * @return String presentation.
+     */
+    public static String toString(String str, Object... triplets) {
+        assert triplets.length % 3 == 0;
+
+        int propCnt = triplets.length / 3;
+
+        Object[] propNames = new Object[propCnt];
+        Object[] propVals = new Object[propCnt];
+        boolean[] propSens = new boolean[propCnt];
+
+        for (int i = 0; i < propCnt; i++) {
+            Object name = triplets[i * 3];
+
+            assert name != null;
+
+            propNames[i] = name;
+
+            propVals[i] = triplets[i * 3 + 1];
+
+            Object sens = triplets[i * 3 + 2];
+
+            assert sens instanceof Boolean;
+
+            propSens[i] = (Boolean)sens;
+        }
+
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
+
+        try {
+            return toStringImpl(str, sb, propNames, propVals, propSens, propCnt);
         }
         finally {
             if (newStr)

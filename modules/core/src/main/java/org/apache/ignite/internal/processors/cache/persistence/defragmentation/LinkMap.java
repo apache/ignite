@@ -213,8 +213,9 @@ public class LinkMap {
 
     }
 
+    /** */
     public static class LinkMappingLeafIO extends BPlusLeafIO<LinkMapping> {
-
+        /** */
         public static final IOVersions<LinkMappingLeafIO> VERSIONS = new IOVersions<>(
                 new LinkMappingLeafIO()
         );
@@ -245,6 +246,4 @@ public class LinkMap {
             return new LinkMapping(oldLink, newLink);
         }
     }
-
-
 }

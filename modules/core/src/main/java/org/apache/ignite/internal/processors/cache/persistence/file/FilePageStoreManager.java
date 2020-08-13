@@ -119,7 +119,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String PART_FILE_PREFIX = "part-";
 
     /** */
-    public static final String INDEX_FILE_NAME = "index" + FILE_SUFFIX;
+    public static final String INDEX_FILE_PREFIX = "index";
+
+    /** */
+    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** */
     public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;

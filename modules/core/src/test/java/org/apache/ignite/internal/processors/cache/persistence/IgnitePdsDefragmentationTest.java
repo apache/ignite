@@ -24,10 +24,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +51,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_2_NAME = "cache2";
+
     /** */
     public static final int PARTS = 1;
 
@@ -86,8 +83,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     private static class PolicyFactory implements Factory<ExpiryPolicy> {
-        @Override
-        public ExpiryPolicy create() {
+        @Override public ExpiryPolicy create() {
             return new ExpiryPolicy() {
                 @Override public Duration getExpiryForCreation() {
                     return new Duration(TimeUnit.MILLISECONDS, 13000);
@@ -211,13 +207,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         AtomicReference<File> defragCachePartFile = new AtomicReference<>();
 
         Files.walkFileTree(workDir.toPath(), new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+            @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+            @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
                 if (path.toString().contains("cacheGroup-group")) {
                     File file = path.toFile();
 
@@ -230,13 +224,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override
-            public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
+            @Override public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+            @Override public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -246,25 +238,17 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void fillCache(IgniteCache<Integer,Integer> cache) {
-        Map kvs = new HashMap(ADDED_KEYS_COUNT);
-
-        List<Integer> addedKeys = new ArrayList<>();
-
+    private void fillCache(IgniteCache<Integer, Object> cache) {
         for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
             byte[] val = new byte[8192];
             new Random().nextBytes(val);
 
-            kvs.put(i, val);
-
-            addedKeys.add(i);
+            cache.put(i, val);
         }
 
-        cache.putAll(kvs);
-
         for (int i = 0; i < REMOVED_KEYS_COUNT; i++) {
-            int key = new Random().nextInt(addedKeys.size());
-            addedKeys.remove(key);
+            int key = new Random().nextInt(ADDED_KEYS_COUNT);
+
             cache.remove(key);
         }
     }

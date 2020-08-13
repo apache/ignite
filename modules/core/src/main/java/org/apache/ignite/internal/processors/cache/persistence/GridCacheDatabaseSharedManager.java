@@ -1308,7 +1308,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr.beforePageWrite(fullId);
 
                 // Write page to disk.
-                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, false);
+                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
