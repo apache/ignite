@@ -59,5 +59,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         void Sleep(TimeSpan delay);
+
+        /** */
+        Guid GetNodeId();
     }
 }

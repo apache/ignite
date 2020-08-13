@@ -22,11 +22,15 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
     public class TestService : ITestService, IService
     {
+        [InstanceResource]
+        private readonly IIgnite _ignite = null;
+
         public const string ExceptionText = "Some error";
 
         public static int CallCount { get; set; }
@@ -94,6 +98,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public void Sleep(TimeSpan delay)
         {
             Thread.Sleep(delay);
+        }
+
+        /** <inheritdoc /> */
+        public Guid GetNodeId()
+        {
+            return _ignite.GetCluster().GetLocalNode().Id;
         }
 
         /** <inheritdoc /> */

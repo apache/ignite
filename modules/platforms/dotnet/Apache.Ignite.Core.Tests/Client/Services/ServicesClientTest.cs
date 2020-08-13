@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestServicesWithCustomClusterGroupInvokeOnSpecifiedNodes()
         {
-            // TODO
+            // var svc = DeployAndGetTestService(s => s.)
         }
 
         /// <summary>
