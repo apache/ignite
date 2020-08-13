@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 
 /**
- * Current checkpoint pages information.
+ * Snapshot of dirty pages which should be stored to disk.
  */
 public class CheckpointPagesInfoHolder {
     /** Total pages count in cp. */

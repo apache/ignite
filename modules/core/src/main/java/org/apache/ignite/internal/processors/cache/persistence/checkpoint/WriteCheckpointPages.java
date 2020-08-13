@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 
 /**
- * Pages write task
+ * Implementation of page writer which able to store pages to disk during checkpoint.
  */
 public class WriteCheckpointPages implements Runnable {
     /** */

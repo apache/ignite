@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
- * Context with information about current snapshots.
+ * Context with information about current checkpoint.
  */
 public class DbCheckpointContextImpl implements DbCheckpointListener.Context {
     /** Current checkpoint progress. */

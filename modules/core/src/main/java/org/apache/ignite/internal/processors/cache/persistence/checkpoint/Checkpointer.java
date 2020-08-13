@@ -129,7 +129,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 
 /**
  * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs -
- * now > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
+ * now > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait.
+ *
+ * Checkpointer is one threaded which means that only one checkpoint at the one moment possible.
+ *
+ * Checkpoint steps:
+ * <p> Take checkpoint write lock(all node load is stopped). </p>
+ * <p> Collect all dirty pages from page memory under write lock. </p>
+ * <p> Release write lock and write start marker to disk. </p>
+ * <p> Start to write dirty pages to disk. </p>
+ * <p> Finish the checkpoint and write end marker to disk. </p>
  */
 @SuppressWarnings("NakedNotify")
 public class Checkpointer extends GridWorker {
