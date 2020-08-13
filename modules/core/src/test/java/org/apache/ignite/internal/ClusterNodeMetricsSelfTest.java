@@ -39,11 +39,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -52,6 +55,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Grid node metrics self test.
@@ -310,7 +314,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterNodeMetrics() throws Exception {
-        final Ignite ignite0 = grid();
+        IgniteEx ignite0 = grid();
         final Ignite ignite1 = startGrid(1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -318,6 +322,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
                 return ignite0.cluster().nodes().size() == 2 && ignite1.cluster().nodes().size() == 2;
             }
         }, 3000L);
+
+        MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
 
         ClusterMetrics metrics0 = ignite0.cluster().localNode().metrics();
 
@@ -327,6 +333,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(metrics0.getTotalCpus(), nodesMetrics.getTotalCpus());
         assertEquals(1, metrics0.getTotalNodes());
         assertEquals(2, nodesMetrics.getTotalNodes());
+        assertEquals(2, ((IntMetric)mreg.findMetric("TotalNodes")).value());
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
@@ -339,7 +346,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJmxClusterMetrics() throws Exception {
-        Ignite node = grid();
+        IgniteEx node = grid();
 
         Ignite node1 = startGrid(1);
         Ignite node2 = startClientGrid(2);
@@ -354,14 +361,19 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Set<UUID> clientNodes = Collections.singleton(nodeId2);
         Set<UUID> allNodes = new HashSet<>(Arrays.asList(nodeId0, nodeId1, nodeId2));
 
+        MetricRegistry mreg = node.context().metric().registry(CLUSTER_METRICS);
+
         // ClusterMetricsMXBeanImpl test.
         JmxClusterMetricsHelper helperCluster = new JmxClusterMetricsHelper(node.configuration(),
             ClusterMetricsMXBeanImpl.class);
 
         assertEquals(node.cluster().topologyVersion(), helperCluster.attr("TopologyVersion"));
+        assertEquals(node.cluster().topologyVersion(), ((LongMetric)mreg.findMetric("TopologyVersion")).value());
 
         assertEquals(2, helperCluster.attr("TotalServerNodes"));
+        assertEquals(2, ((IntMetric)mreg.findMetric("TotalServerNodes")).value());
         assertEquals(1, helperCluster.attr("TotalClientNodes"));
+        assertEquals(1, ((IntMetric)mreg.findMetric("TotalClientNodes")).value());
 
         assertEquals(allNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, true));
         assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));

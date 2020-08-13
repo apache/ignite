@@ -18,26 +18,18 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
-
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.ACTIVE_BASELINE_NODES;
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.TOPOLOGY_VERSION;
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.TOTAL_BASELINE_NODES;
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.TOTAL_CLIENT_NODES;
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.TOTAL_NODES;
-import static org.apache.ignite.internal.cluster.IgniteClusterImpl.TOTAL_SERVER_NODES;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Cluster metrics MBean.
@@ -55,40 +47,13 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** Cluster metrics update mutex. */
     private final Object clusterMetricsMux = new Object();
 
-    /** Topology version metric. */
-    private final LongMetric topVer;
-
-    /** Total nodes count metric. */
-    private final IntMetric totalNodes;
-
-    /** Total server nodes count metric. */
-    private final IntMetric srvNodes;
-
-    /** Total client nodes count metric. */
-    private final IntMetric clientNodes;
-
-    /** Total baseline nodes count metric. */
-    private final IntMetric bltNodes;
-
-    /** Active baseline nodes count metric. */
-    private final IntMetric activeBltNodes;
-
     /**
      * @param cluster Cluster group to manage.
      */
-    public ClusterMetricsMXBeanImpl(ClusterGroup cluster, GridKernalContext ctx) {
+    public ClusterMetricsMXBeanImpl(ClusterGroup cluster) {
         assert cluster != null;
 
         this.cluster = cluster;
-
-        MetricRegistry clusterReg = ctx.metric().registry(CLUSTER_METRICS);
-
-        topVer = clusterReg.findMetric(TOPOLOGY_VERSION);
-        totalNodes = clusterReg.findMetric(TOTAL_NODES);
-        srvNodes = clusterReg.findMetric(TOTAL_SERVER_NODES);
-        clientNodes = clusterReg.findMetric(TOTAL_CLIENT_NODES);
-        bltNodes = clusterReg.findMetric(TOTAL_BASELINE_NODES);
-        activeBltNodes = clusterReg.findMetric(ACTIVE_BASELINE_NODES);
     }
 
     /**
@@ -393,7 +358,7 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
-        return totalNodes.value();
+        return metrics().getTotalNodes();
     }
 
     /** {@inheritDoc} */
@@ -403,27 +368,46 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
-       return bltNodes.value();
+        Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+
+        return baselineNodes != null ? baselineNodes.size() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getActiveBaselineNodes() {
-        return activeBltNodes.value();
+        Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            Set<Object> bltIds = new HashSet<>(baselineNodes.size());
+
+            for (BaselineNode baselineNode : baselineNodes)
+                bltIds.add(baselineNode.consistentId());
+
+            int count = 0;
+
+            for (ClusterNode node : cluster.forServers().nodes())
+                if (bltIds.contains(node.consistentId()))
+                    count++;
+
+            return count;
+        }
+
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalServerNodes() {
-        return srvNodes.value();
+        return cluster.forServers().nodes().size();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalClientNodes() {
-        return clientNodes.value();
+        return cluster.forClients().nodes().size();
     }
 
     /** {@inheritDoc} */
     @Override public long getTopologyVersion() {
-        return topVer.value();
+        return cluster.ignite().cluster().topologyVersion();
     }
 
     /** {@inheritDoc} */

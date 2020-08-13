@@ -4467,8 +4467,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Registers metrics.
      */
     private void registerMetrics() {
-        ctx.cluster().get().registerMetrics();
-
         if (!ctx.metric().enabled())
             return;
 

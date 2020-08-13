@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,6 +91,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  *
@@ -607,6 +610,25 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 U.error(log, "Failed to register MBean for cluster: ", e);
             }
         }
+
+        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
+
+        reg.register("TopologyVersion", cluster::topologyVersion, "Current topology version.");
+
+        reg.register("TotalNodes", () -> cluster.nodes().size(), "Total number of nodes.");
+
+        reg.register("TotalServerNodes", () -> cluster.forServers().nodes().size(), "Server nodes count.");
+
+        reg.register("TotalClientNodes", () -> cluster.forClients().nodes().size(), "Client nodes count.");
+
+        reg.register("TotalBaselineNodes", () -> F.size(cluster.currentBaselineTopology()),
+            "Total baseline nodes count.");
+
+        reg.register("ActiveBaselineNodes", () -> {
+            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+
+            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
+        }, "Active baseline nodes count.");
     }
 
     /** {@inheritDoc} */
