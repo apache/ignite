@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -81,6 +83,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
 
@@ -90,6 +93,24 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.spe
 public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Topology version metric name. */
+    public static final String TOPOLOGY_VERSION = "TopologyVersion";
+
+    /** Total nodes count metric name. */
+    public static final String TOTAL_NODES = "TotalNodes";
+
+    /** Total server nodes count metric name. */
+    public static final String TOTAL_SERVER_NODES = "TotalServerNodes";
+
+    /** Total client nodes count metric name. */
+    public static final String TOTAL_CLIENT_NODES = "TotalClientNodes";
+
+    /** Total baseline nodes count metric name. */
+    public static final String TOTAL_BASELINE_NODES = "TotalBaselineNodes";
+
+    /** Active baseline nodes count metric name. */
+    public static final String ACTIVE_BASELINE_NODES = "ActiveBaselineNodes";
 
     /** */
     private IgniteConfiguration cfg;
@@ -1033,6 +1054,49 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
         return reconnecFut;
+    }
+
+    /** Registers metrics. */
+    public void registerMetrics() {
+        MetricRegistry clusterReg = ctx.metric().registry(CLUSTER_METRICS);
+
+        clusterReg.register(TOPOLOGY_VERSION, this::topologyVersion, "Current topology version.");
+
+        clusterReg.register(TOTAL_NODES, () -> nodes().size(), "Total number of nodes.");
+
+        clusterReg.register(TOTAL_SERVER_NODES, () -> forServers().nodes().size(), "Server nodes count.");
+
+        clusterReg.register(TOTAL_CLIENT_NODES, () -> forClients().nodes().size(), "Client nodes count.");
+
+        clusterReg.register(TOTAL_BASELINE_NODES, () -> {
+            Collection<BaselineNode> baselineNodes = currentBaselineTopology();
+
+            return baselineNodes != null ? baselineNodes.size() : 0;
+        }, "Total baseline nodes count.");
+
+        clusterReg.register(ACTIVE_BASELINE_NODES, this::activeBaselineNodes, "Active baseline nodes count.");
+    }
+
+    /** @return Count of active baseline nodes. */
+    private int activeBaselineNodes() {
+        Collection<BaselineNode> baselineNodes = currentBaselineTopology();
+
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            Set<Object> bltIds = new HashSet<>(baselineNodes.size());
+
+            for (BaselineNode baselineNode : baselineNodes)
+                bltIds.add(baselineNode.consistentId());
+
+            int count = 0;
+
+            for (ClusterNode node : forServers().nodes())
+                if (bltIds.contains(node.consistentId()))
+                    count++;
+
+            return count;
+        }
+
+        return 0;
     }
 
     /** {@inheritDoc} */
