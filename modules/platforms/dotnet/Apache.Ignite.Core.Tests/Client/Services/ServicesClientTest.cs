@@ -36,6 +36,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** */
         private const string ServiceName = "SVC_NAME";
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ServicesClientTest"/> class.
+        /// </summary>
+        public ServicesClientTest() : base(2)
+        {
+            // No-op.
+        }
+
         [TearDown]
         public void TestTearDown()
         {
@@ -378,7 +386,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestServicesWithCustomClusterGroupInvokeOnSpecifiedNodes()
         {
-            // var svc = DeployAndGetTestService(s => s.)
+            ServerServices.DeployNodeSingleton(ServiceName, new TestService());
+
+            foreach (var ignite in Ignition.GetAll())
+            {
+                var node = ignite.GetCluster().GetLocalNode();
+                var clusterGroup = Client.GetCluster().ForPredicate(n => n.Id == node.Id);
+                var svc = clusterGroup.GetServices();
+
+                Assert.AreSame(clusterGroup, svc.ClusterGroup);
+                Assert.AreEqual(node.Id, clusterGroup.GetNodes().Single().Id);
+
+                var actualNodeId = svc.GetServiceProxy<ITestService>(ServiceName).GetNodeId();
+                Assert.AreEqual(node.Id, actualNodeId);
+            }
         }
 
         /// <summary>
