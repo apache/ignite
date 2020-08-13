@@ -54,6 +54,9 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert rowsCnt > 0 && requested == 0;
 
         requested = rowsCnt;
@@ -84,6 +87,9 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** */
     private void pushInternal() {
+        if (isClosed())
+            return;
+
         inLoop = true;
         try {
             if (it == null)

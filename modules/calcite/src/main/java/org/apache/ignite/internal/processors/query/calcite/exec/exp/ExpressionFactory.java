@@ -100,9 +100,4 @@ public interface ExpressionFactory<Row> {
      * @return Scalar.
      */
     Scalar scalar(List<RexNode> nodes, RelDataType type);
-
-    /**
-     * Executes expression.
-     */
-    <T> Supplier<T> execute(RexNode node);
 }

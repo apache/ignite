@@ -191,7 +191,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (inbox == null) {
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            Inbox<?> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+            Inbox<?> newInbox = new Inbox<>(baseInboxContext(nodeId, msg.queryId(), msg.fragmentId()),
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
@@ -230,7 +230,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (inbox == null && msg.batchId() == 0) {
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            Inbox<?> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+            Inbox<?> newInbox = new Inbox<>(baseInboxContext(nodeId, msg.queryId(), msg.fragmentId()),
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
@@ -251,11 +251,12 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /**
      * @return Minimal execution context to meet Inbox needs.
      */
-    private ExecutionContext<?> baseInboxContext(UUID qryId, long fragmentId) {
+    private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
             taskExecutor(),
             PlanningContext.builder()
                 .logger(log)
+                .originatingNodeId(nodeId)
                 .build(),
             qryId,
             new FragmentDescription(

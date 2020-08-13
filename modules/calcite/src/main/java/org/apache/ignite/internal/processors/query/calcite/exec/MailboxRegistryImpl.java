@@ -19,14 +19,27 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,6 +52,12 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     /** */
     private final Map<MailboxKey, Inbox<?>> remotes;
 
+    /** */
+    private final DiscoveryEventListener discoLsnr;
+
+    /** */
+    private GridEventStorageManager evtMgr;
+
     /**
      * @param ctx Kernal.
      */
@@ -47,6 +66,25 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
 
         locals = new ConcurrentHashMap<>();
         remotes = new ConcurrentHashMap<>();
+
+        discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        eventManager(ctx.event());
+
+        init();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init() {
+        eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() {
+        eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +142,27 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
             .map(Map.Entry::getValue)
             .collect(Collectors.toList());
     }
+
+    /**
+     * @param evtMgr Event manager.
+     */
+    public void eventManager(GridEventStorageManager evtMgr) {
+        this.evtMgr = evtMgr;
+    }
+
+    /**
+     * @return Event manager.
+     */
+    public GridEventStorageManager eventManager() {
+        return evtMgr;
+    }
+
+    /** */
+    private void onNodeLeft(UUID nodeId) {
+        locals.values().stream().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
+        remotes.values().stream().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
+    }
+
 
     /** */
     private static class MailboxKey {

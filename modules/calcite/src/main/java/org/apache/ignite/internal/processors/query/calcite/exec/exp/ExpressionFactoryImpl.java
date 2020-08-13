@@ -187,19 +187,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> Supplier<T> execute(RexNode node) {
-        return () -> {
-            Scalar s = scalar(node, null);
-
-            final Row r = ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())).create();
-
-            s.execute(ctx, null, r);
-
-            return (T)ctx.rowHandler().get(0, r);
-        };
-    }
-
     /** */
     private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {
         RelDataType rowType = type == null ? emptyType : type;

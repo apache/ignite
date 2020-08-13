@@ -28,6 +28,7 @@ import java.util.PriorityQueue;
 import java.util.UUID;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
@@ -136,6 +137,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert nodes != null;
         assert rowsCnt > 0 && requested == 0;
 
@@ -158,10 +162,10 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         if (isClosed())
             return;
 
+        registry.unregister(this);
+
         if (buffers != null)
             buffers.forEach(Buffer::sendOutboxClose);
-
-        registry.unregister(this);
 
         super.close();
     }
@@ -186,6 +190,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
      */
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
+
+        if (isClosed())
+            return;
 
         Buffer buf = getOrCreateBuffer(src);
 
@@ -214,6 +221,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
      * @param e Error.
      */
     public void onError(Throwable e) {
+        checkThread();
+
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
@@ -223,6 +232,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
 
     /** */
     private void pushInternal() {
+        if (isClosed())
+            return;
+
         assert downstream != null;
 
         inLoop = true;
@@ -360,6 +372,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private Buffer createBuffer(UUID nodeId) {
         return new Buffer(nodeId);
+    }
+
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        if (nodeId.equals(ctx.originatingNodeId()))
+            ctx.execute(() -> onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']')));
     }
 
     /** */

@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -67,6 +66,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -859,20 +859,34 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             assert node instanceof Outbox : node;
 
-            node.context().execute(((Outbox<Row>) node)::init);
-
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
-        }
-        catch (Throwable ex) { // TODO don't catch errors!
-            cancelQuery(msg.queryId());
 
-            if (ex instanceof ClusterTopologyCheckedException)
-                return;
+            node.context().execute(((Outbox<Row>) node)::init);
+        }
+        catch (Throwable ex) {
+            Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.fragmentDescription().fragmentId());
+            Collection<Outbox<?>> outboxes = mailboxRegistry.outboxes(msg.queryId());
+
+            if (ex instanceof ClusterTopologyCheckedException) {
+                if (inbox != null)
+                    inbox.onNodeLeft(nodeId);
+
+                outboxes.forEach(n -> n.onNodeLeft(nodeId));
+            }
+            else {
+                if (inbox != null)
+                    inbox.context().execute(inbox::close);
+
+                outboxes.forEach(n -> n.context().execute(() -> n.onError(ex)));
+            }
 
             U.warn(log, "Failed to start query. [nodeId=" + nodeId + ']', ex);
 
             try {
-                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId(), ex));
+                messageService().send(
+                    nodeId,
+                    new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId(), ex)
+                );
             }
             catch (IgniteCheckedException e) {
                 e.addSuppressed(ex);
@@ -909,16 +923,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
-
-        final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
-
-        ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']');
-
-        mailboxRegistry().outboxes(null).stream()
-            .filter(p).forEach(n -> n.context().execute(() -> n.onError(ex)));
-
-        mailboxRegistry().inboxes(null).stream()
-            .filter(p).forEach(n -> n.context().execute(() -> n.onError(ex)));
     }
 
     /** */
@@ -1063,7 +1067,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (state0 == QueryState.CLOSED) {
-                root.context().execute(root::closeExecutionTree);
+                root.proceedClose();
 
                 running.remove(ctx.queryId());
             }
@@ -1128,23 +1132,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             if (close)
                 close();
-        }
-    }
-
-    /** */
-    private static final class OriginatingFilter implements Predicate<Node<?>> {
-        /** */
-        private final UUID nodeId;
-
-        /** */
-        private OriginatingFilter(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean test(Node node) {
-            // Uninitialized inbox doesn't know originating node ID.
-            return Objects.equals(node.context().originatingNodeId(), nodeId);
         }
     }
 }

@@ -81,15 +81,17 @@ public class RootNode<Row> extends AbstractNode<Row>
     }
 
     /** */
-    public void closeExecutionTree() {
-        checkThread();
+    public void proceedClose() {
+        context().execute(()-> {
+            checkThread();
 
-        if (isClosed())
-            return;
+            if (isClosed())
+                return;
 
-        buff.clear();
+            buff.clear();
 
-        super.close();
+            super.close();
+        });
     }
 
     /**

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
@@ -122,6 +123,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     @Override public void push(Row row) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert waiting > 0;
 
         waiting--;
@@ -134,6 +138,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert waiting > 0;
 
@@ -152,6 +159,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
+        checkThread();
+
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
@@ -255,6 +264,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         catch (Exception e) {
             onError(e);
         }
+    }
+
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        if (nodeId.equals(ctx.originatingNodeId()))
+            ctx.execute(() -> onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']')));
     }
 
     /** */
