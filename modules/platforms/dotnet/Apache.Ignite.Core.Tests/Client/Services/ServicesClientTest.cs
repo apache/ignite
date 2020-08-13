@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
             Assert.AreEqual(new[] {dt.AddDays(1), dt.AddDays(2)}, svc.GetDateTimeArray(new[] {dt, dt.AddDays(1)}));
             Assert.AreEqual(new List<DateTime> {dt.AddDays(1), dt.AddDays(2)},
-                svc.GetDateTimeList(new[] {dt, dt.AddDays(1)}));
+                svc.GetDateTimeList(new[] {dt, dt.AddDays(1)}.ToList()));
 
             var ts = TimeSpan.FromSeconds(25);
             var minuteTs = TimeSpan.FromMinutes(1);
