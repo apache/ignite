@@ -37,20 +37,26 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
+ * Test class covering feature that allows to unmarshal binary object with custom classloader.
  */
 public class BinaryClassLoaderTest extends GridCommonAbstractTest {
-    /** */
+    /** Person class name. */
     private static final String PERSON_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
 
+    /** Enum class name. */
     private static final String ENUM_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Color";
 
+    /** Organization class name. */
     private static final String ORGANIZATION_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Organization";
 
+    /** Address class name. */
     private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
 
+    /** Enum vals. */
     private static final String[] enumVals = {"GREY", "RED", "GREEN", "PURPLE", "LIGHTBLUE"};
 
-    private boolean startClient = false;
+    /** Start client flag. */
+    private boolean startClient;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,9 +75,14 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
     }
 
+    /**
+     * Checks that binary object deserialization works with custom classloader.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testLoadClassFromBinary() throws Exception {
-        ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
+        ClassLoader testClsLdr = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
         try {
@@ -79,30 +90,35 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             final Ignite ignite2 = startGrid(2);
             final Ignite ignite3 = startGrid(3);
 
-            loadItems(testClassLoader, ignite1);
-            loadOrganization(testClassLoader, ignite1);
-            loadEnumItems(testClassLoader, ignite1);
+            loadItems(testClsLdr, ignite1);
+            loadOrganization(testClsLdr, ignite1);
+            loadEnumItems(testClsLdr, ignite1);
 
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite3);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ignite3);
 
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite3);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ignite3);
 
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite3);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite3);
         }
         finally {
             stopAllGrids();
         }
     }
 
+    /**
+     * Checks that binary object deserialization works with custom classloader if called on client side.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testClientLoadClassFromBinary() throws Exception {
-        ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[]{
+        ClassLoader testClsLdr = new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
         try {
@@ -113,21 +129,21 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
             final Ignite client = startGrid(3);
 
-            loadItems(testClassLoader, client);
-            loadOrganization(testClassLoader, client);
-            loadEnumItems(testClassLoader, client);
+            loadItems(testClsLdr, client);
+            loadOrganization(testClsLdr, client);
+            loadEnumItems(testClsLdr, client);
 
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, client);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, client);
 
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, client);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, client);
 
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
-            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, client);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
+            checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, client);
         }
         finally {
             stopAllGrids();
@@ -135,11 +151,11 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param testClassLoader Test class loader.
+     * @param testClsLdr Test class loader.
      * @param ignite Ignite.
      */
-    private void checkItems(ClassLoader testClassLoader, String cacheName, String valClassName, Ignite ignite) {
-        IgniteCache cache = ignite.cache(cacheName);
+    private void checkItems(ClassLoader testClsLdr, String cacheName, String valClsName, Ignite ignite) {
+        IgniteCache<Integer, Object> cache = ignite.cache(cacheName);
 
         IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
@@ -154,7 +170,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
                     info("Can not execute toString() on class " + binaryVal.type().typeName());
                 }
 
-            assertEquals(binaryVal.type().typeName(), valClassName);
+            assertEquals(binaryVal.type().typeName(), valClsName);
 
             boolean catchEx = false;
 
@@ -163,7 +179,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             } catch (BinaryObjectException e) {
                 ClassNotFoundException cause = X.cause(e, ClassNotFoundException.class);
 
-                if (cause != null && cause.getMessage().contains(valClassName))
+                if (cause != null && cause.getMessage().contains(valClsName))
                     catchEx = true;
                 else
                     throw e;
@@ -171,20 +187,20 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
             assertTrue(catchEx);
 
-            Object personVal = binaryVal.deserialize(testClassLoader);
+            Object personVal = binaryVal.deserialize(testClsLdr);
 
-            assertTrue(personVal != null && personVal.getClass().getName().equals(valClassName));
+            assertTrue(personVal != null && personVal.getClass().getName().equals(valClsName));
         }
     }
 
     /**
-     * @param testClassLoader Test class loader.
+     * @param testClsLdr Test class loader.
      * @param ignite Ignite.
      */
-    private void loadItems(ClassLoader testClassLoader, Ignite ignite) throws Exception {
-        Constructor personConstructor = testClassLoader.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
+    private void loadItems(ClassLoader testClsLdr, Ignite ignite) throws Exception {
+        Constructor personConstructor = testClsLdr.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
 
-        IgniteCache cache = ignite.cache("SomeCache");
+        IgniteCache<Integer, Object> cache = ignite.cache("SomeCache");
 
         for (int i = 0; i < 100; i++)
             cache.put(i, personConstructor.newInstance("Persone name " + i));
@@ -193,38 +209,38 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param testClassLoader Test class loader.
+     * @param testClsLdr Test class loader.
      * @param ignite Ignite.
      */
-    private void loadOrganization(ClassLoader testClassLoader, Ignite ignite) throws Exception {
-        Class personClass = testClassLoader.loadClass(PERSON_CLASS_NAME);
-        Class addressClass = testClassLoader.loadClass(ADDRESS_CLASS_NAME);
+    private void loadOrganization(ClassLoader testClsLdr, Ignite ignite) throws Exception {
+        Class personCls = testClsLdr.loadClass(PERSON_CLASS_NAME);
+        Class addrCls = testClsLdr.loadClass(ADDRESS_CLASS_NAME);
 
-        Constructor personConstructor = testClassLoader.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
-        Constructor addressConstructor = testClassLoader.loadClass(ADDRESS_CLASS_NAME).getConstructor(String.class, Integer.TYPE);
-        Constructor organizationConstructor = testClassLoader.loadClass(ORGANIZATION_CLASS_NAME).getConstructor(String.class, personClass, addressClass);
+        Constructor personConstructor = testClsLdr.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
+        Constructor addrConstructor = testClsLdr.loadClass(ADDRESS_CLASS_NAME).getConstructor(String.class, Integer.TYPE);
+        Constructor organizationConstructor = testClsLdr.loadClass(ORGANIZATION_CLASS_NAME).getConstructor(String.class, personCls, addrCls);
 
-        IgniteCache cache = ignite.cache("OrganizationCache");
+        IgniteCache<Integer, Object> cache = ignite.cache("OrganizationCache");
 
         for (int i = 0; i < 100; i++)
             cache.put(i, organizationConstructor.newInstance("Organization " + i,
                 personConstructor.newInstance("Persone name " + i),
-                addressConstructor.newInstance("Street " + i, i)));
+                addrConstructor.newInstance("Street " + i, i)));
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
     }
 
     /**
-     * @param testClassLoader Test class loader.
+     * @param testClsLdr Test class loader.
      * @param ignite Ignite.
      */
-    private void loadEnumItems(ClassLoader testClassLoader, Ignite ignite) throws Exception {
-        Method factoryMethod = testClassLoader.loadClass(ENUM_CLASS_NAME).getMethod("valueOf", String.class);
+    private void loadEnumItems(ClassLoader testClsLdr, Ignite ignite) throws Exception {
+        Method factoryMtd = testClsLdr.loadClass(ENUM_CLASS_NAME).getMethod("valueOf", String.class);
 
-        IgniteCache cache = ignite.cache("SomeCacheEnum");
+        IgniteCache<Integer, Object> cache = ignite.cache("SomeCacheEnum");
 
         for (int i = 0; i < 100; i++)
-            cache.put(i, factoryMethod.invoke(null, enumVals[i % enumVals.length]));
+            cache.put(i, factoryMtd.invoke(null, enumVals[i % enumVals.length]));
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
     }

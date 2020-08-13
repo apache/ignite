@@ -723,7 +723,7 @@ public class BinaryContext {
     }
 
     /**
-     * Creates descriptor, but not carry about registration.
+     * Creates descriptor without registration.
      *
      * @param cls Class.
      * @return Binary class descriptor.
