@@ -915,9 +915,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         QueryInfo info = running.get(rootNode.queryId());
 
-        assert Objects.nonNull(info);
-
-        info.close();
+        if (info != null)
+            info.close();
     }
 
     /** */
