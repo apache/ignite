@@ -344,15 +344,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(3, svc.test(2, "1"));
             Assert.AreEqual(3, svc.test("1", 2));
 
-            // Dates & Timestamps.
-            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            // Dates & Timestamps: not supported in Thin Client Services.
+            var ex = Assert.Throws<IgniteClientException>(() => svc.test(DateTime.UtcNow));
+            StringAssert.StartsWith("Failed to resolve .NET class 'System.DateTime' in Java", ex.Message);
 
-            Assert.AreEqual(dt, svc.test(dt));
-            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
-            Assert.IsNull(svc.testNullTimestamp(null));
-            Assert.AreEqual(dt, svc.testArray(new DateTime?[] {dt})[0]);
-
-            Guid guid = Guid.NewGuid();
+            // Guid.
+            var guid = Guid.NewGuid();
 
             Assert.AreEqual(guid, svc.test(guid));
             Assert.AreEqual(guid, svc.testNullUUID(guid));
