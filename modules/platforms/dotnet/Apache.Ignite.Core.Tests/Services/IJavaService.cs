@@ -162,5 +162,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         IBinaryObject testBinaryObject(IBinaryObject x);
+
+        /** */
+        void sleep(long delayMs);
     }
 }

@@ -417,9 +417,31 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             var svc = DeployAndGetTestService(s => s.WithTimeout(TimeSpan.FromSeconds(0.5)));
 
-            var ex = Assert.Throws<IgniteClientException>(() => svc.FiveSecondMethod());
+            var ex = Assert.Throws<IgniteClientException>(() => svc.Sleep(TimeSpan.FromSeconds(3)));
 
             Assert.AreEqual("1", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that lingering service calls cause timeout exception when <see cref="IServicesClient.WithTimeout"/>
+        /// is used.
+        ///
+        /// - Deploy the service
+        /// - Get a service proxy with a timeout
+        /// - Execute a method that takes a long time, verify that timeout setting takes effect
+        /// </summary>
+        [Test]
+        public void TestLingeringJavaServiceCallCausesTimeoutExceptionWhenTimeoutIsSet()
+        {
+            var svcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
+
+            var svc = Client.GetServices()
+                .WithTimeout(TimeSpan.FromSeconds(0.5))
+                .GetServiceProxy<IJavaService>(svcName);
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.sleep(2000));
+
+            Assert.AreEqual("timed out", ex.Message);
         }
 
         /// <summary>

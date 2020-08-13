@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
+    using System;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -57,6 +58,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         IBinaryObject[] PersonArrayMethodBinary(IBinaryObject[] persons);
 
         /** */
-        void FiveSecondMethod();
+        void Sleep(TimeSpan delay);
     }
 }

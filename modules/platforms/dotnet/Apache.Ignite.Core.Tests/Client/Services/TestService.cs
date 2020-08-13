@@ -91,9 +91,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /** <inheritdoc /> */
-        public void FiveSecondMethod()
+        public void Sleep(TimeSpan delay)
         {
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Thread.Sleep(delay);
         }
 
         /** <inheritdoc /> */
