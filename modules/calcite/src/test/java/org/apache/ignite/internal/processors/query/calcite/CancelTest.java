@@ -204,6 +204,24 @@ public class CancelTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testFullReadToEnd() throws Exception {
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors =
+            engine.query(null, "PUBLIC",
+                "SELECT * FROM TEST WHERE ID < 1",
+                X.EMPTY_OBJECT_ARRAY);
+
+        cursors.get(0).getAll();
+
+        // Checks that all partition are unreserved.
+        awaitReservationsRelease("TEST");
+    }
+
+    /**
      * @param c Cache.
      * @param rows Rows count.
      */

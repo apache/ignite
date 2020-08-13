@@ -105,8 +105,14 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void close() {
         lock.lock();
         try {
+            if (state == State.CLOSED)
+                return;
+
             if (state == State.RUNNING)
                 state = State.CANCELLED;
+
+            if (state == State.END)
+                state = State.CLOSED;
 
             cond.signalAll();
         }
@@ -254,7 +260,7 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         assert state == State.END;
 
-        onClose.accept(this);
+        close();
         
         return null;
     }
@@ -278,6 +284,9 @@ public class RootNode<Row> extends AbstractNode<Row>
         CANCELLED,
 
         /** */
-        END
+        END,
+
+        /** */
+        CLOSED
     }
 }
