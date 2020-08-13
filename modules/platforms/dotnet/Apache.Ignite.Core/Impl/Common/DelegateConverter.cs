@@ -566,26 +566,32 @@ namespace Apache.Ignite.Core.Impl.Common
                     return Expression.Call(null, convertMethod, value);
                 }
 
+                if (elType.IsValueType)
+                {
+                    // TODO: Predefined arrays (byte[] and so on) do not need a conversion.
+                    // Custom value types do, like DateTime, and user-defined structs
+                }
+
                 if (elType == typeof(sbyte))
                 {
                     return Expression.Call(null, ConvertToSbyteArrayMethod, value);
                 }
-                
+
                 if (elType == typeof(ushort))
                 {
                     return Expression.Call(null, ConvertToUshortArrayMethod, value);
                 }
-                
+
                 if (elType == typeof(uint))
                 {
                     return Expression.Call(null, ConvertToUintArrayMethod, value);
                 }
-                
+
                 if (elType == typeof(ulong))
                 {
                     return Expression.Call(null, ConvertToUlongArrayMethod, value);
                 }
-                
+
                 return Expression.Convert(value, targetType);
             }
 
@@ -610,7 +616,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 value = Expression.Convert(value, typeof(short));
             }
-            
+
             return Expression.Convert(value, targetType);
         }
 
@@ -678,15 +684,15 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 return null;
             }
-            
+
             var arr = arrObj as TFrom[];
             if (arr == null)
             {
                 throw new IgniteException(string.Format("Can't convert '{0}' to '{1}'", arrObj.GetType(), typeof(T[])));
             }
-            
+
             var res = new T[arr.Length];
-            
+
             Buffer.BlockCopy(arr, 0, res, 0, arr.Length * elementSize);
 
             return res;
