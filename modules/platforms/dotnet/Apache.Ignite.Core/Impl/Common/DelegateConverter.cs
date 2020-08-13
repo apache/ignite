@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Converts generic and non-generic delegates.
     /// </summary>
+    [CLSCompliant(false)]
     public static class DelegateConverter
     {
         /** */
