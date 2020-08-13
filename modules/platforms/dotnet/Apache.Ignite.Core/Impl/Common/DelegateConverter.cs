@@ -604,11 +604,11 @@ namespace Apache.Ignite.Core.Impl.Common
             }
             else if (targetType == typeof(uint))
             {
-                value = Expression.Convert(value, typeof(short));
+                value = Expression.Convert(value, typeof(int));
             }
             else if (targetType == typeof(ulong))
             {
-                value = Expression.Convert(value, typeof(short));
+                value = Expression.Convert(value, typeof(long));
             }
 
             return Expression.Convert(value, targetType);
