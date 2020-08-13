@@ -209,6 +209,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(3, svc.GetUShort(2));
             Assert.AreEqual(new ushort[] {1, 6}, svc.GetUShortArray(new ushort[] {0, 5}));
 
+            Assert.AreEqual(3, svc.GetInt(2));
+            Assert.AreEqual(new [] {-4, 6}, svc.GetIntArray(new[] {-5, 5}));
+
+            Assert.AreEqual(3, svc.GetUInt(2));
+            Assert.AreEqual(new uint[] {1, 6}, svc.GetUIntArray(new uint[] {0, 5}));
+
             Assert.AreEqual('d', svc.GetChar('c'));
             Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
 
