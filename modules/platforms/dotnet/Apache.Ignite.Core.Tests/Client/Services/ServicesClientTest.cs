@@ -224,9 +224,18 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual('d', svc.GetChar('c'));
             Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
 
+            var guid = Guid.NewGuid();
+            Assert.AreEqual(guid, svc.GetGuid(guid));
+            Assert.AreEqual(new[] {guid, Guid.Empty}, svc.GetGuidArray(new[] {guid, Guid.Empty}));
+
             var dt = DateTime.Now;
             Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
             Assert.AreEqual(new[] {dt.AddDays(1), dt.AddDays(2)}, svc.GetDateTimeArray(new[] {dt, dt.AddDays(1)}));
+
+            var ts = TimeSpan.FromSeconds(25);
+            var minuteTs = TimeSpan.FromMinutes(1);
+            Assert.AreEqual(ts.Add(minuteTs), svc.GetTimeSpan(ts));
+            Assert.AreEqual(new[] {ts.Add(minuteTs), minuteTs}, svc.GetTimeSpanArray(new[] {ts, TimeSpan.Zero}));
 
 
 
