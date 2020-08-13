@@ -37,6 +37,9 @@ public abstract class IgniteAwareApplication {
     /** App finished. */
     private static final String APP_FINISHED = "IGNITE_APPLICATION_FINISHED";
 
+    /** App broken. */
+    private static final String APP_BROKEN = "IGNITE_APPLICATION_BROKEN";
+
     /** App terminated. */
     private static final String APP_TERMINATED = "IGNITE_APPLICATION_TERMINATED";
 
@@ -46,8 +49,14 @@ public abstract class IgniteAwareApplication {
     /** Finished. */
     private static volatile boolean finished;
 
+    /** Broken. */
+    private static volatile boolean broken;
+
     /** Terminated. */
     private static volatile boolean terminated;
+
+    /** Shutdown hook. */
+    private static volatile Thread hook;
 
     /** Ignite. */
     protected Ignite ignite;
@@ -59,10 +68,15 @@ public abstract class IgniteAwareApplication {
      * Default constructor.
      */
     protected IgniteAwareApplication() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            terminate();
+        Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
+            log.info("SIGTERM recorded.");
 
-            while (!finished()) {
+            if (!finished && !broken)
+                terminate();
+            else
+                log.info("Application already done [finished=" + finished + ", broken=" + broken + "]");
+
+            while (!finished && !broken) {
                 log.info("Waiting for graceful termnation.");
 
                 try {
@@ -72,8 +86,6 @@ public abstract class IgniteAwareApplication {
                     e.printStackTrace();
                 }
             }
-
-            log.info("SIGTERM recorded.");
         }));
 
         log.info("ShutdownHook registered.");
@@ -95,10 +107,36 @@ public abstract class IgniteAwareApplication {
      */
     protected void markFinished() {
         assert !finished;
+        assert !broken;
 
         log.info(APP_FINISHED);
 
+        removeShutdownHook();
+
         finished = true;
+    }
+
+    /**
+     *
+     */
+    private void markBroken() {
+        assert !finished;
+        assert !broken;
+
+        log.info(APP_BROKEN);
+
+        removeShutdownHook();
+
+        broken = true;
+    }
+
+    /**
+     *
+     */
+    private void removeShutdownHook() {
+        Runtime.getRuntime().removeShutdownHook(hook);
+
+        log.info("Shutdown hook removed.");
     }
 
     /**
@@ -107,13 +145,6 @@ public abstract class IgniteAwareApplication {
     protected void markSyncExecutionComplete() {
         markInitialized();
         markFinished();
-    }
-
-    /**
-     *
-     */
-    private boolean finished() {
-        return finished;
     }
 
     /**
@@ -173,6 +204,10 @@ public abstract class IgniteAwareApplication {
         }
         catch (Throwable th) {
             log.error("Unexpected Application failure... ", th);
+
+            recordResult("ERROR", th.getMessage());
+
+            markBroken();
         }
         finally {
             log.info("Application finished.");

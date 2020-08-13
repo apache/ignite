@@ -49,7 +49,13 @@ class IgniteAwareApplicationService(IgniteAwareService):
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
         self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)
-        self.await_event("IGNITE_APPLICATION_INITIALIZED", self.timeout_sec, from_the_beginning=True)
+        self.await_event("IGNITE_APPLICATION_INITIALIZED\\|IGNITE_APPLICATION_BROKEN", self.timeout_sec,
+                         from_the_beginning=True)
+
+        try:
+            self.await_event("IGNITE_APPLICATION_INITIALIZED", 1, from_the_beginning=True)
+        except Exception:
+            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR"))
 
     def start_cmd(self, node):
         cmd = self.env()
@@ -70,7 +76,8 @@ class IgniteAwareApplicationService(IgniteAwareService):
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
                         (str(node.account), str(self.stop_timeout_sec))
 
-        self.await_event("IGNITE_APPLICATION_FINISHED", from_the_beginning=True, timeout_sec=timeout_sec)
+        self.await_event("IGNITE_APPLICATION_FINISHED\\|IGNITE_APPLICATION_BROKEN", from_the_beginning=True,
+                         timeout_sec=timeout_sec)
 
     def clean_node(self, node):
         if self.alive(node):
