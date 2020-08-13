@@ -353,8 +353,8 @@ public class JavaThinClient {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-cluster-groups[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
-            ClientClusterGroup servers = client.cluster().forServers();
-            servers.nodes().forEach(n -> System.out.println("Server node: " + n.id()));
+            ClientClusterGroup serversInDc1 = client.cluster().forServers().forAttribute("dc", "dc1");
+            serversInDc1.nodes().forEach(n -> System.out.println("Node ID: " + n.id()));
         }
         //end::client-cluster-groups[]
     }
