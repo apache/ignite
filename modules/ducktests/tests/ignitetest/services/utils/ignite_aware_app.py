@@ -76,7 +76,8 @@ class IgniteAwareApplicationService(IgniteAwareService):
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
                         (str(node.account), str(self.stop_timeout_sec))
 
-        self.await_event("IGNITE_APPLICATION_FINISHED", from_the_beginning=True, timeout_sec=timeout_sec)
+        self.await_event("IGNITE_APPLICATION_FINISHED\\|IGNITE_APPLICATION_BROKEN", from_the_beginning=True,
+                         timeout_sec=timeout_sec)
 
     def clean_node(self, node):
         if self.alive(node):
