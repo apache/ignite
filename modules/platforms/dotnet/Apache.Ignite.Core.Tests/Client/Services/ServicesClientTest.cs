@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// - Execute a method that takes a long time, verify that timeout setting takes effect
         /// </summary>
         [Test]
-        public void TestLingeringServiceCallCausesTimeoutExceptionWhenTimeoutIsSet()
+        public void TestTimeout()
         {
             var svc = DeployAndGetTestService(s => s.WithTimeout(TimeSpan.FromSeconds(0.5)));
 
@@ -431,7 +431,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// - Execute a method that takes a long time, verify that timeout setting takes effect
         /// </summary>
         [Test]
-        public void TestLingeringJavaServiceCallCausesTimeoutExceptionWhenTimeoutIsSet()
+        public void TestJavaServiceTimeout()
         {
             var svcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
 
