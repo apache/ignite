@@ -206,12 +206,17 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(3, svc.GetShort(2));
             Assert.AreEqual(new short[] {-4, 6}, svc.GetShortArray(new short[] {-5, 5}));
 
+            Assert.AreEqual(3, svc.GetUShort(2));
+            Assert.AreEqual(new ushort[] {1, 6}, svc.GetUShortArray(new ushort[] {0, 5}));
+
             Assert.AreEqual('d', svc.GetChar('c'));
             Assert.AreEqual(new[] {'b', 'c'}, svc.GetCharArray(new[]{'a', 'b'}));
 
             var dt = DateTime.Now;
             Assert.AreEqual(dt.AddDays(1), svc.GetDateTime(dt));
             Assert.AreEqual(new[] {dt.AddDays(1), dt.AddDays(2)}, svc.GetDateTimeArray(new[] {dt, dt.AddDays(1)}));
+
+
 
             // TODO: Pass generic collections (with a non-generic method)
             // TODO: Pass interfaces
