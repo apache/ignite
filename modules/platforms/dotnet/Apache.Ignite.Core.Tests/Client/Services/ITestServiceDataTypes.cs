@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Service interface for testing various data types passing.
@@ -89,6 +90,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         DateTime[] GetDateTimeArray(DateTime[] x);
+
+        /** */
+        List<DateTime> GetDateTimeList(ICollection<DateTime> x);
 
         /** */
         TimeSpan GetTimeSpan(TimeSpan x);

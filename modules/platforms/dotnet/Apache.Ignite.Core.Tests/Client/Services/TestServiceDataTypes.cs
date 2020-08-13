@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Services;
 
@@ -156,6 +157,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public DateTime[] GetDateTimeArray(DateTime[] x)
         {
             return x.Select(d => d.AddDays(1)).ToArray();
+        }
+
+        /** <inheritdoc /> */
+        public List<DateTime> GetDateTimeList(ICollection<DateTime> x)
+        {
+            return x.Select(d => d.AddDays(1)).ToList();
         }
 
         /** <inheritdoc /> */
