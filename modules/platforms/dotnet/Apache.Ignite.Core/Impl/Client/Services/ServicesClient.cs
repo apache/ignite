@@ -101,14 +101,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _timeout);
         }
 
-        // ReSharper disable once UnusedMember.Global (IGNITE-113360)
-        public IServicesClient WithTimeout(TimeSpan timeout)
-        {
-            IgniteArgumentCheck.Ensure(timeout > TimeSpan.Zero, "timeout", "Timeout should be greater than zero");
-
-            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, _serverKeepBinary, timeout);
-        }
-
         /// <summary>
         /// Invokes the proxy method.
         /// </summary>
