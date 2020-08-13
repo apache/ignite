@@ -133,7 +133,7 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    private void removeShutdownHook(){
+    private void removeShutdownHook() {
         Runtime.getRuntime().removeShutdownHook(hook);
 
         log.info("Shutdown hook removed.");
