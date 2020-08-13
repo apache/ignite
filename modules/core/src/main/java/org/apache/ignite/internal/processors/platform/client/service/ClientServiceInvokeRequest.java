@@ -175,7 +175,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                // TODO: Convert array types when necessary - see PlatformServices:600
+                PlatformServices.convertArrayArgs(args, method);
+
                 res = proxy.invokeMethod(method, args);
             }
 
