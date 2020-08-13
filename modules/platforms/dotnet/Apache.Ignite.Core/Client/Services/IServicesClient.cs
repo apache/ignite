@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Client.Services
 {
-    using System;
-
     /// <summary>
     /// Ignite distributed services client.
     /// </summary>
@@ -53,10 +51,5 @@ namespace Apache.Ignite.Core.Client.Services
         /// </summary>
         /// <returns>Instance with server-side binary mode enabled.</returns>
         IServicesClient WithServerKeepBinary();
-
-        /// <summary>
-        /// Returns an instance with specified timeout that applies to all service calls.
-        /// </summary>
-        IServicesClient WithTimeout(TimeSpan timeout);
     }
 }
