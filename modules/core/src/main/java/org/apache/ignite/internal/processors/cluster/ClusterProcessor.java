@@ -613,18 +613,30 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
 
-        reg.register("TopologyVersion", cluster::topologyVersion, "Current topology version.");
+        reg.register("TopologyVersion",
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
+            "Current topology version.");
 
-        reg.register("TotalNodes", () -> cluster.nodes().size(), "Total number of nodes.");
+        reg.register("TotalNodes",
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.nodes().size(),
+            "Total number of nodes.");
 
-        reg.register("TotalServerNodes", () -> cluster.forServers().nodes().size(), "Server nodes count.");
+        reg.register("TotalServerNodes",
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
+            "Server nodes count.");
 
-        reg.register("TotalClientNodes", () -> cluster.forClients().nodes().size(), "Client nodes count.");
+        reg.register("TotalClientNodes",
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
+            "Client nodes count.");
 
-        reg.register("TotalBaselineNodes", () -> F.size(cluster.currentBaselineTopology()),
+        reg.register("TotalBaselineNodes",
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
             "Total baseline nodes count.");
 
         reg.register("ActiveBaselineNodes", () -> {
+            if (ctx.isStopping() || ctx.clientDisconnected())
+                return -1;
+
             Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
 
             return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
