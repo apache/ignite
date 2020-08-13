@@ -119,6 +119,11 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     if (_clusterGroup != null)
                     {
                         var nodes = _clusterGroup.GetNodes();
+                        if (nodes.Count == 0)
+                        {
+                            throw new IgniteClientException("Cluster group is empty");
+                        }
+
                         w.WriteInt(nodes.Count);
 
                         foreach (var node in nodes)

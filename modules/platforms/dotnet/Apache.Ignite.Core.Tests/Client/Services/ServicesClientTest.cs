@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var svc = clusterGroup.GetServices().GetServiceProxy<ITestService>(ServiceName);
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
-            Assert.AreEqual("todo", ex.Message);
+            Assert.AreEqual("Cluster group is empty", ex.Message);
         }
 
         /// <summary>
