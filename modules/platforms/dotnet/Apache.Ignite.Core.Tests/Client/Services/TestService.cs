@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
@@ -27,12 +28,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     public class TestService : ITestService, IService
     {
         public const string ExceptionText = "Some error";
-        
+
         public static int CallCount { get; set; }
 
         /** <inheritdoc /> */
         public int IntProperty { get; set; }
-        
+
         /** <inheritdoc /> */
         public Person PersonProperty { get; set; }
 
@@ -87,6 +88,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             return persons
                 .Select(p => p.ToBuilder().SetIntField("Id", p.GetField<int>("Id") + 2).Build())
                 .ToArray();
+        }
+
+        /** <inheritdoc /> */
+        public void FiveSecondMethod()
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(5));
         }
 
         /** <inheritdoc /> */

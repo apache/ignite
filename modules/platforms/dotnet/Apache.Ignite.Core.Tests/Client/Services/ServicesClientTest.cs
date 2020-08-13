@@ -415,7 +415,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestLingeringServiceCallCausesTimeoutExceptionWhenTimeoutIsSet()
         {
-            // TODO
+            var svc = DeployAndGetTestService(s => s.WithTimeout(TimeSpan.FromSeconds(0.5)));
+
+            var ex = Assert.Throws<IgniteClientException>(() => svc.FiveSecondMethod());
+
+            Assert.AreEqual("1", ex.Message);
         }
 
         /// <summary>

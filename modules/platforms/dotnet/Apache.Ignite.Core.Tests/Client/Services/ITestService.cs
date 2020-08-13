@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     {
         /** */
         int IntProperty { get; set; }
-        
+
         /** */
         Person PersonProperty { get; set; }
-        
+
         /** */
         void VoidMethod();
 
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         Person PersonMethod(Person person);
-        
+
         /** */
         IBinaryObject PersonMethodBinary(IBinaryObject person);
 
@@ -55,5 +55,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         IBinaryObject[] PersonArrayMethodBinary(IBinaryObject[] persons);
+
+        /** */
+        void FiveSecondMethod();
     }
 }
