@@ -68,6 +68,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -4216,6 +4217,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
+                                spi.getSpiContext().recordEvent(new NodeValidationFailedEvent(locNode, node, err0));
+
                                 boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
 
                                 if (!ping) {
