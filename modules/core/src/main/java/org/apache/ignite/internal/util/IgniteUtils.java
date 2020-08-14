@@ -203,6 +203,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -8867,7 +8868,7 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return U.forName(clsName, ldr, null);
+        return U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
     }
 
     /**
@@ -8879,6 +8880,19 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+        return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8889,9 +8903,20 @@ public abstract class IgniteUtils {
         if (ldr != null) {
             if (ldr instanceof ClassCache)
                 return ((ClassCache)ldr).getFromCache(clsName);
+            else if (!useCache) {
+                cls = Class.forName(clsName, true, ldr);
+
+                return cls;
+            }
         }
         else
             ldr = gridClassLoader;
+
+        if (!useCache) {
+            cls = Class.forName(clsName, true, ldr);
+
+            return cls;
+        }
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
