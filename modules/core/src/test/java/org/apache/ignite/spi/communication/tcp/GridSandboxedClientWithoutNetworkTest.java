@@ -20,7 +20,6 @@ package org.apache.ignite.spi.communication.tcp;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -51,11 +50,11 @@ public class GridSandboxedClientWithoutNetworkTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteUtils.INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
-
         super.afterTest();
 
         stopAllGrids();
+
+        IgniteUtils.INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
     }
 
     /** {@inheritDoc} */
@@ -102,21 +101,5 @@ public class GridSandboxedClientWithoutNetworkTest extends GridCommonAbstractTes
         testCache.put("test", "test");
 
         assertEquals("test", srv.getOrCreateCache("test").get("test"));
-    }
-
-    /**
-     * Test that you can't send anything from client to another client that has "-1" local port.
-     *
-     * @throws Exception If failed.
-     */
-    @Test(expected = IgniteCheckedException.class)
-    public void testMisconfiguredNodeWithoutNetwork() throws Exception {
-        IgniteEx srv = startGrid(0);
-
-        IgniteUtils.INTERFACE_SUPPLIER = Collections::emptyEnumeration;
-
-        useAnyLocAddress = true;
-
-        IgniteEx client1 = startClientGrid(1);
     }
 }
