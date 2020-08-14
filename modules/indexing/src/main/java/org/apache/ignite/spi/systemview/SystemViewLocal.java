@@ -57,63 +57,54 @@ import org.h2.value.ValueUuid;
  * SQL system view to export {@link SystemView} data.
  */
 public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
+    /** */
+    private static final Map<Class<?>, Function<Object, ? extends Value>> CLS_TO_VAL = new HashMap<>();
 
-    private static final Map<Class<?>, Function<Object, ? extends Value>> CLASS_TO_VALUE_MAP = new HashMap<>();
-
-    private static final Map<Class<?>, Integer> CLASS_TO_VALUE_TYPE_RECORDS = new HashMap<>();
+    /** */
+    private static final Map<Class<?>, Integer> CLS_TO_VAL_TYPE = new HashMap<>();
 
     static {
-        registerClassToValueRecords();
-        registerClassToValueTypeRecords();
-    }
+        CLS_TO_VAL_TYPE.put(String.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(IgniteUuid.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(UUID.class, Value.UUID);
+        CLS_TO_VAL_TYPE.put(Class.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(InetSocketAddress.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(BigDecimal.class, Value.DECIMAL);
+        CLS_TO_VAL_TYPE.put(BigInteger.class, Value.DECIMAL);
+        CLS_TO_VAL_TYPE.put(Date.class, Value.TIMESTAMP);
+        CLS_TO_VAL_TYPE.put(boolean.class, Value.BOOLEAN);
+        CLS_TO_VAL_TYPE.put(Boolean.class, Value.BOOLEAN);
+        CLS_TO_VAL_TYPE.put(byte.class, Value.BYTE);
+        CLS_TO_VAL_TYPE.put(Byte.class, Value.BYTE);
+        CLS_TO_VAL_TYPE.put(short.class, Value.SHORT);
+        CLS_TO_VAL_TYPE.put(Short.class, Value.SHORT);
+        CLS_TO_VAL_TYPE.put(int.class, Value.INT);
+        CLS_TO_VAL_TYPE.put(Integer.class, Value.INT);
+        CLS_TO_VAL_TYPE.put(long.class, Value.LONG);
+        CLS_TO_VAL_TYPE.put(Long.class, Value.LONG);
+        CLS_TO_VAL_TYPE.put(char.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(Character.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(float.class, Value.FLOAT);
+        CLS_TO_VAL_TYPE.put(Float.class, Value.FLOAT);
+        CLS_TO_VAL_TYPE.put(double.class, Value.DOUBLE);
+        CLS_TO_VAL_TYPE.put(Double.class, Value.DOUBLE);
 
-    /** Maps classes to Value representation. */
-    private static void registerClassToValueTypeRecords() {
-        CLASS_TO_VALUE_TYPE_RECORDS.put(String.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(IgniteUuid.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(UUID.class, Value.UUID);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Class.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(InetSocketAddress.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(BigDecimal.class, Value.DECIMAL);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(BigInteger.class, Value.DECIMAL);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Date.class, Value.TIMESTAMP);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(boolean.class, Value.BOOLEAN);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Boolean.class, Value.BOOLEAN);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(byte.class, Value.BYTE);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Byte.class, Value.BYTE);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(short.class, Value.SHORT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Short.class, Value.SHORT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(int.class, Value.INT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Integer.class, Value.INT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(long.class, Value.LONG);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Long.class, Value.LONG);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(char.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Character.class, Value.STRING);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(float.class, Value.FLOAT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Float.class, Value.FLOAT);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(double.class, Value.DOUBLE);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Double.class, Value.DOUBLE);
-    }
-
-    /** Maps values by their classes according to their (classes) Value representation. */
-    private static void registerClassToValueRecords() {
-        CLASS_TO_VALUE_MAP.put(String.class, val -> ValueString.get(Objects.toString(val)));
-        CLASS_TO_VALUE_MAP.put(IgniteUuid.class, val -> ValueString.get(Objects.toString(val)));
-        CLASS_TO_VALUE_MAP.put(UUID.class, val -> ValueUuid.get((UUID) val));
-        CLASS_TO_VALUE_MAP.put(Class.class, val -> ValueString.get(((Class<?>) val).getName()));
-        CLASS_TO_VALUE_MAP.put(InetSocketAddress.class, val -> ValueString.get(Objects.toString(val)));
-        CLASS_TO_VALUE_MAP.put(BigDecimal.class, val -> ValueDecimal.get((BigDecimal) val));
-        CLASS_TO_VALUE_MAP.put(BigInteger.class, val -> ValueDecimal.get(new BigDecimal((BigInteger) val)));
-        CLASS_TO_VALUE_MAP.put(Date.class, val -> ValueTimestamp.fromMillis(((Date) val).getTime()));
-        CLASS_TO_VALUE_MAP.put(Boolean.class, val -> ValueBoolean.get((Boolean) val));
-        CLASS_TO_VALUE_MAP.put(Byte.class, val -> ValueByte.get((Byte) val));
-        CLASS_TO_VALUE_MAP.put(Short.class, val -> ValueShort.get((Short) val));
-        CLASS_TO_VALUE_MAP.put(Integer.class, val -> ValueInt.get((Integer) val));
-        CLASS_TO_VALUE_MAP.put(Long.class, val -> ValueLong.get((Long) val));
-        CLASS_TO_VALUE_MAP.put(Character.class, val -> ValueString.get(Objects.toString(val)));
-        CLASS_TO_VALUE_MAP.put(Float.class, val -> ValueFloat.get((Float) val));
-        CLASS_TO_VALUE_MAP.put(Double.class, val -> ValueDouble.get((Double) val));
-        CLASS_TO_VALUE_MAP.put(null, val -> ValueNull.INSTANCE);
+        CLS_TO_VAL.put(String.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(IgniteUuid.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(UUID.class, val -> ValueUuid.get((UUID) val));
+        CLS_TO_VAL.put(Class.class, val -> ValueString.get(((Class<?>) val).getName()));
+        CLS_TO_VAL.put(InetSocketAddress.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(BigDecimal.class, val -> ValueDecimal.get((BigDecimal) val));
+        CLS_TO_VAL.put(BigInteger.class, val -> ValueDecimal.get(new BigDecimal((BigInteger) val)));
+        CLS_TO_VAL.put(Date.class, val -> ValueTimestamp.fromMillis(((Date) val).getTime()));
+        CLS_TO_VAL.put(Boolean.class, val -> ValueBoolean.get((Boolean) val));
+        CLS_TO_VAL.put(Byte.class, val -> ValueByte.get((Byte) val));
+        CLS_TO_VAL.put(Short.class, val -> ValueShort.get((Short) val));
+        CLS_TO_VAL.put(Integer.class, val -> ValueInt.get((Integer) val));
+        CLS_TO_VAL.put(Long.class, val -> ValueLong.get((Long) val));
+        CLS_TO_VAL.put(Character.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(Float.class, val -> ValueFloat.get((Float) val));
+        CLS_TO_VAL.put(Double.class, val -> ValueDouble.get((Double) val));
     }
 
     /** System view for export. */
@@ -161,9 +152,11 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
                 sysView.walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-                        Class<?> key = val == null ? null : clazz;
-                        data[idx] = CLASS_TO_VALUE_MAP.getOrDefault(key,
-                                value -> ValueString.get(Objects.toString(value))).apply(val);
+                        if (val == null)
+                            data[idx] = ValueNull.INSTANCE;
+                        else
+                            data[idx] = CLS_TO_VAL.getOrDefault(clazz,
+                                    value -> ValueString.get(Objects.toString(value))).apply(val);
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
@@ -216,7 +209,8 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                int type = CLASS_TO_VALUE_TYPE_RECORDS.getOrDefault(clazz, Value.STRING);
+                int type = CLS_TO_VAL_TYPE.getOrDefault(clazz, Value.STRING);
+
                 cols[idx] = newColumn(sqlName(name), type);
             }
         });
