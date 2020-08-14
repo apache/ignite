@@ -126,7 +126,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         int cnt = sysView.walker().count();
 
         String[] fields = new String[cnt + 1];
-        OpenType<?>[] types = new OpenType[cnt + 1];
+        OpenType[] types = new OpenType[cnt + 1];
 
         List<Integer> filterFieldIdxs = new ArrayList<>(cnt);
 
