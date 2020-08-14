@@ -82,12 +82,12 @@ namespace ignite
                             RwSharedLockGuard lock(txToIdRWLock);
 
                             it = txToId.find(txId);
-                        }
 
-                        if (it != txToId.end())
-                            tx = it->second;
-                        else
-                            throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
+                            if (it != txToId.end())
+                                tx = it->second;
+                            else
+                                throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
+                        }
 
                         TransactionImpl* ptr = tx.Get();
 
@@ -128,12 +128,15 @@ namespace ignite
                         RwSharedLockGuard lock(txToIdRWLock);
 
                         it = txToId.find(txId);
+
+                        if (it != txToId.end())
+                        {
+                            tx = it->second;
+                        }
                     }
 
-                    if (it != txToId.end())
+                    if (tx.IsValid())
                     {
-                        tx = it->second;
-
                         TransactionImpl* ptr = tx.Get();
 
                         if (ptr && ptr->IsClosed())

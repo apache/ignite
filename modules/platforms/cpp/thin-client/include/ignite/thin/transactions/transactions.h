@@ -18,6 +18,8 @@
 #ifndef TRANSACTIONS_H
 #define TRANSACTIONS_H
 
+#include <iostream>
+
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/transactions/transactions_proxy.h>
 
@@ -121,18 +123,6 @@ namespace ignite
                 }
 
                 /**
-                 * Constructor.
-                 *
-                 * @param impl Implementation.
-                 */
-                ClientTransactions(TransactionsProxy& impl) :
-                    proxy(impl),
-                    label("")
-                {
-                    // No-op.
-                }
-
-                /**
                  * Destructor.
                  */
                 ~ClientTransactions() {}
@@ -162,11 +152,9 @@ namespace ignite
                  * @param label Transaction label.
                  * @return ClientTransactions implementation.
                  */
-                ClientTransactions withLabel(const char* lbl)
+                ClientTransactions withLabel(const std::string& lbl)
                 {
-                    ClientTransactions copy = ClientTransactions(proxy);
-
-                    copy.label = lbl;
+                    ClientTransactions copy = ClientTransactions(proxy, lbl.c_str());
 
                     return copy;
                 }
@@ -181,6 +169,18 @@ namespace ignite
                  * Default constructor.
                  */
                 ClientTransactions();
+
+                /**
+                 * Constructor.
+                 *
+                 * @param impl Implementation.
+                 */
+                ClientTransactions(TransactionsProxy& impl, const char *lbl) :
+                    proxy(impl),
+                    label(lbl)
+                {
+                    // No-op.
+                }
             };
         }
     }
