@@ -254,11 +254,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     @Override @MXBeanDescription("Start time of the grid node in milliseconds.")
     public long getNodeStartTime();
 
-    /**
-     * {@inheritDoc}
-     * @deprecated Use {@link GridMetricManager} instead.
-     */
-    @Deprecated
+    /** {@inheritDoc} */
     @Override @MXBeanDescription("Total number of nodes.")
     public int getTotalNodes();
 

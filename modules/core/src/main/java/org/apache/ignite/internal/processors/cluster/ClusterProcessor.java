@@ -617,10 +617,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
             "Current topology version.");
 
-        reg.register("TotalNodes",
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.nodes().size(),
-            "Total number of nodes.");
-
         reg.register("TotalServerNodes",
             () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
             "Server nodes count.");

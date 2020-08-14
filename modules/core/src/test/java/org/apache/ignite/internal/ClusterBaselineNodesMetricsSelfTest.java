@@ -74,7 +74,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         // State #0: 3 server nodes (2 total baseline nodes, 2 active baseline nodes), 1 client node
         log.info(String.format(">>> State #0: topology version = %d", ignite0.cluster().topologyVersion()));
 
-        assertEquals(4, ((IntMetric)mreg.findMetric("TotalNodes")).value());
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
         assertEquals(3, ((IntMetric)mreg.findMetric("TotalServerNodes")).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
@@ -92,7 +91,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         // State #1: 2 server nodes (2 total baseline nodes, 1 active baseline node), 1 client node
         log.info(String.format(">>> State #1: topology version = %d", ignite0.cluster().topologyVersion()));
 
-        assertEquals(3, ((IntMetric)mreg.findMetric("TotalNodes")).value());
         assertEquals(2, mxBeanCluster.getTotalServerNodes());
         assertEquals(2, ((IntMetric)mreg.findMetric("TotalServerNodes")).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
@@ -112,7 +110,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         // State #2: 3 server nodes (2 total baseline nodes, 2 active baseline nodes), 1 client node
         log.info(String.format(">>> State #2: topology version = %d", ignite0.cluster().topologyVersion()));
 
-        assertEquals(4, ((IntMetric)mreg.findMetric("TotalNodes")).value());
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
         assertEquals(3, ((IntMetric)mreg.findMetric("TotalServerNodes")).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());

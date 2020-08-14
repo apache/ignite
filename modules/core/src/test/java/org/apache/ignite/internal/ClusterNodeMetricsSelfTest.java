@@ -323,8 +323,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             }
         }, 3000L);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
-
         ClusterMetrics metrics0 = ignite0.cluster().localNode().metrics();
 
         ClusterMetrics nodesMetrics =
@@ -333,7 +331,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(metrics0.getTotalCpus(), nodesMetrics.getTotalCpus());
         assertEquals(1, metrics0.getTotalNodes());
         assertEquals(2, nodesMetrics.getTotalNodes());
-        assertEquals(2, ((IntMetric)mreg.findMetric("TotalNodes")).value());
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
