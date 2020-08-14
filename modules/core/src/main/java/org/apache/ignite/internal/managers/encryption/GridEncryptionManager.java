@@ -728,7 +728,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone()) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
-                    "The previous master key change was not completed."));
+                    "The master key change is in progress."));
             }
 
             return grpKeyChangeProc.start(cacheOrGrpNames);
@@ -874,14 +874,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param partId Partition ID.
      */
     public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
-        try {
-            pageScanner.cancel(grp.groupId(), partId);
+        pageScanner.cancel(grp.groupId(), partId);
 
-            setEncryptionState(grp, partId, 0, 0);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Unable to cancel reencryption [grpId=" + grp.groupId() + ", partId=" + partId + "]", e);
-        }
+        setEncryptionState(grp, partId, 0, 0);
     }
 
     /**

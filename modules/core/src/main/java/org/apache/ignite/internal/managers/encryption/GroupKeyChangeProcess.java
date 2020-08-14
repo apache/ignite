@@ -138,22 +138,29 @@ class GroupKeyChangeProcess {
             if (grp == null) {
                 IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheOrGroupName);
 
-                if (cache == null)
-                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
+                if (cache == null) {
+                    throw new IgniteException("Cache group key change was rejected. " +
+                        "Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
+                }
 
                 grp = cache.context().group();
 
                 if (grp.sharedGroup()) {
-                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
+                    throw new IgniteException("Cache group key change was rejected. " +
+                        "Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
                         grp.name() + ". Provide group name instead of cache name for shared groups.");
                 }
             }
 
-            if (!grp.config().isEncryptionEnabled())
-                throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+            if (!grp.config().isEncryptionEnabled()) {
+                throw new IgniteException("Cache group key change was rejected. " +
+                    "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+            }
 
-            if (!ctx.encryption().reencryptionFuture(grp.groupId()).isDone())
-                throw new IgniteException("Reencryption is in progress [grp=" + cacheOrGroupName + "]");
+            if (!ctx.encryption().reencryptionFuture(grp.groupId()).isDone()) {
+                throw new IgniteException("Cache group key change was rejected. " +
+                    "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
+            }
 
             grpIds[n] = grp.groupId();
             keyIds[n] = (byte)(ctx.encryption().groupKey(grp.groupId()).unsignedId() + 1);
@@ -189,7 +196,7 @@ class GroupKeyChangeProcess {
 
         if (ctx.encryption().isMasterKeyChangeInProgress()) {
             return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
-                "The previous master key change was not completed."));
+                "The master key change is in progress."));
         }
 
         this.req = req;
@@ -200,15 +207,15 @@ class GroupKeyChangeProcess {
                 int keyId = req.keyIds()[i] & 0xff;
 
                 if (!ctx.encryption().reencryptionFuture(grpId).isDone()) {
-                    return new GridFinishedFuture<>(
-                        new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
+                    return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                            "Cache group reencryption is in progress [grpId=" + grpId + "]"));
                 }
 
                 List<Integer> keyIds = ctx.encryption().groupKeyIds(grpId);
 
                 if (keyIds == null) {
-                    return new GridFinishedFuture<>(
-                        new IgniteException("Encrypted cache group not found [grpId=" + grpId + "]"));
+                    return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected." +
+                            "Encrypted cache group not found [grpId=" + grpId + "]"));
                 }
 
                 for (int locKeyId : keyIds) {
@@ -216,14 +223,11 @@ class GroupKeyChangeProcess {
                         continue;
 
                     Long walSegment = keys.reservedSegment(grpId, keyId);
-
-                    if (walSegment == null)
-                        break;
-
                     GroupKey currKey = ctx.encryption().groupKey(grpId);
 
-                    return new GridFinishedFuture<>(new IgniteException("Cannot add new key identifier, it's " +
-                        "already present. There existing WAL segments that encrypted with this key [" +
+                    return new GridFinishedFuture<>(
+                        new IgniteException("Cache group key change was rejected. Cannot add new key identifier," +
+                        "it's  already present. There existing WAL segments that encrypted with this key [" +
                         "grpId=" + grpId + ", newId=" + keyId + ", currId=" + currKey.unsignedId() +
                         ", walSegment=" + walSegment + "]."));
                 }

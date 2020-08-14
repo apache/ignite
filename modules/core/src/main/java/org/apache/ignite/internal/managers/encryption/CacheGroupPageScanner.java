@@ -250,9 +250,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return {@code True} if reencryption was cancelled.
-     * @throws IgniteCheckedException If failed.
      */
-    public boolean cancel(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancel(int grpId, int partId) {
         GroupScanTask grpScanTask = grps.get(grpId);
 
         if (grpScanTask == null)
@@ -340,9 +339,8 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
          *
          * @param partId Partition ID.
          * @return {@code True} if reencryption was cancelled.
-         * @throws IgniteCheckedException If failed.
          */
-        public synchronized boolean cancel(int partId) throws IgniteCheckedException {
+        public synchronized boolean cancel(int partId) {
             return parts.remove(partId);
         }
 
