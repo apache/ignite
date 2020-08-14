@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.PartitionsExchangeCoordinator
 import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.SysCacheInconsistencyInternalKeyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
@@ -155,6 +156,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnMapOnInvalidTopologyTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PartitionsExchangeAwareTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, SysCacheInconsistencyInternalKeyTest.class, ignoredTests);
 
         return suite;
     }
