@@ -29,13 +29,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements TcpConnectionIndexAwareMessage, SpanTransport {
+public class GridIoMessage implements Message, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -68,9 +67,6 @@ public class GridIoMessage implements TcpConnectionIndexAwareMessage, SpanTransp
     /** Message. */
     private Message msg;
 
-    /** */
-    private transient int connIdx = UNDEFINED_CONNECTION_INDEX;
-
     /** Serialized span */
     private byte[] span;
 
@@ -98,8 +94,7 @@ public class GridIoMessage implements TcpConnectionIndexAwareMessage, SpanTransp
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout,
-        int connIdx
+        boolean skipOnTimeout
     ) {
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
@@ -112,7 +107,6 @@ public class GridIoMessage implements TcpConnectionIndexAwareMessage, SpanTransp
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
-        this.connIdx = connIdx;
     }
 
     /**
@@ -176,11 +170,6 @@ public class GridIoMessage implements TcpConnectionIndexAwareMessage, SpanTransp
      */
     public boolean skipOnTimeout() {
         return skipOnTimeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int connectionIndex() {
-        return connIdx;
     }
 
     /**
