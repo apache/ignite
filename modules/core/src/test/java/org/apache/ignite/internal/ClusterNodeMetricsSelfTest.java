@@ -365,12 +365,12 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             ClusterMetricsMXBeanImpl.class);
 
         assertEquals(node.cluster().topologyVersion(), helperCluster.attr("TopologyVersion"));
-        assertEquals(node.cluster().topologyVersion(), ((LongMetric)mreg.findMetric("TopologyVersion")).value());
+        assertEquals(node.cluster().topologyVersion(), mreg.<LongMetric>findMetric("TopologyVersion").value());
 
         assertEquals(2, helperCluster.attr("TotalServerNodes"));
-        assertEquals(2, ((IntMetric)mreg.findMetric("TotalServerNodes")).value());
+        assertEquals(2, mreg.<IntMetric>findMetric("TotalServerNodes").value());
         assertEquals(1, helperCluster.attr("TotalClientNodes"));
-        assertEquals(1, ((IntMetric)mreg.findMetric("TotalClientNodes")).value());
+        assertEquals(1, mreg.<IntMetric>findMetric("TotalClientNodes").value());
 
         assertEquals(allNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, true));
         assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));
