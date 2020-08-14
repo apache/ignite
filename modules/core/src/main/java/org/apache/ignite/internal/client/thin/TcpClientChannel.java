@@ -153,8 +153,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
-        for (ClientNotificationType type : ClientNotificationType.values())
-            pendingNotifications[type.ordinal()] = new ConcurrentHashMap<>();
+        for (ClientNotificationType type : ClientNotificationType.values()) {
+            if (type.keepNotificationsWithoutListener())
+                pendingNotifications[type.ordinal()] = new ConcurrentHashMap<>();
+        }
 
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
@@ -447,7 +449,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     if (lsrns != null)
                         lsnr = lsrns.get(resId);
 
-                    if (lsnr == null) {
+                    if (notificationType.keepNotificationsWithoutListener() && lsnr == null) {
                         pendingNotifications[notificationType.ordinal()].computeIfAbsent(resId,
                             k -> new ConcurrentLinkedQueue<>()).add(new T2<>(res, err));
                     }
@@ -484,7 +486,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** {@inheritDoc} */
     @Override public void addNotificationListener(ClientNotificationType type, Long rsrcId, NotificationListener lsnr) {
-        Queue<T2<ByteBuffer, Exception>> pendingQueue;
+        Queue<T2<ByteBuffer, Exception>> pendingQueue = null;
 
         notificationLsnrsGuard.writeLock().lock();
 
@@ -499,7 +501,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             lsnrs.put(rsrcId, lsnr);
 
-            pendingQueue = pendingNotifications[type.ordinal()].remove(rsrcId);
+            if (type.keepNotificationsWithoutListener())
+                pendingQueue = pendingNotifications[type.ordinal()].remove(rsrcId);
         }
         finally {
             notificationLsnrsGuard.writeLock().unlock();
@@ -522,7 +525,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             lsnrs.remove(rsrcId);
 
-            pendingNotifications[type.ordinal()].remove(rsrcId);
+            if (type.keepNotificationsWithoutListener())
+                pendingNotifications[type.ordinal()].remove(rsrcId);
 
         }
         finally {
