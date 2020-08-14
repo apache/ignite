@@ -1130,23 +1130,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
-            // Start and configure resource processor first as it contains resources used
-            // by all other managers and processors.
-            GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
-
-            rsrcProc.setSpringContext(rsrcCtx);
-
-            startProcessor(rsrcProc);
-
-            startManager(new GridMetricManager(ctx));
-
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
             startProcessor(clusterProc);
 
             U.onGridStart();
 
+            // Start and configure resource processor first as it contains resources used
+            // by all other managers and processors.
+            GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
+
+            rsrcProc.setSpringContext(rsrcCtx);
+
             scheduler = new IgniteSchedulerImpl(ctx);
+
+            startProcessor(rsrcProc);
 
             // Inject resources into lifecycle beans.
             if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
@@ -1191,6 +1189,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             catch (IgniteCheckedException e) {
                 startManager(new GridTracingManager(ctx, true));
             }
+            startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
             startManager(new GridIoManager(ctx));
             startManager(new GridCheckpointManager(ctx));
@@ -4468,6 +4467,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Registers metrics.
      */
     private void registerMetrics() {
+        // Register cluster metrics even the metric component disabled to provide compatibility for legacy MBeans.
+        ctx.cluster().registerMetrics();
+
         if (!ctx.metric().enabled())
             return;
 

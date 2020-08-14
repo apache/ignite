@@ -20,7 +20,6 @@ package org.apache.ignite.mxbean;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Cluster metrics MBean.
@@ -266,9 +265,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * Get count of total baseline nodes.
      *
      * @return Count of total baseline nodes.
-     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @Deprecated
     @MXBeanDescription("Total baseline nodes count.")
     public int getTotalBaselineNodes();
 
@@ -276,9 +273,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * Get count of active baseline nodes.
      *
      * @return Count of active baseline nodes.
-     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @Deprecated
     @MXBeanDescription("Active baseline nodes count.")
     public int getActiveBaselineNodes();
 
@@ -286,9 +281,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * Get count of server nodes.
      *
      * @return Count of server nodes.
-     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @Deprecated
     @MXBeanDescription("Server nodes count.")
     public int getTotalServerNodes();
 
@@ -296,9 +289,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * Get count of client nodes.
      *
      * @return Count of client nodes.
-     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @Deprecated
     @MXBeanDescription("Client nodes count.")
     public int getTotalClientNodes();
 
@@ -306,9 +297,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * Get current topology version.
      *
      * @return Current topology version.
-     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @Deprecated
     @MXBeanDescription("Current topology version.")
     public long getTopologyVersion();
 

@@ -184,33 +184,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         cluster = new IgniteClusterImpl(ctx);
 
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
-
-        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
-
-        reg.register(TOPOLOGY_VERSION,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
-            "Current topology version.");
-
-        reg.register(TOTAL_SERVER_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
-            "Server nodes count.");
-
-        reg.register(TOTAL_CLIENT_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
-            "Client nodes count.");
-
-        reg.register(TOTAL_BASELINE_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
-            "Total baseline nodes count.");
-
-        reg.register(ACTIVE_BASELINE_NODES, () -> {
-            if (ctx.isStopping() || ctx.clientDisconnected())
-                return -1;
-
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
-
-            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
-        }, "Active baseline nodes count.");
     }
 
     /**
@@ -696,6 +669,36 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         // exception on start.
         if (ctx.io() != null)
             ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
+    }
+
+    /**  Registers cluster metrics. */
+    public void registerMetrics() {
+        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
+
+        reg.register(TOPOLOGY_VERSION,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
+            "Current topology version.");
+
+        reg.register(TOTAL_SERVER_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
+            "Server nodes count.");
+
+        reg.register(TOTAL_CLIENT_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
+            "Client nodes count.");
+
+        reg.register(TOTAL_BASELINE_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
+            "Total baseline nodes count.");
+
+        reg.register(ACTIVE_BASELINE_NODES, () -> {
+            if (ctx.isStopping() || ctx.clientDisconnected())
+                return -1;
+
+            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+
+            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
+        }, "Active baseline nodes count.");
     }
 
     /**
