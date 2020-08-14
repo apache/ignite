@@ -103,10 +103,24 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void close() {
+        boolean doClose = false;
+
         lock.lock();
         try {
-            if (state == State.RUNNING)
+            if (state == State.CANCELLED || state == State.CLOSED)
+                return;
+
+            if (state == State.RUNNING) {
                 state = State.CANCELLED;
+
+                doClose = true;
+            }
+
+            if (state == State.END) {
+                doClose = true;
+
+                state = State.CLOSED;
+            }
 
             cond.signalAll();
         }
@@ -114,7 +128,8 @@ public class RootNode<Row> extends AbstractNode<Row>
             lock.unlock();
         }
 
-        onClose.accept(this);
+        if (doClose)
+            onClose.accept(this);
     }
 
     /** {@inheritDoc} */
@@ -183,7 +198,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public boolean hasNext() {
         if (row != null)
             return true;
-        else if (state == State.END)
+        else if (state == State.END || state == State.CLOSED)
             return false;
         else
             return (row = take()) != null;
@@ -278,6 +293,9 @@ public class RootNode<Row> extends AbstractNode<Row>
         CANCELLED,
 
         /** */
-        END;
+        END,
+
+        /** */
+        CLOSED;
     }
 }
