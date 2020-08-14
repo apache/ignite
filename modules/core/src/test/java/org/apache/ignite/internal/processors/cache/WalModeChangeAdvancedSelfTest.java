@@ -333,7 +333,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Client node disconnected") ||
-                        msg.startsWith("Client node was disconnected") : e.getMessage();
+                        msg.startsWith("Client node was disconnected") ||
+                        msg.contains("client is disconnected") : e.getMessage();
                 }
                 finally {
                     state = !state;
