@@ -16,9 +16,9 @@
 """
 This module contains basic ignite test.
 """
+from time import monotonic
 
 from ducktape.tests.test import Test
-from monotonic import monotonic
 
 
 # pylint: disable=W0223

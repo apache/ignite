@@ -95,7 +95,7 @@ class IgniteAwareApplicationService(IgniteAwareService):
         args = ",".join([str(self.start_ignite), self.java_class_name, IgniteAwareApplicationService.CONFIG_FILE])
 
         if self.params != "":
-            args = ",".join([args, str(base64.b64encode(json.dumps(self.params).encode("UTF-8")))])
+            args = ",".join([args, str(base64.b64encode(json.dumps(self.params).encode('utf-8')), 'utf-8')])
 
         return args
 

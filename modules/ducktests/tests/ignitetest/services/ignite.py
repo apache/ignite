@@ -25,7 +25,7 @@ import time
 from datetime import datetime
 from threading import Thread
 
-import monotonic
+from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
@@ -153,7 +153,7 @@ class IgniteService(IgniteAwareService):
             time.sleep(delay_ms/1000.0)
 
         if time_holder:
-            mono = monotonic.monotonic()
+            mono = monotonic()
             timestamp = datetime.now()
 
             time_holder.compare_and_set(None, (mono, timestamp))
