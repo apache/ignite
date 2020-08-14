@@ -144,6 +144,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpMXBeanImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -222,6 +223,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -1273,6 +1275,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ((DistributedMetaStorageImpl)ctx.distributedMetastorage()).inMemoryReadyForRead();
 
                 startTimer.finishGlobalStage("Init metastore");
+
+                WarmUpMXBean warmUpMXBean = new WarmUpMXBeanImpl(ctx);
+                mBeansMgr.registerMBean(
+                    "WarmUp",
+                    warmUpMXBean.getClass().getSimpleName(),
+                    warmUpMXBean,
+                    WarmUpMXBean.class
+                );
 
                 ctx.cache().context().database().startMemoryRestore(ctx, startTimer);
 

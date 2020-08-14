@@ -29,11 +29,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -266,28 +269,40 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStopWarmUp() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDataRegionConfigurations(
-                        new DataRegionConfiguration().setName("1").setPersistenceEnabled(true)
-                            .setWarmUpConfiguration(new BlockedWarmUpConfiguration())
-                    )
-            );
+        checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(IgniteKernal kernal) throws IgniteCheckedException {
+                assertTrue(kernal.context().cache().stopWarmUp());
+                assertFalse(kernal.context().cache().stopWarmUp());
+            }
+        });
+    }
 
-        IgniteInternalFuture<IgniteEx> stratFut = GridTestUtils.runAsync(() -> startGrid(cfg));
+    /**
+     * Test checks to stop warming up by MXBean.
+     * <p>
+     * Steps:
+     * 1)Running a node in a separate thread with {@link BlockedWarmUpConfiguration} for one region;
+     * 2)Stop warm-up by MXBean;
+     * 3)Make sure that warm-up is stopped and node has started successfully.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWarmUpByMXBean() throws Exception {
+        checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(IgniteKernal kernal) throws IgniteCheckedException {
+                WarmUpMXBean warmUpMXBean = getMxBean(
+                    kernal.configuration().getIgniteInstanceName(),
+                    "WarmUp",
+                    WarmUpMXBeanImpl.class.getSimpleName(),
+                    WarmUpMXBean.class
+                );
 
-        WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
-        BlockedWarmUp strat = (BlockedWarmUp)pluginProvider.strats.get(1);
-
-        strat.startLatch.await(1, TimeUnit.MINUTES);
-
-        IgniteKernal n = IgnitionEx.gridx(cfg.getIgniteInstanceName());
-
-        assertTrue(n.context().cache().stopWarmUp());
-        assertFalse(n.context().cache().stopWarmUp());
-
-        assertNotNull(stratFut.get(TimeUnit.MINUTES.toMillis(1)));
+                warmUpMXBean.stopWarmUp();
+            }
+        });
     }
 
     /**
@@ -308,4 +323,36 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Checking correct warm-up stop.
+     *
+     * @param stopCX Stop warm-up function.
+     * @throws Exception If failed.
+     */
+    private void checkStopWarmUp(IgniteInClosureX<IgniteKernal> stopCX) throws Exception {
+        requireNonNull(stopCX);
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDataRegionConfigurations(
+                        new DataRegionConfiguration().setName("1").setPersistenceEnabled(true)
+                            .setWarmUpConfiguration(new BlockedWarmUpConfiguration())
+                    )
+            );
+
+        IgniteInternalFuture<IgniteEx> stratFut = GridTestUtils.runAsync(() -> startGrid(cfg));
+
+        WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
+        BlockedWarmUp strat = (BlockedWarmUp)pluginProvider.strats.get(1);
+
+        strat.startLatch.await(1, TimeUnit.MINUTES);
+
+        IgniteKernal n = IgnitionEx.gridx(cfg.getIgniteInstanceName());
+
+        stopCX.apply(n);
+
+        assertEquals(0, strat.stopLatch.getCount());
+        assertNotNull(stratFut.get(TimeUnit.MINUTES.toMillis(1)));
+    }
 }
