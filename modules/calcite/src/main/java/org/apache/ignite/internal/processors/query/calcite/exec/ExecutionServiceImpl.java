@@ -1096,11 +1096,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 for (RemoteFragmentKey fragment : fragments)
                     onResponse(fragment, ex);
             }
-            else {
-                if (remotes.contains(nodeId)) {
-                    root.context().execute(() -> root.onError(
-                        new ClusterTopologyCheckedException("Failed to execute query, node left. nodeId=" + nodeId)));
-                }
+
+            if (remotes.contains(nodeId)) {
+                root.context().execute(() -> root.onError(
+                    new ClusterTopologyCheckedException("Failed to execute query, node left. nodeId=" + nodeId)));
             }
         }
 
