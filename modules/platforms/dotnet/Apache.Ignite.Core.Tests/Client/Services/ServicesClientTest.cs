@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // No-op.
         }
 
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
         [TearDown]
         public void TestTearDown()
         {
@@ -67,6 +70,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /// <summary>
         /// Tests that void method can be called and the lack of result is handled correctly.
+        ///
+        /// - Invoke void method
+        /// - Verify invoke count on server
         /// </summary>
         [Test]
         public void TestVoidMethodCall()
@@ -110,6 +116,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Tests that <see cref="IServicesClient.WithKeepBinary"/> call causes service invocation results to be
         /// returned in serialized form.
+        ///
+        /// - Enable binary mode
+        /// - Verify that service invocation result is <see cref="IBinaryObject"/>
         /// </summary>
         [Test]
         public void TestClientKeepBinaryReturnsServiceInvocationResultInBinaryMode()
@@ -125,6 +134,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Tests that <see cref="IServicesClient.WithServerKeepBinary"/> call causes service invocation arguments
         /// to be passed to the service (on server node) in serialized form.
+        ///
+        /// - Enable server-side binary mode
+        /// - Check that server-side service receives <see cref="IBinaryObject"/>, modifies it and returns back
         /// </summary>
         [Test]
         public void TestServerKeepBinaryPassesServerSideArgumentsInBinaryMode()
@@ -139,6 +151,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Tests that <see cref="IServicesClient.WithServerKeepBinary"/> combined with
         /// <see cref="IServicesClient.WithKeepBinary"/> uses binary objects both on client and server sides.
+        ///
+        /// - Enable server and client binary mode
+        /// - Check that both server and client operate on <see cref="IBinaryObject"/> instances
         /// </summary>
         [Test]
         public void TestServerAndClientKeepBinaryPassesBinaryObjectsOnServerAndClient()
@@ -198,8 +213,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(new[] {12, 22}, res.Select(p => p.GetField<int>("Id")));
         }
 
-        /// <summary>p
-        /// Tests various basic argument types passing.
+        /// <summary>
+        /// Tests all primitive and built-in types used as parameters and return values.
         /// </summary>
         [Test]
         public void TestAllArgumentTypes()
@@ -267,6 +282,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /// <summary>
         /// Tests that overloaded methods are resolved correctly.
+        ///
+        /// - Invoke multiple overloads of the same method
+        /// - Check that correct overload is invoked based on the return value
         /// </summary>
         [Test]
         public void TestOverloadResolution()
@@ -382,6 +400,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /// <summary>
         /// Tests that specifying custom cluster group causes service calls to be routed to selected servers.
+        ///
+        /// - Deploy the service on every server node with DeployNodeSingleton
+        /// - For every server node:
+        /// - Get a cluster group of a single node
+        /// - Invoke service method that returns local node id
+        /// - Check that specified server has been used to invoke the service
         /// </summary>
         [Test]
         public void TestServicesWithCustomClusterGroupInvokeOnSpecifiedNodes()
