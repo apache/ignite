@@ -61,6 +61,9 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     private static final Map<Class<?>, Function<Object, ? extends Value>> CLS_TO_VAL = new HashMap<>();
 
     /** */
+    private static final Function<Object, ? extends Value> DEFAULT_FUNC = val -> ValueString.get(Objects.toString(val));
+
+    /** */
     private static final Map<Class<?>, Integer> CLS_TO_VAL_TYPE = new HashMap<>();
 
     static {
@@ -155,8 +158,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
                         else
-                            data[idx] = CLS_TO_VAL.getOrDefault(clazz,
-                                    value -> ValueString.get(Objects.toString(value))).apply(val);
+                            data[idx] = CLS_TO_VAL.getOrDefault(clazz, DEFAULT_FUNC).apply(val);
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
