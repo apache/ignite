@@ -801,7 +801,8 @@ public class GridNioServerWrapper {
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        int lastPort = cfg.localPortRange() == 0 ? cfg.localPort() : cfg.localPort() + cfg.localPortRange() - 1;
+        int lastPort = cfg.localPort() == -1 ? -1
+            : cfg.localPortRange() == 0 ? cfg.localPort() : cfg.localPort() + cfg.localPortRange() - 1;
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
