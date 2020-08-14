@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -91,6 +93,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -107,6 +110,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -132,6 +136,15 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 @SuppressWarnings({"TooBroadScope"})
 public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
     /** */
+    public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
+
+    /** Property name for entry lock timeout. */
+    public static final String ENTRY_LOCK_TIMEOUT_ENV = "ENTRY_LOCK_TIMEOUT";
+
+    /** Entry lock time awaiting. */
+    private static final long ENTRY_LOCK_TIMEOUT = getLong(ENTRY_LOCK_TIMEOUT_ENV, 1000);
+
+    /** */
     private static final byte IS_DELETED_MASK = 0x01;
 
     /** */
@@ -139,9 +152,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** */
     private static final byte IS_EVICT_DISABLED = 0x04;
-
-    /** */
-    public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
      * NOTE
@@ -5039,6 +5049,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public boolean tryLockEntry(long timeout) {
+        try {
+            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ignite) {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void unlockEntry() {
         lock.unlock();
     }
@@ -5086,13 +5108,32 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        lockEntry();
+        return toStringWithTryLock(() -> S.toString(GridCacheMapEntry.class, this));
+    }
 
-        try {
-            return S.toString(GridCacheMapEntry.class, this);
+    /**
+     * Does thread safe {@link #toString} for {@link GridCacheMapEntry} classes.
+     *
+     * @param dfltToStr {@link #toString()} supplier.
+     * @return Result of dfltToStr call If lock acquired or a short representation of {@link GridCacheMapEntry}.
+     */
+    protected String toStringWithTryLock(Supplier<String> dfltToStr) {
+        if (tryLockEntry(ENTRY_LOCK_TIMEOUT)) {
+            try {
+                return dfltToStr.get();
+            }
+            finally {
+                unlockEntry();
+            }
         }
-        finally {
-            unlockEntry();
+        else {
+            String keySens = GridToStringBuilder.includeSensitive() ? ", key=" + key : "";
+
+            return "GridCacheMapEntry [err='Partial result represented because entry lock wasn't acquired."
+                + " Waiting time elapsed.'"
+                + keySens
+                + ", hash=" + hash
+                + "]";
         }
     }
 
