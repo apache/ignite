@@ -90,7 +90,17 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllCsharpFilesAreIncludedInProject()
         {
-            var projFiles = GetReleaseCsprojFiles();
+            var projFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x =>
+                    !x.Name.Contains("DotNetCore") && !x.Name.Contains("Benchmark") && !x.Name.Contains("Examples"));
+
+            var excludedFiles = new[]
+            {
+                "IgnitionStartTest.cs",
+                "Common\\TestFixtureSetUp.cs",
+                "Common\\TestFixtureTearDown.cs",
+                "Client\\Cache\\CacheTestAsyncAwait.cs"
+            };
 
             Assert.Multiple(() =>
             {
@@ -107,14 +117,16 @@ namespace Apache.Ignite.Core.Tests
                         var csFileRelativePath = Path.GetRelativePath(projFile.Directory.FullName, csFile.FullName)
                             .Replace(Path.DirectorySeparatorChar, '\\');
 
-                        if (csFileRelativePath.StartsWith("bin\\") || csFileRelativePath.StartsWith("obj\\"))
+                        if (csFileRelativePath.StartsWith("bin\\") ||
+                            csFileRelativePath.StartsWith("obj\\") ||
+                            csFileRelativePath.Contains("DotNetCore") ||
+                            excludedFiles.Contains(csFileRelativePath))
                         {
                             continue;
                         }
 
-                        StringAssert.Contains(
-                            csFileRelativePath,
-                            projFileText,
+                        Assert.IsTrue(
+                            projFileText.Contains(csFileRelativePath),
                             string.Format("Project file '{0}' should contain file '{1}'", projFile.Name,
                                 csFileRelativePath));
                     }
