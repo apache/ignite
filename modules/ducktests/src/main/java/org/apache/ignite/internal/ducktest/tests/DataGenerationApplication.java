@@ -106,18 +106,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         else {
             log.info("Generating data...");
 
-            try {
-                generateData(cacheName, range, Function.identity(), optimized);
+            generateData(cacheName, range, Function.identity(), optimized);
 
-                log.info("Data generation finished. Generated " + range + " entries.");
-            }
-            catch (Exception e) {
-                if (!X.hasCause(e, NodeStoppingException.class)) {
-                    log.error("Failed to generate data in background.", e);
-
-                    return;
-                }
-            }
+            log.info("Data generation finished. Generated " + range + " entries.");
 
             markSyncExecutionComplete();
         }
