@@ -131,6 +131,18 @@ public class CachePartitionDefragmentationManager {
                 if (workDir != null && parts != null) {
                     CacheGroupContext grpCtx = defrgCtx.groupContextByGroupId(grpId);
 
+                    GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)grpCtx.offheap();
+
+                    // A cheat so that we won't try to save old metadata into a new partition.
+                    dbMgr.removeCheckpointListener(offheap);
+
+                    // Another cheat. Ttl cleanup manager knows too much shit.
+                    grpCtx.caches().stream()
+                        .filter(cacheCtx -> cacheCtx.groupId() == grpId)
+                        .forEach(cacheCtx -> cacheCtx.ttl().unregister());
+
                     boolean encrypted = grpCtx.config().isEncryptionEnabled();
 
                     FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
@@ -191,13 +203,6 @@ public class CachePartitionDefragmentationManager {
                         //TODO Move inside of defragmentSinglePartition, get rid of that ^ stupid checkpoint read lock.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
-                                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
-
-                                GridCacheOffheapManager offheap = (GridCacheOffheapManager)grpCtx.offheap();
-
-                                // A cheat so that we won't try to save old metadata into a new partition.
-                                dbMgr.removeCheckpointListener(offheap);
-
                                 oldPageMem.invalidate(grpId, partId);
                                 ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, partId);
 
@@ -209,7 +214,7 @@ public class CachePartitionDefragmentationManager {
                                     "partId", partId, false,
                                     "oldPages", defrgCtx.pageStore(grpId, partId).pages(), false,
                                     "newPages", partPagesAllocated.get(), false,
-                                    "saved", (defrgCtx.pageStore(grpId, partId).pages() - partPagesAllocated.get()) * partRegion.pageMemory().pageSize(), false,
+                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partPagesAllocated.get()) * partRegion.pageMemory().pageSize(), false,
                                     "mappingPages", mappingPagesAllocated.get(), false,
                                     "partFile", defragmentedPartFile(workDir, partId).getName(), false,
                                     "workDir", workDir, false
@@ -312,6 +317,8 @@ public class CachePartitionDefragmentationManager {
 
         iterate(tree, cachePageMem, (tree0, io, pageAddr, idx) -> {
             CacheDataRow row = tree.getRow(io, pageAddr, idx);
+            row.key().partition(partId); // Hmmmm....
+
             int cacheId = row.cacheId();
 
             GridCacheContext ctx;
@@ -533,7 +540,7 @@ public class CachePartitionDefragmentationManager {
                 try {
                     io = PageIO.getBPlusIO(leafPageAddr);
 
-                    assert io instanceof BPlusLeafIO;
+                    assert io instanceof BPlusLeafIO : io;
 
                     GridUnsafe.copyMemory(leafPageAddr, bufAddr, pageMemory.pageSize());
                 }
