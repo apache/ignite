@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,8 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
@@ -69,20 +65,20 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PageAccessType.ACCESS_READ;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PageAccessType.ACCESS_WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempIndexFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedCacheGroup;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedPartition;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.writeDefragmentationCompletionMarker;
 
 /** */
 public class CachePartitionDefragmentationManager {
@@ -91,30 +87,6 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     @Deprecated public static final String SKIP_CP_ENTRIES = "SKIP_CP_ENTRIES";
-
-    /** Name of defragmentated index partition file. */
-    private static final String DFRG_INDEX_FILE_NAME = INDEX_FILE_PREFIX + "-dfrg" + FILE_SUFFIX;
-
-    /** Name of defragmentated index partition temporary file. */
-    private static final String DFRG_INDEX_TMP_FILE_NAME = DFRG_INDEX_FILE_NAME + TMP_SUFFIX;
-
-    /** Prefix for defragmented partition files. */
-    private static final String DFRG_PARTITION_FILE_PREFIX = PART_FILE_PREFIX + "dfrg-";
-
-    /** Defragmented partition file template. */
-    public static final String DFRG_PARTITION_FILE_TEMPLATE = DFRG_PARTITION_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** Defragmented partition temp file template. */
-    private static final String DFRG_PARTITION_TMP_FILE_TEMPLATE = DFRG_PARTITION_FILE_TEMPLATE + TMP_SUFFIX;
-
-    /** Prefix for link mapping files. */
-    public static final String DFRG_LINK_MAPPING_FILE_PREFIX = PART_FILE_PREFIX + "map-";
-
-    /** Link mapping file template. */
-    public static final String DFRG_LINK_MAPPING_FILE_TEMPLATE = DFRG_LINK_MAPPING_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** Defragmentation complation marker file name. */
-    public static final String DFRG_COMPLETION_MARKER_FILE_NAME = "dfrg-completion-marker";
 
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> sharedCtx;
@@ -140,53 +112,6 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    //TODO Move everything related to file management into a new class.
-    public static void batchRenameDefragmentedCacheGroupPartitions(File workDir, IgniteLogger log) {
-        File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
-
-        if (!completionMarkerFile.exists())
-            return;
-
-        try {
-            for (File mappingFile : workDir.listFiles((dir, name) -> name.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)))
-                Files.delete(mappingFile.toPath());
-
-            for (File partFile : workDir.listFiles((dir, name) -> name.startsWith(DFRG_PARTITION_FILE_PREFIX))) {
-                int partId = extractPartId(partFile.getName());
-
-                File oldPartFile = new File(workDir, String.format(PART_FILE_TEMPLATE, partId));
-
-                Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
-            }
-
-            File idxFile = new File(workDir, DFRG_INDEX_FILE_NAME);
-
-            if (idxFile.exists()) {
-                File oldIdxFile = new File(workDir, INDEX_FILE_NAME);
-
-                Files.move(idxFile.toPath(), oldIdxFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
-            }
-        }
-        catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    private static int extractPartId(String dfrgPartFileName) {
-        assert dfrgPartFileName.startsWith(DFRG_PARTITION_FILE_PREFIX) : dfrgPartFileName;
-        assert dfrgPartFileName.endsWith(FILE_SUFFIX) : dfrgPartFileName;
-
-        String partIdStr = dfrgPartFileName.substring(
-            DFRG_PARTITION_FILE_PREFIX.length(),
-            dfrgPartFileName.length() - FILE_SUFFIX.length()
-        );
-
-        return Integer.parseInt(partIdStr);
-    }
-
-    /** */
     public void executeDefragmentation() {
         System.setProperty(SKIP_CP_ENTRIES, "true");
 
@@ -198,7 +123,7 @@ public class CachePartitionDefragmentationManager {
             for (int grpId : defrgCtx.groupIdsForDefragmentation()) {
                 File workDir = defrgCtx.workDirForGroupId(grpId);
 
-                if (skipAlreadyDefragmentedCacheGroup(workDir, grpId))
+                if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log))
                     continue;
 
                 int[] parts = defrgCtx.partitionsForGroupId(grpId);
@@ -223,8 +148,10 @@ public class CachePartitionDefragmentationManager {
 
                     GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>();
 
+                    PageMemoryEx oldPageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
+
                     for (int partId : parts) {
-                        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId))
+                        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log))
                             continue;
 
                         AtomicLong partPagesAllocated = new AtomicLong();
@@ -271,22 +198,10 @@ public class CachePartitionDefragmentationManager {
                                 // A cheat so that we won't try to save old metadata into a new partition.
                                 dbMgr.removeCheckpointListener(offheap);
 
-                                ((PageMemoryEx)grpCtx.dataRegion().pageMemory()).invalidate(grpId, partId);
+                                oldPageMem.invalidate(grpId, partId);
                                 ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, partId);
 
-                                //TODO All "moves" should be in separate utility methods, now there are too many local
-                                // variables here. Also exception handling will be basically the same for all "moves".
-                                File defragmentedPartTmpFile = defragmentedPartTmpFile(workDir, partId);
-                                File defragmentedPartFile = defragmentedPartFile(workDir, partId);
-
-                                assert !defragmentedPartFile.exists() : defragmentedPartFile;
-
-                                try {
-                                    Files.move(defragmentedPartTmpFile.toPath(), defragmentedPartFile.toPath(), ATOMIC_MOVE);
-                                }
-                                catch (IOException ignore) {
-                                    //TODO Handle.
-                                }
+                                renameTempPartitionFile(workDir, partId);
 
                                 log.info(S.toString(
                                     "Partition defragmented",
@@ -318,19 +233,11 @@ public class CachePartitionDefragmentationManager {
                         //TODO Defragment index file.
                     }
 
-                    ((PageMemoryEx)grpCtx.dataRegion().pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                    oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
-                    File defragmentedIdxTmpFile = defragmentedIndexTmpFile(workDir);
-                    File defragmentedIdxFile = defragmentedIndexFile(workDir);
+                    renameTempIndexFile(workDir);
 
-                    try {
-                        Files.move(defragmentedIdxTmpFile.toPath(), defragmentedIdxFile.toPath(), ATOMIC_MOVE);
-                    }
-                    catch (IOException ignore) {
-                        //TODO Handle.
-                    }
-
-                    writeDefragmentationCompletionMarker(workDir);
+                    writeDefragmentationCompletionMarker(workDir, log);
 
                     batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 
@@ -345,93 +252,6 @@ public class CachePartitionDefragmentationManager {
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);
         }
-    }
-
-    /** */
-    private boolean skipAlreadyDefragmentedCacheGroup(File workDir, int grpId) {
-        File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
-
-        if (completionMarkerFile.exists()) {
-            if (log.isInfoEnabled()) {
-                log.info(S.toString(
-                    "Skipping already defragmented page group",
-                    "grpId", grpId, false,
-                    "markerFileName", completionMarkerFile.getName(), false,
-                    "workDir", workDir.getAbsolutePath(), false
-                ));
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** */
-    private boolean skipAlreadyDefragmentedPartition(File workDir, int grpId, int partId) {
-        File defragmentedPartFile = defragmentedPartFile(workDir, partId);
-        File defragmentedPartMappingFile = defragmentedPartMappingFile(workDir, partId);
-
-        if (defragmentedPartFile.exists() && defragmentedPartMappingFile.exists()) {
-            if (log.isInfoEnabled()) {
-                log.info(S.toString(
-                    "Skipping already defragmented partition",
-                    "grpId", grpId, false,
-                    "partId", partId, false,
-                    "partFileName", defragmentedPartFile.getName(), false,
-                    "mappingFileName", defragmentedPartMappingFile.getName(), false,
-                    "workDir", workDir.getAbsolutePath(), false
-                ));
-            }
-
-            return true;
-        }
-
-        File defragmentedPartTmpFile = defragmentedPartTmpFile(workDir, partId);
-
-        try {
-            Files.deleteIfExists(defragmentedPartTmpFile.toPath());
-
-            Files.deleteIfExists(defragmentedPartFile.toPath());
-
-            Files.deleteIfExists(defragmentedPartMappingFile.toPath());
-        }
-        catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
-    /** */
-    private static File defragmentedIndexTmpFile(File workDir) {
-        return new File(workDir, DFRG_INDEX_TMP_FILE_NAME);
-    }
-
-    /** */
-    private static File defragmentedIndexFile(File workDir) {
-        return new File(workDir, DFRG_INDEX_FILE_NAME);
-    }
-
-    /** */
-    private static File defragmentedPartTmpFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_PARTITION_TMP_FILE_TEMPLATE, partId));
-    }
-
-    /** */
-    private static File defragmentedPartFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_PARTITION_FILE_TEMPLATE, partId));
-    }
-
-    /** */
-    private static File defragmentedPartMappingFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_LINK_MAPPING_FILE_TEMPLATE, partId));
-    }
-
-    /** */
-    private static File defragmentationCompletionMarkerFile(File workDir) {
-        return new File(workDir, DFRG_COMPLETION_MARKER_FILE_NAME);
     }
 
     /** */
@@ -741,22 +561,5 @@ public class CachePartitionDefragmentationManager {
 
             return metaIO.getFirstPageId(metaPageAddr, 0);
         });
-    }
-
-    /** */
-    private void writeDefragmentationCompletionMarker(File workDir) {
-        try {
-            FileIOFactory ioFactory = sharedCtx.gridConfig().getDataStorageConfiguration().getFileIOFactory();
-
-            File completionMarker = defragmentationCompletionMarkerFile(workDir);
-
-            try (FileIO io = ioFactory.create(completionMarker, CREATE_NEW, WRITE)) {
-                io.force(true);
-            }
-        }
-        catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
-        }
     }
 }
