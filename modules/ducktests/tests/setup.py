@@ -54,9 +54,12 @@ setup(name="ignitetest",
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          'ducktape==0.7.8',
+          'ducktape==0.8.0',
           'pytest==4.6.5',
           'mock==3.0.5'
+      ],
+      dependency_links = [
+          'https://github.com/confluentinc/ducktape/tarball/master#egg=ducktape-0.8.0'
       ],
       tests_require=[],
       cmdclass={'test': PyTest}
