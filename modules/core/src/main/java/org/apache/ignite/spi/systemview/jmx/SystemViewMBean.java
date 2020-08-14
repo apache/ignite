@@ -72,39 +72,34 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** Row id attribute name. */
     public static final String ID = "systemViewRowId";
 
-    private static final Map<Class<?>, SimpleType<?>> CLASS_TO_SIMPLE_TYPE_MAP = new HashMap<>();
+    private static final Map<Class<?>, SimpleType<?>> CLS_TO_TYPE = new HashMap<>();
 
     static {
-        registerClassToSimpleTypeRecords();
-    }
-
-    /** Maps classes to their SimpleType representation. */
-    private static void registerClassToSimpleTypeRecords() {
-        CLASS_TO_SIMPLE_TYPE_MAP.put(String.class, SimpleType.STRING);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(IgniteUuid.class, SimpleType.STRING);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(UUID.class, SimpleType.STRING);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Class.class, SimpleType.STRING);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(InetSocketAddress.class, SimpleType.STRING);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(BigDecimal.class, SimpleType.BIGDECIMAL);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(BigInteger.class, SimpleType.BIGINTEGER);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Date.class, SimpleType.DATE);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(ObjectName.class, SimpleType.OBJECTNAME);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(boolean.class, SimpleType.BOOLEAN);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Boolean.class, SimpleType.BOOLEAN);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(byte.class, SimpleType.BYTE);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Byte.class, SimpleType.BYTE);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(short.class, SimpleType.SHORT);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Short.class, SimpleType.SHORT);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(int.class, SimpleType.INTEGER);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Integer.class, SimpleType.INTEGER);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(long.class, SimpleType.LONG);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Long.class, SimpleType.LONG);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(char.class, SimpleType.CHARACTER);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Character.class, SimpleType.CHARACTER);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(float.class, SimpleType.FLOAT);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Float.class, SimpleType.FLOAT);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(double.class, SimpleType.DOUBLE);
-        CLASS_TO_SIMPLE_TYPE_MAP.put(Double.class, SimpleType.DOUBLE);
+        CLS_TO_TYPE.put(String.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(IgniteUuid.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(UUID.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(Class.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(InetSocketAddress.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(BigDecimal.class, SimpleType.BIGDECIMAL);
+        CLS_TO_TYPE.put(BigInteger.class, SimpleType.BIGINTEGER);
+        CLS_TO_TYPE.put(Date.class, SimpleType.DATE);
+        CLS_TO_TYPE.put(ObjectName.class, SimpleType.OBJECTNAME);
+        CLS_TO_TYPE.put(boolean.class, SimpleType.BOOLEAN);
+        CLS_TO_TYPE.put(Boolean.class, SimpleType.BOOLEAN);
+        CLS_TO_TYPE.put(byte.class, SimpleType.BYTE);
+        CLS_TO_TYPE.put(Byte.class, SimpleType.BYTE);
+        CLS_TO_TYPE.put(short.class, SimpleType.SHORT);
+        CLS_TO_TYPE.put(Short.class, SimpleType.SHORT);
+        CLS_TO_TYPE.put(int.class, SimpleType.INTEGER);
+        CLS_TO_TYPE.put(Integer.class, SimpleType.INTEGER);
+        CLS_TO_TYPE.put(long.class, SimpleType.LONG);
+        CLS_TO_TYPE.put(Long.class, SimpleType.LONG);
+        CLS_TO_TYPE.put(char.class, SimpleType.CHARACTER);
+        CLS_TO_TYPE.put(Character.class, SimpleType.CHARACTER);
+        CLS_TO_TYPE.put(float.class, SimpleType.FLOAT);
+        CLS_TO_TYPE.put(Float.class, SimpleType.FLOAT);
+        CLS_TO_TYPE.put(double.class, SimpleType.DOUBLE);
+        CLS_TO_TYPE.put(Double.class, SimpleType.DOUBLE);
     }
 
     /** System view to export. */
@@ -130,15 +125,15 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
 
         int cnt = sysView.walker().count();
 
-        String[] fields = new String[cnt+1];
-        OpenType[] types = new OpenType[cnt+1];
+        String[] fields = new String[cnt + 1];
+        OpenType<?>[] types = new OpenType[cnt + 1];
 
         List<Integer> filterFieldIdxs = new ArrayList<>(cnt);
 
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
-                types[idx] = CLASS_TO_SIMPLE_TYPE_MAP.getOrDefault(clazz, SimpleType.STRING);
+                types[idx] = CLS_TO_TYPE.getOrDefault(clazz, SimpleType.STRING);
 
                 if (sysView.walker().filtrableAttributes().contains(name))
                     filterFieldIdxs.add(idx);
@@ -287,7 +282,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
             if (clazz.isEnum())
-                data.put(name, ((Enum)val).name());
+                data.put(name, ((Enum<?>)val).name());
             else if (clazz.isAssignableFrom(Class.class))
                 data.put(name, ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
