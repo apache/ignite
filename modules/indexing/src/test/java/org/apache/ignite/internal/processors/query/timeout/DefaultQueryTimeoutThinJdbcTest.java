@@ -49,7 +49,13 @@ public class DefaultQueryTimeoutThinJdbcTest extends AbstractDefaultQueryTimeout
         }
     }
 
-    /** */
+    /**
+     * Check cases when JDBC query timeout value (sets in second) more then Integer range in milliseconds.
+     * Steps:
+     * - start server node;
+     * - execute queries with huge timeout in seconds: (timeout_value * 1000 more than Integer.MAX_VALUE);
+     * - the query must be executed successful.
+     */
     @Test
     public void testExplicitTimeoutMoreThenMaxValue() throws Exception {
         startGrid(0);

@@ -501,7 +501,7 @@ public class JdbcThinStatement implements Statement {
         if (timeout < 0)
             throw new SQLException("Invalid timeout value.");
 
-        timeout(timeout * 1000 >= 0 && timeout * 1000 > timeout ? timeout * 1000 : Integer.MAX_VALUE);
+        timeout(timeout * 1000 > timeout ? timeout * 1000 : Integer.MAX_VALUE);
     }
 
     /** {@inheritDoc} */

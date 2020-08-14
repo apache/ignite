@@ -52,78 +52,163 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
         super.afterTest();
     }
 
-    /** */
+    /**
+     * Check the default query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 0 ms (timeout is disabled by default);
+     * - execute query that takes 1000 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testNoExplicitTimeout1() throws Exception {
         checkQueryNoExplicitTimeout(1000, 0, false);
     }
 
-    /** */
+    /**
+     * Check the default query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 1500 ms;
+     * - execute query that takes 1000 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testNoExplicitTimeout2() throws Exception {
         checkQueryNoExplicitTimeout(1000, 1500, false);
     }
 
-    /** */
+    /**
+     * Check the default query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 500 ms;
+     * - execute query that takes 1000 ms;
+     * - check that query fails with QueryCancelledException.
+     */
     @Test
     public void testNoExplicitTimeout3() throws Exception {
         checkQueryNoExplicitTimeout(1000, 500, true);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 0 ms (timeout is disabled by default);
+     * - execute query that takes 500 ms and explicit query timeout 0 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testExplicitTimeout1() throws Exception {
         checkQuery(500, 0, 0, false);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 0 ms (timeout is disabled by default);
+     * - execute query that takes 500 ms and explicit query timeout 1000 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testExplicitTimeout2() throws Exception {
         checkQuery(500, 1000, 0, false);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 0 ms (timeout is disabled by default);
+     * - execute query that takes 2000 ms and explicit query timeout 1000 ms;
+     * - check that query fails with QueryCancelledException.
+     */
     @Test
     public void testExplicitTimeout3() throws Exception {
         checkQuery(2000, 1000, 0, true);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 1000 ms;
+     * - execute query that takes 1500 ms and explicit query timeout 0 ms (timeout is disabled);
+     * - check that query is successful.
+     */
     @Test
     public void testExplicitTimeout4() throws Exception {
         checkQuery(1500, 0, 1000, false);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 1000 ms;
+     * - execute query that takes 1500 ms and explicit query timeout 0 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testExplicitTimeout5() throws Exception {
         checkQuery(1000, 1500, 500, false);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 500 ms;
+     * - execute query that takes 2000 ms and explicit query timeout 1000 ms;
+     * - check that query fails with QueryCancelledException.
+     */
     @Test
     public void testExplicitTimeout6() throws Exception {
         checkQuery(2000, 1000, 500, true);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 2000 ms;
+     * - execute query that takes 500 ms and explicit query timeout 1000 ms;
+     * - check that query is successful.
+     */
     @Test
     public void testExplicitTimeout7() throws Exception {
         checkQuery(500, 1000, 2000, false);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 2000 ms;
+     * - execute query that takes 2000 ms and explicit query timeout 1000 ms;
+     * - check that query fails with QueryCancelledException.
+     */
     @Test
     public void testExplicitTimeout8() throws Exception {
         checkQuery(2000, 1000, 2000, true);
     }
 
-    /** */
+    /**
+     * Check the explicit query timeout.
+     * Steps:
+     * - start server node;
+     * - set default query timeout to 2000 ms;
+     * - execute two queries that takes 1000 ms simultaneous:
+     *      one query with explicit timeout 500 ms and other with explicit timeout 1500 ms;
+     * - check that the first query fails with QueryCancelledException and the second successful.
+     */
     @Test
     public void testConcurrent() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        setDefaultQueryTimeout(1000);
+        setDefaultQueryTimeout(2000);
 
         prepareQueryExecution();
 

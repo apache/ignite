@@ -32,7 +32,7 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
      */
     CUSTOM_OBJECT(2),
 
-    /** Add ability to set set explicit query timeout on the cluster node by the JDBC client. */
+    /** Add ability to set explicit query timeout on the cluster node by the JDBC client. */
     QUERY_TIMEOUT(3);
 
     /** */
