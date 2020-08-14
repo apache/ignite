@@ -314,7 +314,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterNodeMetrics() throws Exception {
-        IgniteEx ignite0 = grid();
+        final Ignite ignite0 = grid();
         final Ignite ignite1 = startGrid(1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
