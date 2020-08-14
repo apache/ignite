@@ -90,8 +90,29 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllCsharpFilesAreIncludedInProject()
         {
-            // TODO: Test Core and Core.Tests projects (since they are shared across .NET Framework & .NET Core)
-            Assert.Fail("TODO");
+            var projFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(f => !f.Name.Contains("DotNetCore"));
+
+            foreach (var projFile in projFiles)
+            {
+                Assert.IsNotNull(projFile.Directory);
+
+                var projFileText = File.ReadAllText(projFile.FullName);
+                var csFiles = projFile.Directory.GetFiles("*.cs", SearchOption.AllDirectories);
+
+                foreach (var csFile in csFiles)
+                {
+                    // Csproj uses the same path separator on all platforms.
+                    var csFileRelativePath = Path.GetRelativePath(projFile.Directory.FullName, csFile.FullName)
+                        .Replace(Path.DirectorySeparatorChar, '\\');
+
+                    StringAssert.Contains(
+                        projFileText,
+                        csFileRelativePath,
+                        string.Format("Project file '{0}' should contain file '{1}'", projFile.Name, csFileRelativePath));
+                }
+            }
         }
 
         /// <summary>
