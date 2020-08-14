@@ -32,7 +32,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import LATEST_2_7
+from ignitetest.tests.utils.version import LATEST_2_7, DEV_BRANCH
 
 
 # pylint: disable=W0223
@@ -106,30 +106,36 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(nodes_to_kill=[0, 1, 2], with_load=[True])
-    def test_tcp(self, with_load, nodes_to_kill):
+    @matrix(ignite_version=[str(LATEST_2_7), str(DEV_BRANCH)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[0, 1, 2],
+            with_load=[False, True])
+    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
         """
-        return self.__simulate_nodes_failure(LATEST_2_7, self.__properties(), False, nodes_to_kill,
+        return self.__simulate_nodes_failure(ignite_version, self.__properties(), None, kill_coordinator,
+                                             nodes_to_kill, with_load)
+
+    @cluster(num_nodes=NUM_NODES + 3)
+    @matrix(ignite_version=[str(LATEST_2_7), str(DEV_BRANCH)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[0, 1, 2],
+            with_load=[False, True])
+    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+        """
+        Test node failure scenario with ZooKeeperSpi.
+        """
+        self.__start_zk_quorum()
+
+        properties = self.__zk_properties(self.zk_quorum.connection_string())
+        modules = ["ignite-zookeeper"]
+
+        return self.__simulate_nodes_failure(ignite_version, properties, modules, kill_coordinator, nodes_to_kill,
                                              with_load)
 
-    # @cluster(num_nodes=NUM_NODES + 3)
-    # @matrix(ignite_version=[str(LATEST_2_7)],  # , str(DEV_BRANCH)])
-    #         kill_coordinator=[True, False],
-    #         nodes_to_kill=[0, 1, 2],
-    #         with_load=[True, False])
-    # def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
-    #     """
-    #     Test node failure scenario with TcpDiscoverySpi.
-    #     """
-    #     self.__start_zk_quorum()
-    #
-    #     properties = self.__zk_properties(self.zk_quorum.connection_string())
-    #
-    #     return self.__simulate_nodes_failure(ignite_version, properties, kill_coordinator, nodes_to_kill, with_load)
-
-    def __simulate_nodes_failure(self, version, properties, kill_coordinator=False, nodes_to_kill=1, with_load=False):
+    def __simulate_nodes_failure(self, version, properties, modules, kill_coordinator=False, nodes_to_kill=1,
+                                 with_load=False):
         if nodes_to_kill == 0 and not kill_coordinator:
             return {"No nodes to kill": "Nothing to do"}
 
@@ -150,18 +156,18 @@ class DiscoveryTest(IgniteTest):
 
         self.servers.start()
 
-        if nodes_to_kill + (1 if kill_coordinator else 0) + (1 if with_load else 0) > self.servers.num_nodes - 1:
+        if nodes_to_kill + (1 if kill_coordinator else 0) > self.servers.num_nodes - 1:
             raise Exception("Too many nodes to kill: " + str(nodes_to_kill) + " with current settings.")
 
         data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
         self.stage("Topology is ready")
 
-        if with_load:
-            self.__start_loading(version, random.randint(1, 5))
-
         failed_nodes, survived_node = self.__choose_node_to_kill(kill_coordinator, nodes_to_kill)
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+
+        if with_load:
+            self.__start_loading(version, properties, modules, random.randint(1, 5))
 
         self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
 
@@ -216,24 +222,26 @@ class DiscoveryTest(IgniteTest):
         coordinator = nodes[0].discovery_info().coordinator
         to_kill = []
 
-        if kill_coordinator < 1:
+        if kill_coordinator:
             to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
 
-        if nodes_to_kill > 1:
-            to_kill.extend(
-                random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill))
+        if nodes_to_kill > 0:
+            choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
+            to_kill.extend([choice] if not isinstance(choice, list) else choice)
 
         survive = random.choice([node for node in self.servers.nodes if node not in to_kill])
 
         return to_kill, survive
 
-    def __start_loading(self, ignite_version, wait_sec=0):
-        self.stage("Start loading")
+    def __start_loading(self, ignite_version, properties, modules, wait_sec=0):
+        self.stage("Starting loading")
 
         self.loader = IgniteApplicationService(
             self.test_context,
             java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             version=ignite_version,
+            modules=modules,
+            properties=properties,
             params={"cacheName": "test-cache", "range": self.__DATA_AMOUNT, "infinite": True, "optimized": False})
 
         self.loader.start()
