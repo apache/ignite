@@ -72,6 +72,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** Row id attribute name. */
     public static final String ID = "systemViewRowId";
 
+    /** */
     private static final Map<Class<?>, SimpleType<?>> CLS_TO_TYPE = new HashMap<>();
 
     static {
