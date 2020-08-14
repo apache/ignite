@@ -64,7 +64,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_M
 /**
  * Statistics for {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
-class TcpCommunicationMetricsListener {
+public class TcpCommunicationMetricsListener {
     /** SPI context. */
     private final IgniteSpiContext spiCtx;
 
@@ -308,7 +308,7 @@ class TcpCommunicationMetricsListener {
         return collectMessagesCountByNodeId(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
     }
 
-    /** */
+    /** Collect messages count by type */
     protected Map<String, Long> collectMessagesCountByType(String prefix) {
         Map<String, Long> res = new HashMap<>();
 
@@ -332,7 +332,7 @@ class TcpCommunicationMetricsListener {
         return res;
     }
 
-    /** */
+    /** Collect messages count by nodeId */
     protected Map<UUID, Long> collectMessagesCountByNodeId(String metricName) {
         Map<UUID, Long> res = new HashMap<>();
 

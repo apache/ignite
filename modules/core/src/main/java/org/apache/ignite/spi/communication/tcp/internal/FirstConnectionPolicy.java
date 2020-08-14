@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.camel;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.spi.communication.tcp.internal;
 
 /**
- * Camel streamer tests. Included into 'Streamers' run configuration.
+ * First connection policy.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
-public class IgniteCamelStreamerTestSuite {
+public class FirstConnectionPolicy implements ConnectionPolicy {
+    /** {@inheritDoc} */
+    @Override public int connectionIndex() {
+        return 0;
+    }
 }
