@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Client
         ComputeTaskExecute = 6000,
         ComputeTaskFinished = 6001,
 
-        // Services
+        // Services.
         ServiceInvoke = 7000
     }
 }

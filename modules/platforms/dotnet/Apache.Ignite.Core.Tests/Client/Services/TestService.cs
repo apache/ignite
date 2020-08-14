@@ -26,13 +26,19 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
 
+    /// <summary>
+    /// Test service.
+    /// </summary>
     public class TestService : ITestService, IService
     {
+        /** */
         [InstanceResource]
         private readonly IIgnite _ignite = null;
 
+        /** */
         public const string ExceptionText = "Some error";
 
+        /** */
         public static int CallCount { get; set; }
 
         /** <inheritdoc /> */
