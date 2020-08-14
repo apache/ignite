@@ -31,7 +31,7 @@ class AddNodeRebalanceTest(IgniteTest):
     """
     Test basic rebalance scenarios.
     """
-    NUM_NODES = 3
+    NUM_NODES = 4
     PRELOAD_TIMEOUT = 60
     DATA_AMOUNT = 1000000
     REBALANCE_TIMEOUT = 60

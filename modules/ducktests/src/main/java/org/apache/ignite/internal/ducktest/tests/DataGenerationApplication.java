@@ -19,23 +19,34 @@ package org.apache.ignite.internal.ducktest.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  *
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
-    /** */
-    public static final String PARAM_RANGE = "range";
+    /** Logger. */
+    protected static final Logger log = LogManager.getLogger(DataGenerationApplication.class.getName());
 
     /** */
-    public static final String PARAM_INFINITE = "infinite";
+    private static final String PARAM_RANGE = "range";
 
     /** */
-    public static final String PARAM_CACHE_NAME = "cacheName";
+    private static final String PARAM_INFINITE = "infinite";
+
+    /** */
+    private static final String PARAM_CACHE_NAME = "cacheName";
+
+    /** */
+    private static final String PARAM_OPTIMIZED = "optimized";
 
     /** */
     private static final long DATAGEN_NOTIFY_INTERVAL_NANO = 1500 * 1000000L;
@@ -45,52 +56,67 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
-        log.info("Creating cache...");
-
-        IgniteCache<Integer, Integer> cache = ignite.createCache(jsonNode.get(PARAM_CACHE_NAME).asText());
-
+        String cacheName = jsonNode.get(PARAM_CACHE_NAME).asText();
         boolean infinite = jsonNode.hasNonNull(PARAM_INFINITE) && jsonNode.get(PARAM_INFINITE).asBoolean();
-
-        log.warn("REMOVETHIS. infinite = " + infinite);
-        log.warn("REMOVETHIS. jsonNode = " + jsonNode);
-
+        boolean optimized = !jsonNode.hasNonNull(PARAM_OPTIMIZED) || jsonNode.get(PARAM_OPTIMIZED).asBoolean();
         int range = jsonNode.get(PARAM_RANGE).asInt();
 
         if (infinite) {
             Random rnd = new Random();
+            CountDownLatch exitLatch = new CountDownLatch(1);
 
             Thread th = new Thread(() -> {
-                log.info("Generating data in background...");
+                log.info("Begin generating data in background...");
+
+                boolean error = false;
 
                 try {
-                    while (!stopped() && !Thread.interrupted())
-                        generateData(cache, range, (idx) -> rnd.nextInt(range));
+                    while (active())
+                        generateData(cacheName, range, (idx) -> rnd.nextInt(range), optimized);
 
                     log.info("Background data generation finished.");
                 }
                 catch (Exception e) {
-                    log.error("Failed to generate data in background.", e);
+                    if (!X.hasCause(e, NodeStoppingException.class)) {
+                        error = true;
+
+                        log.error("Failed to generate data in background.", e);
+                    }
+                }
+                finally {
+                    if (!error)
+                        markFinished();
+
+                    exitLatch.countDown();
                 }
 
-                markFinished();
-            }, DataGenerationApplication.class.getName());
-
-            th.setDaemon(true);
+            }, DataGenerationApplication.class.getName() + "_cacheLoader");
 
             th.start();
 
             markInitialized();
+
+            try {
+                exitLatch.await();
+            }
+            catch (InterruptedException e) {
+                log.warn("Interrupted waiting for background loading.");
+            }
         }
         else {
             log.info("Generating data...");
 
             try {
-                generateData(cache, range, Function.identity());
+                generateData(cacheName, range, Function.identity(), optimized);
 
                 log.info("Data generation finished. Generated " + range + " entries.");
             }
             catch (Exception e) {
-                log.error("Failed to generate data.", e);
+                if (!X.hasCause(e, NodeStoppingException.class)) {
+                    log.error("Failed to generate data in background.", e);
+
+                    return;
+                }
             }
 
             markSyncExecutionComplete();
@@ -98,21 +124,27 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void generateData(IgniteCache<Integer, Integer> cache, int range, Function<Integer, Integer> supplier) {
+    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean optimized) {
         long notifyTime = System.nanoTime();
         int streamed = 0;
 
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cache.getName())) {
+        if(log.isDebugEnabled())
+            log.debug("Creating cache...");
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
+
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
             streamer.allowOverwrite(true);
 
-            for (int i = 0; i < range && !stopped() && Thread.interrupted(); i++) {
-                streamer.addData(i, supplier.apply(i));
+            for (int i = 0; i < range && active(); i++) {
+                if (optimized)
+                    streamer.addData(i, supplier.apply(i));
+                else
+                    cache.put(i, supplier.apply(i));
 
                 if (notifyTime + DATAGEN_NOTIFY_INTERVAL_NANO < System.nanoTime() ||
                     i - streamed >= DATAGEN_NOTIFY_INTERVAL_AMOUNT) {
                     notifyTime = System.nanoTime();
-
-                    log.warn("REMOVETHIS. Streamed " + (i - streamed) + " entries. Total: " + i + '.');
 
                     if (log.isDebugEnabled())
                         log.debug("Streamed " + (i - streamed) + " entries. Total: " + i + '.');
@@ -120,6 +152,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                     streamed = i;
                 }
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Streamed " + range + " entries.");
         }
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -60,29 +59,28 @@ public abstract class IgniteAwareApplication {
      */
     protected IgniteAwareApplication() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if(log.isDebugEnabled())
-                log.debug("Caught shutdown signal.");
+            if (log.isDebugEnabled())
+                log.debug("Caught shutdown signal. Terminating, waiting for graceful stopping...");
 
             terminate();
 
-            log.info("Waiting for graceful termination.");
-
             while (!finished()) {
-                if(log.isDebugEnabled())
-                    log.debug("Cycled waiting for graceful termination...");
+                if (log.isTraceEnabled())
+                    log.trace("Cycled waiting for graceful termination...");
 
                 try {
                     U.sleep(100);
                 }
-                catch (IgniteInterruptedCheckedException e) {
+                catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
 
-            log.info("SIGTERM recorded.");
+            if(log.isDebugEnabled())
+                log.info("SIGTERM processed.");
         }));
 
-        if(log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("ShutdownHook registered.");
     }
 
@@ -132,8 +130,8 @@ public abstract class IgniteAwareApplication {
     }
 
     /** */
-    protected boolean stopped() {
-        return terminated() || finished();
+    protected boolean active() {
+        return !(terminated() || finished());
     }
 
     /**
@@ -164,10 +162,7 @@ public abstract class IgniteAwareApplication {
      */
     public void start(JsonNode jsonNode) {
         try {
-            log.warn("REMOVETHIS. Application params: " + jsonNode);
-
-            if(log.isDebugEnabled())
-                log.debug("Application params: " + jsonNode);
+            log.info("Application params: " + jsonNode);
 
             assert cfgPath != null;
 

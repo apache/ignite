@@ -48,8 +48,8 @@ class IgniteAwareApplicationService(IgniteAwareService):
 
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
-        self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)
-        self.await_event("IGNITE_APPLICATION_INITIALIZED", self.timeout_sec, from_the_beginning=True)
+        self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True, backoff_sec=0.1)
+        self.await_event("IGNITE_APPLICATION_INITIALIZED", self.timeout_sec, from_the_beginning=True, backoff_sec=0.1)
 
     def start_cmd(self, node):
         cmd = self.env()
