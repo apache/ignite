@@ -24,8 +24,6 @@ package org.apache.ignite.mxbean;
 public interface WarmUpMXBean {
     /**
      * Stop warm-up.
-     *
-     * @return {@code true} if stopped by this call.
      */
     @MXBeanDescription("Stop warm-up.")
     void stopWarmUp();
