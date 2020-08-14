@@ -20,9 +20,9 @@
 - title: Setting Up
   items:
     - title: Setting Up GridGain for Java 
-      url: /developers-guide/setup
+      url: /setup
     - title: Setting Up GridGain for .NET/C# 
-      url: /developers-guide/setup-dotnet 
+      url: /setup-dotnet 
 - title: Understanding Configuration
   url: /understanding-configuration
 - title: Configuring Logging
@@ -43,6 +43,8 @@
       url: /clustering/network-configuration
     - title: Connecting Client Nodes 
       url: /clustering/connect-client-nodes
+    - title: Running Client Nodes Behind NAT
+      url: /clustering/running-client-nodes-behind-nat
 - title: Data Modeling 
   items: 
     - title: Introduction
@@ -175,6 +177,8 @@
           url: /monitoring-metrics/new-metrics
     - title: System Views
       url: /monitoring-metrics/system-views
+    - title: Tracing
+      url: /monitoring-metrics/tracing
 - title: Security
   url: /security
   items: 

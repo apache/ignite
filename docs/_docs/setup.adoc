@@ -6,7 +6,6 @@ Ignite was tested on:
 
 include::includes/prereqs.adoc[]
 
-
 == Running Ignite with Java 11 or later
 
 include::includes/java9.adoc[]
@@ -14,20 +13,36 @@ include::includes/java9.adoc[]
 
 == Using Binary Distribution
 
-* Download the appropriate binary package from  TODO.
+* Download the appropriate binary package from https://ignite.apache.org/download.cgi[Apache Ignite Downloads^].
 * Unzip the archive into a directory.
 * (Optional) Set the `IGNITE_HOME` environment variable to point to the
 installation folder and make sure there is no trailing `/` in the path.
 
 == Using Maven
 
-The easiest way to start developing with Ignite is to use Maven.
+The easiest way to use Ignite is to add it to your pom.
 
-*TODO*
+[source, xml]
+----
+
+<properties>
+    <ignite.version>{version}</ignite.version>
+</properties>
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-core</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+</dependencies>
+----
+
+
 
 == Using Docker
 
-If you want to run Ignite in Docker, refer to the link:on-premises-deployment#installing-using-docker[Docker Deployment] section.
+If you want to run Ignite in Docker, refer to the link:installation/installing-using-docker[Docker Deployment] section.
 
 == Configuring Work Directory
 
