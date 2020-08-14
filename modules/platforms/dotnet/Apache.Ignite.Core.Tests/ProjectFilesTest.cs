@@ -84,6 +84,7 @@ namespace Apache.Ignite.Core.Tests
                 "Invalid optimize setting in release mode: ");
         }
 
+#if NETCOREAPP
         /// <summary>
         /// Tests that all .cs files are included in the project.
         /// </summary>
@@ -133,6 +134,7 @@ namespace Apache.Ignite.Core.Tests
                 }
             });
         }
+#endif
 
         /// <summary>
         /// Gets the csproj files that go to the release binary package.
