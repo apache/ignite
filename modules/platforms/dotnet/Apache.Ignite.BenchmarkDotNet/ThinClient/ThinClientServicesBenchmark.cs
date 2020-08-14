@@ -17,15 +17,27 @@
 
 namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
+    using System;
+    using Apache.Ignite.BenchmarkDotNet.ThinClient.Services;
     using Apache.Ignite.Core;
+    using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
     /// Thin client services benchmark.
     /// </summary>
     public class ThinClientServicesBenchmark : ThinClientBenchmarkBase
     {
-        // TODO: Compare Thick vs Thin client perf on different data types
-        public IIgnite ThickClient { get; set; }
+        /** */
+        private const string ServiceName = nameof(BenchService);
+
+        /** */
+        private IIgnite ThickClient { get; set; }
+
+        /** */
+        private IBenchService ThickService { get; set; }
+
+        /** */
+        private IBenchService ThinService { get; set; }
 
         /** <inheritdoc /> */
         public override void GlobalSetup()
@@ -38,7 +50,12 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
                 IgniteInstanceName = "Client"
             };
 
+            var services = Ignite.GetServices();
+            services.DeployClusterSingleton(ServiceName, new BenchService());
+
             ThickClient = Ignition.Start(clientCfg);
+            ThickService = ThickClient.GetServices().GetServiceProxy<IBenchService>(ServiceName);
+            ThinService = Client.GetServices().GetServiceProxy<IBenchService>(ServiceName);
         }
 
         /** <inheritdoc /> */
@@ -46,6 +63,30 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         {
             ThickClient.Dispose();
             base.GlobalCleanup();
+        }
+
+        /** */
+        [Benchmark]
+        public void IntMethodThin()
+        {
+            var res = ThinService.Add(2, 3);
+
+            if (res != 5)
+            {
+                throw new Exception();
+            }
+        }
+
+        /** */
+        [Benchmark]
+        public void IntMethodThick()
+        {
+            var res = ThickService.Add(2, 3);
+
+            if (res != 5)
+            {
+                throw new Exception();
+            }
         }
     }
 }
