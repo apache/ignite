@@ -25,6 +25,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// <summary>
     /// Thin client services benchmark.
     /// </summary>
+    [MemoryDiagnoser]
     public class ThinClientServicesBenchmark : ThinClientBenchmarkBase
     {
         /** */
@@ -44,16 +45,17 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         {
             base.GlobalSetup();
 
+            var services = Ignite.GetServices();
+            services.DeployClusterSingleton(ServiceName, new BenchService());
+
             var clientCfg = new IgniteConfiguration(Utils.GetIgniteConfiguration())
             {
                 ClientMode = true,
                 IgniteInstanceName = "Client"
             };
 
-            var services = Ignite.GetServices();
-            services.DeployClusterSingleton(ServiceName, new BenchService());
-
             ThickClient = Ignition.Start(clientCfg);
+
             ThickService = ThickClient.GetServices().GetServiceProxy<IBenchService>(ServiceName);
             ThinService = Client.GetServices().GetServiceProxy<IBenchService>(ServiceName);
         }
