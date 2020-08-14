@@ -1,0 +1,86 @@
+= Tracing
+
+:javaFile: {javaCodeDir}/Tracing.java
+
+A number of APIs in Ignite are instrumented with OpenCensus for tracing.
+You can collect distributed traces of various tasks execuded in your cluster and use this information to diagnose latency problems.
+
+We suggest you get familiar with OpenCensus tracing documentation: https://opencensus.io/tracing/.
+
+The following APIs are instrumented for tracing:
+
+* Discovery
+* Communication
+* Exchange
+* Transactions
+
+== Configuring Tracing
+
+. Configure OpenCensus tracing in the node configuration:
++
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/tracing.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=config, indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+. Enable sampling of traces for a specific scope:
++
+--
+[source, shell]
+----
+./control.sh --tracing-configuration set --scope DISCOVERY --sampling-rate 1
+----
+
+The `--scope` parameter specifies the API you want to trace.
+The following APIs are instrumented for tracing:
+
+* `DISCOVERY` — discovery events
+* `EXCHANGE` —  exchange events
+* `COMMUNICATION` — communication events
+* `TX` — transactions
+
+The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`.
+`0` means no sampling, `1` means always sampling.
+--
+
+
+== Viewing Traces
+
+To view traces, you need to export them to an external backend using one of the available exporters.
+OpenCensus supports a number of exporter out-of-the-box, and you can write a custom exporter.
+Refer to the link:https://opencensus.io/exporters/[OpenCensus Exporters^] for details.
+
+In this section, we will show how to export traces to link:https://zipkin.io[Zipkin^].
+Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin in your local machine.
+
+[source, java]
+----
+include::{javaFile}[tags=export-to-zipkin, indent=0]
+----
+
+Start one server node and then start another node.
+
+TODO
+
+open http://localhost:9411[^] in your browser
+
+This is what a trace of a node join event looks like:
+
+image::images/trace_in_zipkin.png[]
+
+
+
+
