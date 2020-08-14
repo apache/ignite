@@ -90,29 +90,36 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllCsharpFilesAreIncludedInProject()
         {
-            var projFiles = TestUtils.GetDotNetSourceDir()
-                .GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(f => !f.Name.Contains("DotNetCore"));
+            var projFiles = GetReleaseCsprojFiles();
 
-            foreach (var projFile in projFiles)
+            Assert.Multiple(() =>
             {
-                Assert.IsNotNull(projFile.Directory);
-
-                var projFileText = File.ReadAllText(projFile.FullName);
-                var csFiles = projFile.Directory.GetFiles("*.cs", SearchOption.AllDirectories);
-
-                foreach (var csFile in csFiles)
+                foreach (var projFile in projFiles)
                 {
-                    // Csproj uses the same path separator on all platforms.
-                    var csFileRelativePath = Path.GetRelativePath(projFile.Directory.FullName, csFile.FullName)
-                        .Replace(Path.DirectorySeparatorChar, '\\');
+                    Assert.IsNotNull(projFile.Directory);
 
-                    StringAssert.Contains(
-                        projFileText,
-                        csFileRelativePath,
-                        string.Format("Project file '{0}' should contain file '{1}'", projFile.Name, csFileRelativePath));
+                    var projFileText = File.ReadAllText(projFile.FullName);
+                    var csFiles = projFile.Directory.GetFiles("*.cs", SearchOption.AllDirectories);
+
+                    foreach (var csFile in csFiles)
+                    {
+                        // Csproj uses the same path separator on all platforms.
+                        var csFileRelativePath = Path.GetRelativePath(projFile.Directory.FullName, csFile.FullName)
+                            .Replace(Path.DirectorySeparatorChar, '\\');
+
+                        if (csFileRelativePath.StartsWith("bin\\") || csFileRelativePath.StartsWith("obj\\"))
+                        {
+                            continue;
+                        }
+
+                        StringAssert.Contains(
+                            csFileRelativePath,
+                            projFileText,
+                            string.Format("Project file '{0}' should contain file '{1}'", projFile.Name,
+                                csFileRelativePath));
+                    }
                 }
-            }
+            });
         }
 
         /// <summary>
