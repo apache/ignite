@@ -113,6 +113,21 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /** Periodic version check delay. */
     private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
 
+    /** Topology version metric name. */
+    public static final String TOPOLOGY_VERSION = "TopologyVersion";
+
+    /** Total server nodes count metric name. */
+    public static final String TOTAL_SERVER_NODES = "TotalServerNodes";
+
+    /** Total client nodes count metric name. */
+    public static final String TOTAL_CLIENT_NODES = "TotalClientNodes";
+
+    /** Total baseline nodes count metric name. */
+    public static final String TOTAL_BASELINE_NODES = "TotalBaselineNodes";
+
+    /** Active baseline nodes count metric name. */
+    public static final String ACTIVE_BASELINE_NODES = "ActiveBaselineNodes";
+
     /** */
     private IgniteClusterImpl cluster;
 
@@ -169,6 +184,33 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         cluster = new IgniteClusterImpl(ctx);
 
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
+
+        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
+
+        reg.register(TOPOLOGY_VERSION,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
+            "Current topology version.");
+
+        reg.register(TOTAL_SERVER_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
+            "Server nodes count.");
+
+        reg.register(TOTAL_CLIENT_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
+            "Client nodes count.");
+
+        reg.register(TOTAL_BASELINE_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
+            "Total baseline nodes count.");
+
+        reg.register(ACTIVE_BASELINE_NODES, () -> {
+            if (ctx.isStopping() || ctx.clientDisconnected())
+                return -1;
+
+            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+
+            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
+        }, "Active baseline nodes count.");
     }
 
     /**
@@ -610,33 +652,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 U.error(log, "Failed to register MBean for cluster: ", e);
             }
         }
-
-        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
-
-        reg.register("TopologyVersion",
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
-            "Current topology version.");
-
-        reg.register("TotalServerNodes",
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
-            "Server nodes count.");
-
-        reg.register("TotalClientNodes",
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
-            "Client nodes count.");
-
-        reg.register("TotalBaselineNodes",
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
-            "Total baseline nodes count.");
-
-        reg.register("ActiveBaselineNodes", () -> {
-            if (ctx.isStopping() || ctx.clientDisconnected())
-                return -1;
-
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
-
-            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
-        }, "Active baseline nodes count.");
     }
 
     /** {@inheritDoc} */

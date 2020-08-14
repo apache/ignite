@@ -1130,21 +1130,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
-            ClusterProcessor clusterProc = new ClusterProcessor(ctx);
-
-            startProcessor(clusterProc);
-
-            U.onGridStart();
-
             // Start and configure resource processor first as it contains resources used
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
             rsrcProc.setSpringContext(rsrcCtx);
 
-            scheduler = new IgniteSchedulerImpl(ctx);
-
             startProcessor(rsrcProc);
+
+            startManager(new GridMetricManager(ctx));
+
+            ClusterProcessor clusterProc = new ClusterProcessor(ctx);
+
+            startProcessor(clusterProc);
+
+            U.onGridStart();
+
+            scheduler = new IgniteSchedulerImpl(ctx);
 
             // Inject resources into lifecycle beans.
             if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
@@ -1189,7 +1191,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             catch (IgniteCheckedException e) {
                 startManager(new GridTracingManager(ctx, true));
             }
-            startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
             startManager(new GridIoManager(ctx));
             startManager(new GridCheckpointManager(ctx));

@@ -55,6 +55,9 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOPOLOGY_VERSION;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
@@ -365,12 +368,12 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             ClusterMetricsMXBeanImpl.class);
 
         assertEquals(node.cluster().topologyVersion(), helperCluster.attr("TopologyVersion"));
-        assertEquals(node.cluster().topologyVersion(), mreg.<LongMetric>findMetric("TopologyVersion").value());
+        assertEquals(node.cluster().topologyVersion(), mreg.<LongMetric>findMetric(TOPOLOGY_VERSION).value());
 
         assertEquals(2, helperCluster.attr("TotalServerNodes"));
-        assertEquals(2, mreg.<IntMetric>findMetric("TotalServerNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, helperCluster.attr("TotalClientNodes"));
-        assertEquals(1, mreg.<IntMetric>findMetric("TotalClientNodes").value());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
 
         assertEquals(allNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, true));
         assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));

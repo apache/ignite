@@ -30,6 +30,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACTIVE_BASELINE_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
@@ -75,13 +79,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #0: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
-        assertEquals(3, mreg.<IntMetric>findMetric("TotalServerNodes").value());
+        assertEquals(3, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(1, mreg.<IntMetric>findMetric("TotalClientNodes").value());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("TotalBaselineNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("ActiveBaselineNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
@@ -92,13 +96,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #1: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(2, mxBeanCluster.getTotalServerNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("TotalServerNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(1, mreg.<IntMetric>findMetric("TotalClientNodes").value());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("TotalBaselineNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(1, mxBeanCluster.getActiveBaselineNodes());
-        assertEquals(1, mreg.<IntMetric>findMetric("ActiveBaselineNodes").value());
+        assertEquals(1, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
@@ -111,13 +115,13 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         log.info(String.format(">>> State #2: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(3, mxBeanCluster.getTotalServerNodes());
-        assertEquals(3, mreg.<IntMetric>findMetric("TotalServerNodes").value());
+        assertEquals(3, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(1, mreg.<IntMetric>findMetric("TotalClientNodes").value());
+        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("TotalBaselineNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
-        assertEquals(2, mreg.<IntMetric>findMetric("ActiveBaselineNodes").value());
+        assertEquals(2, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
         assertEquals(1, mxBeanLocalNode1.getTotalBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
