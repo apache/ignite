@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class QueryStartRequest implements MarshalableMessage {
+public class QueryStartRequest implements MarshalableMessage, ExecutionContextAware {
     /** */
     private String schema;
 
@@ -76,11 +76,14 @@ public class QueryStartRequest implements MarshalableMessage {
         return schema;
     }
 
-    /**
-     * @return Query ID.
-     */
-    public UUID queryId() {
+    /** {@inheritDoc} */
+    @Override public UUID queryId() {
         return qryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentDesc.fragmentId();
     }
 
     /**

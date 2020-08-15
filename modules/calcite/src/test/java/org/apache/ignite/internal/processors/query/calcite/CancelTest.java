@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -49,7 +50,7 @@ import static java.util.Collections.singletonList;
  */
 public class CancelTest extends GridCommonAbstractTest {
     /** Partition release timeout. */
-    private static final long PART_RELEASE_TIMEOUT = 2000L;
+    private static final long PART_RELEASE_TIMEOUT = 5000L;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -140,7 +141,7 @@ public class CancelTest extends GridCommonAbstractTest {
 
                 return null;
             },
-            ClusterTopologyCheckedException.class, "Failed to execute query, node left"
+            ClusterTopologyCheckedException.class, "Node left"
         );
 
         awaitReservationsRelease(grid(0), "TEST");

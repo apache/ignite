@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,7 +50,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * creates on first message received from a remote source. This case the context
      * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    protected ExecutionContext<Row> ctx;
+    protected volatile ExecutionContext<Row> ctx;
 
     /** */
     protected Downstream<Row> downstream;

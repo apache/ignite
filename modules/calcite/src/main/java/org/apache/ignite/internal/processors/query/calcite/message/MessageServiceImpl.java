@@ -27,6 +27,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -205,6 +206,16 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         MessageListener old = lsnrs.put(type, lsnr);
 
         assert old == null : old;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean alive(UUID nodeId) {
+        try {
+            return !ioManager().checkNodeLeft(nodeId, null, false);
+        }
+        catch (IgniteClientDisconnectedCheckedException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /** */

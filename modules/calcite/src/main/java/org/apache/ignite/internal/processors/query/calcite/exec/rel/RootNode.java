@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
+
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -35,8 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Client iterator.
  */
-public class RootNode<Row> extends AbstractNode<Row>
-    implements SingleNode<Row>, Downstream<Row>, Iterator<Row>, AutoCloseable {
+public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, Iterator<Row> {
     /** */
     private final ReentrantLock lock;
 
@@ -47,7 +46,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     private final Deque<Row> buff;
 
     /** */
-    private final Consumer<RootNode<Row>> onClose;
+    private final Runnable onClose;
 
     /** */
     private volatile State state = State.RUNNING;
@@ -64,15 +63,27 @@ public class RootNode<Row> extends AbstractNode<Row>
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext<Row> ctx, Consumer<RootNode<Row>> onClose) {
+    public RootNode(ExecutionContext<Row> ctx) {
         super(ctx);
 
-        this.onClose = onClose;
-
-        // extra space for possible END marker
-        buff = new ArrayDeque<>(IN_BUFFER_SIZE + 1);
+        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
         lock = new ReentrantLock();
         cond = lock.newCondition();
+
+        onClose = this::proceedClose;
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    public RootNode(ExecutionContext<Row> ctx, Runnable onClose) {
+        super(ctx);
+
+        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
+        lock = new ReentrantLock();
+        cond = lock.newCondition();
+
+        this.onClose = onClose;
     }
 
     /** */
@@ -94,33 +105,16 @@ public class RootNode<Row> extends AbstractNode<Row>
         });
     }
 
-    /**
-     * @return Execution state.
-     */
-    public State state() {
-        return state;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
-        boolean doClose = false;
-
         lock.lock();
         try {
-            if (state == State.CANCELLED || state == State.CLOSED)
-                return;
-
-            if (state == State.RUNNING) {
+            if (state == State.RUNNING)
                 state = State.CANCELLED;
-
-                doClose = true;
-            }
-
-            if (state == State.END) {
-                doClose = true;
-
+            else if (state == State.END)
                 state = State.CLOSED;
-            }
+            else
+                return;
 
             cond.signalAll();
         }
@@ -128,8 +122,7 @@ public class RootNode<Row> extends AbstractNode<Row>
             lock.unlock();
         }
 
-        if (doClose)
-            onClose.accept(this);
+        onClose.run();
     }
 
     /** {@inheritDoc} */
@@ -239,10 +232,10 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         lock.lock();
         try {
-            checkCancelled();
-            assert state == State.RUNNING;
-
             while (true) {
+                checkCancelled();
+                assert state == State.RUNNING;
+
                 if (!buff.isEmpty())
                     return buff.poll();
                 else if (waiting == -1)
@@ -253,9 +246,6 @@ public class RootNode<Row> extends AbstractNode<Row>
                 }
 
                 cond.await();
-
-                checkCancelled();
-                assert state == State.RUNNING;
             }
 
             state = State.END;
@@ -285,17 +275,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     }
 
     /** */
-    public enum State {
-        /** */
-        RUNNING,
-
-        /** */
-        CANCELLED,
-
-        /** */
-        END,
-
-        /** */
-        CLOSED;
+    private enum State {
+        RUNNING, CANCELLED, END, CLOSED
     }
 }

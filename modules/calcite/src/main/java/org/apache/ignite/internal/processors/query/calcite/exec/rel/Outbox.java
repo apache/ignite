@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
@@ -39,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * A part of exchange.
  */
-public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, AutoCloseable {
+public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, SingleNode<Row>, Downstream<Row> {
     /** */
     private final ExchangeService exchange;
 
@@ -88,17 +87,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         this.dest = dest;
     }
 
-    /**
-     * @return Query ID.
-     */
-    public UUID queryId() {
-        return context().queryId();
-    }
-
-    /**
-     * @return Exchange ID.
-     */
-    public long exchangeId() {
+    /** {@inheritDoc} */
+    @Override public long exchangeId() {
         return exchangeId;
     }
 
@@ -165,8 +155,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
         nodeBuffers.values().forEach(b -> b.onError(e));
-
-        close();
     }
 
     /** {@inheritDoc} */
@@ -211,9 +199,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void sendInboxClose(UUID nodeId, int batchId) {
+    private void sendInboxClose(UUID nodeId) {
         try {
-            exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+            exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId);
         }
         catch (IgniteCheckedException e) {
             U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);
@@ -269,7 +257,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     /** */
     public void onNodeLeft(UUID nodeId) {
         if (nodeId.equals(ctx.originatingNodeId()))
-            ctx.execute(() -> onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']')));
+            ctx.execute(this::close);
     }
 
     /** */
@@ -331,12 +319,11 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             if (hwm == Integer.MAX_VALUE)
                 return;
 
-            int batchId = hwm + 1;
             hwm = Integer.MAX_VALUE;
 
             curr = null;
 
-            sendInboxClose(nodeId, batchId);
+            sendInboxClose(nodeId);
         }
 
         /** */

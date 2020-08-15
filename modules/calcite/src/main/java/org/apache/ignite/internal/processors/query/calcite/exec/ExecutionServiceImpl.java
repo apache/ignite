@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -716,48 +717,46 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         register(info);
 
         // start remote execution
-        if (fragments.size() > 1) {
-            for (int i = 1; i < fragments.size(); i++) {
-                Fragment fragment0 = fragments.get(i);
-                NodesMapping mapping0 = plan.fragmentMapping(fragment0);
+        for (int i = 1; i < fragments.size(); i++) {
+            Fragment fragment0 = fragments.get(i);
+            NodesMapping mapping0 = plan.fragmentMapping(fragment0);
 
-                boolean error = false;
+            boolean error = false;
 
-                for (UUID nodeId : mapping0.nodes()) {
-                    if (error)
-                        info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
-                    else {
-                        try {
-                            FragmentDescription fragmentDesc0 = new FragmentDescription(
-                                fragment0.fragmentId(),
-                                mapping0.partitions(nodeId),
-                                mapping0.assignments().size(),
-                                plan.targetMapping(fragment0),
-                                plan.remoteSources(fragment0)
-                            );
+            for (UUID nodeId : mapping0.nodes()) {
+                if (error)
+                    info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
+                else {
+                    try {
+                        FragmentDescription fragmentDesc0 = new FragmentDescription(
+                            fragment0.fragmentId(),
+                            mapping0.partitions(nodeId),
+                            mapping0.assignments().size(),
+                            plan.targetMapping(fragment0),
+                            plan.remoteSources(fragment0)
+                        );
 
-                            QueryStartRequest req = new QueryStartRequest(
-                                qryId,
-                                pctx.schemaName(),
-                                toJson(fragment0.root()),
-                                pctx.topologyVersion(),
-                                fragmentDesc0,
-                                pctx.parameters());
+                        QueryStartRequest req = new QueryStartRequest(
+                            qryId,
+                            pctx.schemaName(),
+                            toJson(fragment0.root()),
+                            pctx.topologyVersion(),
+                            fragmentDesc0,
+                            pctx.parameters());
 
-                            messageService().send(nodeId, req);
-                        }
-                        catch (Exception e) {
-                            info.onResponse(nodeId, fragment0.fragmentId(), e);
-                            error = true;
-                        }
+                        messageService().send(nodeId, req);
+                    }
+                    catch (Exception e) {
+                        info.onResponse(nodeId, fragment0.fragmentId(), e);
+                        error = true;
                     }
                 }
+            }
 
-                if (error) {
-                    info.awaitAllReplies();
+            if (error) {
+                info.awaitAllReplies();
 
-                    throw new AssertionError(); // Previous call must throw an exception
-                }
+                throw new AssertionError(); // Previous call must throw an exception
             }
         }
 
@@ -838,65 +837,49 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
+        ExecutionContext<Row> execCtx = new ExecutionContext<>(taskExecutor(), ctx, msg.queryId(),
+            msg.fragmentDescription(), handler, Commons.parametersMap(msg.parameters()));
 
+        Outbox<Row> node;
         try {
-            ExecutionContext<Row> execCtx = new ExecutionContext<>(
-                taskExecutor(),
-                ctx,
-                msg.queryId(),
-                msg.fragmentDescription(),
-                handler,
-                Commons.parametersMap(msg.parameters())
-            );
-
-            Node<Row> node = new LogicalRelImplementor<>(
+            node = new LogicalRelImplementor<>(
                 execCtx,
                 partitionService(),
                 mailboxRegistry(),
                 exchangeService(),
                 failureProcessor())
                 .go(fromJson(ctx, msg.root()));
-
-            assert node instanceof Outbox : node;
-
-            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
-
-            node.context().execute(((Outbox<Row>) node)::init);
         }
-        catch (Throwable ex) {
-            Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.fragmentDescription().fragmentId());
-            Collection<Outbox<?>> outboxes = mailboxRegistry.outboxes(msg.queryId());
+        catch (Exception ex) {
+            U.error(log, "Failed to build execution tree. ", ex);
 
-            if (ex instanceof ClusterTopologyCheckedException) {
-                if (inbox != null)
-                    inbox.onNodeLeft(nodeId);
-
-                outboxes.forEach(n -> n.onNodeLeft(nodeId));
-            }
-            else {
-                if (inbox != null)
-                    inbox.context().execute(inbox::close);
-
-                outboxes.forEach(n -> n.context().execute(() -> n.onError(ex)));
-            }
-
-            U.warn(log, "Failed to start query. [nodeId=" + nodeId + ']', ex);
+            mailboxRegistry.outboxes(msg.queryId(), msg.fragmentId(), -1)
+                .forEach(Outbox::close);
+            mailboxRegistry.inboxes(msg.queryId(), msg.fragmentId(), -1)
+                .forEach(Inbox::close);
 
             try {
-                messageService().send(
-                    nodeId,
-                    new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId(), ex)
-                );
+                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
             }
             catch (IgniteCheckedException e) {
-                e.addSuppressed(ex);
-
                 U.warn(log, "Failed to send reply. [nodeId=" + nodeId + ']', e);
             }
 
-            if (ex instanceof Error)
-                throw (Error)ex;
+            return;
         }
+
+        try {
+            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Failed to send reply. [nodeId=" + nodeId + ']', e);
+
+            node.onNodeLeft(nodeId);
+
+            return;
+        }
+
+        node.init();
     }
 
     /** */
@@ -907,17 +890,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         if (info != null)
             info.onResponse(nodeId, msg.fragmentId(), msg.error());
-    }
-
-    /** */
-    private void onCursorClose(RootNode<?> rootNode) {
-        assert rootNode.state() != RootNode.State.RUNNING;
-
-        QueryInfo info = running.get(rootNode.queryId());
-
-        assert Objects.nonNull(info);
-
-        info.close();
     }
 
     /** */
@@ -998,7 +970,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
-            RootNode<Row> rootNode = new RootNode<>(ctx, ExecutionServiceImpl.this::onCursorClose);
+            RootNode<Row> rootNode = new RootNode<>(ctx, this::tryClose);
             rootNode.register(root);
 
             this.root = rootNode;
@@ -1026,7 +998,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         /** {@inheritDoc} */
         @Override public void doCancel() {
-            close();
+            tryClose();
         }
 
         /** */
@@ -1052,7 +1024,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         /**
          * Can be called multiple times after receive each error at {@link #onResponse(RemoteFragmentKey, Throwable)}.
          */
-        private void close() {
+        private void tryClose() {
             QueryState state0 = null;
 
             synchronized (this) {
@@ -1067,9 +1039,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (state0 == QueryState.CLOSED) {
+                // 1) notify user iterator if didn't
+                root.close();
+
+                // 2) unregister runing query
+                running.remove(ctx.queryId());
+
+                // 3) close local execution tree fragment
                 root.proceedClose();
 
-                running.remove(ctx.queryId());
+                // 4) close remote fragments
+                for (UUID nodeId : remotes) {
+                    try {
+                        exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                    }
+                }
             }
         }
 
@@ -1096,11 +1083,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 for (RemoteFragmentKey fragment : fragments)
                     onResponse(fragment, ex);
             }
-
-            if (remotes.contains(nodeId)) {
-                root.context().execute(() -> root.onError(
-                    new ClusterTopologyCheckedException("Failed to execute query, node left. nodeId=" + nodeId)));
-            }
         }
 
         /** */
@@ -1123,16 +1105,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         this.error = error;
                 }
 
-                boolean empty = waiting.isEmpty();
+                close = state == QueryState.CLOSING || this.error != null;
 
-                close = empty && (state == QueryState.CLOSING || this.error != null);
-
-                if (empty)
+                if (waiting.isEmpty())
                     notifyAll();
             }
 
             if (close)
-                close();
+                tryClose();
         }
     }
 }

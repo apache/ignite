@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class InboxCloseMessage implements ExecutionContextAware {
+public class InboxCloseMessage implements CalciteMessage {
     /** */
     private UUID queryId;
 
@@ -37,28 +37,28 @@ public class InboxCloseMessage implements ExecutionContextAware {
     private long exchangeId;
 
     /** */
-    private int batchId;
-
-    /** */
     public InboxCloseMessage() {
         // No-op.
     }
 
     /** */
-    public InboxCloseMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
+    public InboxCloseMessage(UUID queryId, long fragmentId, long exchangeId) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
-        this.batchId = batchId;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID queryId() {
+    /**
+     * @return Query ID.
+     */
+    public UUID queryId() {
         return queryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
         return fragmentId;
     }
 
@@ -67,13 +67,6 @@ public class InboxCloseMessage implements ExecutionContextAware {
      */
     public long exchangeId() {
         return exchangeId;
-    }
-
-    /**
-     * @return Batch ID.
-     */
-    public int batchId() {
-        return batchId;
     }
 
     /** {@inheritDoc} */
@@ -89,24 +82,18 @@ public class InboxCloseMessage implements ExecutionContextAware {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchId", batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeLong("exchangeId", exchangeId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("fragmentId", fragmentId))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -126,14 +113,6 @@ public class InboxCloseMessage implements ExecutionContextAware {
 
         switch (reader.state()) {
             case 0:
-                batchId = reader.readInt("batchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 exchangeId = reader.readLong("exchangeId");
 
                 if (!reader.isLastRead())
@@ -141,7 +120,7 @@ public class InboxCloseMessage implements ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 fragmentId = reader.readLong("fragmentId");
 
                 if (!reader.isLastRead())
@@ -149,7 +128,7 @@ public class InboxCloseMessage implements ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -169,6 +148,6 @@ public class InboxCloseMessage implements ExecutionContextAware {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 }

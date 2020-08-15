@@ -400,7 +400,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** */
-    public Node<Row> go(IgniteRel rel) {
-        return visit(rel);
+    public <T extends Node<Row>> T go(IgniteRel rel) {
+        return (T)visit(rel);
     }
 }

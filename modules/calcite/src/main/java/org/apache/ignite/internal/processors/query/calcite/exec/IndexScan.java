@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosure;
+import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -50,22 +52,23 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Scan on index.
  */
 public class IndexScan<Row> implements Iterable<Row> {
     /** */
+    private final GridKernalContext kctx;
+
+    /** */
+    private final GridCacheContext<?, ?> cctx;
+
+    /** */
     private final ExecutionContext<Row> ectx;
 
     /** */
     private final CacheObjectContext coCtx;
-
-    /** */
-    private final GridKernalContext ctx;
-
-    /** */
-    private final GridCacheContext<?, ?> cacheCtx;
 
     /** */
     private final TableDescriptor desc;
@@ -94,118 +97,126 @@ public class IndexScan<Row> implements Iterable<Row> {
     /** */
     private final MvccSnapshot mvccSnapshot;
 
-    /** */
-    private List<GridDhtLocalPartition> partsToReserve;
-
     /**
-     * @param ctx Cache context.
+     * @param ectx Cache context.
      * @param igniteIdx Index tree.
      * @param filters Additional filters.
      * @param lowerBound Lower index scan bound.
      * @param upperBound Upper index scan bound.
      */
     public IndexScan(
-        ExecutionContext<Row> ctx,
+        ExecutionContext<Row> ectx,
         IgniteIndex igniteIdx,
         Predicate<Row> filters,
         Row lowerBound,
         Row upperBound
     ) {
-        ectx = ctx;
+        this.ectx = ectx;
         desc = igniteIdx.table().descriptor();
+        cctx = desc.cacheContext();
+        kctx = cctx.kernalContext();
+        coCtx = cctx.cacheObjectContext();
+
+        RelDataType rowType = desc.selectRowType(this.ectx.getTypeFactory());
+
+        factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         idx = igniteIdx.index();
+        topVer = ectx.planningContext().topologyVersion();
         this.filters = filters;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        cacheCtx = igniteIdx.table().descriptor().cacheContext();
-        coCtx = cacheCtx.cacheObjectContext();
-        this.ctx = coCtx.kernalContext();
-        topVer = ctx.planningContext().topologyVersion();
-        partsArr = ctx.partitions();
-        mvccSnapshot = ctx.mvccSnapshot();
-
-        RelDataType rowType = desc.selectRowType(ectx.getTypeFactory());
-        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
+        partsArr = ectx.partitions();
+        mvccSnapshot = ectx.mvccSnapshot();
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
-        H2TreeFilterClosure filterC = filterClosure();
+        List<GridDhtLocalPartition> reserved = reserve();
+        try {
+            H2Row lower = lowerBound == null ? null : new H2PlainRow(values(coCtx, ectx, lowerBound));
+            H2Row upper = upperBound == null ? null : new H2PlainRow(values(coCtx, ectx, upperBound));
 
-        H2Row lower = lowerBound == null ? null : new CalciteH2Row<>(coCtx, ectx, lowerBound);
-        H2Row upper = upperBound == null ? null : new CalciteH2Row<>(coCtx, ectx, upperBound);
+            return new IteratorImpl(reserved, idx.find(lower, upper, filterClosure()));
+        }
+        catch (Exception e) {
+            release(reserved);
 
-        reservePartitions();
-
-        GridCursor<H2Row> cur = idx.find(lower, upper, filterC);
-
-        return new CursorIteratorWrapper(cur);
+            throw e;
+        }
     }
 
     /** */
-    public H2TreeFilterClosure filterClosure() {
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(ctx, topVer, partsArr);
-        IndexingQueryCacheFilter f = filter.forCache(cacheCtx.name());
+    private H2TreeFilterClosure filterClosure() {
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, partsArr);
+        IndexingQueryCacheFilter f = filter.forCache(cctx.name());
         H2TreeFilterClosure filterC = null;
 
         if (f != null || mvccSnapshot != null )
-            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cacheCtx, ectx.planningContext().logger());
+            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cctx, ectx.planningContext().logger());
 
         return filterC;
     }
 
     /** */
-    private void reservePartitions() {
-        assert partsToReserve == null : partsToReserve;
+    @NotNull public List<GridDhtLocalPartition> reserve() {
+        List<GridDhtLocalPartition> toReserve;
 
-        partsToReserve = gatherPartitions(cacheCtx, partsArr);
-
-        for (GridDhtLocalPartition part : partsToReserve) {
-            if (part == null || !part.reserve())
-                throw reservationException();
-            else if (part.state() != GridDhtPartitionState.OWNING) {
-                part.release();
-
-                throw reservationException();
-            }
-        }
-    }
-
-    /** */
-    private List<GridDhtLocalPartition> gatherPartitions(GridCacheContext<?, ?> ctx, int[] arr ) {
-        if (ctx.isReplicated()) {
-            int partsCnt = ctx.affinity().partitions();
-            GridDhtPartitionTopology top = ctx.topology();
-            List<GridDhtLocalPartition> parts = new ArrayList<>(partsCnt);
-
+        if (cctx.isReplicated()) {
+            int partsCnt = cctx.affinity().partitions();
+            toReserve = new ArrayList<>(partsCnt);
+            GridDhtPartitionTopology top = cctx.topology();
             for (int i = 0; i < partsCnt; i++)
-                parts.add(top.localPartition(i));
-
-            return parts;
+                toReserve.add(top.localPartition(i));
         }
-        else if (ctx.isPartitioned()) {
-            assert arr != null;
-            List<GridDhtLocalPartition> parts = new ArrayList<>(arr.length);
-            GridDhtPartitionTopology top = ctx.topology();
+        else if (cctx.isPartitioned()) {
+            assert partsArr != null;
 
-            for (int i = 0; i < arr.length; i++)
-                parts.add(top.localPartition(arr[i]));
-
-            return parts;
+            toReserve = new ArrayList<>(partsArr.length);
+            GridDhtPartitionTopology top = cctx.topology();
+            for (int i = 0; i < partsArr.length; i++)
+                toReserve.add(top.localPartition(partsArr[i]));
         }
         else {
-            assert ctx.isLocal();
+            assert cctx.isLocal();
 
-            return Collections.emptyList();
+            toReserve = Collections.emptyList();
         }
+
+        List<GridDhtLocalPartition> reserved = new ArrayList<>(toReserve.size());
+
+        try {
+            for (GridDhtLocalPartition part : toReserve) {
+                if (part == null || !part.reserve())
+                    throw reservationException();
+                else if (part.state() != GridDhtPartitionState.OWNING) {
+                    part.release();
+
+                    throw reservationException();
+                }
+
+                reserved.add(part);
+            }
+        }
+        catch (Exception e) {
+            release(reserved);
+
+            throw e;
+        }
+
+        System.out.println("reserved " + this);
+
+        return reserved;
     }
 
     /** */
-    private void releasePartitions() {
-        assert partsToReserve != null;
-
-        for (GridDhtLocalPartition part : partsToReserve)
+    private void release(List<GridDhtLocalPartition> reserved) {
+        for (Iterator<GridDhtLocalPartition> it = reserved.iterator(); it.hasNext(); ) {
+            GridDhtLocalPartition part = it.next();
             part.release();
+            it.remove();
+        }
+
+        System.out.println("released " + this);
     }
 
     /** */
@@ -214,23 +225,46 @@ public class IndexScan<Row> implements Iterable<Row> {
     }
 
     /** */
-    private class CursorIteratorWrapper extends GridCloseableIteratorAdapter<Row> {
+    @NotNull private Value[] values(CacheObjectValueContext cctx, ExecutionContext<Row> ectx, Row row) {
+        try {
+            RowHandler<Row> rowHnd = ectx.rowHandler();
+            int rowLen = rowHnd.columnCount(row);
+
+            Value[] values = new Value[rowLen];
+            for (int i = 0; i < rowLen; i++) {
+                Object o = rowHnd.get(i, row);
+
+                if (o != null)
+                    values[i] = H2Utils.wrap(cctx, o, DataType.getTypeFromClass(o.getClass()));
+            }
+
+            return values;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wrap object into H2 Value.", e);
+        }
+    }
+
+    /** */
+    private class IteratorImpl extends GridCloseableIteratorAdapter<Row> {
+        /** */
+        private final List<GridDhtLocalPartition> reserved;
+
         /** */
         private final GridCursor<H2Row> cursor;
 
         /** Next element. */
         private Row next;
 
-        /**
-         * @param cursor Cursor.
-         */
-        CursorIteratorWrapper(GridCursor<H2Row> cursor) {
-            assert cursor != null;
+        public IteratorImpl(@NotNull List<GridDhtLocalPartition> reserved, @NotNull GridCursor<H2Row> cursor) {
+            this.reserved = reserved;
             this.cursor = cursor;
         }
 
         /** {@inheritDoc} */
         @Override protected Row onNext() {
+            assert cursor != null;
+
             if (next == null)
                 throw new NoSuchElementException();
 
@@ -243,6 +277,8 @@ public class IndexScan<Row> implements Iterable<Row> {
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
+            assert cursor != null;
+
             if (next != null)
                 return true;
 
@@ -259,57 +295,7 @@ public class IndexScan<Row> implements Iterable<Row> {
 
         /** {@inheritDoc} */
         @Override protected void onClose() {
-            releasePartitions();
-        }
-    }
-
-    /** */
-    private static class CalciteH2Row<Row> extends H2Row {
-        /** */
-        private final Value[] values;
-
-        /** */
-        CalciteH2Row(CacheObjectValueContext coCtx, ExecutionContext<Row> ctx, Row row) {
-            try {
-                RowHandler<Row> rowHnd = ctx.rowHandler();
-
-                int colCnt = rowHnd.columnCount(row);
-
-                values = new Value[colCnt];
-
-                for (int i = 0; i < colCnt; i++) {
-                    Object o = rowHnd.get(i, row);
-
-                    if (o != null) {
-                        Value v = H2Utils.wrap(coCtx, o, DataType.getTypeFromClass(o.getClass()));
-
-                        values[i] = v;
-                    }
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to wrap object into H2 Value.", e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean indexSearchRow() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnCount() {
-            return values.length;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value getValue(int idx) {
-            return values[idx];
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(int idx, Value v) {
-            throw new AssertionError("Not supported.");
+            release(reserved);
         }
     }
 }

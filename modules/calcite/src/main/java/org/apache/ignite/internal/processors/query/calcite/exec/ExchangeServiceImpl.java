@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescr
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -118,8 +120,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new InboxCloseMessage(qryId, fragmentId, exchangeId, batchId));
+    @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        messageService().send(nodeId, new InboxCloseMessage(qryId, fragmentId, exchangeId));
     }
 
     /** {@inheritDoc} */
@@ -155,32 +157,40 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean alive(UUID nodeId) {
+        return messageService().alive(nodeId);
+    }
+
     /** */
     protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
-        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
-
-        if (inbox != null)
-            inbox.close();
+        Collection<Inbox<?>> inboxes = mailboxRegistry().inboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
+        if (!F.isEmpty(inboxes)) {
+            for (Inbox<?> inbox : inboxes)
+                inbox.context().execute(inbox::close);
+        }
         else if (log.isDebugEnabled()) {
             log.debug("Stale inbox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
                 "queryId=" + msg.queryId() + ", " +
                 "fragmentId=" + msg.fragmentId() + ", " +
-                "exchangeId=" + msg.exchangeId() + ", " +
-                "batchId=" + msg.batchId() + "]");
+                "exchangeId=" + msg.exchangeId() + "]");
         }
     }
 
     /** */
     protected void onMessage(UUID nodeId, OutboxCloseMessage msg) {
-        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
-
-        if (outboxes != null)
-            outboxes.forEach(Outbox::close);
+        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
+        if (!F.isEmpty(outboxes)) {
+            for (Outbox<?> outbox : outboxes)
+                outbox.context().execute(outbox::close);
+        }
         else if (log.isDebugEnabled()) {
             log.debug("Stale oubox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
-                "queryId=" + msg.queryId() + ", " + ']');
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + "]");
         }
     }
 

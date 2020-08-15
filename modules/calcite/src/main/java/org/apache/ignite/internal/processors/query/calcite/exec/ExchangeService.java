@@ -56,9 +56,8 @@ public interface ExchangeService extends Service {
      * @param qryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
-     * @param batchId Batch ID.
      */
-    void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException;
 
     /**
      * Sends cancel request.
@@ -84,4 +83,10 @@ public interface ExchangeService extends Service {
         long exchangeId,
         Throwable err
     ) throws IgniteCheckedException;
+
+    /**
+     * @param nodeId Node ID.
+     * @return {@code true} if node is alive, {@code false} otherwise.
+     */
+    boolean alive(UUID nodeId);
 }

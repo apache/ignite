@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class OutboxCloseMessage implements ExecutionContextAware {
+public class OutboxCloseMessage implements CalciteMessage {
     /** */
     private UUID queryId;
 
@@ -48,13 +48,17 @@ public class OutboxCloseMessage implements ExecutionContextAware {
         this.exchangeId = exchangeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID queryId() {
+    /**
+     * @return Query ID.
+     */
+    public UUID queryId() {
         return queryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
         return fragmentId;
     }
 

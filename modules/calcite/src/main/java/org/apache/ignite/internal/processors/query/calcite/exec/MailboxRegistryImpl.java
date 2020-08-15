@@ -27,25 +27,21 @@ import java.util.stream.Collectors;
 
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Mailbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
-import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class MailboxRegistryImpl extends AbstractService implements MailboxRegistry {
+    /** */
+    private static final Predicate<Mailbox<?>> ALWAYS_TRUE = o -> true;
+
     /** */
     private final Map<MailboxKey, Outbox<?>> locals;
 
@@ -122,24 +118,16 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Inbox<?>> inboxes(@Nullable UUID qryId) {
-        if (qryId == null)
-            return remotes.values();
-
-        return remotes.entrySet().stream()
-            .filter(e -> e.getKey().qryId.equals(qryId))
-            .map(Map.Entry::getValue)
+    @Override public Collection<Inbox<?>> inboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
+        return remotes.values().stream()
+            .filter(makeFilter(qryId, fragmentId, exchangeId))
             .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Outbox<?>> outboxes(@Nullable UUID qryId) {
-        if (qryId == null)
-            return locals.values();
-
-        return locals.entrySet().stream()
-            .filter(e -> e.getKey().qryId.equals(qryId))
-            .map(Map.Entry::getValue)
+    @Override public Collection<Outbox<?>> outboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
+        return locals.values().stream()
+            .filter(makeFilter(qryId, fragmentId, exchangeId))
             .collect(Collectors.toList());
     }
 
@@ -159,10 +147,22 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        locals.values().stream().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
-        remotes.values().stream().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
+        locals.values().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
+        remotes.values().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
     }
 
+    /** */
+    private static Predicate<Mailbox<?>> makeFilter(@Nullable UUID qryId, long fragmentId, long exchangeId) {
+        Predicate<Mailbox<?>> filter = ALWAYS_TRUE;
+        if (qryId != null)
+            filter = filter.and(mailbox -> Objects.equals(mailbox.queryId(), qryId));
+        if (fragmentId != -1)
+            filter = filter.and(mailbox -> mailbox.fragmentId() == fragmentId);
+        if (exchangeId != -1)
+            filter = filter.and(mailbox -> mailbox.exchangeId() == exchangeId);
+
+        return filter;
+    }
 
     /** */
     private static class MailboxKey {
