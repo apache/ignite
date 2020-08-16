@@ -174,7 +174,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         IgniteEx n = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders());
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> expStrats =
-            Stream.of(new NoOpWarmUp()).collect(toMap(NoOpWarmUp::configClass, identity()));
+            Stream.of(new NoOpWarmUp(), new LoadAllWarmUp()).collect(toMap(WarmUpStrategy::configClass, identity()));
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> actStrats = CU.warmUpStrategies(n.context());
 

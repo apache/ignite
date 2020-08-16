@@ -5540,12 +5540,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             log.info("Warm-up start.");
 
                         if (log.isInfoEnabled()) {
-                            log.info("Start warm-up for data region: [name=" + regCfg.getName()
+                            log.info("Start warm-up for data region [name=" + regCfg.getName()
                                 + ", warmUpStrategy=" + warmUpStrat + ", warmUpConfig=" + warmUpCfg + ", isDefault="
                                 + (warmUpCfg == dfltWarmUpCfg) + ']');
                         }
 
                         warmUpStrat.warmUp(ctx, warmUpCfg, region);
+
+                        if (log.isInfoEnabled())
+                            log.info("Finish of warm-up data region: " + region.config().getName());
                     }
                 }
             }

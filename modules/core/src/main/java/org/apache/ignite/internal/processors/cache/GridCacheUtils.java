@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUp;
 import org.apache.ignite.internal.processors.cache.warmup.NoOpWarmUp;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
@@ -2117,7 +2118,7 @@ public class GridCacheUtils {
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> strategies = new HashMap<>();
 
         // Adding default strategies.
-        for (WarmUpStrategy<?> strategy : new WarmUpStrategy[] {new NoOpWarmUp()})
+        for (WarmUpStrategy<?> strategy : new WarmUpStrategy[] {new NoOpWarmUp(), new LoadAllWarmUp()})
             strategies.putIfAbsent(strategy.configClass(), strategy);
 
         // Adding strategies from plugins.
