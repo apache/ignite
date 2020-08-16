@@ -48,7 +48,7 @@ namespace ignite
                  */
                 class TransactionImpl
                 {
-                    typedef ThreadLocalInstance<int32_t> TL_TXID;
+                    typedef ThreadLocalInstance<SP_TransactionImpl> TL_TXID;
 
                 public:
                     /**
@@ -174,8 +174,8 @@ namespace ignite
                     /** Cache affinity mapping read-write lock. */
                     static ReadWriteLock txToIdRWLock;
 
-                    /** TxId to transaction map. */
-                    static std::map<int32_t, SP_TransactionImpl> txToId;
+                    /** All active transactions. */
+                    static std::set<int32_t> txToId;
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
                 };

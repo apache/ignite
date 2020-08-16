@@ -32,14 +32,14 @@ namespace ignite
             {
                 TransactionImpl::TL_TXID TransactionImpl::threadTx;
 
+                std::set<int32_t> TransactionImpl::txToId;
+
+                ReadWriteLock TransactionImpl::txToIdRWLock;
+
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
                 }
-
-                std::map<int32_t, SP_TransactionImpl> TransactionImpl::txToId;
-
-                ReadWriteLock TransactionImpl::txToIdRWLock;
 
                 template<typename ReqT, typename RspT>
                 void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
@@ -70,30 +70,28 @@ namespace ignite
                     int32_t txSize,
                     const char* label)
                 {
-                    int32_t txId = threadTx.Get();
+                    SP_TransactionImpl tx = threadTx.Get();
 
-                    SP_TransactionImpl tx;
+                    TransactionImpl* ptr = tx.Get();
 
-                    if (txId != 0)
+                    if (ptr)
                     {
-                        std::map<int32_t, SP_TransactionImpl>::iterator it;
+                        std::set<int32_t>::iterator it;
 
                         {
                             RwSharedLockGuard lock(txToIdRWLock);
 
-                            it = txToId.find(txId);
+                            it = txToId.find(ptr->TxId());
 
-                            if (it != txToId.end())
-                                tx = it->second;
-                            else
+                            if (it == txToId.end())
+                            {
                                 throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
-                        }
+                            }
 
-                        TransactionImpl* ptr = tx.Get();
-
-                        if (ptr && !ptr->IsClosed())
-                        {
-                            throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
+                            if (!ptr->IsClosed())
+                            {
+                                throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
+                            }
                         }
                     }
 
@@ -107,39 +105,24 @@ namespace ignite
 
                     tx = SP_TransactionImpl(new TransactionImpl(txs, curTxId, concurrency, isolation, timeout, txSize));
 
-                    threadTx.Set(curTxId);
+                    threadTx.Set(tx);
 
                     RwExclusiveLockGuard lock(txToIdRWLock);
 
-                    txToId[tx.Get()->TxId()] = tx;
+                    txToId.insert(curTxId);
 
                     return tx;
                 }
 
                 SP_TransactionImpl TransactionImpl::GetCurrent()
                 {
-                    int32_t txId = threadTx.Get();
+                    SP_TransactionImpl tx = threadTx.Get();
 
-                    SP_TransactionImpl tx;
+                    TransactionImpl* ptr = tx.Get();
 
-                    std::map<int32_t, SP_TransactionImpl>::iterator it;
-
+                    if (ptr)
                     {
-                        RwSharedLockGuard lock(txToIdRWLock);
-
-                        it = txToId.find(txId);
-
-                        if (it != txToId.end())
-                        {
-                            tx = it->second;
-                        }
-                    }
-
-                    if (tx.IsValid())
-                    {
-                        TransactionImpl* ptr = tx.Get();
-
-                        if (ptr && ptr->IsClosed())
+                        if (ptr->IsClosed())
                         {
                             tx = SP_TransactionImpl();
 
@@ -239,14 +222,16 @@ namespace ignite
                     threadTx.Set(0);
                 }
 
-                void TransactionImpl::txThreadCheck(const TransactionImpl& tx)
+                void TransactionImpl::txThreadCheck(const TransactionImpl& inTx)
                 {
-                    int32_t currentTxId = threadTx.Get();
+                    SP_TransactionImpl tx = threadTx.Get();
 
-                    if (currentTxId == 0)
+                    TransactionImpl* ptr = tx.Get();
+
+                    if (!ptr)
                         throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
 
-                    if (currentTxId != tx.TxId())
+                    if (ptr->TxId() != inTx.TxId())
                         throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_DIFFERENT_THREAD);
                 }
             }
