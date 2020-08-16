@@ -32,10 +32,6 @@ namespace ignite
             {
                 TransactionImpl::TL_TXID TransactionImpl::threadTx;
 
-                std::set<int32_t> TransactionImpl::txToId;
-
-                ReadWriteLock TransactionImpl::txToIdRWLock;
-
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
@@ -74,25 +70,9 @@ namespace ignite
 
                     TransactionImpl* ptr = tx.Get();
 
-                    if (ptr)
+                    if (ptr && !ptr->IsClosed())
                     {
-                        std::set<int32_t>::iterator it;
-
-                        {
-                            RwSharedLockGuard lock(txToIdRWLock);
-
-                            it = txToId.find(ptr->TxId());
-
-                            if (it == txToId.end())
-                            {
-                                throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
-                            }
-
-                            if (!ptr->IsClosed())
-                            {
-                                throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
-                            }
-                        }
+                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
                     }
 
                     TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize, label);
@@ -106,10 +86,6 @@ namespace ignite
                     tx = SP_TransactionImpl(new TransactionImpl(txs, curTxId, concurrency, isolation, timeout, txSize));
 
                     threadTx.Set(tx);
-
-                    RwExclusiveLockGuard lock(txToIdRWLock);
-
-                    txToId.insert(curTxId);
 
                     return tx;
                 }
@@ -214,10 +190,6 @@ namespace ignite
                 void TransactionImpl::txThreadEnd(TransactionImpl& tx)
                 {
                     tx.Closed();
-
-                    RwExclusiveLockGuard lock(txToIdRWLock);
-
-                    txToId.erase(tx.TxId());
 
                     threadTx.Set(0);
                 }

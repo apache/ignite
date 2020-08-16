@@ -148,7 +148,7 @@ namespace ignite
 
                 private:
                     /** Transactions implementation. */
-                   TransactionsImpl& txs;
+                    TransactionsImpl& txs;
 
                     /** Current transaction Id. */
                     int32_t txId;
@@ -170,12 +170,6 @@ namespace ignite
 
                     /** Closed flag. */
                     bool closed;
-
-                    /** Cache affinity mapping read-write lock. */
-                    static ReadWriteLock txToIdRWLock;
-
-                    /** All active transactions. */
-                    static std::set<int32_t> txToId;
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
                 };
@@ -266,8 +260,6 @@ namespace ignite
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
                 };
-
-                void txThreadCheck();
             }
         }
     }
