@@ -18,7 +18,7 @@
 #ifndef TRANSACTIONS_H
 #define TRANSACTIONS_H
 
-#include <iostream>
+#include <string>
 
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/transactions/transactions_proxy.h>
@@ -115,9 +115,9 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                ClientTransactions(common::concurrent::SharedPointer<void> impl) :
+                ClientTransactions(SharedPointer<void> impl) :
                     proxy(impl),
-                    label("")
+                    label(NULL)
                 {
                     // No-op.
                 }
@@ -125,7 +125,11 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~ClientTransactions() {}
+                ~ClientTransactions()
+                {
+                    if (label)
+                        delete label;
+                }
 
                 /**
                  * Start new transaction with completely clarify parameters.
@@ -143,7 +147,7 @@ namespace ignite
                         int64_t timeout = 0,
                         int32_t txSize = 0)
                 {
-                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize, label));
+                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize, label ? label : ""));
                 }
 
                 /**
@@ -176,10 +180,11 @@ namespace ignite
                  * @param impl Implementation.
                  */
                 ClientTransactions(TransactionsProxy& impl, const char *lbl) :
-                    proxy(impl),
-                    label(lbl)
+                    proxy(impl)
                 {
-                    // No-op.
+                    char* l = new char[strlen(lbl) + 1];
+
+                    label = strcpy(l, lbl);
                 }
             };
         }

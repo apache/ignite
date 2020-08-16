@@ -331,9 +331,16 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
 const std::string label = std::string("label_2_check");
 
+std::string label1 = std::string("label_2_check1");
+
 bool checkTxLabelMessage(const ignite::IgniteError& ex)
 {
     return std::string(ex.what()).find(label) != std::string::npos;
+}
+
+bool checkTxLabel1Message(const ignite::IgniteError& ex)
+{
+    return std::string(ex.what()).find("label_2_check1") != std::string::npos;
 }
 
 BOOST_AUTO_TEST_CASE(TestTxWithLabel)
@@ -351,7 +358,7 @@ BOOST_AUTO_TEST_CASE(TestTxWithLabel)
 
     transactions::ClientTransactions transactions = client.ClientTransactions();
 
-    transactions::ClientTransaction tx = transactions.withLabel(label.c_str()).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+    transactions::ClientTransaction tx = transactions.withLabel(label).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
 
     cache.Put(1, 10);
 
@@ -370,6 +377,20 @@ BOOST_AUTO_TEST_CASE(TestTxWithLabel)
     boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
 
     BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, !checkTxLabelMessage);
+
+    tx.Close();
+
+    // Label is gone
+
+    tx = transactions.withLabel(label1).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+    label1 = "NULL";
+
+    cache.Put(1, 10);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(2 * TX_TIMEOUT));
+
+    BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxLabel1Message);
 
     tx.Close();
 }
