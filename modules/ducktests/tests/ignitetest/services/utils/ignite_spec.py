@@ -201,7 +201,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
             str(start_ignite),
             java_class_name,
             self.CONFIG_FILE,
-            str(base64.b64encode(json.dumps(params).encode("UTF-8")))
+            str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
         ]
 
     def __jackson(self):
