@@ -4467,12 +4467,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Registers metrics.
      */
     private void registerMetrics() {
-        // Register cluster metrics even the metric component disabled to provide compatibility for legacy MBeans.
-        ctx.cluster().registerMetrics();
-
-        if (!ctx.metric().enabled())
-            return;
-
         MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
 
         reg.register("fullVersion", this::getFullVersion, String.class, FULL_VER_DESC);
@@ -4554,6 +4548,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         reg.register("loadBalancingSpiFormatted", this::getLoadBalancingSpiFormatted, String.class,
             LOAD_BALANCING_SPI_FORMATTED_DESC);
+
+        ctx.cluster().registerMetrics();
     }
 
     /**
