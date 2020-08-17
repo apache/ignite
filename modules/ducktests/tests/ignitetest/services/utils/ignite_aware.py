@@ -17,62 +17,34 @@
 This module contains the base class to build services aware of Ignite.
 """
 
-import os
 from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 from six import add_metaclass
 
-from ignitetest.services.utils.ignite_config import IgniteLoggerConfig, IgniteServerConfig, IgniteClientConfig
-from ignitetest.services.utils.ignite_path import IgnitePath
+from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
-from ignitetest.tests.utils.version import IgniteVersion
+from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
 
 @add_metaclass(ABCMeta)
-class IgniteAwareService(BackgroundThreadService):
+class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware):
     """
     The base class to build services aware of Ignite.
     """
-    # Root directory for persistent output
-    PERSISTENT_ROOT = "/mnt/service"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
-    WORK_DIR = os.path.join(PERSISTENT_ROOT, "work")
-    CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-config.xml")
-    LOG4J_CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-log4j.xml")
-
-    logs = {
-        "console_log": {
-            "path": STDOUT_STDERR_CAPTURE,
-            "collect_default": True}
-    }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, modules, client_mode, version, properties, jvm_options):
+    def __init__(self, context, num_nodes, properties, **kwargs):
+        """
+        **kwargs are params that passed to IgniteSpec
+        """
         super(IgniteAwareService, self).__init__(context, num_nodes)
-
-        global_jvm_options = context.globals.get("jvm_opts", "")
-
-        service_jvm_options = " ".join(map(lambda x: '-J' + x, jvm_options)) if jvm_options else ""
-
-        self.jvm_options = " ".join(filter(None, [global_jvm_options, service_jvm_options]))
 
         self.log_level = "DEBUG"
         self.properties = properties
 
-        if isinstance(version, IgniteVersion):
-            self.version = version
-        else:
-            self.version = IgniteVersion(version)
-
-        self.path = IgnitePath(self.version, context)
-        self.client_mode = client_mode
-
-        libs = modules or []
-        libs.extend(["ignite-log4j"])
-
-        self.user_libs = list(map(lambda m: self.path.module(m) + "/*", libs))
+        self.spec = resolve_spec(self, context, **kwargs)
 
     def start_node(self, node):
         self.init_persistent(node)
@@ -88,26 +60,15 @@ class IgniteAwareService(BackgroundThreadService):
         Init persistent directory.
         :param node: Ignite service node.
         """
-        logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
+        super(IgniteAwareService, self).init_persistent(node)
 
-        node.account.mkdirs(self.PERSISTENT_ROOT)
-
-        node_config = self.config().render(config_dir=self.PERSISTENT_ROOT,
-                                           work_dir=self.WORK_DIR,
-                                           properties=self.properties,
-                                           consistent_id=node.account.externally_routable_ip)
+        node_config = self.spec.config().render(config_dir=self.PERSISTENT_ROOT,
+                                                work_dir=self.WORK_DIR,
+                                                properties=self.properties,
+                                                consistent_id=node.account.externally_routable_ip)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
         node.account.create_file(self.CONFIG_FILE, node_config)
-        node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
-
-    @abstractmethod
-    def start_cmd(self, node):
-        """
-        Start up command for service.
-        :param node: Ignite service node.
-        """
-        raise NotImplementedError
 
     @abstractmethod
     def pids(self, node):
@@ -117,18 +78,9 @@ class IgniteAwareService(BackgroundThreadService):
         """
         raise NotImplementedError
 
-    def config(self):
-        """
-        :return: Ignite node configuration.
-        """
-        if self.client_mode:
-            return IgniteClientConfig(self.context)
-
-        return IgniteServerConfig(self.context)
-
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.start_cmd(node)
+        cmd = self.spec.command()
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -141,7 +93,6 @@ class IgniteAwareService(BackgroundThreadService):
         """
         return len(self.pids(node)) > 0
 
-    # pylint: disable=R0913
     def await_event_on_node(self, evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
         """
         Await for specific event message in a node's log file.
@@ -171,16 +122,3 @@ class IgniteAwareService(BackgroundThreadService):
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
-
-    def execute(self, command):
-        """
-        Execute command on all nodes.
-        :param command: Command to execute.
-        """
-        for node in self.nodes:
-            cmd = "%s 1>> %s 2>> %s" % \
-                  (self.path.script(command),
-                   self.STDOUT_STDERR_CAPTURE,
-                   self.STDOUT_STDERR_CAPTURE)
-
-            node.account.ssh(cmd)

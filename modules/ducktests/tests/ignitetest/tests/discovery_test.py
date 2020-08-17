@@ -29,8 +29,8 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
+from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7
 
 
 # pylint: disable=W0223
@@ -165,7 +165,7 @@ class DiscoveryTest(IgniteTest):
         self.servers = IgniteService(
             self.test_context,
             num_nodes=self.NUM_NODES,
-            modules=["ignite-zookeeper"],
+            modules=["zookeeper"],
             properties=properties,
             version=version)
 

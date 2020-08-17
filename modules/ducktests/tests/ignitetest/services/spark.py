@@ -20,13 +20,11 @@ This module contains spark service class.
 import os.path
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.services.service import Service
-
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ducktape.services.background_thread import BackgroundThreadService
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
-class SparkService(IgniteAwareService):
+class SparkService(BackgroundThreadService, PersistenceAware):
     """
     Start a spark node.
     """
@@ -36,15 +34,12 @@ class SparkService(IgniteAwareService):
     logs = {}
 
     # pylint: disable=R0913
-    def __init__(self, context, modules=None, version=DEV_BRANCH, num_nodes=3, properties=""):
+    def __init__(self, context, num_nodes=3):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        modules = modules or []
-        modules.extend(["ignite-spark"])
-
-        IgniteAwareService.__init__(self, context, num_nodes, modules, False, version, properties, None)
+        super(SparkService, self).__init__(context, num_nodes)
 
         self.log_level = "DEBUG"
 
@@ -59,11 +54,14 @@ class SparkService(IgniteAwareService):
             }
 
     def start(self):
-        Service.start(self)
+        BackgroundThreadService.start(self)
 
         self.logger.info("Waiting for Spark to start...")
 
     def start_cmd(self, node):
+        """
+        Prepare command to start Spark nodes
+        """
         if node == self.nodes[0]:
             script = "start-master.sh"
         else:
@@ -77,8 +75,7 @@ class SparkService(IgniteAwareService):
 
         return cmd
 
-    # pylint: disable=W0221
-    def start_node(self, node, timeout_sec=30):
+    def start_node(self, node):
         self.init_persistent(node)
 
         cmd = self.start_cmd(node)
@@ -93,6 +90,7 @@ class SparkService(IgniteAwareService):
 
         self.logger.debug("Monitoring - %s" % log_file)
 
+        timeout_sec = 30
         with node.account.monitor_log(log_file) as monitor:
             node.account.ssh(cmd)
             monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=5,
@@ -108,11 +106,17 @@ class SparkService(IgniteAwareService):
             node.account.ssh(os.path.join(SparkService.INSTALL_DIR, "sbin", "stop-slave.sh"))
 
     def clean_node(self, node):
+        """
+        Clean spark persistence files
+        """
         node.account.kill_java_processes(self.java_class_name(node),
                                          clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % SparkService.SPARK_PERSISTENT_ROOT, allow_fail=False)
 
     def pids(self, node):
+        """
+        :return: list of service pids on specific node
+        """
         try:
             cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.java_class_name(node)
             return list(node.account.ssh_capture(cmd, allow_fail=True, callback=int))

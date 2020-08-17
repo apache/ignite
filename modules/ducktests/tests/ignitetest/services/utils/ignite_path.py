@@ -31,11 +31,9 @@ class IgnitePath:
     SCRATCH_ROOT = "/mnt"
     IGNITE_INSTALL_ROOT = "/opt"
 
-    def __init__(self, version, context):
+    def __init__(self, version, project="ignite"):
         self.version = version
-        self.project = context.globals.get("project", "ignite")
-
-        home_dir = "%s-%s" % (self.project, str(self.version))
+        home_dir = "%s-%s" % (project, str(self.version))
         self.home = os.path.join(IgnitePath.IGNITE_INSTALL_ROOT, home_dir)
 
     def module(self, module_name):
@@ -46,7 +44,7 @@ class IgnitePath:
         if self.version.is_dev:
             module_path = os.path.join("modules", module_name, "target")
         else:
-            module_path = os.path.join("libs", "optional", module_name)
+            module_path = os.path.join("libs", "optional", "ignite-%s" % module_name)
 
         return os.path.join(self.home, module_path)
 
