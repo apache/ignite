@@ -21,7 +21,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # DuckerUp parameters are specified with env variables
 
 # Num of cotainers that ducktape will prepare for tests
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-9}
+IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
 
 # Image name to run nodes
 default_image_name="ducker-ignite-openjdk-8"

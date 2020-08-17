@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -71,7 +72,7 @@ public abstract class IgniteAwareApplication {
                 try {
                     U.sleep(100);
                 }
-                catch (Throwable e) {
+                catch (IgniteInterruptedCheckedException e) {
                     e.printStackTrace();
                 }
             }

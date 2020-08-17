@@ -32,7 +32,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import LATEST_2_7, DEV_BRANCH
+from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
 
 
 # pylint: disable=W0223
@@ -43,7 +43,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 5
+    NUM_NODES = 7
 
     FAILURE_DETECTION_TIMEOUT = 2000
 
