@@ -1155,7 +1155,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             try {
                 addrs = U.resolveLocalAddresses(locHost);
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IOException e) {
                 throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
                     e);
             }

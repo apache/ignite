@@ -15,15 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.camel;
+package org.apache.ignite.tests.p2p.cache;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
 
 /**
- * Camel streamer tests. Included into 'Streamers' run configuration.
+ * Car color
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
-public class IgniteCamelStreamerTestSuite {
+public enum Color implements Serializable {
+    /**
+     * Grey color.
+     */
+    GREY,
+
+    /**
+     * Red color.
+     */
+    RED,
+
+    /**
+     * Green color.
+     */
+    GREEN,
+
+    /**
+     * Purple color.
+     */
+    PURPLE,
+
+    /**
+     * Light blue color.
+     */
+    LIGHTBLUE
 }
