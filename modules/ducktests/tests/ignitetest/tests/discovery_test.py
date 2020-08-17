@@ -106,9 +106,9 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(DEV_BRANCH)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
+    @matrix(ignite_version=[str(DEV_BRANCH, LATEST_2_7)],
+            kill_coordinator=[True, False],
+            nodes_to_kill=[2, 1, 0],
             with_load=[False, True])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
@@ -179,8 +179,8 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
 
         for failed_id in ids_to_wait:
-            self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 60,
-                                             from_the_beginning=True, backoff_sec=0.05)
+            self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 20,
+                                             from_the_beginning=True, backoff_sec=0.01)
             # Save mono of last detected failure.
             time_holder = self.monotonic()
 
