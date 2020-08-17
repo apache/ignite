@@ -213,10 +213,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
     /**
      * Send request and handle response asynchronously.
-     *
-     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
-     * @throws ClientAuthenticationException When user name or password is invalid.
-     * @throws ClientAuthorizationException When user has no permission to perform operation.
      */
     public <T> IgniteInternalFuture<T> serviceAsync(
         ClientOperation op,

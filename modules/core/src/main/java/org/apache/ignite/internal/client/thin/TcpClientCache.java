@@ -41,6 +41,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteFuture;
 
 import static java.util.AbstractMap.SimpleEntry;
@@ -513,6 +514,33 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         // the transaction.
         return transactions.tx() == null ? ch.affinityService(cacheId, key, op, payloadWriter, payloadReader) :
             ch.service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Execute cache operation with a single key asynchronously.
+     */
+    private <T> IgniteFuture<T> cacheSingleKeyOperationAsync(
+        K key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> additionalPayloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException {
+        Consumer<PayloadOutputChannel> payloadWriter = req -> {
+            writeCacheInfo(req);
+            writeObject(req, key);
+
+            if (additionalPayloadWriter != null)
+                additionalPayloadWriter.accept(req);
+        };
+
+        // TODO: Affinity.
+        return new IgniteFutureImpl<>(ch.serviceAsync(op, payloadWriter, payloadReader));
+        /**
+        // Transactional operation cannot be executed on affinity node, it should be executed on node started
+        // the transaction.
+        return transactions.tx() == null ? ch.affinityService(cacheId, key, op, payloadWriter, payloadReader) :
+            ch.service(op, payloadWriter, payloadReader);
+         */
     }
 
     /** Write cache ID and flags. */
