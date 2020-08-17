@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.warmup;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -30,6 +31,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -55,13 +60,14 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(new WarmUpTestPluginProvider())
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDataRegionConfigurations(
                         new DataRegionConfiguration().setName("dr_0").setPersistenceEnabled(true)
-                            .setWarmUpConfiguration(!warmUp ? null : new LoadAllWarmUpConfiguration()),
+                            .setWarmUpConfiguration(!warmUp ? null : new LoadAllWarmUpConfigurationEx()),
                         new DataRegionConfiguration().setName("dr_1").setPersistenceEnabled(true)
-                            .setWarmUpConfiguration(!warmUp ? null : new LoadAllWarmUpConfiguration())
+                            .setWarmUpConfiguration(!warmUp ? null : new LoadAllWarmUpConfigurationEx())
                     )
             ).setCacheConfiguration(
                 cacheCfg("c_0", "g_0", "dr_0", Organization.queryEntity()),
@@ -89,7 +95,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         IgniteCache c4 = n.getOrCreateCache(cacheCfg("c_4", "g_2", "dr_0"));
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 5_000; i++) {
             n.cache("c_0").put("c_0" + i, new Organization(i, "c_0" + i));
             n.cache("c_1").put("c_1" + i, new Person(i, "c_1" + i, i));
             n.cache("c_2").put("c_2" + i, new Organization(i, "c_2" + i));
@@ -116,6 +122,73 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
             assertTrue(regName, actLoadedPages.containsKey(regName));
             assertEquals(regName, loadedPages, actLoadedPages.get(regName));
         });
+    }
+
+    /**
+     * Test checks that if memory is less than pds, not all pages in pds will warm-up.
+     * There may be evictions during warm-up, so count of pages loaded is not maximum.
+     * <p/>
+     * Steps:
+     * 1)Start node and fill it with data for first data region until it is 2 * {@code MIN_PAGE_MEMORY_SIZE};
+     * 2)Make a checkpoint;
+     * 3)Restart node with warm-up, change maximum data region size to {@code MIN_PAGE_MEMORY_SIZE},
+     * and listen for {@link LoadAllWarmUpEx#loadDataInfo};
+     * 4)Check that estimated count of pages to warm-up is between maximum and
+     * approximate minimum count of pages to load;
+     * 5)Checking that total count of pages loaded is between maximum and
+     * approximate minimum count of pages to load.
+     *
+     * Approximate value due to fact that there are already loaded pages at
+     * beginning of warm-up, as well as evictions occur during warm-up.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMemoryLessPds() throws Exception {
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ClusterState.ACTIVE);
+
+        int i = 0;
+
+        final long minMemSize = U.field(IgniteCacheDatabaseSharedManager.class, "MIN_PAGE_MEMORY_SIZE");
+
+        DataRegion dr_0 = n.context().cache().context().database().dataRegion("dr_0");
+
+        while (dr_0.pageMemory().loadedPages() * dr_0.pageMemory().systemPageSize() < 2 * minMemSize) {
+            n.cache("c_0").put("c_0" + i, new Organization(i, "c_0" + i));
+            n.cache("c_1").put("c_1" + i, new Person(i, "c_1" + i, i));
+
+            i++;
+        }
+
+        forceCheckpoint();
+
+        stopAllGrids();
+
+        warmUp = true;
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        cfg.getDataStorageConfiguration().getDataRegionConfigurations()[0].setMaxSize(minMemSize);
+
+        Map<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoMap = new ConcurrentHashMap<>();
+
+        WarmUpTestPluginProvider provider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
+        ((LoadAllWarmUpEx)provider.strats.get(2)).loadDataInfoCb = loadDataInfoMap::put;
+
+        n = startGrid(cfg);
+
+        dr_0 = n.context().cache().context().database().dataRegion("dr_0");
+
+        long warmUpPageCnt = loadDataInfoMap.get("dr_0").values().stream().mapToLong(T2::get2).sum();
+        long maxLoadPages = minMemSize / dr_0.pageMemory().systemPageSize();
+        long minLoadPages = maxLoadPages - 100;
+        long loadPages = dr_0.pageMemory().loadedPages();
+
+        // There are loaded pages before warm-up.
+        assertTrue(warmUpPageCnt >= minLoadPages && warmUpPageCnt <= maxLoadPages);
+
+        // Pages may be evicted.
+        assertTrue(loadPages >= minLoadPages && loadPages <= maxLoadPages);
     }
 
     /**
