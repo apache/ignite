@@ -27,8 +27,6 @@ spec:
           value: ignite-kubernetes,ignite-rest-http
         - name: CONFIG_URI
           value: file:///ignite/config/node-configuration.xml
-        - name: JVM_OPTS
-          value: "-DIGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN=true"          
         ports:
         # Ports to open.
         - containerPort: 47100 # communication SPI port
