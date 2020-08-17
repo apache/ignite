@@ -113,9 +113,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /** Periodic version check delay. */
     private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
 
-    /** Topology version metric name. */
-    public static final String TOPOLOGY_VERSION = "TopologyVersion";
-
     /** Total server nodes count metric name. */
     public static final String TOTAL_SERVER_NODES = "TotalServerNodes";
 
@@ -674,10 +671,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**  Registers cluster metrics. */
     public void registerMetrics() {
         MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
-
-        reg.register(TOPOLOGY_VERSION,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.topologyVersion(),
-            "Current topology version.");
 
         reg.register(TOTAL_SERVER_NODES,
             () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),

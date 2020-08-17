@@ -29,10 +29,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACTIVE_BASELINE_NODES;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOPOLOGY_VERSION;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
@@ -53,9 +51,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** Cluster metrics update mutex. */
     private final Object clusterMetricsMux = new Object();
-
-    /** Topology version metric. */
-    private final LongMetric topVer;
 
     /** Total server nodes count metric. */
     private final IntMetric srvNodes;
@@ -80,7 +75,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
         MetricRegistry clusterReg = ctx.metric().registry(CLUSTER_METRICS);
 
-        topVer = clusterReg.findMetric(TOPOLOGY_VERSION);
         srvNodes = clusterReg.findMetric(TOTAL_SERVER_NODES);
         clientNodes = clusterReg.findMetric(TOTAL_CLIENT_NODES);
         bltNodes = clusterReg.findMetric(TOTAL_BASELINE_NODES);
@@ -419,7 +413,7 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getTopologyVersion() {
-        return topVer.value();
+        return cluster.ignite().cluster().topologyVersion();
     }
 
     /** {@inheritDoc} */

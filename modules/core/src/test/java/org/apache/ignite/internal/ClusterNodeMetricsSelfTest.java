@@ -39,14 +39,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -55,10 +52,6 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOPOLOGY_VERSION;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Grid node metrics self test.
@@ -346,7 +339,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJmxClusterMetrics() throws Exception {
-        IgniteEx node = grid();
+        Ignite node = grid();
 
         Ignite node1 = startGrid(1);
         Ignite node2 = startClientGrid(2);
@@ -361,19 +354,14 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Set<UUID> clientNodes = Collections.singleton(nodeId2);
         Set<UUID> allNodes = new HashSet<>(Arrays.asList(nodeId0, nodeId1, nodeId2));
 
-        MetricRegistry mreg = node.context().metric().registry(CLUSTER_METRICS);
-
         // ClusterMetricsMXBeanImpl test.
         JmxClusterMetricsHelper helperCluster = new JmxClusterMetricsHelper(node.configuration(),
             ClusterMetricsMXBeanImpl.class);
 
         assertEquals(node.cluster().topologyVersion(), helperCluster.attr("TopologyVersion"));
-        assertEquals(node.cluster().topologyVersion(), mreg.<LongMetric>findMetric(TOPOLOGY_VERSION).value());
 
         assertEquals(2, helperCluster.attr("TotalServerNodes"));
-        assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_SERVER_NODES).value());
         assertEquals(1, helperCluster.attr("TotalClientNodes"));
-        assertEquals(1, mreg.<IntMetric>findMetric(TOTAL_CLIENT_NODES).value());
 
         assertEquals(allNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, true));
         assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));
