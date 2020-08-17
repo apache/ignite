@@ -160,7 +160,7 @@ public class TcpDiscoveryStatistics {
 
         Long startTs = msgsProcStartTs.remove(msg.id());
 
-        if (startTs == null) {
+        if (startTs != null) {
             long duration = U.currentTimeMillis() - startTs;
 
             int totalProcMsgs = totalProcessedMessages();
