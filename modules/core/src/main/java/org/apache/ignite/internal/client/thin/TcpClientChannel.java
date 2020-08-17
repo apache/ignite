@@ -66,6 +66,7 @@ import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
@@ -284,17 +285,37 @@ class TcpClientChannel implements ClientChannel {
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
-            if (e.getCause() instanceof ClientError)
-                throw (ClientError)e.getCause();
-
-            if (e.getCause() instanceof ClientException)
-                throw (ClientException)e.getCause();
-
-            throw new ClientException(e.getMessage(), e);
+            return convertException(e);
         }
         finally {
             pendingReqs.remove(reqId);
         }
+    }
+
+    private <T> IgniteInternalFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
+
+        assert pendingReq != null : "Pending request future not found for request " + reqId;
+
+        return pendingReq.chain(payloadFut -> {
+            try {
+                return payloadReader.apply(new PayloadInputChannel(this, payloadFut.get()));
+            } catch (IgniteCheckedException e) {
+                return convertException(e);
+            } finally {
+                pendingReqs.remove(reqId);
+            }
+        });
+    }
+
+    private <T> T convertException(IgniteCheckedException e) {
+        if (e.getCause() instanceof ClientError)
+            throw (ClientError)e.getCause();
+
+        if (e.getCause() instanceof ClientException)
+            throw (ClientException)e.getCause();
+
+        throw new ClientException(e.getMessage(), e);
     }
 
     /**
