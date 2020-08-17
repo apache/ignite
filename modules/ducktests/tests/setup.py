@@ -30,6 +30,5 @@ setup(name="ignitetest",
       license="apache2.0",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
-      install_requires=["ducktape==0.7.8", "requests==2.22.0"],
-      tests_require=["pytest", "mock", "monotonic"]
+      install_requires=["ducktape==0.7.8", "requests==2.22.0", "monotonic==1.5"]
 )
