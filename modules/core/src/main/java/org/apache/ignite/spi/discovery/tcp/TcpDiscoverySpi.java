@@ -291,6 +291,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Default connection recovery timeout in ms. */
     public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Name of the discovery metrics registry. */
+    public static final String DISCO_METRICS = metricName("io", "discovery");
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -2107,7 +2110,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         initializeImpl();
 
         MetricRegistry discoReg =
-            ((IgniteEx)ignite()).context().metric().registry(metricName("io", "discovery"));
+            ((IgniteEx)ignite()).context().metric().registry(DISCO_METRICS);
 
         stats = new TcpDiscoveryStatistics(discoReg);
 

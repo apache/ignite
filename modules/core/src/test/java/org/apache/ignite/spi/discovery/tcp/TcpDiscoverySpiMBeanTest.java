@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DISCO_METRICS;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -84,7 +84,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(metricName("io", "discovery"));
+                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
@@ -160,7 +160,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 1; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(metricName("io", "discovery"));
+                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
