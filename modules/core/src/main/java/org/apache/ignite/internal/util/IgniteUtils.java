@@ -203,6 +203,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -302,7 +303,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
+@SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
     /** */
     public static final long MB = 1024L * 1024;
@@ -513,6 +514,9 @@ public abstract class IgniteUtils {
 
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
+
+    /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
+    public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
 
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
@@ -1208,7 +1212,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if ordering is supported.
      */
     public static boolean discoOrdered(DiscoverySpi discoSpi) {
-        DiscoverySpiOrderSupport ann = getAnnotation(discoSpi.getClass(), DiscoverySpiOrderSupport.class);
+        DiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), DiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
     }
@@ -1285,7 +1289,7 @@ public abstract class IgniteUtils {
      * @param msg Message.
      */
     public static void dumpStack(@Nullable IgniteLogger log, String msg) {
-        error(log, "Dumping stack.", new Exception(msg));
+        U.error(log, "Dumping stack.", new Exception(msg));
     }
 
     /**
@@ -1462,7 +1466,7 @@ public abstract class IgniteUtils {
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
         GridStringBuilder sb = new GridStringBuilder(THREAD_DUMP_MSG)
-            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(currentTimeMillis()))).a(NL);
+            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
             printThreadInfo(info, sb, deadlockedThreadsIds);
@@ -1639,12 +1643,12 @@ public abstract class IgniteUtils {
             return cls.getDeclaredConstructor();
         }
         catch (Exception ignore) {
-            Method ctorFac = ctorFactory();
-            Object sunRefFac = sunReflectionFactory();
+            Method ctorFac = U.ctorFactory();
+            Object sunRefFac = U.sunReflectionFactory();
 
             if (ctorFac != null && sunRefFac != null)
                 try {
-                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, objectConstructor());
+                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, U.objectConstructor());
                 }
                 catch (IllegalAccessException | InvocationTargetException e) {
                     throw new IgniteCheckedException("Failed to get object constructor for class: " + cls, e);
@@ -2062,7 +2066,7 @@ public abstract class IgniteUtils {
         try {
             InetAddress inetAddr = InetAddress.getByName(addr);
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 for (InetAddress itfAddr : asIterable(itf.getInetAddresses()))
                     if (itfAddr.equals(inetAddr))
                         return itf.getDisplayName();
@@ -2173,10 +2177,9 @@ public abstract class IgniteUtils {
      * @param locAddr Local address to resolve.
      * @return Resolved available addresses of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
-        throws IOException, IgniteCheckedException {
+        throws IOException {
         return resolveLocalAddresses(locAddr, false);
     }
 
@@ -2189,10 +2192,9 @@ public abstract class IgniteUtils {
      * @param allHostNames If {@code true} then include host names for all addresses.
      * @return Resolved available addresses and host names of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr,
-        boolean allHostNames) throws IOException, IgniteCheckedException {
+        boolean allHostNames) throws IOException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
@@ -2205,7 +2207,7 @@ public abstract class IgniteUtils {
             if (res == null) {
                 List<InetAddress> locAddrs = new ArrayList<>();
 
-                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
                             locAddrs.add(addr);
@@ -2218,7 +2220,7 @@ public abstract class IgniteUtils {
                     addresses(addr, addrs, hostNames, allHostNames);
 
                 if (F.isEmpty(addrs))
-                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+                    return F.t(Collections.emptyList(), Collections.emptyList());
 
                 res = F.t(addrs, hostNames);
 
@@ -2291,7 +2293,7 @@ public abstract class IgniteUtils {
         else {
             List<NetworkInterface> itfs = new ArrayList<>();
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 itfs.add(itf);
 
             Collections.sort(itfs, new Comparator<NetworkInterface>() {
@@ -2388,7 +2390,7 @@ public abstract class IgniteUtils {
         List<String> ips = new ArrayList<>(4);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -2453,7 +2455,7 @@ public abstract class IgniteUtils {
         List<String> macs = new ArrayList<>(3);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -4007,7 +4009,7 @@ public abstract class IgniteUtils {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = resolveIgniteUrl(springCfgPath);
+            url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 url = resolveInClasspath(springCfgPath);
@@ -4723,7 +4725,7 @@ public abstract class IgniteUtils {
      */
     public static void quietAndInfo(IgniteLogger log, String msg) {
         if (log.isQuiet())
-            quiet(false, msg);
+            U.quiet(false, msg);
 
         if (log.isInfoEnabled())
             log.info(msg);
@@ -5055,7 +5057,7 @@ public abstract class IgniteUtils {
             List<Runnable> tasks = exec.shutdownNow();
 
             if (!F.isEmpty(tasks))
-                warn(log, "Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
+                U.warn(log, "Runnable tasks outlived thread pool executor service [owner=" + getSimpleName(owner) +
                     ", tasks=" + tasks + ']');
 
             try {
@@ -5548,7 +5550,7 @@ public abstract class IgniteUtils {
         if (size == -1)
             return null;
 
-        HashMap<K, V> map = newHashMap(size);
+        HashMap<K, V> map = U.newHashMap(size);
 
         for (int i = 0; i < size; i++)
             map.put((K)in.readObject(), (V)in.readObject());
@@ -6095,10 +6097,10 @@ public abstract class IgniteUtils {
         if (obj instanceof GridPeerDeployAware)
             return ((GridPeerDeployAware)obj).deployClass();
 
-        if (isPrimitiveArray(obj))
+        if (U.isPrimitiveArray(obj))
             return obj.getClass();
 
-        if (!isJdk(obj.getClass()))
+        if (!U.isJdk(obj.getClass()))
             return obj.getClass();
 
         if (obj instanceof Iterable<?>) {
@@ -6114,7 +6116,7 @@ public abstract class IgniteUtils {
             if (e != null) {
                 Object k = e.getKey();
 
-                if (k != null && !isJdk(k.getClass()))
+                if (k != null && !U.isJdk(k.getClass()))
                     return k.getClass();
 
                 Object v = e.getValue();
@@ -6182,7 +6184,7 @@ public abstract class IgniteUtils {
         if (ldr == null)
             ldr = gridClassLoader;
 
-        String lambdaParent = lambdaEnclosingClassName(clsName);
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
 
         try {
             ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
@@ -6340,7 +6342,7 @@ public abstract class IgniteUtils {
         if (obj instanceof Iterable)
             return peerDeployAware0((Iterable)obj);
 
-        if (obj.getClass().isArray() && !isPrimitiveArray(obj))
+        if (obj.getClass().isArray() && !U.isPrimitiveArray(obj))
             return peerDeployAware0((Object[])obj);
 
         return peerDeployAware(obj);
@@ -8062,7 +8064,7 @@ public abstract class IgniteUtils {
                         f.get();
                     }
                     catch (IgniteCheckedException e) {
-                        error(log, "Failed to execute future: " + f, e);
+                        U.error(log, "Failed to execute future: " + f, e);
                     }
                 }
             });
@@ -8744,9 +8746,9 @@ public abstract class IgniteUtils {
         int dot = fileName.lastIndexOf('.');
 
         if (dot < 0 || dot == fileName.length() - 1)
-            return fileName + '-' + id8(nodeId);
+            return fileName + '-' + U.id8(nodeId);
         else
-            return fileName.substring(0, dot) + '-' + id8(nodeId) + fileName.substring(dot);
+            return fileName.substring(0, dot) + '-' + U.id8(nodeId) + fileName.substring(dot);
     }
 
     /**
@@ -8870,7 +8872,7 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null);
+        return U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
     }
 
     /**
@@ -8882,6 +8884,19 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+        return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8892,9 +8907,20 @@ public abstract class IgniteUtils {
         if (ldr != null) {
             if (ldr instanceof ClassCache)
                 return ((ClassCache)ldr).getFromCache(clsName);
+            else if (!useCache) {
+                cls = Class.forName(clsName, true, ldr);
+
+                return cls;
+            }
         }
         else
             ldr = gridClassLoader;
+
+        if (!useCache) {
+            cls = Class.forName(clsName, true, ldr);
+
+            return cls;
+        }
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
@@ -9152,7 +9178,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if error is invalid argument error on MAC.
      */
     public static boolean isMacInvalidArgumentError(Exception e) {
-        return isMacOs() && e instanceof SocketException && e.getMessage() != null &&
+        return U.isMacOs() && e instanceof SocketException && e.getMessage() != null &&
             e.getMessage().toLowerCase().contains("invalid argument");
     }
 
@@ -9208,7 +9234,7 @@ public abstract class IgniteUtils {
                     ((LifecycleAware)obj).stop();
                 }
                 catch (Exception e) {
-                    error(log, "Failed to stop component (ignoring): " + obj, e);
+                    U.error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }
         }
@@ -9507,7 +9533,7 @@ public abstract class IgniteUtils {
                 File readme = new File(igniteDir, "README.txt");
 
                 if (!readme.exists()) {
-                    writeStringToFile(readme,
+                    U.writeStringToFile(readme,
                         "This is Apache Ignite working directory that contains information that \n" +
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
@@ -9566,7 +9592,7 @@ public abstract class IgniteUtils {
         }
 
         if (delIfExist && dir.exists()) {
-            if (!delete(dir))
+            if (!U.delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
 
@@ -10420,7 +10446,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10449,7 +10475,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return unmarshal(ctx.marshaller(), arr, clsLdr);
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10738,8 +10764,8 @@ public abstract class IgniteUtils {
 
         if (adjustedWalArchiveSize > dsCfg.getMaxWalArchiveSize()) {
             if (log != null)
-                quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
-                    readableSize(adjustedWalArchiveSize, false) +
+                U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
+                    U.readableSize(adjustedWalArchiveSize, false) +
                     " (to override, use DataStorageConfiguration.setMaxWalArchiveSize)");
 
             return adjustedWalArchiveSize;
@@ -10788,7 +10814,7 @@ public abstract class IgniteUtils {
                 }
 
                 @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    error(null, "file skipped - " + file, exc);
+                    U.error(null, "file skipped - " + file, exc);
 
                     // Skip directory or file
                     return FileVisitResult.CONTINUE;
@@ -10796,7 +10822,7 @@ public abstract class IgniteUtils {
 
                 @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     if (exc != null)
-                        error(null, "error during size calculation of directory - " + dir, exc);
+                        U.error(null, "error during size calculation of directory - " + dir, exc);
 
                     // Ignoring
                     return FileVisitResult.CONTINUE;
@@ -10829,7 +10855,7 @@ public abstract class IgniteUtils {
                 }
 
                 @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    error(null, "file skipped during recursive search - " + file, exc);
+                    U.error(null, "file skipped during recursive search - " + file, exc);
 
                     // Ignoring.
                     return FileVisitResult.CONTINUE;
@@ -10837,7 +10863,7 @@ public abstract class IgniteUtils {
 
                 @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     if (exc != null)
-                        error(null, "error during recursive search - " + dir, exc);
+                        U.error(null, "error during recursive search - " + dir, exc);
 
                     // Ignoring.
                     return FileVisitResult.CONTINUE;
@@ -11319,7 +11345,7 @@ public abstract class IgniteUtils {
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoMgr.localNode(), oldest(discoMgr.aliveServerNodes(), null));
+            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**
@@ -11529,7 +11555,7 @@ public abstract class IgniteUtils {
             int cntr = val.get1();
 
             if (cntr == 0)
-                val.set2(currentTimeMillis());
+                val.set2(U.currentTimeMillis());
 
             val.set1(++cntr);
 
@@ -11543,16 +11569,16 @@ public abstract class IgniteUtils {
             int cntr = val.get1();
 
             if (--cntr == 0) {
-                long timeout = currentTimeMillis() - val.get2();
+                long timeout = U.currentTimeMillis() - val.get2();
 
                 if (timeout > readLockThreshold) {
                     GridStringBuilder sb = new GridStringBuilder();
 
                     sb.a(LOCK_HOLD_MESSAGE + timeout + " ms." + nl());
 
-                    printStackTrace(Thread.currentThread().getId(), sb);
+                    U.printStackTrace(Thread.currentThread().getId(), sb);
 
-                    warn(log, sb.toString());
+                    U.warn(log, sb.toString());
                 }
             }
 
@@ -11708,7 +11734,7 @@ public abstract class IgniteUtils {
                 lsnr.accept(t);
             }
             catch (Exception e) {
-                warn(log, "Listener error", e);
+                U.warn(log, "Listener error", e);
             }
         }
     }
@@ -12032,6 +12058,13 @@ public abstract class IgniteUtils {
 
             return sb.toString();
         }
+    }
+
+    /** Explicit class for {@code Supplier<Enumeration<NetworkInterface>>}. */
+    @FunctionalInterface
+    public interface InterfaceSupplier {
+        /** Return collection of local network interfaces. */
+        Enumeration<NetworkInterface> getInterfaces() throws SocketException;
     }
 
     /**
