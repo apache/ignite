@@ -70,21 +70,29 @@ public class TcpDiscoveryStatistics {
     /** Pending messages registered count. */
     private final IntMetricImpl pendingMsgsRegistered;
 
+    /** */
+    public TcpDiscoveryStatistics() {
+        joinedNodesCnt = new IntMetricImpl("JoinedNodes", "Joined nodes count");
+
+        failedNodesCnt = new IntMetricImpl("FailedNodes", "Failed nodes count");
+
+        leftNodesCnt = new IntMetricImpl("LeftNodes", "Left nodes count");
+
+        pendingMsgsRegistered = new IntMetricImpl("PendingMessagesRegistered", "Pending messages registered count");
+    }
+
     /**
      * @param discoReg Discovery metric registry.
      */
-    public TcpDiscoveryStatistics(MetricRegistry discoReg) {
+    public void registerMetrics(MetricRegistry discoReg) {
         discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
 
         discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
 
-        joinedNodesCnt = discoReg.intMetric("JoinedNodes", "Joined nodes count");
-
-        failedNodesCnt = discoReg.intMetric("FailedNodes", "Failed nodes count");
-
-        leftNodesCnt = discoReg.intMetric("LeftNodes", "Left nodes count");
-
-        pendingMsgsRegistered = discoReg.intMetric("PendingMessagesRegistered", "Pending messages registered count");
+        discoReg.register(joinedNodesCnt);
+        discoReg.register(failedNodesCnt);
+        discoReg.register(leftNodesCnt);
+        discoReg.register(pendingMsgsRegistered);
     }
 
     /**

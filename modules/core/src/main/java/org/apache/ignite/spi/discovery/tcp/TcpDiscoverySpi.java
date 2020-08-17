@@ -364,7 +364,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Marshaller marsh;
 
     /** Statistics. */
-    protected TcpDiscoveryStatistics stats;
+    protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */
     protected int locPort = DFLT_PORT;
@@ -2121,7 +2121,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         MetricRegistry discoReg =
             ((IgniteEx)ignite()).context().metric().registry(DISCO_METRICS);
 
-        stats = new TcpDiscoveryStatistics(discoReg);
+        stats.registerMetrics(discoReg);
 
         discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
             "Message worker queue current size");

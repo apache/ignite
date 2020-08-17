@@ -40,6 +40,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DISCO_METRICS;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -149,7 +150,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
                 assertFalse(bean.getProcessedMessages().isEmpty());
                 assertFalse(bean.getReceivedMessages().isEmpty());
-                assertTrue(bean.getMaxMessageProcessingTime() > 0);
+                assertTrue(bean.getMaxMessageProcessingTime() >= 0);
                 assertEquals(i == cliIdx, bean.isClientMode());
             }
 
@@ -181,10 +182,10 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                     assertTrue(discoReg.<LongMetric>findMetric("CoordinatorSince").value() > 0);
                 }
 
-                assertEquals(1L, bean.getNodesLeft());
-                assertEquals(1, discoReg.<IntMetric>findMetric("LeftNodes").value());
+                assertTrue(waitForCondition(
+                    () -> bean.getNodesLeft() == 1 && discoReg.<IntMetric>findMetric("LeftNodes").value() == 1,
+                    getTestTimeout()));
             }
-
         }
         finally {
             stopAllGrids();
