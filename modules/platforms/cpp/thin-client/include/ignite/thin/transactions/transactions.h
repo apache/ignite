@@ -116,11 +116,9 @@ namespace ignite
                  * @param impl Implementation.
                  */
                 ClientTransactions(SharedPointer<void> impl) :
-                    proxy(impl)
+                    proxy(impl),
+                    label(SharedPointer<const char>())
                 {
-                    char* l = new char[1];
-
-                    label = strcpy(l, "");
                 }
 
                 /**
