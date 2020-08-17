@@ -81,13 +81,6 @@ public class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
         byte[] data,
         long timeout
     ) throws IOException {
-        // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-        // connRecoveryTimeout.
-        TcpDiscoveryAbstractMessage msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-
-        if (spiCtx != null)
-            apply(spiCtx.localNode(), msg);
-
         super.writeToSocket(sock, data, timeout);
     }
 

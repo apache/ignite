@@ -305,13 +305,6 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException {
             assertNotFailedNode(sock);
-
-            // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-            // connRecoveryTimeout.
-            TcpDiscoveryAbstractMessage msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            if (isDrop(msg))
-                return;
-
             super.writeToSocket(sock, data, timeout);
         }
 
@@ -354,7 +347,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
             boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
 
-            if (drop && msg != null)
+            if (drop)
                 ignite.log().info(">> Drop message " + msg);
 
             return drop;
