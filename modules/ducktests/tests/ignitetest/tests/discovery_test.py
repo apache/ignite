@@ -106,7 +106,7 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(LATEST_2_7), str(DEV_BRANCH)],
+    @matrix(ignite_version=[str(DEV_BRANCH), str(DEV_BRANCH)],
             kill_coordinator=[False, True],
             nodes_to_kill=[0, 1, 2],
             with_load=[False, True])
@@ -179,11 +179,12 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
 
         for failed_id in ids_to_wait:
-            self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 10,
-                                             from_the_beginning=True, backoff_sec=0.01)
+            self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 60,
+                                             from_the_beginning=True, backoff_sec=0.05)
             # Save mono of last detected failure.
             time_holder = self.monotonic()
-            self.stage("Failure detection measured.")
+
+        self.stage("Failure detection measured.")
 
         for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
