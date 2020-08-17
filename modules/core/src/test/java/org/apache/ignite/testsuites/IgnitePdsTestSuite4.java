@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpSelfTest;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -116,6 +117,7 @@ public class IgnitePdsTestSuite4 {
 
         // Warm-up tests.
         GridTestUtils.addTestIfNeeded(suite, WarmUpSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LoadAllWarmUpSelfTest.class, ignoredTests);
 
         return suite;
     }
