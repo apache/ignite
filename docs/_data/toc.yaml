@@ -19,9 +19,9 @@
         url: /installation/kubernetes/gke-deployment
 - title: Setting Up
   items:
-    - title: Setting Up GridGain for Java 
+    - title: Setting Up Ignite for Java 
       url: /setup
-    - title: Setting Up GridGain for .NET/C# 
+    - title: Setting Up Ignite for .NET/C# 
       url: /setup-dotnet 
 - title: Understanding Configuration
   url: /understanding-configuration
