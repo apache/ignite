@@ -180,20 +180,20 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
-            cacheMetrics1::getIndexRebuildKeyProcessed,
-            cacheMetricsMXBean1::getIndexRebuildKeyProcessed,
+            cacheMetrics1::getIndexRebuildKeysProcessed,
+            cacheMetricsMXBean1::getIndexRebuildKeysProcessed,
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
-            cacheMetrics2::getIndexRebuildKeyProcessed,
-            cacheMetricsMXBean2::getIndexRebuildKeyProcessed,
+            cacheMetrics2::getIndexRebuildKeysProcessed,
+            cacheMetricsMXBean2::getIndexRebuildKeysProcessed,
         };
 
         // It must always be 0, because metric is only per node.
         LongSupplier[] idxRebuildKeyProcessedCluster = {
-            cacheClusterMetricsMXBean1::getIndexRebuildKeyProcessed,
-            cacheClusterMetricsMXBean2::getIndexRebuildKeyProcessed
+            cacheClusterMetricsMXBean1::getIndexRebuildKeysProcessed,
+            cacheClusterMetricsMXBean2::getIndexRebuildKeysProcessed
         };
 
         assertEquals(true, idxRebuildProgressCache1);

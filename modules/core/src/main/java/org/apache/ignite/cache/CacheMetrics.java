@@ -730,8 +730,9 @@ public interface CacheMetrics {
 
     /**
      * Return number of keys processed during index rebuilding.
+     * To get remaining number of keys for rebuilding, subtract current value from {@link #getCacheSize}.
      *
      * @return Number of keys processed during index rebuilding.
      */
-    public long getIndexRebuildKeyProcessed();
+    public long getIndexRebuildKeysProcessed();
 }

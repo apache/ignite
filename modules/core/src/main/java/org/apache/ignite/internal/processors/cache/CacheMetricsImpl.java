@@ -1558,7 +1558,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getIndexRebuildKeyProcessed() {
+    @Override public long getIndexRebuildKeysProcessed() {
         return idxRebuildKeyProcessed.value();
     }
 

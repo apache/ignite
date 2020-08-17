@@ -441,7 +441,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         txKeyCollisions = m.getTxKeyCollisions();
 
         idxRebuildInProgress = m.isIndexRebuildInProgress();
-        idxRebuildKeyProcessed = m.getIndexRebuildKeyProcessed();
+        idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
     }
 
     /**
@@ -1068,7 +1068,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     }
 
     /** {@inheritDoc} */
-    @Override public long getIndexRebuildKeyProcessed() {
+    @Override public long getIndexRebuildKeysProcessed() {
         return idxRebuildKeyProcessed;
     }
 

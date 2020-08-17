@@ -549,7 +549,7 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
-        @Override public long getIndexRebuildKeyProcessed() {
+        @Override public long getIndexRebuildKeysProcessed() {
             return 0;
         }
     }

@@ -419,7 +419,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
 
         idxRebuildInProgress = m.isIndexRebuildInProgress();
-        idxRebuildKeyProcessed = m.getIndexRebuildKeyProcessed();
+        idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
     }
 
     /**
@@ -1040,7 +1040,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getIndexRebuildKeyProcessed() {
+    @Override public long getIndexRebuildKeysProcessed() {
         return idxRebuildKeyProcessed;
     }
 
