@@ -41,6 +41,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.lang.IgniteFuture;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -114,6 +115,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             null,
             this::readObject
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAsync(K key) {
+        return null;
     }
 
     /** {@inheritDoc} */

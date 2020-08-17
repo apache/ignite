@@ -23,12 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
+
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Thin client cache.
@@ -42,6 +44,14 @@ public interface ClientCache<K, V> {
      * @throws NullPointerException if the key is null.
      */
     public V get(K key) throws ClientException;
+
+    /**
+     * Asynchronously gets an entry from the cache.
+     *
+     * @param key Key.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<V> getAsync(K key);
 
     /**
      * Associates the specified value with the specified key in the cache.
