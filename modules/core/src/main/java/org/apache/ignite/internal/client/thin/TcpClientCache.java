@@ -120,7 +120,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET,
+                null,
+                this::readObject
+        );
     }
 
     /** {@inheritDoc} */
