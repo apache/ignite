@@ -138,7 +138,7 @@ namespace ignite
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            const char* label);
+                            SharedPointer<const char> label);
                 protected:
                     /** Checks current thread state. */
                     static void txThreadCheck(const TransactionImpl& tx);
@@ -208,7 +208,7 @@ namespace ignite
                             TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            const char* label);
+                            SharedPointer<const char> label);
 
                     /**
                      * Commit Transaction.

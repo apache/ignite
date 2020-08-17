@@ -51,7 +51,7 @@ namespace ignite
                         TransactionIsolation::Type isolation,
                         int64_t timeout,
                         int32_t txSize,
-                        const char* label)
+                        SharedPointer<const char> label)
                 {
                     SP_TransactionImpl tx = TransactionImpl::Create(*this, concurrency, isolation, timeout, txSize, label);
 
@@ -64,7 +64,7 @@ namespace ignite
                     TransactionIsolation::Type isolation,
                     int64_t timeout,
                     int32_t txSize,
-                    const char* label)
+                    SharedPointer<const char> label)
                 {
                     SP_TransactionImpl tx = threadTx.Get();
 

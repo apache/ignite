@@ -631,7 +631,7 @@ namespace ignite
                  */
                 TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
                                ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
-                               int64_t tmOut, int32_t sz, const char* lbl) :
+                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<const char> lbl) :
                     concurrency(conc),
                     isolation(isolationLvl),
                     timeout(tmOut),
@@ -658,7 +658,7 @@ namespace ignite
                     writer.WriteInt8(concurrency);
                     writer.WriteInt8(isolation);
                     writer.WriteInt64(timeout);
-                    writer.WriteString(label);
+                    writer.WriteString(label.Get());
                 }
 
             private:
@@ -675,7 +675,7 @@ namespace ignite
                 const int32_t size;
 
                 /** Tx label. */
-                const char* label;
+                ignite::common::concurrent::SharedPointer<const char> label;
             };
 
             /**

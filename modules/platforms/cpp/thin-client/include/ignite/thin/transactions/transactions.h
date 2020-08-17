@@ -116,10 +116,11 @@ namespace ignite
                  * @param impl Implementation.
                  */
                 ClientTransactions(SharedPointer<void> impl) :
-                    proxy(impl),
-                    label(NULL)
+                    proxy(impl)
                 {
-                    // No-op.
+                    char* l = new char[1];
+
+                    label = strcpy(l, "");
                 }
 
                 /**
@@ -127,8 +128,6 @@ namespace ignite
                  */
                 ~ClientTransactions()
                 {
-                    if (label)
-                        delete label;
                 }
 
                 /**
@@ -147,7 +146,7 @@ namespace ignite
                         int64_t timeout = 0,
                         int32_t txSize = 0)
                 {
-                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize, label ? label : ""));
+                    return ClientTransaction(proxy.txStart(concurrency, isolation, timeout, txSize, label));
                 }
 
                 /**
@@ -167,7 +166,7 @@ namespace ignite
                 TransactionsProxy proxy;
 
                 /** Transaction specific label. */
-                const char* label;
+                SharedPointer<const char> label;
 
                 /**
                  * Default constructor.
@@ -179,12 +178,12 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                ClientTransactions(TransactionsProxy& impl, const char *lbl) :
+                ClientTransactions(TransactionsProxy& impl, const std::string& lbl) :
                     proxy(impl)
                 {
-                    char* l = new char[strlen(lbl) + 1];
+                    char* l = new char[lbl.size() + 1];
 
-                    label = strcpy(l, lbl);
+                    label = strcpy(l, lbl.c_str());
                 }
             };
         }

@@ -129,7 +129,7 @@ namespace ignite
                             TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED,
                             int64_t timeout = 0,
                             int32_t txSize = 0,
-                            const char* lbl = "");
+                            SharedPointer<const char> lbl = "");
                 private:
                     /** Implementation. */
                     SharedPointer<void> impl;
