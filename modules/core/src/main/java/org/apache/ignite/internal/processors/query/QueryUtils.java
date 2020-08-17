@@ -1582,9 +1582,11 @@ public class QueryUtils {
      * @param timeout Timeout.
      * @param timeUnit Time units.
      */
-    public static void copyQueryTimeout(SqlFieldsQuery qry, int timeout, TimeUnit timeUnit) {
+    public static SqlFieldsQuery withQueryTimeout(SqlFieldsQuery qry, int timeout, TimeUnit timeUnit) {
         if (timeout >= 0)
             qry.setTimeout(timeout, timeUnit);
+
+        return qry;
     }
 
     /**

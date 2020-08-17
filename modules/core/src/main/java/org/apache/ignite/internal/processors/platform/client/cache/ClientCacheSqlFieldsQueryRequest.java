@@ -92,7 +92,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         // So, old clients cannot disable default timeout by explicit set timeout to 0.
         // they must use Integer.MAX_VALUE constant.
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.DEFAULT_QRY_TIMEOUT) || timeout > 0)
-            QueryUtils.copyQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
+            QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
 
         this.qry = qry;
     }

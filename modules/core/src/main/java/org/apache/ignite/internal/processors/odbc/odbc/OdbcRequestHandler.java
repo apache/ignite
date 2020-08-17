@@ -346,7 +346,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setArgs(args);
         qry.setAutoCommit(autoCommit);
 
-        QueryUtils.copyQueryTimeout(qry, timeout, TimeUnit.SECONDS);
+        QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.SECONDS);
 
         return qry;
     }

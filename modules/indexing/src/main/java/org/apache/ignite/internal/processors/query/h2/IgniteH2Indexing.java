@@ -956,8 +956,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteException(e);
         }
 
-        SqlFieldsQuery res = new SqlFieldsQuery(sql);
-
+        SqlFieldsQuery res = QueryUtils.withQueryTimeout(new SqlFieldsQuery(sql), qry.getTimeout(), TimeUnit.MILLISECONDS);
         res.setArgs(qry.getArgs());
         res.setDistributedJoins(qry.isDistributedJoins());
         res.setLocal(qry.isLocal());
@@ -966,8 +965,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         res.setReplicatedOnly(qry.isReplicatedOnly());
         res.setSchema(schemaName);
         res.setSql(sql);
-
-        QueryUtils.copyQueryTimeout(res, qry.getTimeout(), TimeUnit.MILLISECONDS);
 
         return res;
     }
@@ -1558,7 +1555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccSnapshot mvccSnapshot,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
-        SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+        SqlFieldsQuery fldsQry =  QueryUtils.withQueryTimeout(new SqlFieldsQuery(qry), timeout, TimeUnit.MILLISECONDS);
 
         if (params != null)
             fldsQry.setArgs(params);
@@ -1567,8 +1564,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
         fldsQry.setPageSize(pageSize);
         fldsQry.setLocal(true);
-
-        QueryUtils.copyQueryTimeout(fldsQry, timeout, TimeUnit.MILLISECONDS);
 
         boolean loc = true;
 
@@ -1602,15 +1597,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Force keepBinary for operation context to avoid binary deserialization inside entry processor
         DmlUtils.setKeepBinaryContext(planCctx);
 
-        SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
+        SqlFieldsQuery selectFieldsQry = QueryUtils.withQueryTimeout(
+            new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated()),
+            fldsQry.getTimeout(),
+            TimeUnit.MILLISECONDS
+        )
             .setArgs(fldsQry.getArgs())
             .setDistributedJoins(fldsQry.isDistributedJoins())
             .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
             .setLocal(fldsQry.isLocal())
             .setPageSize(fldsQry.getPageSize())
             .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS);
-
-        QueryUtils.copyQueryTimeout(selectFieldsQry, fldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
         QueryCursorImpl<List<?>> cur;
 
