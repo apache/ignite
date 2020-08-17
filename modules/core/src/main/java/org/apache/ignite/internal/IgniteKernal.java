@@ -111,6 +111,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -1121,6 +1122,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 hnd,
                 longJVMPauseDetector
             );
+
+            ctx.add(new MaintenanceProcessor(ctx));
 
             startProcessor(new DiagnosticProcessor(ctx));
 

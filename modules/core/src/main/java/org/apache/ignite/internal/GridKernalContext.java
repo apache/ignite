@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -199,6 +200,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Monitoring manager.
      */
     public GridMetricManager metric();
+
+    /**
+     * Gets maintenance registry.
+     *
+     * @return Maintenance registry.
+     */
+    public MaintenanceRegistry maintenanceRegistry();
 
     /**
      * Gets system view manager.

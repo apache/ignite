@@ -2132,24 +2132,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
                         "finish checkpoint on node start.");
 
-            cctx.cache().cacheGroupDescriptors().forEach((grpId, desc) -> {
-                if (!cacheGroupsPredicate.apply(grpId))
-                    return;
-
-                try {
-                    DataRegion region = cctx.database().dataRegion(desc.config().getDataRegionName());
-
-                    if (region == null || !cctx.isLazyMemoryAllocation(region))
+                cctx.cache().cacheGroupDescriptors().forEach((grpId, desc) -> {
+                    if (!cacheGroupsPredicate.apply(grpId))
                         return;
 
-                    region.pageMemory().start();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
+                    try {
+                        DataRegion region = cctx.database().dataRegion(desc.config().getDataRegionName());
 
-            cctx.pageStore().beginRecover();
+                        if (region == null || !cctx.isLazyMemoryAllocation(region))
+                            return;
+
+                        region.pageMemory().start();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+
+                cctx.pageStore().beginRecover();
 
                 if (!(startRec instanceof CheckpointRecord))
                     throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
