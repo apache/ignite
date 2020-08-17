@@ -43,6 +43,7 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -196,6 +197,42 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 ch = channel();
 
                 return ch.service(op, payloadWriter, payloadReader);
+            }
+            catch (ClientConnectionException e) {
+                if (failure == null)
+                    failure = e;
+                else
+                    failure.addSuppressed(e);
+
+                onChannelFailure(ch);
+            }
+        }
+
+        throw failure;
+    }
+
+    /**
+     * Send request and handle response asynchronously.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     */
+    public <T> IgniteInternalFuture<T> serviceAsync(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        ClientConnectionException failure = null;
+
+        for (int i = 0; i < channels.length; i++) {
+            ClientChannel ch = null;
+
+            try {
+                ch = channel();
+
+                // Sync portion of serviceAsync throws exceptions on connection failure.
+                return ch.serviceAsync(op, payloadWriter, payloadReader);
             }
             catch (ClientConnectionException e) {
                 if (failure == null)

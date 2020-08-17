@@ -220,6 +220,13 @@ class TcpClientChannel implements ClientChannel {
         return receive(id, payloadReader);
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> serviceAsync(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter, Function<PayloadInputChannel, T> payloadReader) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException {
+        long id = send(op, payloadWriter);
+
+        return receiveAsync(id, payloadReader);
+    }
+
     /**
      * @param op Operation.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
