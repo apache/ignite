@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -2586,7 +2587,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         ", failedNodeId=" + evtNodeId + ']');
 
                 // Null means that recovery voting is not needed.
-                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = node.isClient() && mvccCrd != null
+                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = isMvccRecoveryMessageRequired()
                     ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
@@ -2658,6 +2659,31 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
+        }
+
+        /**
+         * Determines need to send a recovery message or not.
+         *
+         * @return True if message required, false otherwise.
+         */
+        private boolean isMvccRecoveryMessageRequired() {
+            if (!node.isClient() || mvccCrd == null || mvccCrd.nodeId() == null)
+                return false;
+
+            if (cctx.kernalContext().coordinators().mvccEnabled())
+                return true;
+
+            IgniteProductVersion crdVer = cctx.node(mvccCrd.nodeId()).version();
+
+            if (crdVer.greaterThanEqual(2, 7, 25) || "SNAPSHOT".equals(crdVer.stage()))
+                return false;
+
+            if (crdVer.major() == 2 && crdVer.minor() == 7 && crdVer.maintenance() == 2 &&
+                crdVer.stage().matches("p[0-9]*") &&
+                Integer.parseInt(crdVer.stage().substring(1)) >= 14)
+                return false;
+
+            return true;
         }
 
         /** {@inheritDoc} */

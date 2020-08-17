@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTes
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccStructuresOverheadTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
@@ -80,6 +81,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedCoordinatorFailoverTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedCoordinatorFailoverTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccProcessorLazyStartTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccStructuresOverheadTest.class));
 
         return suite;
     }
