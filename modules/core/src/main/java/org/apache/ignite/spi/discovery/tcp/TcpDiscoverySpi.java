@@ -1364,6 +1364,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Gets pending messages discarded count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesDiscarded() {
+        return 0;
+    }
+
+    /**
      * Gets avg message processing time.
      *
      * @return Avg message processing time.
