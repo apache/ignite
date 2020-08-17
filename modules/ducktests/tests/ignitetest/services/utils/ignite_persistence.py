@@ -22,7 +22,7 @@ import os
 from ignitetest.services.utils.ignite_config import IgniteLoggerConfig
 
 
-class PersistenceAware(object):
+class PersistenceAware:
     """
     This class contains basic persistence artifacts
     """

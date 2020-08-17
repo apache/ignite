@@ -54,7 +54,7 @@ def resolve_spec(service, context, **kwargs):
         raise Exception("There is no specification for class %s" % type(service))
 
 
-class IgniteSpec(object):
+class IgniteSpec:
     """
     This class is a basic Spec
     """
