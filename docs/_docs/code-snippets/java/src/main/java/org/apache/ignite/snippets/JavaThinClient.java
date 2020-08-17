@@ -323,4 +323,72 @@ public class JavaThinClient {
 
         //end::system-views[]
     }
+
+    void partitionAwareness() {
+        //tag::partition-awareness[]
+        ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
+                .setPartitionAwareness(true);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // Put, get or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::partition-awareness[]
+    }
+
+    void cientCluster() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-cluster[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            ClientCluster clientCluster = client.cluster();
+            clientCluster.state(ClusterState.ACTIVE);
+        }
+        //end::client-cluster[]
+    }
+
+    void clientClusterGroups() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-cluster-groups[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            ClientClusterGroup serversInDc1 = client.cluster().forServers().forAttribute("dc", "dc1");
+            serversInDc1.nodes().forEach(n -> System.out.println("Node ID: " + n.id()));
+        }
+        //end::client-cluster-groups[]
+    }
+
+    void clientCompute() {
+        //tag::client-compute-setup[]
+        ThinClientConfiguration thinClientCfg = new ThinClientConfiguration()
+                .setMaxActiveComputeTasksPerConnection(100);
+
+        ClientConnectorConfiguration clientConnectorCfg = new ClientConnectorConfiguration()
+                .setThinClientConfiguration(thinClientCfg);
+
+        IgniteConfiguration igniteCfg = new IgniteConfiguration()
+                .setClientConnectorConfiguration(clientConnectorCfg);
+
+        Ignite ignite = Ignition.start(igniteCfg);
+        //end::client-compute-setup[]
+
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-compute-task[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            // Suppose MyTask class is already deployed to the cluster
+            client.compute().execute(MyTask.class.getName(), "argument");
+        }
+        //end::client-compute-task[]
+    }
+
+    void clientServices() {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::client-services[]
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            // Suppose implementation of MyService interface is already deployed to the cluster as a service with name "MyService"
+            client.services().serviceProxy("MyService", MyService.class).myServiceMethod();
+        }
+        //end::client-services[]
+    }
 }
