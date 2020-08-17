@@ -103,7 +103,7 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNextX() throws IgniteCheckedException{
+        @Override public boolean hasNextX() throws IgniteCheckedException {
             return it.hasNext();
         }
 

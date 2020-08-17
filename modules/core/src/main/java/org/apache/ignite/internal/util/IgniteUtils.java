@@ -12082,4 +12082,56 @@ public abstract class IgniteUtils {
 
         return String.format("%.1f %sB", bytes / Math.pow(base, exponent), unit);
     }
+
+    /**
+     * Converts duration to a human-readable format.
+     * Examples: 10 -> 10ms, 6_0000 -> 6s, 65_000 -> 1m5s, (65 * 60_000 + 32_000) -> 1h5m32s, etc.
+     *
+     * @param millis Duration in milliseconds.
+     * @return Human readable format for duration.
+     */
+    public static String humanReadableDuration(long millis) {
+        StringBuilder sb = new StringBuilder();
+
+        if (millis < 0) {
+            sb.append('-');
+
+            millis = -millis;
+        }
+
+        if (millis < 1_000)
+            sb.append(millis).append("ms");
+        else {
+            long days = TimeUnit.MILLISECONDS.toDays(millis);
+
+            if (days > 0) {
+                sb.append(days).append('d');
+
+                millis -= TimeUnit.DAYS.toMillis(days);
+            }
+
+            long hours = TimeUnit.MILLISECONDS.toHours(millis);
+
+            if (hours > 0) {
+                sb.append(hours).append('h');
+
+                millis -= TimeUnit.HOURS.toMillis(hours);
+            }
+
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+
+            if (minutes > 0) {
+                sb.append(minutes).append('m');
+
+                millis -= TimeUnit.MINUTES.toMillis(minutes);
+            }
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+            if (seconds > 0)
+                sb.append(seconds).append('s');
+        }
+
+        return sb.toString();
+    }
 }

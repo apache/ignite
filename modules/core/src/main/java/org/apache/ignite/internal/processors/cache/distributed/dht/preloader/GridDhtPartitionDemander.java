@@ -1479,7 +1479,7 @@ public class GridDhtPartitionDemander {
                         log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
                             ", partitions=" + parts +
                             ", entries=" + entries +
-                            ", duration=" + (System.currentTimeMillis() - minStartTime) + "ms" +
+                            ", duration=" + U.humanReadableDuration(System.currentTimeMillis() - minStartTime) +
                             ", bytesRcvd=" + U.humanReadableByteCount(bytes) + ']');
                     }
                 }
@@ -1738,7 +1738,7 @@ public class GridDhtPartitionDemander {
                     ", supplier=" + nodeId +
                     ", partitions=" + (fullParts + histParts) +
                     ", entries=" + (fullEntries + histEntries) +
-                    ", duration=" + duration + "ms" +
+                    ", duration=" + U.humanReadableDuration(duration) +
                     ", bytesRcvd=" + U.humanReadableByteCount(fullBytes + histBytes) +
                     ", bandwidth=" + U.humanReadableByteCount((fullBytes + histBytes) / durationSec) + "/sec" +
                     ", histPartitions=" + histParts +
