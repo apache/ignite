@@ -130,7 +130,7 @@ public class TcpDiscoveryStatistics {
     public synchronized void onMessageReceived(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
-        Integer cnt = F.addIfAbsent(rcvdMsgs, msg.getClass().getSimpleName(),  0);
+        Integer cnt = F.addIfAbsent(rcvdMsgs, msg.getClass().getSimpleName(), 0);
 
         rcvdMsgs.put(msg.getClass().getSimpleName(), ++cnt);
     }
