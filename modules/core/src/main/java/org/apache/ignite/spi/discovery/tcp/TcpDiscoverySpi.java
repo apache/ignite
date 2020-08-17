@@ -1446,6 +1446,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         ipFinder.onSpiContextInitialized(spiCtx);
 
         impl.onContextInitialized0(spiCtx);
+
+        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+
+        stats.registerMetrics(discoReg);
+
+        discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
+            "Message worker queue current size");
+
+        discoReg.register("CurrentTopologyVersion", () -> impl.getCurrentTopologyVersion(),
+            "Current topology version");
+
+        if (!isClientMode()) {
+            discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
+
+            discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -2117,23 +2134,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         initializeImpl();
-
-        MetricRegistry discoReg =
-            ((IgniteEx)ignite()).context().metric().registry(DISCO_METRICS);
-
-        stats.registerMetrics(discoReg);
-
-        discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
-            "Message worker queue current size");
-
-        discoReg.register("CurrentTopologyVersion", () -> impl.getCurrentTopologyVersion(),
-            "Current topology version");
-
-        if (!isClientMode()) {
-            discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
-
-            discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
-        }
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
