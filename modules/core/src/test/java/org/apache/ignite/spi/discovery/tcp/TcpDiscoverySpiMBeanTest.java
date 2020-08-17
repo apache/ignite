@@ -137,7 +137,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                     assertTrue(bean.getPendingMessagesRegistered() > 0);
                     assertTrue(discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value() > 0);
                 }
-                else  {
+                else {
                     assertEquals(0, bean.getPendingMessagesRegistered());
                     assertEquals(0, discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value());
                 }
