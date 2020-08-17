@@ -88,6 +88,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.partitioningBy;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -452,7 +454,7 @@ public class GridDhtPartitionDemander {
             for (Integer p : supplyMsg.infos().keySet()) {
                 fut.queued.get(p).increment();
 
-                if (fut.histRebalancingParts.get(nodeId).contains(p))
+                if (fut.historical.contains(p))
                     historical = true;
             }
 
@@ -1131,11 +1133,8 @@ public class GridDhtPartitionDemander {
         /** Assigment. */
         private final GridDhtPreloaderAssignments assignments;
 
-        /** Partitions which have been scheduled for full rebalance from specific supplier. */
-        private final Map<UUID, Set<Integer>> fullRebalancingParts;
-
-        /** Partitions which have been scheduled for historical rebalance from specific supplier. */
-        private final Map<UUID, Set<Integer>> histRebalancingParts;
+        /** Partitions which have been scheduled for rebalance from specific supplier. */
+        private final Map<ClusterNode, Set<Integer>> rebalancingParts;
 
         /** Received keys for full rebalance by supplier. */
         private final Map<UUID, LongAdder> fullReceivedKeys = new ConcurrentHashMap<>();
@@ -1171,8 +1170,7 @@ public class GridDhtPartitionDemander {
         ) {
             assert assignments != null : "Asiignments must not be null.";
 
-            this.fullRebalancingParts = U.newHashMap(assignments.size());
-            this.histRebalancingParts = U.newHashMap(assignments.size());
+            this.rebalancingParts = U.newHashMap(assignments.size());
             this.assignments = assignments;
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
@@ -1189,8 +1187,12 @@ public class GridDhtPartitionDemander {
 
                 partitionsLeft.addAndGet(v.partitions().size());
 
-                fullRebalancingParts.put(k.id(), new HashSet<>(v.partitions().fullSet()));
-                histRebalancingParts.put(k.id(), new HashSet<>(v.partitions().historicalSet()));
+                rebalancingParts.put(k, new HashSet<Integer>(v.partitions().size()) {{
+                    addAll(v.partitions().historicalSet());
+                    addAll(v.partitions().fullSet());
+                }});
+
+                historical.addAll(v.partitions().historicalSet());
 
                 Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream())
                     .forEach(
@@ -1218,8 +1220,7 @@ public class GridDhtPartitionDemander {
          * Dummy future. Will be done by real one.
          */
         RebalanceFuture() {
-            this.fullRebalancingParts = null;
-            this.histRebalancingParts = null;
+            this.rebalancingParts = null;
             this.assignments = null;
             this.exchId = null;
             this.topVer = null;
@@ -1464,8 +1465,7 @@ public class GridDhtPartitionDemander {
                         long minStartTime = Long.MAX_VALUE;
 
                         for (RebalanceFuture fut : futs) {
-                            parts += Stream.of(fut.fullRebalancingParts, fut.histRebalancingParts)
-                                .flatMap(map -> map.values().stream()).mapToInt(Collection::size).sum();
+                            parts += fut.rebalancingParts.values().stream().mapToLong(Collection::size).sum();
 
                             entries += Stream.of(fut.fullReceivedKeys, fut.histReceivedKeys)
                                 .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
@@ -1720,8 +1720,11 @@ public class GridDhtPartitionDemander {
             if (parts.isEmpty()) {
                 int remainingRoutines = remaining.size() - 1;
 
-                int fullParts = fullRebalancingParts.get(nodeId).size();
-                int histParts = histRebalancingParts.get(nodeId).size();
+                Map<Boolean, Long> partCnts = rebalancingParts.get(ctx.node(nodeId)).stream()
+                    .collect(partitioningBy(historical::contains, counting()));
+
+                int fullParts = partCnts.getOrDefault(Boolean.FALSE, 0L).intValue();
+                int histParts = partCnts.getOrDefault(Boolean.TRUE, 0L).intValue();
 
                 long fullEntries = fullReceivedKeys.get(nodeId).sum();
                 long histEntries = histReceivedKeys.get(nodeId).sum();
@@ -1883,15 +1886,12 @@ public class GridDhtPartitionDemander {
             Set<Integer> p1 = new HashSet<>();
 
             // Not compatible if a supplier has left.
-            for (UUID nodeId : fullRebalancingParts.keySet()) {
-                if (!grp.cacheObjectContext().kernalContext().discovery().alive(nodeId))
+            for (ClusterNode node : rebalancingParts.keySet()) {
+                if (!grp.cacheObjectContext().kernalContext().discovery().alive(node))
                     return false;
             }
 
-            for (Set<Integer> partitions : fullRebalancingParts.values())
-                p0.addAll(partitions);
-
-            for (Set<Integer> partitions : histRebalancingParts.values())
+            for (Set<Integer> partitions : rebalancingParts.values())
                 p0.addAll(partitions);
 
             for (GridDhtPartitionDemandMessage message : newAssignments.values()) {
