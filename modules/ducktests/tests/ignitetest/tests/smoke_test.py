@@ -23,8 +23,8 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.spark import SparkService
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.utils.version import DEV_BRANCH
 
 
 # pylint: disable=W0223
@@ -40,6 +40,18 @@ class SmokeServicesTest(IgniteTest):
 
     def teardown(self):
         pass
+
+    @parametrize(version=str(DEV_BRANCH))
+    def test_ignite_start_stop(self, version):
+        """
+        Test that IgniteService correctly start and stop
+        """
+        ignite = IgniteService(
+            self.test_context,
+            num_nodes=1,
+            version=version)
+        ignite.start()
+        ignite.stop()
 
     @parametrize(version=str(DEV_BRANCH))
     def test_ignite_app_start_stop(self, version):
@@ -61,12 +73,11 @@ class SmokeServicesTest(IgniteTest):
         app.stop()
         ignite.stop()
 
-    @parametrize(version=str(DEV_BRANCH))
-    def test_spark_start_stop(self, version):
+    def test_spark_start_stop(self):
         """
         Test that SparkService correctly start and stop
         """
-        spark = SparkService(self.test_context, version=version, num_nodes=2)
+        spark = SparkService(self.test_context, num_nodes=2)
         spark.start()
         spark.stop()
 
