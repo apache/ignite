@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,8 +41,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -89,7 +93,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceStatistics() throws Exception {
-        IgniteEx crd = createCluster(3);
+        createCluster(3);
 
         ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(3)).setGridLogger(listeningTestLog);
@@ -100,7 +104,14 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             new CallbackExecutorLogListener("Completed( \\(final\\))? rebalanc(ing|e chain).*", logMsgs::add)
         );
 
-        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n).record(GridDhtPartitionSupplyMessage.class));
+        Map<Ignite, Collection<T2<ClusterNode, Message>>> recordMsgs = new ConcurrentHashMap<>();
+
+        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n).record((node, msg) -> {
+            if (GridDhtPartitionSupplyMessage.class.isInstance(msg))
+                recordMsgs.computeIfAbsent(n, n1 -> new ConcurrentLinkedQueue<>()).add(new T2<>(node, msg));
+
+            return false;
+        }));
 
         IgniteEx node = startGrid(cfg);
         awaitPartitionMapExchange();
@@ -111,7 +122,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             .collect(
                 toMap(
                     identity(),
-                    n -> TestRecordingCommunicationSpi.spi(n).recordedMessages(true).stream()
+                    n -> recordMsgs.get(n).stream()
                         .filter(t2 -> t2.get1().id().equals(node.localNode().id()))
                         .map(IgniteBiTuple::get2)
                         .map(GridDhtPartitionSupplyMessage.class::cast)
@@ -122,14 +133,14 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         // +1 because one message about end of rebalance for all groups.
         assertEquals(supplyMsgs.values().stream().mapToInt(List::size).sum() + 1, logMsgs.size());
 
-        boolean mvccEnabled = crd.context().cache().cacheGroups().stream().anyMatch(CacheGroupContext::mvccEnabled);
-
         IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long> getSize =
             new IgniteClosure2X<GridCacheEntryInfo, CacheObjectContext, Long>() {
                 /** {@inheritDoc} */
-                @Override public Long applyx(GridCacheEntryInfo info, CacheObjectContext ctx) throws IgniteCheckedException {
-                    return mvccEnabled ? info.marshalledSize(ctx) :
-                        (long)(info.key().valueBytes(ctx).length + info.value().valueBytes(ctx).length);
+                @Override public Long applyx(
+                    GridCacheEntryInfo info,
+                    CacheObjectContext ctx
+                ) throws IgniteCheckedException {
+                    return (long)info.marshalledSize(ctx);
                 }
             };
 

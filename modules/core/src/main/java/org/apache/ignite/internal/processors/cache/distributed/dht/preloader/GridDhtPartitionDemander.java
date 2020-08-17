@@ -53,8 +53,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -75,6 +73,8 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridIterableAdapter;
+import org.apache.ignite.internal.util.lang.GridIterableAdapter.IteratorWrapper;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -594,13 +594,26 @@ public class GridDhtPartitionDemander {
                             part.beforeApplyBatch(last);
 
                             try {
-                                Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
+                                long[] byteRcv = {0};
+
+                                GridIterableAdapter<GridCacheEntryInfo> infosWrap = new GridIterableAdapter<>(
+                                    new IteratorWrapper<GridCacheEntryInfo>(e.getValue().infos().iterator()) {
+                                        /** {@inheritDoc} */
+                                        @Override public GridCacheEntryInfo nextX() throws IgniteCheckedException {
+                                            GridCacheEntryInfo i = super.nextX();
+
+                                            byteRcv[0] += i.marshalledSize(ctx.cacheObjectContext(i.cacheId()));
+
+                                            return i;
+                                        }
+                                    }
+                                );
 
                                 try {
                                     if (grp.mvccEnabled())
-                                        mvccPreloadEntries(topVer, node, p, infos);
+                                        mvccPreloadEntries(topVer, node, p, infosWrap);
                                     else
-                                        preloadEntries(topVer, p, infos, node);
+                                        preloadEntries(topVer, p, infosWrap, node);
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
@@ -608,6 +621,8 @@ public class GridDhtPartitionDemander {
                                 }
 
                                 fut.processed.get(p).increment();
+
+                                fut.onReceivedBytes(p, byteRcv[0], node);
 
                                 // If message was last for this partition, then we take ownership.
                                 if (last)
@@ -785,19 +800,7 @@ public class GridDhtPartitionDemander {
                         if (cctx != null) {
                             mvccPreloadEntry(cctx, node, entryHist, topVer, p);
 
-                            RebalanceFuture fut = rebalanceFut;
-
-                            fut.receivedKeys.incrementAndGet();
-
-                            long bytes = 0;
-
-                            for (GridCacheMvccEntryInfo entryInfo : entryHist)
-                                bytes += entryInfo.marshalledSize(grp.cacheObjectContext());
-
-                            boolean hist = fut.assignments.get(node).partitions().hasHistorical(p);
-
-                            (hist ? fut.histReceivedKeys : fut.fullReceivedKeys).get(node.id()).increment();
-                            (hist ? fut.histReceivedBytes : fut.fullReceivedBytes).get(node.id()).add(bytes);
+                            rebalanceFut.onReceivedKeys(p, node);
 
                             updateGroupMetrics();
                         }
@@ -850,23 +853,11 @@ public class GridDhtPartitionDemander {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        RebalanceFuture fut = rebalanceFut;
-
-        fut.receivedKeys.incrementAndGet();
-
-        CacheObject val = row.value();
-
-        CacheObjectContext cacheObjCtx = grp.cacheObjectContext();
-        long bytes = row.key().valueBytes(cacheObjCtx).length + (isNull(val) ? 0 : val.valueBytes(cacheObjCtx).length);
-
-        boolean hist = fut.assignments.get(node).partitions().hasHistorical(row.partition());
-
-        (hist ? fut.histReceivedKeys : fut.fullReceivedKeys).get(node.id()).increment();
-        (hist ? fut.histReceivedBytes : fut.fullReceivedBytes).get(node.id()).add(bytes);
+        rebalanceFut.onReceivedKeys(row.partition(), node);
 
         updateGroupMetrics();
 
-        GridCacheContext cctx = grp.sharedGroup() ? this.ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
+        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
             return false;
@@ -884,7 +875,7 @@ public class GridDhtPartitionDemander {
             assert row.expireTime() >= 0 : row.expireTime();
 
             if (cached.initialValue(
-                val,
+                row.value(),
                 row.version(),
                 null,
                 null,
@@ -902,7 +893,7 @@ public class GridDhtPartitionDemander {
 
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                     cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, val, true, null,
+                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
                         false, null, null, null, true);
 
                 return true;
@@ -1742,13 +1733,14 @@ public class GridDhtPartitionDemander {
                 long durationSec = Math.max(1, TimeUnit.MILLISECONDS.toSeconds(duration));
 
                 U.log(log, "Completed " + (remainingRoutines == 0 ? "(final) " : "") +
-                    "rebalancing [grp=" + grp.cacheOrGroupName() +
+                    "rebalancing [rebalanceId=" + rebalanceId +
+                    ", grp=" + grp.cacheOrGroupName() +
                     ", supplier=" + nodeId +
                     ", partitions=" + (fullParts + histParts) +
                     ", entries=" + (fullEntries + histEntries) +
                     ", duration=" + duration + "ms" +
                     ", bytesRcvd=" + U.humanReadableByteCount(fullBytes + histBytes) +
-                    ", avgSpeed=" + U.humanReadableByteCount((fullBytes + histBytes) / durationSec) + "/sec" +
+                    ", bandwidth=" + U.humanReadableByteCount((fullBytes + histBytes) / durationSec) + "/sec" +
                     ", histPartitions=" + histParts +
                     ", histEntries=" + histEntries +
                     ", histBytesRcvd=" + U.humanReadableByteCount(histBytes) +
@@ -1756,8 +1748,7 @@ public class GridDhtPartitionDemander {
                     ", fullEntries=" + fullEntries +
                     ", fullBytesRcvd=" + U.humanReadableByteCount(fullBytes) +
                     ", topVer=" + topologyVersion() +
-                    ", progress=" + (routines - remainingRoutines) + "/" + routines +
-                    ", rebalanceId=" + rebalanceId + "]");
+                    ", progress=" + (routines - remainingRoutines) + "/" + routines + "]");
 
                 remaining.remove(nodeId);
             }
@@ -1944,6 +1935,31 @@ public class GridDhtPartitionDemander {
             }
 
             return true;
+        }
+
+        /**
+         * Callback when getting entry from supplier.
+         *
+         * @param p Partition.
+         * @param node Supplier.
+         */
+        private void onReceivedKeys(int p, ClusterNode node) {
+            receivedKeys.incrementAndGet();
+
+            boolean hist = assignments.get(node).partitions().hasHistorical(p);
+            (hist ? histReceivedKeys : fullReceivedKeys).get(node.id()).increment();
+        }
+
+        /**
+         * Callback when getting size of received entries in bytes.
+         *
+         * @param p Partition.
+         * @param bytes Byte count.
+         * @param node Supplier.
+         */
+        private void onReceivedBytes(int p, long bytes, ClusterNode node) {
+            boolean hist = assignments.get(node).partitions().hasHistorical(p);
+            (hist ? histReceivedBytes : fullReceivedBytes).get(node.id()).add(bytes);
         }
 
         /** {@inheritDoc} */

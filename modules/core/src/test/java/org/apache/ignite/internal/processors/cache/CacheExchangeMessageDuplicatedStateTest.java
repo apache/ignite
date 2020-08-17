@@ -38,13 +38,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
@@ -178,7 +176,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         TestRecordingCommunicationSpi commSpi0 =
             (TestRecordingCommunicationSpi)ignite(crdIdx).configuration().getCommunicationSpi();
 
-        List<Object> msgs = commSpi0.recordedMessages(false).stream().map(IgniteBiTuple::get2).collect(toList());
+        List<Object> msgs = commSpi0.recordedMessages(false);
 
         assertTrue(!msgs.isEmpty());
 
@@ -202,7 +200,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             TestRecordingCommunicationSpi commSpi0 =
                 (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-            List<Object> msgs = commSpi0.recordedMessages(false).stream().map(IgniteBiTuple::get2).collect(toList());
+            List<Object> msgs = commSpi0.recordedMessages(false);
 
             assertTrue(!msgs.isEmpty());
 
