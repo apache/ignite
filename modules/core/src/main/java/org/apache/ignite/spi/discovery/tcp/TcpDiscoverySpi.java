@@ -1361,15 +1361,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Gets pending messages discarded count.
-     *
-     * @return Pending messages registered count.
-     */
-    public long getPendingMessagesDiscarded() {
-        return stats.pendingMessagesDiscarded();
-    }
-
-    /**
      * Gets avg message processing time.
      *
      * @return Avg message processing time.
@@ -2126,8 +2117,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         discoReg.register("CurrentTopologyVersion", () -> impl.getCurrentTopologyVersion(),
             "Current topology version");
 
-        discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class,
-            "Coordinator ID");
+        if (!isClientMode()) {
+            discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
+
+            discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+        }
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
@@ -2682,7 +2676,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         /** {@inheritDoc} */
         @Override public long getPendingMessagesDiscarded() {
-            return stats.pendingMessagesDiscarded();
+            return 0;
         }
 
         /** {@inheritDoc} */

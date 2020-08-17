@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
     /** */
-    private GridStringLogger strLog = new GridStringLogger();
+    private final GridStringLogger strLog = new GridStringLogger();
 
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -71,8 +71,10 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
     @Test
     public void testMBean() throws Exception {
         int cnt = 3;
+        int cliIdx = cnt - 1;
 
-        startGrids(cnt);
+        startGrids(cnt - 1);
+        startClientGrid(cliIdx);
 
         ClusterNode crd = U.oldest(grid(0).context().discovery().aliveServerNodes(), null);
 
@@ -93,8 +95,27 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertEquals(grid.cluster().topologyVersion(),
                     discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
 
-                assertEquals(crd.id(), bean.getCoordinator());
-                assertEquals(crd.id(), discoReg.<ObjectMetric<UUID>>findMetric("Coordinator").value());
+                if (i != cliIdx) {
+                    assertEquals(crd.id(), bean.getCoordinator());
+                    assertEquals(crd.id(), discoReg.<ObjectMetric<UUID>>findMetric("Coordinator").value());
+                }
+                else {
+                    assertNull(bean.getCoordinator());
+                    assertNull(discoReg.findMetric("Coordinator"));
+                }
+
+                if (grid.localNode().id().equals(bean.getCoordinator())) {
+                    assertTrue(bean.getCoordinatorSinceTimestamp() > 0);
+                    assertTrue(discoReg.<LongMetric>findMetric("CoordinatorSince").value() > 0);
+                }
+                else {
+                    assertEquals(0, bean.getCoordinatorSinceTimestamp());
+
+                    if (i == cliIdx)
+                        assertNull(discoReg.findMetric("CoordinatorSince"));
+                    else
+                        assertEquals(0L, discoReg.<LongMetric>findMetric("CoordinatorSince").value());
+                }
 
                 // `getNodesJoined` returns count of joined nodes since local node startup.
                 assertEquals((cnt - 1) - i, bean.getNodesJoined());
@@ -112,14 +133,24 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertTrue(bean.getTotalProcessedMessages() > 0);
                 assertTrue(discoReg.<IntMetric>findMetric("TotalProcessedMessages").value() > 0);
 
-                assertTrue(bean.getPendingMessagesRegistered() > 0);
-                assertTrue(discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value() > 0);
+                if (i != cliIdx) {
+                    assertTrue(bean.getPendingMessagesRegistered() > 0);
+                    assertTrue(discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value() > 0);
+                }
+                else  {
+                    assertEquals(0, bean.getPendingMessagesRegistered());
+                    assertEquals(0, discoReg.<IntMetric>findMetric("PendingMessagesRegistered").value());
+                }
 
                 assertEquals(0, bean.getPendingMessagesDiscarded());
-                assertEquals(0, discoReg.<IntMetric>findMetric("PendingMessagesDiscarded").value());
 
                 bean.dumpRingStructure();
                 assertTrue(strLog.toString().contains("TcpDiscoveryNodesRing"));
+
+                assertFalse(bean.getProcessedMessages().isEmpty());
+                assertFalse(bean.getReceivedMessages().isEmpty());
+                assertTrue(bean.getMaxMessageProcessingTime() > 0);
+                assertEquals(i == cliIdx, bean.isClientMode());
             }
 
             stopGrid(0);
@@ -140,8 +171,15 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertEquals(grid.cluster().topologyVersion(),
                     discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
 
-                assertEquals(crd.id(), bean.getCoordinator());
-                assertEquals(crd.id(), discoReg.<ObjectMetric<UUID>>findMetric("Coordinator").value());
+                if (i != cliIdx) {
+                    assertEquals(crd.id(), bean.getCoordinator());
+                    assertEquals(crd.id(), discoReg.<ObjectMetric<UUID>>findMetric("Coordinator").value());
+                }
+
+                if (grid.localNode().id().equals(crd.id())) {
+                    assertTrue(bean.getCoordinatorSinceTimestamp() > 0);
+                    assertTrue(discoReg.<LongMetric>findMetric("CoordinatorSince").value() > 0);
+                }
 
                 assertEquals(1L, bean.getNodesLeft());
                 assertEquals(1, discoReg.<IntMetric>findMetric("LeftNodes").value());

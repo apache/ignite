@@ -70,15 +70,10 @@ public class TcpDiscoveryStatistics {
     /** Pending messages registered count. */
     private final IntMetricImpl pendingMsgsRegistered;
 
-    /** Pending messages discarded count. */
-    private final IntMetricImpl pendingMsgsDiscarded;
-
     /**
      * @param discoReg Discovery metric registry.
      */
     public TcpDiscoveryStatistics(MetricRegistry discoReg) {
-        discoReg.register("CoordinatorSince", crdSinceTs::get, "Coordinator since timestamp");
-
         discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
 
         discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
@@ -90,8 +85,6 @@ public class TcpDiscoveryStatistics {
         leftNodesCnt = discoReg.intMetric("LeftNodes", "Left nodes count");
 
         pendingMsgsRegistered = discoReg.intMetric("PendingMessagesRegistered", "Pending messages registered count");
-
-        pendingMsgsDiscarded = discoReg.intMetric("PendingMessagesDiscarded", "Pending messages discarded count");
     }
 
     /**
@@ -195,13 +188,6 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
-     * Increments pending messages discarded count.
-     */
-    public void onPendingMessageDiscarded() {
-        pendingMsgsDiscarded.increment();
-    }
-
-    /**
      * Gets processed messages counts (grouped by type).
      *
      * @return Map containing message types and respective counts.
@@ -272,15 +258,6 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
-     * Gets pending messages discarded count.
-     *
-     * @return Pending messages registered count.
-     */
-    public long pendingMessagesDiscarded() {
-        return pendingMsgsDiscarded.value();
-    }
-
-    /**
      * Gets nodes joined count.
      *
      * @return Nodes joined count.
@@ -326,7 +303,6 @@ public class TcpDiscoveryStatistics {
         joinedNodesCnt.reset();
         leftNodesCnt.reset();
         maxMsgProcTime = 0;
-        pendingMsgsDiscarded.reset();
         pendingMsgsRegistered.reset();
         procMsgs.clear();
         rcvdMsgs.clear();
