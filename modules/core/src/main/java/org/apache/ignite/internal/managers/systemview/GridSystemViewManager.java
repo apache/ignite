@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
     /** Class name for a SQL view exporter of system views. */
-    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
+    static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
 
     /** Name of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
@@ -82,26 +82,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param ctx Kernal context.
      */
     public GridSystemViewManager(GridKernalContext ctx) {
-        super(ctx, ((Supplier<SystemViewExporterSpi[]>)() -> {
-            SystemViewExporterSpi[] spi = ctx.config().getSystemViewExporterSpi();
-
-            if (!IgniteComponentType.INDEXING.inClassPath())
-                return spi;
-
-            SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spi != null ? spi.length + 1 : 1];
-
-            if (!F.isEmpty(spi))
-                System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
-
-            try {
-                spiWithSql[spiWithSql.length - 1] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-
-            return spiWithSql;
-        }).get());
+        super(ctx, addSqlExporter(ctx.config().getSystemViewExporterSpi()));
     }
 
     /** {@inheritDoc} */
@@ -281,5 +262,30 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<SystemView<?>> iterator() {
         return systemViews.values().iterator();
+    }
+
+    /**
+     * Adds SQL view exporter to the spis array.
+     *
+     * @param spi Spis from config.
+     * @return Spis array with the SQL view exporter in it.
+     */
+    private static SystemViewExporterSpi[] addSqlExporter(SystemViewExporterSpi[] spi) {
+        if (!IgniteComponentType.INDEXING.inClassPath())
+            return spi;
+
+        SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spi != null ? spi.length + 1 : 1];
+
+        if (!F.isEmpty(spi))
+            System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
+
+        try {
+            spiWithSql[spiWithSql.length - 1] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        return spiWithSql;
     }
 }
