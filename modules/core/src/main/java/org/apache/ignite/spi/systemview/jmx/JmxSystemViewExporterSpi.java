@@ -19,16 +19,13 @@ package org.apache.ignite.spi.systemview.jmx;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.managers.systemview.AbstractSystemViewExporterSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
-import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,13 +34,7 @@ import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 /**
  * This SPI implementation exports system views as JMX beans.
  */
-public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
-    /** System view registry. */
-    private ReadOnlySystemViewRegistry sysViewReg;
-
-    /** System view filter. */
-    @Nullable private Predicate<SystemView<?>> filter;
-
+public class JmxSystemViewExporterSpi extends AbstractSystemViewExporterSpi {
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
 
@@ -70,7 +61,7 @@ public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements System
             log.debug("Found new system view [name=" + sysView.name() + ']');
 
         try {
-            SystemViewMBean mlBean = new SystemViewMBean<>(sysView);
+            SystemViewMBean<?> mlBean = new SystemViewMBean<>(sysView);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
@@ -113,15 +104,5 @@ public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements System
         catch (JMException e) {
             log.error("Failed to unregister SPI MBean: " + bean, e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry sysViewReg) {
-        this.sysViewReg = sysViewReg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<SystemView<?>> filter) {
-        this.filter = filter;
     }
 }

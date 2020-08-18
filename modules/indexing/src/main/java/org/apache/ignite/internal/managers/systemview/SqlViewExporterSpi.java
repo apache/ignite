@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
-import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
-import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
@@ -39,10 +34,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
  * Note, instance of this class created with reflection.
  * @see GridSystemViewManager#SYSTEM_VIEW_SQL_SPI
  */
-class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
-    /** System view registry. */
-    private ReadOnlySystemViewRegistry sysViewReg;
-
+class SqlViewExporterSpi extends AbstractSystemViewExporterSpi {
     /** Schema manager. */
     private SchemaManager mgr;
 
@@ -73,25 +65,5 @@ class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterS
             new FiltrableSystemViewLocal<>(ctx, sysView) : new SystemViewLocal<>(ctx, sysView);
 
         mgr.createSystemView(SCHEMA_SYS, view);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStop() throws IgniteSpiException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry mlreg) {
-        this.sysViewReg = mlreg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<SystemView<?>> filter) {
-        // No-op.
     }
 }
