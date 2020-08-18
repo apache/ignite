@@ -632,6 +632,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setArgs(req.arguments());
             qry.setAutoCommit(req.autoCommit());
 
+            if (req.explicitTimeout()) {
+                // Timeout is handled on a client side, do not handle it on a server side.
+                qry.setTimeout(0, TimeUnit.MILLISECONDS);
+            }
+
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
@@ -1003,7 +1008,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
-        qry.setTimeout(0, TimeUnit.MILLISECONDS);
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1455,17 +1456,18 @@ public class PlatformCache extends PlatformAbstractTarget {
         boolean collocated = reader.readBoolean();
         String schema = reader.readString();
 
-        return new SqlFieldsQuery(sql)
+        SqlFieldsQuery qry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(sql), timeout, TimeUnit.MILLISECONDS)
                 .setPageSize(pageSize)
                 .setArgs(args)
                 .setLocal(loc)
                 .setDistributedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
                 .setLazy(lazy)
-                .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)
                 .setSchema(schema);
+
+        return qry;
     }
 
     /**
