@@ -128,7 +128,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
                     assertNull(cache.get(key));
 
-                    List<?> msgs = spi.recordedMessages(false);
+                    List<Object> msgs = spi.recordedMessages(false);
 
                     assertEquals(1, msgs.size());
                 }
@@ -255,7 +255,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
                     assertNull(cache.get(key));
 
-                    List<?> msgs = newNodeSpi.recordedMessages(false);
+                    List<Object> msgs = newNodeSpi.recordedMessages(false);
 
                     assertEquals(1, msgs.size());
 
@@ -361,7 +361,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-            List<?> msgs = spi.recordedMessages(false);
+            List<Object> msgs = spi.recordedMessages(false);
 
             assertEquals(0, msgs.size());
         }
@@ -382,7 +382,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi spi = recordGetRequests(ignite, ccfg.getNearConfiguration() != null);
 
-        List<?> msgs;
+        List<Object> msgs;
 
         if (nearKey != null) {
             assertNull(cache.get(nearKey));

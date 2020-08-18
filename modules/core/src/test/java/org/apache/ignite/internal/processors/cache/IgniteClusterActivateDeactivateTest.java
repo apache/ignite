@@ -1612,7 +1612,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     private void checkRecordedMessages(boolean exp) {
         for (Ignite node : G.allGrids()) {
-            List<?> recorded = TestRecordingCommunicationSpi.spi(node).recordedMessages(false);
+            List<Object> recorded = TestRecordingCommunicationSpi.spi(node).recordedMessages(false);
 
             if (exp)
                 assertFalse(F.isEmpty(recorded));
