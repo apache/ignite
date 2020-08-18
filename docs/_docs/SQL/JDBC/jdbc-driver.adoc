@@ -3,7 +3,7 @@
 
 Ignite is shipped with JDBC drivers that allow processing of distributed data using standard SQL statements like `SELECT`, `INSERT`, `UPDATE` or `DELETE` directly from the JDBC side.
 
-Presently, there are two drivers supported by Ignite: the lightweight and easy to use JDBC Thin Driver described in this document and link:SQL/JDBC/jdbc-client-driver[JDBC Client Driver] that interacts with the cluster by means of a link:clustering/clustering#servers-and-clients[client node].
+Presently, there are two drivers supported by Ignite: the lightweight and easy to use JDBC Thin Driver described in this document and link:SQL/JDBC/jdbc-client-driver[JDBC Client Driver] that interacts with the cluster by means of a client node.
 
 == JDBC Thin Driver
 

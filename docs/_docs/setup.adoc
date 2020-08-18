@@ -38,6 +38,32 @@ The easiest way to use Ignite is to add it to your pom.
 </dependencies>
 ----
 
+The 'ignite-core' library contains the core functionality of Ignite.
+Addition functionality is provided by various Ignite modules.
+
+The following are the two most commonly used modules:
+
+
+* `ignite-spring` (support for link:understanding-configuration#spring-xml-configuration[XML-based configuration])
+* `ignite-indexing` (support for SQL indexing)
+
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-indexing</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+----
+
+
 
 
 == Using Docker
@@ -118,7 +144,7 @@ your application.
 [source, xml]
 ----
 <dependency>
-    <groupId>${groupId}</groupId>
+    <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-log4j2</artifactId>
     <version>${ignite.version}</version>
 </dependency>
@@ -132,7 +158,7 @@ The following modules have LGPL dependencies and, therefore, can't be deployed o
 * ignite-schedule
 
 To use these modules, you will need to build them from sources and add to your project.
-For example, to install ignite-hibernate into your local repository, run this command in the Ignite source package:
+For example, to install `ignite-hibernate` into your local repository, run this command in the Ignite source package:
 
 
 [source, shell]

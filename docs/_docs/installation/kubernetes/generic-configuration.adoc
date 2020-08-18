@@ -52,8 +52,8 @@ include::{script}[tags=create-namespace]
 
 The {soft_name} service is used for auto-discovery and as a load-balancer for external applications that will connect to your cluster.
 
-Every time a new node is started (in a separate pod), the IP finder will connect to the service via the Kubernetes API to obtain the list of the existing pods' addresses.
-Using these addresses, the new node will be able to discover all cluster nodes.
+Every time a new node is started (in a separate pod), the IP finder connects to the service via the Kubernetes API to obtain the list of the existing pods' addresses.
+Using these addresses, the new node discovers all cluster nodes.
 
 .service.yaml
 [source, yaml]
@@ -99,7 +99,7 @@ This will allow you to keep a single instance of the configuration file for all 
 Let's create a configuration file first.
 Choose one of the tabs below, depending on whether you use persistence or not.
 
-:kubernetes-ip-finder-description: This IP finder will connect to the service via the Kubernetes API and obtain the list of the existing pods' addresses. Using these addresses, the new node will be able to discover all other cluster nodes.
+:kubernetes-ip-finder-description: This IP finder connects to the service via the Kubernetes API and obtains the list of the existing pods' addresses. Using these addresses, the new node discovers all other cluster nodes.
 
 
 [tabs]
@@ -119,17 +119,16 @@ include::{configDir}/stateless/node-configuration.xml[]
 tab:Configuration with persistence[]
 In the configuration file, we will:
 
-* Enable link:persistence/native-persistence[native persistence] and specify the `workDirectory`, `walPath`, and `walArchivePath`. These directories will be mounted in each pod that runs an Ignite node. Volume configuration is part of the <<Creating Pod Configuration,pod configuration>>.
+* Enable link:persistence/native-persistence[native persistence] and specify the `workDirectory`, `walPath`, and `walArchivePath`. These directories are mounted in each pod that runs an Ignite node. Volume configuration is part of the <<Creating Pod Configuration,pod configuration>>.
 * Use the `TcpDiscoveryKubernetesIpFinder` IP finder. {kubernetes-ip-finder-description}
 
-The file will look like this:
+The file look like this:
 
 .node-configuration.xml
 [source, xml]
 ----
 include::{configDir}/stateful/node-configuration.xml[]
 ----
-
 --
 
 
@@ -185,11 +184,11 @@ include::{script}[tags=create-deployment]
 
 tab:Configuration with persistence[]
 
-Our StatefulSet configuration will deploy 2 pods running Ignite {version}.
+Our StatefulSet configuration deploys 2 pods running Ignite {version}.
 
 In the container's configuration we will:
 
-* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installing-using-docker#enabling-modules[modules].
+* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation/installing-using-docker#enabling-modules[modules].
 * Use the configuration file from the ConfigMap we created earlier.
 * Mount volumes for the work directory (where application data is stored), WAL files, and WAL archive.
 * Open a number of ports:
@@ -208,7 +207,7 @@ include::{configDir}/stateful/statefulset-template.yaml[]
 ----
 
 Note the `spec.volumeClaimTemplates` section, which defines persistent volumes provisioned by a persistent volume provisioner.
-The volume type will depend on the cloud provider.
+The volume type depends on the cloud provider.
 You can have more control over the volume type by defining https://kubernetes.io/docs/concepts/storage/storage-classes/[storage classes,window=_blank].
 
 Create the StatefulSet by running the following command:
@@ -286,13 +285,14 @@ If you are using persistence, you must activate the cluster after it is started.
 
 Execute the following command:
 
+ *TODO:check the path to control.sh:*
 [source, shell]
 ----
-/opt/gridgain/bin/control.sh --activate
+/opt/apache-ignite/bin/control.sh --activate
 ----
 
-You can also activate the cluster using the link:restapi#activate[REST API]. Refer to the <<Connecting to the Cluster>> section for details about connection to the cluster's REST API.
-
+You can also activate the cluster using the link:restapi#activate[REST API].
+Refer to the <<Connecting to the Cluster>> section for details about connection to the cluster's REST API.
 
 == Scaling the Cluster
 
@@ -335,11 +335,11 @@ Get the public IP of the service:
 [source, shell,subs="attributes,specialchars"]
 ----
 $ {command} describe svc ignite-service -n ignite
-Name:                     gridgain-service
-Namespace:                gridgain
-Labels:                   app=gridgain
+Name:                     ignite-service
+Namespace:                ignite
+Labels:                   app=ignite
 Annotations:              <none>
-Selector:                 app=gridgain
+Selector:                 app=ignite
 Type:                     LoadBalancer
 IP:                       10.0.144.19
 LoadBalancer Ingress:     13.86.186.145

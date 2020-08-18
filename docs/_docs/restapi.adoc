@@ -88,8 +88,6 @@ include::code-snippets/xml/jetty.xml[tags=, indent=0]
 
 === Security
 
-//NOTE: Refer to the link:https://www.gridgain.com/docs/tutorials/security/ssl-guide[SSL Guide] for a comprehensive instruction on SSL.
-
 When link:security/authentication[authentication] is configured in the cluster, all applications that use REST API request authentication by providing security credentials.
 The authentication request returns a session token that can be used with any command within that session.
 

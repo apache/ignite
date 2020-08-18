@@ -280,7 +280,7 @@ include::{csharpFile}[tag=query-entity-with-inline-size,indent=0]
 tab:C++[unsupported]
 --
 
-* If you create indexes using the `CREATE INDEX` command, you can use the `INLINE_SIZE` option to set the inline size. See examples in the link:sql-reference/ddl#examples-4[corresponding section].
+* If you create indexes using the `CREATE INDEX` command, you can use the `INLINE_SIZE` option to set the inline size. See examples in the link:sql-reference/ddl[corresponding section].
 +
 [source, sql]
 ----
@@ -337,7 +337,7 @@ tab:C++[unsupported]
 
 If a custom key can be serialized into a binary form, then Ingnite calculates its hash code and implement the `equals()` method automatically.
 
-However, if the key's type is `Externalizable`, and if it cannot be serialized into the binary form, then you are required to implement the `hashCode` and `equals` methods manually. See the link:advanced-topics/binaryobject[Binary Objects] page for more details.
+However, if the key's type is `Externalizable`, and if it cannot be serialized into the binary form, then you are required to implement the `hashCode` and `equals` methods manually. See the link:key-value-api/binary-objects[Binary Objects] page for more details.
 ====
 
 

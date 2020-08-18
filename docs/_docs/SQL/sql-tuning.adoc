@@ -6,8 +6,8 @@ This article outlines basic and advanced optimization techniques for Ignite SQL 
 == Using the EXPLAIN Statement
 
 Ignite supports the `EXPLAIN` statement, which could be used to read the execution plan of a query.
-Use this command to analyse your queries for possible optimization. 
-Note that the plan will contain multiple rows: the last one will contain a query for the reducing side (usually your application), others are for map nodes (usually server nodes). 
+Use this command to analyse your queries for possible optimization.
+Note that the plan will contain multiple rows: the last one will contain a query for the reducing side (usually your application), others are for map nodes (usually server nodes).
 Read the link:SQL/sql-introduction#distributed-queries[Distributed Queries] section to learn how queries are executed in Ignite.
 
 [source,sql]
@@ -38,7 +38,7 @@ Avoid having too many columns in the result set of a `SELECT` query. Due to limi
 
 == Lazy Loading
 
-By default, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is usually your application). 
+By default, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is usually your application).
 This approach provides optimal performance for queries of small or medium result sets.
 However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions.
 
@@ -305,7 +305,7 @@ Note that you will only have to set the inline size for the index on `stringFiel
 
 Refer to the link:SQL/indexes#configuring-index-inline-size[Configuring Index Inline Size] section for the information on how to change the inline size.
 
-You can check the inline size of an existing index in the link:monitoring-metrics/system-views#indexes-view[INDEXES] system view.
+You can check the inline size of an existing index in the link:monitoring-metrics/system-views#indexes[INDEXES] system view.
 
 [WARNING]
 ====
@@ -352,8 +352,8 @@ WHERE salary > 150000 AND age < 35;
 
 == Partition Pruning
 
-Partition pruning is a technique that optimizes queries that use affinity keys in the `WHERE` condition. 
-When executing such a query, Ignite  scans only those partitions where the requested data is stored. 
+Partition pruning is a technique that optimizes queries that use affinity keys in the `WHERE` condition.
+When executing such a query, Ignite  scans only those partitions where the requested data is stored.
 This reduces query time because the query is sent only to the nodes that store the requested partitions.
 
 In the following example, the employee objects are colocated by the `id` field (if an affinity key is not set

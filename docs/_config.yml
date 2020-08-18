@@ -1,6 +1,6 @@
 exclude: [guidelines.md,  "Gemfile", "Gemfile.lock", README.adoc, "_docs/code-snippets", "_docs/includes", '*.sh']
 attrs: &asciidoc_attributes
-  version: 2.9 
+  version: 2.9.0 
   base_url: /docs
   stylesdir: /docs/assets/css
   imagesdir: /docs/{version}
@@ -12,7 +12,7 @@ attrs: &asciidoc_attributes
   githubUrl: https://github.com/apache/ignite/tree/master
 collections:
   docs:
-    permalink: /docs/2.9/:path:output_ext
+    permalink: /docs/2.9.0/:path:output_ext
     output: true
 defaults:
   -

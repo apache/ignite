@@ -1,8 +1,5 @@
----
-published: false
----
-
 = Expiry Policy for Individual Entries
+:page-published: false
 
 You can have expiry policy
 

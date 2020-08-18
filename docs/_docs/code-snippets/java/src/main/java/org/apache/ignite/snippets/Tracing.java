@@ -1,6 +1,7 @@
 package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,5 @@ public class Tracing {
         //end::config[]
         //end::export-to-zipkin[]
         ignite.close();
-
     }
 }
