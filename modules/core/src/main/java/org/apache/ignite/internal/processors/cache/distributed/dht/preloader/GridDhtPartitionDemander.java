@@ -79,6 +79,7 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -179,6 +180,34 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(), "The time the " +
             "rebalancing was completed with an error or was cancelled. If there were several such cases, the metric " +
             "stores the last time. The metric displays the value even if there is no rebalancing process.");
+
+        mreg.register(
+            "RebalancingFullReceivedKeys",
+            () -> F.viewReadOnly(rebalanceFut.fullReceivedKeys, LongAdder::sum),
+            Map.class,
+            "Currently received keys for full rebalance by supplier."
+        );
+
+        mreg.register(
+            "RebalancingHistReceivedKeys",
+            () -> F.viewReadOnly(rebalanceFut.histReceivedKeys, LongAdder::sum),
+            Map.class,
+            "Currently received keys for historical rebalance by supplier."
+        );
+
+        mreg.register(
+            "RebalancingFullReceivedBytes",
+            () -> F.viewReadOnly(rebalanceFut.fullReceivedBytes, LongAdder::sum),
+            Map.class,
+            "Currently received bytes for full rebalance by supplier."
+        );
+
+        mreg.register(
+            "RebalancingHistReceivedBytes",
+            () -> F.viewReadOnly(rebalanceFut.histReceivedBytes, LongAdder::sum),
+            Map.class,
+            "Currently received bytes for historical rebalance by supplier."
+        );
     }
 
     /**
