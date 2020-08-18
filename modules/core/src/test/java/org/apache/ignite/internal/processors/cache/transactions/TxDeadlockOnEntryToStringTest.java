@@ -125,10 +125,13 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
     private class EntryPrinterTimeoutObject implements GridTimeoutObject {
         /** Id. */
         private final IgniteUuid id = IgniteUuid.randomUuid();
+
         /** Entry. */
         private final GridCacheEntryEx entry;
+
         /** Entry printed. */
         private final CountDownLatch entryPrinted;
+
         /** Entry ready to print. */
         private final CountDownLatch entryReadyToPrint;
 
