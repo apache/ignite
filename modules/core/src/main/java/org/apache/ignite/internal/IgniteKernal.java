@@ -1123,8 +1123,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 longJVMPauseDetector
             );
 
-            ctx.add(new MaintenanceProcessor(ctx));
-
             startProcessor(new DiagnosticProcessor(ctx));
 
             mBeansMgr = new IgniteMBeansManager(this);
@@ -1216,12 +1214,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
 
+            startProcessor(new PdsConsistentIdProcessor(ctx));
+
+            startProcessor(new MaintenanceProcessor(ctx));
+
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.maintenance;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.maintenance.MaintenanceRecordBuilder;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -40,10 +41,13 @@ import java.util.UUID;
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
     /** */
-    private static final String MAINTENANCE_FILE_NAME = "maintenance.txt";
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_records.mntc";
 
     /** */
     private final Map<UUID, String> registeredRecords = new HashMap<>();
+
+    /** */
+    private volatile File mntcRecordsFile;
 
     /**
      * @param ctx Kernal context.
@@ -54,13 +58,18 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void registerMaintenanceRecord(MaintenanceRecordBuilder bldr) throws IgniteCheckedException {
-        try {
-            File mntcFile = new File(MAINTENANCE_FILE_NAME);
+        if (mntcRecordsFile == null) {
+            log.warning("Maintenance records file not found, record won't be stored: "
+                + bldr.maintenanceDescription());
 
-            try (FileOutputStream out = new FileOutputStream(mntcFile)) {
+            return;
+        }
+
+        try {
+            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile)) {
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(bldr.maintenanceTypeId().toString() + System.lineSeparator());
-                    writer.write(bldr.maintenanceDescription() + System.lineSeparator());
+                    writer.write(bldr.maintenanceTypeId().toString() + '\t');
+                    writer.write(bldr.maintenanceDescription() + '\t');
                     writer.write(bldr.getMaintenanceRecord());
                 }
             }
@@ -73,12 +82,25 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         try {
-            File mntcFile = new File(MAINTENANCE_FILE_NAME);
+            PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-            try (FileInputStream in = new FileInputStream(mntcFile)) {
+            File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+
+            if (!storeDir.exists())
+                return;
+
+            mntcRecordsFile = new File(storeDir, MAINTENANCE_FILE_NAME);
+
+            if (!mntcRecordsFile.exists()) {
+                mntcRecordsFile.createNewFile();
+
+                return;
+            }
+
+            try (FileInputStream in = new FileInputStream(mntcRecordsFile)) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                     reader.lines().forEach(s -> {
-                        String[] subStrs = s.split(System.lineSeparator());
+                        String[] subStrs = s.split("\t");
 
                         registeredRecords.put(UUID.fromString(subStrs[0]), subStrs[subStrs.length - 1]);
                     });
@@ -87,7 +109,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             }
         }
         catch (IOException ioE) {
-            // No-op.
+            // TODO: handle exception
         }
     }
 
