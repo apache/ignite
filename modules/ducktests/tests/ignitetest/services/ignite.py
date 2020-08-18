@@ -31,7 +31,7 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.tests.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteService(IgniteAwareService):
@@ -52,9 +52,11 @@ class IgniteService(IgniteAwareService):
     }
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, modules=None, client_mode=False, version=DEV_BRANCH, properties="",
-                 jvm_opts=None):
-        super(IgniteService, self).__init__(context, num_nodes, modules, client_mode, version, properties, jvm_opts)
+    def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
+                 version=DEV_BRANCH):
+        super(IgniteService, self).__init__(context, num_nodes, properties,
+                                            client_mode=client_mode, modules=modules, version=version,
+                                            jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
@@ -64,22 +66,6 @@ class IgniteService(IgniteAwareService):
 
         for node in self.nodes:
             self.await_node_started(node, timeout_sec)
-
-    def start_cmd(self, node):
-        jvm_opts = self.jvm_options + " "
-        jvm_opts += "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
-        jvm_opts += "-J-Dlog4j.configDebug=true "
-
-        cmd = "export EXCLUDE_TEST_CLASSES=true; "
-        cmd += "export IGNITE_LOG_DIR=" + IgniteService.PERSISTENT_ROOT + "; "
-        cmd += "export USER_LIBS=%s; " % ":".join(self.user_libs)
-        cmd += "%s %s %s 1>> %s 2>> %s &" % \
-               (self.path.script("ignite.sh"),
-                jvm_opts,
-                IgniteService.CONFIG_FILE,
-                IgniteService.STDOUT_STDERR_CAPTURE,
-                IgniteService.STDOUT_STDERR_CAPTURE)
-        return cmd
 
     def await_node_started(self, node, timeout_sec):
         """
@@ -162,7 +148,7 @@ class IgniteService(IgniteAwareService):
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % IgniteService.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
     def thread_dump(self, node):
         """

@@ -37,6 +37,9 @@ public abstract class IgniteAwareApplication {
     /** App finished. */
     private static final String APP_FINISHED = "IGNITE_APPLICATION_FINISHED";
 
+    /** App broken. */
+    private static final String APP_BROKEN = "IGNITE_APPLICATION_BROKEN";
+
     /** App terminated. */
     private static final String APP_TERMINATED = "IGNITE_APPLICATION_TERMINATED";
 
@@ -46,8 +49,14 @@ public abstract class IgniteAwareApplication {
     /** Finished. */
     private static volatile boolean finished;
 
+    /** Broken. */
+    private static volatile boolean broken;
+
     /** Terminated. */
     private static volatile boolean terminated;
+
+    /** Shutdown hook. */
+    private static volatile Thread hook;
 
     /** Ignite. */
     protected Ignite ignite;
@@ -59,15 +68,16 @@ public abstract class IgniteAwareApplication {
      * Default constructor.
      */
     protected IgniteAwareApplication() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (log.isDebugEnabled())
-                log.debug("Caught shutdown signal. Terminating, waiting for graceful stopping...");
+        Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
+            log.info("SIGTERM recorded.");
 
-            terminate();
+            if (!finished && !broken)
+                terminate();
+            else
+                log.info("Application already done [finished=" + finished + ", broken=" + broken + "]");
 
-            while (!finished()) {
-                if (log.isTraceEnabled())
-                    log.trace("Cycled waiting for graceful termination...");
+            while (!finished && !broken) {
+                log.info("Waiting for graceful termnation.");
 
                 try {
                     U.sleep(100);
@@ -76,13 +86,9 @@ public abstract class IgniteAwareApplication {
                     e.printStackTrace();
                 }
             }
-
-            if(log.isDebugEnabled())
-                log.info("SIGTERM processed.");
         }));
 
-        if (log.isDebugEnabled())
-            log.debug("ShutdownHook registered.");
+        log.info("ShutdownHook registered.");
     }
 
     /**
@@ -96,27 +102,54 @@ public abstract class IgniteAwareApplication {
         inited = true;
     }
 
-    /** */
+    /**
+     *
+     */
     protected void markFinished() {
         assert !finished;
+        assert !broken;
 
         log.info(APP_FINISHED);
+
+        removeShutdownHook();
 
         finished = true;
     }
 
-    /** */
+    /**
+     *
+     */
+    private void markBroken() {
+        assert !finished;
+        assert !broken;
+
+        log.info(APP_BROKEN);
+
+        removeShutdownHook();
+
+        broken = true;
+    }
+
+    /**
+     *
+     */
+    private void removeShutdownHook() {
+        Runtime.getRuntime().removeShutdownHook(hook);
+
+        log.info("Shutdown hook removed.");
+    }
+
+    /**
+     *
+     */
     protected void markSyncExecutionComplete() {
         markInitialized();
         markFinished();
     }
 
-    /** */
-    protected boolean finished() {
-        return finished;
-    }
-
-    /** */
+    /**
+     *
+     */
     private void terminate() {
         assert !terminated;
 
@@ -125,14 +158,11 @@ public abstract class IgniteAwareApplication {
         terminated = true;
     }
 
-    /** */
+    /**
+     *
+     */
     protected boolean terminated() {
         return terminated;
-    }
-
-    /** */
-    protected boolean active() {
-        return !(terminated() || finished());
     }
 
     /**
@@ -170,15 +200,17 @@ public abstract class IgniteAwareApplication {
             run(jsonNode);
 
             assert inited : "Was not properly initialized.";
+            assert finished : "Was not properly finished.";
         }
         catch (Throwable th) {
             log.error("Unexpected Application failure... ", th);
+
+            recordResult("ERROR", th.getMessage());
+
+            markBroken();
         }
         finally {
-            if (finished())
-                log.info("Application finished.");
-            else if (terminated())
-                log.warn("Application terminated.");
+            log.info("Application finished.");
         }
     }
 }

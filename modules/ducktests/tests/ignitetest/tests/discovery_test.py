@@ -146,7 +146,7 @@ class DiscoveryTest(IgniteTest):
         self.servers = IgniteService(
             self.test_context,
             num_nodes=self.NUM_NODES - 1 if with_load else self.NUM_NODES,
-            modules=["ignite-zookeeper"],
+            modules=modules,
             properties=properties,
             version=version)
 

@@ -140,8 +140,8 @@ class ControlUtility:
         return output
 
     def __form_cmd(self, node, cmd):
-        return self._cluster.path.script("%s --host %s %s" % (self.BASE_COMMAND, node.account.externally_routable_ip,
-                                                              cmd))
+        return self._cluster.spec.path.script("%s --host %s %s" %
+                                              (self.BASE_COMMAND, node.account.externally_routable_ip, cmd))
 
     @staticmethod
     def __parse_output(raw_output):

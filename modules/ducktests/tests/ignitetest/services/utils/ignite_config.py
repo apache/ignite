@@ -51,10 +51,7 @@ class IgniteServerConfig(Config):
     """
     Ignite server node configuration.
     """
-    def __init__(self, context):
-        path = DEFAULT_IGNITE_CONF
-        if 'ignite_server_config_path' in context.globals:
-            path = context.globals['ignite_server_config_path']
+    def __init__(self, path=DEFAULT_IGNITE_CONF):
         super(IgniteServerConfig, self).__init__(path)
 
 
@@ -62,10 +59,7 @@ class IgniteClientConfig(Config):
     """
     Ignite client node configuration.
     """
-    def __init__(self, context):
-        path = DEFAULT_IGNITE_CONF
-        if 'ignite_client_config_path' in context.globals:
-            path = context.globals['ignite_client_config_path']
+    def __init__(self, path=DEFAULT_IGNITE_CONF):
         super(IgniteClientConfig, self).__init__(path)
         self.default_params.update(client_mode=True)
 
