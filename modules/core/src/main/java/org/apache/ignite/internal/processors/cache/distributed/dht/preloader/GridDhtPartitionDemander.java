@@ -88,7 +88,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.partitioningBy;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
@@ -1478,39 +1478,8 @@ public class GridDhtPartitionDemander {
                     if (res && !grp.preloader().syncFuture().isDone())
                         ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
-                    // Finish rebalance chain.
-                    if (isNull(next) && log.isInfoEnabled()) {
-                        Set<RebalanceFuture> futs = ctx.cacheContexts().stream()
-                            .map(GridCacheContext::preloader)
-                            .filter(GridDhtPreloader.class::isInstance)
-                            .map(GridDhtPreloader.class::cast)
-                            .map(p -> p.demander().rebalanceFut)
-                            .filter(fut -> !fut.isInitial())
-                            .collect(Collectors.toSet());
-
-                        long parts = 0;
-                        long entries = 0;
-                        long bytes = 0;
-                        long minStartTime = Long.MAX_VALUE;
-
-                        for (RebalanceFuture fut : futs) {
-                            parts += fut.rebalancingParts.values().stream().mapToLong(Collection::size).sum();
-
-                            entries += Stream.of(fut.fullReceivedKeys, fut.histReceivedKeys)
-                                .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
-
-                            bytes += Stream.of(fut.fullReceivedBytes, fut.histReceivedBytes)
-                                .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
-
-                            minStartTime = Math.min(minStartTime, fut.startTime);
-                        }
-
-                        log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
-                            ", partitions=" + parts +
-                            ", entries=" + entries +
-                            ", duration=" + U.humanReadableDuration(System.currentTimeMillis() - minStartTime) +
-                            ", bytesRcvd=" + U.humanReadableByteCount(bytes) + ']');
-                    }
+                    if (isChainFinish())
+                        onChainFinish();
                 }
 
                 if (next != null)
@@ -1989,6 +1958,62 @@ public class GridDhtPartitionDemander {
         private void onReceivedBytes(int p, long bytes, ClusterNode node) {
             boolean hist = assignments.get(node).partitions().hasHistorical(p);
             (hist ? histReceivedBytes : fullReceivedBytes).get(node.id()).add(bytes);
+        }
+
+        /**
+         * Checks if rebalance chain has completed.
+         *
+         * @return {@code true} if rebalance chain completed.
+         */
+        private boolean isChainFinish() {
+            RebalanceFuture fut = this;
+
+            while (nonNull(fut)) {
+                if (fut.isInitial() || !fut.isDone() || !fut.result())
+                    return false;
+                else
+                    fut = fut.next;
+            }
+
+            return true;
+        }
+
+        /**
+         * Callback when rebalance chain ends.
+         */
+        private void onChainFinish() {
+            assert isChainFinish();
+
+            Set<RebalanceFuture> futs = ctx.cacheContexts().stream()
+                .map(GridCacheContext::preloader)
+                .filter(GridDhtPreloader.class::isInstance)
+                .map(GridDhtPreloader.class::cast)
+                .map(p -> p.demander().rebalanceFut)
+                .filter(fut -> !fut.isInitial() && fut.isDone() && fut.result())
+                .collect(Collectors.toSet());
+
+            long parts = 0;
+            long entries = 0;
+            long bytes = 0;
+            long minStartTime = Long.MAX_VALUE;
+
+            for (RebalanceFuture fut : futs) {
+                parts += fut.rebalancingParts.values().stream().mapToLong(Collection::size).sum();
+
+                entries += Stream.of(fut.fullReceivedKeys, fut.histReceivedKeys)
+                    .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
+
+                bytes += Stream.of(fut.fullReceivedBytes, fut.histReceivedBytes)
+                    .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
+
+                minStartTime = Math.min(minStartTime, fut.startTime);
+            }
+
+            log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
+                ", partitions=" + parts +
+                ", entries=" + entries +
+                ", duration=" + U.humanReadableDuration(System.currentTimeMillis() - minStartTime) +
+                ", bytesRcvd=" + U.humanReadableByteCount(bytes) + ']');
         }
 
         /** {@inheritDoc} */
