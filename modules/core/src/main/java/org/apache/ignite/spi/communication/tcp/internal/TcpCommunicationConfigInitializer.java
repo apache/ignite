@@ -59,6 +59,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_H
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PAIRED_CONN;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_SHMEM_PORT;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 
 /**
@@ -819,7 +820,11 @@ cfg.socketSendBuffer(sockSndBuf);
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         initFailureDetectionTimeout();
 
-        assertParameter(cfg.localPort() > 1023, "locPort > 1023");
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode()))
+            assertParameter(cfg.localPort() > 1023 || cfg.localPort() == -1, "localPort > 1023 || localPort == -1");
+        else
+            assertParameter(cfg.localPort() > 1023, "localPort > 1023");
+
         assertParameter(cfg.localPort() <= 0xffff, "locPort < 0xffff");
         assertParameter(cfg.localPortRange() >= 0, "locPortRange >= 0");
         assertParameter(cfg.idleConnectionTimeout() > 0, "idleConnTimeout > 0");
@@ -853,6 +858,9 @@ cfg.socketSendBuffer(sockSndBuf);
         try {
             IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(cfg.localHost());
 
+            if (cfg.localPort() != -1 && addrs.get1().isEmpty() && addrs.get2().isEmpty())
+                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+
             Collection<InetSocketAddress> extAddrs = cfg.addrRslvr() == null ? null :
                 U.resolveAddresses(cfg.addrRslvr(), F.flat(Arrays.asList(addrs.get1(), addrs.get2())), cfg.boundTcpPort());
 
@@ -864,7 +872,7 @@ cfg.socketSendBuffer(sockSndBuf);
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
             res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
-            res.put(createSpiAttributeName(ATTR_PORT), cfg.boundTcpPort());
+            res.put(createSpiAttributeName(ATTR_PORT), cfg.boundTcpPort() == -1 ? DISABLED_CLIENT_PORT : cfg.boundTcpPort());
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), cfg.boundTcpShmemPort() >= 0 ? cfg.boundTcpShmemPort() : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), cfg.usePairedConnections());
