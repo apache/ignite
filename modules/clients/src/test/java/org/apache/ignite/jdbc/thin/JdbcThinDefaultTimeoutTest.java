@@ -37,6 +37,9 @@ import org.junit.Test;
 /** */
 public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
     /** */
+    private static final int DFLT_QRY_TIMEOUT = 100;
+
+    /** */
     public static final int ROW_COUNT = 200;
 
     /** {@inheritDoc} */
@@ -48,7 +51,7 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(ccfg)
-            .setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(100));
+            .setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(DFLT_QRY_TIMEOUT));
     }
 
     /** {@inheritDoc} */
@@ -76,8 +79,8 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
     /**
      * Check JDBC query timeout.
      * Steps:
-     * - execute query with zero explicit timeout (timeout disabled);
-     * - check that query successful.
+     *  - execute query with implicit default timeout {@link #DFLT_QRY_TIMEOUT};
+     *  - check that query fails by timeout.
      */
     @Test
     public void testDefaultTimeoutIgnored() throws Exception {

@@ -1049,10 +1049,10 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Get timeout and node information
-     * @param timeout - timeout
-     * @param cliIo - ignite endpoint
-     * @return Error description
+     * Get timeout and node information.
+     * @param timeout - timeout.
+     * @param cliIo - ignite endpoint.
+     * @return Error description.
      */
     private String getTimeoutDescription(int timeout, JdbcThinTcpIo cliIo) {
         String cliIoInfo = "";
