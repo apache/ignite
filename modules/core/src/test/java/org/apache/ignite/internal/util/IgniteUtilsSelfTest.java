@@ -1404,16 +1404,16 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHumanReadableByteCount() {
-        assertEquals("0,0 B", U.humanReadableByteCount(0));
-        assertEquals("10,0 B", U.humanReadableByteCount(10));
+        assertEquals("0.0 B", U.humanReadableByteCount(0));
+        assertEquals("10.0 B", U.humanReadableByteCount(10));
 
-        assertEquals("1,0 KB", U.humanReadableByteCount(1024));
-        assertEquals("15,0 KB", U.humanReadableByteCount(15 * 1024));
-        assertEquals("15,0 KB", U.humanReadableByteCount(15 * 1024 + 10));
+        assertEquals("1.0 KB", U.humanReadableByteCount(1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024 + 10));
 
-        assertEquals("1,0 MB", U.humanReadableByteCount(1024 * 1024));
-        assertEquals("6,0 MB", U.humanReadableByteCount(6 * 1024 * 1024));
-        assertEquals("6,1 MB", U.humanReadableByteCount(6 * 1024 * 1024 + 130 * 1024));
+        assertEquals("1.0 MB", U.humanReadableByteCount(1024 * 1024));
+        assertEquals("6.0 MB", U.humanReadableByteCount(6 * 1024 * 1024));
+        assertEquals("6.1 MB", U.humanReadableByteCount(6 * 1024 * 1024 + 130 * 1024));
     }
 
     /**

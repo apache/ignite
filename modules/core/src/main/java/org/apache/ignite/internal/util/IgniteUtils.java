@@ -113,6 +113,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -12069,7 +12070,7 @@ public abstract class IgniteUtils {
 
     /**
      * Converts count of bytes to a human-readable format.
-     * Examples: 10 -> 10,0 B, 2048 -> 2,0 KB, etc.
+     * Examples: 10 -> 10.0 B, 2048 -> 2.0 KB, etc.
      *
      * @param bytes Byte count.
      * @return Human readable format for count of bytes.
@@ -12080,7 +12081,7 @@ public abstract class IgniteUtils {
         int exponent = max((int)(Math.log(bytes) / Math.log(base)), 0);
         String unit = String.valueOf(BYTE_CNT_PREFIXES.charAt(exponent)).trim();
 
-        return String.format("%.1f %sB", bytes / Math.pow(base, exponent), unit);
+        return String.format((Locale)null, "%.1f %sB", (bytes / Math.pow(base, exponent)), unit);
     }
 
     /**
