@@ -54,6 +54,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     /** */
     private static final long DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
 
+    /** */
+    private static final String WATCHEABLE_BEGIN_DATA_GEN_MSG = "Begin generating data in background...";
+
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
         String cacheName = jsonNode.get(PARAM_CACHE_NAME).asText();
@@ -66,12 +69,12 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             CountDownLatch exitLatch = new CountDownLatch(1);
 
             Thread th = new Thread(() -> {
-                log.info("Begin generating data in background...");
+                log.info(WATCHEABLE_BEGIN_DATA_GEN_MSG);
 
                 boolean error = false;
 
                 try {
-                    while (active())
+                    while (!terminated())
                         generateData(cacheName, range, (idx) -> rnd.nextInt(range), optimized);
 
                     log.info("Background data generation finished.");
@@ -84,7 +87,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                     }
                 }
                 finally {
-                    if (!error)
+                    if (error)
+                        markBroken();
+                    else
                         markFinished();
 
                     exitLatch.countDown();
@@ -127,7 +132,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
             streamer.allowOverwrite(true);
 
-            for (int i = 0; i < range && active(); i++) {
+            for (int i = 0; i < range && !terminated(); i++) {
                 if (optimized)
                     streamer.addData(i, supplier.apply(i));
                 else

@@ -31,8 +31,8 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.tests.utils.version import DEV_BRANCH, LATEST_2_7
+from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8
 
 
 # pylint: disable=W0223
@@ -106,9 +106,9 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH, LATEST_2_7)],
-            kill_coordinator=[True, False],
-            nodes_to_kill=[2, 1, 0],
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[0, 1, 2],
             with_load=[False, True])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
@@ -118,7 +118,7 @@ class DiscoveryTest(IgniteTest):
                                              nodes_to_kill, with_load)
 
     @cluster(num_nodes=NUM_NODES + 3)
-    @matrix(ignite_version=[str(LATEST_2_7), str(DEV_BRANCH)],
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[0, 1, 2],
             with_load=[False, True])
@@ -129,7 +129,7 @@ class DiscoveryTest(IgniteTest):
         self.__start_zk_quorum()
 
         properties = self.__zk_properties(self.zk_quorum.connection_string())
-        modules = ["ignite-zookeeper"]
+        modules = ["zookeeper"]
 
         return self.__simulate_nodes_failure(ignite_version, properties, modules, kill_coordinator, nodes_to_kill,
                                              with_load)
@@ -246,6 +246,9 @@ class DiscoveryTest(IgniteTest):
             params={"cacheName": "test-cache", "range": self.__DATA_AMOUNT, "infinite": True, "optimized": False})
 
         self.loader.start()
+
+        for node in self.loader.nodes:
+            self.loader.await_event_on_node("Begin generating data in background...", node, 10, True, 1)
 
         if wait_sec > 0:
             self.logger.info("Waiting for the data load for " + str(wait_sec) + " seconds...")
