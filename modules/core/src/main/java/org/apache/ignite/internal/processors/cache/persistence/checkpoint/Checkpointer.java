@@ -436,13 +436,13 @@ public class Checkpointer extends GridWorker {
 
         long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-        if (sched.nextCpNanos() - nextNanos <= 0)
+        if (sched.nextCpNanos() <= nextNanos)
             return sched;
 
         synchronized (this) {
             sched = scheduledCp;
 
-            if (sched.nextCpNanos() - nextNanos > 0) {
+            if (sched.nextCpNanos() > nextNanos) {
                 sched.reason(reason);
 
                 sched.nextCpNanos(nextNanos);
@@ -1458,6 +1458,8 @@ public class Checkpointer extends GridWorker {
      */
     private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
         synchronized (this) {
+            chp.progress.clearCounters();
+
             for (DataRegion memPlc : dataRegions.get()) {
                 if (!memPlc.config().isPersistenceEnabled())
                     continue;
