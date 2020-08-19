@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-
 /**
  *
  */
@@ -43,36 +42,40 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) throws InterruptedException {
+    @Override protected void run(JsonNode jsonNode) {
         String cacheName = jsonNode.get("cacheName").asText();
-        boolean infinite = jsonNode.get("infinite").asBoolean(false);
+        boolean infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
         int range = jsonNode.get("range").asInt();
 
         if (infinite) {
-            boolean error = false;
+            boolean error = true;
             AtomicInteger cycle = new AtomicInteger();
 
+            log.info("Generating data in background...");
+
             try {
-                while (!terminated()) {
+                while (active()) {
                     generateData(cacheName, range, (idx) -> idx + cycle.get(), true);
 
                     cycle.incrementAndGet();
                 }
 
                 log.info("Background data generation finished.");
-            }
-            catch (Exception e) {
-                if (!X.hasCause(e, NodeStoppingException.class)) {
-                    error = true;
 
+                error = false;
+            }
+            catch (Throwable e) {
+                // The data streamer fails with an error on node stoppage event before the termination.
+                if (X.hasCause(e, NodeStoppingException.class))
+                    error = false;
+                else if (e instanceof Exception)
                     log.error("Failed to generate data in background.", e);
-                }
             }
             finally {
                 if (error)
                     markBroken();
                 else
-                    markFinished();
+                    markFinished(false);
             }
         }
         else {
@@ -94,8 +97,10 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         if (log.isDebugEnabled())
             log.debug("Creating cache...");
 
+        ignite.getOrCreateCache(cacheName);
+
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
-            for (int i = 0; i < range && !terminated(); i++) {
+            for (int i = 0; i < range && active(); i++) {
                 streamer.addData(i, supplier.apply(i));
 
                 if (notifyTime + DATAGEN_NOTIFY_INTERVAL_NANO < System.nanoTime() ||
