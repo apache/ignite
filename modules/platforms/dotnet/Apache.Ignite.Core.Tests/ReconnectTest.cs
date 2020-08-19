@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(cfg))
             {
                 var localNode = ignite.GetCluster().GetLocalNode();
-                var nodes = ignite.GetCluster().GetNodes();
+                var remoteNode = ignite.GetCluster().ForRemotes().GetNode();
 
                 var reconnected = 0;
                 var disconnected = 0;
@@ -172,7 +172,12 @@ namespace Apache.Ignite.Core.Tests
                 Thread.Sleep(100);  // Wait for event handler
                 Assert.AreEqual(1, reconnected);
                 
-                CheckUpdatedNodes(ignite, localNode, nodes);
+                var localNodeNew = ignite.GetCluster().GetLocalNode();
+                Assert.AreNotSame(localNode, localNodeNew);
+                Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
+
+                var remoteNodeNew = ignite.GetCluster().ForRemotes().GetNode();
+                Assert.AreEqual(remoteNode.Id, remoteNodeNew.Id);
             }
         }
 #endif
