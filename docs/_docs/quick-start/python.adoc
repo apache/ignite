@@ -39,6 +39,7 @@ Once the cluster is started, you can use the Ignite Python thin client to perfor
 
 Assuming that the server node is running locally, here is a _HelloWorld_ example that puts and gets values from the cache:
 
+.hello.py
 [source,python]
 ----
 from pyignite import Client
@@ -62,7 +63,7 @@ To run this, you can save the example as a text file (hello.py for example) and 
 
 [source, python]
 ----
-python hello.py
+python3 hello.py
 ----
 
 Or you can enter the example into your Python interpreter/shell (IDLE on Windows, for example) and modify/execute it there.

@@ -14,7 +14,7 @@ image::images/ijimport.png[Importing a Project in IntelliJ]
 
 . Set up JDK if needed.
 
-. Run `src/main/java/org.apache.examples/datagrid/CacheApiExample`:
+. Run `src/main/java/org/apache/ignite/examples/datagrid/CacheApiExample`:
 +
 image::images/ijrun.png[Run a project in IntelliJ]
 +

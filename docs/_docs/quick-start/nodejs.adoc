@@ -14,7 +14,7 @@ include::includes/prereqs.adoc[]
 
 and:
 
-[width="100%",cols="1,3",options=""]
+[width="100%",cols="1,3"]
 |=======================================================================
 |Node.js |Version 8 or higher is required. Either download the Node.js pre-built binary for the target platform, or install Node.js via package manager.
 |=======================================================================

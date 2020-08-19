@@ -14,9 +14,8 @@ include::includes/prereqs.adoc[]
 
 include::includes/install-ignite.adoc[]
 
-Once that's done, you will need to enable HTTP connectivity by putting the
-`ignite-rest-http` module in the classpath of your application. To do this,
-copy the `ignite-rest-http` module from `{IGNITE_HOME}/libs/optional/` to the `{IGNITE_HOME}/libs` folder.
+Once that's done, you will need to enable HTTP connectivity.
+To do this, copy the `ignite-rest-http` module from `{IGNITE_HOME}/libs/optional/` to the `{IGNITE_HOME}/libs` folder.
 
 == Starting a Node
 
@@ -42,7 +41,7 @@ You should see a message like this:
 
 [source, shell,subs="attributes,specialchars"]
 -------------------------------------------------------------------------------
-curl "http://localhost:8080/ignite?cmd=version"
+$ curl "http://localhost:8080/ignite?cmd=version"
 {"successStatus":0,"error":null,"sessionToken":null,"response":"{version}"}
 -------------------------------------------------------------------------------
 

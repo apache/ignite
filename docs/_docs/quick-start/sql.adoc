@@ -53,7 +53,8 @@ $ sqlline -u jdbc:ignite:thin://127.0.0.1
 ----
 CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR) WITH "template=replicated";
 
-CREATE TABLE Person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id)) WITH "backups=1, affinityKey=city_id";
+CREATE TABLE Person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))
+WITH "backups=1, affinityKey=city_id";
 ----
 
 
