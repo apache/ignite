@@ -123,7 +123,7 @@ public enum IgniteFeatures {
     MVCC_TX_RECOVERY_PROTOCOL_V2(44),
 
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(43);
+    PERFORMANCE_STATISTICS(45);
 
     /**
      * Unique feature identifier.
