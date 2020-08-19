@@ -1964,6 +1964,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (kctx.clientNode())
             return;
 
+        String mntcRecord = kctx.maintenanceRegistry().maintenanceRecord(FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+
+        if (mntcRecord != null) {
+            log.warning("Maintenance record found, stop restoring memory");
+
+            return;
+        }
+
         checkpointReadLock();
 
         try {

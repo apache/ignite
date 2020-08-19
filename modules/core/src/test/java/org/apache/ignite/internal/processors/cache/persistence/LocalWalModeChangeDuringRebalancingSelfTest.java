@@ -713,8 +713,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         assertThrows(null, () -> startGrid(1), Exception.class, null);
-        File defaultCacheDir = new File(ig1LfsDir, "cache-" + DEFAULT_CACHE_NAME);
 
+        File defaultCacheDir = new File(ig1LfsDir, "cache-" + DEFAULT_CACHE_NAME);
         for (File file : defaultCacheDir.listFiles())
             file.delete();
 
