@@ -2,12 +2,14 @@
 
 :javaFile: {javaCodeDir}/Tracing.java
 
+WARNING: Experimental
+
 A number of APIs in Ignite are instrumented with OpenCensus for tracing.
 You can collect distributed traces of various tasks execuded in your cluster and use this information to diagnose latency problems.
 
-We suggest you get familiar with OpenCensus tracing documentation: https://opencensus.io/tracing/.
+We suggest you get familiar with OpenCensus tracing documentation: https://opencensus.io/tracing/[^].
 
-The following APIs are instrumented for tracing:
+The following Ignite APIs are instrumented for tracing:
 
 * Discovery
 * Communication
@@ -16,8 +18,8 @@ The following APIs are instrumented for tracing:
 
 == Configuring Tracing
 
-. Configure OpenCensus tracing in the node configuration:
-+
+Enable OpenCensus tracing in the node configuration. All nodes in the cluster must use the same tracing configuration.
+
 [tabs]
 --
 tab:XML[]
@@ -36,13 +38,53 @@ tab:C#/.NET[]
 tab:C++[unsupported]
 --
 
-. Enable sampling of traces for a specific scope:
-+
---
+
+
+== Enabling Sampling of Traces
+
+When you start your cluster with the above configuration, Ignite will not collect traces.
+You have to enable collection of traces for a specific API at runtime.
+You can turn trace sampling on and off at will, for example, only for the period when you are troubleshooting a problem.
+
+You can do this in two ways:
+
+* via the control script from the command line
+* programmatically
+
+Traces are collected with a given probabilistic sampling rate.
+The rate is specified as a value between 0 and 1 inclusive: `0` means no sampling, `1` means always sampling.
+
+When the sampling rate is set to a value greater than 0, Ignite will collect traces.
+To disable trace collection, set the sampling rate to 0.
+
+The following sections describe the two ways of enabling trace sampling.
+
+=== Using Control Script
+
+Go to the `{IGNITE_HOME}/bin` directory of your Ignite installation.
+Enable experimental commands in the control script:
+
+[source, shell]
+----
+export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
+----
+
+Enable tracing for a specific API:
+
 [source, shell]
 ----
 ./control.sh --tracing-configuration set --scope DISCOVERY --sampling-rate 1
 ----
+
+=== Programmatically
+
+Once you start the node, you can enable sampling as follows:
+
+[source, java]
+----
+include::{javaFile}[tags=enable-sampling, indent=0]
+----
+
 
 The `--scope` parameter specifies the API you want to trace.
 The following APIs are instrumented for tracing:
@@ -52,9 +94,10 @@ The following APIs are instrumented for tracing:
 * `COMMUNICATION` — communication events
 * `TX` — transactions
 
-The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`.
-`0` means no sampling, `1` means always sampling.
---
+The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`:
+
+* `0` means no sampling,
+* `1` means always sampling.
 
 
 == Viewing Traces
@@ -64,7 +107,7 @@ OpenCensus supports a number of exporter out-of-the-box, and you can write a cus
 Refer to the link:https://opencensus.io/exporters/[OpenCensus Exporters^] for details.
 
 In this section, we will show how to export traces to link:https://zipkin.io[Zipkin^].
-Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin in your local machine.
+Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin on your machine.
 
 [source, java]
 ----
