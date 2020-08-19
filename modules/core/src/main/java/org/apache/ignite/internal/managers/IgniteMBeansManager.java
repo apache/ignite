@@ -142,7 +142,7 @@ public class IgniteMBeansManager {
         // Metrics
         ClusterMetricsMXBean locMetricsBean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery());
         registerMBean("Kernal", locMetricsBean.getClass().getSimpleName(), locMetricsBean, ClusterMetricsMXBean.class);
-        ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(kernal.cluster());
+        ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(kernal.cluster(), ctx);
         registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
 
         // Transaction metrics

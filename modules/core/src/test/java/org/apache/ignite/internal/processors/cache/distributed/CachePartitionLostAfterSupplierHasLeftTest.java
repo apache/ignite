@@ -42,16 +42,20 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test scenario: last supplier has left while a partition on demander is cleared before sending first demand request.
  */
+@WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
 public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstractTest {
     /** */
     private static final int PARTS_CNT = 64;
@@ -137,6 +141,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testPartitionLostWhileClearing_FailOnFullMessage() throws Exception {
         lossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
         persistence = true;
@@ -349,7 +354,11 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         final GridDhtLocalPartition part = g1.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(partId);
 
-        assertEquals(GridDhtPartitionState.LOST, part.state());
+        assertTrue("Unexpected partition state [p=" + partId +
+                ", expected=" + GridDhtPartitionState.LOST +
+                ", actual=" + part.state() + ']',
+            GridTestUtils.waitForCondition(() -> part.state() == GridDhtPartitionState.LOST, 30_000));
+
         assertTrue(g1.cachex(DEFAULT_CACHE_NAME).lostPartitions().contains(partId));
 
         if (mode != 0) {
