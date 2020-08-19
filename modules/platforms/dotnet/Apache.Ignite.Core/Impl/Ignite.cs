@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly IList<LifecycleHandlerHolder> _lifecycleHandlers;
 
         /** Local node. */
-        private IClusterNode _locNode;
+        private volatile IClusterNode _locNode;
 
         /** Callbacks */
         private readonly UnmanagedCallbacks _cbs;
@@ -1156,6 +1156,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
+            // TODO:
+            // _locNode = null;
+
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
             
             var handler = ClientDisconnected;
