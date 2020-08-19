@@ -34,6 +34,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -304,7 +305,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         startGrid(1);
 
         if (persistEnabled)
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -325,7 +326,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         ig0 = startGrid(0);
 
         if (persistEnabled)
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
         ig0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -371,9 +372,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         inlineSize = 10;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
-        clientLog = new ListeningTestLogger(false, log);
+        clientLog = new ListeningTestLogger(log);
 
         String msg1 = "Index with the given set or subset of columns already exists";
 
@@ -451,6 +452,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
             .getAll().get(0).get(0).toString().toUpperCase();
+
+        System.err.println(plan);
 
         return idxName != null ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase())) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
     }
@@ -538,7 +541,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testAllTableFieldsCoveredByIdx() throws Exception {
         inlineSize = 10;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -577,7 +580,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testConditionsWithoutIndexes() throws Exception {
         inlineSize = 10;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -603,6 +606,30 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
 
         assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "ADDRESS"));
+    }
+
+    /**
+     *  Checks proxy index usage.
+     */
+    @Test
+    public void testConditionsWithoutIndexesUseProxy() throws Exception {
+        inlineSize = 10;
+
+        srvLog = new ListeningTestLogger(log);
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 1, "ID", "VAL0", "VAL1");
+
+        String sqlIdx = String.format("create index \"idx1\" on %s(VAL0, VAL1)", TEST_TBL_NAME);
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx), true).getAll();
+
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "VAL1"));
+
+        assertTrue(checkIdxUsed(qryProc, "idx1", TEST_TBL_NAME, "VAL0"));
     }
 
     /**
