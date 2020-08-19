@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
-
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
+package org.apache.ignite.internal.processors.query.timeout;
 
 /**
- * Test partitions consistency in various scenarios when all rebalance is historical.
+ *
  */
-@WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
-public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPartitionCounterStateConsistencyTest {
+public class DefaultQueryTimeoutThickJavaUpdateTest extends DefaultQueryTimeoutThickJavaTest {
+    /** */
+    public DefaultQueryTimeoutThickJavaUpdateTest() {
+        super(true, false);
+    }
 }

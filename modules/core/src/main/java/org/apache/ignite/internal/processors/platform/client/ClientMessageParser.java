@@ -426,7 +426,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheSqlQueryRequest(reader);
 
             case OP_QUERY_SQL_FIELDS:
-                return new ClientCacheSqlFieldsQueryRequest(reader);
+                return new ClientCacheSqlFieldsQueryRequest(reader, protocolCtx);
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
