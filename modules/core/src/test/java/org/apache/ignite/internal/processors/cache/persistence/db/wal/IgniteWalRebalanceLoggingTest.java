@@ -171,7 +171,8 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
     public void testFullRebalanceWithShortCpHistoryLogMsgs() throws Exception {
         LogListener expMsgsLsnr = LogListener.
-            matches(str -> str.startsWith("Partitions were reserved, but maximum available counter is greater than demanded: ") &&
+            matches(str -> str.startsWith("Partitions were reserved, but maximum available counter is greater than " +
+                "demanded or WAL contains too many updates: ") &&
                 str.contains("grp=cache_group1") && str.contains("grp=cache_group2")).
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&
