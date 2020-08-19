@@ -221,7 +221,11 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> serviceAsync(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter, Function<PayloadInputChannel, T> payloadReader) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException {
+    @Override public <T> IgniteInternalFuture<T> serviceAsync(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException {
         long id = send(op, payloadWriter);
 
         return receiveAsync(id, payloadReader);
@@ -279,6 +283,7 @@ class TcpClientChannel implements ClientChannel {
      */
     private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
         throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
+        // TODO: Simply call receiveAsync().get() from here?
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -299,6 +304,13 @@ class TcpClientChannel implements ClientChannel {
         }
     }
 
+    /**
+     * Receives the response asynchronously.
+     *
+     * @param reqId ID of the request to receive the response for.
+     * @param payloadReader Payload reader from stream.
+     * @return Future for the operation.
+     */
     private <T> IgniteInternalFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
@@ -315,6 +327,11 @@ class TcpClientChannel implements ClientChannel {
         });
     }
 
+    /**
+     * Converts exception to {@link org.apache.ignite.internal.processors.platform.client.IgniteClientException}.
+     * @param e Exception to convert.
+     * @return Resulting exception.
+     */
     private <T> T convertException(IgniteCheckedException e) {
         if (e.getCause() instanceof ClientError)
             throw (ClientError)e.getCause();
