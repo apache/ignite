@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
@@ -327,13 +330,28 @@ public class H2TableDescriptor {
             if (QueryUtils.isSqlType(type.keyClass()))
                 keyCols.add(keyCol);
             else {
-                for (String propName : type.fields().keySet()) {
-                    GridQueryProperty prop = type.property(propName);
+                // SPECIFIED_SEQ_PK_KEYS check guarantee that request running on heterogeneous (RU) cluster can
+                // perform equally on all nodes.
+                if (!idx.kernalContext().recoveryMode()) {
+                    for (String keyName : type.primaryKeyFields()) {
+                        GridQueryProperty prop = type.property(keyName);
 
-                    if (prop.key()) {
-                        Column col = tbl.getColumn(propName);
+                        assert prop.key() : keyName + " is not a key field";
+
+                        Column col = tbl.getColumn(prop.name());
 
                         keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                    }
+                }
+                else {
+                    for (String propName : type.fields().keySet()) {
+                        GridQueryProperty prop = type.property(propName);
+
+                        if (prop.key()) {
+                            Column col = tbl.getColumn(propName);
+
+                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                        }
                     }
                 }
 

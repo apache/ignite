@@ -20,12 +20,18 @@ package org.apache.ignite.internal.managers.discovery;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
  *
  */
 public interface IgniteDiscoverySpi extends DiscoverySpi {
+    /**
+     * Predicate to filter server nodes.
+     */
+    IgnitePredicate<ClusterNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
+
     /**
      * @param nodeId Node ID.
      * @return {@code True} if node joining or already joined topology.
