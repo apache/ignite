@@ -32,8 +32,17 @@ import static org.junit.Assert.assertTrue;
  * Thin client async cache tests.
  */
 public class AsyncCacheTest {
+    // TODO: Add async test to ThinClientPartitionAwarenessStableTopologyTest
+    // TODO: Add test tp FunctionalTest? The problem - they start new server in every test.
+
     /**
-     * TODO
+     * Tests IgniteFuture state transitions with getAsync.
+     *
+     * - Start and async operation
+     * - Check that IgniteFuture is not done initially
+     * - Wait for operation completion
+     * - Verify that listener callback has been called
+     * - Verify that operation result is correct
      *
      * @throws Exception
      */
@@ -52,7 +61,10 @@ public class AsyncCacheTest {
             assertFalse(fut.isDone());
 
             AtomicBoolean listenerCalled = new AtomicBoolean(false);
-            fut.listen(f -> listenerCalled.set(true));
+            fut.listen(f -> {
+                // TODO: Check completion thread! We should not run user code on the socket receiver thread!
+                listenerCalled.set(true);
+            });
 
             Person res = fut.get();
             assertEquals("1", res.getName());
