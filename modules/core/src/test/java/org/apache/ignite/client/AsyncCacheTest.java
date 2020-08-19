@@ -38,7 +38,7 @@ public class AsyncCacheTest {
      * @throws Exception
      */
     @Test
-    public void testGetAsync() throws Exception {
+    public void testGetAsyncReportsCorrectIgniteFutureStates() throws Exception {
         try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
@@ -57,6 +57,7 @@ public class AsyncCacheTest {
             Person res = fut.get();
             assertEquals("1", res.getName());
             assertTrue(listenerCalled.get());
+            assertTrue(fut.isDone());
         }
     }
 
