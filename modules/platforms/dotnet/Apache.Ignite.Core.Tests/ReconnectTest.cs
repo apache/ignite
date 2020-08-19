@@ -231,6 +231,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
 
             var nodesNew = client.GetCluster().GetNodes();
+            Assert.AreEqual(2, nodesNew.Count);
+            
             foreach (var node in nodesNew)
             {
                 Assert.IsFalse(nodes.Any(n => n.Id == node.Id));
