@@ -59,6 +59,7 @@ import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.OUT_OF_RESOURCES_TCP_MSG;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
@@ -185,6 +186,13 @@ public class ConnectionClientPool {
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
         assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode()) || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+
+        if (locNodeSupplier.get().isClient()) {
+            if (node.isClient()) {
+                if (DISABLED_CLIENT_PORT.equals(node.attribute(attrs.port())))
+                    throw new IgniteSpiException("Cannot send message to the client node with no server socket opened.");
+            }
+        }
 
         UUID nodeId = node.id();
 

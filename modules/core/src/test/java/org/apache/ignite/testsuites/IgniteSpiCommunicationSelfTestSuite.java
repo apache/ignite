@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
@@ -36,6 +37,7 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiStartStopS
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpFailureDetectionSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelayOffSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTotallyUnreachableClientTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationConnectOnInitTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitSslTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
@@ -103,7 +105,9 @@ import org.junit.runners.Suite;
     TcpCommunicationSpiMultiJvmTest.class,
     TooManyOpenFilesTcpCommunicationSpiTest.class,
 
-    GridTcpCommunicationInverseConnectionEstablishingTest.class
+    GridTcpCommunicationInverseConnectionEstablishingTest.class,
+    GridTotallyUnreachableClientTest.class,
+    GridSandboxedClientWithoutNetworkTest.class
 
     //GridCacheDhtLockBackupSelfTest.class,
 })
