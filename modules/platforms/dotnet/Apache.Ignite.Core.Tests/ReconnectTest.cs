@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -126,6 +128,9 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
+                var localNode = ignite.GetCluster().GetLocalNode();
+                var nodes = ignite.GetCluster().GetNodes();
+
                 var reconnected = 0;
                 var disconnected = 0;
                 ignite.ClientDisconnected += (sender, args) => { disconnected++; };
@@ -166,6 +171,8 @@ namespace Apache.Ignite.Core.Tests
 
                 Thread.Sleep(100);  // Wait for event handler
                 Assert.AreEqual(1, reconnected);
+                
+                CheckUpdatedNodes(ignite, localNode, nodes);
             }
         }
 #endif
@@ -226,17 +233,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(2, serverCache[2].Id);
             
             // Verify that cached node info is updated on the client.
-            var localNodeNew = client.GetCluster().GetLocalNode();
-            Assert.AreNotSame(localNode, localNodeNew);
-            Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
-
-            var nodesNew = client.GetCluster().GetNodes();
-            Assert.AreEqual(2, nodesNew.Count);
-            
-            foreach (var node in nodesNew)
-            {
-                Assert.IsFalse(nodes.Any(n => n.Id == node.Id));
-            }
+            CheckUpdatedNodes(client, localNode, nodes);
         }
 
         /// <summary>
@@ -252,6 +249,25 @@ namespace Apache.Ignite.Core.Tests
 #endif
 
             Ignition.ClientMode = false;
+        }
+        
+        /// <summary>
+        /// Checks that node info is up to date.
+        /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        private static void CheckUpdatedNodes(IIgnite client, IClusterNode localNode, ICollection<IClusterNode> nodes)
+        {
+            var localNodeNew = client.GetCluster().GetLocalNode();
+            Assert.AreNotSame(localNode, localNodeNew);
+            Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
+
+            var nodesNew = client.GetCluster().GetNodes();
+            Assert.AreEqual(2, nodesNew.Count);
+
+            foreach (var node in nodesNew)
+            {
+                Assert.IsFalse(nodes.Any(n => n.Id == node.Id));
+            }
         }
     }
 }
