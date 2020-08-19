@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
@@ -191,6 +192,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
             var localNode = client.GetCluster().GetLocalNode();
+            var nodes = client.GetCluster().GetNodes();
 
             var evt = new ManualResetEventSlim(false);
             client.ClientReconnected += (sender, args) => evt.Set();
@@ -223,10 +225,16 @@ namespace Apache.Ignite.Core.Tests
             var serverCache = server2.GetCache<int, Person>(CacheName);
             Assert.AreEqual(2, serverCache[2].Id);
             
-            // Verify that local node info is updated on the client.
+            // Verify that cached node info is updated on the client.
             var localNodeNew = client.GetCluster().GetLocalNode();
             Assert.AreNotSame(localNode, localNodeNew);
             Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
+
+            var nodesNew = client.GetCluster().GetNodes();
+            foreach (var node in nodesNew)
+            {
+                Assert.IsFalse(nodes.Any(n => n.Id == node.Id));
+            }
         }
 
         /// <summary>

@@ -1156,7 +1156,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
-            // TODO: _nodes gets out of date while we are disconnected.
             _locNode = null;
             _prj.ClearCachedNodeData();
 
