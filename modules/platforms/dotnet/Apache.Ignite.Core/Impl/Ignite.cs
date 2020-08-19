@@ -1156,9 +1156,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
+            // Clear cached node data.
+            // Do not clear _nodes - it is in sync with PlatformContextImpl.sentNodes.
             _locNode = null;
             _prj.ClearCachedNodeData();
 
+            // Raise events.
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
             
             var handler = ClientDisconnected;
