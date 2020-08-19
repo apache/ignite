@@ -22,10 +22,11 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -60,16 +61,16 @@ public class AsyncCacheTest {
             IgniteFuture<Person> fut = cache.getAsync(1);
             assertFalse(fut.isDone());
 
-            AtomicBoolean listenerCalled = new AtomicBoolean(false);
-            fut.listen(f -> {
-                // TODO: Check completion thread! We should not run user code on the socket receiver thread!
-                listenerCalled.set(true);
-            });
+            AtomicReference<String> completionThreadName = new AtomicReference<>();
+            fut.listen(f -> completionThreadName.set(Thread.currentThread().getName()));
 
             Person res = fut.get();
             assertEquals("1", res.getName());
-            assertTrue(listenerCalled.get());
             assertTrue(fut.isDone());
+
+            assertNotNull(completionThreadName.get());
+            assertFalse("Async operation should not complete on thin client listener thread",
+                    completionThreadName.get().startsWith("thin-client-channel"));
         }
     }
 
