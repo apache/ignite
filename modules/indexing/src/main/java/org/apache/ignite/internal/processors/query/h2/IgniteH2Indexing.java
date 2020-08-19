@@ -1555,7 +1555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccSnapshot mvccSnapshot,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
-        SqlFieldsQuery fldsQry =  QueryUtils.withQueryTimeout(new SqlFieldsQuery(qry), timeout, TimeUnit.MILLISECONDS);
+        SqlFieldsQuery fldsQry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(qry), timeout, TimeUnit.MILLISECONDS);
 
         if (params != null)
             fldsQry.setArgs(params);
