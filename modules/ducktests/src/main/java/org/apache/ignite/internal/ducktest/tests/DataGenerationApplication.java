@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-
 /**
  *
  */
@@ -43,7 +42,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) throws InterruptedException {
+    @Override protected void run(JsonNode jsonNode) {
         String cacheName = jsonNode.get("cacheName").asText();
         boolean infinite = jsonNode.get("infinite").asBoolean(false);
         int range = jsonNode.get("range").asInt();
