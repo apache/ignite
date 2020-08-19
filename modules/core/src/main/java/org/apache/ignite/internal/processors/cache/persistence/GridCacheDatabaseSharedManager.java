@@ -42,7 +42,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -265,7 +264,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ReentrantReadWriteLock checkpointLock = new ReentrantReadWriteLock();
 
     /** */
-    private CheckpointHistory cpHistory;
+    private CheckpointHistory cpHist;
 
     /** */
     private FilePageStoreManager storeMgr;
@@ -483,7 +482,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!kernalCtx.clientNode()) {
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
 
-            cpHistory = new CheckpointHistory(kernalCtx);
+            cpHist = new CheckpointHistory(kernalCtx);
 
             IgnitePageStoreManager store = cctx.pageStore();
 
@@ -509,7 +508,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr,
                 checkpointLock,
                 cctx.wal(),
-                cpHistory,
+                cpHist,
                 persistentStoreMetricsImpl(),
                 this::dataRegions,
                 ioFactory,
@@ -611,8 +610,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
-        if (cpHistory != null)
-            cpHistory = new CheckpointHistory(cctx.kernalContext());
+        if (cpHist != null)
+            cpHist = new CheckpointHistory(cctx.kernalContext());
 
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
@@ -756,7 +755,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
-                cpHistory.initialize(retreiveHistory());
+                cpHist.initialize(retreiveHistory());
 
                 notifyMetastorageReadyForRead();
             }
@@ -803,7 +802,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr,
                 checkpointLock,
                 cctx.wal(),
-                cpHistory,
+                cpHist,
                 persistentStoreMetricsImpl(),
                 this::dataRegions,
                 ioFactory,
@@ -1782,7 +1781,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
-        Map<GroupPartitionId, CheckpointEntry> entries = cpHistory.searchCheckpointEntry(reservationMap);
+        Map<GroupPartitionId, CheckpointEntry> entries = cpHist.searchCheckpointEntry(reservationMap);
 
         if (F.isEmpty(entries))
             return false;
@@ -1865,7 +1864,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public WALPointer lastCheckpointMarkWalPointer() {
-        CheckpointEntry lastCheckpointEntry = cpHistory == null ? null : cpHistory.lastCheckpoint();
+        CheckpointEntry lastCheckpointEntry = cpHist == null ? null : cpHist.lastCheckpoint();
 
         return lastCheckpointEntry == null ? null : lastCheckpointEntry.checkpointMark();
     }
@@ -2885,7 +2884,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param highBound WALPointer.
      */
     public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
-        List<CheckpointEntry> removedFromHistory = cpHistory.onWalTruncated(highBound);
+        List<CheckpointEntry> removedFromHistory = cpHist.onWalTruncated(highBound);
 
         for (CheckpointEntry cp : removedFromHistory)
             removeCheckpointFiles(cp);
@@ -2992,7 +2991,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Checkpoint history.
      */
     @Nullable public CheckpointHistory checkpointHistory() {
-        return cpHistory;
+        return cpHist;
     }
 
     /**
@@ -3381,7 +3380,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            CheckpointEntry lastCp = cpHistory.lastCheckpointMarkingAsInapplicable(grpId);
+            CheckpointEntry lastCp = cpHist.lastCheckpointMarkingAsInapplicable(grpId);
             long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
             if (lastCpTs != 0)
