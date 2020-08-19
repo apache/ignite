@@ -22,7 +22,11 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Thin client async cache tests.
@@ -35,7 +39,7 @@ public class AsyncCacheTest {
      */
     @Test
     public void testGetAsync() throws Exception {
-        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(2);
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("testGetAsync");
@@ -45,8 +49,14 @@ public class AsyncCacheTest {
             cache.put(1, val);
 
             IgniteFuture<Person> fut = cache.getAsync(1);
+            assertFalse(fut.isDone());
+
+            AtomicBoolean listenerCalled = new AtomicBoolean(false);
+            fut.listen(f -> listenerCalled.set(true));
+
             Person res = fut.get();
             assertEquals("1", res.getName());
+            assertTrue(listenerCalled.get());
         }
     }
 
