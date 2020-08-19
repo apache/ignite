@@ -165,6 +165,11 @@ public abstract class IgniteAwareApplication {
         return terminated;
     }
 
+    /** */
+    protected boolean inited() {
+        return inited;
+    }
+
     /**
      * @param name Name.
      * @param val Value.

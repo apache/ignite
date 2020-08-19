@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.ducktest.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
 
 /**
  *
@@ -37,81 +36,49 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     protected static final Logger log = LogManager.getLogger(DataGenerationApplication.class.getName());
 
     /** */
-    private static final String PARAM_RANGE = "range";
-
-    /** */
-    private static final String PARAM_INFINITE = "infinite";
-
-    /** */
-    private static final String PARAM_CACHE_NAME = "cacheName";
-
-    /** */
-    private static final String PARAM_OPTIMIZED = "optimized";
-
-    /** */
     private static final long DATAGEN_NOTIFY_INTERVAL_NANO = 1500 * 1000000L;
 
     /** */
     private static final long DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
 
-    /** */
-    private static final String WATCHEABLE_BEGIN_DATA_GEN_MSG = "Begin generating data in background...";
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) {
-        String cacheName = jsonNode.get(PARAM_CACHE_NAME).asText();
-        boolean infinite = jsonNode.hasNonNull(PARAM_INFINITE) && jsonNode.get(PARAM_INFINITE).asBoolean();
-        boolean optimized = !jsonNode.hasNonNull(PARAM_OPTIMIZED) || jsonNode.get(PARAM_OPTIMIZED).asBoolean();
-        int range = jsonNode.get(PARAM_RANGE).asInt();
+    @Override protected void run(JsonNode jsonNode) throws InterruptedException {
+        String cacheName = jsonNode.get("cacheName").asText();
+        boolean infinite = jsonNode.get("infinite").asBoolean(false);
+        int range = jsonNode.get("range").asInt();
 
         if (infinite) {
-            Random rnd = new Random();
-            CountDownLatch exitLatch = new CountDownLatch(1);
-
-            Thread th = new Thread(() -> {
-                log.info(WATCHEABLE_BEGIN_DATA_GEN_MSG);
-
-                boolean error = false;
-
-                try {
-                    while (!terminated())
-                        generateData(cacheName, range, (idx) -> rnd.nextInt(range), optimized);
-
-                    log.info("Background data generation finished.");
-                }
-                catch (Exception e) {
-                    if (!X.hasCause(e, NodeStoppingException.class)) {
-                        error = true;
-
-                        log.error("Failed to generate data in background.", e);
-                    }
-                }
-                finally {
-                    if (error)
-                        markBroken();
-                    else
-                        markFinished();
-
-                    exitLatch.countDown();
-                }
-
-            }, DataGenerationApplication.class.getName() + "_cacheLoader");
-
-            th.start();
-
-            markInitialized();
+            boolean error = false;
+            AtomicInteger cycle = new AtomicInteger();
 
             try {
-                exitLatch.await();
+                while (!terminated()) {
+                    generateData(cacheName, range, (idx) -> idx + cycle.get(), true);
+
+                    cycle.incrementAndGet();
+                }
+
+                log.info("Background data generation finished.");
             }
-            catch (InterruptedException e) {
-                log.warn("Interrupted waiting for background loading.");
+            catch (Exception e) {
+                if (!X.hasCause(e, NodeStoppingException.class)) {
+                    error = true;
+
+                    log.error("Failed to generate data in background.", e);
+                }
+            }
+            finally {
+                if (error)
+                    markBroken();
+                else
+                    markFinished();
             }
         }
         else {
             log.info("Generating data...");
 
-            generateData(cacheName, range, Function.identity(), optimized);
+            generateData(cacheName, range, Function.identity(), false);
 
             log.info("Data generation finished. Generated " + range + " entries.");
 
@@ -120,27 +87,23 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean optimized) {
+    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited) {
         long notifyTime = System.nanoTime();
         int streamed = 0;
 
-        if(log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Creating cache...");
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
-
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
-            streamer.allowOverwrite(true);
-
             for (int i = 0; i < range && !terminated(); i++) {
-                if (optimized)
-                    streamer.addData(i, supplier.apply(i));
-                else
-                    cache.put(i, supplier.apply(i));
+                streamer.addData(i, supplier.apply(i));
 
                 if (notifyTime + DATAGEN_NOTIFY_INTERVAL_NANO < System.nanoTime() ||
                     i - streamed >= DATAGEN_NOTIFY_INTERVAL_AMOUNT) {
                     notifyTime = System.nanoTime();
+
+                    if (markInited && !inited())
+                        markInitialized();
 
                     if (log.isDebugEnabled())
                         log.debug("Streamed " + (i - streamed) + " entries. Total: " + i + '.');

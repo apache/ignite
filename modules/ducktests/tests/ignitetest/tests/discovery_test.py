@@ -19,7 +19,6 @@ Module contains discovery tests.
 
 import random
 import re
-import time
 from datetime import datetime
 
 from ducktape.mark import matrix
@@ -43,11 +42,20 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
+    class Config:
+        """
+        Configuration for DiscoveryTest.
+        """
+        def __init__(self, nodes_to_kill=1, kill_coordinator=False, with_load=False):
+            self.nodes_to_kill = nodes_to_kill
+            self.kill_coordinator = kill_coordinator
+            self.with_load = with_load
+
     NUM_NODES = 7
 
     FAILURE_DETECTION_TIMEOUT = 2000
 
-    __DATA_AMOUNT = 100000
+    DATA_AMOUNT = 100000
 
     CONFIG_TEMPLATE = """
     <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
@@ -69,28 +77,36 @@ class DiscoveryTest(IgniteTest):
         self.servers = None
         self.loader = None
 
-    def __start_zk_quorum(self):
-        self.zk_quorum = ZookeeperService(self.test_context, 3)
-
-        self.stage("Starting ZooKeeper quorum")
-
-        self.zk_quorum.start()
-
-        self.stage("ZooKeeper quorum started")
-
-    @staticmethod
-    def __properties(zookeeper_settings=None):
+    @cluster(num_nodes=NUM_NODES)
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[0, 1, 2],
+            with_load=[False, True])
+    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
-        :param zookeeper_settings: ZooKeeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
-        :return: Rendered node's properties.
+        Test nodes failure scenario with TcpDiscoverySpi.
         """
-        return Template(DiscoveryTest.CONFIG_TEMPLATE) \
-            .render(failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
-                    zookeeper_settings=zookeeper_settings)
+        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
 
-    @staticmethod
-    def __zk_properties(connection_string):
-        return DiscoveryTest.__properties(zookeeper_settings={'connection_string': connection_string})
+        return self.__simulate_nodes_failure(ignite_version, self.__properties(), None, config)
+
+    @cluster(num_nodes=NUM_NODES + 3)
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[0, 1, 2],
+            with_load=[False, True])
+    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+        """
+        Test node failure scenario with ZooKeeperSpi.
+        """
+        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
+
+        self.__start_zk_quorum()
+
+        properties = self.__zk_properties(self.zk_quorum.connection_string())
+        modules = ["zookeeper"]
+
+        return self.__simulate_nodes_failure(ignite_version, properties, modules, config)
 
     def setUp(self):
         pass
@@ -105,47 +121,13 @@ class DiscoveryTest(IgniteTest):
         if self.zk_quorum:
             self.zk_quorum.stop()
 
-    @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
-            with_load=[False, True])
-    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
-        """
-        Test nodes failure scenario with TcpDiscoverySpi.
-        """
-        return self.__simulate_nodes_failure(ignite_version, self.__properties(), None, kill_coordinator,
-                                             nodes_to_kill, with_load)
-
-    @cluster(num_nodes=NUM_NODES + 3)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
-            with_load=[False, True])
-    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
-        """
-        Test node failure scenario with ZooKeeperSpi.
-        """
-        self.__start_zk_quorum()
-
-        properties = self.__zk_properties(self.zk_quorum.connection_string())
-        modules = ["zookeeper"]
-
-        return self.__simulate_nodes_failure(ignite_version, properties, modules, kill_coordinator, nodes_to_kill,
-                                             with_load)
-
-    def __simulate_nodes_failure(self, version, properties, modules, kill_coordinator=False, nodes_to_kill=1,
-                                 with_load=False):
-        if nodes_to_kill == 0 and not kill_coordinator:
+    def __simulate_nodes_failure(self, version, properties, modules, config):
+        if config.nodes_to_kill == 0 and not config.kill_coordinator:
             return {"No nodes to kill": "Nothing to do"}
 
-        """
-        :param nodes_to_kill: How many nodes to kill. If <1, the coordinator is the choice. Otherwise: not-coordinator
-        nodes of given number.
-        """
         self.servers = IgniteService(
             self.test_context,
-            num_nodes=self.NUM_NODES - 1 if with_load else self.NUM_NODES,
+            num_nodes=self.NUM_NODES - 1,
             modules=modules,
             properties=properties,
             version=version)
@@ -156,18 +138,18 @@ class DiscoveryTest(IgniteTest):
 
         self.servers.start()
 
-        if nodes_to_kill + (1 if kill_coordinator else 0) > self.servers.num_nodes - 1:
-            raise Exception("Too many nodes to kill: " + str(nodes_to_kill) + " with current settings.")
+        if config.nodes_to_kill + (1 if config.kill_coordinator else 0) > self.servers.num_nodes - 1:
+            raise Exception("Too many nodes to kill: " + str(config.nodes_to_kill) + " with current settings.")
 
         data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
         self.stage("Topology is ready")
 
-        failed_nodes, survived_node = self.__choose_node_to_kill(kill_coordinator, nodes_to_kill)
+        failed_nodes, survived_node = self.__choose_node_to_kill(config.kill_coordinator, config.nodes_to_kill)
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        if with_load:
-            self.__start_loading(version, properties, modules, random.randint(1, 5))
+        if config.with_load:
+            self.__start_loading(version, properties, modules)
 
         self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
 
@@ -195,24 +177,25 @@ class DiscoveryTest(IgniteTest):
 
         logged_timestamps.sort(reverse=True)
 
-        # Failure detection delay.
-        time_holder = int((time_holder - first_terminated[0]) * 1000)
-        # Failure detection delay by log.
-        by_log = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1])
+        self.__check_and_store_results(data, int((time_holder - first_terminated[0]) * 1000),
+                                       epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1]))
 
-        assert by_log > 0, \
-            "Negative failure detection delay from the survived node log (" + str(by_log) + "ms). It is probably an " \
-            "issue of the timezone or system clock settings."
-        assert by_log <= time_holder, \
-            "Failure detection delay from the survived node log (" + str(by_log) + "ms) must be lesser than " \
-            "measured value (" + str(time_holder) + "ms) because watching this event consumes extra time. It is " \
-            "probably an issue of the timezone or system clock settings."
-
-        data['Detection of node(s) failure, measured (ms)'] = time_holder
-        data['Detection of node(s) failure, by the log (ms)'] = by_log
         data['Nodes failed'] = len(failed_nodes)
 
         return data
+
+    @staticmethod
+    def __check_and_store_results(data, measured, delay_by_log):
+        assert delay_by_log > 0, \
+            "Negative failure detection delay from the survived node log (" + str(delay_by_log) + "ms). It is \
+            probably an issue of the timezone or system clock settings."
+        assert delay_by_log <= measured, \
+            "Failure detection delay from the survived node log (" + str(delay_by_log) + "ms) must be lesser than  \
+            measured value (" + str(measured) + "ms) because watching this event consumes extra time. It is  \
+            probably an issue of the timezone or system clock settings."
+
+        data['Detection of node(s) failure, measured (ms)'] = measured
+        data['Detection of node(s) failure, by the log (ms)'] = delay_by_log
 
     @staticmethod
     def __failed_pattern(failed_node_id):
@@ -234,7 +217,7 @@ class DiscoveryTest(IgniteTest):
 
         return to_kill, survive
 
-    def __start_loading(self, ignite_version, properties, modules, wait_sec=0):
+    def __start_loading(self, ignite_version, properties, modules):
         self.stage("Starting loading")
 
         self.loader = IgniteApplicationService(
@@ -243,13 +226,29 @@ class DiscoveryTest(IgniteTest):
             version=ignite_version,
             modules=modules,
             properties=properties,
-            params={"cacheName": "test-cache", "range": self.__DATA_AMOUNT, "infinite": True, "optimized": False})
+            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True})
 
         self.loader.start()
 
-        for node in self.loader.nodes:
-            self.loader.await_event_on_node("Begin generating data in background...", node, 10, True, 1)
+    def __start_zk_quorum(self):
+        self.zk_quorum = ZookeeperService(self.test_context, 3)
 
-        if wait_sec > 0:
-            self.logger.info("Waiting for the data load for " + str(wait_sec) + " seconds...")
-            time.sleep(wait_sec)
+        self.stage("Starting ZooKeeper quorum")
+
+        self.zk_quorum.start()
+
+        self.stage("ZooKeeper quorum started")
+
+    @staticmethod
+    def __properties(zookeeper_settings=None):
+        """
+        :param zookeeper_settings: ZooKeeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
+        :return: Rendered node's properties.
+        """
+        return Template(DiscoveryTest.CONFIG_TEMPLATE) \
+            .render(failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                    zookeeper_settings=zookeeper_settings)
+
+    @staticmethod
+    def __zk_properties(connection_string):
+        return DiscoveryTest.__properties(zookeeper_settings={'connection_string': connection_string})
