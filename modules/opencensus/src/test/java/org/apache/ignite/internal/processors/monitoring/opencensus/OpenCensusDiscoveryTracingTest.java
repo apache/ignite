@@ -39,7 +39,7 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
  */
 public class OpenCensusDiscoveryTracingTest extends AbstractTracingTest {
     /** */
-    public static final String CACHE_NAME = "CacheName";
+    private static final String CACHE_NAME = "CacheName";
 
     /** {@inheritDoc} */
     @Override protected TracingSpi getTracingSpi() {
@@ -334,12 +334,5 @@ public class OpenCensusDiscoveryTracingTest extends AbstractTracingTest {
         public Value(int val) {
             this.val = val;
         }
-    }
-
-    /**
-     * @return [@code True} to prevent rebalancing before test start.
-     */
-    @Override protected boolean blockRebalancing() {
-        return false;
     }
 }
