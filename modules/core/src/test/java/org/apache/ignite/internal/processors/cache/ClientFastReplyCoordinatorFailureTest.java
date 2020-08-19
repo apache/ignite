@@ -180,7 +180,6 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testClientRepeatedReply() throws Exception {
         delayNodeFailedMsg = true;
 
