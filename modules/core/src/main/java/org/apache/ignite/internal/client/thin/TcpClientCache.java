@@ -542,6 +542,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         };
 
         // TODO: Affinity.
+        // TODO: Future callback should be moved to some thread pool - how and where?
         return new IgniteFutureImpl<>(ch.serviceAsync(op, payloadWriter, payloadReader));
         /**
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
