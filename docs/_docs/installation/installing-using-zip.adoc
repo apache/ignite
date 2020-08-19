@@ -8,6 +8,6 @@ include::includes/prereqs.adoc[]
 
 == Installing Using ZIP Archive
 
-include::includes/installggqsg.adoc[]
+include::includes/install-ignite.adoc[]
 
 
