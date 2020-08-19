@@ -432,6 +432,7 @@ public class GridReduceQueryExecutor {
                         .parameters(params)
                         .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
                         .timeout(timeoutMillis)
+                        .explicitTimeout(true)
                         .schemaName(schemaName);
 
                     if (mvccTracker != null)
@@ -874,6 +875,7 @@ public class GridReduceQueryExecutor {
             .pageSize(pageSize)
             .parameters(params)
             .timeout(timeoutMillis)
+            .explicitTimeout(true)
             .flags(flags);
 
         updRuns.put(reqId, r);
