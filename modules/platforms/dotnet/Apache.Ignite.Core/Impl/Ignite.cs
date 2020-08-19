@@ -1156,8 +1156,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
-            // TODO:
-            // _locNode = null;
+            _locNode = null;
 
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
             

@@ -190,6 +190,7 @@ namespace Apache.Ignite.Core.Tests
             var client = Ignition.Start(clientCfg);
 
             Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
+            var localNode = client.GetCluster().GetLocalNode();
 
             var evt = new ManualResetEventSlim(false);
             client.ClientReconnected += (sender, args) => evt.Set();
@@ -221,6 +222,11 @@ namespace Apache.Ignite.Core.Tests
 
             var serverCache = server2.GetCache<int, Person>(CacheName);
             Assert.AreEqual(2, serverCache[2].Id);
+            
+            // Verify that local node info is updated on the client.
+            var localNodeNew = client.GetCluster().GetLocalNode();
+            Assert.AreNotSame(localNode, localNodeNew);
+            Assert.AreNotEqual(localNode.Id, localNodeNew.Id);
         }
 
         /// <summary>
