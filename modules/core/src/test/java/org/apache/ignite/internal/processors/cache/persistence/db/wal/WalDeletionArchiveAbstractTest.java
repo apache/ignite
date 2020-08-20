@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -187,7 +188,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             cache.put(i, i);
 
         //then: checkpoint triggered by size limit of wall without checkpoint
-        GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
+        Checkpointer checkpointer = dbMgr.getCheckpointer();
 
         String checkpointReason = U.field((Object)U.field(checkpointer, "curCpProgress"), "reason");
 

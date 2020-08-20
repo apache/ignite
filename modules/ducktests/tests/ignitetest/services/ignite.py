@@ -41,16 +41,6 @@ class IgniteService(IgniteAwareService):
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
-    logs = {
-        "console_log": {
-            "path": IgniteAwareService.STDOUT_STDERR_CAPTURE,
-            "collect_default": True},
-
-        "heap_dump": {
-            "path": HEAP_DUMP_FILE,
-            "collect_default": False}
-    }
-
     # pylint: disable=R0913
     def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
                  version=DEV_BRANCH):

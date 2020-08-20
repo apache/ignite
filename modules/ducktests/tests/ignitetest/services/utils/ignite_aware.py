@@ -39,7 +39,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         super(IgniteAwareService, self).__init__(context, num_nodes)
 
+        # Ducktape checks a Service implementation attribute 'logs' to get config for logging.
+        # IgniteAwareService uses IgnitePersistenceAware mixin to override default Service 'log' definition.
         self.log_level = "DEBUG"
+        self.logs = IgnitePersistenceAware.logs
+
         self.properties = properties
 
         self.spec = resolve_spec(self, context, **kwargs)
