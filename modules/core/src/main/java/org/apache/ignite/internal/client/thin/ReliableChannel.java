@@ -24,12 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -102,6 +97,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /** Affinity map update is in progress. */
     private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Channel is closed. */
     private volatile boolean closed;
 
@@ -136,6 +134,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled() && channels.length > 1;
 
         affinityCtx = new ClientCacheAffinityContext(binary);
+
+        Executor cfgExec = clientCfg.getAsyncContinuationExecutor();
+        asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         ClientConnectionException lastEx = null;
 
