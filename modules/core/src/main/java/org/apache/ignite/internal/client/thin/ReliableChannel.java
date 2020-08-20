@@ -223,9 +223,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 ch = channel();
 
                 // Sync portion of serviceAsync throws exceptions on connection failure.
-                // TODO: Future callback should be moved to some thread pool - how and where?
-                // - Add ClientConfiguration.asyncResultExecutor
-                // - Use ForkJoinPool.commonPool() by default
                 return ch.serviceAsync(op, payloadWriter, payloadReader);
             }
             catch (ClientConnectionException e) {
