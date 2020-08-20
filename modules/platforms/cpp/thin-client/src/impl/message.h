@@ -658,7 +658,7 @@ namespace ignite
                     writer.WriteInt8(concurrency);
                     writer.WriteInt8(isolation);
                     writer.WriteInt64(timeout);
-                    writer.WriteString(label.IsValid() ? label.Get() : "");
+                    label.IsValid() ? writer.WriteString(label.Get()) : writer.WriteNull();
                 }
 
             private:
