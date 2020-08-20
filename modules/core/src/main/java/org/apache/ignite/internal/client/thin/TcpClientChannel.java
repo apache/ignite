@@ -675,7 +675,7 @@ class TcpClientChannel implements ClientChannel {
         private long totalBytesRead;
 
         /** Temporary buffer to read long, int and short values. */
-        private byte[] tmpBuf = new byte[Long.BYTES];
+        private final byte[] tmpBuf = new byte[Long.BYTES];
 
         /**
          * @param in Input stream.
@@ -771,7 +771,7 @@ class TcpClientChannel implements ClientChannel {
     /** SSL Socket Factory. */
     private static class ClientSslSocketFactory {
         /** Trust manager ignoring all certificate checks. */
-        private static TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
+        private static final TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
             @Override public X509Certificate[] getAcceptedIssuers() {
                 return null;
             }
