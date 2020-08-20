@@ -21,8 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.maintenance.MaintenanceRecordBuilder;
+import org.apache.ignite.maintenance.MaintenanceAction;
+import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -34,9 +36,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
@@ -44,7 +46,10 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private static final String MAINTENANCE_FILE_NAME = "maintenance_records.mntc";
 
     /** */
-    private final Map<UUID, String> registeredRecords = new HashMap<>();
+    private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<UUID, MaintenanceAction> registeredActions = new ConcurrentHashMap<>();
 
     /** */
     private volatile File mntcRecordsFile;
@@ -57,10 +62,10 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMaintenanceRecord(MaintenanceRecordBuilder bldr) throws IgniteCheckedException {
+    @Override public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException {
         if (mntcRecordsFile == null) {
             log.warning("Maintenance records file not found, record won't be stored: "
-                + bldr.maintenanceDescription());
+                + rec.description());
 
             return;
         }
@@ -68,9 +73,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         try {
             try (FileOutputStream out = new FileOutputStream(mntcRecordsFile)) {
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(bldr.maintenanceTypeId().toString() + '\t');
-                    writer.write(bldr.maintenanceDescription() + '\t');
-                    writer.write(bldr.getMaintenanceRecord());
+                    writer.write(rec.id().toString() + '\t');
+                    writer.write(rec.description() + '\t');
+                    writer.write(rec.actionParameters());
                 }
             }
         }
@@ -102,19 +107,37 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                     reader.lines().forEach(s -> {
                         String[] subStrs = s.split("\t");
 
-                        registeredRecords.put(UUID.fromString(subStrs[0]), subStrs[subStrs.length - 1]);
+                        UUID id = UUID.fromString(subStrs[0]);
+                        MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], subStrs[2]);
+
+                        registeredRecords.put(id, rec);
                     });
                 }
 
             }
         }
-        catch (IOException ioE) {
-            // TODO: handle exception
+        catch (Throwable t) {
+            // TODO: handle anything so that maintenance mode won't be activated
         }
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String maintenanceRecord(UUID maitenanceId) {
+    @Override public @Nullable MaintenanceRecord maintenanceRecord(UUID maitenanceId) {
         return registeredRecords.get(maitenanceId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMaintenanceMode() {
+        return !registeredRecords.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearMaintenanceRecord(UUID mntcId) {
+        //TODO cleanup record from file by recreating the file without this record
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action) {
+        registeredActions.put(mntcId, action);
     }
 }

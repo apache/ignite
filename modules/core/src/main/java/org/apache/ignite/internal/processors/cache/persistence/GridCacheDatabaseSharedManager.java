@@ -154,6 +154,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -1964,7 +1965,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (kctx.clientNode())
             return;
 
-        String mntcRecord = kctx.maintenanceRegistry().maintenanceRecord(FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+        MaintenanceRecord mntcRecord = kctx.maintenanceRegistry().maintenanceRecord(FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
 
         if (mntcRecord != null) {
             log.warning("Maintenance record found, stop restoring memory");

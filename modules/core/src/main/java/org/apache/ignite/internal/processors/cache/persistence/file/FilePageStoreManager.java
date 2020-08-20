@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.thread.IgniteThread;
@@ -374,7 +375,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try {
                 cctx.kernalContext().maintenanceRegistry()
                     .registerMaintenanceRecord(
-                        new CorruptedDataFilesMaintenanceRecordBuilder(CORRUPTED_DATA_FILES_MNTC_RECORD_ID, groupsWithWalDisabled)
+                        new MaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
+                            "Corrupted cache groups found",
+                            groupsWithWalDisabled.toString())
                     );
             } catch (IgniteCheckedException e) {
                 log.warning("Failed to register maintenance record for corrupted partition files.", e);

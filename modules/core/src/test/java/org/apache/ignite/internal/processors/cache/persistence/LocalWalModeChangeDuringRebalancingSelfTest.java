@@ -705,6 +705,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         stopAllGrids(false);
 
+        ig0 = startGrid(0);
+
         File[] cpMarkers = ig1CpDir.listFiles();
 
         for (File cpMark : cpMarkers) {
@@ -719,6 +721,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             file.delete();
 
         ig1 = startGrid(1);
+
+        ig1.cluster().nodes();
         ig1.cluster().state(ACTIVE);
 
         cache = ig1.cache(DEFAULT_CACHE_NAME);

@@ -20,13 +20,36 @@ package org.apache.ignite.maintenance;
 import java.util.UUID;
 
 /** */
-public interface MaintenanceRecordBuilder {
+public class MaintenanceRecord {
     /** */
-    public UUID maintenanceTypeId();
+    private final UUID id;
 
     /** */
-    public String maintenanceDescription();
+    private final String description;
 
     /** */
-    public String getMaintenanceRecord();
+    private final String actionParameters;
+
+    /**
+     * @param id
+     * @param description
+     * @param actionParameters
+     */
+    public MaintenanceRecord(UUID id, String description, String actionParameters) {
+        this.id = id;
+        this.description = description;
+        this.actionParameters = actionParameters;
+    }
+
+    public UUID id() {
+        return id;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public String actionParameters() {
+        return actionParameters;
+    }
 }

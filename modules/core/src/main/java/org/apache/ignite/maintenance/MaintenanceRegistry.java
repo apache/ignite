@@ -27,14 +27,30 @@ import java.util.UUID;
  */
 public interface MaintenanceRegistry {
     /**
-     * @param blrd Object with information about maintenance record that needs to be stored to maintenance registry.
+     * @param rec Object with maintenance information that needs to be stored to maintenance registry.
      *
      * @throws IgniteCheckedException If handling or storing maintenance record failed.
      */
-    public void registerMaintenanceRecord(MaintenanceRecordBuilder blrd) throws IgniteCheckedException;
+    public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
 
     /**
      * @return Maintenance record for given maintenance ID or null if no maintenance record was found.
      */
-    @Nullable public String maintenanceRecord(UUID maitenanceId);
+    @Nullable public MaintenanceRecord maintenanceRecord(UUID maitenanceId);
+
+    /**
+     * @return {@code True} If any maintenance record was found.
+     */
+    public boolean isMaintenanceMode();
+
+    /**
+     * @param mntcId
+     */
+    public void clearMaintenanceRecord(UUID mntcId);
+
+    /**
+     * @param mntcId
+     * @param action
+     */
+    public void registerMaintenanceAction(UUID mntcId, MaintenanceAction action);
 }

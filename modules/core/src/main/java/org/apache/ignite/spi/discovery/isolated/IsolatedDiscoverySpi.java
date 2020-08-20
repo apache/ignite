@@ -29,12 +29,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
@@ -45,7 +47,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Special discovery SPI implementation to start a single-node cluster in "isolated" mode.
@@ -144,33 +148,33 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-//        exec.execute(() -> {
-//            IgniteFuture<?> fut = lsnr.onDiscovery(new DiscoveryNotification(
-//                EVT_DISCOVERY_CUSTOM_EVT,
-//                1,
-//                locNode,
-//                singleton(locNode),
-//                null,
-//                msg,
-//                null));
-//
-//            // Acknowledge message must be send after initial message processed.
-//            fut.listen((f) -> {
-//                DiscoverySpiCustomMessage ack = msg.ackMessage();
-//
-//                if (ack != null) {
-//                    exec.execute(() -> lsnr.onDiscovery(new DiscoveryNotification(
-//                        EVT_DISCOVERY_CUSTOM_EVT,
-//                        1,
-//                        locNode,
-//                        singleton(locNode),
-//                        null,
-//                        ack,
-//                        null))
-//                    );
-//                }
-//            });
-//        });
+        exec.execute(() -> {
+            IgniteFuture<?> fut = lsnr.onDiscovery(new DiscoveryNotification(
+                EVT_DISCOVERY_CUSTOM_EVT,
+                1,
+                locNode,
+                singleton(locNode),
+                null,
+                msg,
+                null));
+
+            // Acknowledge message must be send after initial message processed.
+            fut.listen((f) -> {
+                DiscoverySpiCustomMessage ack = msg.ackMessage();
+
+                if (ack != null) {
+                    exec.execute(() -> lsnr.onDiscovery(new DiscoveryNotification(
+                        EVT_DISCOVERY_CUSTOM_EVT,
+                        1,
+                        locNode,
+                        singleton(locNode),
+                        null,
+                        ack,
+                        null))
+                    );
+                }
+            });
+        });
     }
 
     /** {@inheritDoc} */
@@ -185,16 +189,16 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-//        exec.execute(() -> {
-//            lsnr.onLocalNodeInitialized(locNode);
-//
-//            lsnr.onDiscovery(new DiscoveryNotification(
-//                EVT_NODE_JOINED,
-//                1,
-//                locNode,
-//                singleton(locNode))
-//            );
-//        });
+        exec.execute(() -> {
+            lsnr.onLocalNodeInitialized(locNode);
+
+            lsnr.onDiscovery(new DiscoveryNotification(
+                EVT_NODE_JOINED,
+                1,
+                locNode,
+                singleton(locNode))
+            );
+        });
     }
 
     /** {@inheritDoc} */
