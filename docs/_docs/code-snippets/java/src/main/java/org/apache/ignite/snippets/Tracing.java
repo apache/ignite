@@ -1,13 +1,19 @@
 package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
+import io.opencensus.common.Duration;
 import io.opencensus.exporter.trace.zipkin.ZipkinExporterConfiguration;
 import io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter;
 
@@ -26,6 +32,7 @@ public class Tracing {
         ignite.close();
     }
 
+    @Test
     void enableSampling() {
         //tag::enable-sampling[]
         Ignite ignite = Ignition.start();
@@ -35,21 +42,55 @@ public class Tracing {
                 new TracingConfigurationParameters.Builder().withSamplingRate(0.5).build());
 
         //end::enable-sampling[]
+        ignite.close();
     }
 
     @Test
     void exportToZipkin() {
         //tag::export-to-zipkin[]
+
+        //register Zipkin exporter
         ZipkinTraceExporter.createAndRegister(
                 ZipkinExporterConfiguration.builder().setV2Url("http://localhost:9411/api/v2/spans")
                         .setServiceName("ignite-cluster").build());
 
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setTracingSpi(new org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi());
+        IgniteConfiguration cfg = new IgniteConfiguration().setClientMode(true)
+                .setTracingSpi(new org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi());
 
         Ignite ignite = Ignition.start(cfg);
-        //end::config[]
+
+        //enable trace sampling for transactions with 100% sampling rate
+        ignite.tracingConfiguration().set(
+                new TracingConfigurationCoordinates.Builder(Scope.TX).build(),
+                new TracingConfigurationParameters.Builder().withSamplingRate(1).build());
+
+        //create a transactional cache
+        IgniteCache<Integer, String> cache = ignite
+                .getOrCreateCache(new CacheConfiguration<Integer, String>("myCache")
+                        .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        IgniteTransactions transactions = ignite.transactions();
+
+        // start a transaction
+        try (Transaction tx = transactions.txStart()) {
+            //do some operations
+            cache.put(1, "test value");
+
+            System.out.println(cache.get(1));
+
+            cache.put(1, "second value");
+
+            tx.commit();
+        }
+
+        try {
+            //This code here is to wait until the trace is exported to Zipkin. 
+            //If your application doesn't stop here, you don't need this piece of code. 
+            Thread.sleep(5_000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
         //end::export-to-zipkin[]
         ignite.close();
     }
