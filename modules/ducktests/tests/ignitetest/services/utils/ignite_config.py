@@ -52,7 +52,7 @@ class IgniteServerConfig(Config):
     Ignite server node configuration.
     """
     def __init__(self, path=DEFAULT_IGNITE_CONF):
-        super(IgniteServerConfig, self).__init__(path)
+        super().__init__(path)
 
 
 class IgniteClientConfig(Config):
@@ -60,7 +60,7 @@ class IgniteClientConfig(Config):
     Ignite client node configuration.
     """
     def __init__(self, path=DEFAULT_IGNITE_CONF):
-        super(IgniteClientConfig, self).__init__(path)
+        super().__init__(path)
         self.default_params.update(client_mode=True)
 
 
@@ -69,4 +69,4 @@ class IgniteLoggerConfig(Config):
     Ignite logger configuration.
     """
     def __init__(self):
-        super(IgniteLoggerConfig, self).__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
+        super().__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")

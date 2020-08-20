@@ -122,7 +122,7 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     Spec to run ignite application
     """
     def __init__(self, **kwargs):
-        super(IgniteApplicationSpec, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.args = ""
 
     def _app_args(self):
@@ -148,7 +148,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
     Implementation IgniteNodeSpec for Apache Ignite project
     """
     def __init__(self, modules, **kwargs):
-        super(ApacheIgniteNodeSpec, self).__init__(project="ignite", **kwargs)
+        super().__init__(project="ignite", **kwargs)
 
         libs = (modules or [])
         libs.append("log4j")
@@ -172,7 +172,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
     """
     # pylint: disable=too-many-arguments
     def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, **kwargs):
-        super(ApacheIgniteApplicationSpec, self).__init__(project="ignite", **kwargs)
+        super().__init__(project="ignite", **kwargs)
         self.context = context
 
         libs = modules or []

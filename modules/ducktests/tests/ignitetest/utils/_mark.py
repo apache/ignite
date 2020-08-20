@@ -26,7 +26,7 @@ class VersionIf(Ignore):
     Ignore test if version doesn't corresponds to condition.
     """
     def __init__(self, condition):
-        super(VersionIf, self).__init__()
+        super().__init__()
         self.condition = condition
 
     def apply(self, seed_context, context_list):
@@ -41,7 +41,7 @@ class VersionIf(Ignore):
         return context_list
 
     def __eq__(self, other):
-        return super(VersionIf, self).__eq__(other) and self.condition == other.condition
+        return super().__eq__(other) and self.condition == other.condition
 
 
 def version_if(condition):

@@ -27,7 +27,7 @@ class IgniteTest(Test):
     Basic ignite test.
     """
     def __init__(self, test_context):
-        super(IgniteTest, self).__init__(test_context=test_context)
+        super().__init__(test_context=test_context)
 
     def stage(self, msg):
         """

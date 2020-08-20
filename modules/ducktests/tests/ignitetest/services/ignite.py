@@ -44,13 +44,12 @@ class IgniteService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
                  version=DEV_BRANCH):
-        super(IgniteService, self).__init__(context, num_nodes, properties,
-                                            client_mode=client_mode, modules=modules, version=version,
-                                            jvm_opts=jvm_opts)
+        super().__init__(context, num_nodes, properties, client_mode=client_mode, modules=modules, version=version,
+                         jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
-        super(IgniteService, self).start()
+        super().start()
 
         self.logger.info("Waiting for Ignite(s) to start...")
 
