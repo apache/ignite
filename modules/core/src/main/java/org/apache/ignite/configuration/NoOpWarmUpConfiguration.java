@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.warmup;
+package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

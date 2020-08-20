@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.warmup;
+package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Warm-up configuration for {@link LoadAllWarmUp}.
+ * "Load All" warm-up configuration that loads data into persistent data region
+ * until it reaches {@link DataRegionConfiguration#getMaxSize} with index priority.
  */
 public class LoadAllWarmUpConfiguration implements WarmUpConfiguration {
     /** Serial version uid. */

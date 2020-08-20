@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.warmup;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.NoOpWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
+
 /**
  * Extension {@link LoadAllWarmUpConfiguration}.
  */

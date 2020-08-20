@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -35,9 +37,9 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
- * Strategy for loading all pages while there is enough memory with priority
- * to index pages. Memory is shared between all regions, so not all regions can
- * be warmed up.
+ * "Load all" warm-up strategy, which loads pages to persistent data region
+ * until it reaches {@link DataRegionConfiguration#getMaxSize} with priority
+ * to index partitions. Loading occurs sequentially for each cache group.
  */
 public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration> {
     /** Logger. */
