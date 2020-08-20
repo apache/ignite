@@ -731,8 +731,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 assert rmtNodeId != null;
                 assert !getLocalNodeId().equals(rmtNodeId);
 
-                spi.stats.onClientSocketInitialized(U.millisSinceNanos(tsNanos));
-
                 locNode.clientRouterNodeId(rmtNodeId);
 
                 tsNanos = System.nanoTime();
@@ -1732,8 +1730,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             updateHeartbeat();
 
-            spi.stats.onJoinStarted();
-
             try {
                 tryJoin();
 
@@ -2319,8 +2315,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "remote event listeners created by this client will be unsubscribed, consider " +
                             "listening to EVT_CLIENT_NODE_RECONNECTED event to restore them.");
                     }
-                    else
-                        spi.stats.onJoinFinished();
 
                     joinErr.set(null);
 

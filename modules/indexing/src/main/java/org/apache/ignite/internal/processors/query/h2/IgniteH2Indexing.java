@@ -812,10 +812,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Session ses = session(conn);
 
-        if (timeoutMillis > 0)
+        if (timeoutMillis >= 0)
             ses.setQueryTimeout(timeoutMillis);
         else
-            ses.setQueryTimeout(0);
+            ses.setQueryTimeout((int)distrCfg.defaultQueryTimeout());
 
         try {
             return stmt.executeQuery();
@@ -956,8 +956,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteException(e);
         }
 
-        SqlFieldsQuery res = new SqlFieldsQuery(sql);
-
+        SqlFieldsQuery res = QueryUtils.withQueryTimeout(new SqlFieldsQuery(sql), qry.getTimeout(), TimeUnit.MILLISECONDS);
         res.setArgs(qry.getArgs());
         res.setDistributedJoins(qry.isDistributedJoins());
         res.setLocal(qry.isLocal());
@@ -966,9 +965,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         res.setReplicatedOnly(qry.isReplicatedOnly());
         res.setSchema(schemaName);
         res.setSql(sql);
-
-        if (qry.getTimeout() > 0)
-            res.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
         return res;
     }
@@ -1559,7 +1555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccSnapshot mvccSnapshot,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
-        SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+        SqlFieldsQuery fldsQry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(qry), timeout, TimeUnit.MILLISECONDS);
 
         if (params != null)
             fldsQry.setArgs(params);
@@ -1601,7 +1597,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Force keepBinary for operation context to avoid binary deserialization inside entry processor
         DmlUtils.setKeepBinaryContext(planCctx);
 
-        SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
+        SqlFieldsQuery selectFieldsQry = QueryUtils.withQueryTimeout(
+            new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated()),
+            fldsQry.getTimeout(),
+            TimeUnit.MILLISECONDS
+        )
             .setArgs(fldsQry.getArgs())
             .setDistributedJoins(fldsQry.isDistributedJoins())
             .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.camel;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.processors.query.timeout;
 
 /**
- * Camel streamer tests. Included into 'Streamers' run configuration.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
-public class IgniteCamelStreamerTestSuite {
+public class DefaultQueryTimeoutThickJavaUpdateTest extends DefaultQueryTimeoutThickJavaTest {
+    /** */
+    public DefaultQueryTimeoutThickJavaUpdateTest() {
+        super(true, false);
+    }
 }
