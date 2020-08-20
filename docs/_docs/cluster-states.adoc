@@ -1,0 +1,21 @@
+= Cluster States
+
+
+You cluster can be in one of the three states.
+
+
+* `INACTIVE`: All operations are prohibited.
++
+--
+The default state of the cluster when you start it for the first time
+
+When you first start your cluster, pure in-memory cluster (no persistent data regions)
+
+When you change the cluster state from active to `INACTIVE` (deactivation), the cluster deallocates all memory resources.
+
+include::includes/note-on-deactivation.adoc[]
+
+--
+* `ACTIVE`: This is the normal mode of the cluster. You can change change the cluster topology and execute any operations.
+
+* `ACTIVE_READ_ONLY`: The read-only mode. The operations that modify data in the cluster are prohibited.
