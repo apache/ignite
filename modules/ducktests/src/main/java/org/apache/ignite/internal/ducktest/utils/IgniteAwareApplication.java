@@ -71,6 +71,12 @@ public abstract class IgniteAwareApplication {
         Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
             log.info("SIGTERM recorded.");
 
+            try {
+                processSigterm();
+            } catch (Exception e){
+                log.error("Failed to call inherited sigterm processor.");
+            }
+
             if (!finished && !broken)
                 terminate();
             else
@@ -95,6 +101,9 @@ public abstract class IgniteAwareApplication {
 
         log.info("ShutdownHook registered.");
     }
+
+    /** */
+    protected void processSigterm(){}
 
     /**
      * Used to marks as started to perform actions. Suitable for async runs.

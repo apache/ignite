@@ -60,6 +60,34 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         }
     }
 
+    /** */
+    private volatile IgniteDataStreamer<Integer, Integer> streamer;
+
+    /** {@inheritDoc} */
+    @Override protected void processSigterm() {
+        super.processSigterm();
+
+        System.out.println("TEST : 11");
+
+        IgniteDataStreamer<Integer, Integer> streamer = this.streamer;
+
+        if (streamer != null) {
+            System.out.println("TEST : 12");
+
+            try {
+                streamer.close(true);
+                System.out.println("TEST : 13");
+            }
+            catch (Exception e) {
+                System.out.println("TEST : 14");
+                log.error("Unable to close data streamer.", e);
+            }
+
+            System.out.println("TEST : 15");
+        }
+
+        System.out.println("TEST : 16");
+    }
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
@@ -79,6 +107,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             AtomicInteger cycle = new AtomicInteger();
 
             log.info("Generating data in background...");
+            System.out.println("TEST : 0");
 
             try {
                 while (active()) {
@@ -92,18 +121,40 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 error = false;
             }
             catch (Throwable e) {
+                e.printStackTrace();
+
+                System.out.println("TEST : 1");
+
                 // The data streamer fails with an error on node stoppage event before the termination.
-                if (X.hasCause(e, NodeStoppingException.class))
+                if (X.hasCause(e, NodeStoppingException.class)) {
                     error = false;
-                else if (e instanceof Exception)
+
+                    System.out.println("TEST : 2");
+                } else if (e instanceof Exception) {
+                    System.out.println("TEST : 3");
+
                     log.error("Failed to generate data in background.", e);
+                }
             }
             finally {
-                if (error)
+                System.out.println("TEST : 4");
+
+                if (error) {
+                    System.out.println("TEST : 5");
+
                     markBroken();
-                else
+
+                    System.out.println("TEST : 6");
+                } else {
+                    System.out.println("TEST : 7");
+
                     markFinished(false);
+
+                    System.out.println("TEST : 8");
+                }
             }
+
+            System.out.println("TEST : 9");
         }
         else {
             log.info("Generating data...");
@@ -121,7 +172,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         long notifyTime = System.nanoTime();
         int streamed = 0;
 
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
+        try (IgniteDataStreamer<Integer, Integer>  streamer = ignite.dataStreamer(cacheName)) {
+            this.streamer = streamer;
+
             for (int i = 0; i < range && active(); i++) {
                 streamer.addData(i, supplier.apply(i));
 
