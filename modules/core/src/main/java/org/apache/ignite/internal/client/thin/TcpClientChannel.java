@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -158,6 +160,9 @@ class TcpClientChannel implements ClientChannel {
     /** Closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
@@ -165,6 +170,9 @@ class TcpClientChannel implements ClientChannel {
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
+
+        Executor cfgExec = cfg.getAsyncContinuationExecutor();
+        asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         try {
             sock = createSocket(cfg);
@@ -324,7 +332,7 @@ class TcpClientChannel implements ClientChannel {
             } finally {
                 pendingReqs.remove(reqId);
             }
-        });
+        }, asyncContinuationExecutor);
     }
 
     /**

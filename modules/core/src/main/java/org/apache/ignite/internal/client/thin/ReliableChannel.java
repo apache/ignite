@@ -97,14 +97,11 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /** Affinity map update is in progress. */
     private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
-    /** Executor for async operation listeners. */
-    private final Executor asyncContinuationExecutor;
-
     /** Channel is closed. */
     private volatile boolean closed;
 
     /** Fail (disconnect) listeners. */
-    private ArrayList<Runnable> chFailLsnrs = new ArrayList<>();
+    private final ArrayList<Runnable> chFailLsnrs = new ArrayList<>();
 
     /**
      * Constructor.
@@ -134,9 +131,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled() && channels.length > 1;
 
         affinityCtx = new ClientCacheAffinityContext(binary);
-
-        Executor cfgExec = clientCfg.getAsyncContinuationExecutor();
-        asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         ClientConnectionException lastEx = null;
 
