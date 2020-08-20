@@ -64,26 +64,15 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             return;
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCnt > 0 && requested == 0 : "requested=" + requested + ", rowCnt=" + rowsCnt;
+        assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
         requested = rowsCnt;
 
-        if (waiting == -1 && rows.isEmpty()) {
-            downstream.end();
-
-            return;
-        }
-
-        if (!inLoop) {
-            assert waiting <= 0 : "Invalid state: [waiting=" + waiting + ", requested=" + requested;
-
-            if (waiting == -1)
-                context().execute(this::flushFromBuffer);
-            else if (waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
-            else
-                throw new AssertionError();
-        }
+        if (waiting == 0)
+            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+        else if (!inLoop)
+            context().execute(this::flushFromBuffer);
     }
 
     /** {@inheritDoc} */
@@ -142,26 +131,26 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private void flushFromBuffer() {
         assert waiting == -1;
 
+        int processed = 0;
+
         inLoop = true;
-
         try {
-            if (requested > 0) {
-                int toSnd = Math.min(Math.min(requested, IN_BUFFER_SIZE), rows.size());
+            while (requested > 0 && !rows.isEmpty()) {
+                requested--;
 
-                for (int i = 0; i < toSnd; i++) {
-                    Row row = rows.poll();
+                downstream.push(rows.poll());
 
-                    requested--;
-
-                    downstream.push(row);
-                }
-
-                if (rows.isEmpty() && requested > 0)
-                    downstream.end();
-                else if (requested > 0) {
+                if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
                     context().execute(this::flushFromBuffer);
+
+                    return;
                 }
+            }
+
+            if (requested >= 0) {
+                downstream.end();
+                requested = 0;
             }
         }
         finally {

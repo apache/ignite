@@ -71,18 +71,11 @@ public interface ExchangeService extends Service {
     /**
      * @param nodeId Target node ID.
      * @param qryId Query ID.
-     * @param fragmentId Target fragment ID.
-     * @param exchangeId Exchange ID.
+     * @param fragmentId Source fragment ID.
      * @param err Exception to send.
      * @throws IgniteCheckedException On error marshaling or send ErrorMessage.
      */
-    void sendError(
-        UUID nodeId,
-        UUID qryId,
-        long fragmentId,
-        long exchangeId,
-        Throwable err
-    ) throws IgniteCheckedException;
+    void sendError(UUID nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteCheckedException;
 
     /**
      * @param nodeId Node ID.

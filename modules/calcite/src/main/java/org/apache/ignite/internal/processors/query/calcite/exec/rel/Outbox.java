@@ -99,7 +99,11 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
      * @param batchId Batch ID.
      */
     public void onAcknowledge(UUID nodeId, int batchId) {
-        nodeBuffers.get(nodeId).onAcknowledge(batchId);
+        Buffer buffer = nodeBuffers.get(nodeId);
+
+        assert buffer != null;
+
+        buffer.onAcknowledge(batchId);
     }
 
     /** */
@@ -139,8 +143,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
         try {
             for (UUID node : dest.targets())
                 getOrCreateBuffer(node).end();
-
-            close();
         }
         catch (Exception e) {
             onError(e);
@@ -149,12 +151,18 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
-        checkThread();
-
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
-        nodeBuffers.values().forEach(b -> b.onError(e));
+        try {
+            sendError(e);
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(context().planningContext().logger(),
+                "Error occurred during send error message: " + X.getFullStackTrace(e));
+        }
+
+        close();
     }
 
     /** {@inheritDoc} */
@@ -165,7 +173,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
         registry.unregister(this);
 
         // Send cancel message for the Inbox to close Inboxes created by batch message race.
-        nodeBuffers.values().forEach(Buffer::close);
+        for (UUID node : dest.targets())
+            getOrCreateBuffer(node).close();
 
         super.close();
     }
@@ -194,8 +203,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** */
-    private void sendError(UUID nodeId, Throwable err) throws IgniteCheckedException {
-        exchange.sendError(nodeId, queryId(), targetFragmentId, exchangeId, err);
+    private void sendError(Throwable err) throws IgniteCheckedException {
+        exchange.sendError(ctx.originatingNodeId(), queryId(), fragmentId(), err);
     }
 
     /** */
@@ -316,6 +325,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
         /** */
         public void close() {
+            int currBatchId = hwm;
+
             if (hwm == Integer.MAX_VALUE)
                 return;
 
@@ -323,18 +334,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
             curr = null;
 
-            sendInboxClose(nodeId);
-        }
-
-        /** */
-        public void onError(Throwable e) {
-            try {
-                sendError(nodeId, e);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(context().planningContext().logger(),
-                    "Error occurred during send error message: " + X.getFullStackTrace(e));
-            }
+            if (currBatchId >= 0)
+                sendInboxClose(nodeId);
         }
 
         /**

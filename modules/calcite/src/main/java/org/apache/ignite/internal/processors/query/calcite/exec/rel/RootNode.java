@@ -21,8 +21,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Client iterator.
@@ -52,7 +53,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private volatile State state = State.RUNNING;
 
     /** */
-    private volatile IgniteSQLException ex;
+    private final AtomicReference<Throwable> ex = new AtomicReference<>();
 
     /** */
     private Row row;
@@ -175,14 +176,8 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert Objects.isNull(ex) : "The error has been handled. Previous error: " + ex;
-
-        if (e instanceof IgniteSQLException)
-            ex = (IgniteSQLException)e;
-        else
-            ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
+        if (!ex.compareAndSet(null, e))
+            ex.get().addSuppressed(e);
 
         close();
     }
@@ -267,11 +262,17 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** */
     private void checkCancelled() {
         if (state == State.CANCELLED) {
-            if (ex != null)
-                throw ex;
+            ex.compareAndSet(null, new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED));
 
-            throw new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED);
+            throw sqlException(ex.get());
         }
+    }
+
+    /** */
+    @NotNull private IgniteSQLException sqlException(Throwable e) {
+        return e instanceof IgniteSQLException
+            ? (IgniteSQLException)e
+            : new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
     }
 
     /** */

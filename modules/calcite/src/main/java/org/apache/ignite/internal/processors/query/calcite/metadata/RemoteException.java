@@ -32,22 +32,17 @@ public class RemoteException extends RuntimeException {
     /** */
     private final long fragmentId;
 
-    /** */
-    private final long exchangeId;
-
     /**
      * @param cause Cause.
      * @param nodeId Node ID.
      * @param queryId Query ID.
      * @param fragmentId Fragment ID.
-     * @param exchangeId Exchange ID.
      */
-    public RemoteException(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, Throwable cause) {
+    public RemoteException(UUID nodeId, UUID queryId, long fragmentId, Throwable cause) {
         super("Remote query execution", cause);
         this.nodeId = nodeId;
         this.queryId = queryId;
         this.fragmentId = fragmentId;
-        this.exchangeId = exchangeId;
     }
 
     /**
@@ -69,12 +64,5 @@ public class RemoteException extends RuntimeException {
      */
     public long fragmentId() {
         return fragmentId;
-    }
-
-    /**
-     * @return Exchange ID.
-     */
-    public long exchangeId() {
-        return exchangeId;
     }
 }

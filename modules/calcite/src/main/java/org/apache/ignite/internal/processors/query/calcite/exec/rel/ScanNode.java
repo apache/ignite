@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  * Scan node.
  */
-public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
+public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private final Iterable<Row> src;
 
@@ -71,6 +71,10 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             return;
 
         Commons.closeQuiet(it);
+
+        it = null;
+
+        Commons.closeQuiet(src);
 
         super.close();
     }
@@ -121,16 +125,27 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 downstream.end();
                 requested = 0;
 
-                close();
+                Commons.closeQuiet(it);
+
+                it = null;
             }
         }
         catch (Throwable e) {
-            close();
-
-            downstream.onError(e);
+            onError(e);
         }
         finally {
             inLoop = false;
         }
+    }
+
+    /** */
+    private void onError(Throwable e) {
+        checkThread();
+
+        assert downstream != null;
+
+        downstream.onError(e);
+
+        close();
     }
 }

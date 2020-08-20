@@ -92,7 +92,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
 
     /** {@inheritDoc} */
     @Override public void unregister(Inbox<?> inbox) {
-        remotes.remove(new MailboxKey(inbox.queryId(), inbox.exchangeId()));
+        remotes.remove(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
     }
 
     /** {@inheritDoc} */
@@ -104,7 +104,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
 
     /** {@inheritDoc} */
     @Override public void unregister(Outbox<?> outbox) {
-        locals.remove(new MailboxKey(outbox.queryId(), outbox.exchangeId()));
+        locals.remove(new MailboxKey(outbox.queryId(), outbox.exchangeId()), outbox);
     }
 
     /** {@inheritDoc} */
@@ -147,8 +147,8 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        locals.values().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
-        remotes.values().forEach(n -> n.context().execute(() -> n.onNodeLeft(nodeId)));
+        locals.values().forEach(n -> n.onNodeLeft(nodeId));
+        remotes.values().forEach(n -> n.onNodeLeft(nodeId));
     }
 
     /** */

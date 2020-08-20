@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.marshaller.Marshaller;
@@ -28,15 +29,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
+public class ErrorMessage implements MarshalableMessage {
     /** */
     private UUID queryId;
 
     /** */
     private long fragmentId;
-
-    /** */
-    private long exchangeId;
 
     /** */
     private byte[] errBytes;
@@ -51,30 +49,26 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
     }
 
     /** */
-    public ErrorMessage(UUID queryId, long fragmentId, long exchangeId, Throwable err) {
+    public ErrorMessage(UUID queryId, long fragmentId, Throwable err) {
         assert err != null;
 
         this.queryId = queryId;
         this.fragmentId = fragmentId;
-        this.exchangeId = exchangeId;
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID queryId() {
+    /**
+     * @return Query ID.
+     */
+    public UUID queryId() {
         return queryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
-        return fragmentId;
-    }
-
     /**
-     * @return Exchange ID.
+     * @return Fragment ID.
      */
-    public long exchangeId() {
-        return exchangeId;
+    public long fragmentId() {
+        return fragmentId;
     }
 
     /**
@@ -99,24 +93,18 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("exchangeId", exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("fragmentId", fragmentId))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -135,15 +123,7 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
             return false;
 
         switch (reader.state()) {
-            case 0:
-                exchangeId = reader.readLong("exchangeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
+             case 0:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -151,7 +131,7 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 fragmentId = reader.readLong("fragmentId");
 
                 if (!reader.isLastRead())
@@ -159,7 +139,7 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -179,7 +159,7 @@ public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 
     /** {@inheritDoc} */

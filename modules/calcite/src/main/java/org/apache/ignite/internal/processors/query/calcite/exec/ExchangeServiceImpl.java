@@ -125,15 +125,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void sendError(
-        UUID nodeId,
-        UUID qryId,
-        long fragmentId,
-        long exchangeId,
-        Throwable err
-    ) throws IgniteCheckedException {
-        messageService().send(nodeId,
-            new ErrorMessage(qryId, fragmentId, exchangeId, err));
+    @Override public void sendError(UUID nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteCheckedException {
+        messageService().send(nodeId, new ErrorMessage(qryId, fragmentId, err));
     }
 
     /** {@inheritDoc} */
@@ -152,7 +145,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (InboxCloseMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (OutboxCloseMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
@@ -192,29 +184,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 "fragmentId=" + msg.fragmentId() + ", " +
                 "exchangeId=" + msg.exchangeId() + "]");
         }
-    }
-
-    /** */
-    protected void onMessage(UUID nodeId, ErrorMessage msg) {
-        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
-
-        if (inbox == null) {
-            // first message sent before a fragment is built
-            // note that an inbox source fragment id is also used as an exchange id
-            Inbox<?> newInbox = new Inbox<>(baseInboxContext(nodeId, msg.queryId(), msg.fragmentId()),
-                this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
-
-            inbox = mailboxRegistry().register(newInbox);
-        }
-
-        assert inbox != null;
-
-        inbox.onError(
-            nodeId,
-            msg.queryId(),
-            msg.fragmentId(),
-            msg.exchangeId(),
-            msg.error());
     }
 
     /** */
@@ -265,8 +234,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         return new ExecutionContext<>(
             taskExecutor(),
             PlanningContext.builder()
-                .logger(log)
                 .originatingNodeId(nodeId)
+                .logger(log)
                 .build(),
             qryId,
             new FragmentDescription(

@@ -45,8 +45,8 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosure;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -57,7 +57,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> implements Iterable<Row> {
+public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private final GridKernalContext kctx;
 
@@ -97,6 +97,9 @@ public class IndexScan<Row> implements Iterable<Row> {
     /** */
     private final MvccSnapshot mvccSnapshot;
 
+    /** */
+    private List<GridDhtLocalPartition> reserved;
+
     /**
      * @param ectx Cache context.
      * @param igniteIdx Index tree.
@@ -130,35 +133,31 @@ public class IndexScan<Row> implements Iterable<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Row> iterator() {
-        List<GridDhtLocalPartition> reserved = reserve();
+    @Override public synchronized Iterator<Row> iterator() {
+        reserve();
         try {
             H2Row lower = lowerBound == null ? null : new H2PlainRow(values(coCtx, ectx, lowerBound));
             H2Row upper = upperBound == null ? null : new H2PlainRow(values(coCtx, ectx, upperBound));
 
-            return new IteratorImpl(reserved, idx.find(lower, upper, filterClosure()));
+            return new IteratorImpl(idx.find(lower, upper, filterClosure()));
         }
         catch (Exception e) {
-            release(reserved);
+            release();
 
             throw e;
         }
     }
 
     /** */
-    private H2TreeFilterClosure filterClosure() {
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, partsArr);
-        IndexingQueryCacheFilter f = filter.forCache(cctx.name());
-        H2TreeFilterClosure filterC = null;
-
-        if (f != null || mvccSnapshot != null )
-            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cctx, ectx.planningContext().logger());
-
-        return filterC;
+    @Override public void close() {
+        release();
     }
 
     /** */
-    @NotNull public List<GridDhtLocalPartition> reserve() {
+    private synchronized void reserve() {
+        if (reserved != null)
+            return;
+
         List<GridDhtLocalPartition> toReserve;
 
         if (cctx.isReplicated()) {
@@ -182,50 +181,53 @@ public class IndexScan<Row> implements Iterable<Row> {
             toReserve = Collections.emptyList();
         }
 
-        List<GridDhtLocalPartition> reserved = new ArrayList<>(toReserve.size());
+        reserved = new ArrayList<>(toReserve.size());
 
         try {
             for (GridDhtLocalPartition part : toReserve) {
                 if (part == null || !part.reserve())
-                    throw reservationException();
+                    throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
                 else if (part.state() != GridDhtPartitionState.OWNING) {
                     part.release();
 
-                    throw reservationException();
+                    throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
                 }
 
                 reserved.add(part);
             }
         }
         catch (Exception e) {
-            release(reserved);
+            release();
 
             throw e;
         }
-
-        System.out.println("reserved " + this);
-
-        return reserved;
     }
 
     /** */
-    private void release(List<GridDhtLocalPartition> reserved) {
-        for (Iterator<GridDhtLocalPartition> it = reserved.iterator(); it.hasNext(); ) {
-            GridDhtLocalPartition part = it.next();
+    private synchronized void release() {
+        if (reserved == null)
+            return;
+
+        for (GridDhtLocalPartition part : reserved)
             part.release();
-            it.remove();
-        }
 
-        System.out.println("released " + this);
+        reserved = null;
     }
 
     /** */
-    private IgniteSQLException reservationException() {
-        return new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
+    private H2TreeFilterClosure filterClosure() {
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, partsArr);
+        IndexingQueryCacheFilter f = filter.forCache(cctx.name());
+        H2TreeFilterClosure filterC = null;
+
+        if (f != null || mvccSnapshot != null )
+            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cctx, ectx.planningContext().logger());
+
+        return filterC;
     }
 
     /** */
-    @NotNull private Value[] values(CacheObjectValueContext cctx, ExecutionContext<Row> ectx, Row row) {
+    private Value[] values(CacheObjectValueContext cctx, ExecutionContext<Row> ectx, Row row) {
         try {
             RowHandler<Row> rowHnd = ectx.rowHandler();
             int rowLen = rowHnd.columnCount(row);
@@ -246,37 +248,20 @@ public class IndexScan<Row> implements Iterable<Row> {
     }
 
     /** */
-    private class IteratorImpl extends GridCloseableIteratorAdapter<Row> {
-        /** */
-        private final List<GridDhtLocalPartition> reserved;
-
+    private class IteratorImpl extends GridIteratorAdapter<Row> {
         /** */
         private final GridCursor<H2Row> cursor;
 
         /** Next element. */
         private Row next;
 
-        public IteratorImpl(@NotNull List<GridDhtLocalPartition> reserved, @NotNull GridCursor<H2Row> cursor) {
-            this.reserved = reserved;
+        /** */
+        public IteratorImpl(@NotNull GridCursor<H2Row> cursor) {
             this.cursor = cursor;
         }
 
         /** {@inheritDoc} */
-        @Override protected Row onNext() {
-            assert cursor != null;
-
-            if (next == null)
-                throw new NoSuchElementException();
-
-            Row res = next;
-
-            next = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
+        @Override public boolean hasNextX() throws IgniteCheckedException {
             assert cursor != null;
 
             if (next != null)
@@ -294,8 +279,22 @@ public class IndexScan<Row> implements Iterable<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() {
-            release(reserved);
+        @Override public Row nextX() {
+            assert cursor != null;
+
+            if (next == null)
+                throw new NoSuchElementException();
+
+            Row res = next;
+
+            next = null;
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() {
+            throw new UnsupportedOperationException("Remove is not supported.");
         }
     }
 }

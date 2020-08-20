@@ -48,7 +48,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.events.EventType;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRes
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -401,7 +402,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         QueryInfo info = running.get(qryId);
 
         if (info != null)
-            info.root.close();
+            info.doCancel();
     }
 
     /** {@inheritDoc} */
@@ -431,6 +432,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void init() {
         messageService().register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
         messageService().register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
+        messageService().register((n,m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -722,7 +724,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             NodesMapping mapping0 = plan.fragmentMapping(fragment0);
 
             boolean error = false;
-
             for (UUID nodeId : mapping0.nodes()) {
                 if (error)
                     info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
@@ -751,12 +752,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         error = true;
                     }
                 }
-            }
-
-            if (error) {
-                info.awaitAllReplies();
-
-                throw new AssertionError(); // Previous call must throw an exception
             }
         }
 
@@ -893,6 +888,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    private void onMessage(UUID nodeId, ErrorMessage msg) {
+        assert nodeId != null && msg != null;
+
+        QueryInfo info = running.get(msg.queryId());
+
+        if (info != null)
+            info.onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
+    }
+
+    /** */
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
     }
@@ -964,9 +969,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private QueryState state;
 
         /** */
-        private Throwable error;
-
-        /** */
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
@@ -998,27 +1000,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         /** {@inheritDoc} */
         @Override public void doCancel() {
-            tryClose();
-        }
-
-        /** */
-        private void awaitAllReplies() {
-            Throwable error;
-
-            try {
-                synchronized (this) {
-                    while (!waiting.isEmpty())
-                        wait();
-
-                    error = this.error;
-                }
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
-            }
-
-            if (error != null)
-                throw new IgniteSQLException("Failed to execute query.", error);
+            root.close();
         }
 
         /**
@@ -1039,16 +1021,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (state0 == QueryState.CLOSED) {
-                // 1) notify user iterator if didn't
-                root.close();
-
-                // 2) unregister runing query
+                // 1) unregister runing query
                 running.remove(ctx.queryId());
 
-                // 3) close local execution tree fragment
+                // 2) close local fragment
                 root.proceedClose();
 
-                // 4) close remote fragments
+                // 3) close remote fragments
                 for (UUID nodeId : remotes) {
                     try {
                         exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);
@@ -1092,27 +1071,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         /** */
         private void onResponse(RemoteFragmentKey fragment, Throwable error) {
-            boolean close;
-
+            QueryState state;
             synchronized (this) {
-                if (fragment != null && !waiting.remove(fragment))
-                    return;
-
-                if (error != null) {
-                    if (this.error != null)
-                        this.error.addSuppressed(error);
-                    else
-                        this.error = error;
-                }
-
-                close = state == QueryState.CLOSING || this.error != null;
-
-                if (waiting.isEmpty())
-                    notifyAll();
+                waiting.remove(fragment);
+                state = this.state;
             }
 
-            if (close)
+            if (error != null)
+                onError(error);
+            else if (state == QueryState.CLOSING)
                 tryClose();
+        }
+
+        /** */
+        private void onError(Throwable error) {
+            root.onError(error);
+
+            tryClose();
         }
     }
 }
