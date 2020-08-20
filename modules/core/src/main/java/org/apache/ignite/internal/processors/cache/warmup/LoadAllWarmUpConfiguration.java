@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Warm-up configuration for {@link LoadAllWarmUp}.
  */
 public class LoadAllWarmUpConfiguration implements WarmUpConfiguration {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LoadAllWarmUpConfiguration.class, this);
