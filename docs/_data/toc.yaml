@@ -109,6 +109,8 @@
       url: /persistence/persistence-tuning
 - title: Baseline Topology
   url: /baseline-topology
+- title: Cluster States 
+  url: /cluster-states
 - title: Data Rebalancing
   url: /data-rebalancing 
 - title: Partition Loss Policy
@@ -179,7 +181,7 @@
   url: /near-cache
 #    - title: .NET Platform Cache
 #      url: /platform-cache
-- title: Metrics and Monitoring
+- title: Monitoring
   items:
     - title: Introduction
       url: /monitoring-metrics/intro

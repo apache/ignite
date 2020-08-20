@@ -1,7 +1,7 @@
 = Operational Commands
 
 
-The following operational commands are supported by Ignite:
+Ignite supports the following operational commands:
 
 == COPY
 

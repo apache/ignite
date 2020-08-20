@@ -57,7 +57,7 @@
 			<version>${ignite.version}</version>
 		</dependency>
 
-        <dependency>
+		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-opencensus</artifactId>
 			<version>${ignite.version}</version>
@@ -73,7 +73,7 @@
 			<artifactId>ignite-aws</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
-        <dependency>
+		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-compress</artifactId>
 			<version>${ignite.version}</version>
