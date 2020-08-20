@@ -1344,11 +1344,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
     /**
-     * Flag to disable {@link DistributedMetaStorage} marshalling validation. When set to {@code true}, keys that
-     * values can't be unmarshalled will be skipped. {@link DistributedMetaStorageListener} and explicit reads will get
-     * {@code null} values. By default, {@code false}.
+     * Newline separated list of keys that {@link DistributedMetaStorage} will skip for any operations:
+     * {@link DistributedMetaStorageListener} will not be notifyed; explicit read will return
+     * {@code null} value; write, remove and CAS operations will no effect.
+     * <b>NOTE:</b> Should be set for each node before cluster start.
      */
-    public static final String IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS = "IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS";
+    public static final String IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP = "IGNITE_METASTORAGE_KEYS_TO_SKIP";
 
     /**
      * Enforces singleton.

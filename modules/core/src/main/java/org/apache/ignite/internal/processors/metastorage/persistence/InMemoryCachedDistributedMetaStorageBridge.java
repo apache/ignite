@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
@@ -74,15 +75,20 @@ class InMemoryCachedDistributedMetaStorageBridge {
      *
      * @param globalKeyPrefix Prefix for the keys that will be iterated.
      * @param cb Callback that will be applied to all {@code <key, value>} pairs.
+     * @param keysToSkip Keys that should be skipped.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void iterate(
         String globalKeyPrefix,
-        BiConsumer<String, ? super Serializable> cb
+        BiConsumer<String, ? super Serializable> cb,
+        Set<String> keysToSkip
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.tailMap(globalKeyPrefix).entrySet()) {
             if (!entry.getKey().startsWith(globalKeyPrefix))
                 break;
+
+            if (keysToSkip.contains(entry.getKey()))
+                continue;
 
             cb.accept(entry.getKey(), unmarshal(marshaller, entry.getValue()));
         }
