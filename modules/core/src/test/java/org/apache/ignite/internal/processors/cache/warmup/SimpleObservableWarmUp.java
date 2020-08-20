@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 
 /**
@@ -38,7 +37,6 @@ class SimpleObservableWarmUp implements WarmUpStrategy<SimpleObservableWarmUpCon
 
     /** {@inheritDoc} */
     @Override public void warmUp(
-        GridKernalContext kernalCtx,
         SimpleObservableWarmUpConfiguration cfg,
         DataRegion region
     ) throws IgniteCheckedException {

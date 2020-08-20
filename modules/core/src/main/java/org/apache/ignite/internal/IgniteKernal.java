@@ -1277,7 +1277,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Init metastore");
 
                 if (!U.IGNITE_MBEANS_DISABLED) {
-                    WarmUpMXBean warmUpMXBean = new WarmUpMXBeanImpl(ctx);
+                    WarmUpMXBean warmUpMXBean = new WarmUpMXBeanImpl(ctx.cache());
 
                     mBeansMgr.registerMBean(
                         "WarmUp",

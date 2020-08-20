@@ -5545,7 +5545,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 + (warmUpCfg == dfltWarmUpCfg) + ']');
                         }
 
-                        warmUpStrat.warmUp(ctx, warmUpCfg, region);
+                        warmUpStrat.warmUp(warmUpCfg, region);
 
                         if (log.isInfoEnabled())
                             log.info("Finish of warm-up data region: " + region.config().getName());

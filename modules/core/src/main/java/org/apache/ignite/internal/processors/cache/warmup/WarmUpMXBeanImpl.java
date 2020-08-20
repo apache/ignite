@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache.warmup;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.WarmUpMXBean;
 
@@ -27,22 +28,23 @@ import org.apache.ignite.mxbean.WarmUpMXBean;
  * {@link WarmUpMXBean} implementation.
  */
 public class WarmUpMXBeanImpl implements WarmUpMXBean {
-    /** Kernal context. */
-    private final GridKernalContext kernalCtx;
+    /** Cache processor. */
+    @GridToStringExclude
+    private final GridCacheProcessor cacheProc;
 
     /**
      * Constructor.
      *
-     * @param kernalCtx Kernal context.
+     * @param cacheProc Cache processor.
      */
-    public WarmUpMXBeanImpl(GridKernalContext kernalCtx) {
-        this.kernalCtx = kernalCtx;
+    public WarmUpMXBeanImpl(GridCacheProcessor cacheProc) {
+        this.cacheProc = cacheProc;
     }
 
     /** {@inheritDoc} */
     @Override public void stopWarmUp() {
         try {
-            kernalCtx.cache().stopWarmUp();
+            cacheProc.stopWarmUp();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

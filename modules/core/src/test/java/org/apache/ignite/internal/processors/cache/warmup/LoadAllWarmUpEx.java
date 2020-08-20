@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.T2;
 
@@ -32,7 +35,17 @@ import static java.util.Objects.nonNull;
  */
 class LoadAllWarmUpEx extends LoadAllWarmUp {
     /** {@link #loadDataInfo} callback. */
-    volatile BiConsumer<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoCb;
+    static volatile BiConsumer<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoCb;
+
+    /**
+     * Constructor.
+     *
+     * @param log       Logger.
+     * @param grpCtxSup Cache group contexts supplier. Since {@link GridCacheProcessor} starts later.
+     */
+    public LoadAllWarmUpEx(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
+        super(log, grpCtxSup);
+    }
 
     /** {@inheritDoc} */
     @Override public Class configClass() {
@@ -41,10 +54,9 @@ class LoadAllWarmUpEx extends LoadAllWarmUp {
 
     /** {@inheritDoc} */
     @Override protected Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo(
-        GridKernalContext kernalCtx,
         DataRegion region
     ) throws IgniteCheckedException {
-        Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo = super.loadDataInfo(kernalCtx, region);
+        Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo = super.loadDataInfo(region);
 
         if (nonNull(loadDataInfoCb))
             loadDataInfoCb.accept(region.config().getName(), loadDataInfo);

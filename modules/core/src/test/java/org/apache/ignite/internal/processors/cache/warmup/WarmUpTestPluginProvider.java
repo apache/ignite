@@ -16,9 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -28,11 +30,10 @@ import org.apache.ignite.plugin.PluginContext;
  */
 class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
     /** Collection of strategies. */
-    final List<WarmUpStrategy<?>> strats = Arrays.asList(
+    final List<WarmUpStrategy<?>> strats = new ArrayList<>(Arrays.asList(
         new SimpleObservableWarmUp(),
-        new BlockedWarmUp(),
-        new LoadAllWarmUpEx()
-    );
+        new BlockedWarmUp()
+    ));
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -42,6 +43,10 @@ class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         super.initExtensions(ctx, registry);
+
+        IgniteEx gridx = (IgniteEx)ctx.grid();
+
+        strats.add(new LoadAllWarmUpEx(gridx.log(), () -> gridx.context().cache().cacheGroups()));
 
         registry.registerExtension(WarmUpStrategySupplier.class, new WarmUpStrategySupplier() {
             /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.mxbean.WarmUpMXBean;
@@ -173,8 +174,11 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
     public void testAvailableWarmUpStrategies() throws Exception {
         IgniteEx n = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders());
 
+        GridCacheProcessor cacheProc = n.context().cache();
+
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> expStrats =
-            Stream.of(new NoOpWarmUp(), new LoadAllWarmUp()).collect(toMap(WarmUpStrategy::configClass, identity()));
+            Stream.of(new NoOpWarmUp(), new LoadAllWarmUp(log, cacheProc::cacheGroups))
+                .collect(toMap(WarmUpStrategy::configClass, identity()));
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> actStrats = CU.warmUpStrategies(n.context());
 

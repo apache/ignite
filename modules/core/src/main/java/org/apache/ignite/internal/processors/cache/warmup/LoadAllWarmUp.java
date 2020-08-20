@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.warmup;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -38,8 +40,28 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
  * be warmed up.
  */
 public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration> {
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /**
+     * Cache group contexts supplier.
+     * Since {@link GridCacheProcessor} starts later.
+     */
+    private final Supplier<Collection<CacheGroupContext>> grpCtxSup;
+
     /** Stop flag. */
     private volatile boolean stop;
+
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param grpCtxSup Cache group contexts supplier. Since {@link GridCacheProcessor} starts later.
+     */
+    public LoadAllWarmUp(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
+        this.log = log;
+        this.grpCtxSup = grpCtxSup;
+    }
 
     /** {@inheritDoc} */
     @Override public Class<LoadAllWarmUpConfiguration> configClass() {
@@ -48,7 +70,6 @@ public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration>
 
     /** {@inheritDoc} */
     @Override public void warmUp(
-        GridKernalContext kernalCtx,
         LoadAllWarmUpConfiguration cfg,
         DataRegion region
     ) throws IgniteCheckedException {
@@ -57,9 +78,7 @@ public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration>
 
         assert region.config().isPersistenceEnabled();
 
-        IgniteLogger log = kernalCtx.log(getClass());
-
-        Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo = loadDataInfo(kernalCtx, region);
+        Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo = loadDataInfo(region);
 
         if (log.isInfoEnabled()) {
             log.info("Order of cache groups loaded into data region [name=" + region.config().getName()
@@ -147,17 +166,15 @@ public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration>
      * into data region. Calculation starts and includes an index partition for
      * each group.
      *
-     * @param kernalCtx Kernal context.
      * @param region Data region.
      * @return Mapping: {cacheGrp -> {partCnt, pageCnt}}.
      * @throws IgniteCheckedException – if faild.
      */
     protected Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo(
-        GridKernalContext kernalCtx,
         DataRegion region
     ) throws IgniteCheckedException {
         // Get cache groups of data region.
-        List<CacheGroupContext> regionGrps = kernalCtx.cache().cacheGroups().stream()
+        List<CacheGroupContext> regionGrps = grpCtxSup.get().stream()
             .filter(grpCtx -> region.equals(grpCtx.dataRegion())).collect(toList());
 
         long availableLoadPageCnt = availableLoadPageCount(region);

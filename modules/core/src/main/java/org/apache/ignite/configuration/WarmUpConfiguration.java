@@ -17,9 +17,11 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
+
 /**
  * Warm-up configuration marker interface.
  */
-public interface WarmUpConfiguration {
+public interface WarmUpConfiguration extends Serializable {
     // No-op.
 }

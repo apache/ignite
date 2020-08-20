@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.warmup;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.WarmUpConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 
 /**
@@ -36,12 +35,11 @@ public interface WarmUpStrategy<T extends WarmUpConfiguration> {
     /**
      * Warm up.
      *
-     * @param kernalCtx Kernal context.
      * @param cfg       Warm-up configuration.
      * @param region    Data region.
      * @throws IgniteCheckedException if faild.
      */
-    void warmUp(GridKernalContext kernalCtx, T cfg, DataRegion region) throws IgniteCheckedException;
+    void warmUp(T cfg, DataRegion region) throws IgniteCheckedException;
 
     /**
      * Stop warming up.

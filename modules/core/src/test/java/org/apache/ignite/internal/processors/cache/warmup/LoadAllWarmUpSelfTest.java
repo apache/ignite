@@ -55,6 +55,8 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        LoadAllWarmUpEx.loadDataInfoCb = null;
     }
 
     /** {@inheritDoc} */
@@ -172,8 +174,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         Map<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoMap = new ConcurrentHashMap<>();
 
-        WarmUpTestPluginProvider provider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
-        ((LoadAllWarmUpEx)provider.strats.get(2)).loadDataInfoCb = loadDataInfoMap::put;
+        LoadAllWarmUpEx.loadDataInfoCb = loadDataInfoMap::put;
 
         n = startGrid(cfg);
 

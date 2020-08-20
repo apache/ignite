@@ -308,7 +308,7 @@ public class DataStorageConfiguration implements Serializable {
     private Integer walPageCompressionLevel;
 
     /** Default warm-up configuration. */
-    @Nullable private transient WarmUpConfiguration dfltWarmUpCfg;
+    @Nullable private WarmUpConfiguration dfltWarmUpCfg;
 
     /**
      * Creates valid durable memory configuration with all default values.
