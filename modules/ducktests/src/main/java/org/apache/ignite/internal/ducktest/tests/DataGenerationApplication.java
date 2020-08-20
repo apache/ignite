@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
