@@ -101,12 +101,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
         ignite(0).atomicSequence(SEQ_NAME, 0, true);
 
         for (int i = 0; i < THREAD_NUM; i++) {
-            multithreaded(new Runnable() {
-                @Override public void run() {
-                    ignite(0).compute().run(new IncrementClosure());
-
-                }
-            }, THREAD_NUM);
+            multithreaded(() -> ignite(0).compute().run(new IncrementClosure()), THREAD_NUM);
         }
     }
 

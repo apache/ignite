@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,31 +79,29 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
 
             final int iter = i;
 
-            GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    Ignite node = ignite(idx.incrementAndGet() % NODES);
+            GridTestUtils.runMultiThreaded(() -> {
+                Ignite node = ignite(idx.incrementAndGet() % NODES);
 
-                    b.await();
+                b.await();
 
-                    boolean sleep = iter % 2 == 0;
+                boolean sleep = iter % 2 == 0;
 
-                    if (sleep)
-                        Thread.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
+                if (sleep)
+                    Thread.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
 
-                    switch (op) {
-                        case GET_OR_CREATE_CACHE:
-                            node.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+                switch (op) {
+                    case GET_OR_CREATE_CACHE:
+                        node.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-                            break;
+                        break;
 
-                        case GET_OR_CREATE_CACHES:
-                            node.getOrCreateCaches(cacheConfigurations());
+                    case GET_OR_CREATE_CACHES:
+                        node.getOrCreateCaches(cacheConfigurations());
 
-                            break;
-                    }
-
-                    return null;
+                        break;
                 }
+
+                return null;
             }, THREADS, "start-cache");
 
             for (String cache : ignite(0).cacheNames())

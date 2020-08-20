@@ -94,7 +94,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -1487,11 +1486,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         log.info("Stop nodes.");
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                stopGrid(idx);
-            }
-        }, NODES, "stopThread");
+        GridTestUtils.runMultiThreaded(idx -> stopGrid(idx), NODES, "stopThread");
     }
 
     /**

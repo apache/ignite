@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -73,13 +72,11 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Integer> clientCache = client.createCache(cacheConfiguration(PARTITIONED, ATOMIC));
 
         try {
-            client.compute(client.cluster().forRemotes().forRandom()).call(new IgniteCallable<Object>() {
-                @Override public Object call() throws Exception {
-                    clientCache.withKeepBinary();
-                    clientCache.withSkipStore();
+            client.compute(client.cluster().forRemotes().forRandom()).call(() -> {
+                clientCache.withKeepBinary();
+                clientCache.withSkipStore();
 
-                    return null;
-                }
+                return null;
             });
         }
         finally {

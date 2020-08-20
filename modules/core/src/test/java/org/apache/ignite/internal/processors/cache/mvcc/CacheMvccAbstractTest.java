@@ -371,39 +371,37 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         final int readers = 4;
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                if (writeMode == WriteMode.PUT) {
-                    Map<Integer, MvccTestAccount> accounts = new HashMap<>();
+            if (writeMode == WriteMode.PUT) {
+                Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
-                    for (int i = 0; i < ACCOUNTS; i++)
-                        accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
+                for (int i = 0; i < ACCOUNTS; i++)
+                    accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
 
-                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.putAll(accounts);
+                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.putAll(accounts);
+
+                    tx.commit();
+                }
+            }
+            else if (writeMode == WriteMode.DML) {
+                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
+                        "(?," + ACCOUNT_START_VAL + ",1)");
+
+                    for (int i = 0; i < ACCOUNTS; i++) {
+                        try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
+                            assertEquals(1L, cur.iterator().next().get(0));
+                        }
 
                         tx.commit();
                     }
                 }
-                else if (writeMode == WriteMode.DML) {
-                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
-                                "(?," + ACCOUNT_START_VAL + ",1)");
-
-                        for (int i = 0; i < ACCOUNTS; i++) {
-                            try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
-                                assertEquals(1L, cur.iterator().next().get(0));
-                            }
-
-                            tx.commit();
-                        }
-                    }
-                }
-                else
-                    assert false : "Unknown write mode";
             }
+            else
+                assert false : "Unknown write mode";
         };
 
         final RemovedAccountsTracker rmvdTracker = new RemovedAccountsTracker(ACCOUNTS);
@@ -1095,20 +1093,18 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         final int readers = 4;
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+        final IgniteInClosure<IgniteCache<Object, Object>> init = cache -> {
+            final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                Map<Integer, Integer> vals = new LinkedHashMap<>();
+            Map<Integer, Integer> vals = new LinkedHashMap<>();
 
-                for (int i = 0; i < TOTAL; i++)
-                    vals.put(i, N);
+            for (int i = 0; i < TOTAL; i++)
+                vals.put(i, N);
 
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    writeAllByMode(cache, vals, writeMode, INTEGER_CODEC);
+            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                writeAllByMode(cache, vals, writeMode, INTEGER_CODEC);
 
-                    tx.commit();
-                }
+                tx.commit();
             }
         };
 

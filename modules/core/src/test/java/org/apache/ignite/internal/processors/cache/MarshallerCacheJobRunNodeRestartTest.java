@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -63,14 +62,12 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
                 }
             });
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer integer) {
-                    Ignite ignite = ignite(integer % 4);
+            GridTestUtils.runMultiThreaded(integer -> {
+                Ignite ignite = ignite(integer % 4);
 
-                    while (!fut.isDone()) {
-                        for (int i = 0; i < 10; i++)
-                            ignite.compute().broadcast(job(i));
-                    }
+                while (!fut.isDone()) {
+                    for (int j = 0; j < 10; j++)
+                        ignite.compute().broadcast(job(j));
                 }
             }, (NODES + 1) * 5, "test");
 

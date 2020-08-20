@@ -236,12 +236,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     private void doTestAtomicLong(ConstantTopologyChangeWorker topWorker) throws Exception {
         try (IgniteAtomicLong s = grid(0).atomicLong(STRUCTURE_NAME, 1, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    assert ignite.atomicLong(STRUCTURE_NAME, 1, true).get() > 0;
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                assert ignite.atomicLong(STRUCTURE_NAME, 1, true).get() > 0;
 
-                    return null;
-                }
+                return null;
             });
 
             long val = s.get();
@@ -301,12 +299,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     private void doTestAtomicReference(ConstantTopologyChangeWorker topWorker) throws Exception {
         try (IgniteAtomicReference<Integer> s = grid(0).atomicReference(STRUCTURE_NAME, 1, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    assert ignite.atomicReference(STRUCTURE_NAME, 1, false).get() > 0;
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                assert ignite.atomicReference(STRUCTURE_NAME, 1, false).get() > 0;
 
-                    return null;
-                }
+                return null;
             });
 
             int val = s.get();
@@ -372,15 +368,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     private void doTestAtomicStamped(ConstantTopologyChangeWorker topWorker) throws Exception {
         try (IgniteAtomicStamped<Integer, Integer> s = grid(0).atomicStamped(STRUCTURE_NAME, 1, 1, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    IgniteBiTuple<Integer, Integer> t = ignite.atomicStamped(STRUCTURE_NAME, 1, 1, false).get();
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                IgniteBiTuple<Integer, Integer> t = ignite.atomicStamped(STRUCTURE_NAME, 1, 1, false).get();
 
-                    assert t.get1() > 0;
-                    assert t.get2() > 0;
+                assert t.get1() > 0;
+                assert t.get2() > 0;
 
-                    return null;
-                }
+                return null;
             });
 
             int val = s.value();
@@ -660,30 +654,28 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             TOP_CHANGE_CNT;
 
         try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, permits, failoverSafe, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    IgniteSemaphore sem = ignite.semaphore(STRUCTURE_NAME, permits, failoverSafe, false);
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                IgniteSemaphore sem = ignite.semaphore(STRUCTURE_NAME, permits, failoverSafe, false);
 
-                    while (true) {
-                        try {
-                            sem.acquire(1);
+                while (true) {
+                    try {
+                        sem.acquire(1);
 
+                        break;
+                    }
+                    catch (IgniteInterruptedException e) {
+                        // Exception may happen in non failover safe mode.
+                        if (failoverSafe)
+                            throw e;
+                        else {
+                            // In non-failoverSafe mode semaphore is not safe to be reused,
+                            // and should always be discarded after exception is caught.
                             break;
                         }
-                        catch (IgniteInterruptedException e) {
-                           // Exception may happen in non failover safe mode.
-                            if (failoverSafe)
-                                throw e;
-                            else {
-                                // In non-failoverSafe mode semaphore is not safe to be reused,
-                                // and should always be discarded after exception is caught.
-                                break;
-                            }
-                        }
                     }
-
-                    return null;
                 }
+
+                return null;
             });
 
             while (!fut.isDone()) {
@@ -751,44 +743,42 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
 
-        IgniteFuture fut = client.compute().applyAsync(new IgniteClosure<Ignite, Object>() {
-            @Override public Object apply(Ignite ignite) {
-                final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
+        IgniteFuture fut = client.compute().applyAsync(ignite -> {
+            final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
+
+            l.lock();
+
+            assertTrue(l.isHeldByCurrentThread());
+
+            l.unlock();
+
+            assertFalse(l.isHeldByCurrentThread());
+
+            // Signal the server to go down.
+            ignite.semaphore("sync", 0, true, true).release();
+
+            boolean isExceptionThrown = false;
+
+            try {
+                // Wait for the server to go down.
+                Thread.sleep(1000);
 
                 l.lock();
 
-                assertTrue(l.isHeldByCurrentThread());
-
-                l.unlock();
+                fail("Exception must be thrown.");
+            }
+            catch (InterruptedException ignored) {
+                fail("Interrupted exception not expected here.");
+            }
+            catch (IgniteException ignored) {
+                isExceptionThrown = true;
+            }
+            finally {
+                assertTrue(isExceptionThrown);
 
                 assertFalse(l.isHeldByCurrentThread());
-
-                // Signal the server to go down.
-                ignite.semaphore("sync", 0, true, true).release();
-
-                boolean isExceptionThrown = false;
-
-                try {
-                    // Wait for the server to go down.
-                    Thread.sleep(1000);
-
-                    l.lock();
-
-                    fail("Exception must be thrown.");
-                }
-                catch (InterruptedException ignored) {
-                    fail("Interrupted exception not expected here.");
-                }
-                catch (IgniteException ignored) {
-                    isExceptionThrown = true;
-                }
-                finally {
-                    assertTrue(isExceptionThrown);
-
-                    assertFalse(l.isHeldByCurrentThread());
-                }
-                return null;
             }
+            return null;
         }, client);
 
         // Wait for the lock on client to be acquired then released.
@@ -877,32 +867,30 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         IgniteEx ig = grid(0);
 
         try (IgniteLock lock = ig.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Void>() {
-                @Override public Void apply(Ignite ignite) {
-                    final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
 
-                    final AtomicBoolean done = new AtomicBoolean(false);
+                final AtomicBoolean done = new AtomicBoolean(false);
 
-                    GridTestUtils.runAsync(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            try {
-                                l.lock();
-                            }
-                            finally {
-                                done.set(true);
-                            }
-
-                            return null;
+                GridTestUtils.runAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        try {
+                            l.lock();
                         }
-                    }, "lock-thread");
+                        finally {
+                            done.set(true);
+                        }
 
-                    // Wait until l.lock() has been called.
-                    while (!l.hasQueuedThreads() && !done.get()){
-                        // No-op.
+                        return null;
                     }
+                }, "lock-thread");
 
-                    return null;
+                // Wait until l.lock() has been called.
+                while (!l.hasQueuedThreads() && !done.get()){
+                    // No-op.
                 }
+
+                return null;
             });
 
             long endTime = System.currentTimeMillis() + getTestTimeout();
@@ -970,12 +958,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteCountDownLatch s = grid(0).countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true)) {
             try {
                 IgniteInternalFuture<?> fut = topWorker.startChangingTopology(
-                    new IgniteClosure<Ignite, Object>() {
-                        @Override public Object apply(Ignite ignite) {
-                            assert ignite.countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, false).count() > 0;
+                    ignite -> {
+                        assert ignite.countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, false).count() > 0;
 
-                            return null;
-                        }
+                        return null;
                     });
 
                 int val = s.count();
@@ -1030,11 +1016,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             for (int i = 0; i < 1000; i++)
                 q.add(i);
 
-            final IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    return null;
-                }
-            });
+            final IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> null);
 
             IgniteInternalFuture<?> takeFut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1106,20 +1088,18 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, 0, config(false))) {
             s.put(1);
 
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    IgniteQueue<Integer> queue = ignite.queue(STRUCTURE_NAME, 0, null);
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                IgniteQueue<Integer> queue = ignite.queue(STRUCTURE_NAME, 0, null);
 
-                    assertNotNull(queue);
+                assertNotNull(queue);
 
-                    Integer val = queue.peek();
+                Integer val = queue.peek();
 
-                    assertNotNull(val);
+                assertNotNull(val);
 
-                    assert val > 0;
+                assert val > 0;
 
-                    return null;
-                }
+                return null;
             });
 
             int val = s.peek();
@@ -1287,12 +1267,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     private void doTestAtomicSequence(ConstantTopologyChangeWorker topWorker) throws Exception {
         try (IgniteAtomicSequence s = startClient().atomicSequence(STRUCTURE_NAME, 1, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
-                    assertTrue(ignite.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(ignite -> {
+                assertTrue(ignite.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
 
-                    return null;
-                }
+                return null;
             });
 
             long old = s.get();
@@ -1516,75 +1494,71 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             final ConcurrentSkipListSet<String> startedNodes = new ConcurrentSkipListSet<>();
 
-            barrier = new CyclicBarrier(TOP_CHANGE_THREAD_CNT, new Runnable() {
-                @Override public void run() {
-                    try {
-                        assertEquals(TOP_CHANGE_THREAD_CNT * 3, startedNodes.size());
+            barrier = new CyclicBarrier(TOP_CHANGE_THREAD_CNT, () -> {
+                try {
+                    assertEquals(TOP_CHANGE_THREAD_CNT * 3, startedNodes.size());
 
-                        for (String name : startedNodes) {
-                            stopGrid(name, false);
+                    for (String name : startedNodes) {
+                        stopGrid(name, false);
 
-                            awaitPartitionMapExchange();
-                        }
+                        awaitPartitionMapExchange();
+                    }
 
-                        startedNodes.clear();
+                    startedNodes.clear();
 
+                    sem.release(TOP_CHANGE_THREAD_CNT);
+
+                    barrier.reset();
+                }
+                catch (Exception e) {
+                    if (failed.compareAndSet(false, true)) {
                         sem.release(TOP_CHANGE_THREAD_CNT);
 
                         barrier.reset();
-                    }
-                    catch (Exception e) {
-                        if (failed.compareAndSet(false, true)) {
-                            sem.release(TOP_CHANGE_THREAD_CNT);
 
-                            barrier.reset();
-
-                            throw F.wrap(e);
-                        }
+                        throw F.wrap(e);
                     }
                 }
             });
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                @Override public void apply() {
-                    try {
-                        for (int i = 0; i < TOP_CHANGE_CNT; i++) {
-                            sem.acquire();
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    for (int i = 0; i < TOP_CHANGE_CNT; i++) {
+                        sem.acquire();
 
+                        if (failed.get())
+                            return;
+
+                        for (int j = 0; j < 3; j++) {
                             if (failed.get())
                                 return;
 
-                            for (int j = 0; j < 3; j++) {
-                                if (failed.get())
-                                    return;
+                            String name = UUID.randomUUID().toString();
 
-                                String name = UUID.randomUUID().toString();
+                            startedNodes.add(name);
 
-                                startedNodes.add(name);
+                            log.info("Start node: " + name);
 
-                                log.info("Start node: " + name);
+                            Ignite g = startGrid(name);
 
-                                Ignite g = startGrid(name);
+                            cb.apply(g);
+                        }
 
-                                cb.apply(g);
-                            }
-
-                            try {
-                                barrier.await();
-                            }
-                            catch (BrokenBarrierException ignored) {
-                                // No-op.
-                            }
+                        try {
+                            barrier.await();
+                        }
+                        catch (BrokenBarrierException ignored) {
+                            // No-op.
                         }
                     }
-                    catch (Exception e) {
-                        if (failed.compareAndSet(false, true)) {
-                            sem.release(TOP_CHANGE_THREAD_CNT);
+                }
+                catch (Exception e) {
+                    if (failed.compareAndSet(false, true)) {
+                        sem.release(TOP_CHANGE_THREAD_CNT);
 
-                            barrier.reset();
+                        barrier.reset();
 
-                            throw F.wrap(e);
-                        }
+                        throw F.wrap(e);
                     }
                 }
             }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CyclicBarrier;
@@ -180,27 +179,25 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
 
             final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> act0 = new ConcurrentSkipListMap<>();
 
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    barrier.await();
+            GridTestUtils.runMultiThreaded(() -> {
+                barrier.await();
 
-                    Object o;
+                Object o;
 
-                    while ((o = q.poll()) != null) {
-                        Object res = b.processEntry((CacheContinuousQueryEntry)o, false);
+                while ((o = q.poll()) != null) {
+                    Object res = b.processEntry((CacheContinuousQueryEntry)o, false);
 
-                        if (res != null) {
-                            if (res instanceof CacheContinuousQueryEntry)
-                                act0.put(((CacheContinuousQueryEntry)res).updateCounter(), (CacheContinuousQueryEntry)res);
-                            else {
-                                for (CacheContinuousQueryEntry e : ((List<CacheContinuousQueryEntry>)res))
-                                    act0.put(e.updateCounter(), e);
-                            }
+                    if (res != null) {
+                        if (res instanceof CacheContinuousQueryEntry)
+                            act0.put(((CacheContinuousQueryEntry)res).updateCounter(), (CacheContinuousQueryEntry)res);
+                        else {
+                            for (CacheContinuousQueryEntry e : ((List<CacheContinuousQueryEntry>)res))
+                                act0.put(e.updateCounter(), e);
                         }
                     }
-
-                    return null;
                 }
+
+                return null;
             }, threads, "test");
 
             actualEntries.addAll(act0.values());

@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,12 +54,10 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    Ignite ignite = ignite(idx);
+            GridTestUtils.runMultiThreaded(idx -> {
+                Ignite ignite = ignite(idx);
 
-                    ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-                }
+                ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
             }, NODES, "cache-thread");
 
             minorVer++;
@@ -73,12 +70,10 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 }
             });
 
-            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer idx) {
-                    Ignite ignite = ignite(idx);
+            GridTestUtils.runMultiThreaded(idx -> {
+                Ignite ignite = ignite(idx);
 
-                    ignite.destroyCache(DEFAULT_CACHE_NAME);
-                }
+                ignite.destroyCache(DEFAULT_CACHE_NAME);
             }, NODES, "cache-thread");
 
             minorVer++;

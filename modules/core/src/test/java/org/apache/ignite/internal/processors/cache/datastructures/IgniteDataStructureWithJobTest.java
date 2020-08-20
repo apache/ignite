@@ -21,11 +21,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -67,12 +65,10 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    ignite.compute().broadcast(new IgniteClosure<IgniteQueue, Integer>() {
-                        @Override public Integer apply(IgniteQueue queue) {
-                            assertNotNull(queue);
+                    ignite.compute().broadcast(queue -> {
+                        assertNotNull(queue);
 
-                            return 1;
-                        }
+                        return 1;
                     }, ignite.queue("queue", 0, new CollectionConfiguration()));
                 }
                 catch (IgniteException ignore) {

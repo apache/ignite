@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.event.CacheEntryListenerException;
@@ -129,14 +128,12 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             skipRead(client, true);
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
 
-                    skipRead(client, false);
+                skipRead(client, false);
 
-                    return null;
-                }
+                return null;
             });
 
             putSomeKeys(1_000);
