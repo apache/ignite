@@ -53,4 +53,10 @@ public interface MaintenanceRegistry {
      * @param action
      */
     public void registerMaintenanceAction(UUID mntcId, MaintenanceAction action);
+
+    /**
+     * @param mntcId
+     * @return
+     */
+    @Nullable public MaintenanceAction maintenanceAction(UUID mntcId);
 }

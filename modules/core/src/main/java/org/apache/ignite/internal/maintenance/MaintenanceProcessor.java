@@ -133,11 +133,18 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void clearMaintenanceRecord(UUID mntcId) {
-        //TODO cleanup record from file by recreating the file without this record
+        if (mntcRecordsFile.exists()) {
+            mntcRecordsFile.delete();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action) {
         registeredActions.put(mntcId, action);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable MaintenanceAction maintenanceAction(UUID mntcId) {
+        return registeredActions.get(mntcId);
     }
 }

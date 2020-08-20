@@ -377,7 +377,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     .registerMaintenanceRecord(
                         new MaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
                             "Corrupted cache groups found",
-                            groupsWithWalDisabled.toString())
+                            groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
                     );
             } catch (IgniteCheckedException e) {
                 log.warning("Failed to register maintenance record for corrupted partition files.", e);
@@ -400,7 +400,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return List of cache groups names that had WAL disabled before node stop.
      */
     private List<String> checkCachesWithDisabledWal() {
-        List<String> groupsWithDisabledWal = new ArrayList<>();
+        List<String> corruptedCachesDirs = new ArrayList<>();
 
         for (Integer grpDescId : idxCacheStores.keySet()) {
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpDescId);
@@ -417,13 +417,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         .filter(f -> !f.getName().equals(CACHE_DATA_FILENAME))
                         .count() > 0)
                     {
-                        groupsWithDisabledWal.add(desc.cacheOrGroupName());
+                        corruptedCachesDirs.add(cacheDirName(desc.config()));
                     }
                 }
             }
         }
 
-        return groupsWithDisabledWal;
+        return corruptedCachesDirs;
     }
 
     /** {@inheritDoc} */

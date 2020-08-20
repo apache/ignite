@@ -44,7 +44,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.maintenance.MaintenanceAction;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -60,6 +64,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -716,13 +721,33 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         assertThrows(null, () -> startGrid(1), Exception.class, null);
 
-        File defaultCacheDir = new File(ig1LfsDir, "cache-" + DEFAULT_CACHE_NAME);
-        for (File file : defaultCacheDir.listFiles())
-            file.delete();
+        ig1 = startGrid(1);
+
+        assertEquals(1, ig0.cluster().nodes().size());
+        assertEquals(1, ig1.cluster().nodes().size());
+
+        ig1.compute().run(new IgniteRunnable() {
+            @IgniteInstanceResource
+            private Ignite ig;
+
+            @Override public void run() {
+                UUID mntcActionId = UUID.fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
+
+                MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
+
+                MaintenanceAction mntcAction = mntcRegistry.maintenanceAction(mntcActionId);
+
+                if (mntcAction != null)
+                    mntcAction.execute();
+
+                mntcRegistry.clearMaintenanceRecord(mntcActionId);
+            }
+        });
+
+        stopAllGrids();
 
         ig1 = startGrid(1);
 
-        ig1.cluster().nodes();
         ig1.cluster().state(ACTIVE);
 
         cache = ig1.cache(DEFAULT_CACHE_NAME);

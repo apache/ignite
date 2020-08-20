@@ -20,5 +20,5 @@ package org.apache.ignite.maintenance;
 /** */
 public interface MaintenanceAction {
     /** */
-    public void executeAction(MaintenanceRecord rec);
+    public void execute();
 }
