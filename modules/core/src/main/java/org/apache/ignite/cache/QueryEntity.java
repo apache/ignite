@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
