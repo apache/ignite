@@ -78,10 +78,10 @@ class DiscoveryTest(IgniteTest):
         self.loader = None
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
-            with_load=[False, True])
+    @matrix(ignite_version=[str(LATEST_2_8)],
+            kill_coordinator=[False],
+            nodes_to_kill=[2],
+            with_load=[True])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.

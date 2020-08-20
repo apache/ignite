@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.X;
@@ -40,14 +41,40 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     /** */
     private static final long DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
 
+    /**
+     * Configuration holder.
+     */
+    private static class Config {
+        /** */
+        private final String cacheName;
+        /** */
+        private final boolean infinite;
+        /** */
+        private final int range;
+
+        /** */
+        private Config(JsonNode jsonNode) {
+            cacheName = jsonNode.get("cacheName").asText();
+            infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
+            range = jsonNode.get("range").asInt();
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
-        String cacheName = jsonNode.get("cacheName").asText();
-        boolean infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
-        int range = jsonNode.get("range").asInt();
+        Config cfg = new Config(jsonNode);
 
-        if (infinite) {
+        CacheConfiguration<Integer, Integer> cacheConfiguration = new CacheConfiguration<>(cfg.cacheName);
+
+        if (log.isDebugEnabled())
+            log.debug("Creating cache, cache config: " + cacheConfiguration);
+
+        log.warn("Creating cache, cache config: " + cacheConfiguration);
+
+        ignite.getOrCreateCache(cacheConfiguration);
+
+        if (cfg.infinite) {
             boolean error = true;
             AtomicInteger cycle = new AtomicInteger();
 
@@ -55,7 +82,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
             try {
                 while (active()) {
-                    generateData(cacheName, range, (idx) -> idx + cycle.get(), true);
+                    generateData(cfg.cacheName, cfg.range, (idx) -> idx + cycle.get(), true);
 
                     cycle.incrementAndGet();
                 }
@@ -81,9 +108,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         else {
             log.info("Generating data...");
 
-            generateData(cacheName, range, Function.identity(), false);
+            generateData(cfg.cacheName, cfg.range, Function.identity(), false);
 
-            log.info("Data generation finished. Generated " + range + " entries.");
+            log.info("Data generation finished. Generated " + cfg.range + " entries.");
 
             markSyncExecutionComplete();
         }
@@ -93,11 +120,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited) {
         long notifyTime = System.nanoTime();
         int streamed = 0;
-
-        if (log.isDebugEnabled())
-            log.debug("Creating cache...");
-
-        ignite.getOrCreateCache(cacheName);
 
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
             for (int i = 0; i < range && active(); i++) {
