@@ -18,7 +18,6 @@ tab:Windows[]
 ----
 control.bat <connection parameters> <command> <arguments>
 ----
-
 --
 
 == Connecting to Cluster
@@ -168,7 +167,7 @@ Execution time: 333 ms
 === Adding Nodes to Baseline Topology
 
 To add a node to the baseline topology, run the command given below.
-After the node is added, the link:data-rebalancing[rebalancing process] will start.
+After the node is added, the link:data-rebalancing[rebalancing process] starts.
 
 [tabs]
 --
@@ -188,8 +187,7 @@ control.bat --baseline add _consistentId1,consistentId2,..._ [--yes]
 
 To remove a node from the baseline topology, use the `remove` command.
 Only offline nodes can be removed from the baseline topology: shut down the node first and then use the `remove` command.
-This operation starts the rebalancing process, which will re-distribute the data across the nodes that remain in the baseline topology.
-//The node will not be shut down until you manually do it.
+This operation starts the rebalancing process, which re-distributes the data across the nodes that remain in the baseline topology.
 
 [tabs]
 --
@@ -285,6 +283,7 @@ tab:Windows[]
 control.bat --baseline auto_adjust disable
 ----
 --
+
 
 == Transaction Management
 
@@ -507,5 +506,60 @@ validate_indexes has finished with errors (listed above).
 ====
 [discrete]
 === Cluster Should Be Idle During `validate_indexes` Check
-Like `idle_verify`, indexes validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
+Like `idle_verify`, index validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
 ====
+
+
+== Tracing Configuration
+
+You can enable or disable sampling of traces for a specific API by using the `--tracing-configuration` command.
+Refer to the link:monitoring-metrics/tracing[Tracing] section for details.
+
+Before using the command, enable experimental features of the control script:
+
+[source, shell]
+----
+export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
+----
+
+To view the current tracing configuration, execute the following command:
+
+[source, shell]
+----
+control.sh --tracing-configuration
+----
+
+To enable trace sampling for a specific API:
+
+
+[source, shell]
+----
+control.sh --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX --sampling-rate <rate> --label <label>
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--scope` a| The API you want to trace:
+
+* `DISCOVERY`: discovery events
+* `EXCHANGE`: exchange events
+* `COMMUNICATION`: communication events
+* `TX`: transactions
+
+| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0`, inclusive.
+ `0` means no sampling (default), `1` means always sampling. Ex. `0.5` means every trace is sampled with the probability of 50%.
+
+| `--label` | Only applicable to the `TX` scope. The parameter defines the sampling rate for the transactions with the given label.
+
+|===
+
+
+
+
+
+
+
+
