@@ -37,6 +37,9 @@ public class ThinClientConfiguration {
     /** Active compute tasks per connection limit. */
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
+    /** If {@code true} sends full stack into client side. */
+    private boolean showFullStack = true;
+
     /**
      * Creates thin-client configuration with all default values.
      */
@@ -93,6 +96,20 @@ public class ThinClientConfiguration {
         this.maxActiveComputeTasksPerConn = maxActiveComputeTasksPerConn;
 
         return this;
+    }
+
+    /**
+     * @return {@code true} If sends full stack into client side.
+     */
+    public boolean showFullStack() {
+        return showFullStack;
+    }
+
+    /**
+     * @param showFullStack If {@code true} sends full stack into client side.
+     */
+    public void showFullStack(boolean showFullStack) {
+        this.showFullStack = showFullStack;
     }
 
     /** {@inheritDoc} */

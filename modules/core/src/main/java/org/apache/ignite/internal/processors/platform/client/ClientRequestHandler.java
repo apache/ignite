@@ -116,7 +116,14 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         int status = e instanceof IgniteClientException ?
             ((IgniteClientException)e).statusCode() : ClientStatus.FAILED;
 
-        return new ClientResponse(req.requestId(), status, X.getFullStackTrace(e));
+        boolean fullStack = false;
+
+        if (X.getCause(e) != null || !X.getSuppressedList(e).isEmpty()) {
+            fullStack =
+                ctx.kernalContext().config().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack();
+        }
+
+        return new ClientResponse(req.requestId(), status, fullStack ? X.getFullStackTrace(e) : e.getMessage());
     }
 
     /** {@inheritDoc} */

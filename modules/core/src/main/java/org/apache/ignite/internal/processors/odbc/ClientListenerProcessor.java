@@ -30,7 +30,9 @@ import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
@@ -50,9 +52,11 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -645,6 +649,20 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void showFullStack(boolean show) {
+            IgniteCompute compute = ctx.grid().compute(ctx.grid().cluster().forServers());
+
+            compute.broadcast(new CA() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                @Override public void apply() {
+                    ignite.configuration().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack(show);
+                }
+            });
         }
     }
 }

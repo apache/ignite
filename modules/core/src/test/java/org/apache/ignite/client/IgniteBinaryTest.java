@@ -34,7 +34,9 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -152,7 +154,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
 
         ccfg.setGridLogger(srvLog);
 
-        try (Ignite ignored = Ignition.start(ccfg)) {
+        try (Ignite ign = Ignition.start(ccfg)) {
             try (IgniteClient client =
                      Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
             ) {
@@ -163,6 +165,20 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
                 }
                 catch (Exception e) {
                     assertTrue(X.getFullStackTrace(e).contains(castErr));
+                }
+
+                ClientProcessorMXBean serverMxBean =
+                    getMxBean(ign.name(), "Clients", ClientListenerProcessor.class, ClientProcessorMXBean.class);
+
+                serverMxBean.showFullStack(false);
+
+                try {
+                    cache.put(1, new ThinBinaryValue());
+
+                    assert false;
+                }
+                catch (Exception e) {
+                    assertFalse(X.getFullStackTrace(e).contains(castErr));
                 }
             }
         }
