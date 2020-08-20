@@ -160,6 +160,8 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
 
                 try {
                     cache.put(1, new ThinBinaryValue());
+
+                    assert false;
                 }
                 catch (Exception e) {
                     assertTrue(X.getFullStackTrace(e).contains(castErr));
@@ -172,6 +174,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
      * Test interceptor implementation.
      */
     private static class ThinBinaryValueInterceptor extends CacheInterceptorAdapter<String, ThinBinaryValue> {
+        /** */
         @Override public ThinBinaryValue onBeforePut(Cache.Entry<String, ThinBinaryValue> entry, ThinBinaryValue newVal) {
             return super.onBeforePut(entry, newVal);
         }

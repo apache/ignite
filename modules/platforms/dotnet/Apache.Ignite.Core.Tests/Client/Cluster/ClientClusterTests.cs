@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             const string invalidCacheName = "invalidCacheName";
             TestDelegate action = () => GetClientCluster().EnableWal(invalidCacheName);
             var ex = Assert.Throws<IgniteClientException>(action);
-            Assert.AreEqual("Cache doesn't exist: " + invalidCacheName, ex.Message);
+            StringAssert.Contains("Cache doesn't exist: " + invalidCacheName, ex.Message);
         }
 
         /// <summary>
