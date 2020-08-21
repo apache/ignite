@@ -55,7 +55,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
             try {
                 while (active()) {
-                    generateData(cacheName, range, (idx) -> idx + cycle.get(), true);
+                    generateData(cacheName, range, (idx) -> idx + cycle.get(), true, cycle.get() > 0);
 
                     cycle.incrementAndGet();
                 }
@@ -81,7 +81,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         else {
             log.info("Generating data...");
 
-            generateData(cacheName, range, Function.identity(), false);
+            generateData(cacheName, range, Function.identity(), false, false);
 
             log.info("Data generation finished. Generated " + range + " entries.");
 
@@ -90,7 +90,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited) {
+    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited,
+        boolean overwrite) {
         long notifyTime = System.nanoTime();
         int streamed = 0;
 
@@ -100,6 +101,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         ignite.getOrCreateCache(cacheName);
 
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
+            streamer.allowOverwrite(overwrite);
+
             for (int i = 0; i < range && active(); i++) {
                 streamer.addData(i, supplier.apply(i));
 
