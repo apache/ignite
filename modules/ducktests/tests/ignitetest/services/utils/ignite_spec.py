@@ -102,8 +102,6 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
-    def __init__(self, **kwargs):
-        IgniteSpec.__init__(self, **kwargs)
 
     def command(self):
         cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
