@@ -312,7 +312,7 @@ public class JavaThinClient {
             UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("IGNITE"))
             .getAll().iterator().next().get(0);
 
-            double cpu_load = (double) igniteClient
+            double cpu_load = (Double) igniteClient
             .query(new SqlFieldsQuery("select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = ? ")
             .setSchema("IGNITE").setArgs(nodeId.toString()))
             .getAll().iterator().next().get(0);
@@ -328,11 +328,11 @@ public class JavaThinClient {
         //end::system-views[]
     }
 
-    void partitionAwareness() {
+    void partitionAwareness() throws Exception {
         //tag::partition-awareness[]
         ClientConfiguration cfg = new ClientConfiguration()
                 .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
-                .setPartitionAwareness(true);
+                .setPartitionAwarenessEnabled(true);
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
@@ -342,6 +342,7 @@ public class JavaThinClient {
         }
         //end::partition-awareness[]
     }
+
 
     @Test
     void cientCluster() throws Exception {
@@ -354,7 +355,7 @@ public class JavaThinClient {
         //end::client-cluster[]
     }
 
-    void clientClusterGroups() {
+    void clientClusterGroups() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-cluster-groups[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
@@ -364,7 +365,7 @@ public class JavaThinClient {
         //end::client-cluster-groups[]
     }
 
-    void clientCompute() {
+    void clientCompute() throws Exception {
         //tag::client-compute-setup[]
         ThinClientConfiguration thinClientCfg = new ThinClientConfiguration()
                 .setMaxActiveComputeTasksPerConnection(100);
@@ -387,7 +388,7 @@ public class JavaThinClient {
         //end::client-compute-task[]
     }
 
-    void clientServices() {
+    void clientServices() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-services[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
@@ -395,5 +396,12 @@ public class JavaThinClient {
             client.services().serviceProxy("MyService", MyService.class).myServiceMethod();
         }
         //end::client-services[]
+    }
+
+    private static class MyTask {
+    }
+
+    private static interface MyService {
+        public void myServiceMethod();
     }
 }
