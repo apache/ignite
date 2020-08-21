@@ -46,7 +46,10 @@ class DiscoveryTest(IgniteTest):
         """
         Configuration for DiscoveryTest.
         """
-        def __init__(self, nodes_to_kill=1, kill_coordinator=False, with_load=False):
+        def __init__(self, nodes_to_kill=1, kill_coordinator=False, with_load=0):
+            """
+            :param with_load: If loading enabled: 0 - no loading; 1 - do some loading; 2 - with transactions.
+            """
             self.nodes_to_kill = nodes_to_kill
             self.kill_coordinator = kill_coordinator
             self.with_load = with_load
@@ -80,13 +83,14 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @matrix(ignite_version=[str(LATEST_2_8)],
             kill_coordinator=[False],
-            nodes_to_kill=[2],
-            with_load=[True])
-    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+            nodes_to_kill=[1],
+            load=[2])
+    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
+        :param load: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - with transactions.
         """
-        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
+        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, load)
 
         return self.__simulate_nodes_failure(ignite_version, self.__properties(), None, config)
 
@@ -94,12 +98,13 @@ class DiscoveryTest(IgniteTest):
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[0, 1, 2],
-            with_load=[False, True])
-    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+            load=[0, 1, 2])
+    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
         Test node failure scenario with ZooKeeperSpi.
+        :param load: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - with transactions.
         """
-        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
+        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, load)
 
         self.__start_zk_quorum()
 
@@ -132,30 +137,20 @@ class DiscoveryTest(IgniteTest):
             properties=properties,
             version=version)
 
-        self.stage("Starting ignite cluster")
-
         time_holder = self.monotonic()
 
         self.servers.start()
 
-        if config.nodes_to_kill + (1 if config.kill_coordinator else 0) > self.servers.num_nodes - 1:
-            raise Exception("Too many nodes to kill: " + str(config.nodes_to_kill) + " with current settings.")
-
         data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
-        self.stage("Topology is ready")
 
         failed_nodes, survived_node = self.__choose_node_to_kill(config.kill_coordinator, config.nodes_to_kill)
 
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-        if config.with_load:
-            self.__start_loading(version, properties, modules)
-
-        self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
+        if config.with_load > 0:
+            self.__start_loading(version, properties, modules, config.with_load > 1)
 
         first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
-
-        self.stage("Waiting for failure detection of " + str(len(failed_nodes)) + " nodes.")
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
@@ -165,8 +160,6 @@ class DiscoveryTest(IgniteTest):
                                              from_the_beginning=True, backoff_sec=0.01)
             # Save mono of last detected failure.
             time_holder = self.monotonic()
-
-        self.stage("Failure detection measured.")
 
         for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
@@ -217,8 +210,12 @@ class DiscoveryTest(IgniteTest):
 
         return to_kill, survive
 
-    def __start_loading(self, ignite_version, properties, modules):
-        self.stage("Starting loading")
+    def __start_loading(self, ignite_version, properties, modules, transactional):
+        params = {"cacheName": "test-cache",
+                  "range": self.DATA_AMOUNT,
+                  "infinite": True,
+                  "optimized": False,
+                  "transactional": transactional}
 
         self.loader = IgniteApplicationService(
             self.test_context,
@@ -226,18 +223,14 @@ class DiscoveryTest(IgniteTest):
             version=ignite_version,
             modules=modules,
             properties=properties,
-            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True})
+            params=params)
 
         self.loader.start()
 
     def __start_zk_quorum(self):
         self.zk_quorum = ZookeeperService(self.test_context, 3)
 
-        self.stage("Starting ZooKeeper quorum")
-
         self.zk_quorum.start()
-
-        self.stage("ZooKeeper quorum started")
 
     @staticmethod
     def __properties(zookeeper_settings=None):
