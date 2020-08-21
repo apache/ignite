@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -68,7 +69,6 @@ import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
@@ -229,7 +229,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> serviceAsync(
+    @Override public <T> CompletableFuture<T> serviceAsync(
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
@@ -291,7 +291,6 @@ class TcpClientChannel implements ClientChannel {
      */
     private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
         throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
-        // TODO: Simply call receiveAsync().get() from here?
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -319,20 +318,25 @@ class TcpClientChannel implements ClientChannel {
      * @param payloadReader Payload reader from stream.
      * @return Future for the operation.
      */
-    private <T> IgniteInternalFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
 
-        return pendingReq.chain(payloadFut -> {
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
             try {
-                return payloadReader.apply(new PayloadInputChannel(this, payloadFut.get()));
+                T res = payloadReader.apply(new PayloadInputChannel(this, payloadFut.get()));
+                fut.complete(res);
             } catch (IgniteCheckedException e) {
-                return convertException(e);
+                fut.completeExceptionally(convertException(e));
             } finally {
                 pendingReqs.remove(reqId);
             }
-        }, asyncContinuationExecutor);
+        }));
+
+        return fut;
     }
 
     /**

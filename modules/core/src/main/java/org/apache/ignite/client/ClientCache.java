@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import javax.cache.expiry.ExpiryPolicy;
 
 import org.apache.ignite.cache.CachePeekMode;
@@ -30,7 +31,6 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Thin client cache.
@@ -51,7 +51,7 @@ public interface ClientCache<K, V> {
      * @param key Key.
      * @return a Future representing pending completion of the operation.
      */
-    public IgniteFuture<V> getAsync(K key);
+    public CompletableFuture<V> getAsync(K key);
 
     /**
      * Associates the specified value with the specified key in the cache.

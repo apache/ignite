@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,8 +42,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.lang.IgniteFuture;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -119,7 +118,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync(K key) {
+    @Override public CompletableFuture<V> getAsync(K key) {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -527,7 +526,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /**
      * Execute cache operation with a single key asynchronously.
      */
-    private <T> IgniteFuture<T> cacheSingleKeyOperationAsync(
+    private <T> CompletableFuture<T> cacheSingleKeyOperationAsync(
         K key,
         ClientOperation op,
         Consumer<PayloadOutputChannel> additionalPayloadWriter,
@@ -542,7 +541,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         };
 
         // TODO: Affinity.
-        return new IgniteFutureImpl<>(ch.serviceAsync(op, payloadWriter, payloadReader));
+        return ch.serviceAsync(op, payloadWriter, payloadReader);
         /**
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
