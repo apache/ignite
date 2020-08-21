@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
@@ -116,7 +115,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         int status = e instanceof IgniteClientException ?
             ((IgniteClientException)e).statusCode() : ClientStatus.FAILED;
 
-        return new ClientResponse(req.requestId(), status, X.getFullStackTrace(e));
+        return new ClientResponse(req.requestId(), status, e.getMessage());
     }
 
     /** {@inheritDoc} */

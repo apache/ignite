@@ -6370,14 +6370,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 CacheLazyEntry<Object, Object> interceptEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
-                Object interceptorVal = null;
-
-                try {
-                    interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
-                }
-                catch (Throwable e) {
-                    throw new IgniteCheckedException(e);
-                }
+                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                 wasIntercepted = true;
 
