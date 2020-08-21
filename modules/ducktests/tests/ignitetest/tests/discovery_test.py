@@ -132,17 +132,11 @@ class DiscoveryTest(IgniteTest):
             properties=properties,
             version=version)
 
-        self.stage("Starting ignite cluster")
-
         time_holder = self.monotonic()
 
         self.servers.start()
 
-        if config.nodes_to_kill + (1 if config.kill_coordinator else 0) > self.servers.num_nodes - 1:
-            raise Exception("Too many nodes to kill: " + str(config.nodes_to_kill) + " with current settings.")
-
         data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
-        self.stage("Topology is ready")
 
         failed_nodes, survived_node = self.__choose_node_to_kill(config.kill_coordinator, config.nodes_to_kill)
 
@@ -151,11 +145,7 @@ class DiscoveryTest(IgniteTest):
         if config.with_load:
             self.__start_loading(version, properties, modules)
 
-        self.stage("Stopping " + str(len(failed_nodes)) + " nodes.")
-
         first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
-
-        self.stage("Waiting for failure detection of " + str(len(failed_nodes)) + " nodes.")
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
@@ -165,8 +155,6 @@ class DiscoveryTest(IgniteTest):
                                              from_the_beginning=True, backoff_sec=0.01)
             # Save mono of last detected failure.
             time_holder = self.monotonic()
-
-        self.stage("Failure detection measured.")
 
         for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
@@ -218,26 +206,20 @@ class DiscoveryTest(IgniteTest):
         return to_kill, survive
 
     def __start_loading(self, ignite_version, properties, modules):
-        self.stage("Starting loading")
-
         self.loader = IgniteApplicationService(
             self.test_context,
             java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             version=ignite_version,
             modules=modules,
             properties=properties,
-            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True})
+            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True, "optimized": False})
 
         self.loader.start()
 
     def __start_zk_quorum(self):
         self.zk_quorum = ZookeeperService(self.test_context, 3)
 
-        self.stage("Starting ZooKeeper quorum")
-
         self.zk_quorum.start()
-
-        self.stage("ZooKeeper quorum started")
 
     @staticmethod
     def __properties(zookeeper_settings=None):
