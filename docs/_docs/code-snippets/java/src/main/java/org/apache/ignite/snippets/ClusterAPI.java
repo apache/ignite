@@ -5,9 +5,51 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
+import org.junit.jupiter.api.Test;
 
-public class ClusterGroups {
+public class ClusterAPI {
 
+    @Test
+    void activate() {
+        //tag::activate[]
+        Ignite ignite = Ignition.start();
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+        //end::activate[]
+        ignite.close();
+    }
+
+    @Test
+    void changeClusterState() {
+        //tag::change-state[]
+        Ignite ignite = Ignition.start();
+
+        ignite.cluster().state(ClusterState.ACTIVE_READ_ONLY);
+        //end::change-state[]
+        ignite.close();
+
+    }
+
+    @Test
+    void enableAutoadjustment() {
+        //tag::enable-autoadjustment[]
+
+        Ignite ignite = Ignition.start();
+
+        ignite.cluster().baselineAutoAdjustEnabled(true);
+
+        ignite.cluster().baselineAutoAdjustTimeout(30000);
+
+        //end::enable-autoadjustment[]
+
+        //tag::disable-autoadjustment[]
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+        //end::disable-autoadjustment[]
+        ignite.close();
+    }
+
+    @Test
     void remoteNodes() {
         // tag::remote-nodes[]
         Ignite ignite = Ignition.ignite();
@@ -20,12 +62,14 @@ public class ClusterGroups {
 
         // Broadcast to all remote nodes and print the ID of the node
         // on which this closure is executing.
-        compute.broadcast(() -> System.out.println("Hello Node: " + ignite.cluster().localNode().id()));
+        compute.broadcast(
+                () -> System.out.println("Hello Node: " + ignite.cluster().localNode().id()));
         // end::remote-nodes[]
     }
 
+    @Test
     void example(Ignite ignite) {
-        // tag::examples[]
+        // tag::group-examples[]
         IgniteCluster cluster = ignite.cluster();
 
         // All nodes on which the cache with name "myCache" is deployed,
@@ -38,6 +82,7 @@ public class ClusterGroups {
         // All client nodes that can access "myCache".
         ClusterGroup clientGroup = cluster.forClientNodes("myCache");
 
-        // end::examples[]
+        // end::group-examples[]
     }
+
 }

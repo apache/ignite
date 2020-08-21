@@ -343,6 +343,8 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
+
+    @Test
     void cientCluster() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-cluster[]

@@ -2,7 +2,7 @@
 :request_table_props: cols="15%,10%,10%,45%,20%",options="header"
 :response_table_props: cols="15%,15%,50%,20%",options="header"
 
-Ignite provides an HTTP REST client that gives you the ability to communicate with the grid over HTTP and HTTPS protocols using the REST approach. REST APIs can be used to perform different operations like read/write from/to cache, execute tasks, get various metrics, and more.
+Ignite provides an HTTP REST client that can communicate with the cluster over HTTP and HTTPS protocols using the REST approach. REST APIs can be used to perform different operations like read/write from/to cache, execute tasks, get various metrics, and more.
 
 Internally, Ignite uses Jetty to provide HTTP server features. See <<Configuration>> section below for details on how to configure jetty.
 
@@ -72,7 +72,7 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |`null`
 
 |`setMessageInterceptor(...)`
-|The interceptor provides the ability to transform all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
+|The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes
 |`null`
 |=======
@@ -169,7 +169,7 @@ To set a custom expire time, set the system variable: `IGNITE_REST_SESSION_TIMEO
 ====
 
 == Data Types
-The REST API also provides support for Java built-in types for put/get operations via `keyType` and `valueType` optional parameters.
+The REST API also supports Java built-in types for put/get operations via `keyType` and `valueType` optional parameters.
 Note that unless one of the below mentioned types are explicitly specified, the REST protocol exchanges the key-value data in `String` format.
 This means that the data is stored and retrieved to/from the cluster as a `String`.
 
@@ -310,16 +310,60 @@ http://host:port/ignite?cmd=version
 }
 ----
 
-=== Activate
-
-Activates the cluster.
+=== Cluster State
+Returns the current link:cluster-states[state of the cluster].
 
 *Request:*::
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=activate
+http://host:port/ignite?cmd=state
 ----
+
+*Response:*::
++
+Returns `true` if the cluster is active. Returns `false` if the cluster in inactive.
++
+[source,json]
+----
+{
+  "successStatus":0,
+  "error":null,
+  "sessionToken":null,
+  "response": "ACTIVE_READ_ONLY"
+}
+----
+
+
+=== Change Cluster State
+
+
+*Request:*::
++
+--
+[source,shell]
+----
+http://host:port/ignite?cmd=setstate&state={new_state}
+----
+
+[{request_table_props}]
+|===
+|Parameter
+|Type
+|Optional
+|Description
+|Example
+
+|`state` | String| No a| New cluster state. One of the values:
+
+* `ACTIVE`: active state,
+* `ACTIVE_READ_ONLY`: read only state,
+* `INACTIVE`: the cluster is deactivated.
+
+include::includes/note-on-deactivation.adoc[]
+|
+|===
+--
 
 *Response:*::
 +
@@ -329,11 +373,11 @@ http://host:port/ignite?cmd=activate
   "successStatus":0,
   "error":null,
   "sessionToken":null,
-  "response":"activate started"
+  "response":"setstate done"
 }
 ----
 
-
+////
 === Deactivate
 Starts the deactivation process for a persistence-enabled cluster.
 
@@ -358,31 +402,8 @@ http://host:port/ignite?cmd=deactivate
   "response":"deactivate started"
 }
 ----
+////
 
-
-=== Current State
-Returns the current state (active/inactive) of the cluster.
-
-*Request:*::
-+
-[source,shell]
-----
-http://host:port/ignite?cmd=currentstate
-----
-
-*Response:*::
-+
-Returns `true` if the cluster is active. Returns `false` if the cluster in inactive.
-+
-[source,json]
-----
-{
-  "successStatus":0,
-  "error":null,
-  "sessionToken":null,
-  "response":true
-}
-----
 
 === Increment
 

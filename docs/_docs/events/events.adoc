@@ -49,16 +49,17 @@ Some events contain the `subjectID` field, which represents the ID of the entity
 Check the specific event class to learn if the `subjectID` field is present.
 
 
-== Cluster Activation Events
+== Cluster State Changed Events
 
-Cluster activation events are instances of the link:{events_url}/ClusterActivationEvent.html[ClusterActivationEvent, window=_blank] class.
-Cluster activation events are generated when the cluster is activated or deactivated. They contain the list of baseline nodes at the moment of the event.
+Cluster state changed events are instances of the javadoc:org.apache.ignite.events.ClusterStateChangeEvent[] class.
+
+The cluster state changed events are generated when the cluster state changes, which happens either on auto-activation, or when a user changes the state manually.
+The events contain the new and old states, and the list of baseline nodes after the change.
 
 [cols="2,5,3",opts="header"]
 |===
 |Event Type | Event Description | Where Event Is Fired
-|EVT_CLUSTER_ACTIVATED | The cluster is activated (including when auto-activated). | All cluster nodes.
-|EVT_CLUSTER_DEACTIVATED | The cluster is deactivated. | All cluster nodes.
+|EVT_CLUSTER_STATE_CHANGED | The cluster state changed.  | All cluster nodes.
 |===
 
 == Cache Lifecycle Events

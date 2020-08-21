@@ -2,12 +2,12 @@
 
 :javaFile: {javaCodeDir}/Tracing.java
 
-WARNING: Experimental
+WARNING: This feature is experimental.
 
-A number of APIs in Ignite are instrumented with OpenCensus for tracing.
-You can collect distributed traces of various tasks execuded in your cluster and use this information to diagnose latency problems.
+A number of APIs in Ignite are instrumented for tracing with OpenCensus.
+You can collect distributed traces of various tasks executed in your cluster and use this information to diagnose latency problems.
 
-We suggest you get familiar with OpenCensus tracing documentation: https://opencensus.io/tracing/[^].
+We suggest you get familiar with OpenCensus tracing documentation before reading this chapter: https://opencensus.io/tracing/[^].
 
 The following Ignite APIs are instrumented for tracing:
 
@@ -15,6 +15,12 @@ The following Ignite APIs are instrumented for tracing:
 * Communication
 * Exchange
 * Transactions
+
+
+To view traces, you must export them into an external system.
+You can use one of the OpenCensus exporters or write your own, but in any case, you will have to write code that registers an exporter in Ignite.
+Refer to <<Exporting Traces>> for details.
+
 
 == Configuring Tracing
 
@@ -39,11 +45,10 @@ tab:C++[unsupported]
 --
 
 
-
 == Enabling Sampling of Traces
 
-When you start your cluster with the above configuration, Ignite will not collect traces.
-You have to enable collection of traces for a specific API at runtime.
+When you start your cluster with the above configuration, Ignite does not collect traces.
+You have to enable trace sampling for a specific API at runtime.
 You can turn trace sampling on and off at will, for example, only for the period when you are troubleshooting a problem.
 
 You can do this in two ways:
@@ -54,7 +59,7 @@ You can do this in two ways:
 Traces are collected with a given probabilistic sampling rate.
 The rate is specified as a value between 0 and 1 inclusive: `0` means no sampling, `1` means always sampling.
 
-When the sampling rate is set to a value greater than 0, Ignite will collect traces.
+When the sampling rate is set to a value greater than 0, Ignite collects traces.
 To disable trace collection, set the sampling rate to 0.
 
 The following sections describe the two ways of enabling trace sampling.
@@ -73,8 +78,10 @@ Enable tracing for a specific API:
 
 [source, shell]
 ----
-./control.sh --tracing-configuration set --scope DISCOVERY --sampling-rate 1
+./control.sh --tracing-configuration set --scope TX --sampling-rate 1
 ----
+
+Refer to the link:control-script#tracing-configuration[Control Script] sections for the list of all parameters.
 
 === Programmatically
 
@@ -100,30 +107,63 @@ The `--sampling-rate` is the probabilistic sampling rate, a number between `0` a
 * `1` means always sampling.
 
 
-== Viewing Traces
+== Exporting Traces
 
 To view traces, you need to export them to an external backend using one of the available exporters.
-OpenCensus supports a number of exporter out-of-the-box, and you can write a custom exporter.
+OpenCensus supports a number of exporters out-of-the-box, and you can write a custom one.
 Refer to the link:https://opencensus.io/exporters/[OpenCensus Exporters^] for details.
 
 In this section, we will show how to export traces to link:https://zipkin.io[Zipkin^].
-Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin on your machine.
 
+. Follow link:https://zipkin.io/pages/quickstart.html[this guide^] to launch Zipkin on your machine.
+. Register `ZipkinTraceExporter` in the application where you start Ignite:
++
+--
 [source, java]
 ----
 include::{javaFile}[tags=export-to-zipkin, indent=0]
 ----
+--
 
-Start one server node and then start another node.
 
-TODO
-
-open http://localhost:9411[^] in your browser
-
-This is what a trace of a node join event looks like:
+. Open http://localhost:9411/zipkin[^] in your browser and click the search icon.
++
+--
+This is what a trace of the transaction looks like:
 
 image::images/trace_in_zipkin.png[]
+--
+
+== Analyzing Trace Data
+
+A trace is recorded information about the execution of a specific event.
+Each trace consists of a tree of _spans_.
+A span is an individual unit of work performed by the system in order to process the event.
+
+Because of the distributed nature of Ignite, an operation usually involves multiple nodes.
+Therefore, a trace can include spans from multiple nodes.
+Each span always contains the information about the node where the corresponding operation was executed.
+
+In the image of the transaction trace presented above, you can see that the trace contains the spans associated with the following operations:
+
+* acquire locks (`transactions.colocated.lock.map`),
+* get (`transactions.near.enlist.read`),
+* put (`transactions.near.enlist.write`),
+* commit (`transactions.commit`), and
+* close (`transactions.close`).
+
+The commit operation, in turn, consists of two operations: prepare and finish.
+
+You can click on each span to view the annotations and tags attached to it.
 
 
+image::images/span.png[Span]
 
+////
+TODO: describe annotations and tags
+=== Annotations
 
+=== Tags
+
+The `node.id` and `node.consistentId` are the ID and consistent ID of the node where the root operation started.
+////

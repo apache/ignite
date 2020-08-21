@@ -1,12 +1,8 @@
 package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.jupiter.api.Test;
 
 public class IgniteLifecycle {
