@@ -37,8 +37,10 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     private static final long DATAGEN_NOTIFY_INTERVAL_NANO = 1500 * 1000000L;
 
     /** */
-    private static final long DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
+    private static final int DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
 
+    /** */
+    private static final int DELAYED_INITIALIZATION_AMOUNT = 10_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
@@ -50,8 +52,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         if (infinite) {
             log.info("Generating data in background...");
 
-            while (active())
+            while (active()) {
                 generateData(cacheName, range, true, optimized, true);
+
+                // Delayed initialization for small data amount ( < DELAYED_INITIALIZATION_AMOUNT ).
+                if (!inited())
+                    markInitialized();
+            }
 
             log.info("Background data generation finished.");
 
@@ -69,7 +76,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void generateData(String cacheName, int range, boolean markInited, boolean optimized, boolean overwrite) {
+    private void generateData(String cacheName, int range, boolean delayedInit, boolean optimized, boolean overwrite) {
         long notifyTime = System.nanoTime();
 
         int streamed = 0;
@@ -92,16 +99,16 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                     i - streamed >= DATAGEN_NOTIFY_INTERVAL_AMOUNT) {
                     notifyTime = System.nanoTime();
 
-                    // Delayed notify of the initialization to make sure the data load has completelly began and
-                    // has produced some amount of data.
-                    if (markInited && !inited())
-                        markInitialized();
-
                     if (log.isDebugEnabled())
                         log.debug("Streamed " + (i - streamed) + " entries. Total: " + i + '.');
 
                     streamed = i;
                 }
+
+                // Delayed notify of the initialization to make sure the data load has completelly began and
+                // has produced some notable amount of data.
+                if (delayedInit && !inited() && i >= DELAYED_INITIALIZATION_AMOUNT)
+                    markInitialized();
             }
 
             if (log.isDebugEnabled())

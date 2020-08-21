@@ -80,7 +80,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
+            nodes_to_kill=[1, 2],
             with_load=[False, True])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
@@ -93,7 +93,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
+            nodes_to_kill=[1, 2],
             with_load=[False, True])
     def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
@@ -122,7 +122,7 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     def __simulate_nodes_failure(self, version, properties, modules, config):
-        if config.nodes_to_kill == 0 and not config.kill_coordinator:
+        if config.nodes_to_kill == 0:
             return {"No nodes to kill": "Nothing to do"}
 
         self.servers = IgniteService(
@@ -190,12 +190,15 @@ class DiscoveryTest(IgniteTest):
         return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
 
     def __choose_node_to_kill(self, kill_coordinator, nodes_to_kill):
+        assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
+
         nodes = self.servers.nodes
         coordinator = nodes[0].discovery_info().coordinator
         to_kill = []
 
         if kill_coordinator:
             to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
+            nodes_to_kill -= 1
 
         if nodes_to_kill > 0:
             choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
