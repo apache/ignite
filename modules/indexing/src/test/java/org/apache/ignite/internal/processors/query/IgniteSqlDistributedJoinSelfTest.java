@@ -141,7 +141,8 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
             "affinityKey varchar(100)," +
             "A_ID bigint, "+
             "COL1 varchar(30)," +
-            "COL2 timestamp, "+
+            "COL2 varchar(100)," +
+            "COL3 timestamp, "+
             "primary key(B_ID, affinityKey)" +
             ") WITH \"template=" + inputCacheTemplate +
             ",CACHE_NAME=BCache," +
@@ -154,8 +155,11 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
             "affinityKey varchar(100)," +
             "COL1 varchar(20)," +
             "COL2 bigint," +
-            "COL3 int," +
-            "COL4 timestamp, " +
+            "COL3 varchar(50)," +
+            "COL4 varchar(20)," +
+            "COL5 varchar(20)," +
+            "COL6 int," +
+            "COL7 timestamp," +
             "primary key(C_ID, affinityKey)" +
             ") WITH \"template=" + inputCacheTemplate +
             ",CACHE_NAME=CCache," +
@@ -176,14 +180,30 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
 
             qryProc.querySqlFields(new SqlFieldsQuery(ins), true);
 
-            ins = String.format("INSERT INTO B VALUES(%s, %s, %s, %s, current_timestamp())", f, f, f, f);
+            ins = String.format("INSERT INTO B VALUES(%s, %s, %s, %s, %s, current_timestamp())", f, f, f, f, f);
 
             qryProc.querySqlFields(new SqlFieldsQuery(ins), true);
 
-            ins = String.format("INSERT INTO C VALUES(%s, %s, %s, %s, %s, %s, current_timestamp())", f, f, f, f, f, f);
+            ins = String.format("INSERT INTO C VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp())"
+                , f, f, f, f, f, f, f, f, f);
 
             qryProc.querySqlFields(new SqlFieldsQuery(ins), true);
         }
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_A_A_ID ON A(A_ID);"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_B_B_ID ON B(B_ID);"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_B_A_ID ON B(A_ID);"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_B_COL2 ON B(COL2) INLINE_SIZE 128;"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_C_C_ID on C(C_ID);"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_C_B_ID on C(B_ID);"), true);
+
+        // uncomment for green result !!!!!
+        //qryProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS idx_C_COL6 on C(COL6);"), true);
 
         String req = "select A.A_ID, A.AFFINITYKEY, B.B_ID from A, B, C" +
             " where " +
@@ -191,8 +211,8 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
             "B.B_ID = C.B_ID AND " +
             "A.AFFINITYKEY = B.AFFINITYKEY AND " +
             "B.AFFINITYKEY = C.AFFINITYKEY AND " +
-            "B.COL1 = ? AND " +
-            "C.COL3 = ?";
+            "B.COL2 = ? AND " +
+            "C.COL6 = ?";
 
         int totalRes = 0;
 
