@@ -1349,7 +1349,8 @@ public final class IgniteSystemProperties {
      * {@code null} value; write, remove and CAS operations will no effect.
      * <b>NOTE:</b> Should be set for each node before cluster start.
      */
-    public static final String IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP = "IGNITE_METASTORAGE_KEYS_TO_SKIP";
+    public static final String IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP =
+        "IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP";
 
     /**
      * Enforces singleton.

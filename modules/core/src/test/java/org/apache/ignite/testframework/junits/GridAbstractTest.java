@@ -1377,7 +1377,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Additional JVM classpath for remote instances.
      */
     protected List<String> additionalRemoteJvmClasspath() {
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     /**
