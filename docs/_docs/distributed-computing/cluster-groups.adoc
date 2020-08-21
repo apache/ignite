@@ -1,6 +1,6 @@
 = Cluster Groups
 
-:javaFile: {javaCodeDir}/ClusterGroups.java
+:javaFile: {javaCodeDir}/ClusterAPI.java
 
 The `ClusterGroup` interface represents a logical group of nodes, which can be used in many of Ignite's APIs when you want to limit the scope of specific operations to a subset of nodes (instead of the whole cluster). For example, you may wish to deploy a service only on remote nodes or execute a job only on the set of nodes that have a specific attribute.
 ////
@@ -36,7 +36,7 @@ For convenience, Ignite comes with a number of predefined cluster groups.
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tag=examples,indent=0]
+include::{javaFile}[tag=group-examples,indent=0]
 ----
 tab:C#/.NET[]
 [source,csharp]

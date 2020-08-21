@@ -39,7 +39,7 @@ public class Tracing {
 
         ignite.tracingConfiguration().set(
                 new TracingConfigurationCoordinates.Builder(Scope.TX).build(),
-                new TracingConfigurationParameters.Builder().withSamplingRate(0.5).build());
+                new TracingConfigurationParameters.Builder().withSamplingRate(1).build());
 
         //end::enable-sampling[]
         ignite.close();

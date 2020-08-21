@@ -311,4 +311,6 @@ tab:C++[unsupported]
 
 Refer to the link:monitoring-metrics/metrics#monitoring-transactions[Monitoring Transactions] section for the list of metrics that expose some transaction-related information.
 
+For the information on how to trace transactions, refer to the link:monitoring-metrics/tracing[Tracing] section.
+
 You can also use the link:control-script#transaction-management[control script] to get information about, or cancel, specific transactions being executed in the cluster.

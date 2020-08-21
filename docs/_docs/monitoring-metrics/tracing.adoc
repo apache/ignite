@@ -78,8 +78,10 @@ Enable tracing for a specific API:
 
 [source, shell]
 ----
-./control.sh --tracing-configuration set --scope DISCOVERY --sampling-rate 1
+./control.sh --tracing-configuration set --scope TX --sampling-rate 1
 ----
+
+Refer to the link:control-script#tracing-configuration[Control Script] sections for the list of all parameters.
 
 === Programmatically
 
@@ -154,13 +156,14 @@ The commit operation, in turn, consists of two operations: prepare and finish.
 
 You can click on each span to view the annotations and tags attached to it.
 
-//=== Analyzing Spans
 
 image::images/span.png[Span]
 
+////
+TODO: describe annotations and tags
 === Annotations
 
 === Tags
 
 The `node.id` and `node.consistentId` are the ID and consistent ID of the node where the root operation started.
-
+////
