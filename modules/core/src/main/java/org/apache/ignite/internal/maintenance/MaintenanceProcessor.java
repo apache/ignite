@@ -46,6 +46,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private static final String MAINTENANCE_FILE_NAME = "maintenance_records.mntc";
 
     /** */
+    private static final String DELIMITER = "\t";
+
+    /** */
     private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
 
     /** */
@@ -70,18 +73,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             return;
         }
 
-        try {
-            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile)) {
-                try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(rec.id().toString() + '\t');
-                    writer.write(rec.description() + '\t');
-                    writer.write(rec.actionParameters());
-                }
+        try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, true)) {
+            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+                writeMaintenanceRecord(rec, writer);
             }
         }
         catch (IOException ioE) {
             throw new IgniteCheckedException("Failed to register maintenance record", ioE);
         }
+    }
+
+    /** */
+    private void writeMaintenanceRecord(MaintenanceRecord rec, Writer writer) throws IOException {
+        writer.write(rec.id().toString() + DELIMITER);
+        writer.write(rec.description() + DELIMITER);
+        writer.write(rec.actionParameters());
     }
 
     /** {@inheritDoc} */
@@ -105,7 +111,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             try (FileInputStream in = new FileInputStream(mntcRecordsFile)) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                     reader.lines().forEach(s -> {
-                        String[] subStrs = s.split("\t");
+                        String[] subStrs = s.split(DELIMITER);
 
                         UUID id = UUID.fromString(subStrs[0]);
                         MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], subStrs[2]);
@@ -113,11 +119,16 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                         registeredRecords.put(id, rec);
                     });
                 }
-
             }
         }
         catch (Throwable t) {
-            // TODO: handle anything so that maintenance mode won't be activated
+            log.warning("Caught exception when starting MaintenanceProcessor, maintenance mode won't be entered", t);
+
+            registeredRecords.clear();
+            registeredActions.clear();
+
+            if (mntcRecordsFile != null)
+                mntcRecordsFile.delete();
         }
     }
 
@@ -133,8 +144,20 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void clearMaintenanceRecord(UUID mntcId) {
+        registeredRecords.remove(mntcId);
+        registeredActions.remove(mntcId);
+
         if (mntcRecordsFile.exists()) {
-            mntcRecordsFile.delete();
+            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, true)) {
+                try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+                    for (MaintenanceRecord rec : registeredRecords.values()) {
+                        writeMaintenanceRecord(rec, writer);
+                    }
+                }
+            }
+            catch (IOException ioE) {
+                mntcRecordsFile.delete();
+            }
         }
     }
 
