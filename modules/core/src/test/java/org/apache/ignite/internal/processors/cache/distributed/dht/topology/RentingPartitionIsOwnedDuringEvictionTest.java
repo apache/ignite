@@ -123,6 +123,8 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
 
             int p0 = evictingPartitionsAfterJoin(g0, cache, 1).get(0);
 
+            log.info("Evicting partition " + p0);
+
             final int cnt = 50_000;
             final int cnt2 = backups == 0 && persistence ? 0 : 1_000; // Handle partition loss.
 
@@ -141,11 +143,14 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
 
             GridDhtLocalPartition evicting = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return evicting.state() == RENTING;
+                    return evicting.state() == RENTING || evicting.state() == EVICTED;
                 }
-            }, 5_000));
+            }, GridDhtLocalPartitionSyncEviction.TIMEOUT);
+
+            if (!res)
+                fail("Failed to wait for eviction " + evicting);
 
             GridDhtPartitionState state = evicting.state();
 

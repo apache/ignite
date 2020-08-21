@@ -190,7 +190,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      */
     private static void tryEvict(GridDhtLocalPartition part) {
         if (part.state() == RENTING && part.reservations() == 0)
-            part.tryContinueClearing();
+            part.clearAsync();
     }
 
     /**
