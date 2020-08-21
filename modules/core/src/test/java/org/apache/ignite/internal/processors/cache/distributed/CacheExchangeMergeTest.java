@@ -167,7 +167,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
-            new IgniteThreadFactory("testscope", "cache-exchange-metge-tests"));
+            new IgniteThreadFactory("testscope", "cache-exchange-merge-tests"));
     }
 
     /** {@inheritDoc} */
