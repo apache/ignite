@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cache.Name));
-            StringAssert.Contains(
+            Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): foobar", ex.Message);
             Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cfg));
-            StringAssert.Contains(
+            Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): a", ex.Message);
             Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 

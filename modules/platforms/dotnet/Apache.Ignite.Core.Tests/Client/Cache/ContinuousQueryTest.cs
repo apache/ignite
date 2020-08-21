@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             queries.ForEach(q => q.Dispose());
 
-            StringAssert.Contains("Too many open cursors", ex.Message);
+            StringAssert.StartsWith("Too many open cursors", ex.Message);
             Assert.AreEqual(ClientStatusCode.TooManyCursors, ex.StatusCode);
         }
 

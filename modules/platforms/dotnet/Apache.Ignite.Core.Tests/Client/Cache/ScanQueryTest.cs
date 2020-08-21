@@ -170,11 +170,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 var qry = new ScanQuery<int, Person>(new PersonFilter(x =>
                 {
-                    throw new ArithmeticException("ArithmeticException_foo");
+                    throw new ArithmeticException("foo");
                 }));
 
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry).GetAll());
-                StringAssert.Contains("ArithmeticException_foo", ex.Message);
+                Assert.AreEqual("foo", ex.Message);
             }
         }
 #endif
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 // MaxCursors = 3
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
-                StringAssert.Contains("Too many open cursors", ex.Message);
+                Assert.AreEqual("Too many open cursors", ex.Message.Substring(0, 21));
                 Assert.AreEqual(ClientStatusCode.TooManyCursors, ex.StatusCode);
 
                 var count = 0;

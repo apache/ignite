@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
 
-            StringAssert.Contains("Compute grid functionality is disabled for thin clients on server node. " +
+            Assert.AreEqual("Compute grid functionality is disabled for thin clients on server node. " +
                             "To enable it set up the " + typeof(ThinClientConfiguration).Name +
                             ".MaxActiveComputeTasksPerConnection property.", clientEx.Message);
         }
