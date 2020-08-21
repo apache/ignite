@@ -23,6 +23,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientCluster;
+import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
@@ -30,10 +32,12 @@ import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -308,7 +312,7 @@ public class JavaThinClient {
             UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("IGNITE"))
             .getAll().iterator().next().get(0);
 
-            double cpu_load = (double) igniteClient
+            double cpu_load = (Double) igniteClient
             .query(new SqlFieldsQuery("select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = ? ")
             .setSchema("IGNITE").setArgs(nodeId.toString()))
             .getAll().iterator().next().get(0);
@@ -324,11 +328,11 @@ public class JavaThinClient {
         //end::system-views[]
     }
 
-    void partitionAwareness() {
+    void partitionAwareness() throws Exception {
         //tag::partition-awareness[]
         ClientConfiguration cfg = new ClientConfiguration()
                 .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
-                .setPartitionAwareness(true);
+                .setPartitionAwarenessEnabled(true);
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
@@ -339,7 +343,7 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
-    void cientCluster() {
+    void cientCluster() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-cluster[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
@@ -349,7 +353,7 @@ public class JavaThinClient {
         //end::client-cluster[]
     }
 
-    void clientClusterGroups() {
+    void clientClusterGroups() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-cluster-groups[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
@@ -359,7 +363,7 @@ public class JavaThinClient {
         //end::client-cluster-groups[]
     }
 
-    void clientCompute() {
+    void clientCompute() throws Exception {
         //tag::client-compute-setup[]
         ThinClientConfiguration thinClientCfg = new ThinClientConfiguration()
                 .setMaxActiveComputeTasksPerConnection(100);
@@ -382,7 +386,7 @@ public class JavaThinClient {
         //end::client-compute-task[]
     }
 
-    void clientServices() {
+    void clientServices() throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
         //tag::client-services[]
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
@@ -390,5 +394,12 @@ public class JavaThinClient {
             client.services().serviceProxy("MyService", MyService.class).myServiceMethod();
         }
         //end::client-services[]
+    }
+
+    private static class MyTask {
+    }
+
+    private static interface MyService {
+        public void myServiceMethod();
     }
 }
