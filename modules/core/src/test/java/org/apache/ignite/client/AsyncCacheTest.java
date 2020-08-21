@@ -19,9 +19,9 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -58,11 +58,11 @@ public class AsyncCacheTest {
             ClientCache<Integer, Person> cache = client.getOrCreateCache(cacheCfg);
             cache.put(1, val);
 
-            IgniteFuture<Person> fut = cache.getAsync(1);
+            CompletableFuture<Person> fut = cache.getAsync(1);
             assertFalse(fut.isDone());
 
             AtomicReference<String> completionThreadName = new AtomicReference<>();
-            fut.listen(f -> completionThreadName.set(Thread.currentThread().getName()));
+            fut.thenRun(() -> completionThreadName.set(Thread.currentThread().getName()));
 
             Person res = fut.get();
             assertEquals("1", res.getName());
