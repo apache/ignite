@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -46,52 +50,34 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      */
     private static class Config {
         /** */
-        private final String cacheName;
+        private String cacheName;
         /** */
-        private final boolean infinite;
+        private boolean infinite;
         /** */
-        private final int range;
-
-        /** */
-        private Config(JsonNode jsonNode) {
-            cacheName = jsonNode.get("cacheName").asText();
-            infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
-            range = jsonNode.get("range").asInt();
-        }
+        private int range;
     }
 
-    /** */
-    private volatile IgniteDataStreamer<Integer, Integer> streamer;
+    public static void main(String[] args){
+        ObjectMapper objMapper = new ObjectMapper();
+        objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-    /** {@inheritDoc} */
-    @Override protected void processSigterm() {
-        super.processSigterm();
+        String json = "{ \"cacheName\" : \"test-cache\", \"infinite\" : true, \"range\" : 100000 }";
 
-        System.out.println("TEST : 11");
+        Config cfg = null;
 
-        IgniteDataStreamer<Integer, Integer> streamer = this.streamer;
-
-        if (streamer != null) {
-            System.out.println("TEST : 12");
-
-            try {
-                streamer.close(true);
-                System.out.println("TEST : 13");
-            }
-            catch (Exception e) {
-                System.out.println("TEST : 14");
-                log.error("Unable to close data streamer.", e);
-            }
-
-            System.out.println("TEST : 15");
+        try {
+            cfg = objMapper.readValue(json, Config.class);
+            System.out.println("Cfg: " +  cfg);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("TEST : 16");
     }
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
-        Config cfg = new Config(jsonNode);
+        Config cfg = parseConfig(jsonNode);
 
         CacheConfiguration<Integer, Integer> cacheConfiguration = new CacheConfiguration<>(cfg.cacheName);
 
@@ -107,11 +93,11 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             AtomicInteger cycle = new AtomicInteger();
 
             log.info("Generating data in background...");
-            System.out.println("TEST : 0");
+            System.out.println("TEST : before data generation.");
 
             try {
                 while (active()) {
-                    generateData(cfg.cacheName, cfg.range, (idx) -> idx + cycle.get(), true);
+                    generateData(cfg.cacheName, cfg.range, (idx) -> idx + cycle.get(), true, cycle.get() > 0);
 
                     cycle.incrementAndGet();
                 }
@@ -121,36 +107,36 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 error = false;
             }
             catch (Throwable e) {
-                e.printStackTrace();
-
-                System.out.println("TEST : 1");
+                System.out.println("TEST : catch (Throwable e).");
 
                 // The data streamer fails with an error on node stoppage event before the termination.
                 if (X.hasCause(e, NodeStoppingException.class)) {
                     error = false;
 
-                    System.out.println("TEST : 2");
+                    System.out.println("TEST : catch (Throwable e), X.hasCause(e, NodeStoppingException.class).");
                 } else if (e instanceof Exception) {
-                    System.out.println("TEST : 3");
+                    System.out.println("TEST : catch (Throwable e), has no NodeStoppingException.");
 
                     log.error("Failed to generate data in background.", e);
+
+                    System.out.println("TEST : catch (Throwable e), has no NodeStoppingException, error logged.");
                 }
             }
             finally {
-                System.out.println("TEST : 4");
+                System.out.println("TEST : finally.");
 
                 if (error) {
-                    System.out.println("TEST : 5");
+                    System.out.println("TEST : finally, error.");
 
                     markBroken();
 
-                    System.out.println("TEST : 6");
+                    System.out.println("TEST : finally, error, markBroken.");
                 } else {
-                    System.out.println("TEST : 7");
+                    System.out.println("TEST : finally, not error.");
 
                     markFinished(false);
 
-                    System.out.println("TEST : 8");
+                    System.out.println("TEST : finally, not error, markFinished.");
                 }
             }
 
@@ -159,7 +145,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         else {
             log.info("Generating data...");
 
-            generateData(cfg.cacheName, cfg.range, Function.identity(), false);
+            generateData(cfg.cacheName, cfg.range, Function.identity(), false, false);
 
             log.info("Data generation finished. Generated " + cfg.range + " entries.");
 
@@ -168,12 +154,32 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited) {
+    private Config parseConfig(JsonNode node) {
+        ObjectMapper objMapper = new ObjectMapper();
+        objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+        Config cfg;
+
+        log.warn("Parsing config: " + node.asText());
+
+        try {
+            cfg = objMapper.readValue(node.asText(), Config.class);
+        }
+        catch (Exception e) {
+            throw new IllegalStateException("Unable to parse config.", e);
+        }
+
+        return cfg;
+    }
+
+    /** */
+    private void generateData(String cacheName, int range, Function<Integer, Integer> supplier, boolean markInited,
+        boolean overwrite) {
         long notifyTime = System.nanoTime();
         int streamed = 0;
 
         try (IgniteDataStreamer<Integer, Integer>  streamer = ignite.dataStreamer(cacheName)) {
-            this.streamer = streamer;
+            streamer.allowOverwrite(overwrite);
 
             for (int i = 0; i < range && active(); i++) {
                 streamer.addData(i, supplier.apply(i));
