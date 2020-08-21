@@ -148,7 +148,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         registeredActions.remove(mntcId);
 
         if (mntcRecordsFile.exists()) {
-            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, true)) {
+            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, false)) {
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                     for (MaintenanceRecord rec : registeredRecords.values()) {
                         writeMaintenanceRecord(rec, writer);

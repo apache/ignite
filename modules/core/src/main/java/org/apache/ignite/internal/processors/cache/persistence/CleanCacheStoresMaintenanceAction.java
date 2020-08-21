@@ -46,13 +46,9 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction {
             File cacheStoreDir = new File(rootStoreDir, cacheStoreDirName);
 
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
-                System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] deleting files from dir " + cacheStoreDir);
-
                 for (File file : cacheStoreDir.listFiles())
                     file.delete();
             }
-            else
-                System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] something wrong with " + cacheStoreDir);
         }
     }
 }

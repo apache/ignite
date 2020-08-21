@@ -750,6 +750,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         ig1.cluster().state(ACTIVE);
 
+        assertEquals(1, ig1.cluster().nodes().size());
+
         cache = ig1.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < 2500; k++)
