@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.warmup;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -26,7 +27,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.util.typedef.T2;
 
 import static java.util.Objects.nonNull;
 
@@ -35,7 +35,7 @@ import static java.util.Objects.nonNull;
  */
 class LoadAllWarmUpEx extends LoadAllWarmUp {
     /** {@link #loadDataInfo} callback. */
-    static volatile BiConsumer<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoCb;
+    static volatile BiConsumer<String, Map<CacheGroupContext, List<LoadPartition>>> loadDataInfoCb;
 
     /**
      * Constructor.
@@ -53,10 +53,10 @@ class LoadAllWarmUpEx extends LoadAllWarmUp {
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo(
+    @Override protected Map<CacheGroupContext, List<LoadPartition>> loadDataInfo(
         DataRegion region
     ) throws IgniteCheckedException {
-        Map<CacheGroupContext, T2<Integer, Long>> loadDataInfo = super.loadDataInfo(region);
+        Map<CacheGroupContext, List<LoadPartition>> loadDataInfo = super.loadDataInfo(region);
 
         if (nonNull(loadDataInfoCb))
             loadDataInfoCb.accept(region.config().getName(), loadDataInfo);

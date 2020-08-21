@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.cache.warmup;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -33,11 +37,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUp.LoadPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
@@ -172,7 +178,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getDataStorageConfiguration().getDataRegionConfigurations()[0].setMaxSize(minMemSize);
 
-        Map<String, Map<CacheGroupContext, T2<Integer, Long>>> loadDataInfoMap = new ConcurrentHashMap<>();
+        Map<String, Map<CacheGroupContext, List<LoadPartition>>> loadDataInfoMap = new ConcurrentHashMap<>();
 
         LoadAllWarmUpEx.loadDataInfoCb = loadDataInfoMap::put;
 
@@ -180,7 +186,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         dr_0 = n.context().cache().context().database().dataRegion("dr_0");
 
-        long warmUpPageCnt = loadDataInfoMap.get("dr_0").values().stream().mapToLong(T2::get2).sum();
+        long warmUpPageCnt = loadDataInfoMap.get("dr_0").values().stream().flatMap(Collection::stream).mapToLong(LoadPartition::pages).sum();
         long maxLoadPages = minMemSize / dr_0.pageMemory().systemPageSize();
         long minLoadPages = maxLoadPages - 100;
         long loadPages = dr_0.pageMemory().loadedPages();
@@ -209,7 +215,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
         return new CacheConfiguration(name)
             .setGroupName(grpName)
             .setDataRegionName(regName)
-            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setAffinity(new GapRendezvousAffinityFunction(false, 5))
             .setQueryEntities(Arrays.asList(qryEntities));
     }
 
@@ -224,8 +230,44 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         return n.context().cache().cacheGroups().stream()
             .filter(grpCtx -> grpCtx.userCache() && grpCtx.persistenceEnabled())
+            // Check for exists gap in local partitions.
+            .peek(grpCtx -> assertTrue(grpCtx.topology().localPartitions().size() < grpCtx.topology().partitions()))
             .map(CacheGroupContext::dataRegion)
             .distinct()
             .collect(toMap(region -> region.config().getName(), region -> region.pageMemory().loadedPages()));
+    }
+
+    /**
+     * {@link RendezvousAffinityFunction} for presence of a gap partition.
+     */
+    private static class GapRendezvousAffinityFunction extends RendezvousAffinityFunction {
+        /** Gap partition id. */
+        public static final int GAP_PART = 2;
+
+        /**
+         * Constructor that invoke {@link RendezvousAffinityFunction#RendezvousAffinityFunction(boolean, int)}.
+         */
+        public GapRendezvousAffinityFunction(boolean exclNeighbors, int parts) {
+            super(exclNeighbors, parts);
+
+            assert parts > GAP_PART : parts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<ClusterNode> assignPartition(
+            int part,
+            List<ClusterNode> nodes,
+            int backups,
+            @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache
+        ) {
+            return part == GAP_PART ? emptyList() : super.assignPartition(part, nodes, backups, neighborhoodCache);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            int part = super.partition(key);
+
+            return part == GAP_PART ? GAP_PART - 1 : part;
+        }
     }
 }
