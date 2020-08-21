@@ -53,54 +53,10 @@ If you want to connect to a node that is running on a remove machine, specify th
 
 You can use the control script to activate or deactivate your cluster, and manage the link:baseline-topology[Baseline Topology].
 
-include::includes/note-on-deactivation.adoc[]
-
-=== Activating Cluster
-
-Activation sets the baseline topology of the cluster to the set of nodes available at the moment of activation.
-Activation is required only if you use link:persistence/native-persistence[native persistence].
-
-To activate the cluster, run the following command:
-
-
-
-[tabs]
---
-tab:Linux[]
-[source,shell,subs="verbatim,quotes"]
-----
-control.sh --activate
-----
-tab:Windows[]
-[source,shell,subs="verbatim,quotes"]
-----
-control.bat --activate
-----
---
-
-=== Deactivating Cluster
-
-To deactivate the cluster, run the following command:
-
-
-[tabs]
---
-tab:Linux[]
-[source,shell,subs="verbatim,quotes"]
-----
-control.sh --deactivate [--yes]
-----
-tab:Windows[]
-[source,shell,subs="verbatim,quotes"]
-----
-control.bat --deactivate [--yes]
-----
---
-
 
 === Getting Cluster State
 
-The state of the cluster refers to whether it is activated or not.
+The cluster can be in one of the three states: active, read only, or inactive. Refer to link:cluster-states[Cluster States] for details.
 
 To get the state of the cluster, run the following command:
 
@@ -117,6 +73,48 @@ tab:Windows[]
 control.bat --state
 ----
 --
+
+=== Activating Cluster
+
+Activation sets the baseline topology of the cluster to the set of nodes available at the moment of activation.
+Activation is required only if you use link:persistence/native-persistence[native persistence].
+
+To activate the cluster, run the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --set-state ACTIVE
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --set-state ACTIVE
+----
+--
+
+=== Deactivating Cluster
+
+include::includes/note-on-deactivation.adoc[]
+
+To deactivate the cluster, run the following command:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --set-state INACTIVE [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --set-state INACTIVE [--yes]
+----
+--
+
 
 
 === Getting Nodes Registered in Baseline Topology
@@ -534,7 +532,7 @@ To enable trace sampling for a specific API:
 
 [source, shell]
 ----
-control.sh --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX --sampling-rate <rate> --label <label>
+control.sh --tracing-configuration set --scope <scope> --sampling-rate <rate> --label <label>
 ----
 
 Parameters:
@@ -549,12 +547,37 @@ Parameters:
 * `COMMUNICATION`: communication events
 * `TX`: transactions
 
-| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0`, inclusive.
+| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0` inclusive.
  `0` means no sampling (default), `1` means always sampling. Ex. `0.5` means every trace is sampled with the probability of 50%.
 
 | `--label` | Only applicable to the `TX` scope. The parameter defines the sampling rate for the transactions with the given label.
+When the `--label` parameter is specified, Ignite will trace transactions with the given label. You can configure different sampling rates for different labels.
 
+Transaction traces with no label will be sampled at the default sampling rate.
+The default rate for the `TX` scope can be set by using this command without the `--label` parameter.
 |===
+
+
+Examples:
+
+* Trace all discovery events:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope DISCOVER --sampling-rate 1
+----
+* Trace all transactions:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope TX --sampling-rate 1
+----
+* Trace transactions with label "report" at a 50% rate:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope TX --sampling-rate 0.5
+----
 
 
 

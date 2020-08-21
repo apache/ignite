@@ -1,6 +1,6 @@
 = Baseline Topology
 
-:javaFile: {javaCodeDir}/BaselineTopology.java
+:javaFile: {javaCodeDir}/ClusterAPI.java
 :csharpFile: {csharpCodeDir}/BaselineTopology.cs
 
 The _baseline topology_ is a set of nodes meant to hold data.
@@ -50,7 +50,7 @@ However, if some nodes do not join after a restart, you must to activate the clu
 You can activate the cluster using one of the following tools:
 
 * link:control-script#activating-cluster[Control script]
-* link:restapi#activate[REST API command]
+* link:restapi#change-cluster-state[REST API command]
 * Programmatically:
 +
 [tabs]
@@ -84,7 +84,7 @@ Here is what happens when the set of nodes in the cluster changes:
 
 Each change in the set of nodes resets the timeout for autoadjustment.
 When the timeout expires and the current set of nodes is different from the baseline topology (for example, new nodes
-are present or some old nodes left), Ignite changes the baseline topology to match the current set of nodes.
+are present or some old nodes left), Ignite changes the baseline topology to the current set of nodes.
 This also triggers data rebalancing.
 
 The autoadjustment timeout allows you to avoid data rebalancing when a node disconnects for a short period due to a

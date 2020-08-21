@@ -271,7 +271,6 @@ $ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
 
 The string `servers=2` in the last line indicates that the two nodes joined into a single cluster.
 
-
 == Activating the Cluster
 
 If you deployed a stateless cluster, skip this step: a cluster without persistence does not require activation.
@@ -288,10 +287,10 @@ Execute the following command:
  *TODO:check the path to control.sh:*
 [source, shell]
 ----
-/opt/apache-ignite/bin/control.sh --activate
+/opt/apache-ignite/bin/control.sh --set-state ACTIVE --yes
 ----
 
-You can also activate the cluster using the link:restapi#activate[REST API].
+You can also activate the cluster using the link:restapi#change-cluster-state[REST API].
 Refer to the <<Connecting to the Cluster>> section for details about connection to the cluster's REST API.
 
 == Scaling the Cluster
