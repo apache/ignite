@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -555,7 +556,8 @@ public class CheckpointHistory {
     public CheckpointHistoryResult searchAndReserveCheckpoints(
         final Map<Integer, Set<Integer>> groupsAndPartitions
     ) {
-        if (F.isEmpty(groupsAndPartitions))
+        if (F.isEmpty(groupsAndPartitions) ||
+            cctx.kernalContext().config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
             return new CheckpointHistoryResult(Collections.emptyMap(), null);
 
         final Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> res = new HashMap<>();
@@ -598,6 +600,8 @@ public class CheckpointHistory {
 
                 for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : res.entrySet())
                     entry.setValue(new T2<>(ReservationReason.WAL_RESERVATION_ERROR, null));
+
+                oldestCpForReservation = null;
             }
         }
 
