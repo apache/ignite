@@ -101,7 +101,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     private List<GridDhtLocalPartition> reserved;
 
     /**
-     * @param ectx Cache context.
+     * @param ectx Execution context.
      * @param igniteIdx Index tree.
      * @param filters Additional filters.
      * @param lowerBound Lower index scan bound.

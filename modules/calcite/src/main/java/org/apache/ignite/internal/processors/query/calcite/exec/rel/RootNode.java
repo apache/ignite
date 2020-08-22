@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Client iterator.
@@ -94,7 +93,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** */
     public void proceedClose() {
-        context().execute(()-> {
+        context().execute(() -> {
             checkThread();
 
             if (isClosed())
@@ -269,7 +268,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** */
-    @NotNull private IgniteSQLException sqlException(Throwable e) {
+    private IgniteSQLException sqlException(Throwable e) {
         return e instanceof IgniteSQLException
             ? (IgniteSQLException)e
             : new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
