@@ -64,26 +64,6 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
     }
 
     /** {@inheritDoc} */
-    public T join() {
-        return fut.join();
-    }
-
-    /** {@inheritDoc} */
-    public T getNow(T t) {
-        return fut.getNow(t);
-    }
-
-    /** {@inheritDoc} */
-    public boolean complete(T t) {
-        return fut.complete(t);
-    }
-
-    /** {@inheritDoc} */
-    public boolean completeExceptionally(Throwable throwable) {
-        return fut.completeExceptionally(throwable);
-    }
-
-    /** {@inheritDoc} */
     @Override public <U> CompletableFuture<U> thenApply(Function<? super T, ? extends U> function) {
         return fut.thenApply(function);
     }
@@ -281,21 +261,5 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
     /** {@inheritDoc} */
     @Override public boolean isCancelled() {
         return fut.isCancelled();
-    }
-
-    public boolean isCompletedExceptionally() {
-        return fut.isCompletedExceptionally();
-    }
-
-    public void obtrudeValue(T t) {
-        fut.obtrudeValue(t);
-    }
-
-    public void obtrudeException(Throwable throwable) {
-        fut.obtrudeException(throwable);
-    }
-
-    public int getNumberOfDependents() {
-        return fut.getNumberOfDependents();
     }
 }
