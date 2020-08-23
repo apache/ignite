@@ -58,7 +58,7 @@ public class AsyncCacheTest {
             ClientCache<Integer, Person> cache = client.getOrCreateCache(cacheCfg);
             cache.put(1, val);
 
-            CompletableFuture<Person> fut = cache.getAsync(1);
+            IgniteClientFuture<Person> fut = cache.getAsync(1);
             assertFalse(fut.isDone());
 
             AtomicReference<String> completionThreadName = new AtomicReference<>();

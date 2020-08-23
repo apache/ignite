@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -118,7 +119,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<V> getAsync(K key) {
+    @Override public IgniteClientFuture<V> getAsync(K key) {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -526,7 +527,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /**
      * Execute cache operation with a single key asynchronously.
      */
-    private <T> CompletableFuture<T> cacheSingleKeyOperationAsync(
+    private <T> IgniteClientFuture<T> cacheSingleKeyOperationAsync(
         K key,
         ClientOperation op,
         Consumer<PayloadOutputChannel> additionalPayloadWriter,

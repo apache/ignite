@@ -32,10 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.client.ClientAuthenticationException;
-import org.apache.ignite.client.ClientAuthorizationException;
-import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.*;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.HostAndPortRange;
@@ -208,7 +205,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * Send request and handle response asynchronously.
      */
-    public <T> CompletableFuture<T> serviceAsync(
+    public <T> IgniteClientFuture<T> serviceAsync(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader

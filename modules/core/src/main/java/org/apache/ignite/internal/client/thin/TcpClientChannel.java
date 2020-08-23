@@ -61,12 +61,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.client.ClientAuthenticationException;
-import org.apache.ignite.client.ClientAuthorizationException;
-import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.SslMode;
-import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.client.*;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -229,7 +224,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CompletableFuture<T> serviceAsync(
+    @Override public <T> IgniteClientFuture<T> serviceAsync(
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
@@ -318,7 +313,7 @@ class TcpClientChannel implements ClientChannel {
      * @param payloadReader Payload reader from stream.
      * @return Future for the operation.
      */
-    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+    private <T> IgniteClientFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -336,7 +331,7 @@ class TcpClientChannel implements ClientChannel {
             }
         }));
 
-        return fut;
+        return new IgniteClientFutureImpl<>(fut);
     }
 
     /**
