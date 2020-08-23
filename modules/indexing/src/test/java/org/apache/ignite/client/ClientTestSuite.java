@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.internal.client.thin.AsyncCacheTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
