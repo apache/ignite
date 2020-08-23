@@ -34,7 +34,7 @@ import de.bwaldvogel.mongo.exception.MongoServerException;
 
 public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	public static final String DEFAULT_DB_NAME = "default";
-	public static final String SYS_DB_NAME = "sys";
+	public static final String SYS_DB_NAME = "admin";
 	public static final String INDEX_DB_PREFIX = "INDEX_SYS_";
     private Ignite mvStore;
     

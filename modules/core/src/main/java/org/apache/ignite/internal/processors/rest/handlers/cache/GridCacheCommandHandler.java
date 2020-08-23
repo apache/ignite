@@ -484,7 +484,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                 case CACHE_GET_ALL: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
-                        new GetAllCommand(getKeys(req0)));
+                        new GetAllCommand(req0.values()!=null ? getKeys(req0) : null));
 
                     break;
                 }
@@ -1337,7 +1337,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-            return c.getAllAsync(keys);
+            //add@byron
+        	if(keys==null || keys.isEmpty()) {
+            	return c.getAllAsync(c.context().cache().keySet());
+            }
+        	return c.getAllAsync(keys);
         }
     }
 

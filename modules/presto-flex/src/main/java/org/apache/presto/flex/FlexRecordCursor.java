@@ -19,6 +19,7 @@ import static io.prestosql.spi.type.BigintType.BIGINT;
 import static io.prestosql.spi.type.BooleanType.BOOLEAN;
 import static io.prestosql.spi.type.DoubleType.DOUBLE;
 import static io.prestosql.spi.type.VarcharType.createUnboundedVarcharType;
+import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -51,7 +52,7 @@ public class FlexRecordCursor
     private final long totalBytes;
     private final FilePlugin plugin;
 
-    private List<String> fields;
+    private List<Object> fields;
 
     public FlexRecordCursor(List<FlexColumnHandle> columnHandles, SchemaTableName schemaTableName)
     {
@@ -75,7 +76,7 @@ public class FlexRecordCursor
 
 
         try (CountingInputStream input = new CountingInputStream(byteSource.openStream())) {
-            lines = plugin.getIterator(byteSource);
+            lines = plugin.getIterator(byteSource,uri);
             if (plugin.skipFirstLine()) {
                 lines.next();
             }
@@ -120,6 +121,17 @@ public class FlexRecordCursor
         checkState(fields != null, "Cursor has not been advanced yet");
 
         int columnIndex = fieldToColumnIndex[field];
+        return fields.get(columnIndex).toString();
+    }
+    
+    private Object getField(int field)
+    {
+        checkState(fields != null, "Cursor has not been advanced yet");
+
+        int columnIndex = fieldToColumnIndex[field];
+        if(columnIndex>=fields.size()) {
+        	return null;
+        }
         return fields.get(columnIndex);
     }
 
@@ -127,6 +139,10 @@ public class FlexRecordCursor
     public boolean getBoolean(int field)
     {
         checkFieldType(field, BOOLEAN);
+        Object value = getField(field);
+        if(value instanceof Boolean) {
+        	return ((Boolean) value).booleanValue();
+        }
         return Boolean.parseBoolean(getFieldValue(field));
     }
 
@@ -134,34 +150,54 @@ public class FlexRecordCursor
     public long getLong(int field)
     {
         checkFieldType(field, BIGINT);
-        return Long.parseLong(getFieldValue(field));
+        Object value = getField(field);
+        if(value instanceof Number) {
+        	return ((Number) value).longValue();
+        }
+        return Long.parseLong(value.toString());
     }
 
     @Override
     public double getDouble(int field)
     {
         checkFieldType(field, DOUBLE);
-        return Double.parseDouble(getFieldValue(field));
+        Object value = getField(field);
+        if(value instanceof Number) {
+        	return ((Number) value).doubleValue();
+        }
+        return Double.parseDouble(value.toString());
     }
 
     @Override
     public Slice getSlice(int field)
     {
-        checkFieldType(field, createUnboundedVarcharType());
-        return Slices.utf8Slice(getFieldValue(field));
+    	checkState(fields != null, "no current record");
+        Object value = getField(field);
+        requireNonNull(value, "value is null");
+        if (value instanceof byte[]) {
+            return Slices.wrappedBuffer((byte[]) value);
+        }
+        if (value instanceof String) {
+            return Slices.utf8Slice((String) value);
+        }
+        if (value instanceof Slice) {
+            return (Slice) value;
+        }
+        throw new IllegalArgumentException("Field " + field + " is not a String, but is a " + value.getClass().getName());
     }
 
     @Override
     public Object getObject(int field)
     {
-        throw new UnsupportedOperationException();
+        //throw new UnsupportedOperationException();
+    	return getField(field);
     }
 
     @Override
     public boolean isNull(int field)
     {
         checkArgument(field < columnHandles.size(), "Invalid field index");
-        return Strings.isNullOrEmpty(getFieldValue(field));
+        return null == getField(field) || getFieldValue(field).isEmpty();
     }
 
     private void checkFieldType(int field, Type expected)

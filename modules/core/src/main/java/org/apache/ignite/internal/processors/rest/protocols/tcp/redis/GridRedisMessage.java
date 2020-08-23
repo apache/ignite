@@ -123,11 +123,20 @@ public class GridRedisMessage implements GridClientMessage {
     public GridRedisCommand command() {
         return GridRedisCommand.valueOf(msgParts.get(CMD_POS).toUpperCase());
     }
+    
+    public String standardizeParams(String cmd) {
+    	//add@byron hashset:
+    	if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') {
+    		return CACHE_NAME_PREFIX+'-'+msgParts.remove(KEY_POS);
+    	}
+    	return null;
+    	//end@
+    }
 
     /**
      * @return Key for the command.
      */
-    public String key() {
+    public String key() {    	
         if (msgParts.size() <= KEY_POS)
             return null;
 

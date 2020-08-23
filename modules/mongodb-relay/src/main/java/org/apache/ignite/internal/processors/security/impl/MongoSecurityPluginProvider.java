@@ -48,7 +48,8 @@ public class MongoSecurityPluginProvider extends AbstractSecurityPluginProvider 
           this.login = "root";
           this.pwd = "";          
           
-          SecurityPermissionSet permsSet = new SecurityPermissionSetBuilder()        		 
+          SecurityPermissionSet permsSet = new SecurityPermissionSetBuilder()  
+        		  			.appendCachePermissions("INDEX_SYS_*", CACHE_READ)
         		            .appendTaskPermissions("*", TASK_CANCEL)
         		            .appendTaskPermissions("*", TASK_EXECUTE)
         		           .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
@@ -73,10 +74,12 @@ public class MongoSecurityPluginProvider extends AbstractSecurityPluginProvider 
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-    	return null;
-		/*
-		 * return new SimpleSecurityProcessor(ctx, new SimpleSecurityData(login, pwd,
-		 * perms), clientData);
-		 */
+    	if(this.pwd==null || this.pwd.isEmpty())
+    		return null;
+		
+		return new SimpleSecurityProcessor(ctx, 
+				new SimpleSecurityData(login, pwd, perms), 
+				clientData);
+		
     }
 }

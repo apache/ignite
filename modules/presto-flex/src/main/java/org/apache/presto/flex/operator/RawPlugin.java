@@ -15,9 +15,12 @@ package org.apache.presto.flex.operator;
 
 import static io.prestosql.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static io.prestosql.spi.type.VarcharType.VARCHAR;
+import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -35,22 +38,31 @@ public class RawPlugin implements FilePlugin {
     @Override
     public List<FlexColumn> getFields(String schema, String table)
     {
-        return ImmutableList.of(new FlexColumn("data", VARCHAR));
+        return ImmutableList.of(new FlexColumn("data", VARBINARY));
     }
 
     @Override
-    public List<String> splitToList(Iterator lines)
+    public List<Object> splitToList(Iterator lines)
     {
-        Iterable<String> iterable = () -> lines;
-        String line = StreamSupport.stream(iterable.spliterator(), false).map(Object::toString).collect(Collectors.joining("\n"));
-        return Arrays.asList(line);
+    	try {
+    		Iterator<InputStream> iterable = (Iterator<InputStream>)lines;
+    		InputStream in = iterable.next();
+			byte [] all = in.readAllBytes();
+			in.close();
+			return Arrays.asList(all);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to get data"+e.getMessage());
+		}
+       
     }
 
     @Override
-    public Iterator<String> getIterator(ByteSource byteSource)
+    public Iterator getIterator(ByteSource byteSource,URI uri)
     {
         try {
-            return byteSource.asCharSource(UTF_8).readLines().iterator();
+            return  Arrays.asList(byteSource.openBufferedStream()).iterator();
         } catch (IOException e) {
             throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to get iterator");
         }

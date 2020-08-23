@@ -28,7 +28,9 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * Security context for tests.
  */
 public class SimpleSecurityContext implements SecurityContext, Serializable {
-    /** Subject. */
+    
+	private static final long serialVersionUID = 5081819630614907255L;
+	/** Subject. */
     private final SecuritySubject subject;
 
     /**
@@ -118,8 +120,9 @@ public class SimpleSecurityContext implements SecurityContext, Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "TestSecurityContext{" +
-            "subject=" + subject +
+        return 
+        	"TestSecurityContext{" +
+        		"subject=" + subject +
             '}';
     }
 }

@@ -22,29 +22,37 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.WeakHashMap;
 
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.presto.flex.FlexColumn;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 
+import au.com.bytecode.opencsv.CSVParser;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.connector.TableNotFoundException;
 
 public class CsvPlugin implements FilePlugin {
-    private static final String DELIMITER = ",";
+    private static final String DELIMITER = ",";   
+    
+    private CSVParser parser = new CSVParser(DELIMITER.charAt(0));
+    
+    private Splitter splitter = Splitter.on(DELIMITER).trimResults(CharMatcher.whitespace().or(CharMatcher.is('"')));
 
     @Override
     public List<FlexColumn> getFields(String schema, String table)
     {
-        Splitter splitter = Splitter.on(DELIMITER).trimResults();
-
+        
         ByteSource byteSource;
         try {
             byteSource = Resources.asByteSource(URI.create(table).toURL());
@@ -59,8 +67,8 @@ public class CsvPlugin implements FilePlugin {
 
         List<FlexColumn> columnTypes = new LinkedList<>();
         try {
-            ImmutableList<String> lines = byteSource.asCharSource(UTF_8).readLines();
-            List<String> fields = splitter.splitToList(lines.get(0));
+            String line = byteSource.asCharSource(UTF_8).readFirstLine();
+            List<String> fields = splitter.splitToList(line);
             fields.forEach(field -> columnTypes.add(new FlexColumn(field, VARCHAR)));
         }
         catch (IOException e) {
@@ -71,21 +79,29 @@ public class CsvPlugin implements FilePlugin {
     }
 
     @Override
-    public Iterator<String> getIterator(ByteSource byteSource)
+    public Iterator<String> getIterator(ByteSource byteSource,URI uri)
     {
         try {
             return byteSource.asCharSource(UTF_8).readLines().iterator();
         } catch (IOException e) {
-            throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to get iterator");
+            throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to get iterator "+ e.getMessage());
         }
     }
 
     @Override
-    public List<String> splitToList(Iterator lines)
+    public List<Object> splitToList(Iterator lines)
     {
-        String line = (String) lines.next();
-        Splitter splitter = Splitter.on(DELIMITER).trimResults();
-        return splitter.splitToList(line);
+        Object line =  lines.next();
+        //Splitter splitter = Splitter.on(DELIMITER).trimResults();
+        //return (List)splitter.splitToList(line.toString());
+        try {
+			String[] row = parser.parseLineMulti(line.toString());
+			return Arrays.asList(row);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to parse line "+ e.getMessage());
+		}
+        
     }
 
     @Override

@@ -18,6 +18,7 @@ import static io.prestosql.spi.type.VarcharType.VARCHAR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -37,14 +38,14 @@ public class TextPlugin implements FilePlugin {
     }
 
     @Override
-    public List<String> splitToList(Iterator lines)
+    public List<Object> splitToList(Iterator lines)
     {
-        String line = (String) lines.next();
+        Object line =  lines.next();
         return Arrays.asList(line);
     }
 
     @Override
-    public Iterator<String> getIterator(ByteSource byteSource)
+    public Iterator<String> getIterator(ByteSource byteSource,URI uri)
     {
         try {
             return byteSource.asCharSource(UTF_8).readLines().iterator();

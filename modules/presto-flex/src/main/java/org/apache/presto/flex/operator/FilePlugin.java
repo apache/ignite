@@ -13,6 +13,7 @@
  */
 package org.apache.presto.flex.operator;
 
+import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,9 +24,9 @@ import com.google.common.io.ByteSource;
 public interface FilePlugin {
     List<FlexColumn> getFields(String schema, String table);
 
-    List<String> splitToList(Iterator lines);
+    List<Object> splitToList(Iterator lines);
 
-    Iterator getIterator(ByteSource byteSource);
+    Iterator getIterator(ByteSource byteSource,URI uri);
 
     boolean skipFirstLine();
 }

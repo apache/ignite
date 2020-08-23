@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.WeakHashMap;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -36,14 +37,20 @@ import com.google.common.io.Resources;
 public class ExcelPlugin implements FilePlugin {
 
     private static final DataFormatter DATA_FORMATTER = new DataFormatter();
+    
+    private static WeakHashMap<URI,Workbook> cache = new WeakHashMap<>();
 
     @Override
     public List<FlexColumn> getFields(String schema, String table)
     {
         try {
             URI uri = URI.create(table);
-            ByteSource byteSource = Resources.asByteSource(uri.toURL());
-            Workbook workbook = WorkbookFactory.create(byteSource.openStream());
+            Workbook workbook = cache.get(uri);
+            if(workbook==null) {
+            	ByteSource byteSource = Resources.asByteSource(uri.toURL());
+            	workbook = WorkbookFactory.create(byteSource.openStream());
+            	cache.put(uri, workbook);
+            }
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.iterator();
             List<FlexColumn> columnTypes = new LinkedList<>();
@@ -59,10 +66,15 @@ public class ExcelPlugin implements FilePlugin {
     }
 
     @Override
-    public Iterator getIterator(ByteSource byteSource)
+    public Iterator getIterator(ByteSource byteSource,URI uri)
     {
         try {
-            Workbook workbook = WorkbookFactory.create(byteSource.openStream());
+        	Workbook workbook = cache.get(uri);
+            if(workbook==null) {
+            	workbook = WorkbookFactory.create(byteSource.openStream());
+            	cache.put(uri, workbook);
+            }
+            
             Sheet sheet = workbook.getSheetAt(0);
             return sheet.iterator();
         } catch (IOException e) {
@@ -72,9 +84,9 @@ public class ExcelPlugin implements FilePlugin {
     }
 
     @Override
-    public List<String> splitToList(Iterator lines)
+    public List<Object> splitToList(Iterator lines)
     {
-        List<String> values = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
         Row row = (Row) lines.next();
         for(Cell cell: row) {
             String cellValue = DATA_FORMATTER.formatCellValue(cell);

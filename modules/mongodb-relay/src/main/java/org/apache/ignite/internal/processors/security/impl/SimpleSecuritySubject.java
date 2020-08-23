@@ -138,9 +138,6 @@ public class SimpleSecuritySubject implements SecuritySubject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "TestSecuritySubject{" +
-            "id=" + id +
-            ", type=" + type +
-            ", login=" + login +
-            '}';
+            "id=" + id +  ", type=" + type +  ", login=" + login + '}';
     }
 }

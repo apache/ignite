@@ -22,11 +22,15 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import org.apache.commons.io.IOUtils;
+import java.nio.CharBuffer;
+
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -95,8 +99,10 @@ public class OpenCensusMetricsExporterExample {
                 URLConnection conn = new URL(METRICS_URL).openConnection();
 
                 try (InputStream in = conn.getInputStream()) {
-                    String content = IOUtils.toString(in, conn.getContentEncoding());
-
+                    Reader reader = new InputStreamReader(in, conn.getContentEncoding());
+                    CharBuffer cb = CharBuffer.allocate(1024);
+                    reader.read(cb);
+                    String content = cb.toString();
                     System.out.println(content);
                 }
             }

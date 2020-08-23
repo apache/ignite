@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.util.EnumMap;
 import java.util.Map;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -55,6 +58,8 @@ import org.jetbrains.annotations.Nullable;
 public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedisMessage> {
     /** Logger. */
     private final IgniteLogger log;
+    
+    private final GridKernalContext ctx;
 
     /** Redis-specific handlers. */
     protected final Map<GridRedisCommand, GridRedisCommandHandler> handlers = new EnumMap<>(GridRedisCommand.class);
@@ -69,6 +74,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
      */
     public GridRedisNioListener(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
+        this.ctx = ctx;
 
         // connection commands.
         addCommandHandler(new GridRedisConnectionCommandHandler(log, hnd, ctx));
@@ -142,6 +148,21 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
             if (cacheName != null)
                 msg.cacheName(cacheName);
+            
+            //add@byron
+            String  cmd = msg.aux(0);
+            if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { //Hashsets
+            	cacheName = msg.standardizeParams(cmd);     
+            	msg.cacheName(cacheName); // hash_name as cachename
+            	
+            	if(cacheName!=null && cacheName.length()<=64) {
+            		CacheConfiguration ccfg = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+            		ccfg.setName(cacheName);
+            		ccfg.setGroupName(GridRedisMessage.CACHE_NAME_PREFIX);
+            		IgniteCache cache = ctx.grid().getOrCreateCache(ccfg);
+            	}                
+            }
+            //end@
 
             IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
 

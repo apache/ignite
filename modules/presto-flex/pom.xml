@@ -40,6 +40,8 @@
         <dep.jackson.version>2.10.3</dep.jackson.version>
         <dep.testng.version>6.10</dep.testng.version>
         <air.javadoc.lint>-missing</air.javadoc.lint>
+        <opencsv.version>2.3</opencsv.version>
+        
 		<maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.targetJdk>11</project.build.targetJdk>
@@ -134,7 +136,11 @@
             <scope>provided</scope>
         </dependency>
 	
-      
+      	<dependency>
+            <groupId>net.sf.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>${opencsv.version}</version>
+        </dependency>
 
         <!-- for testing -->
         

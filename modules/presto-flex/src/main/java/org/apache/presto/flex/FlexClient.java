@@ -15,9 +15,11 @@ package org.apache.presto.flex;
 
 import static java.util.Objects.requireNonNull;
 
+import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,6 +30,7 @@ import org.apache.presto.flex.operator.PluginFactory;
 
 public class FlexClient
 {
+	
     @Inject
     public FlexClient(FlexConfig config)
     {

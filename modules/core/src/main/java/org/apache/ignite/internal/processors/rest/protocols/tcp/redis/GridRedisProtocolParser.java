@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -103,7 +105,7 @@ public class GridRedisProtocolParser {
 
         int len = elCnt(buf);
         byte[] bulkStr = new byte[len];
-
+       
         buf.get(bulkStr, 0, len);
 
         if (buf.get() != CR || buf.get() != LF)
@@ -111,6 +113,59 @@ public class GridRedisProtocolParser {
 
         return new String(bulkStr);
     }
+    
+    /*
+     * A validation method to check packet completeness.
+     * return true if and only if
+     * 1. First byte is ARRAY (43)
+     * 2. Last two bytes are CR(13) LF(10)
+     *
+     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
+     * 1. A beginning packet with leading ARRAY byte
+     * 2. A continual packet with ending CRLF bytes.
+     * 3. A continual packet with neither conditions above.
+     */
+    public static boolean validatePacket(ByteBuffer buf) {
+        return validatePacketHeader(buf) && validatePacketFooter(buf);
+    }
+
+    public static boolean validatePacketHeader(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        if (buf.get() != ARRAY) {
+            result = false;
+        }
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
+    public static boolean validatePacketFooter(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        int limit = buf.limit();
+
+        assert limit > 2;
+
+        //check the final CR(last -2 ) and LF(last -1) byte
+        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF) {
+            result = false;
+        }
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
 
     /**
      * Counts elements in buffer.
@@ -284,8 +339,15 @@ public class GridRedisProtocolParser {
      * @param vals Map.
      * @return Array response.
      */
-    public static ByteBuffer toArray(Map<Object, Object> vals) {
-        return toArray(vals.values());
+    public static ByteBuffer toArray(Map<Object, Object> vals,List<String> params) {
+    	ArrayList<Object> values = new ArrayList<>(vals.size()*2);
+    	if(params!=null && params.size()>0) { //add@byron    		
+    		params.forEach((k)->values.add(vals.get(k)));    		
+    	} 
+    	else {    		
+        	vals.forEach((k,v)->{ values.add(k); values.add(v);});
+    	}
+        return toArray(values);
     }
 
     /**
@@ -304,8 +366,14 @@ public class GridRedisProtocolParser {
         buf.put(arrSize);
         buf.put(CRLF);
 
-        for (Object val : vals)
-            buf.put(toBulkString(val));
+        for (Object val : vals) {
+        	if(val==null) { //add@byron
+        		buf.put(NIL);        		
+        	}
+        	else {
+        		buf.put(toBulkString(val));
+        	}
+        }
 
         buf.flip();
 

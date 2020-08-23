@@ -32,11 +32,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.ECHO;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PING;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.QUIT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SELECT;
-
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 /**
  * Redis connection handler.
  */
@@ -46,7 +42,8 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
         PING,
         QUIT,
         ECHO,
-        SELECT
+        SELECT,
+        AUTH
     );
 
     /** Grid context. */
@@ -109,6 +106,10 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
 
                     msg.setResponse(GridRedisProtocolParser.oKString());
                 }
+                return new GridFinishedFuture<>(msg);
+            case AUTH:
+            	msg.setResponse(GridRedisProtocolParser.oKString());
+            	//ses..addMeta(pass, msg.aux(1));
                 return new GridFinishedFuture<>(msg);
         }
 

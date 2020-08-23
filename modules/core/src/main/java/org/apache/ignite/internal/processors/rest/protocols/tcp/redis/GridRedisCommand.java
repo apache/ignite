@@ -71,10 +71,62 @@ public enum GridRedisCommand {
     EXPIRE("EXPIRE"),
     /** PEXPIRE. */
     PEXPIRE("PEXPIRE"),    
-   
-    /** SET and EXPIRE. */ //add@byron
+    // add@byron
+    /** SET and EXPIRE. */ 
     SETEXPIRE("SETEX"),
+    
+    /** SET no override. */ 
+    SETNX("SETNX"),
+    
+    // Hashes commands
+    /**
+    	 * @method bool|int      hSet(string $key, string $field, string $value)
+    	 * @method bool          hSetNx(string $key, string $field, string $value)
+    	 * @method bool|string   hGet(string $key, string $field)
+    	 * @method bool|int      hLen(string $key)
+    	 * @method bool          hDel(string $key, string $field)
+    	 * @method array         hKeys(string $key, string $field)
+    	 * @method array         hVals(string $key, string $field)
+    	 * @method array         hGetAll(string $key)
+    	 * @method bool          hExists(string $key, string $field)
+    	 * @method int           hIncrBy(string $key, string $field, int $value)
+    	 * @method bool          hMSet(string $key, array $keysValues)
+    	 * @method array         hMGet(string $key, array $fields)
 
+	*/
+    
+    /** hGET. */
+    HGET("hGET"),
+    /** hMGET. */
+    HMGET("hMGET"),
+    /** SET. */
+    HSET("hSET"),
+    
+    /** hSETNX. */
+    HSETNX("hSETNX"),
+    
+    /** MSET. */
+    HMSET("hMSET"),
+    
+    /** hINCRBY. */
+    HINCRBY("hINCRBY"),   
+  
+    /** hLEN. */
+    HLEN("hLEN"),
+    
+    /** hGETALL. */
+    HGETALL("hGETALL"),    
+    
+    /** hDEL. */
+    HDEL("hDEL"),
+    
+    /** hEXISTS. */
+    HEXISTS("hEXISTS"),
+    
+    /** suport use */
+    AUTH("AUTH"),
+    //end@
+    
     // Server commands.
     /** DBSIZE. */
     DBSIZE("DBSIZE"),
@@ -82,6 +134,8 @@ public enum GridRedisCommand {
     FLUSHDB("FLUSHDB"),
     /** FLUSHALL. */
     FLUSHALL("FLUSHALL");
+	
+	
 
     /** String for command. */
     private final String cmd;
