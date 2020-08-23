@@ -51,7 +51,7 @@ public interface ClientCache<K, V> {
      * @param key Key.
      * @return a Future representing pending completion of the operation.
      */
-    public CompletableFuture<V> getAsync(K key);
+    public IgniteClientFuture<V> getAsync(K key);
 
     /**
      * Associates the specified value with the specified key in the cache.
