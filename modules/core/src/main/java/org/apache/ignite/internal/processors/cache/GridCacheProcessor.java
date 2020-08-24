@@ -906,6 +906,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         final List<GridCacheAdapter> stoppedCaches = new ArrayList<>();
 
+        // Close SQL caches which were not started by client.
+        for (String cacheToStop: reconnectRes.stoppedCaches()) {
+            if (!caches.keySet().contains(cacheToStop))
+                ctx.query().onCacheStop(cacheToStop);
+        }
+
         for (final GridCacheAdapter cache : caches.values()) {
             boolean stopped = reconnectRes.stoppedCacheGroups().contains(cache.context().groupId())
                 || reconnectRes.stoppedCaches().contains(cache.name());
