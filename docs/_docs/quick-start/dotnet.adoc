@@ -19,7 +19,7 @@ Ignite for .NET supports a thick client and a thin client. Because this guide fo
 For information about the .NET thin client, see link:thin-clients/dotnet-thin-client[.NET Thin Client].
 ====
 
-//TODO??: WARNING: If you use the thick client without downloading and installing GridGain distribution, some functionality (Logging, etc.) will be missing or not configured.
+//TODO??: WARNING: If you use the thick client without downloading and installing Ignite distribution, some functionality (Logging, etc.) will be missing or not configured.
 
 . Install .NET Core SDK (version 2+): https://dotnet.microsoft.com/download
 

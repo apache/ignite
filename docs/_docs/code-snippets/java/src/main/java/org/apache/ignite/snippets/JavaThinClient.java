@@ -85,6 +85,7 @@ public class JavaThinClient {
         //end::tx[]
     }
 
+    @Test
     void transactionConfiguration() {
 
         // tag::transaction-config[]

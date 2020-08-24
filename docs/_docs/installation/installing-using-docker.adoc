@@ -92,8 +92,8 @@ The following command launches the Ignite Docker image and passes the work direc
 [source,shell]
 ----
 docker run -d \
-  -v persistence-volume:/persistence \
-  -e IGNITE_WORK_DIR=/persistence \
+  -v storage-volume:/storage \
+  -e IGNITE_WORK_DIR=/storage \
   apacheignite/ignite
 ----
 
@@ -108,13 +108,13 @@ When restarting the container with the same command, Ignite will load the data f
 mkdir work_dir
 
 docker run -d \
-  -v ${PWD}/work_dir:/persistence \
-  -e IGNITE_WORK_DIR=/persistence \
+  -v ${PWD}/work_dir:/storage \
+  -e IGNITE_WORK_DIR=/storage \
   apacheignite/ignite
 ----
 
-The `-v` option mounts a local directory under the `/persistence` path in the container.
-The `-e IGNITE_WORK_DIR=/persistence` option tells Ignite to use this folder as the work directory.
+The `-v` option mounts a local directory under the `/storage` path in the container.
+The `-e IGNITE_WORK_DIR=/storage` option tells Ignite to use this folder as the work directory.
 
 
 == Providing Configuration File

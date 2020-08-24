@@ -284,10 +284,9 @@ If you are using persistence, you must activate the cluster after it is started.
 
 Execute the following command:
 
- *TODO:check the path to control.sh:*
 [source, shell]
 ----
-/opt/apache-ignite/bin/control.sh --set-state ACTIVE --yes
+/opt/ignite/apache-ignite/bin/control.sh --set-state ACTIVE --yes
 ----
 
 You can also activate the cluster using the link:restapi#change-cluster-state[REST API].

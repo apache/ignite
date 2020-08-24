@@ -337,6 +337,7 @@ Returns `true` if the cluster is active. Returns `false` if the cluster in inact
 
 === Change Cluster State
 
+The `setstate` command changes the link:cluster-states[cluster state].
 
 *Request:*::
 +
@@ -346,22 +347,20 @@ Returns `true` if the cluster is active. Returns `false` if the cluster in inact
 http://host:port/ignite?cmd=setstate&state={new_state}
 ----
 
-[{request_table_props}]
+[cols="15%,10%,75%",options="header"]
 |===
 |Parameter
 |Type
-|Optional
 |Description
-|Example
 
-|`state` | String| No a| New cluster state. One of the values:
+|`state` | String a| New cluster state. One of the values:
 
 * `ACTIVE`: active state,
 * `ACTIVE_READ_ONLY`: read only state,
 * `INACTIVE`: the cluster is deactivated.
 
 include::includes/note-on-deactivation.adoc[]
-|
+
 |===
 --
 
