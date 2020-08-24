@@ -581,8 +581,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             U.quietAndInfo(log, "Store group key received from coordinator [grp=" + grpId +
                 ", keyId=" + rmtKey.id() + "]");
 
-            //changeActiveKey
-            GroupKey prevKey = grpKeys.changeActiveKey(grpId, rmtKey);
+            withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, rmtKey));
+
+            if (locGrpKey == null)
+                continue;
+
+            GroupKey prevKey = grpKeys.changeActiveKey(grpId, rmtKey.id());
 
             if (prevKey == null)
                 continue;
@@ -632,7 +636,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private void addGroupKey(int grpId, GroupKeyEncrypted key) {
         try {
-            withMasterKeyChangeReadLock(() -> grpKeys.changeActiveKey(grpId, key));
+            withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, key));
 
             synchronized (metaStorageMux) {
                 writeToMetaStore(grpId, true, false);
@@ -769,7 +773,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStore(grpId, true, false);
 
                 // Set new key as key for writing.
-                GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, key);
+                GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, key.id());
 
                 assert prevGrpKey != null && prevGrpKey.id() != key.id() : "prev=" + prevGrpKey + ", currId=" + key.id();
 

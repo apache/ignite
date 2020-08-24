@@ -163,20 +163,35 @@ class CacheGroupEncryptionKeys {
      * Adds new encryption key and set it for writing.
      *
      * @param grpId Cache group ID.
-     * @param newEncKey New encrypted key for writing.
+     * @param newActiveId ID of the existing encryption key to be set for writing..
      * @return Previous encryption key for writing.
      */
-    GroupKey changeActiveKey(int grpId, GroupKeyEncrypted newEncKey) {
-        List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
+    GroupKey changeActiveKey(int grpId, int newActiveId) {
+        List<GroupKey> keys = grpKeys.get(grpId);
+
+        assert keys != null : "grpId=" + grpId;
 
         GroupKey prevKey = F.first(keys);
 
-        GroupKey newKey = new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key()));
+        assert prevKey == null || prevKey.unsignedId() != newActiveId : "grpId=" + grpId;
 
-        keys.add(0, newKey);
+        GroupKey newActiveKey = null;
+
+        for (GroupKey key : keys) {
+            if (key.unsignedId() != newActiveId)
+                continue;
+
+            newActiveKey = key;
+
+            break;
+        }
+
+        assert newActiveKey != null : "grpId=" + grpId;
+
+        keys.add(0, newActiveKey);
 
         // Remove the duplicate key from the tail of the list if exists.
-        keys.subList(1, keys.size()).remove(newKey);
+        keys.subList(1, keys.size()).remove(newActiveKey);
 
         return prevKey;
     }
@@ -187,12 +202,10 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @param newEncKey New encrypted key for writing.
      */
-    void addKey(int grpId, GroupKeyEncrypted newEncKey) {
-        List<GroupKey> keys = grpKeys.get(grpId);
+    boolean addKey(int grpId, GroupKeyEncrypted newEncKey) {
+        List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, v -> new CopyOnWriteArrayList<>());
 
-        assert keys != null : grpId;
-
-        keys.add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
+        return keys.add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
     }
 
     /**
