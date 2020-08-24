@@ -168,4 +168,4 @@ class ControlUtilityError(RemoteCommandError):
     Error is raised when control utility failed.
     """
     def __init__(self, account, cmd, exit_status, output):
-        super(ControlUtilityError, self).__init__(account, cmd, exit_status, "".join(output))
+        super().__init__(account, cmd, exit_status, "".join(output))

@@ -53,9 +53,6 @@ class PmeFreeSwitchTest(IgniteTest):
             </property>
         """
 
-    def __init__(self, test_context):
-        super(PmeFreeSwitchTest, self).__init__(test_context=test_context)
-
     def setUp(self):
         pass
 

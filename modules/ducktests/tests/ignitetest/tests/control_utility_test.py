@@ -62,7 +62,7 @@ class BaselineTests(IgniteTest):
             .render(version=version)
 
     def __init__(self, test_context):
-        super(BaselineTests, self).__init__(test_context)
+        super().__init__(test_context)
         self.servers = None
 
     @cluster(num_nodes=NUM_NODES)

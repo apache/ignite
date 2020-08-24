@@ -44,15 +44,13 @@ class IgniteVersion(LooseVersion):
             if dev_suffix_index >= 0:
                 version_string = version_string[:dev_suffix_index]
 
-        # Don't use the form super.(...).__init__(...) because
-        # LooseVersion is an "old style" python class
-        LooseVersion.__init__(self, version_string)
+        super().__init__(version_string)
 
     def __str__(self):
         if self.is_dev:
             return "dev"
 
-        return LooseVersion.__str__(self)
+        return super().__str__()
 
     def __repr__(self):
         return "IgniteVersion ('%s')" % str(self)

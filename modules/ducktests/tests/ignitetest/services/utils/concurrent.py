@@ -20,7 +20,7 @@ This module contains concurrent utils.
 import threading
 
 
-class CountDownLatch(object):
+class CountDownLatch:
     """
     A count-down latch.
     """

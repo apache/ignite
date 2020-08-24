@@ -16,9 +16,9 @@
 """
 This module contains basic ignite test.
 """
+from time import monotonic
 
 from ducktape.tests.test import Test
-from monotonic import monotonic
 
 
 # pylint: disable=W0223
@@ -27,7 +27,7 @@ class IgniteTest(Test):
     Basic ignite test.
     """
     def __init__(self, test_context):
-        super(IgniteTest, self).__init__(test_context=test_context)
+        super().__init__(test_context=test_context)
 
     def stage(self, msg):
         """

@@ -33,6 +33,8 @@
         {% if consistent_id %}
             <property name="consistentId" value="{{ consistent_id }}"/>
         {% endif %}
-        {{ properties }}
+        {% if properties %}
+            {{ properties }}
+        {% endif %}
     </bean>
 </beans>

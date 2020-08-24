@@ -54,7 +54,7 @@ def resolve_spec(service, context, **kwargs):
         raise Exception("There is no specification for class %s" % type(service))
 
 
-class IgniteSpec(object):
+class IgniteSpec:
     """
     This class is a basic Spec
     """
@@ -102,8 +102,6 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
-    def __init__(self, **kwargs):
-        IgniteSpec.__init__(self, **kwargs)
 
     def command(self):
         cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
@@ -122,7 +120,7 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     Spec to run ignite application
     """
     def __init__(self, **kwargs):
-        super(IgniteApplicationSpec, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.args = ""
 
     def _app_args(self):
@@ -148,7 +146,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
     Implementation IgniteNodeSpec for Apache Ignite project
     """
     def __init__(self, modules, **kwargs):
-        super(ApacheIgniteNodeSpec, self).__init__(project="ignite", **kwargs)
+        super().__init__(project="ignite", **kwargs)
 
         libs = (modules or [])
         libs.append("log4j")
@@ -172,7 +170,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
     """
     # pylint: disable=too-many-arguments
     def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, **kwargs):
-        super(ApacheIgniteApplicationSpec, self).__init__(project="ignite", **kwargs)
+        super().__init__(project="ignite", **kwargs)
         self.context = context
 
         libs = modules or []
@@ -201,7 +199,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
             str(start_ignite),
             java_class_name,
             self.CONFIG_FILE,
-            str(base64.b64encode(json.dumps(params).encode("UTF-8")))
+            str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
         ]
 
     def __jackson(self):
