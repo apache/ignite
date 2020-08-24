@@ -22,14 +22,56 @@
 #include <ignite/ignition.h>
 #include <ignite/test_utils.h>
 
-#include <ignite/test_utils.h>
-
 using namespace ignite;
+using namespace ignite::cache;
+using namespace ignite::cluster;
 using namespace ignite::compute;
 using namespace ignite::common::concurrent;
+using namespace ignite::impl;
 using namespace ignite_test;
 
 using namespace boost::unit_test;
+
+enum { RETRIES_FOR_STABLE_TOPOLOGY = 5};
+
+/*
+ * Test setup fixture for cache affinity.
+ */
+struct ComputeTestSuiteFixtureAffinity
+{
+    Ignite node0;
+    Ignite node1;
+    Ignite node2;
+
+    Ignite MakeNode(const char* name)
+    {
+#ifdef IGNITE_TESTS_32
+        const char* config = "cache-test-32.xml";
+#else
+        const char* config = "cache-test.xml";
+#endif
+        return StartNode(config, name);
+    }
+
+    /*
+     * Constructor.
+     */
+    ComputeTestSuiteFixtureAffinity() :
+        node0(MakeNode("ComputeAffinityNode1")),
+        node1(MakeNode("ComputeAffinityNode2")),
+        node2(MakeNode("ComputeAffinityNode3"))
+    {
+        // No-op.
+    }
+
+    /*
+     * Destructor.
+     */
+    ~ComputeTestSuiteFixtureAffinity()
+    {
+        Ignition::StopAll(true);
+    }
+};
 
 /*
  * Test setup fixture.
@@ -61,6 +103,68 @@ struct ComputeTestSuiteFixture
      * Destructor.
      */
     ~ComputeTestSuiteFixture()
+    {
+        Ignition::StopAll(true);
+    }
+};
+
+/*
+ * Test setup fixture for cluster group.
+ */
+struct ComputeTestSuiteFixtureClusterGroup
+{
+    enum NodeType {
+        SERVER_NODE_ATTRIBUTE_VALUE0,
+        SERVER_NODE_ATTRIBUTE_VALUE1,
+        CLIENT_NODE,
+    };
+
+    Ignite server0;
+    Ignite server1;
+    Ignite server2;
+    Ignite client;
+
+    Ignite MakeNode(const char* name, NodeType type)
+    {
+        std::string config;
+
+        switch (type) {
+        case SERVER_NODE_ATTRIBUTE_VALUE0:
+            config = "compute-server0.xml";
+            break;
+
+        case SERVER_NODE_ATTRIBUTE_VALUE1:
+            config = "compute-server1.xml";
+            break;
+
+        case CLIENT_NODE:
+            config = "compute-client.xml";
+            break;
+        }
+
+#ifdef IGNITE_TESTS_32
+        config.replace(config.begin() + config.find(".xml"), config.end(), "-32.xml");
+#endif
+
+        return StartNode(config.c_str(), name);
+    }
+
+    /*
+     * Constructor.
+     */
+    ComputeTestSuiteFixtureClusterGroup() :
+        server0(MakeNode("ServerNode0", SERVER_NODE_ATTRIBUTE_VALUE0)),
+        server1(MakeNode("ServerNode1", SERVER_NODE_ATTRIBUTE_VALUE1)),
+        server2(MakeNode("ServerNode2", SERVER_NODE_ATTRIBUTE_VALUE1)),
+        client(MakeNode("ClientNode", CLIENT_NODE))
+    {
+        // No-op.
+    }
+
+    /*
+     * Destructor.
+     */
+    ~ComputeTestSuiteFixtureClusterGroup()
     {
         Ignition::StopAll(true);
     }
@@ -185,6 +289,82 @@ struct Func3 : ComputeFunc<void>
 
 std::string Func3::res;
 
+void EmptyDeleter(IgniteEnvironment* p)
+{
+    // No-op.
+}
+
+struct FuncAffinityCall : ComputeFunc<int32_t>
+{
+    FuncAffinityCall() :
+        nodeName(), cacheName(), cacheKey(), err()
+    {
+        // No-op.
+    }
+
+    FuncAffinityCall(std::string nodeName, std::string cacheName, int32_t cacheKey) :
+        nodeName(nodeName), cacheName(cacheName), cacheKey(cacheKey), err()
+    {
+        // No-op.
+    }
+
+    FuncAffinityCall(IgniteError err) :
+        nodeName(), cacheName(), cacheKey(), err(err)
+    {
+        // No-op.
+    }
+
+    virtual int32_t Call()
+    {
+        Ignite& node = GetIgnite();
+        Cache<int32_t, int32_t> cache = node.GetCache<int32_t, int32_t>(cacheName.c_str());
+
+        return cache.LocalPeek(cacheKey, CachePeekMode::ALL);
+    }
+
+    std::string nodeName;
+    std::string cacheName;
+    int32_t cacheKey;
+    IgniteError err;
+};
+
+struct FuncAffinityRun : ComputeFunc<void>
+{
+    FuncAffinityRun() :
+        nodeName(), cacheName(), cacheKey(), err()
+    {
+        // No-op.
+    }
+
+    FuncAffinityRun(std::string nodeName, std::string cacheName, int32_t cacheKey, int32_t checkKey) :
+        nodeName(nodeName), cacheName(cacheName), cacheKey(cacheKey), checkKey(checkKey), err()
+    {
+        // No-op.
+    }
+
+    FuncAffinityRun(IgniteError err) :
+        nodeName(), cacheName(), cacheKey(), err(err)
+    {
+        // No-op.
+    }
+
+    virtual void Call()
+    {
+        Ignite& node = GetIgnite();
+        Cache<int32_t, int32_t> cache = node.GetCache<int32_t, int32_t>(cacheName.c_str());
+
+        int32_t res = cache.LocalPeek(cacheKey, CachePeekMode::ALL);
+        cache.Put(checkKey, res);
+        res = cache.Get(checkKey);
+    }
+
+    std::string nodeName;
+    std::string cacheName;
+    int32_t cacheKey;
+    int32_t checkKey;
+    IgniteError err;
+};
+
 namespace ignite
 {
     namespace binary
@@ -257,6 +437,58 @@ namespace ignite
                 dst.err = reader.ReadObject<IgniteError>("err");
             }
         };
+
+        template<>
+        struct BinaryType<FuncAffinityCall> : BinaryTypeDefaultAll<FuncAffinityCall>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "FuncAffinityCall";
+            }
+
+            static void Write(BinaryWriter& writer, const FuncAffinityCall& obj)
+            {
+                writer.WriteString("nodeName", obj.nodeName);
+                writer.WriteString("cacheName", obj.cacheName);
+                writer.WriteInt32("cacheKey", obj.cacheKey);
+                writer.WriteObject<IgniteError>("err", obj.err);
+            }
+
+            static void Read(BinaryReader& reader, FuncAffinityCall& dst)
+            {
+                dst.nodeName = reader.ReadString("nodeName");
+                dst.cacheName = reader.ReadString("cacheName");
+                dst.cacheKey = reader.ReadInt32("cacheKey");
+                dst.err = reader.ReadObject<IgniteError>("err");
+            }
+        };
+
+        template<>
+        struct BinaryType<FuncAffinityRun> : BinaryTypeDefaultAll<FuncAffinityRun>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "FuncAffinityRun";
+            }
+
+            static void Write(BinaryWriter& writer, const FuncAffinityRun& obj)
+            {
+                writer.WriteString("nodeName", obj.nodeName);
+                writer.WriteString("cacheName", obj.cacheName);
+                writer.WriteInt32("cacheKey", obj.cacheKey);
+                writer.WriteInt32("checkKey", obj.checkKey);
+                writer.WriteObject<IgniteError>("err", obj.err);
+            }
+
+            static void Read(BinaryReader& reader, FuncAffinityRun& dst)
+            {
+                dst.nodeName = reader.ReadString("nodeName");
+                dst.cacheName = reader.ReadString("cacheName");
+                dst.cacheKey = reader.ReadInt32("cacheKey");
+                dst.checkKey = reader.ReadInt32("checkKey");
+                dst.err = reader.ReadObject<IgniteError>("err");
+            }
+        };
     }
 }
 
@@ -267,7 +499,205 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit1(IgniteBindingContext& context)
     binding.RegisterComputeFunc<Func1>();
     binding.RegisterComputeFunc<Func2>();
     binding.RegisterComputeFunc<Func3>();
+    binding.RegisterComputeFunc<FuncAffinityCall>();
+    binding.RegisterComputeFunc<FuncAffinityRun>();
 }
+
+template<typename TK>
+std::vector<int32_t> GetPrimaryKeys(int32_t num, ClusterNode& node, CacheAffinity<TK>& affinity)
+{
+    std::vector<int32_t> ret;
+    int32_t count = 0;
+
+    for (int32_t i = 0; i < INT_MAX; i++)
+        if (affinity.IsPrimary(node, i))
+        {
+            if (count++ < num)
+                ret.push_back(i);
+            else
+                return ret;
+        }
+
+    BOOST_CHECK(false);
+
+    return ret;
+}
+
+BOOST_FIXTURE_TEST_SUITE(ComputeTestSuiteAffinity, ComputeTestSuiteFixtureAffinity)
+
+BOOST_AUTO_TEST_CASE(IgniteAffinityCall)
+{
+    const int32_t key = 100;
+    const int32_t value = 500;
+
+    WITH_RETRY_BEGIN
+    {
+        std::vector<ClusterNode> nodes = node0.GetCluster().AsClusterGroup().GetNodes();
+        Cache<int32_t, int32_t> cache = node0.GetCache<int32_t, int32_t>("cache1");
+
+        cache.Put(key, value);
+
+        CacheAffinity<int> affinity = node0.GetAffinity<int32_t>(cache.GetName());
+        Compute compute = node0.GetCompute();
+
+        BOOST_TEST_CHECKPOINT("Starting local calls loop");
+
+        std::vector<int32_t> aKeys = GetPrimaryKeys(10, nodes.front(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            int32_t res = compute.AffinityCall<int32_t>(cache.GetName(), aKeys[i],
+                FuncAffinityCall(node0.GetName(), cache.GetName(), key));
+
+            CHECK_EQUAL_OR_RETRY(res, value);
+        }
+
+        BOOST_TEST_CHECKPOINT("Starting remote calls loop");
+
+        aKeys = GetPrimaryKeys(10, nodes.back(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            int32_t res = compute.AffinityCall<int32_t>(cache.GetName(), aKeys[i],
+                FuncAffinityCall(node0.GetName(), cache.GetName(), key));
+
+            CHECK_EQUAL_OR_RETRY(res, 0);
+        }
+    }
+    WITH_RETRY_END
+}
+
+BOOST_AUTO_TEST_CASE(IgniteAffinityCallAsync)
+{
+    const int32_t key = 100;
+    const int32_t value = 500;
+
+    WITH_RETRY_BEGIN
+    {
+        std::vector<ClusterNode> nodes = node0.GetCluster().AsClusterGroup().GetNodes();
+        Cache<int32_t, int32_t> cache = node0.GetCache<int32_t, int32_t>("cache1");
+
+        cache.Put(key, value);
+
+        CacheAffinity<int> affinity = node0.GetAffinity<int32_t>(cache.GetName());
+        Compute compute = node0.GetCompute();
+
+        BOOST_TEST_CHECKPOINT("Starting calls loop");
+
+        std::vector<int32_t> aKeys = GetPrimaryKeys(10, nodes.front(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            Future<int32_t> res = compute.AffinityCallAsync<int32_t>(cache.GetName(), aKeys[i],
+                FuncAffinityCall(node0.GetName(), cache.GetName(), key));
+
+            int32_t resVal = res.GetValue();
+            CHECK_EQUAL_OR_RETRY(value, resVal);
+        }
+
+        BOOST_TEST_CHECKPOINT("Starting remote calls loop");
+
+        aKeys = GetPrimaryKeys(10, nodes.back(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            Future<int32_t> res = compute.AffinityCallAsync<int32_t>(cache.GetName(), aKeys[i],
+                FuncAffinityCall(node0.GetName(), cache.GetName(), key));
+
+            int32_t resVal = res.GetValue();
+            CHECK_EQUAL_OR_RETRY(0, resVal);
+        }
+    }
+    WITH_RETRY_END
+}
+
+BOOST_AUTO_TEST_CASE(IgniteAffinityRun)
+{
+    const int32_t key = 100;
+    const int32_t checkKey = -1;
+    const int32_t value = 500;
+
+    WITH_RETRY_BEGIN
+    {
+        std::vector<ClusterNode> nodes = node0.GetCluster().AsClusterGroup().GetNodes();
+        Cache<int32_t, int32_t> cache = node0.GetCache<int32_t, int32_t>("cache1");
+
+        cache.Put(key, value);
+
+        CacheAffinity<int> affinity = node0.GetAffinity<int32_t>(cache.GetName());
+        Compute compute = node0.GetCompute();
+
+        BOOST_TEST_CHECKPOINT("Starting calls loop");
+
+        std::vector<int32_t> aKeys = GetPrimaryKeys(10, nodes.front(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            compute.AffinityRun(cache.GetName(), aKeys[i],
+                FuncAffinityRun(node0.GetName(), cache.GetName(), key, checkKey));
+
+            int32_t resVal = cache.Get(checkKey);
+            CHECK_EQUAL_OR_RETRY(500, resVal);
+        }
+
+        BOOST_TEST_CHECKPOINT("Starting remote calls loop");
+
+        aKeys = GetPrimaryKeys(10, nodes.back(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            compute.AffinityRun(cache.GetName(), aKeys[i],
+                FuncAffinityRun(node0.GetName(), cache.GetName(), key, checkKey));
+
+            int32_t resVal = cache.Get(checkKey);
+            CHECK_EQUAL_OR_RETRY(0, resVal);
+        }
+    }
+    WITH_RETRY_END
+}
+
+BOOST_AUTO_TEST_CASE(IgniteAffinityRunAsync)
+{
+    const int32_t key = 100;
+    const int32_t checkKey = -1;
+    const int32_t value = 500;
+
+    WITH_RETRY_BEGIN
+    {
+        std::vector<ClusterNode> nodes = node0.GetCluster().AsClusterGroup().GetNodes();
+        Cache<int32_t, int32_t> cache = node0.GetCache<int32_t, int32_t>("cache1");
+
+        cache.Put(key, value);
+
+        CacheAffinity<int> affinity = node0.GetAffinity<int32_t>(cache.GetName());
+        Compute compute = node0.GetCompute();
+
+        BOOST_TEST_CHECKPOINT("Starting calls loop");
+
+        std::vector<int32_t> aKeys = GetPrimaryKeys(10, nodes.front(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            Future<void> res = compute.AffinityRunAsync(cache.GetName(), aKeys[i],
+                FuncAffinityRun(node0.GetName(), cache.GetName(), key, checkKey));
+
+            res.GetValue();
+
+            int32_t resVal = cache.Get(checkKey);
+            CHECK_EQUAL_OR_RETRY(500, resVal);
+        }
+
+        BOOST_TEST_CHECKPOINT("Starting remote calls loop");
+
+        aKeys = GetPrimaryKeys(10, nodes.back(), affinity);
+        for (size_t i = 0; i < aKeys.size(); i++)
+        {
+            Future<void> res = compute.AffinityRunAsync<int32_t>(cache.GetName(), aKeys[i],
+                FuncAffinityRun(node0.GetName(), cache.GetName(), key, checkKey));
+
+            res.GetValue();
+
+            int32_t resVal = cache.Get(checkKey);
+            CHECK_EQUAL_OR_RETRY(0, resVal);
+        }
+    }
+    WITH_RETRY_END
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuite, ComputeTestSuiteFixture)
 
@@ -531,6 +961,49 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastRemoteError)
     BOOST_CHECK(!res.IsReady());
 
     BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(ComputeTestSuiteClusterGroup, ComputeTestSuiteFixtureClusterGroup)
+
+BOOST_AUTO_TEST_CASE(IgniteGetClusterGroupForServers)
+{
+    ClusterGroup localGroup = client.GetCluster().AsClusterGroup();
+    ClusterGroup group = localGroup.ForServers();
+
+    Compute compute = client.GetCompute(group);
+
+    BOOST_TEST_CHECKPOINT("Broadcasting");
+    std::vector<std::string> res = compute.Broadcast<std::string>(Func2(8, 5));
+
+    BOOST_CHECK_EQUAL(res.size(), 3);
+    BOOST_CHECK_EQUAL(res[0], "8.5");
+    BOOST_CHECK_EQUAL(res[1], "8.5");
+    BOOST_CHECK_EQUAL(res[2], "8.5");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteGetClusterGroupForAttribute)
+{
+    ClusterGroup localGroup = client.GetCluster().AsClusterGroup();
+    ClusterGroup group1 = localGroup.ForAttribute("TestAttribute", "Value0");
+    ClusterGroup group2 = localGroup.ForAttribute("TestAttribute", "Value1");
+
+    Compute compute1 = client.GetCompute(group1);
+    Compute compute2 = client.GetCompute(group2);
+
+    BOOST_TEST_CHECKPOINT("Broadcasting1");
+    std::vector<std::string> res1 = compute1.Broadcast<std::string>(Func2(8, 5));
+
+    BOOST_CHECK_EQUAL(res1.size(), 1);
+    BOOST_CHECK_EQUAL(res1[0], "8.5");
+
+    BOOST_TEST_CHECKPOINT("Broadcasting2");
+    std::vector<std::string> res2 = compute2.Broadcast<std::string>(Func2(8, 5));
+
+    BOOST_CHECK_EQUAL(res2.size(), 2);
+    BOOST_CHECK_EQUAL(res2[0], "8.5");
+    BOOST_CHECK_EQUAL(res2[1], "8.5");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

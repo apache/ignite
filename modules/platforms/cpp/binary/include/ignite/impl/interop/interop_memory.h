@@ -168,6 +168,11 @@ namespace ignite
                 static bool IsAcquired(int32_t flags);
 
                 /**
+                 * Constructor.
+                 */
+                InteropMemory() : memPtr(0) { }
+
+                /**
                  * Destructor.
                  */
                 virtual ~InteropMemory() { }
