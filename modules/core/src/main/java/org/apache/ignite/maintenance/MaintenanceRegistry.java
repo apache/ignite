@@ -18,45 +18,61 @@
 package org.apache.ignite.maintenance;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 /**
+ * {@link MaintenanceRegistry} is a service local to each Ignite node
+ * that allows to request performing maintenance actions on that particular node.
  *
+ * <p>
+ *     When a node gets into a situation when some specific actions are required
+ *     it enters the special mode called maintenance mode.
+ *     In maintenance mode it doesn't join to the rest of the cluster but still allows to connect to it
+ *     with control.{sh|bat} script or via JXM interface and perform needed actions.
+ * </p>
  */
 public interface MaintenanceRegistry {
     /**
-     * @param rec Object with maintenance information that needs to be stored to maintenance registry.
+     * @param rec {@link MaintenanceRecord} object with maintenance information that needs
+     *                                     to be stored to maintenance registry.
      *
      * @throws IgniteCheckedException If handling or storing maintenance record failed.
      */
     public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
 
     /**
-     * @return Maintenance record for given maintenance ID or null if no maintenance record was found.
+     * @return {@link MaintenanceRecord} object for given maintenance ID or null if no maintenance record was found.
      */
     @Nullable public MaintenanceRecord maintenanceRecord(UUID maitenanceId);
 
     /**
-     * @return {@code True} If any maintenance record was found.
+     * @return {@code True} if any maintenance record was found.
      */
     public boolean isMaintenanceMode();
 
     /**
+     * Deletes {@link MaintenanceRecord} of given ID from maintenance registry.
+     *
      * @param mntcId
      */
     public void clearMaintenanceRecord(UUID mntcId);
 
     /**
-     * @param mntcId
-     * @param action
+     * Registers {@link MaintenanceAction} object with information from corresponding Maintenance record.
+     *
+     * @param mntcId The ID of {@link MaintenanceRecord} action is registered for.
+     * @param action {@link MaintenanceAction} object with executable logic to address given maintenance reason.
      */
-    public void registerMaintenanceAction(UUID mntcId, MaintenanceAction action);
+    public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action);
 
     /**
-     * @param mntcId
-     * @return
+     * Gets {@link MaintenanceAction} object for given maintenance record ID.
+     *
+     * @param mntcId ID of {@link MaintenanceRecord}.
+     * @return {@link MaintenanceAction} registered for given ID or null of no actions were registered.
      */
     @Nullable public MaintenanceAction maintenanceAction(UUID mntcId);
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.maintenance;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -47,6 +48,10 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** */
     private static final String DELIMITER = "\t";
+
+    /** Maintenance record consists of three parts: ID, description (user-readable part)
+     * and information to execute maintenance action. */
+    private static final int MNTC_RECORD_PARTS_COUNT = 3;
 
     /** */
     private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
@@ -78,8 +83,10 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 writeMaintenanceRecord(rec, writer);
             }
         }
-        catch (IOException ioE) {
-            throw new IgniteCheckedException("Failed to register maintenance record", ioE);
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to register maintenance record "
+                + rec
+                , e);
         }
     }
 
@@ -113,6 +120,12 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                     reader.lines().forEach(s -> {
                         String[] subStrs = s.split(DELIMITER);
 
+                        if (subStrs.length != MNTC_RECORD_PARTS_COUNT) {
+                            log.info("Corrupted maintenance record found, skipping: " + s);
+
+                            return;
+                        }
+
                         UUID id = UUID.fromString(subStrs[0]);
                         MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], subStrs[2]);
 
@@ -122,7 +135,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             }
         }
         catch (Throwable t) {
-            log.warning("Caught exception when starting MaintenanceProcessor, maintenance mode won't be entered", t);
+            log.warning("Caught exception when starting MaintenanceProcessor," +
+                " maintenance mode won't be entered", t);
 
             registeredRecords.clear();
             registeredActions.clear();
@@ -155,7 +169,12 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                     }
                 }
             }
-            catch (IOException ioE) {
+            catch (IOException e) {
+                log.warning("Failed to clear maintenance record with id "
+                    + mntcId
+                    + " from file, whole file will be deleted", e
+                );
+
                 mntcRecordsFile.delete();
             }
         }
@@ -163,6 +182,10 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action) {
+        if (!registeredRecords.containsKey(mntcId))
+            throw new IgniteException("Maintenance record for given ID not found," +
+                " maintenance action for non-existing record won't be registered: " + mntcId);
+
         registeredActions.put(mntcId, action);
     }
 

@@ -41,14 +41,17 @@ public class MaintenanceRecord {
         this.actionParameters = actionParameters;
     }
 
+    /** */
     public UUID id() {
         return id;
     }
 
+    /** */
     public String description() {
         return description;
     }
 
+    /** */
     public String actionParameters() {
         return actionParameters;
     }
