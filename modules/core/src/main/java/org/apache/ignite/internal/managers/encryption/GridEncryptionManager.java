@@ -632,9 +632,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private void addGroupKey(int grpId, GroupKeyEncrypted key) {
         try {
-            synchronized (metaStorageMux) {
-                withMasterKeyChangeReadLock(() -> grpKeys.changeActiveKey(grpId, key));
+            withMasterKeyChangeReadLock(() -> grpKeys.changeActiveKey(grpId, key));
 
+            synchronized (metaStorageMux) {
                 writeToMetaStore(grpId, true, false);
             }
         } catch (IgniteCheckedException e) {

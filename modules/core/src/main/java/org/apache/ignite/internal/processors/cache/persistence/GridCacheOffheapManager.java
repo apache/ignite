@@ -40,8 +40,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -1113,11 +1113,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
                     null,
                     null);
-            }
-            catch (Throwable e) {
-                e.printStackTrace();
-
-                throw e;
             }
             finally {
                 pageMem.writeUnlock(grpId, metaId, metaPage, null, allocated);

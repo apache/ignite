@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -119,7 +118,7 @@ class GroupKeyChangeProcess {
         if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
             throw new IllegalStateException("Not all nodes in the cluster support this operation.");
 
-        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+        if (!ctx.state().clusterState().state().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
 
         if (!finished()) {
@@ -270,7 +269,7 @@ class GroupKeyChangeProcess {
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
         try {
-            if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+            if (!ctx.state().clusterState().state().active())
                 throw new IgniteException("Cache group key change was rejected. The cluster is inactive.");
 
             if (!ctx.clientNode())
