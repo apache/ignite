@@ -26,7 +26,7 @@
   - title: Installing Using Docker
     url: /installation/installing-using-docker
   - title:  Installing DEB or RPM package
-    url: /installation/dem-rpm
+    url: /installation/deb-rpm
   - title: Kubernetes
     items: 
       - title: Amazon EKS 
@@ -185,10 +185,12 @@
   items:
     - title: Introduction
       url: /monitoring-metrics/intro
-    - title: Configuring Metrics
-      url: /monitoring-metrics/configuring-metrics
-    - title: JMX Metrics
-      url: /monitoring-metrics/metrics
+    - title: Metrics
+      items: 
+        - title: Configuring Metrics
+          url: /monitoring-metrics/configuring-metrics
+        - title: JMX Metrics
+          url: /monitoring-metrics/metrics
     - title: New Metrics System 
       items:
         - title: Introduction 
