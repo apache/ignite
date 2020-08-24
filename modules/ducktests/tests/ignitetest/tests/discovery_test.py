@@ -122,7 +122,7 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     def __simulate_nodes_failure(self, version, properties, modules, config):
-        if config.nodes_to_kill == 0:
+        if config.nodes_to_kill < 1:
             return {"No nodes to kill": "Nothing to do"}
 
         self.servers = IgniteService(
@@ -152,11 +152,8 @@ class DiscoveryTest(IgniteTest):
 
         for failed_id in ids_to_wait:
             self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 20,
-                                             from_the_beginning=True, backoff_sec=0.01)
-            # Save mono of last detected failure.
-            time_holder = self.monotonic()
+                                             from_the_beginning=True, backoff_sec=0.1)
 
-        for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
                 "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
@@ -165,25 +162,19 @@ class DiscoveryTest(IgniteTest):
 
         logged_timestamps.sort(reverse=True)
 
-        self.__check_and_store_results(data, int((time_holder - first_terminated[0]) * 1000),
-                                       epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1]))
+        self.__check_and_store_results(data, epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1]))
 
         data['Nodes failed'] = len(failed_nodes)
 
         return data
 
     @staticmethod
-    def __check_and_store_results(data, measured, delay_by_log):
-        assert delay_by_log > 0, \
-            "Negative failure detection delay from the survived node log (" + str(delay_by_log) + "ms). It is \
-            probably an issue of the timezone or system clock settings."
-        assert delay_by_log <= measured, \
-            "Failure detection delay from the survived node log (" + str(delay_by_log) + "ms) must be lesser than  \
-            measured value (" + str(measured) + "ms) because watching this event consumes extra time. It is  \
-            probably an issue of the timezone or system clock settings."
+    def __check_and_store_results(data, detection_delay):
+        assert detection_delay > 0, \
+            "Negative failure detection delay (" + str(detection_delay) + "ms). It is probably an issue of the " \
+            "timezone or system clock settings."
 
-        data['Detection of node(s) failure, measured (ms)'] = measured
-        data['Detection of node(s) failure, by the log (ms)'] = delay_by_log
+        data['Detection of node(s) failure (ms)'] = detection_delay
 
     @staticmethod
     def __failed_pattern(failed_node_id):

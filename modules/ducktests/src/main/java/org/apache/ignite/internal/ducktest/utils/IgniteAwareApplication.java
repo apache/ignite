@@ -173,7 +173,9 @@ public abstract class IgniteAwareApplication {
         return terminated;
     }
 
-    /** */
+    /**
+     *
+     */
     protected boolean inited() {
         return inited;
     }

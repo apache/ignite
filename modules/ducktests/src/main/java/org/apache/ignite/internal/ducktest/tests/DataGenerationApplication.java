@@ -34,13 +34,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     protected static final Logger log = LogManager.getLogger(DataGenerationApplication.class.getName());
 
     /** */
-    private static final long DATAGEN_NOTIFY_INTERVAL_NANO = 1500 * 1000000L;
+    private static final long DATAGEN_NOTIFY_INTERVAL = 1500 * 1000000L;
 
     /** */
-    private static final int DATAGEN_NOTIFY_INTERVAL_AMOUNT = 10_000;
+    private static final int DATAGEN_NOTIFY_INTERVAL_COUNT = 10_000;
 
     /** */
-    private static final int DELAYED_INITIALIZATION_AMOUNT = 10_000;
+    private static final int WARMUP_DATA_COUNT = 10_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
@@ -95,8 +95,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 else
                     cache.put(i, i);
 
-                if (notifyTime + DATAGEN_NOTIFY_INTERVAL_NANO < System.nanoTime() ||
-                    i - streamed >= DATAGEN_NOTIFY_INTERVAL_AMOUNT) {
+                if (notifyTime + DATAGEN_NOTIFY_INTERVAL < System.nanoTime() ||
+                    i - streamed >= DATAGEN_NOTIFY_INTERVAL_COUNT) {
                     notifyTime = System.nanoTime();
 
                     if (log.isDebugEnabled())
@@ -107,7 +107,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
                 // Delayed notify of the initialization to make sure the data load has completelly began and
                 // has produced some notable amount of data.
-                if (delayedInit && !inited() && i >= DELAYED_INITIALIZATION_AMOUNT)
+                if (delayedInit && !inited() && i >= WARMUP_DATA_COUNT)
                     markInitialized();
             }
 
