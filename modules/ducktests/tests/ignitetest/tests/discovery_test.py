@@ -162,19 +162,24 @@ class DiscoveryTest(IgniteTest):
 
         logged_timestamps.sort(reverse=True)
 
-        self.__check_and_store_results(data, epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1]))
+        self.__check_and_store_results(data, logged_timestamps, first_terminated[1])
 
         data['Nodes failed'] = len(failed_nodes)
 
         return data
 
     @staticmethod
-    def __check_and_store_results(data, detection_delay):
+    def __check_and_store_results(data, logged_timestamps, first_kill_time):
+        first_kill_time = epoch_mills(first_kill_time)
+
+        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+
         assert detection_delay > 0, \
             "Negative failure detection delay (" + str(detection_delay) + "ms). It is probably an issue of the " \
             "timezone or system clock settings."
 
         data['Detection of node(s) failure (ms)'] = detection_delay
+        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
 
     @staticmethod
     def __failed_pattern(failed_node_id):
