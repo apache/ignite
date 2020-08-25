@@ -54,12 +54,12 @@ class ZookeeperService(Service):
     }
 
     def __init__(self, context, num_nodes, settings=ZookeeperSettings(), start_timeout_sec=60):
-        super(ZookeeperService, self).__init__(context, num_nodes)
+        super().__init__(context, num_nodes)
         self.settings = settings
         self.start_timeout_sec = start_timeout_sec
 
     def start(self):
-        super(ZookeeperService, self).start()
+        super().start()
         self.logger.info("Waiting for Zookeeper quorum...")
 
         for node in self.nodes:

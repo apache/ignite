@@ -35,7 +35,7 @@ def ignite_jmx_mixin(node, pids):
     node.__class__ = type(base_cls_name, (base_cls, IgniteJmxMixin), {})
 
 
-class JmxMBean(object):
+class JmxMBean:
     """
     Dynamically exposes JMX MBean attributes.
     """
@@ -52,7 +52,7 @@ class JmxMBean(object):
         return self.client.mbean_attribute(self.name, attr)
 
 
-class JmxClient(object):
+class JmxClient:
     """JMX client, invokes jmxterm on node locally.
     """
     jmx_util_cmd = 'java -jar /opt/jmxterm.jar -v silent -n'
@@ -92,7 +92,7 @@ class JmxClient(object):
         return self.node.account.ssh_capture(cmd, allow_fail=False, callback=str)
 
 
-class DiscoveryInfo(object):
+class DiscoveryInfo:
     """ Ignite service node discovery info, obtained from DiscoverySpi mbean.
     """
     def __init__(self, coordinator, local_raw):
@@ -147,7 +147,7 @@ class DiscoveryInfo(object):
         return res.group(1) if res else None
 
 
-class IgniteJmxMixin(object):
+class IgniteJmxMixin:
     """
     Mixin to IgniteService node, exposing useful properties, obtained from JMX.
     """

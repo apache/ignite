@@ -36,9 +36,6 @@ class AddNodeRebalanceTest(IgniteTest):
     DATA_AMOUNT = 1000000
     REBALANCE_TIMEOUT = 60
 
-    def __init__(self, test_context):
-        super(AddNodeRebalanceTest, self).__init__(test_context=test_context)
-
     def setUp(self):
         pass
 
