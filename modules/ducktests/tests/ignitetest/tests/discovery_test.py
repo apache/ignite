@@ -207,7 +207,7 @@ class DiscoveryTest(IgniteTest):
             version=ignite_version,
             modules=modules,
             properties=properties,
-            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True, "optimized": False})
+            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True})
 
         self.loader.start()
 

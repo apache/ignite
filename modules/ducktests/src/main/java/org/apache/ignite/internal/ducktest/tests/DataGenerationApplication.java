@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.ducktest.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -31,7 +28,7 @@ import org.apache.log4j.Logger;
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
     /** Logger. */
-    protected static final Logger log = LogManager.getLogger(DataGenerationApplication.class.getName());
+    private static final Logger log = LogManager.getLogger(DataGenerationApplication.class.getName());
 
     /** */
     private static final long DATAGEN_NOTIFY_INTERVAL = 1500 * 1000000L;
@@ -40,34 +37,29 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     private static final int DATAGEN_NOTIFY_INTERVAL_COUNT = 10_000;
 
     /** */
-    private static final int WARMUP_DATA_COUNT = 10_000;
+    private static final int WARMUP_DATA_PERCENT = 10;
+
+    /** */
+    private volatile boolean infinite;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
         String cacheName = jsonNode.get("cacheName").asText();
-        boolean infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
-        boolean optimized = !jsonNode.hasNonNull("optimized") || jsonNode.get("optimized").asBoolean();
+        infinite = jsonNode.hasNonNull("infinite") && jsonNode.get("infinite").asBoolean();
         int range = jsonNode.get("range").asInt();
 
         if (infinite) {
             log.info("Generating data in background...");
 
-            while (active()) {
-                generateData(cacheName, range, true, optimized, true);
-
-                // Delayed initialization for small data amount ( < DELAYED_INITIALIZATION_AMOUNT ).
-                if (!inited())
-                    markInitialized();
-            }
+            while (active())
+                generateData(cacheName, range, true, true);
 
             log.info("Background data generation finished.");
-
-            markFinished();
         }
         else {
             log.info("Generating data...");
 
-            generateData(cacheName, range, false, optimized, false);
+            generateData(cacheName, range, false, false);
 
             log.info("Data generation finished. Generated " + range + " entries.");
 
@@ -75,25 +67,32 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void stop() {
+        super.stop();
+
+        if (infinite)
+            markFinished();
+    }
+
     /** */
-    private void generateData(String cacheName, int range, boolean delayedInit, boolean optimized, boolean overwrite) {
+    private void generateData(String cacheName, int range, boolean warmUp, boolean overwrite) {
         long notifyTime = System.nanoTime();
 
         int streamed = 0;
 
+        int warmUpCnt = (int)Math.max(1, (float)WARMUP_DATA_PERCENT / 100 * range);
+
         if (log.isDebugEnabled())
             log.debug("Creating cache...");
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
+        ignite.getOrCreateCache(cacheName);
 
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
             streamer.allowOverwrite(overwrite);
 
             for (int i = 0; i < range && active(); i++) {
-                if (optimized)
-                    streamer.addData(i, i);
-                else
-                    cache.put(i, i);
+                streamer.addData(i, i);
 
                 if (notifyTime + DATAGEN_NOTIFY_INTERVAL < System.nanoTime() ||
                     i - streamed >= DATAGEN_NOTIFY_INTERVAL_COUNT) {
@@ -107,16 +106,12 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
                 // Delayed notify of the initialization to make sure the data load has completelly began and
                 // has produced some notable amount of data.
-                if (delayedInit && !inited() && i >= WARMUP_DATA_COUNT)
+                if (warmUp && !inited() && warmUpCnt == i + 1)
                     markInitialized();
             }
 
             if (log.isDebugEnabled())
                 log.debug("Streamed " + range + " entries.");
-        }
-        catch (Exception e) {
-            if (!X.hasCause(e, NodeStoppingException.class))
-                throw e;
         }
     }
 }
