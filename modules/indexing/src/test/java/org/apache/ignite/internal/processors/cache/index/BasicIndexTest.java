@@ -277,7 +277,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCorrectPkFldsSequence() throws Exception {
+    public void testCorrectPrimaryKeyFieldsSequence() throws Exception {
         inlineSize = 10;
 
         IgniteEx ig0 = startGrid(0);

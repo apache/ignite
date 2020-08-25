@@ -201,7 +201,7 @@ public interface GridQueryTypeDescriptor {
     public void setDefaults(Object key, Object val) throws IgniteCheckedException;
 
     /**
-     * Gets primary key fields, if defined, or empty collection othervise.
+     * Gets primary key fields if defined, or empty collection otherwise.
      */
     public Set<String> primaryKeyFields();
 
