@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.ducktest.tests;
 
 import java.io.IOException;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Set;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
