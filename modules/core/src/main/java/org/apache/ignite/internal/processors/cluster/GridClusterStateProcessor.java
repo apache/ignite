@@ -584,9 +584,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
 
-            if (joinFut != null)
-                joinFut.onDone(false);
-
             GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
             if (transitionFut != null) {
@@ -596,6 +593,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 transitionFut.onDone();
             }
+
+            if (joinFut != null)
+                joinFut.onDone(discoClusterState.transitionResult() != null && discoClusterState.transitionResult().active());
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
