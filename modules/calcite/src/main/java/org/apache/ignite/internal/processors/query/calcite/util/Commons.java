@@ -216,20 +216,6 @@ public final class Commons {
             U.closeQuiet((AutoCloseable) o);
     }
 
-    /**
-     * @param o Object to close.
-     * @param e Exception, what causes close.
-     */
-    public static void closeQuiet(Object o, @Nullable Exception e) {
-        if (!(o instanceof AutoCloseable))
-            return;
-
-        if (e != null)
-            U.closeWithSuppressingException((AutoCloseable) o, e);
-        else
-            U.closeQuiet((AutoCloseable) o);
-    }
-
     /** */
     public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);

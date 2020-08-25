@@ -60,22 +60,27 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
         requested = rowsCnt;
 
-        if (waiting == -1 && !inLoop)
-            context().execute(this::flushFromBuffer);
-        else if (waiting == 0)
+        if (waiting == 0)
             F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else
-            throw new AssertionError();
+        else if (!inLoop)
+            context().execute(this::flushFromBuffer);
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
         assert waiting > 0;
@@ -96,6 +101,9 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
         assert waiting > 0;
@@ -123,28 +131,16 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private void flushFromBuffer() {
         assert waiting == -1;
 
+        int processed = 0;
+
         inLoop = true;
-
         try {
-            int processed = 0;
+            while (requested > 0 && !rows.isEmpty()) {
+                requested--;
 
-            while (requested > 0) {
-                int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
+                downstream.push(rows.poll());
 
-                for (int i = 0; i < toSnd; i++) {
-                    requested--;
-
-                    if (rows.isEmpty())
-                        break;
-
-                    Row row = rows.poll();
-
-                    downstream.push(row);
-
-                    processed++;
-                }
-
-                if (processed >= IN_BUFFER_SIZE && requested > 0) {
+                if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
                     context().execute(this::flushFromBuffer);
 
@@ -156,7 +152,6 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 downstream.end();
                 requested = 0;
             }
-
         }
         finally {
             inLoop = false;

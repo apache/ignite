@@ -22,9 +22,9 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -35,8 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Client iterator.
  */
-public class RootNode<Row> extends AbstractNode<Row>
-    implements SingleNode<Row>, Downstream<Row>, Iterator<Row>, AutoCloseable {
+public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, Iterator<Row> {
     /** */
     private final ReentrantLock lock;
 
@@ -47,13 +46,13 @@ public class RootNode<Row> extends AbstractNode<Row>
     private final Deque<Row> buff;
 
     /** */
-    private final Consumer<RootNode<Row>> onClose;
+    private final Runnable onClose;
 
     /** */
     private volatile State state = State.RUNNING;
 
     /** */
-    private volatile IgniteSQLException ex;
+    private final AtomicReference<Throwable> ex = new AtomicReference<>();
 
     /** */
     private Row row;
@@ -64,15 +63,27 @@ public class RootNode<Row> extends AbstractNode<Row>
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext<Row> ctx, Consumer<RootNode<Row>> onClose) {
+    public RootNode(ExecutionContext<Row> ctx) {
         super(ctx);
 
-        this.onClose = onClose;
-
-        // extra space for possible END marker
-        buff = new ArrayDeque<>(IN_BUFFER_SIZE + 1);
+        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
         lock = new ReentrantLock();
         cond = lock.newCondition();
+
+        onClose = this::proceedClose;
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    public RootNode(ExecutionContext<Row> ctx, Runnable onClose) {
+        super(ctx);
+
+        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
+        lock = new ReentrantLock();
+        cond = lock.newCondition();
+
+        this.onClose = onClose;
     }
 
     /** */
@@ -80,39 +91,38 @@ public class RootNode<Row> extends AbstractNode<Row>
         return context().queryId();
     }
 
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (state != State.RUNNING)
-            return;
+    /** */
+    public void proceedClose() {
+        context().execute(() -> {
+            checkThread();
 
-        lock.lock();
-        try {
-            if (state != State.RUNNING)
+            if (isClosed())
                 return;
 
-            context().markCancelled();
-            state = State.CANCELLED;
             buff.clear();
+
+            super.close();
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        lock.lock();
+        try {
+            if (state == State.RUNNING)
+                state = State.CANCELLED;
+            else if (state == State.END)
+                state = State.CLOSED;
+            else
+                return;
+
             cond.signalAll();
         }
         finally {
             lock.unlock();
         }
-        
-        context().execute(F.first(sources)::cancel);
-        onClose.accept(this);
-    }
 
-    /**
-     * @return Execution state.
-     */
-    public State state() {
-        return state;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        cancel();
+        onClose.run();
     }
 
     /** {@inheritDoc} */
@@ -123,7 +133,7 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         lock.lock();
         try {
-            assert waiting > 0;
+            assert waiting > 0 : "waiting=" + waiting;
 
             waiting--;
 
@@ -149,7 +159,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void end() {
         lock.lock();
         try {
-            assert waiting > 0;
+            assert waiting > 0 : "waiting=" + waiting;
 
             waiting = -1;
 
@@ -165,18 +175,17 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
-        checkThread();
+        if (!ex.compareAndSet(null, e))
+            ex.get().addSuppressed(e);
 
-        ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
-
-        cancel();
+        close();
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
         if (row != null)
             return true;
-        else if (state == State.END)
+        else if (state == State.END || state == State.CLOSED)
             return false;
         else
             return (row = take()) != null;
@@ -217,10 +226,10 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         lock.lock();
         try {
-            checkCancelled();
-            assert state == State.RUNNING;
-
             while (true) {
+                checkCancelled();
+                assert state == State.RUNNING;
+
                 if (!buff.isEmpty())
                     return buff.poll();
                 else if (waiting == -1)
@@ -231,9 +240,6 @@ public class RootNode<Row> extends AbstractNode<Row>
                 }
 
                 cond.await();
-
-                checkCancelled();
-                assert state == State.RUNNING;
             }
 
             state = State.END;
@@ -247,7 +253,7 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         assert state == State.END;
 
-        onClose.accept(this);
+        close();
         
         return null;
     }
@@ -255,22 +261,21 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** */
     private void checkCancelled() {
         if (state == State.CANCELLED) {
-            if (ex != null)
-                throw ex;
+            ex.compareAndSet(null, new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED));
 
-            throw new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED);
+            throw sqlException(ex.get());
         }
     }
 
     /** */
-    public enum State {
-        /** */
-        RUNNING,
+    private IgniteSQLException sqlException(Throwable e) {
+        return e instanceof IgniteSQLException
+            ? (IgniteSQLException)e
+            : new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
+    }
 
-        /** */
-        CANCELLED,
-
-        /** */
-        END
+    /** */
+    private enum State {
+        RUNNING, CANCELLED, END, CLOSED
     }
 }

@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  *
@@ -35,10 +36,28 @@ public interface MessageService extends Service {
     void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException;
 
     /**
+     * Checks whether a node with given ID is alive.
+     *
+     * @param nodeId Node ID.
+     * @return {@code True} if node is alive.
+     */
+    boolean alive(UUID nodeId);
+
+    /**
      * Registers a listener for messages of a given type.
      *
      * @param lsnr Listener.
      * @param type Message type.
      */
     void register(MessageListener lsnr, MessageType type);
+
+    /**
+     * @return Message marshaller.
+     */
+    Marshaller marshaller();
+
+    /**
+     * @return Message class loader.
+     */
+    ClassLoader classLoader();
 }

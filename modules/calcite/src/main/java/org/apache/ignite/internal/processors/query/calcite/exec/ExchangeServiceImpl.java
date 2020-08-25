@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,15 +28,18 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
+import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -111,8 +115,18 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new InboxCancelMessage(qryId, fragmentId, exchangeId, batchId));
+    @Override public void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        messageService().send(nodeId, new OutboxCloseMessage(qryId, fragmentId, exchangeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        messageService().send(nodeId, new InboxCloseMessage(qryId, fragmentId, exchangeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendError(UUID nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteCheckedException {
+        messageService().send(nodeId, new ErrorMessage(qryId, fragmentId, err));
     }
 
     /** {@inheritDoc} */
@@ -129,24 +143,46 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (InboxCloseMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (OutboxCloseMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
-    /** */
-    protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
-        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+    /** {@inheritDoc} */
+    @Override public boolean alive(UUID nodeId) {
+        return messageService().alive(nodeId);
+    }
 
-        if (inbox != null)
-            inbox.cancel();
+    /** */
+    protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
+        Collection<Inbox<?>> inboxes = mailboxRegistry().inboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
+        if (!F.isEmpty(inboxes)) {
+            for (Inbox<?> inbox : inboxes)
+                inbox.context().execute(inbox::close);
+        }
         else if (log.isDebugEnabled()) {
-            log.debug("Stale cancel message received: [" +
+            log.debug("Stale inbox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
                 "queryId=" + msg.queryId() + ", " +
                 "fragmentId=" + msg.fragmentId() + ", " +
-                "exchangeId=" + msg.exchangeId() + ", " +
-                "batchId=" + msg.batchId() + "]");
+                "exchangeId=" + msg.exchangeId() + "]");
+        }
+    }
+
+    /** */
+    protected void onMessage(UUID nodeId, OutboxCloseMessage msg) {
+        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
+        if (!F.isEmpty(outboxes)) {
+            for (Outbox<?> outbox : outboxes)
+                outbox.context().execute(outbox::close);
+        }
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale oubox cancel message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + "]");
         }
     }
 
@@ -173,7 +209,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (inbox == null && msg.batchId() == 0) {
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            Inbox<?> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+            Inbox<?> newInbox = new Inbox<>(baseInboxContext(nodeId, msg.queryId(), msg.fragmentId()),
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
@@ -194,10 +230,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /**
      * @return Minimal execution context to meet Inbox needs.
      */
-    private ExecutionContext<?> baseInboxContext(UUID qryId, long fragmentId) {
+    private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
             taskExecutor(),
             PlanningContext.builder()
+                .originatingNodeId(nodeId)
                 .logger(log)
                 .build(),
             qryId,

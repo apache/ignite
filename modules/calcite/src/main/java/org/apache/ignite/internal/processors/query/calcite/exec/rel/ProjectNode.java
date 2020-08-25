@@ -43,6 +43,9 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0;
 
@@ -52,6 +55,9 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
 
@@ -66,6 +72,9 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
 

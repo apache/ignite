@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class InboxCancelMessage implements ExecutionContextAware {
+public class OutboxCloseMessage implements CalciteMessage {
     /** */
     private UUID queryId;
 
@@ -37,26 +37,28 @@ public class InboxCancelMessage implements ExecutionContextAware {
     private long exchangeId;
 
     /** */
-    private int batchId;
+    public OutboxCloseMessage() {
+        // No-op.
+    }
 
     /** */
-    public InboxCancelMessage(){}
-
-    /** */
-    public InboxCancelMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
+    public OutboxCloseMessage(UUID queryId, long fragmentId, long exchangeId) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
-        this.batchId = batchId;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID queryId() {
+    /**
+     * @return Query ID.
+     */
+    public UUID queryId() {
         return queryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
         return fragmentId;
     }
 
@@ -65,13 +67,6 @@ public class InboxCancelMessage implements ExecutionContextAware {
      */
     public long exchangeId() {
         return exchangeId;
-    }
-
-    /**
-     * @return Batch ID.
-     */
-    public int batchId() {
-        return batchId;
     }
 
     /** {@inheritDoc} */
@@ -87,24 +82,18 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchId", batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeLong("exchangeId", exchangeId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("fragmentId", fragmentId))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -124,14 +113,6 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
         switch (reader.state()) {
             case 0:
-                batchId = reader.readInt("batchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 exchangeId = reader.readLong("exchangeId");
 
                 if (!reader.isLastRead())
@@ -139,7 +120,7 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 fragmentId = reader.readLong("fragmentId");
 
                 if (!reader.isLastRead())
@@ -147,7 +128,7 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -157,16 +138,16 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
         }
 
-        return reader.afterMessageRead(InboxCancelMessage.class);
+        return reader.afterMessageRead(OutboxCloseMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
-        return MessageType.QUERY_INBOX_CANCEL_MESSAGE;
+        return MessageType.QUERY_OUTBOX_CANCEL_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 }

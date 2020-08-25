@@ -37,10 +37,10 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_BATCH_SIZE", 100);
 
     /** */
-    protected static final int IO_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 200);
+    protected static final int IO_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 256);
 
     /** */
-    protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 50);
+    protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 4);
 
     /** for debug purpose */
     private volatile Thread thread;
@@ -57,6 +57,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
 
     /** */
     protected List<Node<Row>> sources;
+
+    /** */
+    protected boolean closed;
 
     /**
      * @param ctx Execution context.
@@ -84,13 +87,23 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
+    @Override public void close() {
         checkThread();
 
-        context().markCancelled();
+        if (closed)
+            return;
+
+        closed = true;
 
         if (!F.isEmpty(sources))
-            sources.forEach(Node::cancel);
+            sources.forEach(U::closeQuiet);
+    }
+
+    /**
+     * @return {@code true} if the subtree is canceled.
+     */
+    protected boolean isClosed() {
+        return closed;
     }
 
     /** */

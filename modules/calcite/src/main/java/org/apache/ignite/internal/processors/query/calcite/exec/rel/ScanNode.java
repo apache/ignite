@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  * Scan node.
  */
-public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
+public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private final Iterable<Row> src;
 
@@ -54,6 +54,9 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert rowsCnt > 0 && requested == 0;
 
         requested = rowsCnt;
@@ -63,15 +66,17 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
-        close();
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
+        if (isClosed())
+            return;
+
         Commons.closeQuiet(it);
+
+        it = null;
+
+        Commons.closeQuiet(src);
+
+        super.close();
     }
 
     /** {@inheritDoc} */
@@ -86,6 +91,9 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** */
     private void pushInternal() {
+        if (isClosed())
+            return;
+
         inLoop = true;
         try {
             if (it == null)
@@ -96,7 +104,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             Thread thread = Thread.currentThread();
 
             while (requested > 0 && it.hasNext()) {
-                if (context().cancelled())
+                if (isClosed())
                     return;
 
                 if (thread.isInterrupted())
@@ -117,16 +125,27 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 downstream.end();
                 requested = 0;
 
-                close();
+                Commons.closeQuiet(it);
+
+                it = null;
             }
         }
         catch (Throwable e) {
-            close();
-
-            downstream.onError(e);
+            onError(e);
         }
         finally {
             inLoop = false;
         }
+    }
+
+    /** */
+    private void onError(Throwable e) {
+        checkThread();
+
+        assert downstream != null;
+
+        downstream.onError(e);
+
+        close();
     }
 }

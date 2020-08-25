@@ -57,9 +57,6 @@ public class ExecutionContext<Row> implements DataContext {
     /** */
     private final ExpressionFactory<Row> expressionFactory;
 
-    /** */
-    private volatile boolean cancelled;
-
     /**
      * @param ctx Parent context.
      * @param qryId Query ID.
@@ -150,13 +147,6 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /**
-     * @return Cancelled flag.
-     */
-    public boolean cancelled() {
-        return cancelled;
-    }
-
-    /**
      * @return Handler to access row fields.
      */
     public RowHandler<Row> rowHandler() {
@@ -195,14 +185,6 @@ public class ExecutionContext<Row> implements DataContext {
     /** {@inheritDoc} */
     @Override public Object get(String name) {
         return params.get(name);
-    }
-
-    /**
-     * Sets cancelled flag.
-     */
-    public void markCancelled() {
-        if (!cancelled)
-            cancelled = true;
     }
 
     /**

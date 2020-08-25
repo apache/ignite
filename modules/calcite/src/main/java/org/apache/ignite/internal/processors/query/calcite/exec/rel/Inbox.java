@@ -17,27 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A part of exchange.
  */
-public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
+public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, SingleNode<Row> {
     /** */
     private final ExchangeService exchange;
 
@@ -54,7 +57,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     private final Map<UUID, Buffer> perNodeBuffers;
 
     /** */
-    private Collection<UUID> nodes;
+    private volatile Collection<UUID> srcNodeIds;
 
     /** */
     private Comparator<Row> comp;
@@ -92,17 +95,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         perNodeBuffers = new HashMap<>();
     }
 
-    /**
-     * @return Query ID.
-     */
-    public UUID queryId() {
-        return context().queryId();
-    }
-
-    /**
-     * @return Exchange ID.
-     */
-    public long exchangeId() {
+    /** {@inheritDoc} */
+    @Override public long exchangeId() {
         return exchangeId;
     }
 
@@ -110,48 +104,44 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      * Inits this Inbox.
      *
      * @param ctx Execution context.
-     * @param nodes Source nodes.
+     * @param srcNodeIds Source node IDs.
      * @param comp Optional comparator for merge exchange.
      */
-    public void init(ExecutionContext<Row> ctx, Collection<UUID> nodes, Comparator<Row> comp) {
+    public void init(ExecutionContext<Row> ctx, Collection<UUID> srcNodeIds, @Nullable Comparator<Row> comp) {
         // It's important to set proper context here because
         // because the one, that is created on a first message
-        // recived doesn't have all context variables in place.
+        // received doesn't have all context variables in place.
         this.ctx = ctx;
-        this.nodes = nodes;
         this.comp = comp;
+
+        // memory barier
+        this.srcNodeIds = new HashSet<>(srcNodeIds);
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         checkThread();
 
-        assert nodes != null;
+        if (isClosed())
+            return;
+
+        assert srcNodeIds != null;
         assert rowsCnt > 0 && requested == 0;
 
         requested = rowsCnt;
-
-        if (buffers == null) {
-            nodes.forEach(this::getOrCreateBuffer);
-            buffers = new ArrayList<>(perNodeBuffers.values());
-
-            assert buffers.size() == nodes.size();
-        }
 
         if (!inLoop)
             context().execute(this::pushInternal);
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
-        close();
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
+        if (isClosed())
+            return;
+
         registry.unregister(this);
+
+        super.close();
     }
 
     /** {@inheritDoc} */
@@ -175,6 +165,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         Buffer buf = getOrCreateBuffer(src);
 
         boolean waitingBefore = buf.check() == State.WAITING;
@@ -185,20 +178,47 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             pushInternal();
     }
 
+    /**
+     * @param e Error.
+     */
+    private void onError(Throwable e) {
+        checkThread();
+
+        assert downstream != null;
+
+        downstream.onError(e);
+
+        close();
+    }
+
     /** */
     private void pushInternal() {
+        if (isClosed())
+            return;
+
         assert downstream != null;
 
         inLoop = true;
+
         try {
+            if (buffers == null) {
+                for (UUID node : srcNodeIds)
+                    checkNode(node);
+
+                buffers = srcNodeIds.stream()
+                    .map(this::getOrCreateBuffer)
+                    .collect(Collectors.toList());
+
+                assert buffers.size() == perNodeBuffers.size();
+            }
+
             if (comp != null)
                 pushOrdered();
             else
                 pushUnordered();
         }
-        catch (Exception e) {
-            downstream.onError(e);
-            close();
+        catch (Throwable e) {
+            onError(e);
         }
         finally {
             inLoop = false;
@@ -231,7 +251,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         while (requested > 0 && !heap.isEmpty()) {
-            if (context().cancelled())
+            if (isClosed())
                 return;
 
             Buffer buf = heap.poll().right;
@@ -259,8 +279,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
             downstream.end();
             requested = 0;
-
-            close();
         }
     }
 
@@ -269,7 +287,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         int idx = 0, noProgress = 0;
 
         while (requested > 0 && !buffers.isEmpty()) {
-            if (context().cancelled())
+            if (isClosed())
                 return;
 
             Buffer buf = buffers.get(idx);
@@ -299,8 +317,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         if (requested > 0 && buffers.isEmpty()) {
             downstream.end();
             requested = 0;
-
-            close();
         }
     }
 
@@ -317,6 +333,28 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     /** */
     private Buffer createBuffer(UUID nodeId) {
         return new Buffer(nodeId);
+    }
+
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        if (ctx.originatingNodeId().equals(nodeId) && srcNodeIds == null)
+            ctx.execute(this::close);
+        else if (srcNodeIds != null && srcNodeIds.contains(nodeId))
+            ctx.execute(() -> onNodeLeft0(nodeId));
+    }
+
+    /** */
+    private void onNodeLeft0(UUID nodeId) {
+        checkThread();
+
+        if (getOrCreateBuffer(nodeId).check() != State.END)
+            onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']'));
+    }
+
+    /** */
+    private void checkNode(UUID nodeId) throws ClusterTopologyCheckedException {
+        if (!exchange.alive(nodeId))
+            throw new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']');
     }
 
     /** */

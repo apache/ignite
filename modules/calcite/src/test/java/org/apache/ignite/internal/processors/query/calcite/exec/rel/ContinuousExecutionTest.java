@@ -142,7 +142,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
         inbox.init(ectx, nodes.subList(1, nodes.size()), null);
 
-        RootNode<Object[]> node = new RootNode<>(ectx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ectx);
 
         node.register(inbox);
 

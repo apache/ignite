@@ -71,6 +71,9 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert !F.isEmpty(sources) && sources.size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
@@ -124,6 +127,9 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     private void pushLeft(Row row) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert downstream != null;
         assert waitingLeft > 0;
 
@@ -137,6 +143,9 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     /** */
     private void pushRight(Row row) {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
         assert waitingRight > 0;
@@ -153,6 +162,9 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     private void endLeft() {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert downstream != null;
         assert waitingLeft > 0;
 
@@ -164,6 +176,9 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     /** */
     private void endRight() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
         assert waitingRight > 0;
