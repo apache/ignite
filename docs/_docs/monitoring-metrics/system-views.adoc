@@ -597,6 +597,8 @@ Page list is a data structure used to store a list of partially free data pages 
 Page lists organized in buckets. Each bucket group pages with about the same size of free space.
 If persistence is enabled page lists are created for each partition of each cache group, to view such page lists cacheGroupPageLists system view (SQL name CACHE_GROUP_PAGE_LISTS) can be used. If persistence is disabled page lists are created for each data region, in this case, dataRegionPageLists system view (SQL name DATA_REGION_PAGE_LISTS) can be used. These views contain information about each bucket of each page list what is useful to understand how much data can be inserted into the cache without allocating new pages and also helps to detect skews in page lists utilization.
 
+
+////
 === Columns of cacheGroupPageLists
 
 
@@ -668,4 +670,4 @@ If persistence is enabled page lists are created for each partition of each cach
 |WRITE_BEHIND_FLUSH_THREAD_COUNT | int | Number of threads that will perform cache flushing
 |WRITE_SYNCHRONIZATION_MODE | string |  Gets write synchronization mode
 
-
+////

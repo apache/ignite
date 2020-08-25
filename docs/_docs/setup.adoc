@@ -22,7 +22,7 @@ installation folder and make sure there is no trailing `/` in the path.
 
 The easiest way to use Ignite is to add it to your pom.
 
-[source, xml]
+[source, xml,subs="attributes,specialchars" ]
 ----
 
 <properties>
