@@ -1,5 +1,5 @@
 
-{% assign prefix = site.attrs.base_url | append: "/" | append: site.attrs.version %}
+{% assign prefix = site.attrs.base_url  %}
 {% assign normalized_path = page.url | replace: ".html","" | remove_first: prefix %}
 {% if page.toc != false %}
 <nav class='left-nav' data-swiftype-index='false'>
