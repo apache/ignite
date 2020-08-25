@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
  * to index partitions. Loading occurs sequentially for each cache group,
  * starting with index partition, and then all others in ascending order.
  */
-public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration> {
+public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfiguration> {
     /** Logger. */
     @GridToStringExclude
     private final IgniteLogger log;
@@ -65,7 +65,7 @@ public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration>
      * @param log Logger.
      * @param grpCtxSup Cache group contexts supplier. Since {@link GridCacheProcessor} starts later.
      */
-    public LoadAllWarmUp(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
+    public LoadAllWarmUpStrategy(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
         this.log = log;
         this.grpCtxSup = grpCtxSup;
     }
@@ -148,7 +148,7 @@ public class LoadAllWarmUp implements WarmUpStrategy<LoadAllWarmUpConfiguration>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(LoadAllWarmUp.class, this);
+        return S.toString(LoadAllWarmUpStrategy.class, this);
     }
 
     /**

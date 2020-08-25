@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Noop warming up strategy.
  */
-public class NoOpWarmUp implements WarmUpStrategy<NoOpWarmUpConfiguration> {
+public class NoOpWarmUpStrategy implements WarmUpStrategy<NoOpWarmUpConfiguration> {
     /** {@inheritDoc} */
     @Override public Class<NoOpWarmUpConfiguration> configClass() {
         return NoOpWarmUpConfiguration.class;
@@ -46,6 +46,6 @@ public class NoOpWarmUp implements WarmUpStrategy<NoOpWarmUpConfiguration> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NoOpWarmUp.class, this);
+        return S.toString(NoOpWarmUpStrategy.class, this);
     }
 }

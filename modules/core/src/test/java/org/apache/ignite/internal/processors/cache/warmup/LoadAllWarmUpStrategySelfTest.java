@@ -37,7 +37,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUp.LoadPartition;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategy.LoadPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -48,9 +48,9 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Test class for testing {@link LoadAllWarmUp}.
+ * Test class for testing {@link LoadAllWarmUpStrategy}.
  */
-public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
+public class LoadAllWarmUpStrategySelfTest extends GridCommonAbstractTest {
     /** Flag for enabling warm-up. */
     private boolean warmUp;
 
@@ -62,7 +62,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        LoadAllWarmUpEx.loadDataInfoCb = null;
+        LoadAllWarmUpStrategyEx.loadDataInfoCb = null;
     }
 
     /** {@inheritDoc} */
@@ -140,7 +140,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
      * 1)Start node and fill it with data for first data region until it is 2 * {@code MIN_PAGE_MEMORY_SIZE};
      * 2)Make a checkpoint;
      * 3)Restart node with warm-up, change maximum data region size to {@code MIN_PAGE_MEMORY_SIZE},
-     * and listen for {@link LoadAllWarmUpEx#loadDataInfo};
+     * and listen for {@link LoadAllWarmUpStrategyEx#loadDataInfo};
      * 4)Check that estimated count of pages to warm-up is between maximum and
      * approximate minimum count of pages to load;
      * 5)Checking that total count of pages loaded is between maximum and
@@ -180,7 +180,7 @@ public class LoadAllWarmUpSelfTest extends GridCommonAbstractTest {
 
         Map<String, Map<CacheGroupContext, List<LoadPartition>>> loadDataInfoMap = new ConcurrentHashMap<>();
 
-        LoadAllWarmUpEx.loadDataInfoCb = loadDataInfoMap::put;
+        LoadAllWarmUpStrategyEx.loadDataInfoCb = loadDataInfoMap::put;
 
         n = startGrid(cfg);
 

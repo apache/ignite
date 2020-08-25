@@ -79,8 +79,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUp;
-import org.apache.ignite.internal.processors.cache.warmup.NoOpWarmUp;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.NoOpWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -2119,8 +2119,11 @@ public class GridCacheUtils {
 
         // Adding default strategies.
         WarmUpStrategy[] defStrats = {
-            new NoOpWarmUp(),
-            new LoadAllWarmUp(kernalCtx.log(LoadAllWarmUp.class), () -> kernalCtx.cache().cacheGroups())
+            new NoOpWarmUpStrategy(),
+            new LoadAllWarmUpStrategy(
+                kernalCtx.log(LoadAllWarmUpStrategy.class),
+                () -> kernalCtx.cache().cacheGroups()
+            )
         };
 
         for (WarmUpStrategy<?> strategy : defStrats)

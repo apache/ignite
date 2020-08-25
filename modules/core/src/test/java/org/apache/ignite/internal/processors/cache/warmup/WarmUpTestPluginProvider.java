@@ -46,7 +46,7 @@ class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
 
         IgniteEx gridx = (IgniteEx)ctx.grid();
 
-        strats.add(new LoadAllWarmUpEx(gridx.log(), () -> gridx.context().cache().cacheGroups()));
+        strats.add(new LoadAllWarmUpStrategyEx(gridx.log(), () -> gridx.context().cache().cacheGroups()));
 
         registry.registerExtension(WarmUpStrategySupplier.class, new WarmUpStrategySupplier() {
             /** {@inheritDoc} */

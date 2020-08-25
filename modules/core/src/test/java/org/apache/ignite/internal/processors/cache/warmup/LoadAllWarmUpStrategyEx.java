@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import static java.util.Objects.nonNull;
 
 /**
- * Extension {@link LoadAllWarmUp}.
+ * Extension {@link LoadAllWarmUpStrategy}.
  */
-class LoadAllWarmUpEx extends LoadAllWarmUp {
+class LoadAllWarmUpStrategyEx extends LoadAllWarmUpStrategy {
     /** {@link #loadDataInfo} callback. */
     static volatile BiConsumer<String, Map<CacheGroupContext, List<LoadPartition>>> loadDataInfoCb;
 
@@ -43,7 +43,7 @@ class LoadAllWarmUpEx extends LoadAllWarmUp {
      * @param log       Logger.
      * @param grpCtxSup Cache group contexts supplier. Since {@link GridCacheProcessor} starts later.
      */
-    public LoadAllWarmUpEx(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
+    public LoadAllWarmUpStrategyEx(IgniteLogger log, Supplier<Collection<CacheGroupContext>> grpCtxSup) {
         super(log, grpCtxSup);
     }
 
