@@ -588,9 +588,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             GroupKey prevKey = grpKeys.changeActiveKey(grpId, rmtKey.id());
 
-            if (prevKey == null)
-                continue;
-
             grpKeys.reserveWalKey(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
             reencryptGroupsForced.put(grpId, rmtKey.id());
@@ -634,7 +631,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Cache group ID.
      * @param key Encryption key.
      */
-    private void addGroupKey(int grpId, GroupKeyEncrypted key) {
+    void addGroupKey(int grpId, GroupKeyEncrypted key) {
         try {
             withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, key));
 
@@ -676,7 +673,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             digest = masterKeyDigest(masterKeyName);
         } catch (Exception e) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
-                "Unable to get the master key digest."));
+                "Unable to get the master key digest.", e));
         }
 
         MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
@@ -697,11 +694,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone()) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
                     "The previous change was not completed."));
-            }
-
-            if (!grpKeyChangeProc.finished()) {
-                return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
-                    "Cache group key change was not completed."));
             }
 
             masterKeyChangeFut = new KeyChangeFuture(request.requestId());
@@ -728,11 +720,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (stopped) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
                     "Node is stopping."));
-            }
-
-            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone()) {
-                return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
-                    "The master key change is in progress."));
             }
 
             return grpKeyChangeProc.start(cacheOrGrpNames);
@@ -764,18 +751,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (grp == null)
                 continue;
 
-            GroupKeyEncrypted key = new GroupKeyEncrypted(keyIds[i] & 0xff, keys[i]);
+            int newKeyId = keyIds[i] & 0xff;
 
             synchronized (metaStorageMux) {
-                // Store new key as inactive for recovery.
-                grpKeys.addKey(grpId, key);
-
-                writeToMetaStore(grpId, true, false);
-
                 // Set new key as key for writing.
-                GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, key.id());
-
-                assert prevGrpKey != null && prevGrpKey.id() != key.id() : "prev=" + prevGrpKey + ", currId=" + key.id();
+                GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, newKeyId);
 
                 grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
@@ -785,7 +765,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reencryptGroups.put(grpId, pageScanner.pagesCount(grp));
 
             if (log.isInfoEnabled())
-                log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + key.id() + "]");
+                log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + newKeyId + "]");
         }
 
         startReencryption(encryptionStatus.keySet());
@@ -803,6 +783,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @param grpId Cache group ID.
+     * @return {@code True} If the specified cache group is being re-encrypted.
+     */
+    boolean isReencryptionInProgress(int grpId) {
+        // The method guarantees not only the completion of the re-encryption, but also that the clearing of
+        // unused keys is complete.
+        return reencryptGroups.containsKey(grpId);
+    }
+
+    /**
      * Removes encryption key(s).
      *
      * @param grpId Cache group ID.
@@ -812,7 +802,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             ctx.cache().context().database().checkpointReadLock();
 
             try {
-                grpKeys.remove(grpId);
+                if (grpKeys.remove(grpId) == null)
+                    return;
 
                 metaStorage.remove(ENCRYPTION_KEYS_PREFIX + grpId);
 
@@ -878,9 +869,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param partId Partition ID.
      */
     public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
-        pageScanner.cancel(grp.groupId(), partId);
-
-        setEncryptionState(grp, partId, 0, 0);
+        if (pageScanner.cancel(grp.groupId(), partId))
+            setEncryptionState(grp, partId, 0, 0);
     }
 
     /**
@@ -1402,11 +1392,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "The previous change was not completed."));
         }
 
-        if (grpKeyChangeProc.started()) {
-            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                "Cache group key change was not completed."));
-        }
-
         masterKeyChangeRequest = req;
 
         if (ctx.clientNode())
@@ -1548,7 +1533,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param c Callable to run with master key change read lock.
      * @return Computed result.
      */
-    private <T> T withMasterKeyChangeReadLock(Callable<T> c) {
+    <T> T withMasterKeyChangeReadLock(Callable<T> c) {
         masterKeyChangeLock.readLock().lock();
 
         try {

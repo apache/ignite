@@ -160,20 +160,20 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * Adds new encryption key and set it for writing.
+     * Sets new encryption key for writing.
      *
      * @param grpId Cache group ID.
      * @param newActiveId ID of the existing encryption key to be set for writing..
-     * @return Previous encryption key for writing.
+     * @return Previous encryption key used for writing.
      */
     GroupKey changeActiveKey(int grpId, int newActiveId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
-        assert keys != null : "grpId=" + grpId;
+        assert !F.isEmpty(keys) : "grpId=" + grpId;
 
-        GroupKey prevKey = F.first(keys);
+        GroupKey prevKey = keys.get(0);
 
-        assert prevKey == null || prevKey.unsignedId() != newActiveId : "grpId=" + grpId;
+        assert prevKey.unsignedId() != newActiveId : "grpId=" + grpId + ", keyId=" + newActiveId;
 
         GroupKey newActiveKey = null;
 
@@ -186,11 +186,11 @@ class CacheGroupEncryptionKeys {
             break;
         }
 
-        assert newActiveKey != null : "grpId=" + grpId;
+        assert newActiveKey != null : "grpId=" + grpId + ", keyId=" + newActiveId + ", keys=" + keys;
 
         keys.add(0, newActiveKey);
 
-        // Remove the duplicate key from the tail of the list if exists.
+        // Remove the duplicate key from the tail of the list.
         keys.subList(1, keys.size()).remove(newActiveKey);
 
         return prevKey;
@@ -201,11 +201,17 @@ class CacheGroupEncryptionKeys {
      *
      * @param grpId Cache group ID.
      * @param newEncKey New encrypted key for writing.
+     * @return {@code True} If a key has been added, {@code False} if the specified key is already present.
      */
     boolean addKey(int grpId, GroupKeyEncrypted newEncKey) {
         List<GroupKey> keys = grpKeys.computeIfAbsent(grpId, v -> new CopyOnWriteArrayList<>());
 
-        return keys.add(new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key())));
+        GroupKey grpKey = new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key()));
+
+        if (!keys.contains(grpKey))
+            return keys.add(grpKey);
+
+        return false;
     }
 
     /**
@@ -225,9 +231,10 @@ class CacheGroupEncryptionKeys {
      * Remove encrytion keys associated with the specified cache group.
      *
      * @param grpId Cache group ID.
+     * @return List of encryption keys of the removed cache group.
      */
-    void remove(int grpId) {
-        grpKeys.remove(grpId);
+    List<GroupKey> remove(int grpId) {
+        return grpKeys.remove(grpId);
     }
 
     /**

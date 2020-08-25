@@ -88,15 +88,6 @@ class GroupKeyChangeProcess {
     }
 
     /**
-     * @return {@code True} if operation is not finished.
-     */
-    public boolean finished() {
-        IgniteInternalFuture<Void> fut0 = fut;
-
-        return fut0 == null || fut0.isDone();
-    }
-
-    /**
      * @param msg Error message.
      */
     public void cancel(String msg) {
@@ -121,7 +112,9 @@ class GroupKeyChangeProcess {
         if (!ctx.state().clusterState().state().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
 
-        if (!finished()) {
+        IgniteInternalFuture<Void> fut0 = fut;
+
+        if (fut0 != null && !fut0.isDone()) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
                 "The previous change was not completed."));
         }
@@ -156,7 +149,7 @@ class GroupKeyChangeProcess {
                     "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
             }
 
-            if (!ctx.encryption().reencryptionFuture(grp.groupId()).isDone()) {
+            if (ctx.encryption().isReencryptionInProgress(grp.groupId())) {
                 throw new IgniteException("Cache group key change was rejected. " +
                     "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
             }
@@ -169,7 +162,8 @@ class GroupKeyChangeProcess {
 
         byte[][] keys = ctx.encryption().createKeys(grpIds.length).get1().toArray(new byte[grpIds.length][]);
 
-        ChangeCacheEncryptionRequest req = new ChangeCacheEncryptionRequest(grpIds, keys, keyIds);
+        ChangeCacheEncryptionRequest req =
+            new ChangeCacheEncryptionRequest(grpIds, keys, keyIds, ctx.config().getEncryptionSpi().getMasterKeyName());
 
         fut = new GroupKeyChangeFuture(req);
 
@@ -193,11 +187,6 @@ class GroupKeyChangeProcess {
                 "The previous change was not completed."));
         }
 
-        if (ctx.encryption().isMasterKeyChangeInProgress()) {
-            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
-                "The master key change is in progress."));
-        }
-
         this.req = req;
 
         try {
@@ -205,7 +194,7 @@ class GroupKeyChangeProcess {
                 int grpId = req.groupIds()[i];
                 int keyId = req.keyIds()[i] & 0xff;
 
-                if (!ctx.encryption().reencryptionFuture(grpId).isDone()) {
+                if (ctx.encryption().isReencryptionInProgress(grpId)) {
                     return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                             "Cache group reencryption is in progress [grpId=" + grpId + "]"));
                 }
@@ -217,12 +206,17 @@ class GroupKeyChangeProcess {
                             "Encrypted cache group not found [grpId=" + grpId + "]"));
                 }
 
+                GroupKey currKey = ctx.encryption().groupKey(grpId);
+
                 for (int locKeyId : keyIds) {
                     if (locKeyId != keyId)
                         continue;
 
                     Long walSegment = keys.reservedSegment(grpId, keyId);
-                    GroupKey currKey = ctx.encryption().groupKey(grpId);
+
+                    // Can overwrite inactive key if it was added during prepare phase.
+                    if (walSegment == null && currKey.id() != (byte)keyId)
+                        continue;
 
                     return new GridFinishedFuture<>(
                         new IgniteException("Cache group key change was rejected. Cannot add new key identifier," +
@@ -231,13 +225,30 @@ class GroupKeyChangeProcess {
                         ", walSegment=" + walSegment + "]."));
                 }
             }
+
+            return ctx.encryption().withMasterKeyChangeReadLock(() -> {
+                String curMasterKeyName = ctx.config().getEncryptionSpi().getMasterKeyName();
+
+                if (!curMasterKeyName.equals(req.masterKeyName())) {
+                    return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                        "Master key has been changed."));
+                }
+
+                for (int i = 0; i < req.groupIds().length; i++) {
+                    // Store new key as inactive.
+                    GroupKeyEncrypted grpKey = new GroupKeyEncrypted(req.keyIds()[i] & 0xff, req.keys()[i]);
+
+                    ctx.encryption().addGroupKey(req.groupIds()[i], grpKey);
+                }
+
+                return new GridFinishedFuture<>(new EmptyResult());
+            });
+
         }
         catch (Exception e) {
             return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected [nodeId=" +
                 ctx.localNodeId() + ']', e));
         }
-
-        return new GridFinishedFuture<>(new EmptyResult());
     }
 
     /**

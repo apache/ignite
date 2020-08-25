@@ -21,9 +21,11 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -59,6 +62,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
+import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -311,6 +315,56 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
             checkGroupKey(grpId, ++keyId & 0xff, MAX_AWAIT_MILLIS);
         } while (keyId != INITIAL_KEY_ID);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMasterAndCacheGroupKeySimultaneousChange() throws Exception {
+        startTestGrids(true);
+
+        IgniteEx node0 = grid(GRID_0);
+        IgniteEx node1 = grid(GRID_1);
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        int grpId = CU.cacheId(cacheName());
+
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
+
+        Random rnd = ThreadLocalRandom.current();
+
+        for (byte keyId = 1; keyId < 50; keyId++) {
+            String currMkName = node0.context().config().getEncryptionSpi().getMasterKeyName();
+            String newMkName = currMkName.equals(MASTER_KEY_NAME_2) ? MASTER_KEY_NAME_3 : MASTER_KEY_NAME_2;
+
+            boolean changeGrpFirst = rnd.nextBoolean();
+
+            IgniteFuture<Void> grpKeyFut;
+            IgniteFuture<Void> masterKeyFut;
+
+            if (changeGrpFirst) {
+                grpKeyFut = node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
+                masterKeyFut = node0.encryption().changeMasterKey(newMkName);
+            }
+            else {
+                masterKeyFut = node0.encryption().changeMasterKey(newMkName);
+                grpKeyFut = node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
+            }
+
+            masterKeyFut.get(MAX_AWAIT_MILLIS);
+            assertTrue(checkMasterKeyName(newMkName));
+
+            try {
+                grpKeyFut.get(MAX_AWAIT_MILLIS);
+                checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
+            } catch (IgniteException e) {
+                assertTrue(e.getMessage().contains("Cache group key change was rejected. Master key has been changed."));
+
+                keyId -= 1;
+            }
+        }
     }
 
     /**
