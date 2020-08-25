@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,6 +52,7 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setRebalanceThreadPoolSize(ThreadLocalRandom.current().nextInt(4) + 1);
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration().setWalSegmentSize(4 * 1024 * 1024);
@@ -94,13 +97,13 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
         final int delta = 2_000;
         final int rmv = 1_500;
 
-        loadDataToPartition(clearingPart, getTestIgniteInstanceName(0), DEFAULT_CACHE_NAME, cnt, 0, 3);
+        loadDataToPartition(clearingPart, getTestIgniteInstanceName(0), DEFAULT_CACHE_NAME, cnt, 0);
 
         forceCheckpoint();
 
         stopGrid(2);
 
-        loadDataToPartition(clearingPart, getTestIgniteInstanceName(0), DEFAULT_CACHE_NAME, delta, cnt, 3);
+        loadDataToPartition(clearingPart, getTestIgniteInstanceName(0), DEFAULT_CACHE_NAME, delta, cnt);
 
         // Removal required for triggering full rebalancing.
         List<Integer> clearKeys = partitionKeys(grid(0).cache(DEFAULT_CACHE_NAME), clearingPart, rmv, cnt);
@@ -118,10 +121,10 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id) {
                             return id == clearingPart ?
-                                new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 1, lock, unlock) :
-                                new GridDhtLocalPartition(ctx, grp, id, recovery);
+                                new GridDhtLocalPartitionSyncEviction(ctx, grp, id, false, 1, lock, unlock) :
+                                new GridDhtLocalPartition(ctx, grp, id, false);
                         }
                     });
                 }
@@ -141,7 +144,9 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
 
         ClusterNode supplier = assignments.supplier(clearingPart);
 
-        GridFutureAdapter clearFut = U.field(ctx.topology().localPartition(clearingPart), "clearFut");
+        AtomicReference<GridFutureAdapter<?>> ref = U.field(ctx.topology().localPartition(clearingPart), "finishFutRef");
+
+        GridFutureAdapter clearFut = ref.get();
 
         assertFalse(clearFut.isDone());
 

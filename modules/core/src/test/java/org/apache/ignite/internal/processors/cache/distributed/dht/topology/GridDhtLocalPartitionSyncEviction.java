@@ -31,9 +31,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
- * Extends a DHT partition adding extended blocking capabilities on clearing.
+ * Extends a DHT partition adding a support for blocking capabilities on clearing.
  */
-class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
+public class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
     /** */
     static final int TIMEOUT = 30_000;
 
@@ -54,7 +54,8 @@ class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
      * @param grp Group.
      * @param id Id.
      * @param recovery Recovery.
-     * @param mode Delay mode: 0 - delay before rent, 1 - delay in the middle of clearing, 2 - delay after tryEvict.
+     * @param mode Delay mode: 0 - delay before rent, 1 - delay in the middle of clearing, 2 - delay after tryEvict
+     *             3 - delay before clearing.
      * @param lock Clearing lock latch.
      * @param unlock Clearing unlock latch.
      */
@@ -83,19 +84,24 @@ class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
 
     /** {@inheritDoc} */
     @Override protected long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
-        EvictionContext spied = Mockito.spy(evictionCtx);
+        EvictionContext spied = mode == 1 ? Mockito.spy(evictionCtx) : evictionCtx;
 
-        Mockito.doAnswer(new Answer() {
-            @Override public Object answer(InvocationOnMock invocation) throws Throwable {
-                if (!delayed && mode == 1) {
-                    sync();
+        if (mode == 3)
+            sync();
 
-                    delayed = true;
+        if (mode == 1) {
+            Mockito.doAnswer(new Answer() {
+                @Override public Object answer(InvocationOnMock invocation) throws Throwable {
+                    if (!delayed) {
+                        sync();
+
+                        delayed = true;
+                    }
+
+                    return invocation.callRealMethod();
                 }
-
-                return invocation.callRealMethod();
-            }
-        }).when(spied).shouldStop();
+            }).when(spied).shouldStop();
+        }
 
         long cnt = super.clearAll(spied);
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -39,7 +40,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
- * Tests a scenario when a clearing partition is attempted to evict after call to
+ * Tests a scenario when a clearing partition is attempted to evict after a call to
  * {@link GridDhtPartitionTopology#tryEvict(GridDhtLocalPartition)}.
  *
  * Such a scenario can leave a partition in RENTING state until the next exchange, but it's look acceptable.
@@ -50,6 +51,7 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setRebalanceThreadPoolSize(ThreadLocalRandom.current().nextInt(4) + 1);
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration().setWalSegmentSize(4 * 1024 * 1024);
@@ -118,10 +120,10 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id) {
                             return id == evictingPart ?
-                                new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
-                                new GridDhtLocalPartition(ctx, grp, id, recovery);
+                                new GridDhtLocalPartitionSyncEviction(ctx, grp, id, false, 2, lock, unlock) :
+                                new GridDhtLocalPartition(ctx, grp, id, false);
                         }
                     });
                 }
