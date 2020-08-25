@@ -148,7 +148,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
         if config.with_load > 0:
-            self.__start_loading(version, properties, modules, config.with_load > 1)
+            self.__start_loading(version, properties, modules, config.with_load > 1, ids_to_wait)
 
         first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
 
@@ -206,15 +206,17 @@ class DiscoveryTest(IgniteTest):
 
         return to_kill, survive
 
-    def __start_loading(self, ignite_version, properties, modules, transactional):
+    def __start_loading(self, ignite_version, properties, modules, transactional, target_node_ids=None):
         params = {"cacheName": "test-cache",
                   "range": self.DATA_AMOUNT,
-                  "infinite": True,
                   "transactional": transactional}
+
+        if target_node_ids:
+            params["targetNodes"] = target_node_ids
 
         self.loader = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
             version=ignite_version,
             modules=modules,
             properties=properties,
