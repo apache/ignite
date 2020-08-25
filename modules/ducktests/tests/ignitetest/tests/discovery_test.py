@@ -204,11 +204,11 @@ class DiscoveryTest(IgniteTest):
     def __start_loading(self, ignite_version, properties, modules):
         self.loader = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
             version=ignite_version,
             modules=modules,
             properties=properties,
-            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT, "infinite": True})
+            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT})
 
         self.loader.start()
 

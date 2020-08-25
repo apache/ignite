@@ -71,15 +71,8 @@ public abstract class IgniteAwareApplication {
         Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
             log.info("SIGTERM recorded.");
 
-            if (!finished && !broken) {
-                assert !terminated;
-
-                log.info(APP_TERMINATED);
-
-                terminated = true;
-
-                stop();
-            }
+            if (!finished && !broken)
+                terminate();
             else
                 log.info("Application already done [finished=" + finished + ", broken=" + broken + "]");
 
@@ -165,6 +158,17 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
+    private void terminate() {
+        assert !terminated;
+
+        log.info(APP_TERMINATED);
+
+        terminated = true;
+    }
+
+    /**
+     *
+     */
     protected boolean terminated() {
         return terminated;
     }
@@ -181,13 +185,6 @@ public abstract class IgniteAwareApplication {
      */
     protected boolean active() {
         return !(terminated || broken || finished);
-    }
-
-    /**
-     *
-     */
-    protected void stop() {
-        // No-op.
     }
 
     /**
