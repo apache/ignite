@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
@@ -42,14 +39,8 @@ class TcpClientTransactions implements ClientTransactions {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
-    /** Tx counter (used to generate tx UID). */
-    private final AtomicLong txCnt = new AtomicLong();
-
     /** Current thread transaction UID. */
-    private final ThreadLocal<Long> threadLocTxUid = new ThreadLocal<>();
-
-    /** Tx map (Tx UID to Tx). */
-    private final Map<Long, TcpClientTransaction> txMap = new ConcurrentHashMap<>();
+    private final ThreadLocal<TcpClientTransaction> threadLocTxUid = new ThreadLocal<>();
 
     /** Tx config. */
     private final ClientTransactionConfiguration txCfg;
@@ -108,9 +99,7 @@ class TcpClientTransactions implements ClientTransactions {
             res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
         );
 
-        threadLocTxUid.set(tx0.txUid);
-
-        txMap.put(tx0.txUid, tx0);
+        threadLocTxUid.set(tx0);
 
         return tx0;
     }
@@ -126,12 +115,10 @@ class TcpClientTransactions implements ClientTransactions {
      * Current thread transaction.
      */
     TcpClientTransaction tx() {
-        Long txUid = threadLocTxUid.get();
+        TcpClientTransaction tx0 = threadLocTxUid.get();
 
-        if (txUid == null)
+        if (tx0 == null)
             return null;
-
-        TcpClientTransaction tx0 = txMap.get(txUid);
 
         // Also check isClosed() flag, since transaction can be closed by another thread.
         return tx0 == null || tx0.isClosed() ? null : tx0;
@@ -183,9 +170,6 @@ class TcpClientTransactions implements ClientTransactions {
      *
      */
     class TcpClientTransaction implements ClientTransaction {
-        /** Unique client-side transaction id. */
-        private final long txUid;
-
         /** Server-side transaction id. */
         private final int txId;
 
@@ -200,19 +184,18 @@ class TcpClientTransactions implements ClientTransactions {
          * @param clientCh Client channel.
          */
         private TcpClientTransaction(int id, ClientChannel clientCh) {
-            txUid = txCnt.incrementAndGet();
             txId = id;
             this.clientCh = clientCh;
         }
 
         /** {@inheritDoc} */
         @Override public void commit() {
-            Long threadTxUid;
+            TcpClientTransaction threadTxUid;
 
             if (closed || (threadTxUid = threadLocTxUid.get()) == null)
                 throw new ClientException("The transaction is already closed");
 
-            if (txUid != threadTxUid)
+            if (txId != threadTxUid.txId)
                 throw new ClientException("You can commit transaction only from the thread it was started");
 
             endTx(true);
@@ -248,14 +231,9 @@ class TcpClientTransactions implements ClientTransactions {
                     }, null);
             }
             finally {
-                txMap.remove(txUid);
-
                 closed = true;
 
-                Long threadTxUid = threadLocTxUid.get();
-
-                if (threadTxUid != null && txUid == threadTxUid)
-                    threadLocTxUid.set(null);
+                threadLocTxUid.set(null);
             }
         }
 

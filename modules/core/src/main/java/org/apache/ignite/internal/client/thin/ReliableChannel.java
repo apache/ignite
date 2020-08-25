@@ -189,7 +189,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     ) throws ClientException, ClientError {
         ClientConnectionException failure = null;
 
-        for (int i = 0; i < channels.length; i++) {
+        for (int i = 0; i <= channels.length; i++) {
             ClientChannel ch = null;
 
             try {

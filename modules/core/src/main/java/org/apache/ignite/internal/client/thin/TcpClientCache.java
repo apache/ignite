@@ -530,14 +530,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;
         }
 
-        if (tx != null) {
-            if (tx.clientChannel() != payloadCh.clientChannel()) {
-                throw new ClientException("Transaction context has been lost due to connection errors. " +
-                    "Cache operations are prohibited until current transaction closed.");
-            }
-
+        if (tx != null)
             flags |= TRANSACTIONAL_FLAG_MASK;
-        }
 
         out.writeByte(flags);
 

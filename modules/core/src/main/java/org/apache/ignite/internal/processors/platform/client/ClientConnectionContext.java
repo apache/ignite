@@ -38,7 +38,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
@@ -219,6 +221,16 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);
 
+        @Nullable Object connCtx0 = ses.meta(CONN_CTX_META_KEY);
+
+        assert connCtx0 == null || connCtx0 instanceof ClientConnectionContext;
+
+        if (connCtx0 != null) {
+            ClientConnectionContext connCtx = (ClientConnectionContext)connCtx0;
+
+            txIdSeq.set(connCtx.lastTxId() + 1);
+        }
+
         this.ses = ses;
     }
 
@@ -290,9 +302,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * Next transaction id for this connection.
      */
     public int nextTxId() {
-        int txId = txIdSeq.incrementAndGet();
-
-        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
+        return txIdSeq.incrementAndGet();
     }
 
     /**
@@ -379,5 +389,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         int cnt = activeTasksCnt.decrementAndGet();
 
         assert cnt >= 0 : "Unexpected active tasks count: " + cnt;
+    }
+
+    /**
+     * @return Tx id.
+     */
+    public int lastTxId() {
+        return txIdSeq.get();
     }
 }

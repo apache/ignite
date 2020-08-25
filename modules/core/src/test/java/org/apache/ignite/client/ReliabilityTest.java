@@ -122,7 +122,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                assertEquals(suppressed.length, CLUSTER_SIZE - 1);
+                assertEquals(CLUSTER_SIZE, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
@@ -202,7 +202,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test that client works properly with servers txId intersection.
      */
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
         int CLUSTER_SIZE = 2;
 
@@ -230,6 +229,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     // Another thread puts to cache here.
                     barrier.await(1, TimeUnit.SECONDS);
 
+                    cache.put(1, 0);
+
                     tx.commit();
 
                     barrier.await(1, TimeUnit.SECONDS);
@@ -247,11 +248,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // same transaction id as we started in this thread.
             barrier.await(1, TimeUnit.SECONDS);
 
-            GridTestUtils.assertThrows(null, () -> {
-                cache.put(0, 0);
-
-                return null;
-            }, ClientException.class, "Transaction context has been lost due to connection errors");
+            cache.put(0, 0);
 
             tx.close();
 
@@ -260,7 +257,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Another thread commit transaction here.
             barrier.await(1, TimeUnit.SECONDS);
 
-            assertFalse(cache.containsKey(0));
+            assertEquals((int)cache.get(0), 0);
+
+            assertEquals((int)cache.get(1), 0);
         }
     }
 
@@ -281,10 +280,15 @@ public class ReliabilityTest extends AbstractThinClientTest {
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
+            // Fill throttling periods array.
             for (int i = 0; i < throttlingRetries; i++) {
-                // Attempts to reconnect within throttlingRetries should pass.
                 cache.put(0, 0);
 
+                dropAllThinClientConnections(Ignition.allGrids().get(0));
+            }
+
+            for (int i = 0; i < throttlingRetries; i++) {
+                // Attempts to reconnect within throttlingRetries should pass.
                 dropAllThinClientConnections(Ignition.allGrids().get(0));
 
                 GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);

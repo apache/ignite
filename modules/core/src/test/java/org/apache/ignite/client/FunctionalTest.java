@@ -690,18 +690,9 @@ public class FunctionalTest {
                 ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
             try (ClientTransaction tx = client.transactions().txStart()) {
-                cache.put(1, "value6");
-
                 mxBean.dropAllConnections();
 
-                try {
-                    cache.put(1, "value7");
-
-                    fail();
-                }
-                catch (ClientException expected) {
-                    // No-op.
-                }
+                cache.put(1, "value6");
 
                 // Start new transaction doesn't recover cache operations on failed channel.
                 try (ClientTransaction tx1 = client.transactions().txStart()) {
@@ -711,29 +702,17 @@ public class FunctionalTest {
                     // No-op.
                 }
 
-                try {
-                    cache.get(1);
-
-                    fail();
-                }
-                catch (ClientException expected) {
-                    // No-op.
-                }
+                assertEquals("value6", cache.get(1));
 
                 // Close outdated transaction doesn't recover cache operations on failed channel.
                 tx0.close();
 
-                try {
-                    cache.get(1);
-
-                    fail();
-                }
-                catch (ClientException expected) {
-                    // No-op.
-                }
+                assertEquals("value6", cache.get(1));
             }
 
-            assertEquals("value5", cache.get(1));
+            assertEquals("value6", cache.get(1));
+
+            cache.put(1, "value5");
 
             // Test concurrent transactions in different connections.
             try (IgniteClient client1 = Ignition.startClient(getClientConfiguration())) {

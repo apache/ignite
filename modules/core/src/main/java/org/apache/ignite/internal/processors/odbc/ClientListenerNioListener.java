@@ -90,6 +90,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client configuration. */
     private final ThinClientConfiguration thinCfg;
 
+    /** */
+    private ClientListenerConnectionContext storedCtx;
+
     /**
      * Constructor.
      *
@@ -145,16 +148,26 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
         if (connCtx == null) {
-            try {
-                onHandshake(ses, msg);
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to handle handshake request " +
-                    "(probably, connection has already been closed).", e);
-            }
+            synchronized (this) {
+                connCtx = ses.meta(CONN_CTX_META_KEY);
 
-            return;
+                if (connCtx == null) {
+                    try {
+                        ses.addMeta(CONN_CTX_META_KEY, storedCtx);
+
+                        onHandshake(ses, msg);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to handle handshake request " +
+                            "(probably, connection has already been closed).", e);
+                    }
+
+                    return;
+                }
+            }
         }
+
+        storedCtx = connCtx;
 
         ClientListenerMessageParser parser = connCtx.parser();
         ClientListenerRequestHandler handler = connCtx.handler();
