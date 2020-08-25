@@ -331,9 +331,10 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                         @Override public GridDhtLocalPartition create(
                             GridCacheSharedContext ctx,
                             CacheGroupContext grp,
-                            int id
+                            int id,
+                            boolean recovery
                         ) {
-                            return new GridDhtLocalPartitionSyncEviction(ctx, grp, id, false, 3, l1, l2) {
+                            return new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 3, l1, l2) {
                                 /** */
                                 @Override protected void sync() {
                                     if (holder.get() == id)
@@ -421,8 +422,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id) {
-                            return new GridDhtLocalPartitionSyncEviction(ctx, grp, id, false, mode, l1, l2) {
+                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                            return new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, mode, l1, l2) {
                                 /** */
                                 @Override protected void sync() {
                                     if (holder.get() == id)
