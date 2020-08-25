@@ -71,14 +71,15 @@ public abstract class IgniteAwareApplication {
         Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
             log.info("SIGTERM recorded.");
 
-            try {
-                processSigterm();
-            } catch (Exception e){
-                log.error("Failed to call inherited sigterm processor.");
-            }
+            if (!finished && !broken) {
+                assert !terminated;
 
-            if (!finished && !broken)
-                terminate();
+                log.info(APP_TERMINATED);
+
+                terminated = true;
+
+                stop();
+            }
             else
                 log.info("Application already done [finished=" + finished + ", broken=" + broken + "]");
 
@@ -103,9 +104,6 @@ public abstract class IgniteAwareApplication {
 
         log.info("ShutdownHook registered.");
     }
-
-    /** */
-    protected void processSigterm(){}
 
     /**
      * Used to marks as started to perform actions. Suitable for async runs.
@@ -167,29 +165,29 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    private void terminate() {
-        assert !terminated;
-
-        log.info(APP_TERMINATED);
-
-        terminated = true;
+    protected boolean terminated() {
+        return terminated;
     }
 
     /**
      *
      */
-    protected boolean terminated() {
-        return terminated;
-    }
-
-    /** */
     protected boolean inited() {
         return inited;
     }
 
-    /** */
+    /**
+     *
+     */
     protected boolean active() {
         return !(terminated || broken || finished);
+    }
+
+    /**
+     *
+     */
+    protected void stop() {
+        // No-op.
     }
 
     /**

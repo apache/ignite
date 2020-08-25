@@ -81,10 +81,10 @@ class DiscoveryTest(IgniteTest):
         self.loader = None
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(LATEST_2_8)],
-            kill_coordinator=[False],
-            nodes_to_kill=[1],
-            load=[2])
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[1, 2],
+            load=[0, 1, 2])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -127,7 +127,7 @@ class DiscoveryTest(IgniteTest):
             self.zk_quorum.stop()
 
     def __simulate_nodes_failure(self, version, properties, modules, config):
-        if config.nodes_to_kill == 0 and not config.kill_coordinator:
+        if config.nodes_to_kill < 1:
             return {"No nodes to kill": "Nothing to do"}
 
         self.servers = IgniteService(
@@ -157,11 +157,8 @@ class DiscoveryTest(IgniteTest):
 
         for failed_id in ids_to_wait:
             self.servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 20,
-                                             from_the_beginning=True, backoff_sec=0.01)
-            # Save mono of last detected failure.
-            time_holder = self.monotonic()
+                                             from_the_beginning=True, backoff_sec=0.1)
 
-        for failed_id in ids_to_wait:
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
                 "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
@@ -170,37 +167,35 @@ class DiscoveryTest(IgniteTest):
 
         logged_timestamps.sort(reverse=True)
 
-        self.__check_and_store_results(data, int((time_holder - first_terminated[0]) * 1000),
-                                       epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated[1]))
+        self.__store_results(data, logged_timestamps, first_terminated[1])
 
         data['Nodes failed'] = len(failed_nodes)
 
         return data
 
     @staticmethod
-    def __check_and_store_results(data, measured, delay_by_log):
-        assert delay_by_log > 0, \
-            "Negative failure detection delay from the survived node log (" + str(delay_by_log) + "ms). It is \
-            probably an issue of the timezone or system clock settings."
-        assert delay_by_log <= measured, \
-            "Failure detection delay from the survived node log (" + str(delay_by_log) + "ms) must be lesser than  \
-            measured value (" + str(measured) + "ms) because watching this event consumes extra time. It is  \
-            probably an issue of the timezone or system clock settings."
+    def __store_results(data, logged_timestamps, first_kill_time):
+        first_kill_time = epoch_mills(first_kill_time)
 
-        data['Detection of node(s) failure, measured (ms)'] = measured
-        data['Detection of node(s) failure, by the log (ms)'] = delay_by_log
+        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+
+        data['Detection of node(s) failure (ms)'] = detection_delay
+        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
 
     @staticmethod
     def __failed_pattern(failed_node_id):
         return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
 
     def __choose_node_to_kill(self, kill_coordinator, nodes_to_kill):
+        assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
+
         nodes = self.servers.nodes
         coordinator = nodes[0].discovery_info().coordinator
         to_kill = []
 
         if kill_coordinator:
             to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
+            nodes_to_kill -= 1
 
         if nodes_to_kill > 0:
             choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
@@ -214,7 +209,6 @@ class DiscoveryTest(IgniteTest):
         params = {"cacheName": "test-cache",
                   "range": self.DATA_AMOUNT,
                   "infinite": True,
-                  "optimized": False,
                   "transactional": transactional}
 
         self.loader = IgniteApplicationService(
