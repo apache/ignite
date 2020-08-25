@@ -80,8 +80,7 @@ public abstract class IgniteAwareApplication {
                 log.debug("Waiting for graceful termination...");
 
             while (!finished && !broken) {
-                if (log.isTraceEnabled())
-                    log.trace("Waiting for graceful termination cycle...");
+                log.info("Waiting for graceful termination cycle...");
 
                 try {
                     U.sleep(100);
