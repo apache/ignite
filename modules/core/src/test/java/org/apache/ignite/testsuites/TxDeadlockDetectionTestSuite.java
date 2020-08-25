@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetect
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionUnmasrhalErrorsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockOnEntryToStringTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
@@ -43,7 +44,8 @@ import org.junit.runners.Suite;
     TxDeadlockDetectionTest.class,
     TxDeadlockDetectionNoHangsTest.class,
     TxDeadlockDetectionUnmasrhalErrorsTest.class,
-    TxDeadlockDetectionMessageMarshallingTest.class
+    TxDeadlockDetectionMessageMarshallingTest.class,
+    TxDeadlockOnEntryToStringTest.class
 })
 public class TxDeadlockDetectionTestSuite {
 }
