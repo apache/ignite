@@ -1,19 +1,19 @@
 Apache Ignite Dependencies
 --------------------------
 
-Current folder contains JAR files for all Apache Ignite modules along with their dependencies.
-When node is started using 'ignite.{sh|bat}' script, all JARs and classes located in
-'libs' folder and all its sub-folders except 'optional' are added to classpath of the node.
+The current folder contains JAR files for all Apache Ignite modules along with their dependencies.
+When the node is started using 'ignite.{sh|bat}' script, all JARs and classes located in
+'libs' folder and all its sub-folders except 'optional' is added to the classpath of the node.
 
 By default, only Apache Ignite core JAR and a minimum set of modules is enabled, while other
-modules are located in 'optional' folder and therefore disabled.
+modules are located in the 'optional' folder and therefore disabled.
 
 To enable any of optional Ignite modules when starting a standalone node,
 move corresponding module folder from 'libs/optional' to 'libs' before running
 'ignite.{sh|bat}' script. The content of the module folder will be added to
-classpath in this case.
+the classpath in this case.
 
-If you need to add your own classes to classpath of the node (e.g., task classes), put them
+If you need to add your own classes to the classpath of the node (e.g., task classes), put them
 to 'libs' folder. You can create a subfolder for convenience as well.
 
 
@@ -47,7 +47,7 @@ with actual Ignite version you are interested in):
 
 2. Or import individual Apache Ignite modules a la carte.
 
-Alternatively you can import Ignite modules a la carte, one by one.
+Alternatively, you can import Ignite modules a la carte, one by one.
 The only required module is 'ignite-core', all others are optional.
 Here is how it can be imported into your POM file:
 
@@ -72,7 +72,7 @@ All optional modules can be imported just like the core module, but with differe
 
 The following modules are available:
 - ignite-aop (for AOP-based grid-enabling)
-- ignite-aws (for seemless cluster discovery on AWS S3)
+- ignite-aws (for seamless cluster discovery on AWS S3)
 - ignite-cassandra (for Apache Cassandra integration)
 - ignite-cloud (for Apache JClouds integration) 
 - ignite-gce (for automatic cluster discovery on Google Compute Engine)
@@ -86,8 +86,8 @@ The following modules are available:
 - ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
 - ignite-mesos (for integration with Apache Mesos cluster resource manager)
-- ignite-osgi (to allow Ignite run seemlessly in OSGI containers)
-- ignite-osgi-karaf (to seemlessly intall ignite into Apache Karaf container)
+- ignite-osgi (to allow Ignite run seamlessly in OSGI containers)
+- ignite-osgi-karaf (to seamlessly install ignite into Apache Karaf container)
 - ignite-osgi-paxlogging (to expose PAX Logging API to Log4j if needed)
 - ignite-rest-http (for HTTP REST messages)
 - ignite-scalar (for ignite Scala API)
