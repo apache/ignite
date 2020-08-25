@@ -249,6 +249,8 @@
   url: /restapi
 - title: Control Script
   url: /control-script
+- title: Plugins 
+  url: /plugins
 - title: SQLLine 
   url: /sqlline
 

@@ -1,0 +1,75 @@
+= Plugins
+
+== Overview
+
+The Ignite plugin system allows you to extend the core functionality of Ignite.
+
+To add a custom plugin, implement the `PluginProvider` interface and register the implementation either via `IgniteConfiguration.setPluginProviders()` or service loader.
+
+. Implement the `IgnitePlugin` interface. If your plugin adds functionality that is meant to be triggered by a user, you should add public methods to this class that trigger specific actions. An instance of this class is available at runtime via `Ignite.plugin(String pluginName)`.
+
+. Implement the `PluginProvider` interface. The following methods must return non-null values. Other methods are optional.
++
+--
+* `name()` - returns the name of the plugin
+* `plugin()` - return the object of your plugin class.
+
+Plugins have access to the Ignite API and node configuration via `PluginContext`. See the javadoc:org.apache.ignite.plugin.PluginContext[] javadoc for more information.
+
+
+--
+
+. Register the plugin via `IgniteConfiguration.setPluginProviders(...)`.
+
+. At runtime, call `MyPlugin plugin = Ignite.plugin(pluginName)`
+
+
+== Plugin Example
+
+Let's create a simple Ignite plugin that prints information about the number of entries in every cache to the console periodically, on each node.
+In addition, it exposes a public method that the users can call from their application to print the cache size information on demand.
+
+=== Implement IgnitePlugin
+.MyPlugin.java
+[source, java]
+----
+include::{javaCodeDir}/plugin/MyPlugin.java[tags=, indent=0]
+----
+
+=== Implement PluginProvider
+
+.MyPluginProvider.java
+[source, java]
+----
+include::{javaCodeDir}/plugin/MyPluginProvider.java[tags=!no-op-methods, indent=0]
+----
+
+=== Register your Plugin
+
+
+Programmatically:
+
+[source, java]
+----
+include::{javaCodeDir}/plugin/PluginExample.java[tags=register-plugin, indent=0]
+----
+
+
+Via XML Configuration:
+
+Compile your plugin source code and add the classes to the classpath on each node.
+Then, you can register the plugin as follows:
+
+[source, xml]
+----
+include::code-snippets/xml/plugins.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+=== Access the Plugin at Runtime
+
+[source, java]
+----
+include::{javaCodeDir}/plugin/PluginExample.java[tags=access-plugin, indent=0]
+
+----
+

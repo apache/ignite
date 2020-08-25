@@ -5,19 +5,31 @@ import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridPluginComponent;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-public class MyPluginProvider implements PluginProvider<PluginConfiguration>{
-    
+public class MyPluginProvider implements PluginProvider<PluginConfiguration> {
+
+    private long period = 10;
+
+    private MyPlugin plugin;
+
+    public MyPluginProvider() {
+    }
+
+    /**
+     * 
+     * @param period period in seconds
+     */
+    public MyPluginProvider(long period) {
+        this.period = period;
+    }
 
     @Override
     public String name() {
@@ -26,28 +38,47 @@ public class MyPluginProvider implements PluginProvider<PluginConfiguration>{
 
     @Override
     public String version() {
-        return null;
+        return "1.0";
     }
 
     @Override
     public String copyright() {
-        return null;
+        return "MyCompany";
     }
 
     @Override
-    public <T extends IgnitePlugin> T plugin() {
-        System.out.println("plugin");
-        return (T) new MyPlugin();
+    public MyPlugin plugin() {
+        return plugin;
     }
 
     @Override
-    public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-        
+    public void initExtensions(PluginContext ctx, ExtensionRegistry registry)
+            throws IgniteCheckedException {
+        plugin = new MyPlugin(period, ctx);
     }
 
+    @Override
+    public void onIgniteStart() throws IgniteCheckedException {
+        plugin.start();
+    }
+
+    @Override
+    public void onIgniteStop(boolean cancel) {
+        plugin.stop();
+    }
+
+    public long getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(long period) {
+        this.period = period;
+    }
+
+    // other no-op methods of PluginProvider 
+    //tag::no-op-methods[]
     @Override
     public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-        //return (T) new GridPluginComponent(this);
         return null;
     }
 
@@ -58,42 +89,23 @@ public class MyPluginProvider implements PluginProvider<PluginConfiguration>{
 
     @Override
     public void start(PluginContext ctx) throws IgniteCheckedException {
-        
     }
 
     @Override
     public void stop(boolean cancel) throws IgniteCheckedException {
-        
-    }
-
-    @Override
-    public void onIgniteStart() throws IgniteCheckedException {
-        
-       System.out.println("onIgnitestart"); 
-        
-    }
-
-    @Override
-    public void onIgniteStop(boolean cancel) {
-        
     }
 
     @Override
     public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // TODO Auto-generated method stub
-        
     }
-
+    //end::no-op-methods[]
 }
