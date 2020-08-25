@@ -25,15 +25,13 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collections;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_INSTANCE_NAME;
 
 /**
  *
@@ -63,8 +61,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private Object ctgr;
 
     /** Whether or not to log Ignite instance name. */
-    private static final boolean logIgniteInstanceName = System.getProperty(IGNITE_LOG_INSTANCE_NAME) != null ||
-        System.getProperty(IGNITE_LOG_GRID_NAME) != null;
+    private static final boolean logIgniteInstanceName =
+        IgniteSystemProperty.IGNITE_LOG_INSTANCE_NAME.getString() != null ||
+        IgniteSystemProperty.IGNITE_LOG_GRID_NAME.getString() != null;
 
     /**
      * No-arg constructor is required by externalization.
@@ -203,8 +202,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /**
      * Enriches the log message with Ignite instance name if
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_INSTANCE_NAME} or
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME} system property is set.
+     * {@link org.apache.ignite.IgniteSystemProperty#IGNITE_LOG_INSTANCE_NAME} or
+     * {@link org.apache.ignite.IgniteSystemProperty#IGNITE_LOG_GRID_NAME} system property is set.
      *
      * @param m Message to enrich.
      * @return Enriched message or the original one.

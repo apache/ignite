@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.swing.ImageIcon;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.internal.util.GridConfigurationFinder;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -45,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.RELEASE_DATE_STR;
@@ -65,6 +65,9 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 public final class CommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE;
+
+    /** Command to print Ignite system properties info. */
+    private static final String PRINT_PROPS_COMMAND = "-systemProps";
 
     /** Build date. */
     private static Date releaseDate;
@@ -171,7 +174,8 @@ public final class CommandLineStartup {
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
                 "    -np              - no pause on exit (pause by default)",
-                "    -nojmx           - disable JMX monitoring (enabled by default)");
+                "    -nojmx           - disable JMX monitoring (enabled by default)",
+                "    -systemProps     - prints Ignite system properties info.");
 
             if (ignite) {
                 X.error(
@@ -271,6 +275,12 @@ public final class CommandLineStartup {
         if (args.length > 0 && isHelp(args[0]))
             exit(null, true, 0);
 
+        if (args.length > 0 && PRINT_PROPS_COMMAND.equalsIgnoreCase(args[0])) {
+            IgniteSystemProperty.printFormatted();
+
+            exit(null, false, 0);
+        }
+
         if (args.length > 0 && args[0].isEmpty())
             exit("Empty argument.", true, 1);
 
@@ -336,16 +346,6 @@ public final class CommandLineStartup {
             X.error("Start was interrupted (exiting): " + e.getMessage());
         }
 
-        String code = System.getProperty(IGNITE_RESTART_CODE);
-
-        if (code != null)
-            try {
-                System.exit(Integer.parseInt(code));
-            }
-            catch (NumberFormatException ignore) {
-                System.exit(0);
-            }
-        else
-            System.exit(0);
+        System.exit(IgniteSystemProperty.IGNITE_RESTART_CODE.getInteger(0));
     }
 }

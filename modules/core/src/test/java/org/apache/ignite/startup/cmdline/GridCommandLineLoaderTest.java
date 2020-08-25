@@ -20,7 +20,7 @@ package org.apache.ignite.startup.cmdline;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 
 /**
  * Command line loader test.
@@ -97,8 +95,8 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
          */
         @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
             if (evt == LifecycleEventType.AFTER_NODE_START) {
-                System.setProperty(IGNITE_RESTART_CODE, Integer.toString(
-                    1 + IgniteSystemProperties.getInteger(IGNITE_RESTART_CODE, 0)));
+                System.setProperty(IgniteSystemProperty.IGNITE_RESTART_CODE.name(), Integer.toString(
+                    1 + IgniteSystemProperty.IGNITE_RESTART_CODE.getInteger(0)));
 
                 String name = ignite.name();
 
