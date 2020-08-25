@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -120,6 +122,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testRejectNodeJoinDuringRotation() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
@@ -223,7 +226,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx grid1 = startGrid(GRID_1);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         createEncryptedCache(grid0, grid1, cacheName(), null);
 
@@ -250,35 +253,25 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         String alive = stopCrd ? GRID_1 : GRID_0;
         String stopped = stopCrd ? GRID_0 : GRID_1;
 
-        IgniteFuture<Void> fut = grid(alive).encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
+        IgniteFuture<Void> changeFut = grid(alive).encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
 
-        IgniteInternalFuture stopFut = null;
+        IgniteInternalFuture<?> stopFut = new GridFinishedFuture<>();
 
-        if (!discoBlock) {
-            spi.waitForBlocked();
-
-            stopFut = runAsync(() -> {
-                if (stopCrd)
-                    stopGrid(GRID_0, true);
-                else
-                    stopGrid(GRID_1, true);
-            });
-        }
-        else {
+        if (discoBlock) {
             locHook.waitForBlocked(MAX_AWAIT_MILLIS);
 
-            if (stopCrd)
-                stopGrid(GRID_0, true);
-            else
-                stopGrid(GRID_1, true);
+            stopGrid(stopped, true);
 
             locHook.stopBlock();
         }
+        else {
+            spi.waitForBlocked();
 
-        fut.get(MAX_AWAIT_MILLIS);
+            stopFut = runAsync(() -> stopGrid(stopped, true));
+        }
 
-        if (stopFut != null)
-            stopFut.get();
+        changeFut.get(MAX_AWAIT_MILLIS);
+        stopFut.get(MAX_AWAIT_MILLIS);
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
@@ -311,13 +304,13 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        int maxItrs = 0x100;
+        byte keyId = INITIAL_KEY_ID;
 
-        for (int i = 0; i < maxItrs; i++) {
+        do {
             node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-            checkGroupKey(grpId, (byte)(i + 1) & 0xff, MAX_AWAIT_MILLIS);
-        }
+            checkGroupKey(grpId, ++keyId & 0xff, MAX_AWAIT_MILLIS);
+        } while (keyId != INITIAL_KEY_ID);
     }
 
     /**
@@ -428,7 +421,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        IgniteFuture fut = node2.encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
+        IgniteFuture<Void> fut = node2.encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
 
         fut.get(MAX_AWAIT_MILLIS);
 
@@ -521,7 +514,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         final Ignite somenode = node0;
 
-        IgniteInternalFuture loadFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runAsync(() -> {
             try (IgniteDataStreamer<Integer, String> streamer = somenode.dataStreamer(cacheName())) {
                 while (!Thread.currentThread().isInterrupted()) {
                     int n = cntr.getAndIncrement();
@@ -575,7 +568,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                     node1.context().encryption().groupKeyIds(grpId).size() == 1)
                     break;
 
-                if (n - start == 500_000)
+                if (n - start == 1_000_000)
                     break;
             }
         }
@@ -604,7 +597,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         AtomicBoolean stopLoad = new AtomicBoolean();
 
-        IgniteInternalFuture fut = runAsync(() -> {
+        IgniteInternalFuture<?> fut = runAsync(() -> {
             Ignite grid = grid(GRID_0);
 
             long cntr = grid.cache(cacheName()).size();
@@ -721,7 +714,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         String cacheName = "userCache";
 
-        IgniteInternalFuture cacheStartFut = runAsync(() -> {
+        IgniteInternalFuture<?> cacheStartFut = runAsync(() -> {
             client.getOrCreateCache(cacheConfiguration(cacheName, grpName));
         });
 
@@ -849,7 +842,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             if (!(customMsg instanceof InitMessage))
                 return;
 
-            InitMessage msg = (InitMessage)customMsg;
+            InitMessage<Serializable> msg = (InitMessage<Serializable>)customMsg;
 
             if (msg.type() != type.ordinal())
                 return;
