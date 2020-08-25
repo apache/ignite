@@ -153,42 +153,4 @@ BOOST_AUTO_TEST_CASE(IgniteAffinityMapKeyToPrimaryAndBackups)
     BOOST_REQUIRE(nodes.front().GetId() == partNodes.front().GetId());
 }
 
-BOOST_AUTO_TEST_CASE(IgniteAffinityMapPartitionsToNodes)
-{
-    Ignite node0 = MakeNode("AffinityNode2");
-    Cache<int32_t, int32_t> cache0 = node.GetCache<int32_t, int32_t>("partitioned2");
-    CacheAffinity<int32_t> affinity0 = node.GetAffinity<int32_t>(cache.GetName());
-
-    Ignite node1 = MakeNode("AffinityNode3");
-
-
-    WITH_STABLE_TOPOLOGY_BEGIN(node0)
-    {
-        std::vector<ClusterNode> nodes = node.GetCluster().AsClusterGroup().GetNodes();
-
-        CHECK_TOPOLOGY_STABLE(node1)
-        BOOST_REQUIRE(nodes.size() == 3);
-
-        std::vector<int32_t> primary = affinity.GetPrimaryPartitions(nodes[0]);
-        std::vector<int32_t> primary0 = affinity.GetPrimaryPartitions(nodes[1]);
-
-        std::sort(primary.begin(), primary.end());
-        std::sort(primary0.begin(), primary0.end());
-
-        CHECK_TOPOLOGY_STABLE(node1)
-        BOOST_REQUIRE(primary != primary0);
-
-        primary.insert(primary.end(), primary0.begin(), primary0.end());
-        std::map<int32_t, ClusterNode> map = affinity.MapPartitionsToNodes(primary);
-        for (std::map<int32_t, ClusterNode>::const_iterator it = map.begin(); it != map.end(); ++it)
-        {
-            std::vector<cluster::ClusterNode> nodes = affinity.MapPartitionToPrimaryAndBackups(it->first);
-
-            CHECK_TOPOLOGY_STABLE(node1)
-            BOOST_REQUIRE(nodes.front().GetId() == it->second.GetId());
-        }
-    }
-    WITH_STABLE_TOPOLOGY_END
-}
-
 BOOST_AUTO_TEST_SUITE_END()
