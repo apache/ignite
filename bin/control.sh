@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-set -o nounset
-set -o errexit
-set -o pipefail
-set -o errtrace
-set -o functrace
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -63,9 +66,6 @@ fi
 CP="${IGNITE_LIBS}:${IGNITE_HOME}/libs/optional/ignite-zookeeper/*"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
-
-RESTART_SUCCESS_FILE="${IGNITE_HOME}/work/ignite_success_${RANDOM_NUMBER}"
-RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 
 #
 # Find available port for JMX
@@ -177,47 +177,15 @@ elif [ $version -ge 11 ] ; then
         ${JVM_OPTS}"
 fi
 
-ERRORCODE="-1"
-
-while [ "${ERRORCODE}" -ne "130" ]
-do
-    if [ "${INTERACTIVE:-}" == "1" ] ; then
-        case $osname in
-            Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
-                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
-            ;;
-            *)
-                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
-                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
-            ;;
-        esac
-    else
-        case $osname in
-            Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
-                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
-            ;;
-            *)
-                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
-                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
-            ;;
-        esac
-    fi
-
-    ERRORCODE="$?"
-
-    if [ ! -f "${RESTART_SUCCESS_FILE}" ] ; then
-        break
-    else
-        rm -f "${RESTART_SUCCESS_FILE}"
-    fi
-done
-
-if [ -f "${RESTART_SUCCESS_FILE}" ] ; then
-    rm -f "${RESTART_SUCCESS_FILE}"
-fi
+case $osname in
+    Darwin*)
+        "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" ${JMX_MON:-} \
+         -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
+    ;;
+    *)
+        "$JAVA" ${JVM_OPTS} ${QUIET:-} ${JMX_MON:-} \
+         -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
+    ;;
+esac
