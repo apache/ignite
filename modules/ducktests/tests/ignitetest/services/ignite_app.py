@@ -34,15 +34,15 @@ class IgniteApplicationService(IgniteAwareService):
     def __init__(self, context, java_class_name, params="", properties="", timeout_sec=60, modules=None,
                  client_mode=True, version=DEV_BRANCH, servicejava_class_name=SERVICE_JAVA_CLASS_NAME,
                  jvm_opts=None, start_ignite=True):
-        super(IgniteApplicationService, self).__init__(context, 1, properties,
-                                                       client_mode=client_mode,
-                                                       version=version,
-                                                       modules=modules,
-                                                       servicejava_class_name=servicejava_class_name,
-                                                       java_class_name=java_class_name,
-                                                       params=params,
-                                                       jvm_opts=jvm_opts,
-                                                       start_ignite=start_ignite)
+        super().__init__(context, 1, properties,
+                         client_mode=client_mode,
+                         version=version,
+                         modules=modules,
+                         servicejava_class_name=servicejava_class_name,
+                         java_class_name=java_class_name,
+                         params=params,
+                         jvm_opts=jvm_opts,
+                         start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
@@ -50,7 +50,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.stop_timeout_sec = 10
 
     def start(self):
-        super(IgniteApplicationService, self).start()
+        super().start()
 
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
@@ -61,7 +61,7 @@ class IgniteApplicationService(IgniteAwareService):
         try:
             self.await_event("IGNITE_APPLICATION_INITIALIZED", 1, from_the_beginning=True)
         except Exception:
-            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR"))
+            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR")) from None
 
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=20):

@@ -22,7 +22,7 @@ import os
 from ignitetest.services.utils.ignite_config import IgniteLoggerConfig
 
 
-class PersistenceAware(object):
+class PersistenceAware:
     """
     This class contains basic persistence artifacts
     """
@@ -53,12 +53,18 @@ class IgnitePersistenceAware(PersistenceAware):
     CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-config.xml")
     LOG4J_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j.xml")
 
+    def __getattribute__(self, item):
+        if item == 'logs':
+            return PersistenceAware.logs
+
+        return super().__getattribute__(item)
+
     def init_persistent(self, node):
         """
         Init persistent directory.
         :param node: Ignite service node.
         """
-        super(IgnitePersistenceAware, self).init_persistent(node)
+        super().init_persistent(node)
 
         logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)

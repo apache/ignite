@@ -21,15 +21,13 @@ from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
-from six import add_metaclass
 
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
 
-@add_metaclass(ABCMeta)
-class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware):
+class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
@@ -39,12 +37,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware):
         """
         **kwargs are params that passed to IgniteSpec
         """
-        super(IgniteAwareService, self).__init__(context, num_nodes)
+        super().__init__(context, num_nodes)
 
         # Ducktape checks a Service implementation attribute 'logs' to get config for logging.
         # IgniteAwareService uses IgnitePersistenceAware mixin to override default Service 'log' definition.
         self.log_level = "DEBUG"
-        self.logs = IgnitePersistenceAware.logs
 
         self.properties = properties
 
@@ -53,7 +50,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware):
     def start_node(self, node):
         self.init_persistent(node)
 
-        super(IgniteAwareService, self).start_node(node)
+        super().start_node(node)
 
         wait_until(lambda: len(self.pids(node)) > 0, timeout_sec=10)
 
@@ -64,7 +61,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware):
         Init persistent directory.
         :param node: Ignite service node.
         """
-        super(IgniteAwareService, self).init_persistent(node)
+        super().init_persistent(node)
 
         node_config = self.spec.config().render(config_dir=self.PERSISTENT_ROOT,
                                                 work_dir=self.WORK_DIR,

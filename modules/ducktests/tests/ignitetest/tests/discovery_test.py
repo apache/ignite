@@ -72,7 +72,7 @@ class DiscoveryTest(IgniteTest):
     """
 
     def __init__(self, test_context):
-        super(DiscoveryTest, self).__init__(test_context=test_context)
+        super().__init__(test_context=test_context)
         self.zk_quorum = None
         self.servers = None
         self.loader = None
@@ -158,7 +158,8 @@ class DiscoveryTest(IgniteTest):
                 "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
             logged_timestamps.append(
-                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read()).group(), "[%Y-%m-%d %H:%M:%S,%f]"))
+                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                                  "[%Y-%m-%d %H:%M:%S,%f]"))
 
         logged_timestamps.sort(reverse=True)
 

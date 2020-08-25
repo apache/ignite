@@ -16,7 +16,6 @@
 """
 Module contains useful test decorators.
 """
-import six
 from ducktape.mark._mark import Ignore, Mark
 
 from ignitetest.utils.version import IgniteVersion
@@ -27,7 +26,7 @@ class VersionIf(Ignore):
     Ignore test if version doesn't corresponds to condition.
     """
     def __init__(self, condition):
-        super(VersionIf, self).__init__()
+        super().__init__()
         self.condition = condition
 
     def apply(self, seed_context, context_list):
@@ -36,13 +35,13 @@ class VersionIf(Ignore):
         for ctx in context_list:
             assert 'version' in ctx.injected_args, "'version' in injected args not present"
             version = ctx.injected_args['version']
-            assert isinstance(version, six.string_types), "'version' in injected args must be a string"
+            assert isinstance(version, str), "'version' in injected args must be a string"
             ctx.ignore = ctx.ignore or not self.condition(IgniteVersion(version))
 
         return context_list
 
     def __eq__(self, other):
-        return super(VersionIf, self).__eq__(other) and self.condition == other.condition
+        return super().__eq__(other) and self.condition == other.condition
 
 
 def version_if(condition):

@@ -32,8 +32,6 @@ class SmokeServicesTest(IgniteTest):
     """
     Tests services implementations
     """
-    def __init__(self, test_context):
-        super(SmokeServicesTest, self).__init__(test_context=test_context)
 
     def setUp(self):
         pass

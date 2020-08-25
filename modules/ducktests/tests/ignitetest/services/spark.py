@@ -39,7 +39,7 @@ class SparkService(BackgroundThreadService, PersistenceAware):
         :param context: test context
         :param num_nodes: number of Ignite nodes.
         """
-        super(SparkService, self).__init__(context, num_nodes)
+        super().__init__(context, num_nodes)
 
         self.log_level = "DEBUG"
 

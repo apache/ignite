@@ -25,7 +25,7 @@ import time
 from datetime import datetime
 from threading import Thread
 
-import monotonic
+from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
@@ -44,13 +44,12 @@ class IgniteService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
                  version=DEV_BRANCH):
-        super(IgniteService, self).__init__(context, num_nodes, properties,
-                                            client_mode=client_mode, modules=modules, version=version,
-                                            jvm_opts=jvm_opts)
+        super().__init__(context, num_nodes, properties, client_mode=client_mode, modules=modules, version=version,
+                         jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
-        super(IgniteService, self).start()
+        super().start()
 
         self.logger.info("Waiting for Ignite(s) to start...")
 
@@ -129,7 +128,7 @@ class IgniteService(IgniteAwareService):
             time.sleep(delay_ms/1000.0)
 
         if time_holder:
-            mono = monotonic.monotonic()
+            mono = monotonic()
             timestamp = datetime.now()
 
             time_holder.compare_and_set(None, (mono, timestamp))
