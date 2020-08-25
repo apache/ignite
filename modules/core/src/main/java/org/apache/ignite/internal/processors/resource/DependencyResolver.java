@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.opencensus;
-
-import org.apache.ignite.TracingConfigurationValidationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.processors.resource;
 
 /**
- * Suite to test OpenCensus integration.
+ * The interface specifies a container of dependencies.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OpenCensusMetricExporterSpiTest.class,
-    OpenCensusTracingSpiTest.class,
-    OpenCensusTxTracingTest.class,
-    MixedTracingSpiTest.class,
-    TracingConfigurationValidationTest.class,
-    OpenCensusTxTracingConfigurationTest.class,
-    OpenCensusTracingConfigurationGetTest.class,
-    OpenCensusTracingConfigurationGetAllTest.class,
-    OpenCensusTracingConfigurationResetTest.class,
-    OpenCensusTracingConfigurationResetAllTest.class,
-    OpenCensusDiscoveryTracingTest.class
-})
-public class IgniteOpenCensusSuite {
+public interface DependencyResolver {
+    /**
+     * The method doing resolve input dependency and return original or override class.
+     *
+     * @param instance Input dependency.
+     *
+     * @return Original instance or override.
+     */
+    <T> T resolve(T instance);
 }

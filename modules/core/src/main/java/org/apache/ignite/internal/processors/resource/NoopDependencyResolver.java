@@ -15,28 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.opencensus;
-
-import org.apache.ignite.TracingConfigurationValidationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.processors.resource;
 
 /**
- * Suite to test OpenCensus integration.
+ * Noop implementation of dependency resolver. It's used by default.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OpenCensusMetricExporterSpiTest.class,
-    OpenCensusTracingSpiTest.class,
-    OpenCensusTxTracingTest.class,
-    MixedTracingSpiTest.class,
-    TracingConfigurationValidationTest.class,
-    OpenCensusTxTracingConfigurationTest.class,
-    OpenCensusTracingConfigurationGetTest.class,
-    OpenCensusTracingConfigurationGetAllTest.class,
-    OpenCensusTracingConfigurationResetTest.class,
-    OpenCensusTracingConfigurationResetAllTest.class,
-    OpenCensusDiscoveryTracingTest.class
-})
-public class IgniteOpenCensusSuite {
+public class NoopDependencyResolver implements DependencyResolver {
+    /** {@inheritDoc} */
+    @Override public <T> T resolve(T instance) {
+        return instance;
+    }
 }
