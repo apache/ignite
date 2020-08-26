@@ -1,6 +1,9 @@
 package org.apache.ignite.snippets;
 
+import java.util.UUID;
+
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
@@ -28,7 +31,20 @@ public class ClusterAPI {
         ignite.cluster().state(ClusterState.ACTIVE_READ_ONLY);
         //end::change-state[]
         ignite.close();
+    }
 
+    void changeClusterTag() throws IgniteCheckedException {
+        //tag::cluster-tag[]
+        Ignite ignite = Ignition.start();
+
+        // get the cluster id
+       java.util.UUID clusterId = ignite.cluster().id();
+       
+       // change the cluster tag
+       ignite.cluster().tag("new_tag");
+
+        //end::cluster-tag[]
+        ignite.close();
     }
 
     @Test
