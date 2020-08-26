@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -48,21 +49,21 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class IgniteSystemProperties {
     /**
-     * If this system property is present the Ignite will include instance name into verbose log.
-     */
-    @IgniteSystemProperty(description = "If this system property is present the Ignite will include instance name " +
-        "into verbose log.", type = String.class)
-    public static final String IGNITE_LOG_INSTANCE_NAME = "IGNITE_LOG_INSTANCE_NAME";
-
-    /**
      * If this system property is present the Ignite will include grid name into verbose log.
      *
      * @deprecated Use {@link #IGNITE_LOG_INSTANCE_NAME}.
      */
     @Deprecated
     @IgniteSystemProperty(description = "If this system property is present the Ignite will include grid name into " +
-        "verbose log. Deprecated: use " + IGNITE_LOG_INSTANCE_NAME + " instead.", type = String.class)
+        "verbose log.", type = String.class)
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
+
+    /**
+     * If this system property is present the Ignite will include instance name into verbose log.
+     */
+    @IgniteSystemProperty(description = "If this system property is present the Ignite will include instance name " +
+        "into verbose log.", type = String.class)
+    public static final String IGNITE_LOG_INSTANCE_NAME = "IGNITE_LOG_INSTANCE_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when
@@ -148,41 +149,49 @@ public final class IgniteSystemProperties {
     /**
      * This property allows to override Jetty host for REST processor.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allows to override Jetty host for REST processor.",
+        type = String.class)
     public static final String IGNITE_JETTY_HOST = "IGNITE_JETTY_HOST";
 
     /**
      * This property allows to override Jetty local port for REST processor.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allows to override Jetty local port for REST " +
+        "processor.", type = Integer.class)
     public static final String IGNITE_JETTY_PORT = "IGNITE_JETTY_PORT";
 
     /**
      * This property does not allow Ignite to override Jetty log configuration for REST processor.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property does not allow Ignite to override Jetty log configuration " +
+        "for REST processor.", type = Boolean.class)
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
     /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allow rewriting default (30) REST session expire time " +
+        "(in seconds).", type = Long.class)
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
 
     /** This property allow rewriting default ({@code 300}) REST session security token expire time (in seconds). */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allow rewriting default (300) REST session security token " +
+        "expire time (in seconds).", type = Long.class)
     public static final String IGNITE_REST_SECURITY_TOKEN_TIMEOUT = "IGNITE_REST_SECURITY_TOKEN_TIMEOUT";
 
     /**
      * This property allows to override maximum count of task results stored on one node
      * in REST processor.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allows to override maximum count of task results stored on " +
+        "one node in REST processor.", type = Integer.class)
     public static final String IGNITE_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
 
     /**
      * This property allows to override default behavior that rest processor
      * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property allows to override default behavior that rest processor " +
+        "doesn't start on client node. If set true than rest processor will be started on client node.",
+        type = Boolean.class)
     public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
 
     /**
@@ -192,7 +201,8 @@ public final class IgniteSystemProperties {
      * @deprecated Should be made default in Apache Ignite 3.0.
      */
     @Deprecated
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property changes output format of GridRestCommand.CACHE_GET_ALL from " +
+        "{k: v, ...} to [{\"key\": k, \"value\": v}, ...] to allow non-string keys output.", type = Boolean.class)
     public static final String IGNITE_REST_GETALL_AS_ARRAY = "IGNITE_REST_GETALL_AS_ARRAY";
 
     /**
@@ -200,7 +210,9 @@ public final class IgniteSystemProperties {
      * primary node. Remapping may be needed when topology is changed concurrently with
      * get operation.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "This property defines the maximum number of attempts to remap near get to " +
+        "the same primary node. Remapping may be needed when topology is changed concurrently with get operation.",
+        type = Integer.class)
     public static final String IGNITE_NEAR_GET_MAX_REMAPS = "IGNITE_NEAR_GET_MAX_REMAPS";
 
     /**
@@ -211,7 +223,10 @@ public final class IgniteSystemProperties {
      * Note that if you use <tt>ignite.{sh|bat}</tt> scripts to start Ignite they
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Set to either true or false to enable or disable quiet mode of Ignite. " +
+        "In quiet mode, only warning and errors are printed into the log additionally to a shortened version of " +
+        "standard output on the start. Note that if you use ignite.{sh|bat} scripts to start Ignite they start by " +
+        "default in quiet mode. You can supply -v flag to override it.", type = Boolean.class)
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
@@ -219,23 +234,27 @@ public final class IgniteSystemProperties {
      * Troubleshooting logger makes logging more verbose without enabling debug mode
      * to provide more detailed logs without performance penalty.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Setting this option to true will enable troubleshooting logger. " +
+        "Troubleshooting logger makes logging more verbose without enabling debug mode to provide more detailed " +
+        "logs without performance penalty.", type = Boolean.class)
     public static final String IGNITE_TROUBLESHOOTING_LOGGER = "IGNITE_TROUBLESHOOTING_LOGGER";
 
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Setting to true enables writing sensitive information in toString() output.",
+        type = Boolean.class)
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /** Maximum length for {@code toString()} result. */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum length for toString() result.", type = Integer.class)
     public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
 
     /**
      * Limit collection (map, array) elements number to output.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Limit collection (map, array) elements number to output.",
+        type = Integer.class)
     public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
 
     /**
@@ -244,25 +263,30 @@ public final class IgniteSystemProperties {
      * in configuration, then default console appender will be added.
      * Set this property to {@code false} if no appenders should be added.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "If this property is set to true (default) and Ignite is launched in " +
+        "verbose mode (see IGNITE_QUIET) and no console appenders can be found in configuration, then default " +
+        "console appender will be added. Set this property to false if no appenders should be added.",
+        type = Boolean.class)
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
 
     /** Maximum size for exchange history. Default value is {@code 1000}.*/
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum size for exchange history. Default value is 1000.",
+        type = Integer.class)
     public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
     /** */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Partition map exchange merge delay in milliseconds.", type = Long.class)
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
     /** PME-free switch explicitly disabled. */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "PME-free switch explicitly disabled.", type = Boolean.class)
     public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
 
     /**
      * Name of the system property defining name of command line program.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Name of the system property defining name of command line program.",
+        type = String.class)
     public static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /**
@@ -270,7 +294,9 @@ public final class IgniteSystemProperties {
      * is used with auto-restarting functionality when Ignite is started
      * by supplied <tt>ignite.{bat|sh}</tt> scripts.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Name of the system property defining success file name. This file is used " +
+        "with auto-restarting functionality when Ignite is started by supplied ignite.{bat|sh} scripts.",
+        type = String.class)
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 
     /**
@@ -282,7 +308,11 @@ public final class IgniteSystemProperties {
      * However, this system property has bigger priority and overrides the settings set via
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "The system property sets a system-wide local IP address or hostname to be " +
+        "used by Ignite networking components. Once provided, the property overrides all the default local binding " +
+        "settings for Ignite nodes. Note, that the address can also be changed via " +
+        "IgniteConfiguration.setLocalHost(String) method. However, this system property has bigger priority and " +
+        "overrides the settings set via IgniteConfiguration.", type = String.class)
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
 
     /**
@@ -292,7 +322,8 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.DeploymentMode
      * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "System property to override deployment mode configuration parameter. Valid " +
+        "values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.", type = DeploymentMode.class)
     public static final String IGNITE_DEP_MODE_OVERRIDE = "IGNITE_DEPLOYMENT_MODE_OVERRIDE";
 
     /**
@@ -300,7 +331,9 @@ public final class IgniteSystemProperties {
      * is used to detect duplicate transaction and has a default value of {@code 102400}. In
      * most cases this value is large enough and does not need to be changed.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Property controlling size of buffer holding completed transaction versions. " +
+        "Such buffer is used to detect duplicate transaction and has a default value of 102400. In most cases this " +
+        "value is large enough and does not need to be changed.", type = Integer.class)
     public static final String IGNITE_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
 
     /**
