@@ -225,6 +225,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                 }
             });
 
+            // TODO: Cancel task.fut when this fut is cancelled
             return new IgniteClientFutureImpl<>(fut);
         }
     }
