@@ -5,7 +5,7 @@
 
         <property name="pluginProviders">
             <bean class="org.apache.ignite.snippets.plugin.MyPluginProvider">
-               <property name="period" value="100"/> 
+               <property name="interval" value="100"/> 
             </bean>
         </property>
 

@@ -16,7 +16,10 @@ import org.jetbrains.annotations.Nullable;
 
 public class MyPluginProvider implements PluginProvider<PluginConfiguration> {
 
-    private long period = 10;
+    /**
+     * The time interval in seconds for printing cache size information. 
+     */
+    private long interval = 10;
 
     private MyPlugin plugin;
 
@@ -25,14 +28,15 @@ public class MyPluginProvider implements PluginProvider<PluginConfiguration> {
 
     /**
      * 
-     * @param period period in seconds
+     * @param interval Time interval in seconds
      */
-    public MyPluginProvider(long period) {
-        this.period = period;
+    public MyPluginProvider(long interval) {
+        this.interval = interval;
     }
 
     @Override
     public String name() {
+        //the name of the plugin
         return "MyPlugin";
     }
 
@@ -54,31 +58,42 @@ public class MyPluginProvider implements PluginProvider<PluginConfiguration> {
     @Override
     public void initExtensions(PluginContext ctx, ExtensionRegistry registry)
             throws IgniteCheckedException {
-        plugin = new MyPlugin(period, ctx);
+        plugin = new MyPlugin(interval, ctx);
     }
 
     @Override
     public void onIgniteStart() throws IgniteCheckedException {
+        //start the plugin when Ignite is started
         plugin.start();
     }
 
     @Override
     public void onIgniteStop(boolean cancel) {
+        //stop the plugin
         plugin.stop();
     }
 
-    public long getPeriod() {
-        return period;
+    /**
+     * The time interval (in seconds) for printing cache size information 
+     * @return 
+     */
+    public long getInterval() {
+        return interval;
     }
 
-    public void setPeriod(long period) {
-        this.period = period;
+    /**
+     * Sets the time interval (in seconds) for printing cache size information
+     * @param interval 
+     */
+    public void setInterval(long interval) {
+        this.interval = interval;
     }
 
     // other no-op methods of PluginProvider 
     //tag::no-op-methods[]
     @Override
     public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+        System.out.println(cls);
         return null;
     }
 

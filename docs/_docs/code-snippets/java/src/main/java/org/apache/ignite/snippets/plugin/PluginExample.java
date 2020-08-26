@@ -39,7 +39,7 @@ public class PluginExample {
         //print the cache size information
         p.printCacheInfo();
         //end::example[]
-       // ignite.close();
+        ignite.close();
     }
     
     public static void main(String[] args) {

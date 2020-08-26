@@ -9,24 +9,24 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 
 /**
+ * 
  * The plugin prints cache size information to console  
- * @author 
  *
  */
 public class MyPlugin implements IgnitePlugin, Runnable {
-    
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private PluginContext context;
 
-    private long period;
+    private long interval;
 
     /**
      * 
      * @param context 
      */
-    public MyPlugin(long period, PluginContext context) {
-        this.period = period;
+    public MyPlugin(long interval, PluginContext context) {
+        this.interval = interval;
         this.context = context;
     }
 
@@ -57,12 +57,12 @@ public class MyPlugin implements IgnitePlugin, Runnable {
     public void run() {
         print0();
     }
-    
+
     void start() {
-        scheduler.scheduleAtFixedRate(this, period, period, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this, interval, interval, TimeUnit.SECONDS);
     }
-    
+
     void stop() {
-       scheduler.shutdownNow(); 
+        scheduler.shutdownNow();
     }
 }

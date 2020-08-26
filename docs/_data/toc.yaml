@@ -185,6 +185,8 @@
   items:
     - title: Introduction
       url: /monitoring-metrics/intro
+    - title: Cluster ID and Tag
+      url: /monitoring-metrics/cluster-id
     - title: Metrics
       items: 
         - title: Configuring Metrics
