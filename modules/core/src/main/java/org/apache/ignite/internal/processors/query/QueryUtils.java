@@ -624,6 +624,9 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
+        if (!isKeyClsSqlType)
+            d.primaryKeyFields(keyFields);
+
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         // Also if fields are not set then _KEY and _VAL will be created as visible,
         // so we have to add binary properties for them
@@ -810,9 +813,17 @@ public class QueryUtils {
      * @param scale Scale.
      * @return Binary property.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
-        Class<?> resType, Map<String, String> aliases, boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale) {
+    public static QueryBinaryProperty buildBinaryProperty(
+        GridKernalContext ctx,
+        String pathStr,
+        Class<?> resType,
+        Map<String, String> aliases,
+        boolean isKeyField,
+        boolean notNull,
+        Object dlftVal,
+        int precision,
+        int scale
+    ) {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
