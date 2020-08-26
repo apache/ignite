@@ -105,6 +105,8 @@ public class DistributedMetaStorageSkipKeysTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        startLocalNode = false;
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -138,13 +140,11 @@ public class DistributedMetaStorageSkipKeysTest extends GridCommonAbstractTest {
             // 3. Recovery metastorage from remote node data and check on local JVM.
             startLocalNode = true;
 
-            ignite = startGrid(1);
+            ignite = startGrid(0);
+
+            startGrid(1);
 
             ignite.cluster().state(ClusterState.ACTIVE);
-
-            startGrid(0);
-
-            waitForTopology(2);
 
             DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 

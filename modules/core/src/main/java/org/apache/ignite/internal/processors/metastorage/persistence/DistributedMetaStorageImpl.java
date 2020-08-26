@@ -743,6 +743,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     unmarshal(marshaller, item.valuesBytesArray()[i]);
                 }
                 catch (IgniteCheckedException e) {
+                    log.error("Unable to unmarshal the distributed metastorage entry. If the key will not be " +
+                        "used it can be ignored via the " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP +
+                        " system property [key=" + item.keys()[i] +']', e);
+
                     return "Unable to unmarshal key=" + item.keys()[i];
                 }
             }
