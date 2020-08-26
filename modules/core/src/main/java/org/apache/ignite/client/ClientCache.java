@@ -179,6 +179,25 @@ public interface ClientCache<K, V> {
     public void putAll(Map<? extends K, ? extends V> map) throws ClientException;
 
     /**
+     * Copies all of the entries from the specified map to the {@link ClientCache}.
+     * <p>
+     * The effect of this call is equivalent to that of calling
+     * {@link #put(Object, Object) put(k, v)} on this cache once for each mapping
+     * from key <tt>k</tt> to value <tt>v</tt> in the specified map.
+     * <p>
+     * The order in which the individual puts occur is undefined.
+     * <p>
+     * The behavior of this operation is undefined if entries in the cache
+     * corresponding to entries in the map are modified or removed while this
+     * operation is in progress. or if map is modified while the operation is in
+     * progress.
+     * <p>
+     *
+     * @param map Mappings to be stored in this cache.
+     */
+    public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException;
+
+    /**
      * Atomically replaces the entry for a key only if currently mapped to a given value.
      * <p>
      * This is equivalent to:
@@ -198,6 +217,27 @@ public interface ClientCache<K, V> {
      * @return <tt>true</tt> if the value was replaced
      */
     public boolean replace(K key, V oldVal, V newVal) throws ClientException;
+
+    /**
+     * Atomically replaces the entry for a key only if currently mapped to a given value.
+     * <p>
+     * This is equivalent to:
+     * <pre><code>
+     * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
+     *  cache.put(key, newValue);
+     * return true;
+     * } else {
+     *  return false;
+     * }
+     * </code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key Key with which the specified value is associated.
+     * @param oldVal Value expected to be associated with the specified key.
+     * @param newVal Value to be associated with the specified key.
+     * @return <tt>true</tt> if the value was replaced
+     */
+    public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException;
 
     /**
      * Atomically replaces the entry for a key only if currently mapped to some
@@ -220,6 +260,26 @@ public interface ClientCache<K, V> {
     public boolean replace(K key, V val) throws ClientException;
 
     /**
+     * Atomically replaces the entry for a key only if currently mapped to some
+     * value.
+     * <p>
+     * This is equivalent to
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return true;
+     * } else {
+     *   return false;
+     * }</code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key The key with which the specified value is associated.
+     * @param val The value to be associated with the specified key.
+     * @return <tt>true</tt> if the value was replaced.
+     */
+    public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException;
+
+    /**
      * Removes the mapping for a key from this cache if it is present.
      * <p>
      * More formally, if this cache contains a mapping from key <tt>k</tt> to value <tt>v</tt> such that
@@ -236,6 +296,24 @@ public interface ClientCache<K, V> {
      * @return <tt>false</tt> if there was no matching key.
      */
     public boolean remove(K key) throws ClientException;
+
+    /**
+     * Removes the mapping for a key from this cache if it is present.
+     * <p>
+     * More formally, if this cache contains a mapping from key <tt>k</tt> to value <tt>v</tt> such that
+     * <code>(key==null ?  k==null : key.equals(k))</code>, that mapping is removed.
+     * (The cache can contain at most one such mapping.)
+     *
+     * <p>Returns <tt>true</tt> if this cache previously associated the key, or <tt>false</tt> if the cache
+     * contained no mapping for the key.
+     * <p>
+     * The cache will not contain a mapping for the specified key once the
+     * call returns.
+     *
+     * @param key Key whose mapping is to be removed from the cache.
+     * @return <tt>false</tt> if there was no matching key.
+     */
+    public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException;
 
     /**
      * Atomically removes the mapping for a key only if currently mapped to the given value.
@@ -258,6 +336,26 @@ public interface ClientCache<K, V> {
     public boolean remove(K key, V oldVal) throws ClientException;
 
     /**
+     * Atomically removes the mapping for a key only if currently mapped to the given value.
+     * <p>
+     * This is equivalent to:
+     * <pre><code>
+     * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue) {
+     *   cache.remove(key);
+     *   return true;
+     * } else {
+     *   return false;
+     * }
+     * </code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key Key whose mapping is to be removed from the cache.
+     * @param oldVal Value expected to be associated with the specified key.
+     * @return <tt>false</tt> if there was no matching key.
+     */
+    public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException;
+
+    /**
      * Removes entries for the specified keys.
      * <p>
      * The order in which the individual entries are removed is undefined.
@@ -267,11 +365,27 @@ public interface ClientCache<K, V> {
     public void removeAll(Set<? extends K> keys) throws ClientException;
 
     /**
+     * Removes entries for the specified keys.
+     * <p>
+     * The order in which the individual entries are removed is undefined.
+     *
+     * @param keys The keys to remove.
+     */
+    public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException;
+
+    /**
      * Removes all of the mappings from this cache.
      * <p>
      * The order that the individual entries are removed is undefined.
      */
     public void removeAll() throws ClientException;
+
+    /**
+     * Removes all of the mappings from this cache.
+     * <p>
+     * The order that the individual entries are removed is undefined.
+     */
+    public IgniteClientFuture<Void> removeAllAsync() throws ClientException;
 
     /**
      * Associates the specified value with the specified key in this cache, returning an existing value if one existed.
