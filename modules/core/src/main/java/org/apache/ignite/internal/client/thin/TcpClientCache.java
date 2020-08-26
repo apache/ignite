@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -148,6 +147,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> putAsync(K key, V val) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -158,6 +162,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             null,
             res -> res.in().readBoolean()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -182,6 +191,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws ClientException {
         return ch.service(
             ClientOperation.CACHE_GET_SIZE,
@@ -191,6 +205,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             },
             res -> (int)res.in().readLong()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -212,6 +231,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                 in -> new SimpleEntry<K, V>(readObject(in), readObject(in))
             )
         ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -237,6 +261,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
+    @Override
+    public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) throws ClientException {
         if (key == null)
@@ -260,6 +289,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -276,6 +310,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean remove(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -286,6 +325,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             null,
             res -> res.in().readBoolean()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -302,6 +346,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             req -> writeObject(req, oldVal),
             res -> res.in().readBoolean()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -322,8 +371,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -343,6 +402,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndRemove(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -353,6 +417,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             null,
             this::readObject
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -372,6 +441,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -387,9 +461,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
+    @Override
+    public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void clear() throws ClientException {
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
+    }
+
+    @Override
+    public IgniteClientFuture<Void> clearAsync() throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
