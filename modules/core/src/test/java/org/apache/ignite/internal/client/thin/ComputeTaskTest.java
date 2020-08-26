@@ -165,6 +165,36 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
+    @Test
+    public void testExecuteTaskAsync2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            TestLatchTask.latch = new CountDownLatch(1);
+
+            Future<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync2(TestLatchTask.class.getName(), null);
+
+            GridTestUtils.assertThrowsAnyCause(
+                null,
+                () -> fut.get(10L, TimeUnit.MILLISECONDS),
+                TimeoutException.class,
+                null
+            );
+
+            // TODO: More checks for the new Future
+            assertFalse(fut.isDone());
+
+            TestLatchTask.latch.countDown();
+
+            T2<UUID, Set<UUID>> val = fut.get();
+
+            assertTrue(fut.isDone());
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     *
+     */
     @Test(expected = CancellationException.class)
     public void testTaskCancellation() throws Exception {
         try (IgniteClient client = startClient(0)) {
@@ -198,6 +228,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             fut.cancel(true);
 
+            // TODO: More checks for the new Future
             assertTrue(GridTestUtils.waitForCondition(
                 () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
 
