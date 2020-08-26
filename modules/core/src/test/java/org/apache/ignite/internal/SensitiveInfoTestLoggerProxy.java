@@ -33,13 +33,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperty;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
 
 /**
  *
@@ -68,7 +70,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     private static final long serialVersionUID = 0L;
 
     /** Whether or not to log grid name. */
-    private static final boolean logGridName = IgniteSystemProperty.IGNITE_LOG_GRID_NAME.getString() != null;
+    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /** Test sensitive mode. */
     public static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
@@ -332,7 +334,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /**
-     * Enriches the log message with grid name if {@link IgniteSystemProperty#IGNITE_LOG_GRID_NAME}
+     * Enriches the log message with grid name if {@link IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
      * system property is set.
      *
      * @param m Message to enrich.

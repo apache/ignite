@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -30,6 +31,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.ImageIcon;
 import org.apache.ignite.IgniteState;
@@ -46,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.RELEASE_DATE_STR;
@@ -276,7 +280,7 @@ public final class CommandLineStartup {
             exit(null, true, 0);
 
         if (args.length > 0 && PRINT_PROPS_COMMAND.equalsIgnoreCase(args[0])) {
-            IgniteSystemProperty.printFormatted();
+            printSystemPropertiesInfo();
 
             exit(null, false, 0);
         }
@@ -346,6 +350,40 @@ public final class CommandLineStartup {
             X.error("Start was interrupted (exiting): " + e.getMessage());
         }
 
-        System.exit(IgniteSystemProperty.IGNITE_RESTART_CODE.getInteger(0));
+        String code = System.getProperty(IGNITE_RESTART_CODE);
+
+        if (code != null)
+            try {
+                System.exit(Integer.parseInt(code));
+            }
+            catch (NumberFormatException ignore) {
+                System.exit(0);
+            }
+        else
+            System.exit(0);
     }
+
+    /** Prints properties info to console. */
+    private static void printSystemPropertiesInfo() {
+        Map<String, IgniteSystemProperty> props = new TreeMap<>();
+
+        for (Field field : IgniteSystemProperties.class.getDeclaredFields()) {
+            IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
+
+            if (ann != null)
+                props.put(field.getName(), ann);
+        }
+
+        X.println("Ignite system properties:");
+
+        props.forEach((name, ann) -> {
+            String deprecated = U.findField(IgniteSystemProperties.class, name)
+                .isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
+
+            String typeStr = ann.type().getSimpleName();
+
+            X.println(String.format("%-30s - [%s] %s%s", name, typeStr, deprecated, ann.description()));
+        });
+    }
+
 }

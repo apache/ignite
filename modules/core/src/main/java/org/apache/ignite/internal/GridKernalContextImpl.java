@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperty;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
@@ -451,7 +451,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private boolean recoveryMode = true;
 
     /** */
-    private final boolean igniteDaemon = IgniteSystemProperty.IGNITE_DAEMON.getBoolean(false);
+    private final boolean igniteDaemon = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DAEMON);
 
     /**
      * No-arg constructor is required by externalization.
