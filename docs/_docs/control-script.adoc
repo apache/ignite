@@ -581,8 +581,55 @@ control.sh --tracing-configuration set --scope TX --sampling-rate 0.5
 
 
 
+== Cluster ID and Tag
 
+A cluster ID is a unique identifier of the cluster that is generated automatically when the cluster starts for the first time. Read link:monitoring-metrics/cluster-id[Cluster ID and Tag] for more information.
 
+To view the cluster ID, run the `--state` command:
 
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --state
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --state
+----
+--
+
+And check the output:
+
+[source, text]
+----
+Command [STATE] started
+Arguments: --state
+--------------------------------------------------------------------------------
+Cluster  ID: bf9764ea-995e-4ea9-b35d-8c6d078b0234
+Cluster tag: competent_black
+--------------------------------------------------------------------------------
+Cluster is active
+Command [STATE] finished with code: 0
+----
+
+A cluster tag is a user friendly name that you can assign to your cluster.
+To change the tag, use the following command (the tag must contain no more than 280 characters):
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --change-tag _<new-tag>_
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --change-tag _<new-tag>_
+----
+--
 
 
