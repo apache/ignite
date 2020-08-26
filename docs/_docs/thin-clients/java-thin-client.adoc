@@ -211,7 +211,7 @@ Refer to link:distributed-computing/cluster-groups[Cluster groups] to get more i
 
 == Executing compute tasks
 
-The Java thin client has basic functionality to execute compute tasks. By default this feature is disabled on server-side. To enable this functionality server-side configuration property `maxActiveComputeTasksPerConnection` should be set excplicitly to value more than 0:
+The Java thin client has basic functionality to execute compute tasks. By default this feature is disabled on server-side. To enable this functionality server-side configuration property `maxActiveComputeTasksPerConnection` should be set explicitly to value more than 0:
 
 [tabs]
 --

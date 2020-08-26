@@ -14,7 +14,7 @@ include::installation/kubernetes/generic-configuration.adoc[tag=intro]
 include::installation/kubernetes/generic-configuration.adoc[tag=kube-version]
 
 In this guide, we will use the `eksctl` command line tool to create a Kubernetes cluster.
-Please follow link:https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html[this guide,window=_blank] to install the required resources and get familiar with the tool.
+Follow link:https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html[this guide,window=_blank] to install the required resources and get familiar with the tool.
 
 
 == Creating an Amazon EKS Cluster
