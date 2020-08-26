@@ -188,6 +188,29 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
+    @Test(expected = CancellationException.class)
+    public void testTaskCancellation2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            Future<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
+
+            assertFalse(fut.isCancelled());
+            assertFalse(fut.isDone());
+
+            fut.cancel(true);
+
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
+
+            assertTrue(fut.isCancelled());
+            assertTrue(fut.isDone());
+
+            fut.get();
+        }
+    }
+
+    /**
+     *
+     */
     @Test(expected = ClientException.class)
     public void testTaskWithTimeout() throws Exception {
         try (IgniteClient client = startClient(0)) {

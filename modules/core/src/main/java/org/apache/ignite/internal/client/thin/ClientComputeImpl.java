@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -110,7 +111,12 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+    @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+        return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
         return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
@@ -385,6 +391,11 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         /** {@inheritDoc} */
         @Override public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+            return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
+        }
+
+        @Override
+        public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 
