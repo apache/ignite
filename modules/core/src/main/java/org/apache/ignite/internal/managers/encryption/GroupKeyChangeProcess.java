@@ -27,8 +27,8 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.EmptyResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.KeyChangeFuture;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -46,7 +46,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 
 /**
- * Two phase distributed process, that performs cache group encryption key rotation.
+ * A two-phase distributed process that rotates the encryption keys of specified cache groups and initiates
+ * re-encryption of those cache groups.
  */
 class GroupKeyChangeProcess {
     /** Grid kernal context. */
@@ -83,7 +84,7 @@ class GroupKeyChangeProcess {
     /**
      * @return {@code True} if operation is still in progress.
      */
-    public boolean started() {
+    public boolean inProgress() {
         return req != null;
     }
 
@@ -125,37 +126,39 @@ class GroupKeyChangeProcess {
         int n = 0;
 
         for (String cacheOrGroupName : cacheOrGrpNames) {
-            CacheGroupContext grp = ctx.cache().cacheGroup(CU.cacheId(cacheOrGroupName));
+            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheOrGroupName));
 
-            if (grp == null) {
-                IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheOrGroupName);
+            if (grpDesc == null) {
+                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cacheOrGroupName);
 
-                if (cache == null) {
+                if (cacheDesc == null) {
                     throw new IgniteException("Cache group key change was rejected. " +
                         "Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
                 }
 
-                grp = cache.context().group();
+                int grpId = cacheDesc.groupId();
 
-                if (grp.sharedGroup()) {
+                grpDesc = ctx.cache().cacheGroupDescriptor(grpId);
+
+                if (grpDesc.sharedGroup()) {
                     throw new IgniteException("Cache group key change was rejected. " +
-                        "Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
-                        grp.name() + ". Provide group name instead of cache name for shared groups.");
+                        "Cache or group \"" + cacheOrGroupName + "\" is a part of group \"" +
+                        grpDesc.groupName() + "\". Provide group name instead of cache name for shared groups.");
                 }
             }
 
-            if (!grp.config().isEncryptionEnabled()) {
+            if (!grpDesc.config().isEncryptionEnabled()) {
                 throw new IgniteException("Cache group key change was rejected. " +
                     "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
             }
 
-            if (ctx.encryption().isReencryptionInProgress(grp.groupId())) {
+            if (ctx.encryption().isReencryptionInProgress(grpDesc.groupId())) {
                 throw new IgniteException("Cache group key change was rejected. " +
                     "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
             }
 
-            grpIds[n] = grp.groupId();
-            keyIds[n] = (byte)(ctx.encryption().groupKey(grp.groupId()).unsignedId() + 1);
+            grpIds[n] = grpDesc.groupId();
+            keyIds[n] = (byte)(ctx.encryption().groupKey(grpDesc.groupId()).unsignedId() + 1);
 
             n += 1;
         }
@@ -182,7 +185,7 @@ class GroupKeyChangeProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
-        if (started()) {
+        if (inProgress()) {
             return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                 "The previous change was not completed."));
         }

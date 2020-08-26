@@ -63,6 +63,7 @@ import org.junit.Test;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -863,6 +864,43 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
         assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWrongCacheGroupSpecified() throws Exception {
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        IgniteEx node0 = grids.get1();
+        IgniteEx node1 = grids.get2();
+
+        assertThrowsAnyCause(log,
+            () -> node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS),
+            IgniteException.class,
+            "Cache group key change was rejected. Cache or group \"" + cacheName() + "\" doesn't exists");
+
+        node0.createCache(new CacheConfiguration<>(cacheName()).setNodeFilter(node -> node.equals(node0.localNode())));
+
+        assertThrowsAnyCause(log,
+            () -> node1.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS),
+            IgniteException.class,
+            "Cache group key change was rejected. Cache or group \"" + cacheName() + "\" is not encrypted.");
+
+        node0.destroyCache(cacheName());
+
+        awaitPartitionMapExchange();
+
+        String grpName = "cacheGroup1";
+
+        createEncryptedCache(node0, node1, cacheName(), grpName);
+
+        assertThrowsAnyCause(log,
+            () -> node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS),
+            IgniteException.class,
+            "Cache group key change was rejected. Cache or group \"" + cacheName() + "\" is a part of group \"" +
+            grpName + "\". Provide group name instead of cache name for shared groups.");
     }
 
     /**

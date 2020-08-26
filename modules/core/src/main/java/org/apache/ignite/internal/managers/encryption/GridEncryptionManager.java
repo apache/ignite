@@ -212,7 +212,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Process to perform the master key change. Changes master key and reencrypt group keys. */
     private DistributedProcess<MasterKeyChangeRequest, EmptyResult> performMKChangeProc;
 
-    /** Two phase distributed process, that performs cache group encryption key rotation. */
+    /**
+     * A two-phase distributed process that rotates the encryption keys of specified cache groups and initiates
+     * re-encryption of those cache groups.
+     */
     private GroupKeyChangeProcess grpKeyChangeProc;
 
     /** Cache groups for which encryption key was changed, and they must be re-encrypted. */
@@ -423,7 +426,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (res != null)
             return res;
 
-        if (grpKeyChangeProc.started()) {
+        if (grpKeyChangeProc.inProgress()) {
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Cache group key change is in progress! Node join is rejected. [node=" + node.id() + "]",
                 "Cache group key change is in progress! Node join is rejected.");
@@ -535,7 +538,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         HashMap<Integer, byte[]> newKeys =
             newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
-        if (newKeys != null) {
+        if (!F.isEmpty(newKeys)) {
+            if (knownEncKeys == null)
+                knownEncKeys = new HashMap<>();
+
             for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
                 GroupKeyEncrypted old =
                     knownEncKeys.putIfAbsent(entry.getKey(), new GroupKeyEncrypted(INITIAL_KEY_ID, entry.getValue()));
@@ -840,13 +846,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void onCacheGroupStop(int grpId) {
         IgniteInternalFuture<Void> fut = reencryptionFuture(grpId);
 
-        if (!fut.isDone()) {
-            try {
-                fut.cancel();
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Unable to cancel reencryption [grpId=" + grpId + "]", e);
-            }
+        try {
+            fut.cancel();
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Unable to cancel reencryption [grpId=" + grpId + "]", e);
         }
 
         reencryptGroups.remove(grpId);
@@ -869,7 +873,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param partId Partition ID.
      */
     public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
-        if (pageScanner.cancel(grp.groupId(), partId))
+        if (pageScanner.excludePartition(grp.groupId(), partId))
             setEncryptionState(grp, partId, 0, 0);
     }
 
@@ -889,7 +893,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStore(0, false, true);
 
                 for (Map.Entry<Integer, Set<Integer>> entry : rmvKeys.entrySet()) {
-                    int grpId = entry.getKey();
+                    Integer grpId = entry.getKey();
 
                     if (reencryptGroups.containsKey(grpId))
                         continue;
@@ -1019,6 +1023,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             reencryptGroups.put(grpId, offsets);
         }
+
+        reencryptGroupsForced.clear();
 
         startReencryption(reencryptGroups.keySet());
     }

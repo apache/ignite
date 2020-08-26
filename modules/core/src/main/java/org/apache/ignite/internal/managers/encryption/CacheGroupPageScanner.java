@@ -251,13 +251,13 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @param partId Partition ID.
      * @return {@code True} if reencryption was cancelled.
      */
-    public boolean cancel(int grpId, int partId) {
+    public boolean excludePartition(int grpId, int partId) {
         GroupScanTask grpScanTask = grps.get(grpId);
 
         if (grpScanTask == null)
             return false;
 
-        return grpScanTask.cancel(partId);
+        return grpScanTask.excludePartition(partId);
     }
 
     /**
@@ -268,6 +268,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public long[] pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
+        // The last element of the array is used to store the status of the index section.
         long[] partStates = new long[grp.affinity().partitions() + 1];
 
         ctx.cache().context().database().checkpointReadLock();
@@ -277,6 +278,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
+                    // The last element of the array is used to store the status of the index section.
                     partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });
@@ -331,7 +333,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         /** {@inheritDoc} */
         @Override public synchronized boolean cancel() throws IgniteCheckedException {
-            return onDone(null, null, true);
+            return onCancelled();
         }
 
         /**
@@ -340,7 +342,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
          * @param partId Partition ID.
          * @return {@code True} if reencryption was cancelled.
          */
-        public synchronized boolean cancel(int partId) {
+        public synchronized boolean excludePartition(int partId) {
             return parts.remove(partId);
         }
 
