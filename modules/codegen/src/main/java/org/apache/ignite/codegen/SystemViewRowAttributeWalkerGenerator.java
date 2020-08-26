@@ -151,7 +151,6 @@ public class SystemViewRowAttributeWalkerGenerator {
         Comparator<String> importComparatror = (s1, s2) -> s1.replace(";","").compareTo(s2.replace(";",""));
         final Set<String> imports = new TreeSet<>(importComparatror);
 
-
         addImport(imports, SystemViewRowAttributeWalker.class);
         addImport(imports, clazz);
 
