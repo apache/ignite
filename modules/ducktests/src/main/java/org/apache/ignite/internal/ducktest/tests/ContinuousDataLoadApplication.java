@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests;
 
 import java.util.Set;
 import java.io.IOException;
-import java.util.Random;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -49,9 +49,6 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         private String cacheName;
 
         /** */
-        private boolean infinite;
-
-        /** */
         private int range;
 
         /** */
@@ -69,34 +66,50 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
 
         cacheConfiguration.setAtomicityMode(cfg.transactional ? TRANSACTIONAL : ATOMIC);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg.cacheName);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration);
 
         int warmUpCnt = (int)Math.max(1, 0.1f * cfg.range);
-
-        Random rnd = new Random();
-
-        long streamed = 0;
 
         log.info("Generating data in background...");
 
         long notifyTime = System.nanoTime();
 
         while (active()) {
-            cache.put(rnd.nextInt(cfg.range), rnd.nextInt(cfg.range));
+            Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null;
 
-            streamed++;
+            //TODO
+            if (tx != null)
+                log.warn("TODO: transaction started.");
 
-            if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
-                notifyTime = System.nanoTime();
+            for (int i = 0; i < cfg.range; ++i) {
+                cache.put(i, i);
 
-                if (log.isDebugEnabled())
-                    log.debug("Streamed " + streamed + " entries.");
+                if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
+                    notifyTime = System.nanoTime();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Streamed " + i + " entries.");
+                }
+
+                // Delayed notify of the initialization to make sure the data load has completelly began and
+                // has produced some valuable amount of data.
+                if (!inited() && warmUpCnt == i)
+                    markInitialized();
             }
 
-            // Delayed notify of the initialization to make sure the data load has completelly began and
-            // has produced some valuable amount of data.
-            if (!inited() && warmUpCnt == streamed)
-                markInitialized();
+            if (tx != null) {
+                //TODO
+                log.warn("TODO: commiting.");
+
+                try {
+                    tx.commit();
+                } finally {
+                    tx.close();
+                }
+
+                //TODO
+                log.warn("Commited.");
+            }
         }
 
         log.info("Background data generation finished.");
@@ -110,11 +123,12 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
         Config cfg;
-
-        log.warn("Parsing config: " + node.asText());
+   
+        //TODO
+        log.warn("TODO : Parsing config: " + node.toString());
 
         try {
-            cfg = objMapper.readValue(node.asText(), Config.class);
+            cfg = objMapper.treeToValue(node, Config.class);
         }
         catch (Exception e) {
             throw new IllegalStateException("Unable to parse config.", e);
@@ -129,8 +143,7 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         ObjectMapper objMapper = new ObjectMapper();
         objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-        String json = "{ \"cacheName\" : \"test-cache\", \"infinite\" : true, \"range\" : 100000, " +
-            "\"optimized\" : false, \"targetNodes\" : [\"sdfsd\", \"sdf5gj\", \"ask4j6\"] }";
+        String json = "{\"cacheName\":\"test-cache\",\"range\":100000,\"transactional\":true}";
 
         Config cfg;
 

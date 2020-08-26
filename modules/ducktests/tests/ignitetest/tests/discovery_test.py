@@ -81,10 +81,14 @@ class DiscoveryTest(IgniteTest):
         self.loader = None
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
-            load=[0, 1, 2])
+    # @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+    #         kill_coordinator=[False, True],
+    #         nodes_to_kill=[1, 2],
+    #         load=[0, 1, 2])
+    @matrix(ignite_version=[str(LATEST_2_8)],
+            kill_coordinator=[False],
+            nodes_to_kill=[2],
+            load=[2])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -97,7 +101,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
-            nodes_to_kill=[0, 1, 2],
+            nodes_to_kill=[1, 2],
             load=[0, 1, 2])
     def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
@@ -148,7 +152,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
         if config.with_load > 0:
-            self.__start_loading(version, properties, modules, config.with_load > 1, ids_to_wait)
+            self.__start_loading(version, properties, modules, config.with_load > 1)
 
         first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
 
