@@ -407,6 +407,25 @@ public interface ClientCache<K, V> {
     public V getAndPut(K key, V val) throws ClientException;
 
     /**
+     * Associates the specified value with the specified key in this cache, returning an existing value if one existed.
+     * <p>
+     * If the cache previously contained a mapping for
+     * the key, the old value is replaced by the specified value.  (A cache
+     * <tt>c</tt> is said to contain a mapping for a key <tt>k</tt> if and only
+     * if {@link #containsKey(Object) c.containsKey(k)} would return
+     * <tt>true</tt>.)
+     * <p>
+     * The previous value is returned, or null if there was no value associated
+     * with the key previously.
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return The value associated with the key at the start of the operation or
+     * null if none was associated.
+     */
+    public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException;
+
+    /**
      * Atomically removes the entry for a key only if currently mapped to some value.
      * <p>
      * This is equivalent to:
@@ -425,6 +444,26 @@ public interface ClientCache<K, V> {
      * @return The value if one existed or null if no mapping existed for this key.
      */
     public V getAndRemove(K key) throws ClientException;
+
+    /**
+     * Atomically removes the entry for a key only if currently mapped to some value.
+     * <p>
+     * This is equivalent to:
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   V oldValue = cache.get(key);
+     *   cache.remove(key);
+     *   return oldValue;
+     * } else {
+     *   return null;
+     * }
+     * </code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key Key with which the specified value is associated.
+     * @return The value if one existed or null if no mapping existed for this key.
+     */
+    public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException;
 
     /**
      * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
@@ -449,6 +488,28 @@ public interface ClientCache<K, V> {
     public V getAndReplace(K key, V val) throws ClientException;
 
     /**
+     * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
+     * <p>
+     * This is equivalent to
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   V oldValue = cache.get(key);
+     *   cache.put(key, value);
+     *   return oldValue;
+     * } else {
+     *   return null;
+     * }
+     * </code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key Key with which the specified value is associated.
+     * @param val Value to be associated with the specified key.
+     * @return The previous value associated with the specified key, or
+     * <tt>null</tt> if there was no mapping for the key.
+     */
+    public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException;
+
+    /**
      * Atomically associates the specified key with the given value if it is not already associated with a value.
      * <p>
      * This is equivalent to:
@@ -469,9 +530,34 @@ public interface ClientCache<K, V> {
     public boolean putIfAbsent(K key, V val) throws ClientException;
 
     /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {}
+     *   cache.put(key, value);
+     *   return true;
+     * } else {
+     *   return false;
+     * }
+     * </code></pre>
+     * except that the action is performed atomically.
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return <tt>true</tt> if a value was set.
+     */
+    public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException;
+
+    /**
      * Clears the contents of the cache.
      */
     public void clear() throws ClientException;
+
+    /**
+     * Clears the contents of the cache.
+     */
+    public IgniteClientFuture<Void> clearAsync() throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.
