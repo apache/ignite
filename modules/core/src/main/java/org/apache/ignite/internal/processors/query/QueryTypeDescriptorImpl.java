@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
@@ -130,6 +131,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private final CacheObjectContext coCtx;
+
+    /** Primary key fields. */
+    private Set<String> pkFields;
 
     /**
      * Constructor.
@@ -733,5 +737,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             prop.setValue(key, val, prop.defaultValue());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> primaryKeyFields() {
+        return pkFields == null ? Collections.emptySet() : pkFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyFields(Set<String> keys) {
+        pkFields = keys;
     }
 }
