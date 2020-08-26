@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import javax.cache.expiry.ExpiryPolicy;
 
 import org.apache.ignite.cache.CachePeekMode;
@@ -46,7 +45,7 @@ public interface ClientCache<K, V> {
     public V get(K key) throws ClientException;
 
     /**
-     * Asynchronously gets an entry from the cache.
+     * Gets an entry from the cache asynchronously.
      *
      * @param key Key.
      * @return a Future representing pending completion of the operation.
@@ -66,6 +65,19 @@ public interface ClientCache<K, V> {
     public void put(K key, V val) throws ClientException;
 
     /**
+     * Associates the specified value with the specified key in the cache asynchronously.
+     * <p>
+     * If the {@link ClientCache} previously contained a mapping for the key, the old
+     * value is replaced by the specified value.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param val value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation.
+     * @throws NullPointerException if key is null or if value is null.
+     */
+    public IgniteClientFuture<Void> putAsync(K key, V val) throws ClientException;
+
+    /**
      * Determines if the {@link ClientCache} contains an entry for the specified key.
      * <p>
      * More formally, returns <tt>true</tt> if and only if this cache contains a
@@ -78,6 +90,18 @@ public interface ClientCache<K, V> {
     public boolean containsKey(K key) throws ClientException;
 
     /**
+     * Determines if the {@link ClientCache} contains an entry for the specified key asynchronously.
+     * <p>
+     * More formally, returns <tt>true</tt> if and only if this cache contains a
+     * mapping for a key <tt>k</tt> such that <tt>key.equals(k)</tt>.
+     * (There can be at most one such mapping)
+     *
+     * @param key key whose presence in this cache is to be tested.
+     * @return <tt>true</tt> if this map contains a mapping for the specified key.
+     */
+    public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException;
+
+    /**
      * @return The name of the cache.
      */
     public String getName();
@@ -86,6 +110,12 @@ public interface ClientCache<K, V> {
      * @return The cache configuration.
      */
     public ClientCacheConfiguration getConfiguration() throws ClientException;
+
+    /**
+     * Gets the cache configuration asynchronously.
+     * @return The cache configuration.
+     */
+    public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException;
 
     /**
      * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't provided,
@@ -99,6 +129,17 @@ public interface ClientCache<K, V> {
     public int size(CachePeekMode... peekModes) throws ClientException;
 
     /**
+     * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't provided,
+     * only size of primary copies across all nodes will be returned. This behavior is identical to calling
+     * this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     */
+    public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException;
+
+    /**
      * Gets a collection of entries from the {@link ClientCache}, returning them as
      * {@link Map} of the values associated with the set of keys requested.
      *
@@ -107,6 +148,16 @@ public interface ClientCache<K, V> {
      * in the cache are not in the returned map.
      */
     public Map<K, V> getAll(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Gets a collection of entries from the {@link ClientCache}, returning them as
+     * {@link Map} of the values associated with the set of keys requested.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A map of entries that were found for the given keys. Keys not found
+     * in the cache are not in the returned map.
+     */
+    public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * Copies all of the entries from the specified map to the {@link ClientCache}.
