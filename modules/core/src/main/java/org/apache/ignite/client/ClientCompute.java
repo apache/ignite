@@ -56,8 +56,7 @@ public interface ClientCompute {
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    // TODO: Deprecate this, replace with a new method returning IgniteFuture
-    public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
+    public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
 
     /**
      * Sets timeout for tasks executed by returned {@code ClientCompute} instance.

@@ -21,17 +21,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -58,9 +61,6 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** Channel. */
     private final ReliableChannel ch;
 
-    /** Binary marshaller. */
-    private final ClientBinaryMarshaller marsh;
-
     /** Utils for serialization/deserialization. */
     private final ClientUtils utils;
 
@@ -76,7 +76,6 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** Constructor. */
     ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
         this.ch = ch;
-        this.marsh = marsh;
         this.dfltGrp = dfltGrp;
 
         utils = new ClientUtils(marsh);
@@ -111,7 +110,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+    @Override public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
         return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
@@ -171,7 +170,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      * @param flags Flags.
      * @param timeout Timeout.
      */
-    private <T, R> Future<R> executeAsync0(
+    private <T, R> IgniteClientFuture<R> executeAsync0(
         String taskName,
         @Nullable T arg,
         ClientClusterGroupImpl clusterGrp,
@@ -207,14 +206,26 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             if (task == null) // Channel is closed concurrently, retry with another channel.
                 continue;
 
+            CompletableFuture<R> fut = new CompletableFuture<>();
+
             task.fut.listen(f -> {
                 // Don't remove task if future was canceled by user. This task can be added again later by notification.
                 // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
-                if (!f.isCancelled())
+                if (!f.isCancelled()) {
                     removeTask(task.ch, task.taskId);
+
+                    try {
+                        fut.complete(((GridFutureAdapter<R>)f).get());
+                    } catch (IgniteCheckedException e) {
+                        fut.completeExceptionally(e);
+                    }
+                }
+                else {
+                    fut.cancel(false);
+                }
             });
 
-            return new ClientFutureImpl<>((GridFutureAdapter<R>)task.fut);
+            return new IgniteClientFutureImpl<>(fut);
         }
     }
 
@@ -372,7 +383,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+        @Override public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 
