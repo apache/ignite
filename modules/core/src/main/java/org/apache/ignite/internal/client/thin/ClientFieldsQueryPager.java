@@ -38,7 +38,7 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
 
     /** Constructor. */
     ClientFieldsQueryPager(
-        ReliableChannel ch,
+        ReliableChannelFacade ch,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,

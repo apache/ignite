@@ -36,7 +36,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     private final Consumer<PayloadOutputChannel> qryWriter;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelFacade ch;
 
     /** Has next. */
     private boolean hasNext = true;
@@ -52,7 +52,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Constructor. */
     GenericQueryPager(
-        ReliableChannel ch,
+        ReliableChannelFacade ch,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter

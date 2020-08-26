@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.SslMode;
@@ -33,8 +34,8 @@ public final class ClientConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** @serial Server addresses. */
-    private String[] addrs = null;
+    /** Server addresses finder. */
+    private Supplier<String[]> addrFinder;
 
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
@@ -116,17 +117,32 @@ public final class ClientConfiguration implements Serializable {
     private int reconnectThrottlingRetries = 3;
 
     /**
+     * Try use other limited number of channels to send a request if default channel is not responding.
+     * 0 means try use all configured channels before fail.
+     */
+    private int channelsAttemptsLimit = 0;
+
+    /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        return addrs;
+        return addrFinder.get();
     }
 
     /**
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        this.addrs = addrs;
+        addrFinder = () -> addrs;
+
+        return this;
+    }
+
+    /**
+     * @param finder function that finds node addresses
+     */
+    public ClientConfiguration setAddressesFinder(Supplier<String[]> finder) {
+        addrFinder = finder;
 
         return this;
     }
@@ -489,6 +505,24 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
         this.reconnectThrottlingRetries = reconnectThrottlingRetries;
+
+        return this;
+    }
+
+    /**
+     * Get channels attempts limit.
+     */
+    public int getChannelsAttemptsLimit() {
+        return channelsAttemptsLimit;
+    }
+
+    /**
+     * Sets channels attempts limit.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setChannelsAttemptsLimit(int channelsAttemptsLimit) {
+        this.channelsAttemptsLimit = channelsAttemptsLimit;
 
         return this;
     }

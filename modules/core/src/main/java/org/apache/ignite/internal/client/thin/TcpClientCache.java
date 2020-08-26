@@ -63,7 +63,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final int cacheId;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelFacade ch;
 
     /** Cache name. */
     private final String name;
@@ -84,12 +84,12 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final ExpiryPolicy expiryPlc;
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions) {
+    TcpClientCache(String name, ReliableChannelFacade ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions) {
         this(name, ch, marsh, transactions, false, null);
     }
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+    TcpClientCache(String name, ReliableChannelFacade ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
         boolean keepBinary, ExpiryPolicy expiryPlc) {
         this.name = name;
         this.cacheId = ClientUtils.cacheId(name);
