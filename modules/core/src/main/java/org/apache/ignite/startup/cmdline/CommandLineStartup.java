@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.ImageIcon;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteSystemProperty;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
@@ -365,24 +367,29 @@ public final class CommandLineStartup {
 
     /** Prints properties info to console. */
     private static void printSystemPropertiesInfo() {
-        Map<String, IgniteSystemProperty> props = new TreeMap<>();
+        Map<String, Field> props = new TreeMap<>();
 
         for (Field field : IgniteSystemProperties.class.getDeclaredFields()) {
             IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
 
-            if (ann != null)
-                props.put(field.getName(), ann);
+            if (ann != null) {
+                try {
+                    props.put(U.staticField(IgniteSystemProperties.class, field.getName()), field);
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
         }
 
         X.println("Ignite system properties:");
 
-        props.forEach((name, ann) -> {
-            String deprecated = U.findField(IgniteSystemProperties.class, name)
-                .isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
+        props.forEach((name, field) -> {
+            String deprecated = field.isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
 
-            String typeStr = ann.type().getSimpleName();
+            IgniteSystemProperty prop = field.getAnnotation(IgniteSystemProperty.class);
 
-            X.println(String.format("%-30s - [%s] %s%s", name, typeStr, deprecated, ann.description()));
+            X.println(format("%-30s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.description()));
         });
     }
 }

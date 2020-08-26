@@ -1425,40 +1425,47 @@ public final class IgniteSystemProperties {
     /**
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum size of history of server nodes (server node IDs) that ever joined " +
+        "to current topology.", type = Integer.class)
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
 
     /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum number of diagnostic warning messages per category, when " +
+        "waiting for PME.", type = Integer.class)
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
      * Flag to enable triggering failure handler for node if unrecoverable partition inconsistency is
      * discovered during partition update counters exchange.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Flag to enable triggering failure handler for node if unrecoverable " +
+        "partition inconsistency is discovered during partition update counters exchange.", type = Boolean.class)
     public static final String IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY =
         "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
 
     /**
      * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.",
+        type = Boolean.class)
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
 
     /**
      * Interval between logging of time of next auto-adjust.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Interval between logging of time of next auto-adjust in milliseconds.",
+        type = Long.class)
     public static final String IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL = "IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL";
 
     /**
      * Starting from this number of dirty pages in checkpoint, array will be sorted with
      * {@link Arrays#parallelSort(Comparable[])} in case of {@link CheckpointWriteOrder#SEQUENTIAL}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Starting from this number of dirty pages in checkpoint, array will be " +
+        "sorted with Arrays.parallelSort(Comparable[]) in case of CheckpointWriteOrder.SEQUENTIAL.",
+        type = Integer.class)
     public static final String CHECKPOINT_PARALLEL_SORT_THRESHOLD = "CHECKPOINT_PARALLEL_SORT_THRESHOLD";
 
     /**
@@ -1466,11 +1473,14 @@ public final class IgniteSystemProperties {
      * is set, static cache configuration will override persisted configuration. DDL operations are not allowed
      * when this system property is set.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Keep static cache configuration even if stored cache data differs from " +
+        "the static config. When this property is set, static cache configuration will override persisted " +
+        "configuration. DDL operations are not allowed when this system property is set.", type = Boolean.class)
     public static final String IGNITE_KEEP_STATIC_CACHE_CONFIGURATION = "IGNITE_KEEP_STATIC_CACHE_CONFIGURATION";
 
     /** Enable backward compatible to use 'IGNITE' as SQL system schema. */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enable backward compatible to use 'IGNITE' as SQL system schema.",
+        type = Boolean.class)
     public static final String IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE = "IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE";
 
     /**
@@ -1478,7 +1488,9 @@ public final class IgniteSystemProperties {
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Shows if dump requests from local node to near node are allowed, when " +
+        "long running transaction is found. If allowed, the compute request to near node will be made to get " +
+        "thread dump of transaction owner thread.", type = Boolean.class)
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
@@ -1491,7 +1503,8 @@ public final class IgniteSystemProperties {
      *
      * Default is 2 - HEAP_LOG.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Page lock tracker type. -1 - Disable lock tracking. 1 - HEAP_STACK. " +
+        "2 - HEAP_LOG. 3 - OFF_HEAP_STACK. 4 - OFF_HEAP_LOG. Default is 2 - HEAP_LOG.", type = Integer.class)
     public static final String IGNITE_PAGE_LOCK_TRACKER_TYPE = "IGNITE_PAGE_LOCK_TRACKER_TYPE";
 
     /**
@@ -1499,7 +1512,8 @@ public final class IgniteSystemProperties {
      *
      * Default is 512 pages.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Capacity in pages for storing in page lock tracker strucuture. Default " +
+        "is 512 pages.", type = Integer.class)
     public static final String IGNITE_PAGE_LOCK_TRACKER_CAPACITY = "IGNITE_PAGE_LOCK_TRACKER_CAPACITY";
 
     /**
@@ -1507,7 +1521,8 @@ public final class IgniteSystemProperties {
      *
      * Default is 60_000 ms.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Page lock tracker thread for checking hangs threads interval. " +
+        "Default is 60_000 ms.", type = Integer.class)
     public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
 
     /**
@@ -1515,14 +1530,25 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enables threads locks dumping on critical node failure. Default is true.",
+        type = Boolean.class)
     public static final String IGNITE_DUMP_PAGE_LOCK_ON_FAILURE = "IGNITE_DUMP_PAGE_LOCK_ON_FAILURE";
 
     /**
      * Scan the classpath on startup and log all the files containing in it.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Scan the classpath on startup and log all the files containing in it.",
+        type = Boolean.class)
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
+
+    /**
+     * The coefficient for samples of completed transactions that will be dumped in log. Must be float value
+     * between 0.0 and 1.0 inclusive. Default value is <code>0.0</code>.
+     */
+    @IgniteSystemProperty(description = "The coefficient for samples of completed transactions that will be dumped " +
+        "in log. Must be float value between 0.0 and 1.0 inclusive. Default value is 0.0.", type = Float.class)
+    public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT =
+        "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT";
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
@@ -1531,23 +1557,21 @@ public final class IgniteSystemProperties {
      * waiting it). Equals 0 if not set. No long transactions are dumped in log if nor this parameter
      * neither {@link #IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT} is set.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Threshold timeout for long transactions, if transaction exceeds it, it " +
+        "will be dumped in log with information about how much time did it spent in system time (time while aquiring " +
+        "locks, preparing, commiting, etc) and user time (time when client node runs some code while holding " +
+        "transaction and not waiting it). Equals 0 if not set. No long transactions are dumped in log if nor " +
+        "this parameter neither " + IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is set.", type = Long.class)
     public static final String IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD = "IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD";
-
-    /**
-     * The coefficient for samples of completed transactions that will be dumped in log. Must be float value
-     * between 0.0 and 1.0 inclusive. Default value is <code>0.0</code>.
-     */
-    @IgniteSystemProperty(description = "", type = String.class)
-    public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT =
-        "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT";
 
     /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
      * {@link #IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT} is above <code>0.0</code>. Must be integer value
      * greater than <code>0</code>. Default value is <code>5</code>.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "The limit of samples of completed transactions that will be dumped in log " +
+        "per second, if " +IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is above 0.0. Must be integer value " +
+        "greater than 0. Default value is 5.", type = Integer.class)
     public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT =
         "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT";
 
@@ -1557,7 +1581,10 @@ public final class IgniteSystemProperties {
      * onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such onheap caching.
      * Default value is <code>false</code>.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Disable onheap caching of pages lists (free lists and reuse lists). " +
+        "If persistence is enabled changes to page lists are not stored to page memory immediately, they are " +
+        "cached in onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such " +
+        "onheap caching. Default value is false.", type = Boolean.class)
     public static final String IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING = "IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING";
 
     /**
@@ -1567,7 +1594,10 @@ public final class IgniteSystemProperties {
      * master key. Set up this property to re-encrypt cache keys on startup and join to cluster with the valid
      * master key name.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "The master key name that the node will use during the recovery. If a node " +
+        "was unavailable during a master key change process it won't be able to join to cluster with old the " +
+        "master key. Set up this property to re-encrypt cache keys on startup and join to cluster with the valid " +
+        "master key name.", type = String.class)
     public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP =
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
@@ -1577,7 +1607,9 @@ public final class IgniteSystemProperties {
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
      * restart.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enables extended logging of indexes create/rebuild process. Default false. " +
+        "Warning: enabling that option can lead to performance degradation of index creation, rebuilding and " +
+        "node restart.", type = Boolean.class)
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
 
     /**
@@ -1586,7 +1618,9 @@ public final class IgniteSystemProperties {
      * that have backups configured.
      */
     @IgniteExperimental
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When enabled, node will wait until all of its data is backed up before " +
+        "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
+        "caches exist that have backups configured.", type = Boolean.class)
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
 
     /**
@@ -1595,7 +1629,9 @@ public final class IgniteSystemProperties {
      * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
      * compatibility. By default, {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
+        "when value IgniteConfiguration#getLocalHost is ip, for backward compatibility. By default, false.",
+        type = Boolean.class)
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
@@ -1604,7 +1640,10 @@ public final class IgniteSystemProperties {
      * per key lock queue may rise. This property sets the interval during which statistics are collected.
      * Default is 1000 ms.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When above zero, prints tx key collisions once per interval. Each " +
+        "transaction besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons per key " +
+        "lock queue may rise. This property sets the interval during which statistics are collected. Default is " +
+        "1000 ms.", type = Integer.class)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
     /**
