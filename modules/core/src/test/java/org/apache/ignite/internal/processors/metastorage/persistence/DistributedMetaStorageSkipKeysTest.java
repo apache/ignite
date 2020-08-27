@@ -105,11 +105,11 @@ public class DistributedMetaStorageSkipKeysTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        startLocalNode = false;
-
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        startLocalNode = false;
     }
 
     /** @throws Exception If failed. */
@@ -148,19 +148,7 @@ public class DistributedMetaStorageSkipKeysTest extends GridCommonAbstractTest {
 
             DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
-            assertNull(metastorage.read(KEY_1));
-
             metastorage.iterate(KEY_1, (key, val) -> fail());
-
-            metastorage.remove(KEY_1);
-
-            String newVal1 = "newVal1";
-
-            metastorage.write(KEY_1, newVal1);
-
-            metastorage.compareAndSet(KEY_1, newVal1, "newVal2");
-
-            assertNull(metastorage.read(KEY_1));
 
             assertEquals(VALUE_2, metastorage.read(KEY_2));
         }

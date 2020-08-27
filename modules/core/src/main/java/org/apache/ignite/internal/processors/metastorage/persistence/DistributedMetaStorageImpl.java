@@ -183,8 +183,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private final DmsDataWriterWorker worker;
 
     /**
-     * Keys that should be skipped for any operations.
-     * See {@link IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP}.
+     * Keys that should be skipped on cluster start.
+     *
+     * @see IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP
      */
     private final Set<String> keysToSkip;
 
@@ -231,14 +232,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         String keysToSkipProp = IgniteSystemProperties.getString(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP);
 
         if (!F.isEmpty(keysToSkipProp)) {
-            String[] keys = keysToSkipProp.split(U.nl());
+            String[] keys = keysToSkipProp.split(",");
 
             keysToSkip = new HashSet<>(keys.length);
 
             keysToSkip.addAll(Arrays.asList(keys));
 
             log.warning("System property " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP + " is set. " +
-                "The distributed metastorage will skip keys for any operations [keysToSkip=" + keysToSkip + ']');
+                "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
         }
         else
             keysToSkip = Collections.emptySet();
@@ -432,9 +433,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override @Nullable public <T extends Serializable> T read(@NotNull String key) throws IgniteCheckedException {
-        if (keysToSkip.contains(key))
-            return null;
-
         lock.readLock().lock();
 
         try {
@@ -789,7 +787,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         int hv = (int)(v - remoteVer.id() + hist.length - 1);
 
                         try {
-                            completeWrite(hist[hv]);
+                            completeWrite(hist[hv], true);
                         }
                         catch (IgniteCheckedException ex) {
                             log.error("Unable to unmarshal new metastore data. update=" + hist[hv], ex);
@@ -1006,7 +1004,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 if (nodeData.updates != null) {
                     for (DistributedMetaStorageHistoryItem update : nodeData.updates)
-                        completeWrite(update);
+                        completeWrite(update, true);
                 }
             }
             else if (!isClient && ver.id() > 0) {
@@ -1038,12 +1036,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-        if (keysToSkip.contains(key)) {
-            fut.onDone(false);
-
-            return fut;
-        }
-
         updateFuts.put(reqId, fut);
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
@@ -1064,12 +1056,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
-
-        if (keysToSkip.contains(key)) {
-            fut.onDone(false);
-
-            return fut;
-        }
 
         updateFuts.put(reqId, fut);
 
@@ -1106,7 +1092,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false);
         }
         catch (IgniteInterruptedCheckedException e) {
             throw U.convertException(e);
@@ -1162,10 +1148,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param histItem {@code <key, value>} pair to process.
+     * @param skipKeys {@code True} if skip notifying for ignored keys.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
      */
     private void completeWrite(
-        DistributedMetaStorageHistoryItem histItem
+        DistributedMetaStorageHistoryItem histItem,
+        boolean skipKeys
     ) throws IgniteCheckedException {
         lock.writeLock().lock();
 
@@ -1178,8 +1166,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             ver = ver.nextVersion(histItem);
 
             for (int i = 0, len = histItem.keys().length; i < len; i++) {
-                notifyListeners(histItem.keys()[i], bridge.readMarshalled(histItem.keys()[i]),
-                    histItem.valuesBytesArray()[i]);
+                if (skipKeys && keysToSkip.contains(histItem.keys()[i]))
+                    continue;
+
+                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]),
+                    unmarshal(marshaller, histItem.valuesBytesArray()[i]));
             }
 
             for (int i = 0, len = histItem.keys().length; i < len; i++)
@@ -1251,7 +1242,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param msg Message with all required data.
-     * @see #completeWrite(DistributedMetaStorageHistoryItem)
+     * @see #completeWrite(DistributedMetaStorageHistoryItem, boolean)
      */
     private void completeCas(
         DistributedMetaStorageCasMessage msg
@@ -1270,7 +1261,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
-        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false);
     }
 
     /**
@@ -1338,17 +1329,24 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             int c = oldKey.compareTo(newKey);
 
             if (c < 0) {
-                notifyListeners(oldKey, oldValBytes, null);
+                if (!keysToSkip.contains(oldKey))
+                    notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
 
                 ++oldIdx;
             }
             else if (c > 0) {
-                notifyListeners(newKey, null, newValBytes);
+                if (!keysToSkip.contains(newKey))
+                    notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
 
                 ++newIdx;
             }
             else {
-                notifyListeners(oldKey, oldValBytes, newValBytes);
+                Serializable oldVal = unmarshal(marshaller, oldValBytes);
+
+                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(marshaller, newValBytes);
+
+                if (!keysToSkip.contains(oldKey))
+                    notifyListeners(oldKey, oldVal, newVal);
 
                 ++oldIdx;
 
@@ -1356,28 +1354,25 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             }
         }
 
-        for (; oldIdx < oldData.length; ++oldIdx)
-            notifyListeners(oldData[oldIdx].key, oldData[oldIdx].valBytes, null);
+        for (; oldIdx < oldData.length; ++oldIdx) {
+            if (!keysToSkip.contains(oldData[oldIdx].key))
+                notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
+        }
 
-        for (; newIdx < newData.length; ++newIdx)
-            notifyListeners(newData[newIdx].key, null, newData[newIdx].valBytes);
+        for (; newIdx < newData.length; ++newIdx) {
+            if (!keysToSkip.contains(oldData[newIdx].key))
+                notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
+        }
     }
 
     /**
      * Notify listeners.
      *
      * @param key The key.
-     * @param oldValBytes Marshalled old value bytes.
-     * @param newValBytes Marshalled new value bytes.
-     * @throws IgniteCheckedException In case of unmarshalling errors.
+     * @param oldVal Old value.
+     * @param newVal New value.
      */
-    private void notifyListeners(String key, byte[] oldValBytes, byte[] newValBytes) throws IgniteCheckedException {
-        if (keysToSkip.contains(key))
-            return;
-
-        Serializable oldVal = oldValBytes == null ? null : unmarshal(marshaller, oldValBytes);
-        Serializable newVal = newValBytes == null ? null : unmarshal(marshaller, newValBytes);
-
+    private void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
                 try {
