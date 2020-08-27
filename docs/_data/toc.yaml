@@ -179,8 +179,8 @@
       url: /events/events
 - title: Near Caches
   url: /near-cache
-#    - title: .NET Platform Cache
-#      url: /platform-cache
+- title: .NET Platform Cache
+  url: /platform-cache
 - title: Monitoring
   items:
     - title: Introduction
