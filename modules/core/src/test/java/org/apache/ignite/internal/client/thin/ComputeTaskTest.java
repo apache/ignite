@@ -237,12 +237,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             fut.cancel(true);
 
-            // TODO: More checks for the new Future
             assertTrue(GridTestUtils.waitForCondition(
                 () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
 
             assertTrue(fut.isCancelled());
             assertTrue(fut.isDone());
+
+            assertNotNull(handledErr.get());
+            assertTrue(handledErr.get() instanceof CancellationException);
 
             fut.get();
         }
