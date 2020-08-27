@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -1063,20 +1064,25 @@ public final class IgniteSystemProperties {
 
     /**
      * Default value is {@code false}.
+     *
+     * @deprecated Is not used anymore.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @Deprecated
+    @IgniteSystemProperty(description = "Enables WAL debug log on recovery. Default value is {@code false}.",
+        type = Boolean.class)
     public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
 
     /**
      * Number of checkpoint history entries held in memory.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Number of checkpoint history entries held in memory.", type = Integer.class)
     public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
 
     /**
      * If this property is set to {@code true} enable logging in {@link GridClient}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "If this property is set to true enable logging in GridClient.",
+        type = Boolean.class)
     public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
@@ -1084,28 +1090,35 @@ public final class IgniteSystemProperties {
      * feature is available in classpath and OS and filesystem settings allows to enable this mode.
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, direct IO may be enabled. Direct IO enabled only if JAR " +
+        "file with corresponding feature is available in classpath and OS and filesystem settings allows to enable " +
+        "this mode. Default is true.", type = Boolean.class)
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
 
     /**
      * When set to {@code true}, warnings that are intended for development environments and not for production
      * (such as coding mistakes in code using Ignite) will not be logged.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, warnings that are intended for development environments " +
+        "and not for production (such as coding mistakes in code using Ignite) will not be logged.",
+        type = Boolean.class)
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
      * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true (default), pages are written to page store without " +
+        "holding segment lock (with delay). Because other thread may require exactly the same page to be loaded " +
+        "from store, reads are protected by locking.", type = Boolean.class)
     public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
 
     /**
      * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, WAL implementation with dedicated worker will be used " +
+        "even in FSYNC mode. Default is false.", type = Boolean.class)
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
     /**
@@ -1113,7 +1126,8 @@ public final class IgniteSystemProperties {
      * {@link CacheConfiguration#setOnheapCacheEnabled(boolean)}.
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, on-heap cache cannot be enabled - see " +
+        "CacheConfiguration.setOnheapCacheEnabled(boolean). Default is false.", type = Boolean.class)
     public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
 
     /**
@@ -1121,20 +1135,24 @@ public final class IgniteSystemProperties {
      * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to false, loaded pages implementation is switched to previous " +
+        "version of implementation, FullPageIdTable. True value enables 'Robin Hood hashing: backward shift " +
+        "deletion'. Default is true.", type = Boolean.class)
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
      * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Property for setup percentage of archive size for checkpoint trigger. " +
+        "Default value is 0.25", type = Double.class)
     public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
      * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
      * Default value is 0.5
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Property for setup percentage of WAL archive size to calculate threshold " +
+        "since which removing of old archive should be started. Default value is 0.5", type = Double.class)
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
@@ -1142,13 +1160,15 @@ public final class IgniteSystemProperties {
      *
      * Default value is 1000 ms.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Threshold time (in millis) to print warning to log if waiting for next wal " +
+        "segment took longer than the threshold. Default value is 1000 ms.\n", type = Long.class)
     public static final String IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = "IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT";
 
     /**
      * Count of WAL compressor worker threads. Default value is 4.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Count of WAL compressor worker threads. Default value is 4.",
+        type = Integer.class)
     public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
 
     /**
@@ -1159,13 +1179,15 @@ public final class IgniteSystemProperties {
      *
      * @see CacheConfiguration#isReadFromBackup()
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Whenever read load balancing is enabled, that means 'get' requests will " +
+        "be distributed between primary and backup nodes if it is possible and CacheConfiguration.isReadFromBackup() " +
+        "is true. Default is true.", type = Boolean.class)
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
 
     /**
      * Number of repetitions to capture a lock in the B+Tree.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Number of repetitions to capture a lock in the B+Tree.", type = Integer.class)
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
@@ -1174,7 +1196,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code 64kb}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Amount of memory reserved in the heap at node start, which can be dropped " +
+        "to increase the chances of success when handling OutOfMemoryError. Default is 64kb.", type = Integer.class)
     public static final String IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = "IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE";
 
     /**
@@ -1182,7 +1205,8 @@ public final class IgniteSystemProperties {
      *
      * The default is '50', that means: warn about nodes with 50+% difference.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "The threshold of uneven distribution above which partition distribution " +
+        "will be logged. The default is '50', that means: warn about nodes with 50+% difference.", type = Float.class)
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
     /**
@@ -1190,7 +1214,8 @@ public final class IgniteSystemProperties {
      * OWNING state.
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to false, WAL will not be automatically disabled during " +
+        "rebalancing if there is no partition in OWNING state. Default is true.", type = Boolean.class)
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
@@ -1200,13 +1225,16 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When property is set false each next exchange will try to compare with " +
+        "previous. If last rebalance is equivalent with new possible one, new rebalance does not trigger. Set the " +
+        "property true and each exchange will try to trigger new rebalance. Default is false.", type = Boolean.class)
     public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION = "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
     /**
      * Sets timeout for TCP client recovery descriptor reservation.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Sets timeout for TCP client recovery descriptor reservation.",
+        type = Long.class)
     public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
             "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
@@ -1219,7 +1247,12 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, Ignite will skip partitions sizes check on partition " +
+        "validation after rebalance has finished. Partitions sizes may differs on nodes when Expiry Policy is in " +
+        "use and it is ok due to lazy entry eviction mechanics. There is no need to disable partition size " +
+        "validation either in normal case or when expiry policy is configured for cache. But it should be disabled " +
+        "manually when policy is used on per entry basis to hint Ignite to skip this check. Default is false.",
+        type = Boolean.class)
     public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
 
     /**
@@ -1227,7 +1260,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enables threads dumping on critical node failure. Default is true.",
+        type = Boolean.class)
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
@@ -1235,7 +1269,8 @@ public final class IgniteSystemProperties {
      *
      * Default is failure detection timeout. {@code 0} or negative value - throttling is disabled.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Throttling time out for thread dump generation during failure handling. " +
+        "Default is failure detection timeout. 0 or negative value - throttling is disabled.", type = Long.class)
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT =
             "IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT";
 
@@ -1244,19 +1279,20 @@ public final class IgniteSystemProperties {
      *
      * Default is 500 ms.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Throttling timeout in millis which avoid excessive PendingTree access on " +
+        "unwind if there is nothing to clean yet. Default is 500 ms.", type = Long.class)
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
     /**
      * Threshold for throttling operations logging.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Threshold for throttling operations logging.", type = Integer.class)
     public static final String IGNITE_THROTTLE_LOG_THRESHOLD = "IGNITE_THROTTLE_LOG_THRESHOLD";
 
     /**
      * Number of concurrent operation for evict partitions.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Number of concurrent operation for evict partitions.", type = Integer.class)
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
@@ -1265,50 +1301,58 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, Ignite will allow execute DML operation " +
+        "(MERGE|INSERT|UPDATE|DELETE) within transaction for non MVCC mode. Default is false.", type = Boolean.class)
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
      * Timeout between ZooKeeper client retries, default 2s.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Timeout between ZooKeeper client retries in milliseconds, default 2s.",
+        type = Long.class)
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
 
     /**
      * Number of attempts to reconnect to ZooKeeper.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Number of attempts to reconnect to ZooKeeper.", type = Integer.class)
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
 
     /**
      * Maximum number for cached MVCC transaction updates. This caching is used for continuous query with MVCC caches.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum number for cached MVCC transaction updates. This caching is used " +
+        "for continuous query with MVCC caches.", type = Integer.class)
     public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
 
     /**
      * Try reuse memory on deactivation. Useful in case of huge page memory region size.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Try reuse memory on deactivation. Useful in case of huge page memory " +
+        "region size.", type = Boolean.class)
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
      * Maximum inactivity period for system worker in milliseconds. When this value is exceeded, worker is considered
      * blocked with consequent critical failure handler invocation.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum inactivity period for system worker in milliseconds. When this " +
+        "value is exceeded, worker is considered blocked with consequent critical failure handler invocation.",
+        type = Long.class)
     public static final String IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT = "IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT";
 
     /**
      * Timeout for checkpoint read lock acquisition in milliseconds.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Timeout for checkpoint read lock acquisition in milliseconds.",
+        type = Long.class)
     public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
 
     /**
      * Timeout for waiting schema update if schema was not found for last accepted version.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Timeout for waiting schema update if schema was not found for last accepted " +
+        "version.", type = Long.class)
     public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
 
     /**
@@ -1317,7 +1361,9 @@ public final class IgniteSystemProperties {
      * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
      */
     @Deprecated
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "System property to override CacheConfiguration.getRebalanceThrottle " +
+        "configuration property for all caches. 0 by default, which means that override is disabled.",
+        type = Long.class)
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
@@ -1325,11 +1371,11 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Enables start caches in parallel. Default is true.", type = Boolean.class)
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /** For test purposes only. Force Mvcc mode. */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "For test purposes only. Force Mvcc mode.", type = Boolean.class)
     public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
 
     /**
@@ -1337,7 +1383,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Allows to log additional information about all restored partitions after " +
+        "binary and logical recovery phases. Default is true.", type = Boolean.class)
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
     /**
@@ -1345,19 +1392,22 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Disables cache interceptor triggering in case of conflicts. Default is false.",
+        type = Boolean.class)
     public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Sets default CacheConfiguration#setDiskPageCompression disk page compression.",
+        type = DiskPageCompression.class)
     public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
 
     /**
      * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Sets default DataStorageConfiguration#setPageSize storage page size.",
+        type = Integer.class)
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
     /**
@@ -1370,7 +1420,11 @@ public final class IgniteSystemProperties {
      * <p/>
      * Default is {@code true}.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Manages the type of the implementation of the service processor " +
+        "(implementation of the IgniteServices). All nodes in the cluster must have the same value of this property. " +
+        "If the property is true then event-driven implementation of the service processor will be used. If the " +
+        "property is false then internal cache based implementation of service processor will be used.",
+        type = Boolean.class)
     public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
         = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
 
@@ -1382,28 +1436,35 @@ public final class IgniteSystemProperties {
      * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
      * metrics will be unavailable via JMX too.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "When set to true, cache metrics are not included into the discovery metrics " +
+        "update message (in this case message contains only cluster metrics). By default cache metrics are included " +
+        "into the message and calculated each time the message is sent. Cache metrics sending can also be turned off " +
+        "by disabling statistics per each cache, but in this case some cache metrics will be unavailable via JMX too.",
+        type = Boolean.class)
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
      * Maximum number of different partitions to be extracted from between expression within sql query.
      * In case of limit exceeding all partitions will be used.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum number of different partitions to be extracted from between " +
+        "expression within sql query. In case of limit exceeding all partitions will be used.", type = Integer.class)
     public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
         "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
 
     /**
      * Maximum amount of bytes that can be stored in history of {@link DistributedMetaStorage} updates.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Maximum amount of bytes that can be stored in history of " +
+        "DistributedMetaStorage updates.", type = Long.class)
     public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
 
     /**
      * Size threshold to allocate and retain additional  HashMap to improve contains()
      * which leads to extra memory consumption.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Size threshold to allocate and retain additional HashMap to improve " +
+        "contains() which leads to extra memory consumption.", type = Integer.class)
     public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUPS_THRESHOLD";
 
     /**
@@ -1413,13 +1474,17 @@ public final class IgniteSystemProperties {
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Flag to disable memory optimization: BitSets instead of HashSets to store " +
+        "partitions. When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to " +
+        "improve contains() which leads to extra memory consumption, otherwise we use view on the list of cluster " +
+        "nodes to reduce memory consumption on redundant data structures.", type = Boolean.class)
     public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
 
     /**
      * Limit the maximum number of objects in memory during the recovery procedure.
      */
-    @IgniteSystemProperty(description = "", type = String.class)
+    @IgniteSystemProperty(description = "Limit the maximum number of objects in memory during the recovery procedure.",
+        type = Integer.class)
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
