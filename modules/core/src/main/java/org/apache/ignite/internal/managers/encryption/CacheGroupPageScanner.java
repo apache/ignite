@@ -86,9 +86,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         log = ctx.log(getClass());
 
-        encrCfg = ctx.config().getDataStorageConfiguration().getEncryptionConfiguration();
-
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        encrCfg = dsCfg != null ? ctx.config().getDataStorageConfiguration().getEncryptionConfiguration() : null;
 
         limiter = CU.isPersistenceEnabled(dsCfg) && encrCfg.getReencryptionRateLimit() > 0 ?
             new BasicRateLimiter(encrCfg.getReencryptionRateLimit() * MB / dsCfg.getPageSize()) : null;
