@@ -150,7 +150,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-/*        if (connCtx == null) {
+        if (connCtx == null) {
             synchronized (this) {
                 connCtx = ses.meta(CONN_CTX_META_KEY);
 
@@ -168,18 +168,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                     return;
                 }
             }
-        }*/
-
-        if (connCtx == null) {
-            try {
-                onHandshake(ses, msg);
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to handle handshake request " +
-                    "(probably, connection has already been closed).", e);
-            }
-
-            return;
         }
 
         storedCtx = connCtx;
