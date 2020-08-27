@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -138,11 +139,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
-    /** Property name for entry lock timeout. */
-    public static final String ENTRY_LOCK_TIMEOUT_ENV = "ENTRY_LOCK_TIMEOUT";
-
     /** Entry lock time awaiting. */
-    private static final long ENTRY_LOCK_TIMEOUT = getLong(ENTRY_LOCK_TIMEOUT_ENV, 1000);
+    private static final long ENTRY_LOCK_TIMEOUT = getLong(IgniteSystemProperties.ENTRY_LOCK_TIMEOUT, 1000);
 
     /** */
     private static final byte IS_DELETED_MASK = 0x01;

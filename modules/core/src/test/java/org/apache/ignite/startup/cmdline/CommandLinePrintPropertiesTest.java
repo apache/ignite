@@ -39,7 +39,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.PRINT_PROPS_C
  */
 public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
     /** Ignite system property pattern. */
-    private final Pattern propPtrn = Pattern.compile("^(\\w+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
+    private final Pattern propPtrn = Pattern.compile("^([\\w.]+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
 
     /** @throws Exception If failed. */
     @Test
@@ -73,7 +73,7 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
                     Field field = expProps.remove(name);
 
-                    assertNotNull("Duplicate property found [name=" + name + ']', field);
+                    assertNotNull("Unexpected or duplicated property found [name=" + name + ']', field);
 
                     assertEquals(field.isAnnotationPresent(Deprecated.class), deprecated);
 

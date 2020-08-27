@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -39,6 +38,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
@@ -99,7 +99,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
      *  We recover all before it, and start the node.
      */
     @Test
-    @WithSystemProperty(key = GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
+    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void nodeShouldStartIfLogicalRecordCorruptedAfterCheckpointOrWalStart() throws Exception {
         startNodeAndPopulate();
 

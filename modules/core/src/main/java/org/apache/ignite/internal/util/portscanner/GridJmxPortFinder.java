@@ -26,13 +26,12 @@ import java.net.UnknownHostException;
 import java.nio.channels.FileLock;
 import org.apache.ignite.IgniteSystemProperties;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JMX_PORT;
+
 /**
  * Ignite port scanner.
  */
 public class GridJmxPortFinder {
-    /** Environment variable for overriding JMX port. */
-    public static final String IGNITE_JMX_PORT = "IGNITE_JMX_PORT";
-
     /** Minimum port number. */
     private static final int MIN_PORT = 49112;
 

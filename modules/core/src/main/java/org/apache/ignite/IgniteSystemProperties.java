@@ -1826,6 +1826,32 @@ public final class IgniteSystemProperties {
         "1000 ms.", type = Integer.class)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
+    /** Property name for entry lock timeout in milliseconds. Default is 1000. */
+    @IgniteSystemProperty(description = "Property name for entry lock timeout in milliseconds. Default is 1000.",
+        type = Long.class)
+    public static final String ENTRY_LOCK_TIMEOUT = "ENTRY_LOCK_TIMEOUT";
+
+    /** Enables additional check for resource name on resources removal. */
+    @IgniteSystemProperty(description = "Enables additional check for resource name on resources removal.",
+        type = Boolean.class)
+    public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
+
+    /** Enables exchange compatibility with protocol version 1. */
+    @IgniteSystemProperty(description = "Enables exchange compatibility with protocol version 1.", type = Boolean.class)
+    public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
+
+    /** Skip checkpoint on node stop flag. */
+    @IgniteSystemProperty(description = "Skip checkpoint on node stop flag.", type = Boolean.class)
+    public static final String IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP = "IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP";
+
+    /** Enables log checkpoint read lock holders. */
+    @IgniteSystemProperty(description = "Enables log checkpoint read lock holders.", type = Boolean.class)
+    public static final String IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS = "IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS";
+
+    /** Environment variable for overriding JMX port. */
+    @IgniteSystemProperty(description = "Environment variable for overriding JMX port.", type = Integer.class)
+    public static final String IGNITE_JMX_PORT = "IGNITE_JMX_PORT";
+
     /**
      * Enforces singleton.
      */

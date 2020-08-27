@@ -35,6 +35,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
+
 /**
  *
  */
@@ -82,7 +84,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        System.setProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
+        System.setProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
     }
 
     /** {@inheritDoc} */
@@ -91,7 +93,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
+        System.clearProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
     }
 
     /**

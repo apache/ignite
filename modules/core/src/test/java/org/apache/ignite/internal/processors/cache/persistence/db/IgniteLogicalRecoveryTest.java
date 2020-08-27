@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
@@ -62,6 +61,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
@@ -169,7 +170,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        System.setProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
+        System.setProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
     }
 
     /** {@inheritDoc} */
@@ -178,7 +179,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
+        System.clearProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
     }
 
     /**
