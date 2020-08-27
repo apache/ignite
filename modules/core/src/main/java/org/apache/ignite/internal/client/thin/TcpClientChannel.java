@@ -331,7 +331,7 @@ class TcpClientChannel implements ClientChannel {
             }
         }));
 
-        return new IgniteClientFutureImpl<>(fut);
+        return new IgniteClientFutureImpl<>(fut, null);
     }
 
     /**

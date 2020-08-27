@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -231,8 +232,13 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                 }
             });
 
-            // TODO: Cancel task.fut when this fut is cancelled
-            return new IgniteClientFutureImpl<>(fut);
+            return new IgniteClientFutureImpl<>(fut, () -> {
+                try {
+                    task.fut.cancel();
+                } catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+            });
         }
     }
 
