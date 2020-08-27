@@ -26,6 +26,49 @@ from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
+class DiscoverySpi(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def type(self):
+        pass
+
+
+class TcpDiscoverySpi(DiscoverySpi):
+    def __init__(self, ip_finder):
+        self.ip_finder = ip_finder
+
+    @property
+    def type(self):
+        return 'TCP'
+
+
+class TcpDiscoveryIpFinder(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def type(self):
+        pass
+
+
+class TcpDiscoveryVmIpFinder(TcpDiscoveryIpFinder):
+    def __init__(self, nodes):
+        self.addresses = [node.account.externally_routable_ip for node in nodes]
+
+    @property
+    def type(self):
+        return 'VM'
+
+
+def from_ignite_cluster(cluster, subset=None):
+    assert isinstance(cluster, IgniteAwareService)
+
+    if subset:
+        assert isinstance(subset, slice)
+        nodes = cluster.nodes[subset]
+    else:
+        nodes = cluster.nodes
+
+    return TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(nodes))
+
 
 class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metaclass=ABCMeta):
     """
@@ -66,6 +109,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         node_config = self.spec.config().render(config_dir=self.PERSISTENT_ROOT,
                                                 work_dir=self.WORK_DIR,
                                                 properties=self.properties,
+                                                discovery_spi=self.discovery_spi,
                                                 consistent_id=node.account.externally_routable_ip)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)

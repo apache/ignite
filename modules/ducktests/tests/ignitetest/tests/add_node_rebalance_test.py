@@ -22,6 +22,7 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.ignite_aware import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
@@ -35,12 +36,6 @@ class AddNodeRebalanceTest(IgniteTest):
     PRELOAD_TIMEOUT = 60
     DATA_AMOUNT = 1000000
     REBALANCE_TIMEOUT = 60
-
-    def setUp(self):
-        pass
-
-    def teardown(self):
-        pass
 
     @cluster(num_nodes=NUM_NODES + 1)
     @parametrize(version=str(DEV_BRANCH))
@@ -56,9 +51,11 @@ class AddNodeRebalanceTest(IgniteTest):
 
         self.stage("Start Ignite nodes")
 
-        ignites = IgniteService(self.test_context, num_nodes=AddNodeRebalanceTest.NUM_NODES - 1, version=ignite_version)
+        ignites = IgniteService(self.test_context, num_nodes=self.NUM_NODES - 1, version=ignite_version)
 
         ignites.start()
+
+        discovery_spi = from_ignite_cluster(ignites)
 
         self.stage("Starting DataGenerationApplication")
 
@@ -67,9 +64,10 @@ class AddNodeRebalanceTest(IgniteTest):
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
                                  version=ignite_version,
                                  params={"cacheName": "test-cache", "range": self.DATA_AMOUNT},
+                                 discovery_spi=discovery_spi,
                                  timeout_sec=self.PRELOAD_TIMEOUT).run()
 
-        ignite = IgniteService(self.test_context, num_nodes=1, version=ignite_version)
+        ignite = IgniteService(self.test_context, num_nodes=1, version=ignite_version, discovery_spi=discovery_spi)
 
         self.stage("Starting Ignite node")
 

@@ -33,6 +33,31 @@
         {% if consistent_id %}
             <property name="consistentId" value="{{ consistent_id }}"/>
         {% endif %}
+        {% if discovery_spi %}
+            {% if discovery_spi.type == 'TCP' %}
+                <property name="discoverySpi">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                        {% if discovery_spi.ip_finder %}
+                            {% set ip_finder = discovery_spi.ip_finder %}
+                            <property name="ipFinder">
+                                {% if ip_finder.type == 'VM' %}
+                                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                                    <property name="addresses">
+                                        <list>
+                                            {% for address in ip_finder.addresses %}
+                                            <value>{{ address }}</value>
+                                            {% endfor %}
+                                        </list>
+                                    </property>
+                                </bean>
+                                {% endif %}
+                            </property>
+                        {% endif %}
+                    </bean>
+                </property>
+            {% elif discovery_spi.type == 'ZOOKEEPER' %}
+            {% endif %}
+        {% endif %}
         {% if properties %}
             {{ properties }}
         {% endif %}

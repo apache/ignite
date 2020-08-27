@@ -30,7 +30,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_aware import IgniteAwareService, TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -42,10 +42,13 @@ class IgniteService(IgniteAwareService):
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
-                 version=DEV_BRANCH):
+    def __init__(self, context, num_nodes, jvm_opts=None, properties="", discovery_spi=None,
+                 client_mode=False, modules=None, version=DEV_BRANCH):
         super().__init__(context, num_nodes, properties, client_mode=client_mode, modules=modules, version=version,
                          jvm_opts=jvm_opts)
+
+        self.discovery_spi = discovery_spi if discovery_spi else \
+            TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(self.nodes))
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):

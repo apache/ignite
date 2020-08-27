@@ -110,6 +110,7 @@ while [[ $# -ge 1 ]]; do
         -p|--param) duck_add_param "$2"; shift 2;;
         -g|--global) duck_add_global "$2"; shift 2;;
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
+        -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
@@ -137,6 +138,10 @@ DUCKTAPE_OPTIONS="--globals '$GLOBALS'"
 # If parameters are passed in options than it must contain all possible parameters, otherwise None will be injected
 if [[ "$PARAMETERS" != "{}" ]]; then
     DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --parameters '$PARAMETERS'"
+fi
+
+if [[ -n "$MAX_PARALLEL" ]]; then
+  DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --max-parallel $MAX_PARALLEL"
 fi
 
 "$SCRIPT_DIR"/ducker-ignite test "$TC_PATHS" "$DUCKTAPE_OPTIONS" \
