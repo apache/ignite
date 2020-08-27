@@ -2,8 +2,6 @@
 
 == Overview
 
-
-
 The Ignite plugin system allows you to extend the core functionality of Ignite.
 Plugins have access to different internal Ignite components, such as security processor and others, and can extend the programmatic API of Ignite.
 
@@ -51,7 +49,6 @@ include::{javaCodeDir}/plugin/MyPluginProvider.java[tags=!no-op-methods, indent=
 
 The `onIgniteStart()` method is invoked when Ignite is started.
 We start the plugin by calling `MyPlugin.start()`, which simply schedules periodic execution of the task that prints cache size information.
-
 
 === {counter:step}. Implement IgnitePlugin
 
@@ -109,6 +106,7 @@ When you start the node, you should see the following message in the console:
 === {counter:step}. Access the Plugin at Runtime
 
 You can access the instance of the plugin by calling `Ignite.plugin(pluginName)`.
+The `pluginName` argument must be equal to the plugin name returned in `MyPluginProvider.name()`.
 
 [source, java]
 ----

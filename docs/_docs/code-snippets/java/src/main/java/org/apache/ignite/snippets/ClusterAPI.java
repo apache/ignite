@@ -1,7 +1,5 @@
 package org.apache.ignite.snippets;
 
-import java.util.UUID;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;

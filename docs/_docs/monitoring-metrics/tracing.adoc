@@ -56,8 +56,8 @@ You can do this in two ways:
 * via the control script from the command line
 * programmatically
 
-Traces are collected with a given probabilistic sampling rate.
-The rate is specified as a value between 0 and 1 inclusive: `0` means no sampling, `1` means always sampling.
+Traces are collected at a given probabilistic sampling rate.
+The rate is specified as a value between 0.0 and 1.0 inclusive: `0` means no sampling, `1` means always sampling.
 
 When the sampling rate is set to a value greater than 0, Ignite collects traces.
 To disable trace collection, set the sampling rate to 0.
