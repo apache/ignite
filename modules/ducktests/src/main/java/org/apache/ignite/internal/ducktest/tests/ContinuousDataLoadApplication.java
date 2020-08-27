@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
-import java.io.IOException;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Keeps data load until stopped.
@@ -41,74 +41,55 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(ContinuousDataLoadApplication.class.getName());
 
-    /**
-     * Configuration holder.
-     */
-    private static class Config {
-        /** */
-        private String cacheName;
+    /** */
+    private IgniteCache<Integer, Integer> cache;
 
-        /** */
-        private int range;
+    /** Node set to exclusively put data on if required. */
+    private List<ClusterNode> nodesToLoad = Collections.emptyList();
 
-        /** */
-        private Set<String> targetNodes;
+    /** */
+    private Affinity<Integer> aff;
 
-        /** */
-        private boolean transactional;
-    }
+    /** Data number to put before notifying of the initialized state. */
+    private int warmUpCnt;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
         Config cfg = parseConfig(jsonNode);
 
-        CacheConfiguration<Integer, Integer> cacheConfiguration = new CacheConfiguration<>(cfg.cacheName);
-
-        cacheConfiguration.setAtomicityMode(cfg.transactional ? TRANSACTIONAL : ATOMIC);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration);
-
-        int warmUpCnt = (int)Math.max(1, 0.1f * cfg.range);
+        init(cfg);
 
         log.info("Generating data in background...");
 
         long notifyTime = System.nanoTime();
 
+        int loaded = 0;
+
         while (active()) {
-            Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null;
+            try (Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null) {
+                for (int i = 0; i < cfg.range && active(); ++i) {
+                    if (skipDataKey(i))
+                        continue;
 
-            //TODO
-            if (tx != null)
-                log.warn("TODO: transaction started.");
+                    cache.put(i, i);
 
-            for (int i = 0; i < cfg.range; ++i) {
-                cache.put(i, i);
+                    ++loaded;
 
-                if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
-                    notifyTime = System.nanoTime();
+                    if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
+                        notifyTime = System.nanoTime();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Streamed " + i + " entries.");
+                        if (log.isDebugEnabled())
+                            log.debug("Streamed " + i + " entries.");
+                    }
+
+                    // Delayed notify of the initialization to make sure the data load has completelly began and
+                    // has produced some valuable amount of data.
+                    if (!inited() && warmUpCnt == loaded)
+                        markInitialized();
                 }
 
-                // Delayed notify of the initialization to make sure the data load has completelly began and
-                // has produced some valuable amount of data.
-                if (!inited() && warmUpCnt == i)
-                    markInitialized();
-            }
-
-            if (tx != null) {
-                //TODO
-                log.warn("TODO: commiting.");
-
-                try {
+                if (tx != null && active())
                     tx.commit();
-                } finally {
-                    tx.close();
-                }
-
-                //TODO
-                log.warn("Commited.");
             }
         }
 
@@ -117,15 +98,45 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         markFinished();
     }
 
-    /** */
+    /**
+     * @return {@code True} if data should not be put for {@code dataKey}. {@code False} otherwise.
+     */
+    private boolean skipDataKey(int dataKey) {
+        if (!nodesToLoad.isEmpty()) {
+            for (ClusterNode n : nodesToLoad)
+                if (aff.isPrimaryOrBackup(n, dataKey))
+                    return false;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepares run settings based on {@code cfg}.
+     */
+    private void init(Config cfg) {
+        cache = ignite.getOrCreateCache(cfg.cacheName);
+
+        if (cfg.targetNodes != null && !cfg.targetNodes.isEmpty()) {
+            nodesToLoad = ignite.cluster().nodes().stream().filter(n -> cfg.targetNodes.contains(n.id().toString()))
+                .collect(Collectors.toList());
+
+            aff = ignite.affinity(cfg.cacheName);
+        }
+
+        warmUpCnt = cfg.warmUpRange < 1 ? (int)Math.max(1, 0.1f * cfg.range) : cfg.warmUpRange;
+    }
+
+    /**
+     * Converts Json-represented config into {@code Config}.
+     */
     private static Config parseConfig(JsonNode node) {
         ObjectMapper objMapper = new ObjectMapper();
         objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
         Config cfg;
-   
-        //TODO
-        log.warn("TODO : Parsing config: " + node.toString());
 
         try {
             cfg = objMapper.treeToValue(node, Config.class);
@@ -137,22 +148,26 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         return cfg;
     }
 
+    /**
+     * The configuration holder.
+     */
+    private static class Config {
+        /** Name of the cache. */
+        private String cacheName;
 
-    /** */
-    public static void main(String[] args){
-        ObjectMapper objMapper = new ObjectMapper();
-        objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        /** Data/keys number to load. */
+        private int range;
 
-        String json = "{\"cacheName\":\"test-cache\",\"range\":100000,\"transactional\":true}";
+        /** Node id set. If not empty, data will be load only on this nodes. */
+        private Set<String> targetNodes;
 
-        Config cfg;
+        /** If {@code true}, data will be put within transaction. */
+        private boolean transactional;
 
-        try {
-            cfg = objMapper.readValue(json, Config.class);
-            System.out.println("Cfg: " +  cfg);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        /**
+         * Data number to warn-up and to delay the init-notification. If < 1, ignored and considered default 10% of
+         * {@code range}.
+         */
+        private int warmUpRange;
     }
 }

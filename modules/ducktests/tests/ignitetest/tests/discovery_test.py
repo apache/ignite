@@ -58,10 +58,24 @@ class DiscoveryTest(IgniteTest):
 
     FAILURE_DETECTION_TIMEOUT = 2000
 
-    DATA_AMOUNT = 100000
+    DATA_AMOUNT = 5_000_000
+
+    WARMUP_DATA_AMOUNT = 10_000
+
+    CACHE_NAME = "test-cache"
 
     CONFIG_TEMPLATE = """
     <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
+    <property name="cacheConfiguration">
+        <list>
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value=\"""" + CACHE_NAME + """\"/>
+                <property name="backups" value="1"/>
+                <property name="atomicityMode" value="{{ cache_atomicity }}"/>
+                <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+            </bean>
+       </list>
+    </property>
     {% if zookeeper_settings %}
         {% with zk = zookeeper_settings %}
         <property name="discoverySpi">
@@ -81,14 +95,10 @@ class DiscoveryTest(IgniteTest):
         self.loader = None
 
     @cluster(num_nodes=NUM_NODES)
-    # @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
-    #         kill_coordinator=[False, True],
-    #         nodes_to_kill=[1, 2],
-    #         load=[0, 1, 2])
-    @matrix(ignite_version=[str(LATEST_2_8)],
-            kill_coordinator=[False],
-            nodes_to_kill=[2],
-            load=[2])
+    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+            kill_coordinator=[False, True],
+            nodes_to_kill=[1, 2],
+            load=[0, 1, 2])
     def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -96,7 +106,7 @@ class DiscoveryTest(IgniteTest):
         """
         config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, load)
 
-        return self.__simulate_nodes_failure(ignite_version, self.__properties(), None, config)
+        return self.__simulate_nodes_failure(ignite_version, self.__properties(config), None, config)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
@@ -112,7 +122,7 @@ class DiscoveryTest(IgniteTest):
 
         self.__start_zk_quorum()
 
-        properties = self.__zk_properties(self.zk_quorum.connection_string())
+        properties = self.__zk_properties(config, self.zk_quorum.connection_string())
         modules = ["zookeeper"]
 
         return self.__simulate_nodes_failure(ignite_version, properties, modules, config)
@@ -152,7 +162,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
         if config.with_load > 0:
-            self.__start_loading(version, properties, modules, config.with_load > 1)
+            self.__start_loading(version, properties, modules, ids_to_wait if config.with_load > 1 else None)
 
         first_terminated = self.servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
 
@@ -210,13 +220,12 @@ class DiscoveryTest(IgniteTest):
 
         return to_kill, survive
 
-    def __start_loading(self, ignite_version, properties, modules, transactional, target_node_ids=None):
-        params = {"cacheName": "test-cache",
+    def __start_loading(self, ignite_version, properties, modules, transactional_nodes=None):
+        params = {"cacheName": self.CACHE_NAME,
                   "range": self.DATA_AMOUNT,
-                  "transactional": transactional}
-
-        if target_node_ids:
-            params["targetNodes"] = target_node_ids
+                  "warmUpRange": self.WARMUP_DATA_AMOUNT,
+                  "transactional": True if transactional_nodes else False,
+                  "targetNodes": transactional_nodes}
 
         self.loader = IgniteApplicationService(
             self.test_context,
@@ -234,15 +243,17 @@ class DiscoveryTest(IgniteTest):
         self.zk_quorum.start()
 
     @staticmethod
-    def __properties(zookeeper_settings=None):
+    def __properties(config, zookeeper_settings=None):
         """
         :param zookeeper_settings: ZooKeeperDiscoverySpi settings. If None, TcpDiscoverySpi will be used.
         :return: Rendered node's properties.
         """
+        atomicity = "ATOMIC" if config.with_load < 2 else "TRANSACTIONAL"
+
         return Template(DiscoveryTest.CONFIG_TEMPLATE) \
             .render(failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
-                    zookeeper_settings=zookeeper_settings)
+                    zookeeper_settings=zookeeper_settings, cache_atomicity=atomicity)
 
     @staticmethod
-    def __zk_properties(connection_string):
-        return DiscoveryTest.__properties(zookeeper_settings={'connection_string': connection_string})
+    def __zk_properties(config, connection_string):
+        return DiscoveryTest.__properties(config, zookeeper_settings={'connection_string': connection_string})
