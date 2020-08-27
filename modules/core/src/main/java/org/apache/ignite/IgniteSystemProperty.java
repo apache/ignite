@@ -24,15 +24,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Ignite system property.
+ * Ignite system property info.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface IgniteSystemProperty {
-    /** Property description. */
+    /** Description. */
     String description();
 
-    /** Property type. */
+    /** Type. */
     Class<?> type();
 }

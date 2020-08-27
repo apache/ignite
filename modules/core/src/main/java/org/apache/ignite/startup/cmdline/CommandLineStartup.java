@@ -73,7 +73,7 @@ public final class CommandLineStartup {
     private static final boolean QUITE;
 
     /** Command to print Ignite system properties info. */
-    private static final String PRINT_PROPS_COMMAND = "-systemProps";
+    static final String PRINT_PROPS_COMMAND = "-systemProps";
 
     /** Build date. */
     private static Date releaseDate;
@@ -382,14 +382,12 @@ public final class CommandLineStartup {
             }
         }
 
-        X.println("Ignite system properties:");
-
         props.forEach((name, field) -> {
             String deprecated = field.isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
 
             IgniteSystemProperty prop = field.getAnnotation(IgniteSystemProperty.class);
 
-            X.println(format("%-30s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.description()));
+            X.println(format("%-40s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.description()));
         });
     }
 }
