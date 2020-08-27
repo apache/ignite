@@ -167,14 +167,15 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     }
 
     /**
-     *
+     * Tests asynchronous task execution.
      */
     @Test
     public void testExecuteTaskAsync2() throws Exception {
         try (IgniteClient client = startClient(0)) {
             TestLatchTask.latch = new CountDownLatch(1);
 
-            IgniteClientFuture<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync2(TestLatchTask.class.getName(), null);
+            IgniteClientFuture<T2<UUID, Set<UUID>>> fut = client.compute()
+                    .executeAsync2(TestLatchTask.class.getName(), null);
 
             GridTestUtils.assertThrowsAnyCause(
                 null,
@@ -184,7 +185,6 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             );
 
             // TODO: More checks for the new Future - can we use chaining and so on.
-            // TODO: Test executeAsync2 with exception
             assertFalse(fut.isDone());
 
             TestLatchTask.latch.countDown();
@@ -194,6 +194,19 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             assertTrue(fut.isDone());
             assertEquals(nodeId(0), val.get1());
             assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution with an exception.
+     */
+    @Test
+    public void testExecuteTaskAsync2WithException() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+
+            // TODO
+            fut.get();
         }
     }
 
