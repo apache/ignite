@@ -201,12 +201,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
      * Tests asynchronous task execution with an exception.
      */
     @Test
-    public void testExecuteTaskAsync2WithException() throws Exception {
+    public void testExecuteTaskAsync2WithExceptionInTask() throws Exception {
         try (IgniteClient client = startClient(0)) {
+            // TODO: Why do we get the exception synchronously?
+            // Because Compute is not properly async - fix this.
             IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
 
-            // TODO
-            fut.get();
+            String errMessage = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get();
+            assertTrue(errMessage.contains("cause=Foo"));
         }
     }
 
