@@ -1148,12 +1148,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param histItem {@code <key, value>} pair to process.
-     * @param skipKeys {@code True} if skip notifying for ignored keys.
+     * @param skipNotify {@code True} if skip notifying for ignored keys.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
      */
     private void completeWrite(
         DistributedMetaStorageHistoryItem histItem,
-        boolean skipKeys
+        boolean skipNotify
     ) throws IgniteCheckedException {
         lock.writeLock().lock();
 
@@ -1166,7 +1166,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             ver = ver.nextVersion(histItem);
 
             for (int i = 0, len = histItem.keys().length; i < len; i++) {
-                if (skipKeys && keysToSkip.contains(histItem.keys()[i]))
+                if (skipNotify && keysToSkip.contains(histItem.keys()[i]))
                     continue;
 
                 notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]),
