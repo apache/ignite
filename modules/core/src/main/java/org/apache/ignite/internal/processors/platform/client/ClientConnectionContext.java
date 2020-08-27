@@ -300,9 +300,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /**
      * Next transaction id for this connection.
+     * txId == 0 - reserved.
      */
     public int nextTxId() {
-        return txIdSeq.incrementAndGet();
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
     }
 
     /**
