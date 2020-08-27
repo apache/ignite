@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.configuration.DiskPageCompression;
-import org.apache.ignite.testframework.junits.WithIgniteSystemProperty;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 
-import static org.apache.ignite.IgniteSystemProperty.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  * WAL recovery test with WAL page compression enabled and PDS disk page compression disabled.
  */
-@WithIgniteSystemProperty(key = IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, value = "DISABLED")
+@WithSystemProperty(key = IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, value = "DISABLED")
 public class WalRecoveryWithPageCompressionTest extends IgniteWalRecoveryTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
