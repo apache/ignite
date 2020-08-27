@@ -56,6 +56,12 @@
                     </bean>
                 </property>
             {% elif discovery_spi.type == 'ZOOKEEPER' %}
+                <property name="discoverySpi">
+                    <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
+                        <property name="zkConnectionString" value="{{ discovery_spi.connection_string }}"/>
+                        <property name="zkRootPath" value="{{ discovery_spi.root_path }}"/>
+                    </bean>
+                </property>
             {% endif %}
         {% endif %}
         {% if properties %}

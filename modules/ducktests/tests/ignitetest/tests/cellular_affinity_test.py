@@ -23,7 +23,7 @@ from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.ignite_aware import from_ignite_cluster
+from ignitetest.services.utils.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH
 

@@ -52,12 +52,21 @@ Usage: ${0} [options]
 
 The options are as follows:
 -h|--help
-    Display this help message
+    Display this help message.
+
+-n|--num-nodes
+    Specify how many nodes to start. Default number of nodes to start: 11.
+
+-j|--max-parallel
+    Specify max number of tests that can be run in parallel.
 
 -p|--param
     Use specified param to inject in tests. Could be used multiple times.
 
     ./run_tests.sh --param version=2.8.1
+
+-pj|--params-json
+    Use specified json as parameters to inject in tests. Can be extended with -p|--param.
 
 -g|--global
     Use specified global param to pass to test context. Could be used multiple times.
@@ -108,8 +117,10 @@ while [[ $# -ge 1 ]]; do
     case "$1" in
         -h|--help) usage;;
         -p|--param) duck_add_param "$2"; shift 2;;
+        -pj|--params-json) PARAMETERS="$2"; shift 2;;
         -g|--global) duck_add_global "$2"; shift 2;;
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
+        -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;

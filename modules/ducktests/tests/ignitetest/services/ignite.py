@@ -30,7 +30,8 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_aware import IgniteAwareService, TcpDiscoverySpi, TcpDiscoveryVmIpFinder
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.discovery import TcpDiscoveryVmIpFinder, TcpDiscoverySpi
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -44,11 +45,11 @@ class IgniteService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, num_nodes, jvm_opts=None, properties="", discovery_spi=None,
                  client_mode=False, modules=None, version=DEV_BRANCH):
-        super().__init__(context, num_nodes, properties, client_mode=client_mode, modules=modules, version=version,
-                         jvm_opts=jvm_opts)
+        def discovery_spi_factory():
+            return TcpDiscoverySpi(TcpDiscoveryVmIpFinder(self.nodes)) if not discovery_spi else discovery_spi
 
-        self.discovery_spi = discovery_spi if discovery_spi else \
-            TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(self.nodes))
+        super().__init__(context, num_nodes, properties, discovery_spi_factory, client_mode=client_mode,
+                         modules=modules, version=version, jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
@@ -128,7 +129,7 @@ class IgniteService(IgniteAwareService):
             start_waiter.wait()
 
         if delay_ms > 0:
-            time.sleep(delay_ms/1000.0)
+            time.sleep(delay_ms / 1000.0)
 
         if time_holder:
             mono = monotonic()
