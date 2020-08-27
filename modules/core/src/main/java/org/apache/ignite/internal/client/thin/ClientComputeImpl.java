@@ -192,26 +192,21 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         if (nodeIds != null && nodeIds.isEmpty())
             throw new ClientException("Cluster group is empty.");
 
-        while (true) {
-            Consumer<PayloadOutputChannel> payloadWriter =
+        Consumer<PayloadOutputChannel> payloadWriter =
                 ch -> writeExecuteTaskRequest(ch, taskName, arg, nodeIds, flags, timeout);
 
-            Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
+        Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
                 ch -> new T2<>(ch.clientChannel(), ch.in().readLong());
 
-            T2<ClientChannel, Long> taskParams;
+        IgniteClientFuture<T2<ClientChannel, Long>> initFut = ch.serviceAsync(
+                COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
 
-            try {
-                taskParams = ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
-            }
-            catch (ClientServerError error) {
-                throw new ClientException(error.getMessage());
-            }
-
+        CompletableFuture<R> computeFut = initFut.thenCompose(taskParams -> {
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
-            if (task == null) // Channel is closed concurrently, retry with another channel.
-                continue;
+            if (task == null) {
+                // TODO: Channel closed - try again recursively (add a test for this?)
+            }
 
             CompletableFuture<R> fut = new CompletableFuture<>();
 
@@ -222,12 +217,11 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                     removeTask(task.ch, task.taskId);
 
                     try {
-                        fut.complete(((GridFutureAdapter<R>)f).get());
+                        fut.complete(((GridFutureAdapter<R>) f).get());
                     } catch (IgniteCheckedException e) {
                         fut.completeExceptionally(e);
                     }
-                }
-                else {
+                } else {
                     fut.cancel(false);
                 }
             });
@@ -239,7 +233,9 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                     throw U.convertException(e);
                 }
             });
-        }
+        }).toCompletableFuture();
+
+        return new IgniteClientFutureImpl<>(computeFut, () -> computeFut.cancel(true));
     }
 
     /**
