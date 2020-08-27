@@ -190,6 +190,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file ",
             "-Dlog4j.configDebug=true",
+            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
             "-Xmx1G",
             "-ea",
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"

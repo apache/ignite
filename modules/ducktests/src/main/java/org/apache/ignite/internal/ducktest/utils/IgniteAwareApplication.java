@@ -76,8 +76,11 @@ public abstract class IgniteAwareApplication {
             else
                 log.info("Application already done [finished=" + finished + ", broken=" + broken + "]");
 
+            if (log.isDebugEnabled())
+                log.debug("Waiting for graceful termination...");
+
             while (!finished && !broken) {
-                log.info("Waiting for graceful termnation.");
+                log.info("Waiting for graceful termination cycle...");
 
                 try {
                     U.sleep(100);
@@ -86,6 +89,9 @@ public abstract class IgniteAwareApplication {
                     e.printStackTrace();
                 }
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Graceful termination done.");
         }));
 
         log.info("ShutdownHook registered.");
@@ -111,7 +117,8 @@ public abstract class IgniteAwareApplication {
 
         log.info(APP_FINISHED);
 
-        removeShutdownHook();
+        if (!terminated())
+            removeShutdownHook();
 
         finished = true;
     }
@@ -163,6 +170,20 @@ public abstract class IgniteAwareApplication {
      */
     protected boolean terminated() {
         return terminated;
+    }
+
+    /**
+     *
+     */
+    protected boolean inited() {
+        return inited;
+    }
+
+    /**
+     *
+     */
+    protected boolean active() {
+        return !(terminated || broken || finished);
     }
 
     /**
