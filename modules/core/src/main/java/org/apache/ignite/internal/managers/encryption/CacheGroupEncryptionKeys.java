@@ -277,7 +277,7 @@ class CacheGroupEncryptionKeys {
     }
 
     /**
-     * @return WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key IDs.
+     * @return A collection of tracked (encrypted with previous encryption keys) WAL segments.
      */
     Serializable trackedWalSegments() {
         return (Serializable)Collections.unmodifiableCollection(trackedWalSegments);

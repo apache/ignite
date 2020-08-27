@@ -152,7 +152,7 @@ class GroupKeyChangeProcess {
                     "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
             }
 
-            if (ctx.encryption().isReencryptionInProgress(grpDesc.groupId())) {
+            if (ctx.encryption().reencryptionRequired(grpDesc.groupId())) {
                 throw new IgniteException("Cache group key change was rejected. " +
                     "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
             }
@@ -197,7 +197,7 @@ class GroupKeyChangeProcess {
                 int grpId = req.groupIds()[i];
                 int keyId = req.keyIds()[i] & 0xff;
 
-                if (ctx.encryption().isReencryptionInProgress(grpId)) {
+                if (ctx.encryption().reencryptionRequired(grpId)) {
                     return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                             "Cache group reencryption is in progress [grpId=" + grpId + "]"));
                 }

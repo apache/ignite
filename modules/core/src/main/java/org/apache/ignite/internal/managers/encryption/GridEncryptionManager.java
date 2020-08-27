@@ -642,7 +642,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, key));
 
             synchronized (metaStorageMux) {
-                writeToMetaStore(grpId, true, false);
+                writeGroupKeysToMetaStore(grpId);
             }
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
@@ -763,9 +763,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 // Set new key as key for writing.
                 GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, newKeyId);
 
+                writeGroupKeysToMetaStore(grpId);
+
                 grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
-                writeToMetaStore(grpId, true, true);
+                writeTrackedWalIdxsToMetaStore();
             }
 
             reencryptGroups.put(grpId, pageScanner.pagesCount(grp));
@@ -780,19 +782,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @param grpId Cache group ID.
      * @return Future that will be completed when reencryption of the specified group is finished.
+     * @throws IgniteCheckedException If reencryption is disabled.
      */
-    public IgniteInternalFuture<Void> reencryptionFuture(int grpId) {
-        if (pageScanner.disabled() && reencryptGroups.containsKey(grpId))
-            return new GridFutureAdapter<>();
+    public IgniteInternalFuture<Void> reencryptionFuture(int grpId) throws IgniteCheckedException {
+        if (pageScanner.disabled() && reencryptionRequired(grpId))
+            throw new IgniteCheckedException("Reencryption is disabled.");
 
         return pageScanner.statusFuture(grpId);
     }
 
     /**
      * @param grpId Cache group ID.
-     * @return {@code True} If the specified cache group is being re-encrypted.
+     * @return {@code True} If the specified cache group should be re-encrypted.
      */
-    boolean isReencryptionInProgress(int grpId) {
+    public boolean reencryptionRequired(int grpId) {
         // The method guarantees not only the completion of the re-encryption, but also that the clearing of
         // unused keys is complete.
         return reencryptGroups.containsKey(grpId);
@@ -844,9 +847,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Cache group ID.
      */
     public void onCacheGroupStop(int grpId) {
-        IgniteInternalFuture<Void> fut = reencryptionFuture(grpId);
-
         try {
+            IgniteInternalFuture<Void> fut = reencryptionFuture(grpId);
+
             fut.cancel();
         }
         catch (IgniteCheckedException e) {
@@ -890,7 +893,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         synchronized (metaStorageMux) {
             try {
-                writeToMetaStore(0, false, true);
+                writeTrackedWalIdxsToMetaStore();
 
                 for (Map.Entry<Integer, Set<Integer>> entry : rmvKeys.entrySet()) {
                     Integer grpId = entry.getKey();
@@ -904,7 +907,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     assert rmv : keyIds;
 
-                    writeToMetaStore(grpId, true, false);
+                    writeGroupKeysToMetaStore(grpId);
 
                     if (log.isInfoEnabled()) {
                         log.info("Previous encryption keys have been removed [grpId=" + grpId +
@@ -1165,7 +1168,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (rmvKeyIds.isEmpty())
             return;
 
-        writeToMetaStore(grpId, true, false);
+        writeGroupKeysToMetaStore(grpId);
 
         if (log.isInfoEnabled())
             log.info("Previous encryption keys were removed [grpId=" + grpId + ", keyIds=" + rmvKeyIds + "]");
@@ -1182,14 +1185,56 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             metaStorage.write(MASTER_KEY_NAME_PREFIX, getSpi().getMasterKeyName());
 
         if (!reencryptGroupsForced.isEmpty())
-            writeToMetaStore(0, false, true);
+            writeTrackedWalIdxsToMetaStore();
 
         for (Integer grpId : grpKeys.groupIds()) {
             if (!writeAll && !reencryptGroupsForced.containsKey(grpId) &&
                 metaStorage.read(ENCRYPTION_KEYS_PREFIX + grpId) != null)
                 continue;
 
-            writeToMetaStore(grpId, true, false);
+            writeGroupKeysToMetaStore(grpId);
+        }
+    }
+
+    /**
+     * Writes cache group encryption keys to metastore.
+     *
+     * @param grpId Cache group ID.
+     */
+    private void writeGroupKeysToMetaStore(int grpId) throws IgniteCheckedException {
+        assert Thread.holdsLock(metaStorageMux);
+
+        if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
+            return;
+
+        List<GroupKeyEncrypted> keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
+
+        ctx.cache().context().database().checkpointReadLock();
+
+        try {
+            metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keysEncrypted);
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Writes tracked (encrypted with previous encryption keys) WAL segments to metastore.
+     */
+    private void writeTrackedWalIdxsToMetaStore() throws IgniteCheckedException {
+        assert Thread.holdsLock(metaStorageMux);
+
+        if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
+            return;
+
+        ctx.cache().context().database().checkpointReadLock();
+
+        try {
+            metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.trackedWalSegments());
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
         }
     }
 
@@ -1212,39 +1257,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public DiscoveryDataExchangeType discoveryDataType() {
         return ENCRYPTION_MGR;
-    }
-
-    /**
-     * Writes cache group encryption keys to metastore.
-     *
-     * @param grpId Cache group ID.
-     * @param updateKeys Write existing encryption keys.
-     * @param updateWalIdxs Write WAL segment indexes.
-     */
-    private void writeToMetaStore(int grpId, boolean updateKeys, boolean updateWalIdxs) throws IgniteCheckedException {
-        assert Thread.holdsLock(metaStorageMux);
-        assert updateKeys || updateWalIdxs;
-
-        if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
-            return;
-
-        List<GroupKeyEncrypted> keysEncrypted = null;
-
-        if (updateKeys)
-            keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
-
-        ctx.cache().context().database().checkpointReadLock();
-
-        try {
-            if (updateWalIdxs)
-                metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.trackedWalSegments());
-
-            if (updateKeys)
-                metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keysEncrypted);
-        }
-        finally {
-            ctx.cache().context().database().checkpointReadUnlock();
-        }
     }
 
     /**

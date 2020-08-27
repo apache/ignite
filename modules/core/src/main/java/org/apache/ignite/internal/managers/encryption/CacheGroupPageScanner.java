@@ -223,9 +223,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @return Future that will be completed when all partitions have been scanned and pages have been written to disk.
      */
     public IgniteInternalFuture<Void> statusFuture(int grpId) {
-        GroupScanTask ctx0 = grps.get(grpId);
+        GroupScanTask grpScanTask = grps.get(grpId);
 
-        return ctx0 == null ? new GridFinishedFuture<>() : ctx0;
+        return grpScanTask == null ? new GridFinishedFuture<>() : grpScanTask;
     }
 
     /**
@@ -268,7 +268,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public long[] pagesCount(CacheGroupContext grp) throws IgniteCheckedException {
-        // The last element of the array is used to store the status of the index section.
+        // The last element of the array is used to store the status of the index partition.
         long[] partStates = new long[grp.affinity().partitions() + 1];
 
         ctx.cache().context().database().checkpointReadLock();
@@ -278,7 +278,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
-                    // The last element of the array is used to store the status of the index section.
+                    // The last element of the array is used to store the status of the index partition.
                     partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });
