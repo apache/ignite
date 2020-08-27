@@ -23,13 +23,13 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIndexMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Meta page delta record, includes encryption status data.
  */
-public class MetaPageUpdateDataRecord extends PageDeltaRecord {
+public class MetaPageUpdateIndexDataRecord extends PageDeltaRecord {
     /** Index of the last reencrypted page. */
     private int encryptPageIdx;
 
@@ -42,7 +42,7 @@ public class MetaPageUpdateDataRecord extends PageDeltaRecord {
      * @param encryptPageIdx Index of the last reencrypted page.
      * @param encryptPageCnt Total pages to be reencrypted.
      */
-    public MetaPageUpdateDataRecord(int grpId, long pageId, int encryptPageIdx, int encryptPageCnt) {
+    public MetaPageUpdateIndexDataRecord(int grpId, long pageId, int encryptPageIdx, int encryptPageCnt) {
         super(grpId, pageId);
 
         this.encryptPageIdx = encryptPageIdx;
@@ -51,7 +51,7 @@ public class MetaPageUpdateDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        PageMetaIO io = PageMetaIO.VERSIONS.forPage(pageAddr);
+        PageIndexMetaIO io = PageIndexMetaIO.VERSIONS.forPage(pageAddr);
 
         io.setEncryptedPageIndex(pageAddr, encryptPageIdx);
         io.setEncryptedPageCount(pageAddr, encryptPageCnt);
@@ -59,13 +59,13 @@ public class MetaPageUpdateDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.META_PAGE_DELTA_RECORD;
+        return RecordType.INDEX_META_PAGE_DELTA_RECORD;
     }
 
     /**
      * @param in Input.
      */
-    public MetaPageUpdateDataRecord(DataInput in) throws IOException {
+    public MetaPageUpdateIndexDataRecord(DataInput in) throws IOException {
         super(in.readInt(), in.readLong());
 
         encryptPageIdx = in.readInt();
@@ -99,7 +99,7 @@ public class MetaPageUpdateDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdateDataRecord.class, this, "partId",
+        return S.toString(MetaPageUpdateIndexDataRecord.class, this, "partId",
             PageIdUtils.partId(pageId()), "super", super.toString());
     }
 }

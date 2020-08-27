@@ -37,6 +37,9 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     /** */
     private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
 
+    /** */
+    public static final int END_OF_PARTITION_PAGE_META_V2 = GAPS_LINK + 8;
+
     /**
      * @param ver Version.
      */

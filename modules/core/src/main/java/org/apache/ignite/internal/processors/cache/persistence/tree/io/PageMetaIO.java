@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * IO for index partition metadata page.
  */
 public class PageMetaIO extends PageIO {
     /** */
@@ -53,15 +53,6 @@ public class PageMetaIO extends PageIO {
 
     /** End of page meta. */
     static final int END_OF_PAGE_META = CANDIDATE_PAGE_COUNT_OFF + 4;
-
-    /** Total pages for reencryption offset. */
-    private static final int ENCRYPT_PAGE_IDX_OFF = END_OF_PAGE_META;
-
-    /** Last reencrypted page index offset. */
-    private static final int ENCRYPT_PAGE_MAX_OFF = ENCRYPT_PAGE_IDX_OFF + 4;
-
-    /** End of page meta. */
-    static final int END_OF_PAGE_META_V2 = ENCRYPT_PAGE_MAX_OFF + 4;
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
@@ -95,8 +86,6 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotTag(pageAddr, 0);
         setLastAllocatedPageCount(pageAddr, 0);
         setCandidatePageCount(pageAddr, 0);
-        setEncryptedPageIndex(pageAddr, 0);
-        setEncryptedPageCount(pageAddr, 0);
     }
 
     /**
@@ -256,52 +245,6 @@ public class PageMetaIO extends PageIO {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @return Index of the last reencrypted page.
-     */
-    public int getEncryptedPageIndex(long pageAddr) {
-        return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_IDX_OFF);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param pageIdx Index of the last reencrypted page.
-     *
-     * @return {@code true} if value has changed as a result of this method's invocation.
-     */
-    public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
-        if (getEncryptedPageIndex(pageAddr) == pageIdx)
-            return false;
-
-        PageUtils.putLong(pageAddr, ENCRYPT_PAGE_IDX_OFF, pageIdx);
-
-        return true;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @return Total pages to be reencrypted.
-     */
-    public int getEncryptedPageCount(long pageAddr) {
-        return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_MAX_OFF);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param pagesCnt Total pages to be reencrypted.
-     *
-     * @return {@code true} if value has changed as a result of this method's invocation.
-     */
-    public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
-        if (getEncryptedPageCount(pageAddr) == pagesCnt)
-            return false;
-
-        PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);
-
-        return true;
-    }
-
     /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("PageMeta[\n\ttreeRoot=").a(getReuseListRoot(addr))
@@ -311,8 +254,6 @@ public class PageMetaIO extends PageIO {
             .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
             .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
             .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
-            .a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(addr))
-            .a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(addr))
             .a("\n]");
     }
 }

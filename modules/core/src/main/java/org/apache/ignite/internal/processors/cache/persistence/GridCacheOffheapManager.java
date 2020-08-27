@@ -57,7 +57,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateIndexDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV3;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -93,10 +93,10 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.Partiti
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIndexMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV3;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
@@ -445,7 +445,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     boolean changed = false;
 
                     try {
-                        PagePartitionMetaIOV2 io = PageIO.getPageIO(partMetaPageAddr);
+                        PagePartitionMetaIOV3 io = PageIO.getPageIO(partMetaPageAddr);
 
                         long link = io.getGapsLink(partMetaPageAddr);
 
@@ -1066,8 +1066,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 long metastoreRoot, reuseListRoot;
 
-                if (PageIO.getType(pageAddr) != PageIO.T_META) {
-                    PageMetaIO pageIO = PageMetaIO.VERSIONS.latest();
+                if (PageIO.getType(pageAddr) != PageIO.T_INDEX_META && PageIO.getType(pageAddr) != PageIO.T_META) {
+                    PageIndexMetaIO pageIO = PageIndexMetaIO.VERSIONS.latest();
 
                     pageIO.initNewPage(pageAddr, metaId, pageMem.realPageSize(grpId));
 
@@ -1078,7 +1078,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
 
                     if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
-                        assert pageIO.getType() == PageIO.T_META;
+                        assert pageIO.getType() == PageIO.T_INDEX_META;
 
                         wal.log(new MetaPageInitRecord(
                             grpId,
@@ -1093,7 +1093,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     allocated = true;
                 }
                 else {
-                    PageMetaIO pageIO = PageIO.getPageIO(pageAddr);
+                    // Upgrade meta page.
+                    if (PageIO.getType(pageAddr) == PageIO.T_META) {
+                        PageIO.setType(pageAddr, PageIO.T_INDEX_META);
+
+                        PageIndexMetaIO pageIO = PageIO.getPageIO(pageAddr);
+
+                        pageIO.setEncryptedPageIndex(pageAddr, 0);
+                        pageIO.setEncryptedPageCount(pageAddr, 0);
+                    }
+
+                    PageIndexMetaIO pageIO = PageIO.getPageIO(pageAddr);
 
                     metastoreRoot = pageIO.getTreeRoot(pageAddr);
                     reuseListRoot = pageIO.getReuseListRoot(pageAddr);
@@ -1325,7 +1335,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
             try {
-                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+                PageIndexMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
                 int encryptIdx = ReencryptStateUtils.pageIndex(state);
                 int encryptCnt = ReencryptStateUtils.pageCount(state);
@@ -1342,7 +1352,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
                 if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId, metaPage, wal, null))
-                    wal.log(new MetaPageUpdateDataRecord(grpId, metaPageId, encryptIdx, encryptCnt));
+                    wal.log(new MetaPageUpdateIndexDataRecord(grpId, metaPageId, encryptIdx, encryptCnt));
             }
             finally {
                 pageMem.writeUnlock(grpId, metaPageId, metaPage, null, changed);
@@ -2053,7 +2063,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         try {
                             if (PageIO.getType(pageAddr) != 0) {
-                                PagePartitionMetaIOV2 io = (PagePartitionMetaIOV2)PagePartitionMetaIO.VERSIONS.latest();
+                                PagePartitionMetaIOV3 io = (PagePartitionMetaIOV3)PagePartitionMetaIO.VERSIONS.latest();
 
                                 Map<Integer, Long> cacheSizes = null;
 
@@ -2140,7 +2150,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
-                        PagePartitionMetaIOV2 io = (PagePartitionMetaIOV2)PagePartitionMetaIO.VERSIONS.latest();
+                        PagePartitionMetaIOV3 io = (PagePartitionMetaIOV3)PagePartitionMetaIO.VERSIONS.latest();
 
                         io.initNewPage(pageAddr, partMetaId, pageMem.realPageSize(grpId));
 

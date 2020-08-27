@@ -28,32 +28,11 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  * Persistent partition contains it's own PendingTree.
  */
 public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
-    /** */
-    private static final int SIZE_OFF = PageMetaIO.END_OF_PAGE_META_V2;
+    /** Last reencrypted page index offset. */
+    private static final int ENCRYPT_PAGE_IDX_OFF = END_OF_PARTITION_PAGE_META_V2;
 
-    /** */
-    private static final int UPDATE_CNTR_OFF = SIZE_OFF + 8;
-
-    /** */
-    private static final int GLOBAL_RMV_ID_OFF = UPDATE_CNTR_OFF + 8;
-
-    /** */
-    private static final int PARTITION_STATE_OFF = GLOBAL_RMV_ID_OFF + 8;
-
-    /** */
-    private static final int NEXT_PART_META_PAGE_OFF = PARTITION_STATE_OFF + 1;
-
-    /** */
-    private static final int PENDING_TREE_ROOT_OFF = NEXT_PART_META_PAGE_OFF + 8;
-
-    /** */
-    private static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
-
-    /** */
-    private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
-
-    /** */
-    private static final int END_OF_PARTITION_META_V3 = GAPS_LINK + 8;
+    /** Total pages to be reencrypted offset. */
+    private static final int ENCRYPT_PAGE_MAX_OFF = ENCRYPT_PAGE_IDX_OFF + 4;
 
     /**
      * @param ver Version.
@@ -66,171 +45,52 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
         super.initNewPage(pageAddr, pageId, pageSize);
 
-        setSize(pageAddr, 0);
-        setUpdateCounter(pageAddr, 0);
-        setGlobalRemoveId(pageAddr, 0);
-        setPartitionState(pageAddr, (byte)-1);
-        setCountersPageId(pageAddr, 0);
-        setPendingTreeRoot(pageAddr, 0L);
-        setPartitionMetaStoreReuseListRoot(pageAddr, 0L);
-        setGapsLink(pageAddr, 0);
+        setEncryptedPageIndex(pageAddr, 0);
+        setEncryptedPageCount(pageAddr, 0);
     }
 
     /**
      * @param pageAddr Page address.
-     * @return Partition size.
+     * @return Index of the last reencrypted page.
      */
-    @Override public long getSize(long pageAddr) {
-        return PageUtils.getLong(pageAddr, SIZE_OFF);
+    public int getEncryptedPageIndex(long pageAddr) {
+        return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_IDX_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param size Partition size.
+     * @param pageIdx Index of the last reencrypted page.
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    @Override public boolean setSize(long pageAddr, long size) {
-        if (getSize(pageAddr) == size)
+    public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+        if (getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
-        PageUtils.putLong(pageAddr, SIZE_OFF, size);
+        PageUtils.putLong(pageAddr, ENCRYPT_PAGE_IDX_OFF, pageIdx);
 
         return true;
     }
 
     /**
      * @param pageAddr Page address.
-     * @return Partition update counter.
+     * @return Total pages to be reencrypted.
      */
-    @Override public long getUpdateCounter(long pageAddr) {
-        return PageUtils.getLong(pageAddr, UPDATE_CNTR_OFF);
+    public int getEncryptedPageCount(long pageAddr) {
+        return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_MAX_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param cntr Partition update counter.
+     * @param pagesCnt Total pages to be reencrypted.
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    @Override public boolean setUpdateCounter(long pageAddr, long cntr) {
-        if (getUpdateCounter(pageAddr) == cntr)
+    public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+        if (getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 
-        PageUtils.putLong(pageAddr, UPDATE_CNTR_OFF, cntr);
-
-        return true;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @return Global remove ID.
-     */
-    @Override public long getGlobalRemoveId(long pageAddr) {
-        return PageUtils.getLong(pageAddr, GLOBAL_RMV_ID_OFF);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param rmvId Global remove ID.
-     *
-     * @return {@code true} if value has changed as a result of this method's invocation.
-     */
-    @Override public boolean setGlobalRemoveId(long pageAddr, long rmvId) {
-        if (getGlobalRemoveId(pageAddr) == rmvId)
-            return false;
-
-        PageUtils.putLong(pageAddr, GLOBAL_RMV_ID_OFF, rmvId);
-
-        return true;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     */
-    @Override public byte getPartitionState(long pageAddr) {
-        return PageUtils.getByte(pageAddr, PARTITION_STATE_OFF);
-    }
-
-    /**
-     * @param pageAddr Partition metadata page address.
-     * @param state State.
-     *
-     * @return {@code true} if value has changed as a result of this method's invocation.
-     */
-    @Override public boolean setPartitionState(long pageAddr, byte state) {
-        if (getPartitionState(pageAddr) == state)
-            return false;
-
-        PageUtils.putByte(pageAddr, PARTITION_STATE_OFF, state);
-
-        return true;
-    }
-
-    /**
-     * Returns partition counters page identifier, page with caches in cache group sizes.
-     *
-     * @param pageAddr Partition metadata page address.
-     * @return Next meta partial page ID or {@code 0} if it does not exist.
-     */
-    @Override public long getCountersPageId(long pageAddr) {
-        return PageUtils.getLong(pageAddr, NEXT_PART_META_PAGE_OFF);
-    }
-
-    /**
-     * Sets new reference to partition counters page (logical cache sizes).
-     *
-     * @param pageAddr Partition metadata page address.
-     * @param cntrsPageId New cache sizes page ID.
-     */
-    @Override public void setCountersPageId(long pageAddr, long cntrsPageId) {
-        PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getPendingTreeRoot(long pageAddr) {
-        return PageUtils.getLong(pageAddr, PENDING_TREE_ROOT_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPendingTreeRoot(long pageAddr, long listRoot) {
-        PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, listRoot);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     */
-    @Override public long getPartitionMetaStoreReuseListRoot(long pageAddr) {
-        return PageUtils.getLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param listRoot List root.
-     */
-    @Override public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
-        PageUtils.putLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF, listRoot);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @return Partition size.
-     */
-    @Override public long getGapsLink(long pageAddr) {
-        return PageUtils.getLong(pageAddr, GAPS_LINK);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param link Link.
-     *
-     * @return {@code true} if value has changed as a result of this method's invocation.
-     */
-    @Override public boolean setGapsLink(long pageAddr, long link) {
-        if (getGapsLink(pageAddr) == link)
-            return false;
-
-        PageUtils.putLong(pageAddr, GAPS_LINK, link);
+        PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);
 
         return true;
     }
@@ -255,6 +115,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
         sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
         sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
         sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
+        sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr));
+        sb.a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
         sb.a("\n]");
     }
 
@@ -267,14 +129,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
         assert PageIO.getType(pageAddr) == getType();
         assert PageIO.getVersion(pageAddr) < 3;
 
-        if (PageIO.getVersion(pageAddr) < 2)
-            super.upgradePage(pageAddr);
-
         PageIO.setVersion(pageAddr, getVersion());
-
-        byte[] bytes = PageUtils.getBytes(pageAddr, END_OF_PAGE_META, END_OF_PARTITION_META_V3 - SIZE_OFF);
-
-        PageUtils.putBytes(pageAddr, END_OF_PAGE_META_V2, bytes);
 
         setEncryptedPageIndex(pageAddr, 0);
         setEncryptedPageCount(pageAddr, 0);

@@ -56,7 +56,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateIndexDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulFullSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
@@ -118,12 +118,12 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_META_PAGE_DELTA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INIT_NEW_PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MEMORY_RECOVERY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_DELTA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_INIT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_ALLOCATED_INDEX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID;
@@ -198,7 +198,7 @@ public class RecordUtils {
             put(PAGES_LIST_ADD_PAGE, RecordUtils::buildPagesListAddPageRecord);
             put(PAGES_LIST_REMOVE_PAGE, RecordUtils::buildPagesListRemovePageRecord);
             put(META_PAGE_INIT, RecordUtils::buildMetaPageInitRecord);
-            put(META_PAGE_DELTA_RECORD, RecordUtils::buildMetaPageDeltaRecord);
+            put(INDEX_META_PAGE_DELTA_RECORD, RecordUtils::buildMetaPageIndexDeltaRecord);
             put(PARTITION_META_PAGE_UPDATE_COUNTERS, RecordUtils::buildMetaPageUpdatePartitionDataRecord);
             put(MEMORY_RECOVERY, RecordUtils::buildMemoryRecoveryRecord);
             put(TRACKING_PAGE_DELTA, RecordUtils::buildTrackingPageDeltaRecord);
@@ -425,8 +425,8 @@ public class RecordUtils {
     }
 
     /** **/
-    public static MetaPageUpdateDataRecord buildMetaPageDeltaRecord() {
-        return new MetaPageUpdateDataRecord(1, 1, 0, 0);
+    public static MetaPageUpdateIndexDataRecord buildMetaPageIndexDeltaRecord() {
+        return new MetaPageUpdateIndexDataRecord(1, 1, 0, 0);
     }
 
     /** **/

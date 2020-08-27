@@ -70,7 +70,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineFlagsCreatedVersionRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateIndexDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulFullSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
@@ -386,7 +386,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case META_PAGE_INIT:
                 return /*cache ID*/4 + /*page ID*/8 + /*ioType*/2 + /*ioVer*/2 +  /*tree root*/8 + /*reuse root*/8;
 
-            case META_PAGE_DELTA_RECORD:
+            case INDEX_META_PAGE_DELTA_RECORD:
                 return /*cache ID*/4 + /*page ID*/8 + /*encrypt page index*/ 4 + /*encrypt pages count*/4;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
@@ -634,8 +634,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case META_PAGE_DELTA_RECORD:
-                res = new MetaPageUpdateDataRecord(in);
+            case INDEX_META_PAGE_DELTA_RECORD:
+                res = new MetaPageUpdateIndexDataRecord(in);
 
                 break;
 
@@ -1321,8 +1321,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case META_PAGE_DELTA_RECORD:
-                ((MetaPageUpdateDataRecord)rec).toBytes(buf);
+            case INDEX_META_PAGE_DELTA_RECORD:
+                ((MetaPageUpdateIndexDataRecord)rec).toBytes(buf);
 
                 break;
 
