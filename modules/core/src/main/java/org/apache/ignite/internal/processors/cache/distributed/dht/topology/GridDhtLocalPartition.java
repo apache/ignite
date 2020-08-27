@@ -152,10 +152,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private volatile CacheDataStore store;
 
-    /** Set if failed to move partition to RENTING state due to reservations, to be checked when
-     * reservation is released. */
-    private volatile long delayedRentingTopVer;
-
     /** */
     private final AtomicReference<GridFutureAdapter<?>> finishFutRef = new AtomicReference<>();
 
@@ -491,15 +487,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
-                // If no more reservations try to continue delayed renting.
-                if (reservations == 0) {
-                    if (delayedRentingTopVer != 0 &&
-                        // Prevents delayed renting on topology which expects ownership.
-                        delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
-                        rent();
-                    else if (getPartState(state) == RENTING) // If was reserved in renting state continue clearing.
-                        clearAsync();
-                }
+                // If no more reservations try to continue clearing.
+                if (reservations == 0 && getPartState(state) == RENTING)
+                    clearAsync();
 
                 return;
             }
@@ -675,12 +665,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return rent;
         }
 
-        // Store current topology version to check on partition release.
-        delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
-
         if (getReservations(state0) == 0 && casState(state0, RENTING)) {
-            delayedRentingTopVer = 0;
-
             // Evict asynchronously, as the 'rent' method may be called
             // from within write locks on local partition.
             clearAsync();
@@ -690,7 +675,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Starts clearing process asynchronously if it's requested and not running at the moment.
+     * Initiates partition clearing attempt.
+     *
+     * @return A future what will be finished then a current clearing attempt is done.
      */
     public IgniteInternalFuture<?> clearAsync() {
         long state = this.state.get();
@@ -700,7 +687,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         boolean evictionRequested = partState == RENTING;
         boolean clearingRequested = partState == MOVING;
 
-        if (!evictionRequested && !clearingRequested)
+        if (!evictionRequested && !clearingRequested || !tryInvalidateGroupReservations())
             return new GridFinishedFuture<>();
 
         GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
@@ -730,15 +717,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code true} If there is a group reservation.
+     * Invalidates all partition group reservations, so they can't be reserved again any more.
+     *
+     * @return {@code true} If all group reservations are invalidated (or no such reservations).
      */
-    private boolean groupReserved() {
+    private boolean tryInvalidateGroupReservations() {
         for (GridDhtPartitionsReservation reservation : reservations) {
             if (!reservation.invalidate())
-                return true; // Failed to invalidate reservation -> we are reserved.
+                return false; // Failed to invalidate reservation -> we are reserved.
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -762,7 +751,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
         // A partition is promoted to EVICTED state if it is not reserved and empty.
-        if (getReservations(state0) == 0 && store.isEmpty() && state == RENTING)
+        if (store.isEmpty() && getReservations(state0) == 0 && state == RENTING)
             casState(state0, EVICTED);
     }
 

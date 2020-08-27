@@ -71,7 +71,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
         assert cctx != null;
         assert appKey != null;
 
-        this.topVer = topVer;
+        this.topVer = cctx.shared().exchange().lastAffinityChangedTopologyVersion(topVer);
         this.cctx = cctx;
         this.appKey = appKey;
     }
@@ -181,16 +181,10 @@ public class GridDhtPartitionsReservation implements GridReservable {
         if (parts == null)  // Can be not initialized yet.
             return;
 
-        for (GridDhtLocalPartition part : parts)
-            tryEvict(part);
-    }
-
-    /**
-     * @param part Partition.
-     */
-    private static void tryEvict(GridDhtLocalPartition part) {
-        if (part.state() == RENTING && part.reservations() == 0)
-            part.clearAsync();
+        for (GridDhtLocalPartition part : parts) {
+            if (part.state() == RENTING)
+                part.clearAsync();
+        }
     }
 
     /**
@@ -206,7 +200,9 @@ public class GridDhtPartitionsReservation implements GridReservable {
             if (reservations.compareAndSet(r, r - 1)) {
                 // If it was the last reservation and topology version changed -> attempt to evict partitions.
                 if (r == 1 && !cctx.kernalContext().isStopping() &&
-                    !topVer.equals(cctx.topology().lastTopologyChangeVersion()))
+                    // Avoid calling tryEvict if a topology has not changed.
+                    !topVer.equals(cctx.shared().exchange().lastAffinityChangedTopologyVersion(
+                        cctx.topology().lastTopologyChangeVersion())))
                     tryEvict(parts.get());
 
                 return;
@@ -239,7 +235,6 @@ public class GridDhtPartitionsReservation implements GridReservable {
     }
 
     /**
-     * Must be checked in {@link GridDhtLocalPartition#tryClear(EvictionContext)}.
      * If returns {@code true} this reservation object becomes invalid and partitions
      * can be evicted or at least cleared.
      * Also this means that after returning {@code true} here method {@link #reserve()} can not
