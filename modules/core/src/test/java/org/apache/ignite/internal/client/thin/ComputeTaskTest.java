@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -182,7 +183,8 @@ public class ComputeTaskTest extends AbstractThinClientTest {
                 null
             );
 
-            // TODO: More checks for the new Future
+            // TODO: More checks for the new Future - can we use chaining and so on.
+            // TODO: Test executeAsync2 with exception
             assertFalse(fut.isDone());
 
             TestLatchTask.latch.countDown();
@@ -230,7 +232,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             assertFalse(fut.isDone());
 
             AtomicReference<Throwable> handledErr = new AtomicReference<>();
-            fut.handle((r, err) -> {
+            CompletionStage<T2<UUID, List<UUID>>> handledFut = fut.handle((r, err) -> {
                 handledErr.set(err);
                 return r;
             });
@@ -245,6 +247,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             assertNotNull(handledErr.get());
             assertTrue(handledErr.get() instanceof CancellationException);
+            assertNull(handledFut.toCompletableFuture().get());
 
             fut.get();
         }
