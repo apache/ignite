@@ -1752,7 +1752,7 @@ public final class IgniteSystemProperties {
      * greater than <code>0</code>. Default value is <code>5</code>.
      */
     @IgniteSystemProperty(description = "The limit of samples of completed transactions that will be dumped in log " +
-        "per second, if " +IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is above 0.0. Must be integer value " +
+        "per second, if " + IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is above 0.0. Must be integer value " +
         "greater than 0. Default value is 5.", type = Integer.class)
     public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT =
         "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT";
