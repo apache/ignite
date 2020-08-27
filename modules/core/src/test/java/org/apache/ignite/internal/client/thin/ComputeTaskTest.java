@@ -33,6 +33,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientCache;
@@ -40,6 +42,7 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -170,7 +173,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             TestLatchTask.latch = new CountDownLatch(1);
 
-            Future<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync2(TestLatchTask.class.getName(), null);
+            IgniteClientFuture<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync2(TestLatchTask.class.getName(), null);
 
             GridTestUtils.assertThrowsAnyCause(
                 null,
@@ -221,10 +224,16 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     @Test(expected = CancellationException.class)
     public void testTaskCancellation2() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            Future<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
+            IgniteClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
 
             assertFalse(fut.isCancelled());
             assertFalse(fut.isDone());
+
+            AtomicReference<Throwable> handledErr = new AtomicReference<>();
+            fut.handle((r, err) -> {
+                handledErr.set(err);
+                return r;
+            });
 
             fut.cancel(true);
 
