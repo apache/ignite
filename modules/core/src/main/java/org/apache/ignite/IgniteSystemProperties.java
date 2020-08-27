@@ -341,9 +341,9 @@ public final class IgniteSystemProperties {
      * Transactions that take more time, than value of this property, will be output to log
      * with warning level. {@code 0} (default value) disables warning on slow transactions.
      */
-    @IgniteSystemProperty(description = "Transactions that take more time, than value of this property, will be " +
-        "output to log with warning level. 0 (default value) disables warning on slow transactions.",
-        type = Integer.class)
+    @IgniteSystemProperty(description = "Transactions that take more time, than value of this property " +
+        "(in milliseconds), will be output to log with warning level. 0 (default value) disables warning on slow " +
+        "transactions.", type = Integer.class)
     public static final String IGNITE_SLOW_TX_WARN_TIMEOUT = "IGNITE_SLOW_TX_WARN_TIMEOUT";
 
     /**
@@ -418,8 +418,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SSH_USER_NAME = "IGNITE_SSH_USER_NAME";
 
     /** System property to hold preload resend timeout for evicted partitions. */
-    @IgniteSystemProperty(description = "System property to hold preload resend timeout for evicted partitions.",
-        type = Long.class)
+    @IgniteSystemProperty(description = "System property to hold preload resend timeout for evicted partitions " +
+        "in milliseconds.", type = Long.class)
     public static final String IGNITE_PRELOAD_RESEND_TIMEOUT = "IGNITE_PRELOAD_RESEND_TIMEOUT";
 
     /**
@@ -691,8 +691,8 @@ public final class IgniteSystemProperties {
     @IgniteSystemProperty(description = "Disable SQL system views", type = Boolean.class)
     public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
 
-    /** SQL retry timeout. */
-    @IgniteSystemProperty(description = "SQL retry timeout.", type = Long.class)
+    /** SQL retry timeout in milliseconds. */
+    @IgniteSystemProperty(description = "SQL retry timeout in milliseconds.", type = Long.class)
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 
     /** Enable backward compatible handling of UUID through DDL. */
@@ -720,8 +720,8 @@ public final class IgniteSystemProperties {
         "IGNITE_DISCOVERY_METRICS_QNT_WARN";
 
     /** Time interval that indicates that client reconnect throttle must be reset to zero. 2 minutes by default. */
-    @IgniteSystemProperty(description = "Time interval that indicates that client reconnect throttle must be reset " +
-        "to zero. 2 minutes by default.", type = Long.class)
+    @IgniteSystemProperty(description = "Time interval in milliseconds that indicates that client reconnect throttle " +
+        "must be reset to zero. 2 minutes by default.", type = Long.class)
     public static final String CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL =
         "CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL";
 
@@ -749,12 +749,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT";
 
     /** Upper time limit between long running/hanging operations debug dumps. */
-    @IgniteSystemProperty(description = "Upper time limit between long running/hanging operations debug dumps.",
-        type = Long.class)
+    @IgniteSystemProperty(description = "Upper time limit between long running/hanging operations debug dumps " +
+        "in milliseconds.", type = Long.class)
     public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT";
 
     /** JDBC driver cursor remove delay. */
-    @IgniteSystemProperty(description = "JDBC driver cursor remove delay.", type = Long.class)
+    @IgniteSystemProperty(description = "JDBC driver cursor remove delay in milliseconds.", type = Long.class)
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
     /** Long-long offheap map load factor. */
@@ -1052,8 +1052,8 @@ public final class IgniteSystemProperties {
      */
     @IgniteSystemProperty(description = "When client cache is started or closed special discovery message is sent " +
         "to notify cluster (for example this is needed for ClusterGroup.forCacheNodes(String) API. This timeout " +
-        "specifies how long to wait after client cache start/close before sending this message. If during this " +
-        "timeout another client cache changed, these events are combined into single message." +
+        "in milliseconds specifies how long to wait after client cache start/close before sending this message. If " +
+        "during this timeout another client cache changed, these events are combined into single message." +
         "Default is 10 seconds.", type = Long.class)
     public static final String IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT =
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
@@ -1063,8 +1063,8 @@ public final class IgniteSystemProperties {
      * the future will be dumped to the log on exchange. Default is {@code 0} (disabled).
      */
     @IgniteSystemProperty(description = "If a partition release future completion time during an exchange exceeds " +
-        "this threshold, the contents of the future will be dumped to the log on exchange. Default is 0 (disabled).",
-        type = Integer.class)
+        "this threshold (in milliseconds), the contents of the future will be dumped to the log on exchange. Default " +
+        "is 0 (disabled).", type = Integer.class)
     public static final String IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD =
         "IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD";
 
@@ -1121,7 +1121,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /** Property for setup Ignite WAL segment sync timeout. */
-    @IgniteSystemProperty(description = "Property for setup Ignite WAL segment sync timeout.", type = Long.class)
+    @IgniteSystemProperty(description = "Property for setup Ignite WAL segment sync timeout in milliseconds.",
+        type = Long.class)
     public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
 
     /**
@@ -1266,7 +1267,7 @@ public final class IgniteSystemProperties {
      * Default value is 1000 ms.
      */
     @IgniteSystemProperty(description = "Threshold time (in millis) to print warning to log if waiting for next wal " +
-        "segment took longer than the threshold. Default value is 1000 ms.\n", type = Long.class)
+        "segment took longer than the threshold. Default value is 1000 ms.", type = Long.class)
     public static final String IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = "IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT";
 
     /**
@@ -1348,7 +1349,7 @@ public final class IgniteSystemProperties {
     /**
      * Sets timeout for TCP client recovery descriptor reservation.
      */
-    @IgniteSystemProperty(description = "Sets timeout for TCP client recovery descriptor reservation.",
+    @IgniteSystemProperty(description = "Sets timeout for TCP client recovery descriptor reservation in milliseconds.",
         type = Long.class)
     public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
             "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
@@ -1384,8 +1385,9 @@ public final class IgniteSystemProperties {
      *
      * Default is failure detection timeout. {@code 0} or negative value - throttling is disabled.
      */
-    @IgniteSystemProperty(description = "Throttling time out for thread dump generation during failure handling. " +
-        "Default is failure detection timeout. 0 or negative value - throttling is disabled.", type = Long.class)
+    @IgniteSystemProperty(description = "Throttling time out for thread dump generation during failure handling " +
+        "in milliseconds. Default is failure detection timeout. 0 or negative value - throttling is disabled.",
+        type = Long.class)
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT =
             "IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT";
 
@@ -1467,7 +1469,7 @@ public final class IgniteSystemProperties {
      * Timeout for waiting schema update if schema was not found for last accepted version.
      */
     @IgniteSystemProperty(description = "Timeout for waiting schema update if schema was not found for last accepted " +
-        "version.", type = Long.class)
+        "version in milliseconds.", type = Long.class)
     public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
 
     /**
@@ -1477,7 +1479,7 @@ public final class IgniteSystemProperties {
      */
     @Deprecated
     @IgniteSystemProperty(description = "System property to override CacheConfiguration.getRebalanceThrottle " +
-        "configuration property for all caches. 0 by default, which means that override is disabled.",
+        "configuration property for all caches in milliseconds. 0 by default, which means that override is disabled.",
         type = Long.class)
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 

@@ -181,7 +181,7 @@ public final class CommandLineStartup {
                 "    -v               - verbose mode (quiet by default).",
                 "    -np              - no pause on exit (pause by default)",
                 "    -nojmx           - disable JMX monitoring (enabled by default)",
-                "    -systemProps     - prints Ignite system properties info.");
+                "    " + PRINT_PROPS_COMMAND + "     - prints Ignite system properties info.");
 
             if (ignite) {
                 X.error(
