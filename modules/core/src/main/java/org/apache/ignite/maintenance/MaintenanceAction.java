@@ -17,7 +17,10 @@
 
 package org.apache.ignite.maintenance;
 
+import org.apache.ignite.lang.IgniteExperimental;
+
 /** */
+@IgniteExperimental
 public interface MaintenanceAction {
     /** */
     public void execute();

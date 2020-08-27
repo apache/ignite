@@ -18,6 +18,7 @@
 package org.apache.ignite.maintenance;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,7 @@ import java.util.UUID;
  *     with control.{sh|bat} script or via JXM interface and perform needed actions.
  * </p>
  */
+@IgniteExperimental
 public interface MaintenanceRegistry {
     /**
      * @param rec {@link MaintenanceRecord} object with maintenance information that needs

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.maintenance;
 
+import org.apache.ignite.lang.IgniteExperimental;
+
 import java.util.UUID;
 
 /** */
+@IgniteExperimental
 public class MaintenanceRecord {
     /** */
     private final UUID id;

@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -54,6 +55,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private static final int MNTC_RECORD_PARTS_COUNT = 3;
 
     /** */
+    private static final String IN_MEMORY_MODE_ERR_MSG = "Maintenance Mode is not supported for in-memory clusters";
+
+    /** */
     private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
 
     /** */
@@ -62,15 +66,23 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** */
     private volatile File mntcRecordsFile;
 
+    /** */
+    private final boolean inMemoryMode;
+
     /**
      * @param ctx Kernal context.
      */
     public MaintenanceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        inMemoryMode = !CU.isPersistenceEnabled(ctx.config());
     }
 
     /** {@inheritDoc} */
     @Override public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException {
+        if (inMemoryMode)
+            throw new IgniteCheckedException(IN_MEMORY_MODE_ERR_MSG);
+
         if (mntcRecordsFile == null) {
             log.warning("Maintenance records file not found, record won't be stored: "
                 + rec.description());
@@ -99,6 +111,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        if (inMemoryMode)
+            return;
+
         try {
             PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
@@ -182,6 +197,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action) {
+        if (inMemoryMode)
+            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
+
         if (!registeredRecords.containsKey(mntcId))
             throw new IgniteException("Maintenance record for given ID not found," +
                 " maintenance action for non-existing record won't be registered: " + mntcId);
@@ -191,6 +209,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceAction maintenanceAction(UUID mntcId) {
+        if (inMemoryMode)
+            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
+
         return registeredActions.get(mntcId);
     }
 }
