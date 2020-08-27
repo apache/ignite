@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY_OLD;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY_PREV;
 import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
@@ -221,7 +221,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);
 
-        @Nullable Object connCtx0 = ses.meta(CONN_CTX_META_KEY_OLD);
+        @Nullable Object connCtx0 = ses.meta(CONN_CTX_META_KEY_PREV);
 
         assert connCtx0 == null || connCtx0 instanceof ClientConnectionContext;
 

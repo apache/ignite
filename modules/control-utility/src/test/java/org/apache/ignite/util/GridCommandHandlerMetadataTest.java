@@ -368,10 +368,8 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
                 "--typeName", "Type0",
                 "--out", typeFile.toString()));
 
-            // Executes command to check disconnect / reconnect.
-            GridTestUtils.assertThrows(log, () ->
-                    cli.createCache(new ClientCacheConfiguration().setName("test")),
-                Exception.class, null);
+            // Executes command to reconnect.
+            cli.createCache(new ClientCacheConfiguration().setName("test"));
 
             createType(cli.binary(), "Type0", "str");
         }

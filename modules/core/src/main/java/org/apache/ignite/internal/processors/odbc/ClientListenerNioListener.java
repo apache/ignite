@@ -69,8 +69,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** */
-    public static final int CONN_CTX_META_KEY_OLD = GridNioSessionMetaKey.nextUniqueKey();
+    /** Previous session metadata key. */
+    public static final int CONN_CTX_META_KEY_PREV = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
@@ -93,7 +93,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client configuration. */
     private final ThinClientConfiguration thinCfg;
 
-    /** */
+    /** Previous session context. */
     private volatile ClientListenerConnectionContext storedCtx;
 
     /**
@@ -156,7 +156,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
                 if (connCtx == null) {
                     try {
-                        ses.addMeta(CONN_CTX_META_KEY_OLD, storedCtx);
+                        ses.addMeta(CONN_CTX_META_KEY_PREV, storedCtx);
 
                         onHandshake(ses, msg);
                     }
