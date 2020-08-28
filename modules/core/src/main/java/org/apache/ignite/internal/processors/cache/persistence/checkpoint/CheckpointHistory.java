@@ -454,7 +454,7 @@ public class CheckpointHistory {
      * @param latestReservedPointer Latest reserved WAL pointer.
      * @return Earliest WAL pointer for group specified.
      */
-    @Nullable public WALPointer searchEarliestWalPointer(
+    @Nullable public FileWALPointer searchEarliestWalPointer(
         int grpId,
         Map<Integer, Long> partsCounter,
         FileWALPointer latestReservedPointer,
@@ -511,11 +511,8 @@ public class CheckpointHistory {
                 }
             }
 
-            if ((F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate)) || ptr.compareTo(latestReservedPointer) <= 0) {
-                assert ptr.compareTo(latestReservedPointer) == 0;
-
+            if ((F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate)) || ptr.compareTo(latestReservedPointer) <= 0)
                 break;
-            }
         }
 
         if (!F.isEmpty(modifiedPartsCounter)) {

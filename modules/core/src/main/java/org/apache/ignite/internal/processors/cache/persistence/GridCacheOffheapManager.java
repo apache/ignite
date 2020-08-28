@@ -122,9 +122,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
-    /** Margin for historical rebalance on atomic cache. */
+    /**
+     * Margin for WAL iterator, that used for historical rebalance on atomic cache.
+     * It is intended for prevent  partition divergence due to reordering in WAL.
+     * <p>
+     * Default is {@code 5}. Iterator starts from 5 updates earlier than expected.
+     *
+     */
     public final long walAtomicCacheMargin = IgniteSystemProperties.getLong(
-        IgniteSystemProperties.WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE, 5);
+        "WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE", 5);
 
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
@@ -1030,7 +1036,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         FileWALPointer latestReservedPointer = (FileWALPointer)database.latestWalPointerReservedForPreloading();
 
-        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+        FileWALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
             partsCounters, latestReservedPointer, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
         assert latestReservedPointer.compareTo(minPtr) <= 0
