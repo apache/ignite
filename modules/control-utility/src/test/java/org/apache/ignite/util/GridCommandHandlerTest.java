@@ -89,6 +89,9 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
+import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -2329,6 +2332,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
         new IgniteCacheGroupsWithRestartsTest().testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
+    }
+
+    /** TODO: 28.08.2020 Add. */
+    @Test
+    public void test() throws Exception {
+        WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(provider);
+        cfg.getDataStorageConfiguration().setDefaultWarmUpConfiguration(new BlockedWarmUpConfiguration());
+
+        IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
+
+        BlockedWarmUpStrategy blockedWarmUpStrategy = (BlockedWarmUpStrategy)provider.strats.get(1);
+        U.await(blockedWarmUpStrategy.startLatch);
+
+        assertEquals(EXIT_CODE_OK, execute("--warm-up"));
+
+        blockedWarmUpStrategy.stopLatch.countDown();
+        fut.get();
     }
 
     /**
