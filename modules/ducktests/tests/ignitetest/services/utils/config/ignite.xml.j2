@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
+{#
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
@@ -15,7 +15,9 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
+#}
+
+{% import 'discovery.xml.j2' as discovery_macro %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -34,35 +36,7 @@
             <property name="consistentId" value="{{ consistent_id }}"/>
         {% endif %}
         {% if discovery_spi %}
-            {% if discovery_spi.type == 'TCP' %}
-                <property name="discoverySpi">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                        {% if discovery_spi.ip_finder %}
-                            {% set ip_finder = discovery_spi.ip_finder %}
-                            <property name="ipFinder">
-                                {% if ip_finder.type == 'VM' %}
-                                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                                    <property name="addresses">
-                                        <list>
-                                            {% for address in ip_finder.addresses %}
-                                            <value>{{ address }}</value>
-                                            {% endfor %}
-                                        </list>
-                                    </property>
-                                </bean>
-                                {% endif %}
-                            </property>
-                        {% endif %}
-                    </bean>
-                </property>
-            {% elif discovery_spi.type == 'ZOOKEEPER' %}
-                <property name="discoverySpi">
-                    <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
-                        <property name="zkConnectionString" value="{{ discovery_spi.connection_string }}"/>
-                        <property name="zkRootPath" value="{{ discovery_spi.root_path }}"/>
-                    </bean>
-                </property>
-            {% endif %}
+            {{ discovery_macro.discovery_spi(discovery_spi) }}
         {% endif %}
         {% if properties %}
             {{ properties }}

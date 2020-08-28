@@ -72,6 +72,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
                                                 discovery_spi=self.discovery_spi_factory(),
                                                 consistent_id=node.account.externally_routable_ip)
 
+        self.logger.info("Config is %s" % node_config)
         setattr(node, "consistent_id", node.account.externally_routable_ip)
         node.account.create_file(self.CONFIG_FILE, node_config)
 

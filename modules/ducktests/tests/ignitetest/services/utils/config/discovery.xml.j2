@@ -1,0 +1,57 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+{% macro ip_finder(finder) %}
+    {% if finder %}
+        <property name="ipFinder">
+            {% if finder.type == 'VM' %}
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <property name="addresses">
+                        <list>
+                            {% for address in finder.addresses %}
+                                <value>{{ address }}</value>
+                            {% endfor %}
+                        </list>
+                    </property>
+                </bean>
+            {% endif %}
+        </property>
+    {% endif %}
+{% endmacro %}
+
+{% macro zookeeper_discovery_spi(spi) %}
+    <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
+        <property name="zkConnectionString" value="{{ spi.connection_string }}"/>
+        <property name="zkRootPath" value="{{ spi.root_path }}"/>
+    </bean>
+{% endmacro %}
+
+{% macro tcp_discovery_spi(spi) %}
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        {{ ip_finder(spi.ip_finder) }}
+    </bean>
+{% endmacro %}
+
+{% macro discovery_spi(spi) %}
+    <property name="discoverySpi">
+        {% if spi.type == 'TCP' %}
+            {{ tcp_discovery_spi(spi) }}
+        {% elif spi.type == 'ZOOKEEPER' %}
+            {{  zookeeper_discovery_spi(spi) }}
+        {% endif %}
+    </property>
+{% endmacro %}

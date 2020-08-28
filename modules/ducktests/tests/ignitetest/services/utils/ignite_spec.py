@@ -28,7 +28,6 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
 
-# pylint: disable=no-else-return
 def resolve_spec(service, context, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
@@ -48,10 +47,11 @@ def resolve_spec(service, context, **kwargs):
 
     if is_impl("IgniteService"):
         return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(**kwargs)
-    elif is_impl("IgniteApplicationService"):
+
+    if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, **kwargs)
-    else:
-        raise Exception("There is no specification for class %s" % type(service))
+
+    raise Exception("There is no specification for class %s" % type(service))
 
 
 class IgniteSpec:
@@ -208,5 +208,5 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
             aws = self.path.module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
-        else:
-            return []
+
+        return []
