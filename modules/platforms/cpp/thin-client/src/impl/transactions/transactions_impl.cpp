@@ -17,6 +17,7 @@
 
 #include "impl/message.h"
 #include "impl/transactions/transactions_impl.h"
+#include "impl/transactions/transaction_impl.h"
 #include "impl/response_status.h"
 
 using namespace ignite::common::concurrent;

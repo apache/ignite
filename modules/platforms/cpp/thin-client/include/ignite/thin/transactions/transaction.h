@@ -50,7 +50,10 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~ClientTransaction() {}
+                ~ClientTransaction()
+                {
+                    // No-op.
+                }
 
                 /**
                  * Commits this transaction.

@@ -21,6 +21,7 @@
 #include "impl/data_router.h"
 #include <ignite/common/fixed_size_array.h>
 #include "ignite/thin/transactions/transaction_consts.h"
+#include "impl/transactions/transaction_impl.h"
 
 namespace ignite
 {
@@ -30,152 +31,16 @@ namespace ignite
         {
             namespace transactions
             {
-                /* Forward declaration. */
                 class TransactionsImpl;
 
-                /* Forward declaration. */
-                class TransactionImpl;
-
-                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> SP_TransactionsImpl;
                 typedef ignite::common::concurrent::SharedPointer<TransactionImpl> SP_TransactionImpl;
+                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> SP_TransactionsImpl;
 
-                /**
-                 * Ignite transactions implementation.
-                 *
-                 * This is an entry point for Thin C++ Ignite transactions.
-                 */
-                class TransactionImpl
-                {
-                public:
-                    /**
-                     * Constructor.
-                     *
-                     * @param txImpl Transactions implementation.
-                     * @param txid Transaction Id.
-                     * @param concurrency Transaction concurrency.
-                     * @param isolation Transaction isolation.
-                     * @param timeout Transaction timeout.
-                     * @param size Number of entries participating in transaction (may be approximate).
-                     */
-                    TransactionImpl(
-                            TransactionsImpl& txImpl,
-                            int32_t txid,
-                            ignite::thin::transactions::TransactionConcurrency::Type concurrency,
-                            ignite::thin::transactions::TransactionIsolation::Type isolation,
-                            int64_t timeout,
-                            int32_t size) :
-                        txs(txImpl),
-                        txId(txid),
-                        concurrency(concurrency),
-                        isolation(isolation),
-                        timeout(timeout),
-                        txSize(size),
-                        closed(false)
-                    {}
-                    
-                    /**
-                     * Destructor.
-                     */
-                    ~TransactionImpl() {}
-                    
-                    /**
-                     * Commits this transaction.
-                     */
-                    void Commit();
-    
-                    /**
-                     * Rolls back this transaction.
-                     */
-                    void Rollback();
-    
-                    /**
-                     * Ends the transaction. Transaction will be rolled back if it has not been committed.
-                     */
-                    void Close();
-
-                    /**
-                     * @return Current transaction Id.
-                     */
-                    int32_t TxId() const
-                    {
-                        return txId;
-                    }
-
-                    /**
-                     * Check if the transaction has been closed.
-                     *
-                     * @return True if the transaction has been closed.
-                     */
-                    bool IsClosed() const;
-
-                    /**
-                     * Sets close flag to tx.
-                     */
-                    void Closed();
-
-                    /**
-                     * @return Current transaction.
-                     */
-                    static SP_TransactionImpl GetCurrent();
-
-                    /**
-                     * Starts transaction.
-                     *
-                     * @param txs Transactions implementation.
-                     * @param concurrency Transaction concurrency.
-                     * @param isolation Transaction isolation.
-                     * @param timeout Transaction timeout.
-                     * @param txSize Number of entries participating in transaction (may be approximate).
-                     * @param label Transaction specific label.
-                     */
-                    static SP_TransactionImpl Create(
-                            TransactionsImpl& txs,
-                            ignite::thin::transactions::TransactionConcurrency::Type concurrency,
-                            ignite::thin::transactions::TransactionIsolation::Type isolation,
-                            int64_t timeout,
-                            int32_t txSize,
-                            ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label);
-                protected:
-                    /** Checks current thread state. */
-                    static void txThreadCheck(const TransactionImpl& tx);
-
-                    /** Completes tc and clear state from storage. */
-                    static void txThreadEnd(TransactionImpl& tx);
-
-                private:
-                    /** Transactions implementation. */
-                    TransactionsImpl& txs;
-
-                    /** Current transaction Id. */
-                    int32_t txId;
-
-                    /** Thread local instance of the transaction. */
-                    static ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> threadTx;
-
-                    /** Concurrency. */
-                    int concurrency;
-
-                    /** Isolation. */
-                    int isolation;
-
-                    /** Timeout in milliseconds. */
-                    int64_t timeout;
-
-                    /** Transaction size. */
-                    int32_t txSize;
-
-                    /** Closed flag. */
-                    bool closed;
-
-                    IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
-                };
-            
                 /**
                  * Thin client transaction.
                  */
                 class TransactionsImpl
                 {
-                    typedef ignite::common::concurrent::SharedPointer<TransactionImpl> SP_TransactionImpl;
                 public:
                     /**
                      * Constructor.
@@ -199,7 +64,7 @@ namespace ignite
                      * @param label Transaction specific label.
                      * @return Transaction ID on success.
                      */
-                    ignite::common::concurrent::SharedPointer<TransactionImpl> TxStart(
+                    SP_TransactionImpl TxStart(
                             ignite::thin::transactions::TransactionConcurrency::Type concurrency,
                             ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
