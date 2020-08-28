@@ -224,7 +224,7 @@ class DiscoveryTest(IgniteTest):
         params = {"cacheName": self.CACHE_NAME,
                   "range": self.DATA_AMOUNT,
                   "warmUpRange": self.WARMUP_DATA_AMOUNT,
-                  "transactional": True if transactional_nodes else False,
+                  "transactional": bool(transactional_nodes),
                   "targetNodes": transactional_nodes}
 
         self.loader = IgniteApplicationService(
