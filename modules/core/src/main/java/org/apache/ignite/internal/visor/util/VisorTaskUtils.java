@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.net.InetAddress;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -52,8 +51,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,7 +59,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -78,7 +74,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
-import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_DIR;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED;
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -744,28 +739,6 @@ public class VisorTaskUtils {
         finally {
             U.close(raf, null);
         }
-    }
-
-    /**
-     * Resolve IGFS profiler logs directory.
-     *
-     * @param igfs IGFS instance to resolve logs dir for.
-     * @return {@link Path} to log dir or {@code null} if not found.
-     * @throws IgniteCheckedException if failed to resolve.
-     */
-    public static Path resolveIgfsProfilerLogsDir(IgniteFileSystem igfs) throws IgniteCheckedException {
-        String logsDir;
-
-        if (igfs instanceof IgfsEx)
-            logsDir = ((IgfsEx)igfs).clientLogDirectory();
-        else if (igfs == null)
-            throw new IgniteCheckedException("Failed to get profiler log folder (IGFS instance not found)");
-        else
-            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected IGFS instance type)");
-
-        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_IGFS_LOG_DIR);
-
-        return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }
 
     /**

@@ -214,20 +214,6 @@ public final class Commons {
             U.closeQuiet((AutoCloseable) o);
     }
 
-    /**
-     * @param o Object to close.
-     * @param e Exception, what causes close.
-     */
-    public static void closeQuiet(Object o, @Nullable Exception e) {
-        if (!(o instanceof AutoCloseable))
-            return;
-
-        if (e != null)
-            U.closeWithSuppressingException((AutoCloseable) o, e);
-        else
-            U.closeQuiet((AutoCloseable) o);
-    }
-
     /** */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());

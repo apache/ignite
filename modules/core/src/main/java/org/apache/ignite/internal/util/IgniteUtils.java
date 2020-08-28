@@ -113,6 +113,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -203,6 +204,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -263,6 +265,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
@@ -302,7 +305,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
+@SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
     /** */
     public static final long MB = 1024L * 1024;
@@ -514,6 +517,9 @@ public abstract class IgniteUtils {
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
 
+    /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
+    public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
+
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
 
@@ -619,6 +625,9 @@ public abstract class IgniteUtils {
 
     /** JDK9: URLClassPath#getURLs. */
     private static Method mthdURLClassPathGetUrls;
+
+    /** Byte count prefixes. */
+    private static String BYTE_CNT_PREFIXES = " KMGTPE";
 
     /*
      * Initializes enterprise check.
@@ -1544,6 +1553,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Stacktrace of current thread as {@link String}.
+     */
+    public static String stackTrace() {
+        GridStringBuilder sb = new GridStringBuilder();
+        long threadId = Thread.currentThread().getId();
+
+        printStackTrace(threadId, sb);
+
+        return sb.toString();
+    }
+
+    /**
      * @return {@code true} if there is java level deadlock.
      */
     public static boolean deadlockPresent() {
@@ -2047,7 +2068,7 @@ public abstract class IgniteUtils {
         try {
             InetAddress inetAddr = InetAddress.getByName(addr);
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 for (InetAddress itfAddr : asIterable(itf.getInetAddresses()))
                     if (itfAddr.equals(inetAddr))
                         return itf.getDisplayName();
@@ -2114,7 +2135,8 @@ public abstract class IgniteUtils {
 
         Collection<Future<?>> futs = new ArrayList<>(addrs.size());
 
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()),
+            new IgniteThreadFactory("utils", "reachable"));
 
         try {
             for (final InetAddress addr : addrs) {
@@ -2158,10 +2180,9 @@ public abstract class IgniteUtils {
      * @param locAddr Local address to resolve.
      * @return Resolved available addresses of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
-        throws IOException, IgniteCheckedException {
+        throws IOException {
         return resolveLocalAddresses(locAddr, false);
     }
 
@@ -2174,10 +2195,9 @@ public abstract class IgniteUtils {
      * @param allHostNames If {@code true} then include host names for all addresses.
      * @return Resolved available addresses and host names of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr,
-        boolean allHostNames) throws IOException, IgniteCheckedException {
+        boolean allHostNames) throws IOException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
@@ -2190,7 +2210,7 @@ public abstract class IgniteUtils {
             if (res == null) {
                 List<InetAddress> locAddrs = new ArrayList<>();
 
-                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
                             locAddrs.add(addr);
@@ -2203,7 +2223,7 @@ public abstract class IgniteUtils {
                     addresses(addr, addrs, hostNames, allHostNames);
 
                 if (F.isEmpty(addrs))
-                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+                    return F.t(Collections.emptyList(), Collections.emptyList());
 
                 res = F.t(addrs, hostNames);
 
@@ -2276,7 +2296,7 @@ public abstract class IgniteUtils {
         else {
             List<NetworkInterface> itfs = new ArrayList<>();
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 itfs.add(itf);
 
             Collections.sort(itfs, new Comparator<NetworkInterface>() {
@@ -2373,7 +2393,7 @@ public abstract class IgniteUtils {
         List<String> ips = new ArrayList<>(4);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -2438,7 +2458,7 @@ public abstract class IgniteUtils {
         List<String> macs = new ArrayList<>(3);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -8855,7 +8875,7 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return U.forName(clsName, ldr, null);
+        return U.forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
     }
 
     /**
@@ -8867,6 +8887,19 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+        return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8877,9 +8910,20 @@ public abstract class IgniteUtils {
         if (ldr != null) {
             if (ldr instanceof ClassCache)
                 return ((ClassCache)ldr).getFromCache(clsName);
+            else if (!useCache) {
+                cls = Class.forName(clsName, true, ldr);
+
+                return cls;
+            }
         }
         else
             ldr = gridClassLoader;
+
+        if (!useCache) {
+            cls = Class.forName(clsName, true, ldr);
+
+            return cls;
+        }
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
@@ -11056,11 +11100,6 @@ public abstract class IgniteUtils {
 
                 break;
 
-            case GridIoPolicy.IGFS_POOL:
-                parallelismLvl = cfg.getIgfsThreadPoolSize();
-
-                break;
-
             case GridIoPolicy.SERVICE_POOL:
                 parallelismLvl = cfg.getServiceThreadPoolSize();
 
@@ -11917,5 +11956,185 @@ public abstract class IgniteUtils {
         IgniteCompute compute = kctx.grid().compute(grp);
 
         compute.broadcast(job);
+    }
+
+    /**
+     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
+     *
+     * @param in Data input.
+     * @throws IOException If write failed.
+     * @return Read result.
+     */
+    public static Map<String, String> readStringMap(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+        else {
+            Map<String, String> map = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                map.put(readUTF(in), readUTF(in));
+
+            return map;
+        }
+    }
+
+    /**
+     * Writes string-to-string map to given data output.
+     *
+     * @param out Data output.
+     * @param map Map.
+     * @throws IOException If write failed.
+     */
+    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
+    }
+
+    /** Explicit class for {@code Supplier<Enumeration<NetworkInterface>>}. */
+    @FunctionalInterface
+    public interface InterfaceSupplier {
+        /** Return collection of local network interfaces. */
+        Enumeration<NetworkInterface> getInterfaces() throws SocketException;
+    }
+
+    /**
+     * Converts count of bytes to a human-readable format.
+     * Examples: 10 -> 10.0 B, 2048 -> 2.0 KB, etc.
+     *
+     * @param bytes Byte count.
+     * @return Human readable format for count of bytes.
+     */
+    public static String humanReadableByteCount(long bytes) {
+        long base = 1024L;
+
+        int exponent = max((int)(Math.log(bytes) / Math.log(base)), 0);
+        String unit = String.valueOf(BYTE_CNT_PREFIXES.charAt(exponent)).trim();
+
+        return String.format((Locale)null, "%.1f %sB", (bytes / Math.pow(base, exponent)), unit);
+    }
+
+    /**
+     * Converts duration to a human-readable format.
+     * Examples: 10 -> 10ms, 6_0000 -> 6s, 65_000 -> 1m5s, (65 * 60_000 + 32_000) -> 1h5m32s, etc.
+     *
+     * @param millis Duration in milliseconds.
+     * @return Human readable format for duration.
+     */
+    public static String humanReadableDuration(long millis) {
+        StringBuilder sb = new StringBuilder();
+
+        if (millis < 0) {
+            sb.append('-');
+
+            millis = -millis;
+        }
+
+        if (millis < 1_000)
+            sb.append(millis).append("ms");
+        else {
+            long days = TimeUnit.MILLISECONDS.toDays(millis);
+
+            if (days > 0) {
+                sb.append(days).append('d');
+
+                millis -= TimeUnit.DAYS.toMillis(days);
+            }
+
+            long hours = TimeUnit.MILLISECONDS.toHours(millis);
+
+            if (hours > 0) {
+                sb.append(hours).append('h');
+
+                millis -= TimeUnit.HOURS.toMillis(hours);
+            }
+
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+
+            if (minutes > 0) {
+                sb.append(minutes).append('m');
+
+                millis -= TimeUnit.MINUTES.toMillis(minutes);
+            }
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+            if (seconds > 0)
+                sb.append(seconds).append('s');
+        }
+
+        return sb.toString();
     }
 }

@@ -81,16 +81,20 @@ public interface MailboxRegistry extends Service {
     /**
      * Returns all registered inboxes for provided query ID.
      *
-     * @param qryId Query ID. {@code null} means return all registered inboxes.
+     * @param qryId Query ID. {@code null} means return inboxes with any query id.
+     * @param fragmentId Fragment Id. {@code -1} means return inboxes with any fragment id.
+     * @param exchangeId Exchange Id. {@code -1} means return inboxes with any exchange id.
      * @return Registered inboxes.
      */
-    Collection<Inbox<?>> inboxes(@Nullable UUID qryId);
+    Collection<Inbox<?>> inboxes(@Nullable UUID qryId, long fragmentId, long exchangeId);
 
     /**
      * Returns all registered outboxes for provided query ID.
      *
-     * @param qryId Query ID. {@code null} means return all registered outboxes.
+     * @param qryId Query ID. {@code null} means return outboxes with any query id.
+     * @param fragmentId Fragment Id. {@code -1} means return outboxes with any fragment id.
+     * @param exchangeId Exchange Id. {@code -1} means return outboxes with any exchange id.
      * @return Registered outboxes.
      */
-    Collection<Outbox<?>> outboxes(@Nullable UUID qryId);
+    Collection<Outbox<?>> outboxes(@Nullable UUID qryId, long fragmentId, long exchangeId);
 }

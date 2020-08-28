@@ -1329,7 +1329,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode<Object[]> consumer = new RootNode<>(ectx, r -> {});
+            RootNode<Object[]> consumer = new RootNode<>(ectx);
             consumer.register(exec);
 
             //// Remote part
@@ -1575,7 +1575,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode<Object[]> consumer = new RootNode<>(ectx, r -> {});
+            RootNode<Object[]> consumer = new RootNode<>(ectx);
             consumer.register(exec);
 
             //// Remote part
@@ -2795,6 +2795,11 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void send(UUID nodeId, CalciteMessage msg) {
             mgr.send(localNodeId(), nodeId, msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean alive(UUID nodeId) {
+            return true;
         }
 
         /** {@inheritDoc} */

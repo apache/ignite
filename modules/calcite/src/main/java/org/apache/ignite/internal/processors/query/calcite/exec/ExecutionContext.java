@@ -31,10 +31,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -60,12 +56,6 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** */
     private final ExpressionFactory<Row> expressionFactory;
-
-    /** */
-    private Object[] correlations = new Object[16];
-
-    /** */
-    private volatile boolean cancelled;
 
     /**
      * @param ctx Parent context.
@@ -116,8 +106,8 @@ public class ExecutionContext<Row> implements DataContext {
     /**
      * @return Interested partitions.
      */
-    public int[] localPartitions() {
-        return fragmentDesc.localPartitions();
+    public int[] partitions() {
+        return fragmentDesc.partitions();
     }
 
     /** */
@@ -154,13 +144,6 @@ public class ExecutionContext<Row> implements DataContext {
      */
     public MvccSnapshot mvccSnapshot() {
         return null; // TODO
-    }
-
-    /**
-     * @return Cancelled flag.
-     */
-    public boolean cancelled() {
-        return cancelled;
     }
 
     /**
@@ -202,38 +185,6 @@ public class ExecutionContext<Row> implements DataContext {
     /** {@inheritDoc} */
     @Override public Object get(String name) {
         return params.get(name);
-    }
-
-    /**
-     * Gets correlated value.
-     *
-     * @param id Correlation ID.
-     * @return Correlated value.
-     */
-    public @NotNull Object getCorrelated(int id) {
-        checkRange(correlations, id);
-
-        return correlations[id];
-    }
-
-    /**
-     * Sets correlated value.
-     *
-     * @param id Correlation ID.
-     * @param value Correlated value.
-     */
-    public void setCorrelated(@NotNull Object value, int id) {
-        correlations = Commons.ensureCapacity(correlations, id + 1);
-
-        correlations[id] = value;
-    }
-
-    /**
-     * Sets cancelled flag.
-     */
-    public void markCancelled() {
-        if (!cancelled)
-            cancelled = true;
     }
 
     /**

@@ -107,7 +107,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         FilterNode<Object[]> filter = new FilterNode<>(ctx, r -> (Integer) r[0] >= 2);
         filter.register(project);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(filter);
 
         assert node.hasNext();
@@ -151,7 +151,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         UnionAllNode<Object[]> union = new UnionAllNode<>(ctx);
         union.register(F.asList(scan1, scan2, scan3));
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(union);
 
         assertTrue(root.hasNext());
@@ -195,7 +195,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(project);
 
         assert node.hasNext();
@@ -245,7 +245,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[2], r[3], r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(project);
 
         assert node.hasNext();
@@ -295,7 +295,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(project);
 
         assert node.hasNext();
@@ -346,7 +346,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(project);
 
         assert node.hasNext();
@@ -394,7 +394,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ctx);
         node.register(project);
 
         assert node.hasNext();
@@ -446,7 +446,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -492,7 +492,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -537,7 +537,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -582,7 +582,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -627,7 +627,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -669,7 +669,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -713,7 +713,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -755,7 +755,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -797,7 +797,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -839,7 +839,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -882,7 +882,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx);
         root.register(agg);
 
         assertTrue(root.hasNext());

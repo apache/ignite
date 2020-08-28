@@ -180,6 +180,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean alive(UUID nodeId) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override protected void prepareMarshal(Message msg) {
             // No-op;
         }

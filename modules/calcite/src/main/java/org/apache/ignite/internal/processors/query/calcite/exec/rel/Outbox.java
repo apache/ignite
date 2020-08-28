@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * A part of exchange.
  */
-public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, AutoCloseable {
+public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, SingleNode<Row>, Downstream<Row> {
     /** */
     private final ExchangeService exchange;
 
@@ -52,7 +52,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     private final long targetFragmentId;
 
     /** */
-    private final Destination<Row> dest;
+    private final Destination dest;
 
     /** */
     private final Deque<Row> inBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
@@ -77,7 +77,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         MailboxRegistry registry,
         long exchangeId,
         long targetFragmentId,
-        Destination<Row> dest) {
+        Destination dest
+    ) {
         super(ctx);
         this.exchange = exchange;
         this.registry = registry;
@@ -86,17 +87,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         this.dest = dest;
     }
 
-    /**
-     * @return Query ID.
-     */
-    public UUID queryId() {
-        return context().queryId();
-    }
-
-    /**
-     * @return Exchange ID.
-     */
-    public long exchangeId() {
+    /** {@inheritDoc} */
+    @Override public long exchangeId() {
         return exchangeId;
     }
 
@@ -107,47 +99,42 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
      * @param batchId Batch ID.
      */
     public void onAcknowledge(UUID nodeId, int batchId) {
-        nodeBuffers.get(nodeId).onAcknowledge(batchId);
+        Buffer buffer = nodeBuffers.get(nodeId);
+
+        assert buffer != null;
+
+        buffer.onAcknowledge(batchId);
     }
 
     /** */
     public void init() {
-        send();
-    }
-
-    /** */
-    private void send() {
         checkThread();
 
-        try {
-            sendInternal();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flushFromBuffer();
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert waiting > 0;
 
         waiting--;
 
-        try {
-            inBuf.add(row);
+        inBuf.add(row);
 
-            sendInternal();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flushFromBuffer();
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert waiting > 0;
 
@@ -156,8 +143,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         try {
             for (UUID node : dest.targets())
                 getOrCreateBuffer(node).end();
-
-            close();
         }
         catch (Exception e) {
             onError(e);
@@ -169,35 +154,33 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
-        cancel(); // TODO send cause to originator.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
         try {
-            checkThread();
-            context().markCancelled();
+            sendError(e);
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(context().planningContext().logger(),
+                "Error occurred during send error message: " + X.getFullStackTrace(e));
+        }
 
-            nodeBuffers.values().forEach(Buffer::cancel);
-            super.cancel();
-        }
-        finally {
-            close();
-        }
+        close();
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (isClosed())
+            return;
+
         registry.unregister(this);
+
+        // Send cancel message for the Inbox to close Inboxes created by batch message race.
+        for (UUID node : dest.targets())
+            getOrCreateBuffer(node).close();
+
+        super.close();
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowCnt) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reset() {
         throw new UnsupportedOperationException();
     }
 
@@ -220,9 +203,14 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void sendCancel(UUID nodeId, int batchId) {
+    private void sendError(Throwable err) throws IgniteCheckedException {
+        exchange.sendError(ctx.originatingNodeId(), queryId(), fragmentId(), err);
+    }
+
+    /** */
+    private void sendInboxClose(UUID nodeId) {
         try {
-            exchange.cancel(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+            exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId);
         }
         catch (IgniteCheckedException e) {
             U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);
@@ -240,31 +228,45 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void sendInternal() throws IgniteCheckedException {
-        while (!inBuf.isEmpty()) {
-            List<UUID> nodes = dest.targets(inBuf.peek());
+    private void flushFromBuffer() {
+        try {
+            while (!inBuf.isEmpty()) {
+                Row row = inBuf.remove();
 
-            assert !F.isEmpty(nodes);
+                List<UUID> nodes = dest.targets(row);
 
-            Collection<Buffer> buffers = new ArrayList<>(nodes.size());
+                assert !F.isEmpty(nodes);
 
-            for (UUID node : nodes) {
-                Buffer dest = getOrCreateBuffer(node);
+                Collection<Buffer> buffers = new ArrayList<>(nodes.size());
 
-                if (!dest.ready())
-                    return;
+                for (UUID node : nodes) {
+                    Buffer dest = getOrCreateBuffer(node);
 
-                buffers.add(dest);
+                    if (dest.ready())
+                        buffers.add(dest);
+                    else {
+                        inBuf.addFirst(row);
+
+                        return;
+                    }
+                }
+
+                for (Buffer dest : buffers)
+                    dest.add(row);
             }
 
-            Row row = inBuf.remove();
-
-            for (Buffer dest : buffers)
-                dest.add(row);
+            if (waiting == 0)
+                F.first(sources).request(waiting = IN_BUFFER_SIZE);
         }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
 
-        if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        if (nodeId.equals(ctx.originatingNodeId()))
+            ctx.execute(this::close);
     }
 
     /** */
@@ -322,15 +324,18 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         }
 
         /** */
-        public void cancel() {
+        public void close() {
+            int currBatchId = hwm;
+
             if (hwm == Integer.MAX_VALUE)
                 return;
 
-            int batchId = hwm + 1;
             hwm = Integer.MAX_VALUE;
 
             curr = null;
-            sendCancel(nodeId, batchId);
+
+            if (currBatchId >= 0)
+                sendInboxClose(nodeId);
         }
 
         /**
@@ -359,7 +364,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             lwm = id;
 
             if (!readyBefore && ready())
-                send();
+                flushFromBuffer();
         }
     }
 }

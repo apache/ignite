@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,6 +64,8 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -120,6 +124,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -209,6 +214,34 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(ACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+    }
+
+    /**
+     * Test clients leakage.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientsLeakage() throws Exception {
+        startGrids(1);
+
+        Map<UUID, GridClientImpl> clnts = U.field(GridClientFactory.class, "openClients");
+
+        Map<UUID, GridClientImpl> clntsBefore = new HashMap<>(clnts);
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
+
+        Map<UUID, GridClientImpl> clntsAfter1 = new HashMap<>(clnts);
+
+        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter1));
+
+        stopAllGrids();
+
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute("--set-state", "ACTIVE"));
+
+        Map<UUID, GridClientImpl> clntsAfter2 = new HashMap<>(clnts);
+
+        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
     /**
@@ -716,6 +749,63 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--baseline", "remove", offlineNodeConsId));
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test is checking how to --shutdown-policy command works through control.sh.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testShutdownPolicy() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(true);
+
+        ShutdownPolicy policy = ignite.cluster().shutdownPolicy();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy"));
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "Cluster shutdown policy is " + policy);
+    }
+
+    /**
+     * Change shutdown policy through command.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testShutdownPolicyChange() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(true);
+
+        ShutdownPolicy policyToChange = null;
+
+        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
+            if (policy != ignite.cluster().shutdownPolicy())
+                policyToChange = policy;
+        }
+
+        assertNotNull(policyToChange);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", policyToChange.name()));
+
+        assertSame(policyToChange, ignite.cluster().shutdownPolicy());
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "Cluster shutdown policy is " + policyToChange);
     }
 
     /**

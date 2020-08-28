@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -98,6 +99,9 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
+    /** Tracing. */
+    TRACING(26),
+
     /** Distributed change timeout for dump long operations. */
     DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
@@ -108,7 +112,20 @@ public enum IgniteFeatures {
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
     /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39);
+    REMOVE_METADATA(39),
+
+    /** Support policy of shutdown. */
+    SHUTDOWN_POLICY(40),
+
+    /** Force rebuild, list or request indexes rebuild status from control script. */
+    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
+
+    /** Optimization of recovery protocol for cluster which doesn't contain MVCC caches. */
+    MVCC_TX_RECOVERY_PROTOCOL_V2(44),
+
+    /** Pk index keys are applied in correct order. */
+    SPECIFIED_SEQ_PK_KEYS(45);
+
     /**
      * Unique feature identifier.
      */

@@ -16,6 +16,8 @@ Support for the following will be added in next releases:
  * Event listening.
  * Compute grid functionality.
 
+List of implemented features can be found here: https://cwiki.apache.org/confluence/display/IGNITE/Thin+clients+features
+
 Full source code is provided. Users should build the library for intended platform.
 
 For build instructions please refer to DEVNOTES.txt.

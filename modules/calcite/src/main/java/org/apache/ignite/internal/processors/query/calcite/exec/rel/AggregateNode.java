@@ -97,6 +97,9 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0 && requested == 0;
         assert waiting <= 0;
@@ -128,6 +131,9 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     @Override public void push(Row row) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert downstream != null;
         assert waiting > 0;
 
@@ -148,6 +154,9 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (isClosed())
+            return;
 
         assert downstream != null;
         assert waiting > 0;

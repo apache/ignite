@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  * Scan node.
  */
-public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
+public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private final Iterable<Row> src;
 
@@ -54,43 +54,29 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void request(int rowsCnt) {
         checkThread();
 
+        if (isClosed())
+            return;
+
         assert rowsCnt > 0 && requested == 0;
 
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::push);
-    }
-
-    /** */
-    private void push() {
-        try {
-            pushInternal();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
-    }
-
-    /** */
-    private void onError(Exception e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
-        close();
+            context().execute(this::pushInternal);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (isClosed())
+            return;
+
         Commons.closeQuiet(it);
+
+        it = null;
+
+        Commons.closeQuiet(src);
+
+        super.close();
     }
 
     /** {@inheritDoc} */
@@ -103,26 +89,22 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void resetInternal() {
-        requested = 0;
-        Commons.closeQuiet(it);
-        it = null;
-    }
-
     /** */
-    private void pushInternal() throws Exception {
-        if (it == null)
-            it = src.iterator();
-
-        int processed = 0;
-
-        Thread thread = Thread.currentThread();
+    private void pushInternal() {
+        if (isClosed())
+            return;
 
         inLoop = true;
         try {
+            if (it == null)
+                it = src.iterator();
+
+            int processed = 0;
+
+            Thread thread = Thread.currentThread();
+
             while (requested > 0 && it.hasNext()) {
-                if (context().cancelled())
+                if (isClosed())
                     return;
 
                 if (thread.isInterrupted())
@@ -133,21 +115,37 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::push);
+                    context().execute(this::pushInternal);
 
                     return;
                 }
             }
+
+            if (requested > 0 && !it.hasNext()) {
+                downstream.end();
+                requested = 0;
+
+                Commons.closeQuiet(it);
+
+                it = null;
+            }
+        }
+        catch (Throwable e) {
+            onError(e);
         }
         finally {
             inLoop = false;
         }
+    }
 
-        if (requested > 0 && !it.hasNext()) {
-            requested = 0;
-            downstream.end();
+    /** */
+    private void onError(Throwable e) {
+        checkThread();
 
-            close();
-        }
+        assert downstream != null;
+
+        downstream.onError(e);
+
+        close();
     }
 }
