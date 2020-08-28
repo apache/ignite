@@ -34,6 +34,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -43,11 +45,19 @@ import org.junit.Test;
  */
 @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonAbstractTest {
+    /** Historical iterator problem. */
+    private static String HISTORICAL_ITERATOR_PROBLEM = "Historical iterator tries to iterate WAL out of reservation";
+
+    /** Listening logger. */
+    private ListeningTestLogger listeningLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(listeningLog)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setCheckpointFrequency(600_000)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true)))
@@ -73,6 +83,8 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        listeningLog = new ListeningTestLogger(log);
     }
 
     /**
@@ -82,7 +94,7 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
      */
     @Test
     public void testLoosingCreateSupplyLatestUpdates() throws Exception {
-        restartsBackupWithReorderedUpdate(false);
+        restartsBackupWithReorderedUpdate(false, false);
     }
 
     /**
@@ -92,16 +104,27 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
      */
     @Test
     public void testLoosingUpdateSupplyLatestUpdates() throws Exception {
-        restartsBackupWithReorderedUpdate(true);
+        restartsBackupWithReorderedUpdate(true, false);
+    }
+
+    /**
+     * Checks scenario, where a WAL pointer with an additional margin goes out of the bound of a preloading reservation.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMarginGoesOutOfReservation() throws Exception {
+        restartsBackupWithReorderedUpdate(true, true);
     }
 
     /**
      * Starts two nodes (first primary, second backup), reorders update on a backup and after restarts the backup node.
      *
      * @param updateExistedKys True for reordered update existing key, false reordered creating new entries.
+     * @param isCpRequiredBeforeStopNode If the parameter is true then checkpoint required, otherwise not.
      * @throws Exception If failed.
      */
-    private void restartsBackupWithReorderedUpdate(boolean updateExistedKys) throws Exception {
+    private void restartsBackupWithReorderedUpdate(boolean updateExistedKys, boolean isCpRequiredBeforeStopNode) throws Exception {
         IgniteEx ignite0 = startGrids(2);
 
         ignite0.cluster().state(ClusterState.ACTIVE);
@@ -129,7 +152,8 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        forceCheckpoint();
+        if (isCpRequiredBeforeStopNode)
+            forceCheckpoint();
 
         stopGrid(1);
 
@@ -140,11 +164,18 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
 
         forceCheckpoint(ignite0);
 
+        LogListener lsnr = LogListener.matches(HISTORICAL_ITERATOR_PROBLEM).build();
+
+        listeningLog.registerListener(lsnr);
+
         startGrid(1);
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(ignite0, DEFAULT_CACHE_NAME));
+        assertFalse(lsnr.check());
+
+        if (!isCpRequiredBeforeStopNode)
+            assertPartitionsSame(idleVerify(ignite0, DEFAULT_CACHE_NAME));
     }
 
     /**

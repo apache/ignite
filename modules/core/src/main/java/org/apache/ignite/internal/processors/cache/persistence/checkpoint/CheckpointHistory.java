@@ -451,11 +451,13 @@ public class CheckpointHistory {
      *
      * @param grpId Group id.
      * @param partsCounter Partition mapped to update counter.
+     * @param latestReservedPointer Latest reserved WAL pointer.
      * @return Earliest WAL pointer for group specified.
      */
     @Nullable public WALPointer searchEarliestWalPointer(
         int grpId,
         Map<Integer, Long> partsCounter,
+        FileWALPointer latestReservedPointer,
         long margin
     ) throws IgniteCheckedException {
         if (F.isEmpty(partsCounter))
@@ -480,6 +482,8 @@ public class CheckpointHistory {
 
             Iterator<Map.Entry<Integer, Long>> iter = modifiedPartsCounter.entrySet().iterator();
 
+            FileWALPointer ptr = (FileWALPointer)cpEntry.checkpointMark();
+
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
 
@@ -487,8 +491,6 @@ public class CheckpointHistory {
 
                 if (foundCntr != null && foundCntr <= entry.getValue()) {
                     iter.remove();
-
-                    FileWALPointer ptr = (FileWALPointer)cpEntry.checkpointMark();
 
                     if (ptr == null) {
                         throw new IgniteCheckedException("Could not find start pointer for partition [part="
@@ -509,8 +511,11 @@ public class CheckpointHistory {
                 }
             }
 
-            if (F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate))
-                return minPtr;
+            if ((F.isEmpty(modifiedPartsCounter) && F.isEmpty(historyPointerCandidate)) || ptr.compareTo(latestReservedPointer) <= 0) {
+                assert ptr.compareTo(latestReservedPointer) == 0;
+
+                break;
+            }
         }
 
         if (!F.isEmpty(modifiedPartsCounter)) {

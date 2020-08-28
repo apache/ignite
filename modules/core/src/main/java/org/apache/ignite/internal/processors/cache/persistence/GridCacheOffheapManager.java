@@ -1028,8 +1028,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
+        FileWALPointer latestReservedPointer = (FileWALPointer)database.latestWalPointerReservedForPreloading();
+
         FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
-            partsCounters, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
+            partsCounters, latestReservedPointer, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
+
+        assert latestReservedPointer.compareTo(minPtr) <= 0
+            : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()
+            + ", reservedPointer=" + database.latestWalPointerReservedForPreloading()
+            + ", historicalPointer=" + minPtr + ']';
 
         try {
             WALIterator it = grp.shared().wal().replay(minPtr);
