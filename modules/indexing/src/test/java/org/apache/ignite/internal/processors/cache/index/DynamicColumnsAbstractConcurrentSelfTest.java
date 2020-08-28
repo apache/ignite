@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -618,20 +619,19 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         idxLatch.await();
 
-        // Destroy cache (drop table).
-        run(cli, DROP_SQL);
+        // Start destroy cache (drop table).
+        IgniteInternalFuture<List<List<?>>> dropFut = GridTestUtils.runAsync(() -> run(cli, DROP_SQL));
+
+        U.sleep(2_000);
+
+        assertFalse(idxFut.isDone());
+        assertFalse(dropFut.isDone());
 
         // Unblock indexing and see what happens.
         unblockIndexing(srv1);
 
-        try {
-            idxFut.get();
-
-            fail("Exception has not been thrown.");
-        }
-        catch (SchemaOperationException e) {
-            // No-op.
-        }
+        idxFut.get();
+        dropFut.get();
     }
 
     /**

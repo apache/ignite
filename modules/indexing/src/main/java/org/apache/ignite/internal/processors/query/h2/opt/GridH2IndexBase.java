@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelM
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -42,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends BaseIndex implements GridIndex<H2Row> {
+public abstract class GridH2IndexBase extends H2IndexCostedBase, implements GridIndex<H2Row> {
     /**
      * Constructor.
      *
@@ -52,7 +51,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements GridIndex<H2R
      * @param type Index type.
      */
     protected GridH2IndexBase(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
-        initBaseIndex(tbl, 0, name, cols, type);
+        super(tbl, name, cols, type);
     }
 
     /** {@inheritDoc} */

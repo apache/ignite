@@ -83,6 +83,7 @@ public class CacheGroupData implements Serializable {
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled WAL state.
      * @param walChangeReqs WAL change requests.
+     * @param cacheCfgEnrichment Cache configuration enrichment.
      */
     CacheGroupData(
         CacheConfiguration cacheCfg,

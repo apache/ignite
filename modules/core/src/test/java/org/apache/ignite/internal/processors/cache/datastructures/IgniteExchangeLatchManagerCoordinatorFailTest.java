@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,12 +26,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -152,6 +155,10 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
+
+        startGrids(5);
+        awaitPartitionMapExchange();
+        waitForLatchesCleanup();
     }
 
     /** {@inheritDoc} */
@@ -247,9 +254,6 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void doTestCoordinatorFail(List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(5);
-        crd.cluster().active(true);
-
         IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
 
         // Latch to synchronize node states.
@@ -309,10 +313,6 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      */
     @Test
     public void testCoordinatorFailoverAfterServerLatchCompleted() throws Exception {
-        startGrids(5);
-
-        ignite(0).cluster().active(true);
-
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (int i = 0; i < 5; i++) {
                 if (!grid(0).context().cache().context().exchange().readyAffinityVersion().equals(latchTopVer))
@@ -346,6 +346,32 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
             info("Waiting for latch after stop: " + i);
 
             latches[i].await(10_000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Waits until latches are cleaned up after exchange.
+     */
+    private void waitForLatchesCleanup() throws IgniteInterruptedCheckedException {
+        for (int i = 0; i < 5; i++) {
+            int finalI = i;
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    ExchangeLatchManager mgr = grid(finalI).context().cache().context().exchange().latch();
+
+                    Map serverLatches = U.field(mgr, "serverLatches");
+
+                    if (!serverLatches.isEmpty())
+                        return false;
+
+                    Map clientLatches = U.field(mgr, "clientLatches");
+
+                    if (!clientLatches.isEmpty())
+                        return false;
+
+                    return true;
+                }
+            }, 5_000));
         }
     }
 }

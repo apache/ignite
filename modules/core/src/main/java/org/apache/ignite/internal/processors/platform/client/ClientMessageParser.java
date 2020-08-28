@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePa
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveIfEqualsRequest;
@@ -201,6 +202,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005;
+
+    /** */
+    private static final short OP_QUERY_CONTINUOUS = 2006;
+
+    /** */
+    public static final short OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION = 2007;
 
     /* Binary metadata operations. */
     /** */
@@ -419,10 +426,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheSqlQueryRequest(reader);
 
             case OP_QUERY_SQL_FIELDS:
-                return new ClientCacheSqlFieldsQueryRequest(reader);
+                return new ClientCacheSqlFieldsQueryRequest(reader, protocolCtx);
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
+
+            case OP_QUERY_CONTINUOUS:
+                return new ClientCacheQueryContinuousRequest(reader);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);

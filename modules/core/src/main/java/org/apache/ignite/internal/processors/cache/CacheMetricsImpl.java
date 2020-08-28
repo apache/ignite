@@ -34,6 +34,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntSet;
@@ -212,6 +214,24 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Tx collisions info. */
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
 
+    /** Offheap entries count. */
+    private final LongGauge offHeapEntriesCnt;
+
+    /** Offheap primary entries count. */
+    private final LongGauge offHeapPrimaryEntriesCnt;
+
+    /** Offheap backup entries count. */
+    private final LongGauge offHeapBackupEntriesCnt;
+
+    /** Onheap entries count. */
+    private final LongGauge heapEntriesCnt;
+
+    /** Cache size. */
+    private final LongGauge cacheSize;
+
+    /** Number of keys processed during index rebuilding. */
+    private final LongAdderMetric idxRebuildKeyProcessed;
+
     /**
      * Creates cache metrics.
      *
@@ -349,11 +369,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
 
-        mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
-
-            return fut != null && !fut.isDone();
-        }, "True if index rebuild is in progress.");
+        mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
+            "True if index rebuild is in progress.");
 
         getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
 
@@ -368,6 +385,24 @@ public class CacheMetricsImpl implements CacheMetrics {
         mreg.register("TxKeyCollisions", this::getTxKeyCollisions, String.class, "Tx key collisions. " +
             "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
             "corresponding keys.");
+
+        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
+            () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
+
+        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
+            () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
+
+        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
+            () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
+
+        heapEntriesCnt = mreg.register("HeapEntriesCount",
+            () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
+
+        cacheSize = mreg.register("CacheSize",
+            () -> getEntriesStat().cacheSize(), "Local cache size.");
+
+        idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
+            "Number of keys processed during index rebuilding.");
     }
 
     /**
@@ -438,22 +473,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return getEntriesStat().offHeapEntriesCount();
+        return offHeapEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return getEntriesStat().heapEntriesCount();
+        return heapEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return getEntriesStat().offHeapPrimaryEntriesCount();
+        return offHeapPrimaryEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return getEntriesStat().offHeapBackupEntriesCount();
+        return offHeapBackupEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
@@ -470,7 +505,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return getEntriesStat().cacheSize();
+        return cacheSize.value();
     }
 
     /** {@inheritDoc} */
@@ -683,6 +718,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.clear();
 
         txKeyCollisionInfo = null;
+
+        idxRebuildKeyProcessed.reset();
     }
 
     /** {@inheritDoc} */
@@ -867,7 +904,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.onRead(isHit);
     }
 
-    /** Set callback for tx key collisions detection.
+    /**
+     * Set callback for tx key collisions detection.
      *
      * @param coll Key collisions info holder.
      */
@@ -1232,6 +1270,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         boolean isEmpty;
 
         try {
+            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+            if (AffinityTopologyVersion.NONE.equals(topVer))
+                return unknownEntriesStat();
+
             final GridCacheAdapter<?, ?> cache = cctx.cache();
 
             if (cache != null) {
@@ -1249,8 +1292,6 @@ public class CacheMetricsImpl implements CacheMetrics {
                 }
             }
             else {
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
                 IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
                 IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
@@ -1283,14 +1324,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             }
         }
         catch (Exception e) {
-            owningPartCnt = -1;
-            movingPartCnt = 0;
-            offHeapEntriesCnt = -1L;
-            offHeapPrimaryEntriesCnt = -1L;
-            offHeapBackupEntriesCnt = -1L;
-            heapEntriesCnt = -1L;
-            size = -1;
-            sizeLong = -1L;
+            return unknownEntriesStat();
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -1307,6 +1341,24 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
+
+        return stat;
+    }
+
+    /** @return Instance of {@link EntriesStatMetrics} with default values in case of unknown metrics. */
+    private EntriesStatMetrics unknownEntriesStat() {
+        EntriesStatMetrics stat = new EntriesStatMetrics();
+
+        stat.offHeapEntriesCount(-1L);
+        stat.offHeapPrimaryEntriesCount(-1L);
+        stat.offHeapBackupEntriesCount(-1L);
+        stat.heapEntriesCount(-1L);
+        stat.size(-1);
+        stat.cacheSize(-1L);
+        stat.keySize(-1);
+        stat.isEmpty(false);
+        stat.totalPartitionsCount(-1);
+        stat.rebalancingPartitionsCount(0);
 
         return stat;
     }
@@ -1496,6 +1548,32 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
+
+        return fut != null && !fut.isDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return idxRebuildKeyProcessed.value();
+    }
+
+    /** Reset metric - number of keys processed during index rebuilding. */
+    public void resetIndexRebuildKeyProcessed() {
+        idxRebuildKeyProcessed.reset();
+    }
+
+    /**
+     * Increase number of keys processed during index rebuilding.
+     *
+     * @param val Number of processed keys.
+     */
+    public void addIndexRebuildKeyProcessed(long val) {
+        idxRebuildKeyProcessed.add(val);
     }
 
     /** {@inheritDoc} */

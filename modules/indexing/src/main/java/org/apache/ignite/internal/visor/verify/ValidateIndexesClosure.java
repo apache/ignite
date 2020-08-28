@@ -49,8 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
@@ -413,8 +411,6 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
-        DbCheckpointListener lsnr = null;
-
         try {
             for (Integer grpId: grpIds) {
                 final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
@@ -449,10 +445,6 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                 integrityCheckFutures.get(j).cancel(false);
 
             throw unwrapFutureException(e);
-        }
-        finally {
-            if (db instanceof GridCacheDatabaseSharedManager && lsnr != null)
-                ((GridCacheDatabaseSharedManager)db).removeCheckpointListener(lsnr);
         }
 
         return integrityCheckResults;

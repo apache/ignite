@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
@@ -128,6 +131,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private final CacheObjectContext coCtx;
+
+    /** Primary key fields. */
+    private Set<String> pkFields;
 
     /**
      * Constructor.
@@ -418,13 +424,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        if (prop.notNull()) {
-            if (validateProps == null)
-                validateProps = new ArrayList<>();
-
-            validateProps.add(prop);
-        }
-        else if (prop.precision() != -1) {
+        if (prop.notNull() || prop.precision() != -1 ||
+            coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -581,6 +582,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (F.isEmpty(validateProps))
             return;
 
+        final boolean validateTypes = coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled();
+
         for (int i = 0; i < validateProps.size(); ++i) {
             GridQueryProperty prop = validateProps.get(i);
 
@@ -602,6 +605,30 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (propVal == null && prop.notNull()) {
                 throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
                     isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (validateTypes && propVal != null) {
+                if (!(propVal instanceof BinaryObject)) {
+                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
+                            Arrays.stream((Object[]) propVal).
+                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + prop.name() +
+                                "' is not compatible with table definition. Expected '" +
+                                prop.type().getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
+                        ((BinaryObject)propVal).type().typeId()) {
+                    throw new IgniteSQLException("Type for a column '" + prop.name() +
+                        "' is not compatible with table definition. Expected '" +
+                        prop.type().getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
             }
 
             if (propVal == null || prop.precision() == -1)
@@ -642,5 +669,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             prop.setValue(key, val, prop.defaultValue());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> primaryKeyFields() {
+        return pkFields == null ? Collections.emptySet() : pkFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyFields(Set<String> keys) {
+        pkFields = keys;
     }
 }

@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
@@ -36,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Compute;
+    using Apache.Ignite.Core.Impl.Client.Services;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
@@ -64,12 +66,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
             new ConcurrentDictionary<Guid, IClientClusterNode>();
-        
+
         /** Cluster. */
         private readonly ClientCluster _cluster;
 
         /** Compute. */
         private readonly ComputeClient _compute;
+
+        /** Services. */
+        private readonly IServicesClient _services;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
@@ -91,16 +96,18 @@ namespace Apache.Ignite.Core.Impl.Client
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
             _binary = new Binary(_marsh);
-            
+
             _cluster = new ClientCluster(this);
-            
+
             _compute = new ComputeClient(this, ComputeClientFlags.None, TimeSpan.Zero, null);
+
+            _services = new ServicesClient(this);
         }
 
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public ClientFailoverSocket Socket
+        internal ClientFailoverSocket Socket
         {
             get { return _socket; }
         }
@@ -208,6 +215,7 @@ namespace Apache.Ignite.Core.Impl.Client
             throw GetClientNotSupportedException();
         }
 
+        /** <inheritDoc /> */
         public object GetJavaThreadLocal()
         {
             throw GetClientNotSupportedException();
@@ -242,6 +250,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public IComputeClient GetCompute()
         {
             return _compute;
+        }
+
+        /** <inheritDoc /> */
+        public IServicesClient GetServices()
+        {
+            return _services;
         }
 
         /** <inheritDoc /> */

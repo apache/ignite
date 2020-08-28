@@ -72,6 +72,37 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** Row id attribute name. */
     public static final String ID = "systemViewRowId";
 
+    /** */
+    private static final Map<Class<?>, SimpleType<?>> CLS_TO_TYPE = new HashMap<>();
+
+    static {
+        CLS_TO_TYPE.put(String.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(IgniteUuid.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(UUID.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(Class.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(InetSocketAddress.class, SimpleType.STRING);
+        CLS_TO_TYPE.put(BigDecimal.class, SimpleType.BIGDECIMAL);
+        CLS_TO_TYPE.put(BigInteger.class, SimpleType.BIGINTEGER);
+        CLS_TO_TYPE.put(Date.class, SimpleType.DATE);
+        CLS_TO_TYPE.put(ObjectName.class, SimpleType.OBJECTNAME);
+        CLS_TO_TYPE.put(boolean.class, SimpleType.BOOLEAN);
+        CLS_TO_TYPE.put(Boolean.class, SimpleType.BOOLEAN);
+        CLS_TO_TYPE.put(byte.class, SimpleType.BYTE);
+        CLS_TO_TYPE.put(Byte.class, SimpleType.BYTE);
+        CLS_TO_TYPE.put(short.class, SimpleType.SHORT);
+        CLS_TO_TYPE.put(Short.class, SimpleType.SHORT);
+        CLS_TO_TYPE.put(int.class, SimpleType.INTEGER);
+        CLS_TO_TYPE.put(Integer.class, SimpleType.INTEGER);
+        CLS_TO_TYPE.put(long.class, SimpleType.LONG);
+        CLS_TO_TYPE.put(Long.class, SimpleType.LONG);
+        CLS_TO_TYPE.put(char.class, SimpleType.CHARACTER);
+        CLS_TO_TYPE.put(Character.class, SimpleType.CHARACTER);
+        CLS_TO_TYPE.put(float.class, SimpleType.FLOAT);
+        CLS_TO_TYPE.put(Float.class, SimpleType.FLOAT);
+        CLS_TO_TYPE.put(double.class, SimpleType.DOUBLE);
+        CLS_TO_TYPE.put(Double.class, SimpleType.DOUBLE);
+    }
+
     /** System view to export. */
     private final SystemView<R> sysView;
 
@@ -103,37 +134,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
-
-                if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                    clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
-                    clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
-                    types[idx] = SimpleType.STRING;
-                else if (clazz.isAssignableFrom(BigDecimal.class))
-                    types[idx] = SimpleType.BIGDECIMAL;
-                else if (clazz.isAssignableFrom(BigInteger.class))
-                    types[idx] = SimpleType.BIGINTEGER;
-                else if (clazz.isAssignableFrom(Date.class))
-                    types[idx] = SimpleType.DATE;
-                else if (clazz.isAssignableFrom(ObjectName.class))
-                    types[idx] = SimpleType.OBJECTNAME;
-                else if (clazz == boolean.class || clazz.isAssignableFrom(Boolean.class))
-                    types[idx] = SimpleType.BOOLEAN;
-                else if (clazz == byte.class || clazz.isAssignableFrom(Byte.class))
-                    types[idx] = SimpleType.BYTE;
-                else if (clazz == char.class || clazz.isAssignableFrom(Character.class))
-                    types[idx] = SimpleType.CHARACTER;
-                else if (clazz == short.class || clazz.isAssignableFrom(Short.class))
-                    types[idx] = SimpleType.SHORT;
-                else if (clazz == int.class || clazz.isAssignableFrom(Integer.class))
-                    types[idx] = SimpleType.INTEGER;
-                else if (clazz == long.class || clazz.isAssignableFrom(Long.class))
-                    types[idx] = SimpleType.LONG;
-                else if (clazz == float.class || clazz.isAssignableFrom(Float.class))
-                    types[idx] = SimpleType.FLOAT;
-                else if (clazz == double.class || clazz.isAssignableFrom(Double.class))
-                    types[idx] = SimpleType.DOUBLE;
-                else
-                    types[idx] = SimpleType.STRING;
+                types[idx] = CLS_TO_TYPE.getOrDefault(clazz, SimpleType.STRING);
 
                 if (sysView.walker().filtrableAttributes().contains(name))
                     filterFieldIdxs.add(idx);
@@ -282,7 +283,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
             if (clazz.isEnum())
-                data.put(name, ((Enum)val).name());
+                data.put(name, ((Enum<?>)val).name());
             else if (clazz.isAssignableFrom(Class.class))
                 data.put(name, ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
