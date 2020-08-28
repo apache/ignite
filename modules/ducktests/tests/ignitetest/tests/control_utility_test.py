@@ -19,11 +19,12 @@ This module contains control.sh utility tests.
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 from ducktape.utils.util import wait_until
-from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
-from ignitetest.services.utils.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import version_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
@@ -35,32 +36,6 @@ class BaselineTests(IgniteTest):
     Tests baseline command
     """
     NUM_NODES = 3
-
-    CONFIG_TEMPLATE = """
-        {% if version > "2.9.0" %}
-            <property name="clusterStateOnStart" value="INACTIVE"/>
-        {%  else %}
-            <property name="activeOnStart" value="false"/>
-        {% endif %}
-        <property name="dataStorageConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                <property name="defaultDataRegionConfiguration">
-                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="persistenceEnabled" value="true"/>
-                        <property name="maxSize" value="#{100L * 1024 * 1024}"/>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-    """
-
-    @staticmethod
-    def properties(version):
-        """
-        Render properties for ignite node configuration.
-        """
-        return Template(BaselineTests.CONFIG_TEMPLATE) \
-            .render(version=version)
 
     @cluster(num_nodes=NUM_NODES)
     @parametrize(version=str(DEV_BRANCH))
@@ -219,14 +194,19 @@ class BaselineTests(IgniteTest):
     def __check_baseline_size(baseline, size):
         assert len(baseline) == size, 'Unexpected size of baseline %d, %d expected' % (len(baseline), size)
 
-    def __start_ignite_nodes(self, version, num_nodes, timeout_sec=180, join_cluster=None):
-        ignite_version = IgniteVersion(version)
+    def __start_ignite_nodes(self, version, num_nodes, timeout_sec=60, join_cluster=None):
+        config = IgniteConfiguration(
+            cluster_state="INACTIVE",
+            version=IgniteVersion(version),
+            data_storage=DataStorageConfiguration(
+                default=DataRegionConfiguration(persistent=True)
+            )
+        )
 
-        servers = IgniteService(self.test_context,
-                                num_nodes=num_nodes,
-                                version=ignite_version,
-                                discovery_spi=from_ignite_cluster(join_cluster) if join_cluster else None,
-                                properties=self.properties(ignite_version))
+        if join_cluster:
+            config._replace(discovery_spi=from_ignite_cluster(join_cluster))
+
+        servers = IgniteService(self.test_context, config=config, num_nodes=num_nodes)
 
         servers.start(timeout_sec=timeout_sec)
 

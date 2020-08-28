@@ -23,10 +23,11 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.spark import SparkService
-from ignitetest.services.utils.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -41,10 +42,7 @@ class SmokeServicesTest(IgniteTest):
         """
         Test that IgniteService correctly start and stop
         """
-        ignite = IgniteService(
-            self.test_context,
-            num_nodes=1,
-            version=version)
+        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(version)), num_nodes=1)
         ignite.start()
         ignite.stop()
 
@@ -54,16 +52,12 @@ class SmokeServicesTest(IgniteTest):
         """
         Test that IgniteService and IgniteApplicationService correctly start and stop
         """
-        ignite = IgniteService(
-            self.test_context,
-            num_nodes=1,
-            version=version)
+        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(version)), num_nodes=1)
 
         app = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
-            discovery_spi=from_ignite_cluster(ignite),
-            version=version)
+            IgniteClientConfiguration(version=IgniteVersion(version), discovery_spi=from_ignite_cluster(ignite)),
+            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication")
 
         ignite.start()
         app.start()

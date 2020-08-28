@@ -20,19 +20,32 @@ Module contains discovery tests.
 import random
 import re
 from datetime import datetime
+from time import monotonic
+from typing import NamedTuple
 
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
-from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteAwareService
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.discovery import from_zookeeper_cluster, from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion
+
+
+class DiscoveryTestConfig(NamedTuple):
+    """
+    Configuration for DiscoveryTest.
+    """
+    version: IgniteVersion
+    nodes_to_kill = 1
+    kill_coordinator = False
+    with_load = False
+    with_zk = False
 
 
 # pylint: disable=W0223
@@ -43,165 +56,158 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    class Config:
-        """
-        Configuration for DiscoveryTest.
-        """
-        def __init__(self, nodes_to_kill=1, kill_coordinator=False, with_load=False):
-            self.nodes_to_kill = nodes_to_kill
-            self.kill_coordinator = kill_coordinator
-            self.with_load = with_load
-
     NUM_NODES = 7
 
     FAILURE_DETECTION_TIMEOUT = 2000
 
     DATA_AMOUNT = 100000
 
-    CONFIG_TEMPLATE = """
-    <property name="failureDetectionTimeout" value="{{ failure_detection_timeout }}"/>
-    """
-
     @cluster(num_nodes=NUM_NODES)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+    def test_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
         """
-        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
+                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=False)
 
-        return self.__simulate_nodes_failure(ignite_version, self.__properties(), config)
+        return self._perform_test(test_config)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+    def test_zk(self, version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test node failure scenario with ZooKeeperSpi.
         """
-        config = DiscoveryTest.Config(nodes_to_kill, kill_coordinator, with_load)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
+                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=True)
 
-        zk_quorum = self.__start_zk_quorum()
+        return self._perform_test(test_config)
 
-        return self.__simulate_nodes_failure(
-            version=ignite_version,
-            properties=self.__properties(),
-            discovery_spi=from_zookeeper_cluster(zk_quorum),
-            modules=["zookeeper"],
-            config=config)
+    def _perform_test(self, test_config):
+        ignite_config = IgniteConfiguration(
+            version=test_config.version,
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
+        )
 
-    # pylint: disable=too-many-arguments,too-many-locals
-    def __simulate_nodes_failure(self, version, properties, config, discovery_spi=None, modules=None):
-        if config.nodes_to_kill < 1:
-            return {"No nodes to kill": "Nothing to do"}
+        if test_config.with_zk:
+            zk_quorum = start_zookeeper(self.test_context, 3)
 
-        servers = IgniteService(
-            self.test_context,
-            num_nodes=self.NUM_NODES - 1,
-            modules=modules,
-            properties=properties,
-            discovery_spi=discovery_spi,
-            version=version)
+            ignite_config = ignite_config._replace(discovery_spi=from_zookeeper_cluster(zk_quorum))
 
-        time_holder = self.monotonic()
+        servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config)
 
-        servers.start()
+        if test_config.with_load:
+            load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
+                ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-        data = {'Ignite cluster start time (s)': round(self.monotonic() - time_holder, 1)}
+            start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT)
 
-        failed_nodes, survived_node = self.__choose_node_to_kill(servers, config.kill_coordinator, config.nodes_to_kill)
-
-        ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
-
-        if config.with_load:
-            self.__start_loading(ignite_version=version, properties=properties, modules=modules,
-                                 discovery_spi=discovery_spi if discovery_spi else from_ignite_cluster(servers))
-
-        first_terminated = servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
-
-        # Keeps dates of logged node failures.
-        logged_timestamps = []
-
-        for failed_id in ids_to_wait:
-            servers.await_event_on_node(self.__failed_pattern(failed_id), survived_node, 20,
-                                        from_the_beginning=True, backoff_sec=0.1)
-
-            _, stdout, _ = survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (self.__failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
-
-            logged_timestamps.append(
-                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                                  "[%Y-%m-%d %H:%M:%S,%f]"))
-
-        logged_timestamps.sort(reverse=True)
-
-        self.__store_results(data, logged_timestamps, first_terminated[1])
-
-        data['Nodes failed'] = len(failed_nodes)
-
+        data = simulate_nodes_failure(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
+        data['Ignite cluster start time (s)'] = start_servers_sec
         return data
 
-    @staticmethod
-    def __store_results(data, logged_timestamps, first_kill_time):
-        first_kill_time = epoch_mills(first_kill_time)
 
-        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+def start_zookeeper(test_context, num_nodes):
+    """
+    Start zookeeper cluster.
+    """
+    zk_quorum = ZookeeperService(test_context, num_nodes)
+    zk_quorum.start()
+    return zk_quorum
 
-        data['Detection of node(s) failure (ms)'] = detection_delay
-        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
 
-    @staticmethod
-    def __failed_pattern(failed_node_id):
-        return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
+def start_servers(test_context, num_nodes, ignite_config, modules=None):
+    """
+    Start ignite servers.
+    """
+    servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules)
 
-    @staticmethod
-    def __choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
-        assert nodes_to_kill > 0, "   No nodes to kill passed. Check the parameters."
+    start = monotonic()
+    servers.start()
+    return servers, round(monotonic() - start, 1)
 
-        nodes = servers.nodes
-        coordinator = nodes[0].discovery_info().coordinator
-        to_kill = []
 
-        if kill_coordinator:
-            to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
-            nodes_to_kill -= 1
+def start_load_app(test_context, ignite_config, data_amount, modules=None):
+    """
+    Start loader application.
+    """
+    loader = IgniteApplicationService(
+        test_context,
+        config=ignite_config,
+        java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
+        modules=modules,
+        params={"cacheName": "test-cache", "range": data_amount})
 
-        if nodes_to_kill > 0:
-            choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
-            to_kill.extend([choice] if not isinstance(choice, list) else choice)
+    loader.start()
 
-        survive = random.choice([node for node in servers.nodes if node not in to_kill])
 
-        return to_kill, survive
+def failed_pattern(failed_node_id):
+    """
+    Failed node pattern in log
+    """
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
 
-    def __start_loading(self, ignite_version, properties, modules, discovery_spi):
-        loader = IgniteApplicationService(
-            self.test_context,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
-            version=ignite_version,
-            modules=modules,
-            discovery_spi=discovery_spi,
-            properties=properties,
-            params={"cacheName": "test-cache", "range": self.DATA_AMOUNT})
 
-        loader.start()
-        return loader
+def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
+    """Choose node to kill during test"""
+    assert nodes_to_kill > 0, "   No nodes to kill passed. Check the parameters."
 
-    def __start_zk_quorum(self):
-        zk_quorum = ZookeeperService(self.test_context, 3)
+    nodes = servers.nodes
+    coordinator = nodes[0].discovery_info().coordinator
+    to_kill = []
 
-        zk_quorum.start()
-        return zk_quorum
+    if kill_coordinator:
+        to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
+        nodes_to_kill -= 1
 
-    @staticmethod
-    def __properties():
-        """
-        :return: Rendered node's properties.
-        """
-        return Template(DiscoveryTest.CONFIG_TEMPLATE).render(
-            failure_detection_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT)
+    if nodes_to_kill > 0:
+        choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
+        to_kill.extend([choice] if not isinstance(choice, list) else choice)
+
+    survive = random.choice([node for node in servers.nodes if node not in to_kill])
+
+    return to_kill, survive
+
+
+def simulate_nodes_failure(servers, kill_coordinator, nodes_to_kill):
+    """
+    Perform node failure scenario
+    """
+    failed_nodes, survived_node = choose_node_to_kill(servers, kill_coordinator, nodes_to_kill)
+
+    ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+
+    _, first_terminated = servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
+
+    # Keeps dates of logged node failures.
+    logged_timestamps = []
+    data = {}
+
+    for failed_id in ids_to_wait:
+        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20,
+                                    from_the_beginning=True, backoff_sec=0.1)
+
+        _, stdout, _ = survived_node.account.ssh_client.exec_command(
+            "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+
+        logged_timestamps.append(
+            datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                              "[%Y-%m-%d %H:%M:%S,%f]"))
+
+    logged_timestamps.sort(reverse=True)
+
+    first_kill_time = epoch_mills(first_terminated)
+    detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+
+    data['Detection of node(s) failure (ms)'] = detection_delay
+    data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
+    data['Nodes failed'] = len(failed_nodes)
+
+    return data

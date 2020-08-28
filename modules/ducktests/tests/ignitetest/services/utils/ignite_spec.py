@@ -22,13 +22,13 @@ import importlib
 import json
 
 from ignitetest.services.utils.ignite_path import IgnitePath
-from ignitetest.services.utils.ignite_config import IgniteClientConfig, IgniteServerConfig
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.utils.version import DEV_BRANCH
 
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
 
-def resolve_spec(service, context, **kwargs):
+def resolve_spec(service, context, config, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -46,10 +46,10 @@ def resolve_spec(service, context, **kwargs):
         return len(impl_filter) > 0
 
     if is_impl("IgniteService"):
-        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(**kwargs)
+        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(config=config, **kwargs)
 
     if is_impl("IgniteApplicationService"):
-        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, **kwargs)
+        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, config=config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 
@@ -58,24 +58,21 @@ class IgniteSpec:
     """
     This class is a basic Spec
     """
-    def __init__(self, version, project, client_mode, jvm_opts):
-        if isinstance(version, IgniteVersion):
-            self.version = version
-        else:
-            self.version = IgniteVersion(version)
-
+    def __init__(self, config, project, jvm_opts):
+        self.version = config.version
         self.path = IgnitePath(self.version, project)
         self.envs = {}
         self.jvm_opts = jvm_opts or []
-        self.client_mode = client_mode
+        self.config = config
 
-    def config(self):
+    @property
+    def config_template(self):
         """
         :return: config that service will use to start on a node
         """
-        if self.client_mode:
-            return IgniteClientConfig()
-        return IgniteServerConfig()
+        if self.config.client_mode:
+            return IgniteClientConfigTemplate()
+        return IgniteServerConfigTemplate()
 
     def command(self):
         """

@@ -34,6 +34,12 @@ class DiscoverySpi(metaclass=ABCMeta):
         Type of DiscoverySPI.
         """
 
+    @abstractmethod
+    def prepare_on_start(self, **kwargs):
+        """
+        Call if update before start is needed.
+        """
+
 
 class ZookeeperDiscoverySpi(DiscoverySpi):
     """
@@ -47,17 +53,8 @@ class ZookeeperDiscoverySpi(DiscoverySpi):
     def type(self):
         return "ZOOKEEPER"
 
-
-class TcpDiscoverySpi(DiscoverySpi):
-    """
-    TcpDiscoverySpi.
-    """
-    def __init__(self, ip_finder):
-        self.ip_finder = ip_finder
-
-    @property
-    def type(self):
-        return 'TCP'
+    def prepare_on_start(self, **kwargs):
+        pass
 
 
 class TcpDiscoveryIpFinder(metaclass=ABCMeta):
@@ -71,18 +68,47 @@ class TcpDiscoveryIpFinder(metaclass=ABCMeta):
         Type of TcpDiscoveryIpFinder.
         """
 
+    @abstractmethod
+    def prepare_on_start(self, **kwargs):
+        """
+        Call if update before start is needed.
+        """
+
 
 class TcpDiscoveryVmIpFinder(TcpDiscoveryIpFinder):
     """
     IpFinder with static ips, obtained from cluster nodes.
     """
-    def __init__(self, nodes):
-        self.addresses = [node.account.externally_routable_ip for node in nodes]
+    def __init__(self, nodes=None):
+        self.addresses = TcpDiscoveryVmIpFinder.__get_addresses(nodes) if nodes else None
 
     @property
     def type(self):
         return 'VM'
 
+    def prepare_on_start(self, **kwargs):
+        if not self.addresses:
+            cluster = kwargs.get('cluster')
+            self.addresses = TcpDiscoveryVmIpFinder.__get_addresses(cluster.nodes)
+
+    @staticmethod
+    def __get_addresses(nodes):
+        return [node.account.externally_routable_ip for node in nodes]
+
+
+class TcpDiscoverySpi(DiscoverySpi):
+    """
+    TcpDiscoverySpi.
+    """
+    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder()):
+        self.ip_finder = ip_finder
+
+    @property
+    def type(self):
+        return 'TCP'
+
+    def prepare_on_start(self, **kwargs):
+        self.ip_finder.prepare_on_start(**kwargs)
 
 def from_ignite_cluster(cluster, subset=None):
     """

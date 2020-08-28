@@ -22,7 +22,8 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
@@ -51,23 +52,21 @@ class AddNodeRebalanceTest(IgniteTest):
 
         self.stage("Start Ignite nodes")
 
-        ignites = IgniteService(self.test_context, num_nodes=self.NUM_NODES - 1, version=ignite_version)
+        node_config = IgniteConfiguration(version=ignite_version)
 
+        ignites = IgniteService(self.test_context, config=node_config, num_nodes=self.NUM_NODES - 1)
         ignites.start()
-
-        discovery_spi = from_ignite_cluster(ignites)
 
         self.stage("Starting DataGenerationApplication")
 
+        node_config = node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
         # This client just put some data to the cache.
-        IgniteApplicationService(self.test_context,
+        IgniteApplicationService(self.test_context, config=node_config,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
-                                 version=ignite_version,
                                  params={"cacheName": "test-cache", "range": self.DATA_AMOUNT},
-                                 discovery_spi=discovery_spi,
                                  timeout_sec=self.PRELOAD_TIMEOUT).run()
 
-        ignite = IgniteService(self.test_context, num_nodes=1, version=ignite_version, discovery_spi=discovery_spi)
+        ignite = IgniteService(self.test_context, node_config._replace(client_mode=False), num_nodes=1)
 
         self.stage("Starting Ignite node")
 
