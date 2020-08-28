@@ -127,7 +127,7 @@ namespace ignite
                             ignite::thin::transactions::TransactionIsolation::Type isolation = ignite::thin::transactions::TransactionIsolation::READ_COMMITTED,
                             int64_t timeout = 0,
                             int32_t txSize = 0,
-                            ignite::common::concurrent::SharedPointer<ignite::common::FixedSizeArray<char> > lbl = "");
+                            ignite::common::concurrent::SharedPointer<ignite::common::FixedSizeArray<char> > lbl = NULL);
                 private:
                     /** Implementation. */
                     ignite::common::concurrent::SharedPointer<void> impl;
