@@ -49,12 +49,13 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
         for (Field field : IgniteSystemProperties.class.getFields()) {
             int mod = field.getModifiers();
 
-            if (isPublic(mod) && isStatic(mod) && isFinal(mod) && String.class.equals(field.getType()))
+            if (isPublic(mod) && isStatic(mod) && isFinal(mod) && String.class.equals(field.getType())) {
                 expProps.put(U.staticField(IgniteSystemProperties.class, field.getName()), field);
 
-            assertTrue("Ignite system property must be annotated by @" +
-                IgniteSystemProperty.class.getSimpleName() + " [field=" + field + ']',
-                field.isAnnotationPresent(IgniteSystemProperty.class));
+                assertTrue("Ignite system property must be annotated by @" +
+                        IgniteSystemProperty.class.getSimpleName() + " [field=" + field + ']',
+                    field.isAnnotationPresent(IgniteSystemProperty.class));
+            }
         }
 
         assertFalse(expProps.isEmpty());
