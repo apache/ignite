@@ -197,6 +197,7 @@
     <ClInclude Include="..\..\src\impl\response_status.h" />
     <ClInclude Include="..\..\src\impl\utility.h" />
     <ClInclude Include="..\..\include\ignite\thin\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction.h" />
     <ClInclude Include="..\..\include\ignite\thin\transactions\transaction_consts.h" />
     <ClInclude Include="..\..\include\ignite\thin\transactions\transactions_proxy.h" />
     <ClInclude Include="..\..\src\impl\transactions\transactions_impl.h" />

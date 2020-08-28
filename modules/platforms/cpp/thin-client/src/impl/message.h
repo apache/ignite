@@ -622,8 +622,7 @@ namespace ignite
             /**
              * Tx start request.
              */
-            template<int32_t OpCode>
-            class TxStartRequest : public Request<OpCode>
+            class TxStartRequest : public Request<RequestType::OP_TX_START>
             {
             public:
                 /**
@@ -631,7 +630,7 @@ namespace ignite
                  */
                 TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
                                ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
-                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<const char> lbl) :
+                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl) :
                     concurrency(conc),
                     isolation(isolationLvl),
                     timeout(tmOut),
@@ -658,7 +657,7 @@ namespace ignite
                     writer.WriteInt8(concurrency);
                     writer.WriteInt8(isolation);
                     writer.WriteInt64(timeout);
-                    label.IsValid() ? writer.WriteString(label.Get()) : writer.WriteNull();
+                    label.IsValid() ? writer.WriteString(label.Get()->GetData()) : writer.WriteNull();
                 }
 
             private:
@@ -675,14 +674,13 @@ namespace ignite
                 const int32_t size;
 
                 /** Tx label. */
-                ignite::common::concurrent::SharedPointer<const char> label;
+                ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label;
             };
 
             /**
              * Tx end request.
              */
-            template<int32_t OpCode>
-            class TxEndRequest : public Request<OpCode>
+            class TxEndRequest : public Request<RequestType::OP_TX_END>
             {
             public:
                 /**

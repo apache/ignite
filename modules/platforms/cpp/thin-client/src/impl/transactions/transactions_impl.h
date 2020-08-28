@@ -19,6 +19,7 @@
 #define _IGNITE_IMPL_THIN_TRANSACTIONS_IMPL
 
 #include "impl/data_router.h"
+#include <ignite/common/fixed_size_array.h>
 #include "ignite/thin/transactions/transaction_consts.h"
 
 namespace ignite
@@ -45,8 +46,6 @@ namespace ignite
                  */
                 class TransactionImpl
                 {
-                    typedef ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> TL_TXID;
-
                 public:
                     /**
                      * Constructor.
@@ -135,7 +134,7 @@ namespace ignite
                             ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            ignite::common::concurrent::SharedPointer<const char> label);
+                            ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label);
                 protected:
                     /** Checks current thread state. */
                     static void txThreadCheck(const TransactionImpl& tx);
@@ -151,7 +150,7 @@ namespace ignite
                     int32_t txId;
 
                     /** Thread local instance of the transaction. */
-                    static TL_TXID threadTx;
+                    static ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> threadTx;
 
                     /** Concurrency. */
                     int concurrency;
@@ -205,7 +204,7 @@ namespace ignite
                             ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            ignite::common::concurrent::SharedPointer<const char> label);
+                            ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label);
 
                     /**
                      * Commit Transaction.
@@ -250,7 +249,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SyncMessage(const ReqT& req, RspT& rsp);
+                    void SendTxMessage(const ReqT& req, RspT& rsp);
                 private:
                     /** Data router. */
                     SP_DataRouter router;

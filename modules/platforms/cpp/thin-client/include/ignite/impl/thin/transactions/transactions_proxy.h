@@ -19,6 +19,7 @@
 #define _IGNITE_IMPL_THIN_TRANSACTIONS_PROXY
 
 #include "ignite/common/concurrent.h"
+#include <ignite/common/fixed_size_array.h>
 #include "ignite/thin/transactions/transaction_consts.h"
 
 namespace ignite
@@ -126,7 +127,7 @@ namespace ignite
                             ignite::thin::transactions::TransactionIsolation::Type isolation = ignite::thin::transactions::TransactionIsolation::READ_COMMITTED,
                             int64_t timeout = 0,
                             int32_t txSize = 0,
-                            ignite::common::concurrent::SharedPointer<const char> lbl = "");
+                            ignite::common::concurrent::SharedPointer<ignite::common::FixedSizeArray<char> > lbl = "");
                 private:
                     /** Implementation. */
                     ignite::common::concurrent::SharedPointer<void> impl;

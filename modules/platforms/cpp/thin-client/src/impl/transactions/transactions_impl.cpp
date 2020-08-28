@@ -31,7 +31,7 @@ namespace ignite
         {
             namespace transactions
             {
-                TransactionImpl::TL_TXID TransactionImpl::threadTx;
+                ThreadLocalInstance<SP_TransactionImpl> TransactionImpl::threadTx;
 
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
@@ -39,7 +39,7 @@ namespace ignite
                 }
 
                 template<typename ReqT, typename RspT>
-                void TransactionsImpl::SyncMessage(const ReqT& req, RspT& rsp)
+                void TransactionsImpl::SendTxMessage(const ReqT& req, RspT& rsp)
                 {
                     router.Get()->SyncMessage(req, rsp);
 
@@ -52,7 +52,7 @@ namespace ignite
                         TransactionIsolation::Type isolation,
                         int64_t timeout,
                         int32_t txSize,
-                        SharedPointer<const char> label)
+                        SharedPointer<common::FixedSizeArray<char> > label)
                 {
                     SP_TransactionImpl tx = TransactionImpl::Create(*this, concurrency, isolation, timeout, txSize, label);
 
@@ -65,7 +65,7 @@ namespace ignite
                     TransactionIsolation::Type isolation,
                     int64_t timeout,
                     int32_t txSize,
-                    SharedPointer<const char> label)
+                    SharedPointer<common::FixedSizeArray<char> > label)
                 {
                     SP_TransactionImpl tx = threadTx.Get();
 
@@ -76,11 +76,11 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
                     }
 
-                    TxStartRequest<RequestType::OP_TX_START> req(concurrency, isolation, timeout, txSize, label);
+                    TxStartRequest req(concurrency, isolation, timeout, txSize, label);
 
                     Int32Response rsp;
 
-                    txs.SyncMessage(req, rsp);
+                    txs.SendTxMessage(req, rsp);
 
                     int32_t curTxId = rsp.GetValue();
 
@@ -126,22 +126,22 @@ namespace ignite
 
                 int32_t TransactionsImpl::TxCommit(int32_t txId)
                 {
-                    TxEndRequest<RequestType::OP_TX_END> req(txId, true);
+                    TxEndRequest req(txId, true);
 
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    SendTxMessage(req, rsp);
 
                     return rsp.GetStatus();
                 }
 
                 int32_t TransactionsImpl::TxRollback(int32_t txId)
                 {
-                    TxEndRequest<RequestType::OP_TX_END> req(txId, false);
+                    TxEndRequest req(txId, false);
 
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    SendTxMessage(req, rsp);
 
                     return rsp.GetStatus();
                 }

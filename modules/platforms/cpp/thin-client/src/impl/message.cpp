@@ -195,12 +195,12 @@ namespace ignite
                 value.Read(reader);
             }
 
-            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(typeId);
             }
 
-            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());

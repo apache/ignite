@@ -20,6 +20,7 @@
 
 using namespace ignite::impl::thin;
 using namespace transactions;
+using namespace ignite::thin::transactions;
 
 namespace
 {
@@ -49,7 +50,7 @@ namespace ignite
                         TransactionIsolation::Type isolation,
                         int64_t timeout,
                         int32_t txSize,
-                        SharedPointer<const char> lbl)
+                        SharedPointer<ignite::common::FixedSizeArray<char> > lbl)
                 {
                     return TransactionProxy(GetTxsImpl(impl).TxStart(concurrency, isolation, timeout, txSize, lbl));
                 }
@@ -72,6 +73,7 @@ namespace ignite
                     }
                     catch (...)
                     {
+                        //No-op, we can`t throw any exceptions here.
                     }
                 }
             }
