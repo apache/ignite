@@ -159,6 +159,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                         ses.addMeta(CONN_CTX_META_KEY_PREV, storedCtx);
 
                         onHandshake(ses, msg);
+
+                        storedCtx = null;
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to handle handshake request " +
