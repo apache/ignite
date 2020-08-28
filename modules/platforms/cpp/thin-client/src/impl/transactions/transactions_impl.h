@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef TRANSACTIONS_IMPL_H
-#define TRANSACTIONS_IMPL_H
+#ifndef _IGNITE_IMPL_THIN_TRANSACTIONS_IMPL
+#define _IGNITE_IMPL_THIN_TRANSACTIONS_IMPL
 
 #include "impl/data_router.h"
 #include "ignite/thin/transactions/transaction_consts.h"
-
-using namespace ignite::thin::transactions;
-using namespace ignite::common::concurrent;
 
 namespace ignite
 {
@@ -38,8 +35,8 @@ namespace ignite
                 /* Forward declaration. */
                 class TransactionImpl;
 
-                typedef SharedPointer<TransactionsImpl> SP_TransactionsImpl;
-                typedef SharedPointer<TransactionImpl> SP_TransactionImpl;
+                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> SP_TransactionsImpl;
+                typedef ignite::common::concurrent::SharedPointer<TransactionImpl> SP_TransactionImpl;
 
                 /**
                  * Ignite transactions implementation.
@@ -48,7 +45,7 @@ namespace ignite
                  */
                 class TransactionImpl
                 {
-                    typedef ThreadLocalInstance<SP_TransactionImpl> TL_TXID;
+                    typedef ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> TL_TXID;
 
                 public:
                     /**
@@ -64,8 +61,8 @@ namespace ignite
                     TransactionImpl(
                             TransactionsImpl& txImpl,
                             int32_t txid,
-                            TransactionConcurrency::Type concurrency,
-                            TransactionIsolation::Type isolation,
+                            ignite::thin::transactions::TransactionConcurrency::Type concurrency,
+                            ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t size) :
                         txs(txImpl),
@@ -134,11 +131,11 @@ namespace ignite
                      */
                     static SP_TransactionImpl Create(
                             TransactionsImpl& txs,
-                            TransactionConcurrency::Type concurrency,
-                            TransactionIsolation::Type isolation,
+                            ignite::thin::transactions::TransactionConcurrency::Type concurrency,
+                            ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            SharedPointer<const char> label);
+                            ignite::common::concurrent::SharedPointer<const char> label);
                 protected:
                     /** Checks current thread state. */
                     static void txThreadCheck(const TransactionImpl& tx);
@@ -179,7 +176,7 @@ namespace ignite
                  */
                 class TransactionsImpl
                 {
-                    typedef SharedPointer<TransactionImpl> SP_TransactionImpl;
+                    typedef ignite::common::concurrent::SharedPointer<TransactionImpl> SP_TransactionImpl;
                 public:
                     /**
                      * Constructor.
@@ -203,12 +200,12 @@ namespace ignite
                      * @param label Transaction specific label.
                      * @return Transaction ID on success.
                      */
-                    SharedPointer<TransactionImpl> TxStart(
-                            TransactionConcurrency::Type concurrency,
-                            TransactionIsolation::Type isolation,
+                    ignite::common::concurrent::SharedPointer<TransactionImpl> TxStart(
+                            ignite::thin::transactions::TransactionConcurrency::Type concurrency,
+                            ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
-                            SharedPointer<const char> label);
+                            ignite::common::concurrent::SharedPointer<const char> label);
 
                     /**
                      * Commit Transaction.
@@ -265,4 +262,4 @@ namespace ignite
     }
 }
 
-#endif // TRANSACTIONS_IMPL_H
+#endif // _IGNITE_IMPL_THIN_TRANSACTIONS_IMPL

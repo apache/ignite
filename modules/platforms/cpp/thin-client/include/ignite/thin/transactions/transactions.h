@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef TRANSACTIONS_H
-#define TRANSACTIONS_H
+#ifndef _IGNITE_THIN_TRANSACTIONS_CLIENT_TRANSACTION
+#define _IGNITE_THIN_TRANSACTIONS_CLIENT_TRANSACTION
 
 #include <string>
 
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/transactions/transactions_proxy.h>
-
-using namespace ignite::impl::thin::transactions;
-using namespace ignite::common::concurrent;
 
 namespace ignite
 {
@@ -43,8 +40,13 @@ namespace ignite
              */
             class ClientTransaction {
 
-            public:                
-                ClientTransaction(TransactionProxy impl) :
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param impl Implementation.
+                 */
+                ClientTransaction(ignite::impl::thin::transactions::TransactionProxy impl) :
                     proxy(impl)
                 {}
 
@@ -91,7 +93,7 @@ namespace ignite
                 }
             private:
                 /** Implementation. */
-                TransactionProxy proxy;
+                ignite::impl::thin::transactions::TransactionProxy proxy;
 
                 /**
                  * Default constructor.
@@ -115,9 +117,9 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                ClientTransactions(SharedPointer<void> impl) :
+                ClientTransactions(ignite::common::concurrent::SharedPointer<void> impl) :
                     proxy(impl),
-                    label(SharedPointer<const char>())
+                    label(ignite::common::concurrent::SharedPointer<const char>())
                 {
                 }
 
@@ -155,16 +157,16 @@ namespace ignite
                  */
                 ClientTransactions withLabel(const std::string& lbl)
                 {
-                    ClientTransactions copy = ClientTransactions(proxy, lbl.c_str());
+                    ClientTransactions copy = ClientTransactions(proxy, lbl);
 
                     return copy;
                 }
             private:
                 /** Implementation. */
-                TransactionsProxy proxy;
+                ignite::impl::thin::transactions::TransactionsProxy proxy;
 
                 /** Transaction specific label. */
-                SharedPointer<const char> label;
+                ignite::common::concurrent::SharedPointer<const char> label;
 
                 /**
                  * Default constructor.
@@ -176,7 +178,7 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                ClientTransactions(TransactionsProxy& impl, const std::string& lbl) :
+                ClientTransactions(ignite::impl::thin::transactions::TransactionsProxy& impl, const std::string& lbl) :
                     proxy(impl)
                 {
                     char* l = new char[lbl.size() + 1];
@@ -188,4 +190,4 @@ namespace ignite
     }
 }
 
-#endif // TRANSACTIONS_H
+#endif // _IGNITE_THIN_TRANSACTIONS_CLIENT_TRANSACTION

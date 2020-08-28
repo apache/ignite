@@ -31,6 +31,8 @@
 
 using namespace ignite::thin;
 using namespace boost::unit_test;
+using namespace ignite::thin::transactions;
+using namespace ignite::common::concurrent;
 
 class IgniteTxTestSuiteFixture
 {

@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef TRANSACTIONS_PROXY_H
-#define TRANSACTIONS_PROXY_H
+#ifndef _IGNITE_IMPL_THIN_TRANSACTIONS_PROXY
+#define _IGNITE_IMPL_THIN_TRANSACTIONS_PROXY
 
 #include "ignite/common/concurrent.h"
 #include "ignite/thin/transactions/transaction_consts.h"
-
-using namespace ignite::common::concurrent;
-using namespace ignite::thin::transactions;
 
 namespace ignite
 {
@@ -47,7 +44,7 @@ namespace ignite
                      * Constructor.
                      * @param impl Transaction implementation.
                      */
-                    TransactionProxy(const SharedPointer<void>& impl) :
+                    TransactionProxy(const ignite::common::concurrent::SharedPointer<void>& impl) :
                         impl(impl)
                     {}
 
@@ -86,7 +83,7 @@ namespace ignite
 
                 private:
                     /** Implementation. */
-                    SharedPointer<void> impl;
+                    ignite::common::concurrent::SharedPointer<void> impl;
                 };
 
                 /**
@@ -102,7 +99,7 @@ namespace ignite
                     /**
                      * Constructor.
                      */
-                    TransactionsProxy(const SharedPointer<void>& impl) :
+                    TransactionsProxy(const ignite::common::concurrent::SharedPointer<void>& impl) :
                         impl(impl)
                     {
                         // No-op.
@@ -125,14 +122,14 @@ namespace ignite
                      * @return Proxy implementation.
                      */
                     TransactionProxy txStart(
-                            TransactionConcurrency::Type concurrency = TransactionConcurrency::PESSIMISTIC,
-                            TransactionIsolation::Type isolation = TransactionIsolation::READ_COMMITTED,
+                            ignite::thin::transactions::TransactionConcurrency::Type concurrency = ignite::thin::transactions::TransactionConcurrency::PESSIMISTIC,
+                            ignite::thin::transactions::TransactionIsolation::Type isolation = ignite::thin::transactions::TransactionIsolation::READ_COMMITTED,
                             int64_t timeout = 0,
                             int32_t txSize = 0,
-                            SharedPointer<const char> lbl = "");
+                            ignite::common::concurrent::SharedPointer<const char> lbl = "");
                 private:
                     /** Implementation. */
-                    SharedPointer<void> impl;
+                    ignite::common::concurrent::SharedPointer<void> impl;
 
                     /**
                      * Default constructor.
@@ -144,4 +141,4 @@ namespace ignite
     }
 }
 
-#endif // TRANSACTIONS_PROXY_H
+#endif // _IGNITE_IMPL_THIN_TRANSACTIONS_PROXY

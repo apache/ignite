@@ -21,6 +21,7 @@
 
 using namespace ignite::common::concurrent;
 using namespace ignite::impl::thin;
+using namespace ignite::thin::transactions;
 
 namespace ignite
 {
