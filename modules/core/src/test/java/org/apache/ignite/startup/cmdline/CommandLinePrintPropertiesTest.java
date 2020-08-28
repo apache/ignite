@@ -33,13 +33,14 @@ import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.PRINT_PROPS_COMMAND;
+import static org.apache.ignite.startup.cmdline.CommandLineStartup.PROPS_CLS;
 
 /**
  * Tests print Ignite system properties.
  */
 public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
     /** Ignite system property pattern. */
-    private final Pattern propPtrn = Pattern.compile("^(\\w+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
+    private final Pattern propPtrn = Pattern.compile("^([\\w.]+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
 
     /** @throws Exception If failed. */
     @Test
@@ -55,6 +56,18 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
                 assertTrue("Ignite system property must be annotated by @" +
                         IgniteSystemProperty.class.getSimpleName() + " [field=" + field + ']',
                     field.isAnnotationPresent(IgniteSystemProperty.class));
+            }
+        }
+
+        for (Class<?> cls : PROPS_CLS) {
+            if (cls.equals(IgniteSystemProperties.class))
+                continue;
+
+            for (Field field : cls.getFields()) {
+                IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
+
+                if (ann != null)
+                    expProps.put(U.staticField(cls, field.getName()), field);
             }
         }
 
@@ -74,7 +87,7 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
                     Field field = expProps.remove(name);
 
-                    assertNotNull("Duplicate property found [name=" + name + ']', field);
+                    assertNotNull("Unexpected or duplicated property found [name=" + name + ']', field);
 
                     assertEquals(field.isAnnotationPresent(Deprecated.class), deprecated);
 

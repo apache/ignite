@@ -40,12 +40,17 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.IgnitionListener;
+import org.apache.ignite.internal.processors.cache.ExchangeContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridConfigurationFinder;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.portscanner.GridJmxPortFinder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -74,6 +79,16 @@ public final class CommandLineStartup {
 
     /** Command to print Ignite system properties info. */
     static final String PRINT_PROPS_COMMAND = "-systemProps";
+
+    /** Classes with Ignite system properties. */
+    static final Class<?>[] PROPS_CLS = {
+        IgniteSystemProperties.class,
+        ExchangeContext.class,
+        GridCacheMapEntry.class,
+        LocalDeploymentSpi.class,
+        GridCacheDatabaseSharedManager.class,
+        GridJmxPortFinder.class
+    };
 
     /** Build date. */
     private static Date releaseDate;
@@ -369,15 +384,17 @@ public final class CommandLineStartup {
     private static void printSystemPropertiesInfo() {
         Map<String, Field> props = new TreeMap<>();
 
-        for (Field field : IgniteSystemProperties.class.getDeclaredFields()) {
-            IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
+        for (Class<?> cls : PROPS_CLS) {
+            for (Field field : cls.getFields()) {
+                IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
 
-            if (ann != null) {
-                try {
-                    props.put(U.staticField(IgniteSystemProperties.class, field.getName()), field);
-                }
-                catch (IgniteCheckedException ignored) {
-                    // No-op.
+                if (ann != null) {
+                    try {
+                        props.put(U.staticField(cls, field.getName()), field);
+                    }
+                    catch (IgniteCheckedException ignored) {
+                        // No-op.
+                    }
                 }
             }
         }
