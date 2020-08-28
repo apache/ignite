@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** Read func. */
         private readonly Func<BinaryReader, T> _readFunc;
-        
+
         /** Lock object. */
         private readonly object _syncRoot = new object();
 
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readFunc">The read function.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
-        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc, 
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc,
             IBinaryStream initialBatchStream = null)
         {
             Debug.Assert(marsh != null);
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             lock (_syncRoot)
             {
                 ThrowIfDisposed();
-                
+
                 _batch = _hasNext ? GetBatch() : null;
 
                 _batchPos = 0;
@@ -293,6 +293,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                     return;
                 }
 
+                // When _hasNext is false, cursor is already disposed by the server.
                 if (_hasNext)
                 {
                     Dispose(true);

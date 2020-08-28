@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -104,9 +103,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  */
 public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     implements IgniteTxRemoteEx {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Commit allowed field updater. */
     private static final AtomicIntegerFieldUpdater<GridDistributedTxRemoteAdapter> COMMIT_ALLOWED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDistributedTxRemoteAdapter.class, "commitAllowed");
@@ -130,13 +126,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** Transaction label. */
     @GridToStringInclude
     @Nullable private String txLbl;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDistributedTxRemoteAdapter() {
-        // No-op.
-    }
 
     /**
      * @param ctx Cache registry.
@@ -174,7 +163,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             ctx,
             nodeId,
             xidVer,
-            ctx.versions().last(),
+            null,
             Thread.currentThread().getId(),
             sys,
             plc,

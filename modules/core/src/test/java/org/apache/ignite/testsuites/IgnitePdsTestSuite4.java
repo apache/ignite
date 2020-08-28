@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.BreakRebalanceChainTest;
+import org.apache.ignite.cache.CircledRebalanceTest;
 import org.apache.ignite.cache.NotOptimizedRebalanceTest;
+import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
 import org.apache.ignite.cache.RebalanceCancellationTest;
 import org.apache.ignite.cache.RebalanceCompleteDuringExchangeTest;
 import org.apache.ignite.cache.ResetLostPartitionTest;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLoc
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedTreeFailureHandlingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheEntriesExpirationTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsConsistencyOnDelayedPartitionOwning;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDuringRebalancingTest;
@@ -51,6 +54,8 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategySelfTest;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -79,6 +84,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ResetLostPartitionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceAfterResettingLostPartitionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
@@ -103,8 +109,15 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockLogTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockStackTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, HistoricalReservationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CircledRebalanceTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsConsistencyOnDelayedPartitionOwning.class, ignoredTests);
+
+        // Warm-up tests.
+        GridTestUtils.addTestIfNeeded(suite, WarmUpSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LoadAllWarmUpStrategySelfTest.class, ignoredTests);
 
         return suite;
     }

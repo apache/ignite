@@ -39,6 +39,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -61,6 +62,7 @@ import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -91,7 +93,7 @@ public class IgniteMBeansManager {
     }
 
     /**
-     * Registers all kernal MBeans (for kernal, metrics, thread pools).
+     * Registers kernal MBeans (for kernal, metrics, thread pools) after node start.
      *
      * @param utilityCachePool Utility cache pool.
      * @param execSvc Executor service.
@@ -100,7 +102,6 @@ public class IgniteMBeansManager {
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
-     * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
@@ -114,7 +115,7 @@ public class IgniteMBeansManager {
      * @param workersRegistry Worker registry.
      * @throws IgniteCheckedException if fails to register any of the MBeans.
      */
-    public void registerAllMBeans(
+    public void registerMBeansAfterNodeStarted(
         ExecutorService utilityCachePool,
         final ExecutorService execSvc,
         final ExecutorService svcExecSvc,
@@ -122,7 +123,6 @@ public class IgniteMBeansManager {
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc,
         StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
@@ -144,7 +144,7 @@ public class IgniteMBeansManager {
         // Metrics
         ClusterMetricsMXBean locMetricsBean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery());
         registerMBean("Kernal", locMetricsBean.getClass().getSimpleName(), locMetricsBean, ClusterMetricsMXBean.class);
-        ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(kernal.cluster());
+        ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(kernal.cluster(), ctx);
         registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
 
         // Transaction metrics
@@ -196,7 +196,6 @@ public class IgniteMBeansManager {
         registerExecutorMBean("GridSystemExecutor", sysExecSvc);
         registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
         registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
-        registerExecutorMBean("GridIgfsExecutor", igfsExecSvc);
         registerExecutorMBean("GridAffinityExecutor", affExecSvc);
         registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
         registerExecutorMBean("GridQueryExecutor", qryExecSvc);
@@ -237,6 +236,23 @@ public class IgniteMBeansManager {
 
         if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
+    }
+
+    /**
+     * Registers kernal MBeans during init phase.
+     *
+     * @throws IgniteCheckedException if fails to register any of the MBeans.
+     */
+    public void registerMBeansDuringInitPhase() throws IgniteCheckedException {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        // Warm-up.
+        registerMBean("WarmUp",
+            WarmUpMXBeanImpl.class.getSimpleName(),
+            new WarmUpMXBeanImpl(ctx.cache()),
+            WarmUpMXBean.class
+        );
     }
 
     /**

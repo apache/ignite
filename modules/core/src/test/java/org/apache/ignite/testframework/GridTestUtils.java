@@ -113,6 +113,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -121,6 +122,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -219,22 +221,16 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-            @Nullable DiscoverySpiCustomMessage spiCustomMsg
-        ) {
-            hook.beforeDiscovery(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
+            hook.beforeDiscovery(notification.getCustomMsgData());
 
-            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
+            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
 
             return fut;
         }
+
 
         /** {@inheritDoc} */
         @Override public void onLocalNodeInitialized(ClusterNode locNode) {
@@ -2174,6 +2170,17 @@ public final class GridTestUtils {
     }
 
     /**
+     * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
+     */
+    public static void deleteIndexBin(String igniteInstanceName) throws IgniteCheckedException {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
+            new File(grp, "index.bin").delete();
+        }
+    }
+
+    /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
      * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
      * This method return correct simple name for inner classes.
@@ -2415,6 +2422,24 @@ public final class GridTestUtils {
             while ((remainTime = end - System.currentTimeMillis()) > 0);
 
             return sleepMs;
+        }
+
+        /**
+         * Delays execution for {@code duration} milliseconds.
+         *
+         * @param duration Duration.
+         * @return amount of milliseconds to delay.
+         */
+        @QuerySqlFunction
+        public static long delay(long duration) {
+            try {
+                Thread.sleep(duration);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return duration;
         }
 
         /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
  * <li>{@link #EVTS_DISCOVERY}</li>
  * <li>{@link #EVTS_DISCOVERY_ALL}</li>
  * <li>{@link #EVTS_ERROR}</li>
- * <li>{@link #EVTS_IGFS}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
  * </ul>
@@ -657,150 +657,6 @@ public interface EventType {
     public static final int EVT_CACHE_NODES_LEFT = 100;
 
     /**
-     * Built-in event type: IGFS file created.
-     * <p>
-     * Fired when IGFS component creates new file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CREATED = 116;
-
-    /**
-     * Built-in event type: IGFS file renamed.
-     * <p>
-     * Fired when IGFS component renames an existing file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_RENAMED = 117;
-
-    /**
-     * Built-in event type: IGFS file deleted.
-     * <p>
-     * Fired when IGFS component deletes a file.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_DELETED = 118;
-
-    /**
-     * Built-in event type: IGFS file opened for reading.
-     * <p>
-     * Fired when IGFS file is opened for reading.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_OPENED_READ = 119;
-
-    /**
-     * Built-in event type: IGFS file opened for writing.
-     * <p>
-     * Fired when IGFS file is opened for writing.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_OPENED_WRITE = 120;
-
-    /**
-     * Built-in event type: IGFS file or directory metadata updated.
-     * <p>
-     * Fired when IGFS file or directory metadata is updated.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_META_UPDATED = 121;
-
-    /**
-     * Built-in event type: IGFS file closed.
-     * <p>
-     * Fired when IGFS file is closed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CLOSED_WRITE = 122;
-
-    /**
-     * Built-in event type: IGFS file closed.
-     * <p>
-     * Fired when IGFS file is closed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_CLOSED_READ = 123;
-
-    /**
-     * Built-in event type: IGFS directory created.
-     * <p>
-     * Fired when IGFS component creates new directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_CREATED = 124;
-
-    /**
-     * Built-in event type: IGFS directory renamed.
-     * <p>
-     * Fired when IGFS component renames an existing directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_RENAMED = 125;
-
-    /**
-     * Built-in event type: IGFS directory deleted.
-     * <p>
-     * Fired when IGFS component deletes a directory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_DIR_DELETED = 126;
-
-    /**
-     * Built-in event type: IGFS file purged.
-     * <p>
-     * Fired when IGFS file data was actually removed from cache.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int EVT_IGFS_FILE_PURGED = 127;
-
-    /**
      * Built-in event type: WAL segment movement to archive folder completed
      * <p>
      * Fired for each completed WAL segment which was moved to archive
@@ -981,6 +837,49 @@ public interface EventType {
     public static final int EVT_CLUSTER_STATE_CHANGE_STARTED = 145;
 
     /**
+     * Built-in event type: baseline topology has been changed by either user request or auto-adjust timeout event.
+     * Event includes the following information: new baseline nodes.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#setBaselineTopology(long)
+     * @see IgniteCluster#setBaselineTopology(Collection)
+     */
+    public static final int EVT_BASELINE_CHANGED = 146;
+
+    /**
+     * Built-in event type: baseline auto-adjust "enabled" flag has been changed by user request.
+     * Event includes the following information: auto-adjust enabled flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustEnabled(boolean)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED = 147;
+
+    /**
+     * Built-in event type: baseline auto-adjust timeout has been changed by user request.
+     * Event includes the following information: auto-adjust "enabled" flag, auto-adjust timeout.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteCluster#baselineAutoAdjustTimeout(long)
+     */
+    public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -1156,28 +1055,6 @@ public interface EventType {
     public static final int[] EVTS_CACHE_QUERY = {
         EVT_CACHE_QUERY_EXECUTED,
         EVT_CACHE_QUERY_OBJECT_READ
-    };
-
-    /**
-     * All Igfs events. This array can be directly passed into
-     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see IgfsEvent
-     */
-    public static final int[] EVTS_IGFS = {
-        EVT_IGFS_FILE_CREATED,
-        EVT_IGFS_FILE_RENAMED,
-        EVT_IGFS_FILE_DELETED,
-        EVT_IGFS_FILE_OPENED_READ,
-        EVT_IGFS_FILE_OPENED_WRITE,
-        EVT_IGFS_FILE_CLOSED_WRITE,
-        EVT_IGFS_FILE_CLOSED_READ,
-        EVT_IGFS_FILE_PURGED,
-        EVT_IGFS_META_UPDATED,
-        EVT_IGFS_DIR_CREATED,
-        EVT_IGFS_DIR_RENAMED,
-        EVT_IGFS_DIR_DELETED,
     };
 
     /**

@@ -51,16 +51,19 @@ public class GridCacheAttributes implements Serializable {
     private CacheConfigurationEnrichment enrichment;
 
     /**
-     * @param cfg Cache configuration.
+     * Creates a new instance of cache attributes.
      *
+     * @param cfg Cache configuration.
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
         this.ccfg = cfg;
     }
 
     /**
-     * @param cfg Cache configuration.
+     * Creates a new instance of cache attributes.
      *
+     * @param cfg Cache configuration.
+     * @param enrichment Cache configuration enrichment.
      */
     public GridCacheAttributes(CacheConfiguration cfg, CacheConfigurationEnrichment enrichment) {
         this.ccfg = cfg;
@@ -234,7 +237,7 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Transaction manager lookup class name.
-     * @deprecated Transaction manager lookup must be configured in 
+     * @deprecated Transaction manager lookup must be configured in
      *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
      */
     @Deprecated
