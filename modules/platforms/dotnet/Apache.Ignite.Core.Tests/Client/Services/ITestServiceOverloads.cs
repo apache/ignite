@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,43 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using Apache.Ignite.BenchmarkDotNet.ThinClient;
-    using global::BenchmarkDotNet.Running;
+    using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
-    /// Benchmark runner.
+    /// Test interface for overload resolution.
     /// </summary>
-    public static class Program
+    public interface ITestServiceOverloads
     {
-        /// <summary>
-        /// Main.
-        /// </summary>
-        public static void Main()
-        {
-            BenchmarkRunner.Run<ThinClientServicesBenchmark>();
-        }
+        /** */
+        bool Foo();
+
+        /** */
+        int Foo(int x);
+        
+        /** */
+        int Foo(uint x);
+        
+        /** */
+        int Foo(byte x);
+        
+        /** */
+        int Foo(short x);
+        
+        /** */
+        int Foo(ushort x);
+        
+        /** */
+        int Foo(Person x);
+        
+        /** */
+        int Foo(int[] x);
+        
+        /** */
+        int Foo(object[] x);
+        
+        /** */
+        int Foo(Person[] x);
     }
 }

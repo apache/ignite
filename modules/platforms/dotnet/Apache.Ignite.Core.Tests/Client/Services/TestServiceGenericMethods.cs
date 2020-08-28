@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,37 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using Apache.Ignite.BenchmarkDotNet.ThinClient;
-    using global::BenchmarkDotNet.Running;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
-    /// Benchmark runner.
+    /// Test service with generic methods.
     /// </summary>
-    public static class Program
+    public class TestServiceGenericMethods : ITestServiceGenericMethods, IService
     {
-        /// <summary>
-        /// Main.
-        /// </summary>
-        public static void Main()
+        /** <inheritdoc /> */
+        public T GetGeneric<T>(T x)
         {
-            BenchmarkRunner.Run<ThinClientServicesBenchmark>();
+            return x;
+        }
+
+        /** <inheritdoc /> */
+        public void Init(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void Execute(IServiceContext context)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void Cancel(IServiceContext context)
+        {
+            // No-op.
         }
     }
 }

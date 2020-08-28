@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+namespace Apache.Ignite.Core.Tests.Client.Services
 {
-    using Apache.Ignite.BenchmarkDotNet.ThinClient;
-    using global::BenchmarkDotNet.Running;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Tests.Client.Cache;
 
     /// <summary>
-    /// Benchmark runner.
+    /// Client-side counterpart for <see cref="ITestService"/>.
+    /// <para />
+    /// Clients can use a different service interface. Method signatures can also differ.
     /// </summary>
-    public static class Program
+    public interface ITestServiceClient
     {
         /// <summary>
-        /// Main.
+        /// Counterpart for <see cref="ITestService.PersonMethodBinary"/>.
+        /// <para />
+        /// Client-side interface operates on <see cref="Person"/>,
+        /// but server-side method uses <see cref="IBinaryObject"/>: 
         /// </summary>
-        public static void Main()
-        {
-            BenchmarkRunner.Run<ThinClientServicesBenchmark>();
-        }
+        Person PersonMethodBinary(Person person);
+        
+        /// <summary>
+        /// Counterpart for <see cref="ITestService.PersonMethod"/>.
+        /// </summary>
+        IBinaryObject PersonMethod(IBinaryObject person);
     }
 }
