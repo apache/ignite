@@ -304,6 +304,7 @@ public class CachePartitionDefragmentationManager {
         CacheDataStore oldCacheDataStore = StreamSupport
             .stream(stores.spliterator(), false)
             .filter(s -> grpId == s.tree().groupId())
+            .filter(s -> partId == s.partId())
             .findFirst()
             .orElse(null);
 

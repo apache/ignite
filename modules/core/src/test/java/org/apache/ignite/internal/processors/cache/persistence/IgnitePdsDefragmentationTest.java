@@ -53,7 +53,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final String CACHE_2_NAME = "cache2";
 
     /** */
-    public static final int PARTS = 1;
+    public static final int PARTS = 4;
 
     /** */
     public static final int ADDED_KEYS_COUNT = 5;
