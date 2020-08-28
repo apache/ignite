@@ -1,12 +1,11 @@
 
 = Understanding Configuration
 
-This chapter explains different ways of configuring an Ignite cluster.
+This chapter explains different ways of setting configuration parameters in an Ignite cluster.
 
 == Overview
 
-When you start a node, you need to provide configuration parameters to the node.
-Basically, all configuration parameters are defined in an instance of the javadoc:org.apache.ignite.configuration.IgniteConfiguration[] class.
+You can specify custom configuration parameters by providing an instance of the javadoc:org.apache.ignite.configuration.IgniteConfiguration[] class to Ignite when starting the node.
 You can set the parameters either programmatically or via an XML configuration file.
 These 2 ways are fully interchangeable.
 

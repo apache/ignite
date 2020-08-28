@@ -5,6 +5,7 @@ layout: default
 <section class='page-docs'>
     {% include left-nav.html %}
     <article data-swiftype-index='true'>
+        <a class='edit-link' href="{{site.attrs.docSourceUrl}}/{{page.path}}" target="_blank">Edit</a>
         {% if page.path contains ".adoc" %}
             <h1>{{page.title}}</h1>
         {% endif %}

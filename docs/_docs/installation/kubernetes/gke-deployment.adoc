@@ -18,8 +18,8 @@ include::installation/kubernetes/generic-configuration.adoc[tag=kube-version]
 A cluster in GKE is a set of nodes that provision resources for the applications that are deployed in the cluster.
 You must create a GKE cluster with enough resources (CPU, RAM, and storage) for your use case.
 
-* link:https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster[Create a cluster,window=_blank].
-* link:https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl[configure _kubectl_,window=_blank]
+* link:https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster[Create a cluster,window=_blank]
+* link:https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl[Configure _kubectl_,window=_blank]
 
 The easiest way to create a cluster is to use the `gcloud` command line tool:
 

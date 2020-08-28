@@ -45,7 +45,7 @@ tab:C++[unsupported]
 --
 
 
-== Enabling Sampling of Traces
+== Enabling Trace Sampling
 
 When you start your cluster with the above configuration, Ignite does not collect traces.
 You have to enable trace sampling for a specific API at runtime.
@@ -85,7 +85,7 @@ Refer to the link:control-script#tracing-configuration[Control Script] sections 
 
 === Programmatically
 
-Once you start the node, you can enable sampling as follows:
+Once you start the node, you can enable trace sampling as follows:
 
 [source, java]
 ----

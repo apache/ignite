@@ -4,7 +4,7 @@
 
 == Overview
 
-Your cluster can be in one of the three states: `ACTIVE`, `ACTIVE_READ_ONLY`, and `INACTIVE`.
+An Ignite cluster can be in one of the three states: `ACTIVE`, `ACTIVE_READ_ONLY`, and `INACTIVE`.
 
 When you start a pure in-memory cluster (no persistent data regions) for the first time, the cluster is in the `ACTIVE` state.
 When you start a cluster with persistent data regions for the first time, the cluster is `INACTIVE`.

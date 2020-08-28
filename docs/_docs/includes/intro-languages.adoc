@@ -1,6 +1,6 @@
 Ignite is available for Java, .NET/C#, and {cpp}. The Java version provides the richest API. The .NET/C# and C++ variants may have limited functionality. To make this guide intuitive for all developers, we adhere to the following conventions:
 
-* The information provided in the guide applies to all programming languages unless noted otherwise.
+* The information provided in this documentation applies to all programming languages unless noted otherwise.
 * Code samples for different languages are provided in different tabs as shown below. For example, if you are a .NET developer, click on the .NET tab in the code examples to see .NET specific code.
 +
 [tabs]

@@ -10,6 +10,7 @@ attrs: &asciidoc_attributes
   javaCodeDir: code-snippets/java/src/main/java/org/apache/ignite/snippets
   csharpCodeDir: code-snippets/dotnet
   githubUrl: https://github.com/apache/ignite/tree/master
+  docSourceUrl: https://github.com/apache/ignite/tree/IGNITE-7595/docs
 collections:
   docs:
     permalink: /docs/:path:output_ext

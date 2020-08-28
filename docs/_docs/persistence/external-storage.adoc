@@ -11,7 +11,7 @@ For other NoSQL databases for which integration is not available off-the-shelf, 
 
 The two main use cases where an external storage can be used include:
 
-* A caching layer to an existing database. In this scenario, you can dramatically improve the processing speed by loading data into memory. You can also bring SQL support to a database that does not have it (when all data is loaded into memory).
+* A caching layer to an existing database. In this scenario, you can improve the processing speed by loading data into memory. You can also bring SQL support to a database that does not have it (when all data is loaded into memory).
 
 * You want to persist the data in an external database (instead of using the link:persistence/native-persistence[native persistence]).
 

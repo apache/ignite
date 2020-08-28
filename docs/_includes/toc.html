@@ -30,7 +30,8 @@
 {% else %}  
     {% for guide in site.data.toc %}
 
-        <h2>  {{guide.title }} </h2>
+        <h2> 
+<a href="{{site.attrs.base_url}}{{guide.url}}" class=''>{{guide.title}}</a> </h2>
         {% if guide.items %}
         <ul>
           {% for sect in guide.items %}
