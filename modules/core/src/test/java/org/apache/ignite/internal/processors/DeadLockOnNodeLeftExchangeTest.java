@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -32,8 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 
 /** */
 public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
@@ -77,7 +76,7 @@ public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_EXCHANGE_COMPATIBILITY_VER_1, value = "true")
+    @WithSystemProperty(key = ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1, value = "true")
     public void test() throws Exception {
         startGrids(4);
 

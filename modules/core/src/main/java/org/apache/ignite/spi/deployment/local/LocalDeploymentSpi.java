@@ -46,8 +46,6 @@ import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
-
 /**
  * Local deployment SPI that implements only within VM deployment on local
  * node via {@link #register(ClassLoader, Class)} method. This SPI requires
@@ -70,6 +68,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEPLOYMENT_ADDITIO
 @IgniteSpiConsistencyChecked(optional = false)
 @IgnoreIfPeerClassLoadingDisabled
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
+    /** Enables additional check for resource name on resources removal. */
+    public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
+
     /** Value for additional check on resources removal. */
     private static final boolean ENABLE_IGNITE_DEPLOYMENT_ADDITIONAL_CHECK =
         IgniteSystemProperties.getBoolean(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);

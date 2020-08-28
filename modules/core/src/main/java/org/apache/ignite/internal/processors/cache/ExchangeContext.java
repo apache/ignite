@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -38,6 +37,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  *
  */
 public class ExchangeContext {
+    /** */
+    public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
+
     /** Logger. */
     private final IgniteLogger log;
 

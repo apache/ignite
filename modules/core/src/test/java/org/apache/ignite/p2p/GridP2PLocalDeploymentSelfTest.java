@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
+import static org.apache.ignite.spi.deployment.local.LocalDeploymentSpi.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
 
 /**
  * Test to make sure that if job executes on the same node, it reuses the same class loader as task.
