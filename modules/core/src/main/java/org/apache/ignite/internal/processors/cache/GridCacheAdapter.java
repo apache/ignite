@@ -171,6 +171,10 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ALL;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ALL_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ASYNC;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL_ASYNC;
@@ -1469,29 +1473,37 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws IgniteCheckedException {
-        A.notNull(key, "key");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_GET, MTC.span()))) {
+            final K rawKey = key;
 
-        boolean statsEnabled = ctx.statisticsEnabled();
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(rawKey));
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            A.notNull(key, "key");
 
-        boolean keepBinary = ctx.keepBinary();
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        if (keepBinary)
-            key = (K)ctx.toCacheKeyObject(key);
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        V val = repairableGet(key, !keepBinary, false);
+            boolean keepBinary = ctx.keepBinary();
 
-        if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            if (keepBinary)
+                key = (K)ctx.toCacheKeyObject(key);
 
-            val = (V)ctx.config().getInterceptor().onGet(key, val);
+            V val = repairableGet(key, !keepBinary, false);
+
+            if (ctx.config().getInterceptor() != null) {
+                key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+
+                val = (V)ctx.config().getInterceptor().onGet(key, val);
+            }
+
+            if (statsEnabled)
+                metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+            return val;
         }
-
-        if (statsEnabled)
-            metrics0().addGetTimeNanos(System.nanoTime() - start);
-
-        return val;
     }
 
     /** {@inheritDoc} */
@@ -1532,37 +1544,42 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(final K key) {
-        A.notNull(key, "key");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_GET_ASYNC, MTC.span()))) {
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
+            A.notNull(key, "key");
 
-        final boolean statsEnabled = ctx.statisticsEnabled();
+            final boolean statsEnabled = ctx.statisticsEnabled();
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+            final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        final boolean keepBinary = ctx.keepBinary();
+            final boolean keepBinary = ctx.keepBinary();
 
-        final K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
+            final K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
 
-        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+            final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        IgniteInternalFuture<V> fut = repairableGetAsync(
-            key,
-            !keepBinary,
-            false,
-            opCtx != null && opCtx.readRepair());
+            IgniteInternalFuture<V> fut = repairableGetAsync(
+                key,
+                !keepBinary,
+                false,
+                opCtx != null && opCtx.readRepair());
 
-        if (ctx.config().getInterceptor() != null)
-            fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
-                @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+            if (ctx.config().getInterceptor() != null)
+                fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
+                    @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
+                        K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
-                }
-            });
+                        return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                    }
+                });
 
-        if (statsEnabled)
-            fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
+            if (statsEnabled)
+                fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
-        return fut;
+            return fut;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1620,28 +1637,33 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        A.notNull(keys, "keys");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_GET_ALL, MTC.span()))) {
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
+            A.notNull(keys, "keys");
 
-        boolean statsEnabled = ctx.statisticsEnabled();
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+            final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, V> map = repairableGetAll(
-            keys,
-            !ctx.keepBinary(),
-            false,
-            opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair());
+            Map<K, V> map = repairableGetAll(
+                keys,
+                !ctx.keepBinary(),
+                false,
+                opCtx != null && opCtx.recovery(),
+                opCtx != null && opCtx.readRepair());
 
-        if (ctx.config().getInterceptor() != null)
-            map = interceptGet(keys, map);
+            if (ctx.config().getInterceptor() != null)
+                map = interceptGet(keys, map);
 
-        if (statsEnabled)
-            metrics0().addGetTimeNanos(System.nanoTime() - start);
+            if (statsEnabled)
+                metrics0().addGetTimeNanos(System.nanoTime() - start);
 
-        return map;
+            return map;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1678,39 +1700,45 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
-        A.notNull(keys, "keys");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_GET_ALL_ASYNC, MTC.span()))) {
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        final boolean statsEnabled = ctx.statisticsEnabled();
+            A.notNull(keys, "keys");
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+            final boolean statsEnabled = ctx.statisticsEnabled();
 
-        String taskName = ctx.kernalContext().job().currentTaskName();
+            final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+            String taskName = ctx.kernalContext().job().currentTaskName();
 
-        IgniteInternalFuture<Map<K, V>> fut = repairableGetAllAsync(
-            keys,
-            !ctx.config().isReadFromBackup(),
-            /*skip tx*/false,
-            opCtx != null ? opCtx.subjectId() : null,
-            taskName,
-            !(opCtx != null && opCtx.isKeepBinary()),
-            opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
-            /*skip vals*/false,
-            /*need ver*/false);
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (ctx.config().getInterceptor() != null)
-            return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
-                @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                    return interceptGet(keys, f.get());
-                }
-            });
+            IgniteInternalFuture<Map<K, V>> fut = repairableGetAllAsync(
+                keys,
+                !ctx.config().isReadFromBackup(),
+                /*skip tx*/false,
+                opCtx != null ? opCtx.subjectId() : null,
+                taskName,
+                !(opCtx != null && opCtx.isKeepBinary()),
+                opCtx != null && opCtx.recovery(),
+                opCtx != null && opCtx.readRepair(),
+                /*skip vals*/false,
+                /*need ver*/false);
 
-        if (statsEnabled)
-            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+            if (ctx.config().getInterceptor() != null)
+                return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
+                    @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
+                        return interceptGet(keys, f.get());
+                    }
+                });
 
-        return fut;
+            if (statsEnabled)
+                fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+            return fut;
+        }
     }
 
     /** {@inheritDoc} */
@@ -2571,7 +2599,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
             boolean statsEnabled = ctx.statisticsEnabled();
@@ -2964,7 +2992,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public final IgniteInternalFuture<Boolean> putAsync(K key, V val, @Nullable CacheEntryPredicate filter) {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ASYNC, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
             A.notNull(key, "key", val, "val");
@@ -3071,7 +3099,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m) throws IgniteCheckedException {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ALL, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addTag("keys.count", () -> m == null ? "0" : String.valueOf(m.size()));
 
             A.notNull(m, "map");
@@ -3116,7 +3144,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m) {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ALL_ASYNC, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addTag("keys.count", () -> m == null ? "0" : String.valueOf(m.size()));
 
             if (F.isEmpty(m))
@@ -3262,7 +3290,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
 
             assert ctx.isLocal();
 
@@ -3289,7 +3317,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
 
             boolean statsEnabled = ctx.statisticsEnabled();
@@ -3339,7 +3367,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable final Collection<? extends K> keys) {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL_ASYNC, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
 
             if (F.isEmpty(keys))
@@ -3399,7 +3427,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public boolean remove(final K key, @Nullable CacheEntryPredicate filter) throws IgniteCheckedException {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
             boolean statsEnabled = ctx.statisticsEnabled();
@@ -3463,7 +3491,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public IgniteInternalFuture<Boolean> removeAsync(final K key, @Nullable final CacheEntryPredicate filter) {
         try (MTC.TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ASYNC, MTC.span()))) {
-            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("cache", () -> Objects.toString(cacheCfg.getName()));
             MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
             final boolean statsEnabled = ctx.statisticsEnabled();

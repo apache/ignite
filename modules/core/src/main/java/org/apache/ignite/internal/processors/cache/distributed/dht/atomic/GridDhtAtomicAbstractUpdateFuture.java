@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -60,7 +61,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_PROCESS_ATOMIC_DEFERRED_UPDATE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_UPDATE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_UPDATE_MAP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 
 /**
  * DHT atomic cache backup update future.
@@ -389,21 +390,22 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param ret Cache operation return value.
      * @param updateRes Response.
      * @param completionCb Callback to invoke to send response to near node.
+     * @param ctxSpan Tracing span.
      */
     final void map(ClusterNode nearNode,
         GridCacheReturn ret,
         GridNearAtomicUpdateResponse updateRes,
-        GridDhtAtomicCache.UpdateReplyClosure completionCb) {
+        GridDhtAtomicCache.UpdateReplyClosure completionCb,
+        Span ctxSpan
+    ) {
         try (
             TraceSurroundings ignored =
                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(CACHE_API_DHT_UPDATE_FUTURE,
-                    MTC.span()));
+                    ctxSpan));
             TraceSurroundings ignored2 =
-                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_DHT_UPDATE_MAP, span))
+                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP, span))
         ) {
             span.addTag("write.version", () -> Objects.toString(writeVer));
-
-            MTC.span().addTag("mappings", () -> Objects.toString(mappings));
 
             if (F.isEmpty(mappings)) {
                 updateRes.mapping(Collections.<UUID>emptyList());

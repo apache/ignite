@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -46,9 +45,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_PRE
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
     /** */
     private static final long serialVersionUID = 7460376140787916619L;
-
-    /** Tracing span. */
-    protected Span span;
 
     /** */
     @GridToStringExclude

@@ -74,6 +74,9 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -96,6 +99,10 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_REQUEST;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_RESPONSE;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
@@ -332,19 +339,23 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param res Near get response.
      */
     protected final void processNearGetResponse(UUID nodeId, GridNearGetResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
-
-        CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
-
-        if (fut == null) {
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE,
+                     MTC.span()))) {
             if (log.isDebugEnabled())
-                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+                log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            return;
+            CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
+
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                return;
+            }
+
+            fut.onResult(nodeId, res);
         }
-
-        fut.onResult(nodeId, res);
     }
 
     /**
@@ -352,20 +363,24 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param res Near get response.
      */
     protected void processNearSingleGetResponse(UUID nodeId, GridNearSingleGetResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
-
-        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
-            .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
-
-        if (fut == null) {
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_RESPONSE,
+                     MTC.span()))) {
             if (log.isDebugEnabled())
-                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+                log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            return;
+            GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+                .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
+
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                return;
+            }
+
+            fut.onResult(nodeId, res);
         }
-
-        fut.onResult(nodeId, res);
     }
 
     /**
@@ -829,106 +844,110 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Get request.
      */
     protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
-        assert ctx.affinityNode();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_REQUEST,
+                     MTC.span()))) {
+            assert ctx.affinityNode();
 
-        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
+            final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
-        IgniteInternalFuture<GridCacheEntryInfo> fut =
-            getDhtSingleAsync(
-                nodeId,
-                req.messageId(),
-                req.key(),
-                req.addReader(),
-                req.readThrough(),
-                req.topologyVersion(),
-                req.subjectId(),
-                req.taskNameHash(),
-                expiryPlc,
-                req.skipValues(),
-                req.recovery(),
-                req.txLabel(),
-                req.mvccSnapshot());
+            IgniteInternalFuture<GridCacheEntryInfo> fut =
+                getDhtSingleAsync(
+                    nodeId,
+                    req.messageId(),
+                    req.key(),
+                    req.addReader(),
+                    req.readThrough(),
+                    req.topologyVersion(),
+                    req.subjectId(),
+                    req.taskNameHash(),
+                    expiryPlc,
+                    req.skipValues(),
+                    req.recovery(),
+                    req.txLabel(),
+                    req.mvccSnapshot());
 
-        fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
-            @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
-                GridNearSingleGetResponse res;
+            fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+                @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
+                    GridNearSingleGetResponse res;
 
-                GridDhtFuture<GridCacheEntryInfo> fut = (GridDhtFuture<GridCacheEntryInfo>)f;
+                    GridDhtFuture<GridCacheEntryInfo> fut = (GridDhtFuture<GridCacheEntryInfo>)f;
 
-                try {
-                    GridCacheEntryInfo info = fut.get();
+                    try {
+                        GridCacheEntryInfo info = fut.get();
 
-                    if (F.isEmpty(fut.invalidPartitions())) {
-                        Message res0 = null;
+                        if (F.isEmpty(fut.invalidPartitions())) {
+                            Message res0 = null;
 
-                        if (info != null) {
-                            if (req.needEntryInfo()) {
-                                info.key(null);
+                            if (info != null) {
+                                if (req.needEntryInfo()) {
+                                    info.key(null);
 
-                                res0 = info;
+                                    res0 = info;
+                                }
+                                else if (req.needVersion())
+                                    res0 = new CacheVersionedValue(info.value(), info.version());
+                                else
+                                    res0 = info.value();
                             }
-                            else if (req.needVersion())
-                                res0 = new CacheVersionedValue(info.value(), info.version());
-                            else
-                                res0 = info.value();
+
+                            res = new GridNearSingleGetResponse(
+                                ctx.cacheId(),
+                                req.futureId(),
+                                null,
+                                res0,
+                                false,
+                                req.addDeploymentInfo()
+                            );
+
+                            if (info != null && req.skipValues())
+                                res.setContainsValue();
                         }
+                        else {
+                            AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
-                        res = new GridNearSingleGetResponse(
-                            ctx.cacheId(),
+                            res = new GridNearSingleGetResponse(
+                                ctx.cacheId(),
+                                req.futureId(),
+                                topVer,
+                                null,
+                                true,
+                                req.addDeploymentInfo()
+                            );
+                        }
+                    }
+                    catch (NodeStoppingException ignored) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed processing get request: " + req, e);
+
+                        res = new GridNearSingleGetResponse(ctx.cacheId(),
                             req.futureId(),
+                            req.topologyVersion(),
                             null,
-                            res0,
                             false,
-                            req.addDeploymentInfo()
-                        );
+                            req.addDeploymentInfo());
 
-                        if (info != null && req.skipValues())
-                            res.setContainsValue();
+                        res.error(e);
                     }
-                    else {
-                        AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
-                        res = new GridNearSingleGetResponse(
-                            ctx.cacheId(),
-                            req.futureId(),
-                            topVer,
-                            null,
-                            true,
-                            req.addDeploymentInfo()
-                        );
+                    try {
+                        ctx.io().send(nodeId, res, ctx.ioPolicy());
                     }
-                }
-                catch (NodeStoppingException ignored) {
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed processing get request: " + req, e);
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send get response to node, node failed: " + nodeId);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                            ",req=" + req + ", res=" + res + ']', e);
+                    }
 
-                    res = new GridNearSingleGetResponse(ctx.cacheId(),
-                        req.futureId(),
-                        req.topologyVersion(),
-                        null,
-                        false,
-                        req.addDeploymentInfo());
-
-                    res.error(e);
+                    sendTtlUpdateRequest(expiryPlc);
                 }
-
-                try {
-                    ctx.io().send(nodeId, res, ctx.ioPolicy());
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to send get response to node, node failed: " + nodeId);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
-                        ",req=" + req + ", res=" + res + ']', e);
-                }
-
-                sendTtlUpdateRequest(expiryPlc);
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -936,67 +955,71 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Get request.
      */
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
-        assert ctx.affinityNode();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST,
+                     MTC.span()))) {
+            assert ctx.affinityNode();
 
-        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
+            final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
-        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
-            getDhtAsync(nodeId,
-                req.messageId(),
-                req.keys(),
-                req.addReaders(),
-                req.readThrough(),
-                req.topologyVersion(),
-                req.subjectId(),
-                req.taskNameHash(),
-                expiryPlc,
-                req.skipValues(),
-                req.recovery(),
-                req.txLabel(),
-                req.mvccSnapshot());
+            IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
+                getDhtAsync(nodeId,
+                    req.messageId(),
+                    req.keys(),
+                    req.addReaders(),
+                    req.readThrough(),
+                    req.topologyVersion(),
+                    req.subjectId(),
+                    req.taskNameHash(),
+                    expiryPlc,
+                    req.skipValues(),
+                    req.recovery(),
+                    req.txLabel(),
+                    req.mvccSnapshot());
 
-        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
-            @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
-                GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
-                    req.futureId(),
-                    req.miniId(),
-                    req.version(),
-                    req.deployInfo() != null);
+            fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+                @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                    GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
+                        req.futureId(),
+                        req.miniId(),
+                        req.version(),
+                        req.deployInfo() != null);
 
-                GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
-                    (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
+                    GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
+                        (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
 
-                try {
-                    Collection<GridCacheEntryInfo> entries = fut.get();
+                    try {
+                        Collection<GridCacheEntryInfo> entries = fut.get();
 
-                    res.entries(entries);
+                        res.entries(entries);
+                    }
+                    catch (NodeStoppingException ignored) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed processing get request: " + req, e);
+
+                        res.error(e);
+                    }
+
+                    if (!F.isEmpty(fut.invalidPartitions())) {
+                        AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
+
+                        res.invalidPartitions(fut.invalidPartitions(), topVer);
+                    }
+
+                    try {
+                        ctx.io().send(nodeId, res, ctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                            ",req=" + req + ", res=" + res + ']', e);
+                    }
+
+                    sendTtlUpdateRequest(expiryPlc);
                 }
-                catch (NodeStoppingException ignored) {
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed processing get request: " + req, e);
-
-                    res.error(e);
-                }
-
-                if (!F.isEmpty(fut.invalidPartitions())) {
-                    AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
-
-                    res.invalidPartitions(fut.invalidPartitions(), topVer);
-                }
-
-                try {
-                    ctx.io().send(nodeId, res, ctx.ioPolicy());
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
-                        ",req=" + req + ", res=" + res + ']', e);
-                }
-
-                sendTtlUpdateRequest(expiryPlc);
-            }
-        });
+            });
+        }
     }
 
     /**

@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 
 /**
  * DHT atomic cache near update future.
@@ -475,44 +475,43 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     private void waitAndRemap(AffinityTopologyVersion remapTopVer) {
-        try (TraceSurroundings ignored =
-                 MTC.supportContinual(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP,
-                     span))) {
-            assert remapTopVer != null;
+        assert remapTopVer != null;
 
-            if (topLocked) {
-                assert !F.isEmpty(remapKeys) : remapKeys;
+        if (topLocked) {
+            assert !F.isEmpty(remapKeys) : remapKeys;
 
-                CachePartialUpdateCheckedException e =
-                    new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
+            CachePartialUpdateCheckedException e =
+                new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
-                ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
-                    "Failed to update keys, topology changed while execute atomic update inside transaction.");
+            ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
+                "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-                cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
-                e.add(remapKeys, cause);
+            e.add(remapKeys, cause);
 
-                completeFuture(null, e, null);
+            completeFuture(null, e, null);
 
-                return;
-            }
+            return;
+        }
 
-            IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
+        IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
 
-            if (fut == null)
-                fut = new GridFinishedFuture<>(remapTopVer);
+        if (fut == null)
+            fut = new GridFinishedFuture<>(remapTopVer);
 
-            fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                        @Override public void run() {
+        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+            @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        try (TraceSurroundings ignored =
+                                 MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP, MTC.span()))) {
                             mapOnTopology();
                         }
-                    });
-                }
-            });
-        }
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -736,7 +735,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
     /** {@inheritDoc} */
     @Override protected void map(AffinityTopologyVersion topVer) {
-        MTC.span().addTag("topology.version", () -> Objects.toString(topVer));
+        span.addTag("topology.version", () -> Objects.toString(topVer));
 
         map(topVer, null);
     }

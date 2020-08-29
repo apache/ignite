@@ -217,16 +217,58 @@ public enum SpanType {
     CACHE_API_DHT_UPDATE_FUTURE(Scope.CACHE_API_WRITE, "cache.api.dht.update.future", 61, false),
 
     /** */
-    CACHE_API_DHT_UPDATE_MAP(Scope.CACHE_API_WRITE, "cache.api.dht.update.map", 62, false),
+    CACHE_API_UPDATE_MAP(Scope.CACHE_API_WRITE, "cache.api.update.map", 62, false),
 
     /** */
     CACHE_API_NEAR_UPDATE_FUTURE(Scope.CACHE_API_WRITE, "cache.api.near.update.future", 63, false),
 
     /** */
-    CACHE_API_NEAR_UPDATE_MAP(Scope.CACHE_API_WRITE, "cache.api.near.update.map", 64, false),
+    CACHE_API_NEAR_UPDATE_PRIMARY_FAILED_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.near.atomic.primary.failed.response", 64, false),
 
     /** */
-    CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP(Scope.CACHE_API_WRITE, "cache.api.near.update.wait.and.remap", 65, false);
+    CACHE_API_GET(Scope.CACHE_API_READ, "cache.api.get", 65, true),
+
+    /** */
+    CACHE_API_GET_ALL(Scope.CACHE_API_READ, "cache.api.get.all", 66, true),
+
+    /** */
+    CACHE_API_GET_ASYNC(Scope.CACHE_API_READ, "cache.api.get.async", 67, true),
+
+    /** */
+    CACHE_API_GET_ALL_ASYNC(Scope.CACHE_API_READ, "cache.api.get.all.async", 68, true),
+
+    /** */
+    CACHE_API_NEAR_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.near.get.future", 69, false),
+
+    /** */
+    CACHE_API_PARTITIONED_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.partitioned.get.future", 70, false),
+
+    /** */
+    CACHE_API_PARTITIONED_SINGLE_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.partitioned.single.get.future", 71, false),
+
+    /** */
+    CACHE_API_DHT_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.dht.get.future", 72, false),
+
+    /** */
+    CACHE_API_DHT_SINGLE_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.dht.single.get.future", 73, false),
+
+    /** */
+    CACHE_API_GET_MAP(Scope.CACHE_API_READ, "cache.api.get.map", 74, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST(Scope.CACHE_API_READ, "cache.api.near.atomic.get.request", 75, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE(Scope.CACHE_API_READ, "cache.api.near.atomic.get.response", 76, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_REQUEST(Scope.CACHE_API_READ,
+        "cache.api.near.atomic.single.get.request", 77, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_RESPONSE(Scope.CACHE_API_READ,
+        "cache.api.near.atomic.single.get.response", 78, false);
 
     /** Scope */
     private Scope scope;

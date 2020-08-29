@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -60,7 +61,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
     /** Tracing span. */
     @GridToStringExclude
-    protected volatile Span span;
+    protected volatile Span span = NoopSpan.INSTANCE;
 
     /*
      * https://bugs.openjdk.java.net/browse/JDK-8074773

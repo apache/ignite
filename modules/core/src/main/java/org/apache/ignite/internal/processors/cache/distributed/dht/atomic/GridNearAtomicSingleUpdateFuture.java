@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 
 /**
  * DHT atomic cache near update future.
@@ -354,40 +354,41 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param remapTopVer New topology version.
      */
     private void waitAndRemap(AffinityTopologyVersion remapTopVer) {
-        try (TraceSurroundings ignored =
-                MTC.supportContinual(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP,
-                    span))) {
-            if (topLocked) {
-                CachePartialUpdateCheckedException e =
-                    new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
+        if (topLocked) {
+            CachePartialUpdateCheckedException e =
+                new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
-                ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
-                    "Failed to update keys, topology changed while execute atomic update inside transaction.");
+            ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
+                "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-                cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
-                e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
+            e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
 
-                completeFuture(null, e, null);
+            completeFuture(null, e, null);
 
-                return;
-            }
+            return;
+        }
 
-            IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
+        IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
 
-            if (fut == null)
-                fut = new GridFinishedFuture<>(remapTopVer);
+        if (fut == null)
+            fut = new GridFinishedFuture<>(remapTopVer);
 
             fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                         @Override public void run() {
-                            mapOnTopology();
+                            try (TraceSurroundings ignored =
+                                     MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP,
+                                         MTC.span()))) {
+                                mapOnTopology();
+                            }
                         }
-                    });
-                }
-            });
-        }
+                    }
+                });
+            }
+        });
     }
 
     /**

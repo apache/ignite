@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,7 +61,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_MAP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_PRIMARY_FAILED_RESPONSE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 
 /**
  * Base for near atomic update futures.
@@ -252,7 +254,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_FUTURE,
                     MTC.span()));
             TraceSurroundings ignored2 =
-                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_MAP, span))
+                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP, span))
         ) {
             AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -459,29 +461,34 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @return Response to notify about primary failure.
      */
     final GridNearAtomicUpdateResponse primaryFailedResponse(GridNearAtomicAbstractUpdateRequest req) {
-        assert req.response() == null : req;
-        assert req.nodeId() != null : req;
+        try (TraceSurroundings ignored =
+                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_PRIMARY_FAILED_RESPONSE,
+                    MTC.span()))) {
+            MTC.span().addTag("request.node.id", () -> Objects.toString(req.nodeId));
+            assert req.response() == null : req;
+            assert req.nodeId() != null : req;
 
-        if (msgLog.isDebugEnabled()) {
-            msgLog.debug("Near update fut, node left [futId=" + req.futureId() +
-                ", node=" + req.nodeId() + ']');
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near update fut, node left [futId=" + req.futureId() +
+                    ", node=" + req.nodeId() + ']');
+            }
+
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
+                req.nodeId(),
+                req.futureId(),
+                req.partition(),
+                true,
+                cctx.deploymentEnabled());
+
+            ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
+                "before response is received: " + req.nodeId());
+
+            e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
+
+            res.addFailedKeys(req.keys(), e);
+
+            return res;
         }
-
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
-            req.nodeId(),
-            req.futureId(),
-            req.partition(),
-            true,
-            cctx.deploymentEnabled());
-
-        ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
-            "before response is received: " + req.nodeId());
-
-        e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
-
-        res.addFailedKeys(req.keys(), e);
-
-        return res;
     }
 
     /**
