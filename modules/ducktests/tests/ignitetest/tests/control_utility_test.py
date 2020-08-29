@@ -199,7 +199,8 @@ class BaselineTests(IgniteTest):
             cluster_state="INACTIVE",
             version=IgniteVersion(version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(persistent=True)
+                default=DataRegionConfiguration(name='persistent', persistent=True),
+                regions=[DataRegionConfiguration(name='in-memory', persistent=False, max_size=100 * 1024 * 1024)]
             )
         )
 

@@ -22,14 +22,17 @@
                 <property name="defaultDataRegionConfiguration">
                     {{ data_region(config.default) }}
                 </property>
+                {% if config.regions %}
+                    <property name="dataRegionConfigurations">
+                        <list>
+                        {% for region in config.regions %}
+                            {{ data_region(region) }}
+                        {% endfor %}
+                        </list>
+                    </property>
+                {% endif %}
             </bean>
         </property>
-
-        {% if config.regions %}
-            {% for region in config.regions %}
-                {{ data_region(region) }}
-            {% endfor %}
-        {% endif %}
     {% endif %}
 {% endmacro %}
 
