@@ -222,7 +222,7 @@ public class GridDhtPartitionDemander {
      */
     void stop() {
         try {
-            rebalanceFut.cancel();
+            rebalanceFut.onCacheGroupStopped();
         }
         catch (Exception ignored) {
             rebalanceFut.onDone(false);
@@ -1504,6 +1504,11 @@ public class GridDhtPartitionDemander {
             cancel();
         }
 
+        /** */
+        public void onCacheGroupStopped() {
+            cancel();
+        }
+
         /**
          * Cancels this future and proceeds to a next in the chain.
          *
@@ -1591,9 +1596,7 @@ public class GridDhtPartitionDemander {
             else
                 exchFut.markNodeAsInapplicableForFullRebalance(nodeId, grp.groupId(), p);
 
-            missed.computeIfAbsent(nodeId, k -> new HashSet<>());
-
-            missed.get(nodeId).add(p);
+            missed.computeIfAbsent(nodeId, k -> new HashSet<>()).add(p);
         }
 
         /**

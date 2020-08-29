@@ -759,12 +759,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void afterStateRestored(AffinityTopologyVersion topVer) {
-        /** Partition maps are initialized as a part of partition map exchange protocol,
-         * see {@link #beforeExchange(GridDhtPartitionsExchangeFuture, boolean, boolean)}. */
-        for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
-            if (locPart != null && locPart.state() == RENTING)
-                locPart.clearAsync(); // Resume clearing
-        }
+        // No-op. If some partitions are restored in RENTING state clearing will be started after PME.
+        // Otherwise it's possible RENTING will be finished while node2part is not ready and a partition
+        // map will not be updated.
     }
 
     /** {@inheritDoc} */
