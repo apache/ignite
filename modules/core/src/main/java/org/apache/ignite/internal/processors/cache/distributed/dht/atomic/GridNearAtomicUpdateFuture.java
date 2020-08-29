@@ -505,7 +505,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
                         try (TraceSurroundings ignored =
-                                 MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP, MTC.span()))) {
+                                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_UPDATE_MAP, MTC.span()))) {
                             mapOnTopology();
                         }
                     }

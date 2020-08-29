@@ -50,6 +50,27 @@ public interface Span {
     Span addSensitiveTag(String tagName, Supplier<String> tagValSupplier);
 
     /**
+     * If (@code org.apache.ignite.internal.util.tostring.GridToStringBuilder#includeSensitive()) is {@code true}.
+     * adds tag to the span if current span type is the same as {@code directParentSpan} otherwise adds log.
+     *
+     * @param tagName Tag name.
+     * @param directParentSpan Direct parent span.
+     * @param tagValSupplier Tag value supplier. Supplier is used instead of strict tag value cause of it's lazy nature.
+     *  So that it's possible not to generate String tag value in case of NoopSpan.
+     */
+    Span addSensitiveTagOrLog(String tagName, SpanType directParentSpan, Supplier<String> tagValSupplier);
+
+    /**
+     * Adds tag to the span if current span type is the same as {@code directParentSpan} otherwise adds log.
+     *
+     * @param tagName Tag name.
+     * @param directParentSpan Direct parent span.
+     * @param tagValSupplier Tag value supplier. Supplier is used instead of strict tag value cause of it's lazy nature.
+     *  So that it's possible not to generate String tag value in case of NoopSpan.
+     */
+    Span addTagOrLog(String tagName, SpanType directParentSpan, Supplier<String> tagValSupplier);
+
+    /**
      * Logs work to span.
      *
      * @param logDescSupplier Log description supplier.

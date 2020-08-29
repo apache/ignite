@@ -69,6 +69,36 @@ public class SpanImpl implements Span {
     }
 
     /** {@inheritDoc} */
+    @Override public Span addSensitiveTagOrLog(
+        String tagName,
+        SpanType directParentSpan,
+        Supplier<String> tagValSupplier
+    ) {
+        if (S.includeSensitive()) {
+            if (spanType == directParentSpan)
+                spiSpecificSpan.addTag(tagName, tagValSupplier.get());
+            else
+                spiSpecificSpan.addLog('[' + tagName + '=' + tagValSupplier.get() + ']');
+        }
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Span addTagOrLog(
+        String tagName,
+        SpanType directParentSpan,
+        Supplier<String> tagValSupplier
+    ) {
+        if (spanType == directParentSpan)
+            spiSpecificSpan.addTag(tagName, tagValSupplier.get());
+        else
+            spiSpecificSpan.addLog('[' + tagName + '=' + tagValSupplier.get() + ']');
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public Span addLog(Supplier<String> logDescSupplier) {
         spiSpecificSpan.addLog(logDescSupplier.get());
 
