@@ -99,7 +99,6 @@ import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
