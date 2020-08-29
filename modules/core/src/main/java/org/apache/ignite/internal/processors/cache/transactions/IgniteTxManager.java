@@ -749,7 +749,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Boolean mvccOp,
         int txSize,
         @Nullable String lb,
-        boolean tracingEnabled
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -773,7 +772,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             taskNameHash,
             lb,
             txDumpsThrottling,
-            tracingEnabled
         );
 
         if (tx.system()) {

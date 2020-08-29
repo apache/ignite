@@ -170,7 +170,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         MTC.supportInitial(cctx.kernalContext().tracing().create(
             TX,
             null,
-            lb));
+            lb,
+            tracingEnabled));
 
         MTC.span().addTag("isolation", isolation::name);
         MTC.span().addTag("concurrency", concurrency::name);
@@ -196,8 +197,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 true,
                 null,
                 txSize,
-                lb,
-                tracingEnabled
+                lb
             );
 
             assert tx != null;

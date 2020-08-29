@@ -187,7 +187,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             }
         }).when(mockTm).
             newTx(locTx.implicit(), locTx.implicitSingle(), null, locTx.concurrency(),
-                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label(), false);
+                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label());
 
         ctx.setTxManager(mockTm);
     }
@@ -224,7 +224,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
             IgniteTxManager.TxDumpsThrottling txDumpsThrottling) {
             super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp,
-                txSize, subjId, taskNameHash, lb, txDumpsThrottling, false);
+                txSize, subjId, taskNameHash, lb, txDumpsThrottling);
         }
 
         /** {@inheritDoc} */

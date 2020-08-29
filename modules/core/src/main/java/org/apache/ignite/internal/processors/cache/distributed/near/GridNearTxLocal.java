@@ -285,7 +285,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         int taskNameHash,
         @Nullable String lb,
         IgniteTxManager.TxDumpsThrottling txDumpsThrottling,
-        boolean tracingEnabled
     ) {
         super(
             ctx,

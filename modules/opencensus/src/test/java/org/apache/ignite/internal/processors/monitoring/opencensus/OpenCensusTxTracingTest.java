@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_PREPARE_RESP;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_ROLLBACK;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -1136,7 +1137,7 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
     }
 
     /**
-     * Check that cache.put opeartions are traced witthin transaction span in case of adding CACHE_API_WRITE as
+     * Check that cache.put operations are traced within transaction span in case of adding CACHE_API_WRITE as
      * supported scope to TX tracing configuration.
      *
      * @throws Exception If failed.
@@ -1180,6 +1181,131 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             CACHE_API_PUT,
             txSpanIds.get(0),
             2,
+            null);
+    }
+
+    /**
+     * Verify that event if tx tracing is disabled within tracing-configuration transaction will be traced if started
+     * on IgniteTransactions.withTracing();
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWithTracingTxTracing() throws Exception {
+        grid(0).tracingConfiguration().set(
+            new TracingConfigurationCoordinates.Builder(Scope.TX).build(),
+            new TracingConfigurationParameters.Builder().
+                withSamplingRate(SAMPLING_RATE_NEVER).build());
+
+        IgniteEx client = startGrid("client");
+
+        Transaction tx = client.transactions().withLabel("label1").withTracing().txStart(PESSIMISTIC, SERIALIZABLE);
+
+        client.cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        tx.commit();
+
+        handler().flush();
+
+        List<SpanId> txSpanIds = checkSpan(
+            TX,
+            null,
+            1,
+            ImmutableMap.<String, String>builder()
+                .put("node.id", client.localNode().id().toString())
+                .put("node.consistent.id", client.localNode().consistentId().toString())
+                .put("node.name", client.name())
+                .put("concurrency", PESSIMISTIC.name())
+                .put("isolation", SERIALIZABLE.name())
+                .put("timeout", String.valueOf(0))
+                .put("label", "label1")
+                .build()
+        );
+
+        checkSpan(
+            TX_NEAR_ENLIST_WRITE,
+            txSpanIds.get(0),
+            1,
+            null);
+
+        checkSpan(
+            TX_COLOCATED_LOCK_MAP,
+            txSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> commitSpanIds = checkSpan(
+            TX_COMMIT,
+            txSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txNearPrepareSpanIds = checkSpan(
+            TX_NEAR_PREPARE,
+            commitSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txNearPrepareReqSpanIds = checkSpan(
+            TX_NEAR_PREPARE_REQ,
+            txNearPrepareSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txDhtPrepareSpanIds = checkSpan(
+            TX_DHT_PREPARE,
+            txNearPrepareReqSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txDhtPrepareReqSpanIds = checkSpan(
+            TX_PROCESS_DHT_PREPARE_REQ,
+            txDhtPrepareSpanIds.get(0),
+            2,
+            null);
+
+        for (SpanId parentSpanId: txDhtPrepareReqSpanIds) {
+            checkSpan(
+                TX_PROCESS_DHT_PREPARE_RESP,
+                parentSpanId,
+                1,
+                null);
+        }
+
+        checkSpan(
+            TX_NEAR_PREPARE_RESP,
+            txDhtPrepareSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txNearFinishSpanIds = checkSpan(
+            TX_NEAR_FINISH,
+            txNearPrepareSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+            TX_NEAR_FINISH_REQ,
+            txNearFinishSpanIds.get(0),
+            1,
+            null);
+
+        List<SpanId> txDhtFinishSpanIds = checkSpan(
+            TX_DHT_FINISH,
+            txNearFinishReqSpanIds.get(0),
+            1,
+            null);
+
+        checkSpan(
+            TX_PROCESS_DHT_FINISH_REQ,
+            txDhtFinishSpanIds.get(0),
+            2,
+            null);
+
+        checkSpan(
+            TX_NEAR_FINISH_RESP,
+            txNearFinishReqSpanIds.get(0),
+            1,
             null);
     }
 }

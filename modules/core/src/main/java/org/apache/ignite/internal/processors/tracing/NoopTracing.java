@@ -60,7 +60,8 @@ public class NoopTracing implements Tracing {
     @Override public @NotNull Span create(
         @NotNull SpanType spanType,
         @Nullable Span parentSpan,
-        @Nullable String label) {
+        @Nullable String lb,
+        boolean forceTracing) {
         return NoopSpan.INSTANCE;
     }
 
