@@ -99,6 +99,7 @@ import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -222,7 +223,7 @@ public class GridDhtPartitionDemander {
      */
     void stop() {
         try {
-            rebalanceFut.onCacheGroupStopped();
+            rebalanceFut.onStop();
         }
         catch (Exception ignored) {
             rebalanceFut.onDone(false);
@@ -1170,6 +1171,9 @@ public class GridDhtPartitionDemander {
         /** Received keys for historical rebalance by suppliers. */
         private final Map<UUID, LongAdder> histReceivedBytes = new ConcurrentHashMap<>();
 
+        /** The flag to stop further chain processing on cancellation. */
+        private boolean stopping;
+
         /**
          * Creates a new rebalance future.
          *
@@ -1275,6 +1279,12 @@ public class GridDhtPartitionDemander {
                 return;
             }
 
+            if (ctx.kernalContext().isStopping()) {
+                onStop();
+
+                return;
+            }
+
             if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
                 if (log.isTraceEnabled())
                     log.trace("Cancel partition demand because rebalance disabled on current node.");
@@ -1328,7 +1338,7 @@ public class GridDhtPartitionDemander {
                     for (Integer partId : d.partitions().fullSet()) {
                         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-                        assert part.state() == MOVING : part;
+                        assert part.state() != OWNING : part;
 
                         // Reset the initial update counter value to prevent historical rebalancing on this partition.
                         part.dataStore().resetInitialUpdateCounter();
@@ -1417,11 +1427,11 @@ public class GridDhtPartitionDemander {
                     if (res && !grp.preloader().syncFuture().isDone())
                         ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
-                    if (isChainFinish())
+                    if (isChainFinished())
                         onChainFinished();
                 }
 
-                if (next != null)
+                if (next != null && !stopping)
                     next.requestPartitions(); // Process next group.
 
                 return true;
@@ -1505,7 +1515,9 @@ public class GridDhtPartitionDemander {
         }
 
         /** */
-        public void onCacheGroupStopped() {
+        public void onStop() {
+            stopping = true;
+
             cancel();
         }
 
@@ -1871,11 +1883,9 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         * Checks if rebalance chain has completed.
-         *
-         * @return {@code true} if rebalance chain completed.
+         * @return {@code True} if a rebalance chain has been completed.
          */
-        private boolean isChainFinish() {
+        private boolean isChainFinished() {
             assert isDone() : this;
 
             if (isInitial() || !result())
@@ -1897,8 +1907,6 @@ public class GridDhtPartitionDemander {
          * Callback when rebalance chain ends.
          */
         private void onChainFinished() {
-            assert isChainFinish();
-
             Set<RebalanceFuture> futs = ctx.cacheContexts().stream()
                 .map(GridCacheContext::preloader)
                 .filter(GridDhtPreloader.class::isInstance)
