@@ -1171,8 +1171,8 @@ public class GridDhtPartitionDemander {
         /** Received keys for historical rebalance by suppliers. */
         private final Map<UUID, LongAdder> histReceivedBytes = new ConcurrentHashMap<>();
 
-        /** The flag to stop further chain processing on cancellation. */
-        private boolean stopping;
+        /** The flag to stop chain processing on future completion. */
+        private volatile boolean stopChain;
 
         /**
          * Creates a new rebalance future.
@@ -1431,7 +1431,7 @@ public class GridDhtPartitionDemander {
                         onChainFinished();
                 }
 
-                if (next != null && !stopping)
+                if (next != null && !stopChain)
                     next.requestPartitions(); // Process next group.
 
                 return true;
@@ -1516,7 +1516,7 @@ public class GridDhtPartitionDemander {
 
         /** */
         public void onStop() {
-            stopping = true;
+            stopChain = true;
 
             cancel();
         }
@@ -1714,6 +1714,8 @@ public class GridDhtPartitionDemander {
                         ", grpId=" + grp.groupId() +
                         ", grpName=" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer + ']');
+
+                    stopChain = true;
 
                     onDone(false); // Finished but has missed partitions, will force dummy exchange
 
