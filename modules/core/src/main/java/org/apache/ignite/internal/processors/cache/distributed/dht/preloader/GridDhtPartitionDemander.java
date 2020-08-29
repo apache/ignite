@@ -1338,7 +1338,9 @@ public class GridDhtPartitionDemander {
                     for (Integer partId : d.partitions().fullSet()) {
                         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-                        assert part.state() != OWNING : part;
+                        // Due to rebalance cancellation it's possible for a group to be already partially rebalanced,
+                        // so the partition could be in OWNING state.
+                        // Due to async eviction it's possible for the partition to be in RENTING/EVICTED state.
 
                         // Reset the initial update counter value to prevent historical rebalancing on this partition.
                         part.dataStore().resetInitialUpdateCounter();
@@ -1405,12 +1407,12 @@ public class GridDhtPartitionDemander {
                 else
                     log.error("Failed to send initial demand request to node.", e1);
 
-                tryCancel();
+                cancel();
             }
             catch (Throwable th) {
                 log.error("Runtime error caught during initial demand request sending.", th);
 
-                tryCancel();
+                cancel();
             }
         }
 
@@ -1714,8 +1716,6 @@ public class GridDhtPartitionDemander {
                         ", grpId=" + grp.groupId() +
                         ", grpName=" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer + ']');
-
-                    stopChain = true;
 
                     onDone(false); // Finished but has missed partitions, will force dummy exchange
 
