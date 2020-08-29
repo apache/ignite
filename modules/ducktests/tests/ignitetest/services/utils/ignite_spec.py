@@ -20,6 +20,7 @@ This module contains Spec classes that describes config and command line to star
 import base64
 import importlib
 import json
+from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
@@ -54,7 +55,7 @@ def resolve_spec(service, context, config, **kwargs):
     raise Exception("There is no specification for class %s" % type(service))
 
 
-class IgniteSpec:
+class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
@@ -74,11 +75,12 @@ class IgniteSpec:
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
+    @property
+    @abstractmethod
     def command(self):
         """
         :return: string that represents command to run service on a node
         """
-        raise NotImplementedError()
 
     def _envs(self):
         """
@@ -99,7 +101,7 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
-
+    @property
     def command(self):
         cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
               (self._envs(),
@@ -123,6 +125,7 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     def _app_args(self):
         return ",".join(self.args)
 
+    @property
     def command(self):
         cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
               (self._envs(),
@@ -133,9 +136,6 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
                self.STDOUT_STDERR_CAPTURE)
 
         return cmd
-
-
-###
 
 
 class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):

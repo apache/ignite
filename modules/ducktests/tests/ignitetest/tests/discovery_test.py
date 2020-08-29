@@ -42,10 +42,10 @@ class DiscoveryTestConfig(NamedTuple):
     Configuration for DiscoveryTest.
     """
     version: IgniteVersion
-    nodes_to_kill = 1
-    kill_coordinator = False
-    with_load = False
-    with_zk = False
+    nodes_to_kill: int = 1
+    kill_coordinator: bool = False
+    with_load: bool = False
+    with_zk: bool = False
 
 
 # pylint: disable=W0223
@@ -63,51 +63,54 @@ class DiscoveryTest(IgniteTest):
     DATA_AMOUNT = 100000
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+    @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
+    def test_node_fail_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=False)
 
-        return self._perform_test(test_config)
+        return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=NUM_NODES + 3)
-    @matrix(ignite_version=[str(DEV_BRANCH), str(LATEST_2_8)],
+    @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_zk(self, version, kill_coordinator, nodes_to_kill, with_load):
+    def test_node_fail_zk(self, version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test node failure scenario with ZooKeeperSpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=True)
 
-        return self._perform_test(test_config)
+        return self._perform_node_fail_scenario(test_config)
 
-    def _perform_test(self, test_config):
+    def _perform_node_fail_scenario(self, test_config):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
         )
+        modules = None
 
         if test_config.with_zk:
             zk_quorum = start_zookeeper(self.test_context, 3)
 
             ignite_config = ignite_config._replace(discovery_spi=from_zookeeper_cluster(zk_quorum))
 
-        servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config)
+            modules = ['zookeeper']
+
+        servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
         if test_config.with_load:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT)
+            start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT, modules=modules)
 
         data = simulate_nodes_failure(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
         data['Ignite cluster start time (s)'] = start_servers_sec

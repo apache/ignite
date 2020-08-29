@@ -80,7 +80,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
-        self.logger.info("Node config for %s is %s" % (node.account.hostname, node_config))
+        self.logger.debug("Config for node %s: %s" % (node.account.hostname, node_config))
 
         return node_config
 
@@ -94,7 +94,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command()
+        cmd = self.spec.command
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
