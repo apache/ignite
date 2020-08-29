@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -110,6 +111,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -169,6 +171,16 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE_ALL_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL_ASYNC;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE_ALL_ASYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -2557,21 +2569,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public boolean put(final K key, final V val, final CacheEntryPredicate filter)
         throws IgniteCheckedException {
-        boolean statsEnabled = ctx.statisticsEnabled();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        A.notNull(key, "key", val, "val");
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (keyCheck)
-            validateCacheKey(key);
+            A.notNull(key, "key", val, "val");
 
-        boolean stored = put0(key, val, filter);
+            if (keyCheck)
+                validateCacheKey(key);
 
-        if (statsEnabled && stored)
-            metrics0().addPutTimeNanos(System.nanoTime() - start);
+            boolean stored = put0(key, val, filter);
 
-        return stored;
+            if (statsEnabled && stored)
+                metrics0().addPutTimeNanos(System.nanoTime() - start);
+
+            return stored;
+        }
     }
 
     /**
@@ -2944,21 +2962,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Put future.
      */
     public final IgniteInternalFuture<Boolean> putAsync(K key, V val, @Nullable CacheEntryPredicate filter) {
-        A.notNull(key, "key", val, "val");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ASYNC, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
-        if (keyCheck)
-            validateCacheKey(key);
+            A.notNull(key, "key", val, "val");
 
-        final boolean statsEnabled = ctx.statisticsEnabled();
+            if (keyCheck)
+                validateCacheKey(key);
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+            final boolean statsEnabled = ctx.statisticsEnabled();
 
-        IgniteInternalFuture<Boolean> fut = putAsync0(key, val, filter);
+            final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (statsEnabled)
-            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            IgniteInternalFuture<Boolean> fut = putAsync0(key, val, filter);
 
-        return fut;
+            if (statsEnabled)
+                fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+
+            return fut;
+        }
     }
 
     /**
@@ -3045,24 +3069,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        A.notNull(m, "map");
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ALL, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> m == null ? "0" : String.valueOf(m.size()));
 
-        if (F.isEmpty(m))
-            return;
+            A.notNull(m, "map");
 
-        boolean statsEnabled = ctx.statisticsEnabled();
+            if (F.isEmpty(m))
+                return;
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        if (keyCheck)
-            validateCacheKeys(m.keySet());
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        warnIfUnordered(m, BulkOperation.PUT);
+            if (keyCheck)
+                validateCacheKeys(m.keySet());
 
-        putAll0(m);
+            warnIfUnordered(m, BulkOperation.PUT);
 
-        if (statsEnabled)
-            metrics0().addPutTimeNanos(System.nanoTime() - start);
+            putAll0(m);
+
+            if (statsEnabled)
+                metrics0().addPutTimeNanos(System.nanoTime() - start);
+        }
     }
 
     /**
@@ -3084,24 +3114,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m) {
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<Object>();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_PUT_ALL_ASYNC, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> m == null ? "0" : String.valueOf(m.size()));
 
-        boolean statsEnabled = ctx.statisticsEnabled();
+            if (F.isEmpty(m))
+                return new GridFinishedFuture<Object>();
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        if (keyCheck)
-            validateCacheKeys(m.keySet());
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        warnIfUnordered(m, BulkOperation.PUT);
+            if (keyCheck)
+                validateCacheKeys(m.keySet());
 
-        IgniteInternalFuture<?> fut = putAllAsync0(m);
+            warnIfUnordered(m, BulkOperation.PUT);
 
-        if (statsEnabled)
-            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            IgniteInternalFuture<?> fut = putAllAsync0(m);
 
-        return fut;
+            if (statsEnabled)
+                fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+
+            return fut;
+        }
     }
 
     /**
@@ -3224,46 +3260,57 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        assert ctx.isLocal();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
 
-        // We do batch and recreate cursor because removing using a single cursor
-        // will cause it to reinitialize on each merged page.
-        List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
+            assert ctx.isLocal();
 
-        do {
-            Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
-                true, true, null, null, null);
+            // We do batch and recreate cursor because removing using a single cursor
+            // will cause it to reinitialize on each merged page.
+            List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
 
-            while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
-                keys.add((K)it.next().key());
+            do {
+                Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
+                    true, true, null, null, null);
 
-            removeAll(keys);
+                while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
+                    keys.add((K)it.next().key());
 
-            keys.clear();
+                removeAll(keys);
+
+                keys.clear();
+            }
+            while (!isEmpty());
         }
-        while (!isEmpty());
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(final Collection<? extends K> keys) throws IgniteCheckedException {
-        boolean statsEnabled = ctx.statisticsEnabled();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        A.notNull(keys, "keys");
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (F.isEmpty(keys))
-            return;
+            A.notNull(keys, "keys");
 
-        if (keyCheck)
-            validateCacheKeys(keys);
+            if (F.isEmpty(keys))
+                return;
 
-        warnIfUnordered(keys, BulkOperation.REMOVE);
+            if (keyCheck)
+                validateCacheKeys(keys);
 
-        removeAll0(keys);
+            warnIfUnordered(keys, BulkOperation.REMOVE);
 
-        if (statsEnabled)
-            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            removeAll0(keys);
+
+            if (statsEnabled)
+                metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+        }
     }
 
     /**
@@ -3290,24 +3337,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable final Collection<? extends K> keys) {
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<Object>();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ALL_ASYNC, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addTag("keys.count", () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        final boolean statsEnabled = ctx.statisticsEnabled();
+            if (F.isEmpty(keys))
+                return new GridFinishedFuture<Object>();
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+            final boolean statsEnabled = ctx.statisticsEnabled();
 
-        if (keyCheck)
-            validateCacheKeys(keys);
+            final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        warnIfUnordered(keys, BulkOperation.REMOVE);
+            if (keyCheck)
+                validateCacheKeys(keys);
 
-        IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
+            warnIfUnordered(keys, BulkOperation.REMOVE);
 
-        if (statsEnabled)
-            fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
 
-        return fut;
+            if (statsEnabled)
+                fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+
+            return fut;
+        }
     }
 
     /**
@@ -3344,21 +3397,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException If failed.
      */
     public boolean remove(final K key, @Nullable CacheEntryPredicate filter) throws IgniteCheckedException {
-        boolean statsEnabled = ctx.statisticsEnabled();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+            boolean statsEnabled = ctx.statisticsEnabled();
 
-        A.notNull(key, "key");
+            long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (keyCheck)
-            validateCacheKey(key);
+            A.notNull(key, "key");
 
-        boolean rmv = remove0(key, filter);
+            if (keyCheck)
+                validateCacheKey(key);
 
-        if (statsEnabled && rmv)
-            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            boolean rmv = remove0(key, filter);
 
-        return rmv;
+            if (statsEnabled && rmv)
+                metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+            return rmv;
+        }
     }
 
     /**
@@ -3402,21 +3461,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Putx operation future.
      */
     public IgniteInternalFuture<Boolean> removeAsync(final K key, @Nullable final CacheEntryPredicate filter) {
-        final boolean statsEnabled = ctx.statisticsEnabled();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE_ASYNC, MTC.span()))) {
+            MTC.span().addSensitiveTag("cache", () -> Objects.toString(cacheCfg.getName()));
+            MTC.span().addSensitiveTag("key", () -> Objects.toString(key));
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+            final boolean statsEnabled = ctx.statisticsEnabled();
 
-        A.notNull(key, "key");
+            final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (keyCheck)
-            validateCacheKey(key);
+            A.notNull(key, "key");
 
-        IgniteInternalFuture<Boolean> fut = removeAsync0(key, filter);
+            if (keyCheck)
+                validateCacheKey(key);
 
-        if (statsEnabled)
-            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            IgniteInternalFuture<Boolean> fut = removeAsync0(key, filter);
 
-        return fut;
+            if (statsEnabled)
+                fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+
+            return fut;
+        }
     }
 
     /**

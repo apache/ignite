@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -57,6 +58,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_FUTURE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_MAP;
 
 /**
  * Base for near atomic update futures.
@@ -243,17 +247,25 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * Performs future mapping.
      */
     public final void map() {
-        AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
+        try (
+            TraceSurroundings ignored =
+                MTC.supportContinual(span = cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_FUTURE,
+                    MTC.span()));
+            TraceSurroundings ignored2 =
+                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_MAP, span))
+        ) {
+            AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
 
-        if (topVer == null)
-            mapOnTopology();
-        else {
-            topLocked = true;
+            if (topVer == null)
+                mapOnTopology();
+            else {
+                topLocked = true;
 
-            // Cannot remap.
-            remapCnt = 1;
+                // Cannot remap.
+                remapCnt = 1;
 
-            map(topVer);
+                map(topVer);
+            }
         }
     }
 

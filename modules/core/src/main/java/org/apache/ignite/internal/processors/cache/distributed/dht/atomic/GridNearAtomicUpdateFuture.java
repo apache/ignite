@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -62,6 +64,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP;
 
 /**
  * DHT atomic cache near update future.
@@ -471,40 +475,44 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     private void waitAndRemap(AffinityTopologyVersion remapTopVer) {
-        assert remapTopVer != null;
+        try (TraceSurroundings ignored =
+                 MTC.supportContinual(cctx.kernalContext().tracing().create(CACHE_API_NEAR_UPDATE_WAIT_AND_REMAP,
+                     span))) {
+            assert remapTopVer != null;
 
-        if (topLocked) {
-            assert !F.isEmpty(remapKeys) : remapKeys;
+            if (topLocked) {
+                assert !F.isEmpty(remapKeys) : remapKeys;
 
-            CachePartialUpdateCheckedException e =
-                new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
+                CachePartialUpdateCheckedException e =
+                    new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
-            ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
-                "Failed to update keys, topology changed while execute atomic update inside transaction.");
+                ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
+                    "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
+                cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
-            e.add(remapKeys, cause);
+                e.add(remapKeys, cause);
 
-            completeFuture(null, e, null);
+                completeFuture(null, e, null);
 
-            return;
-        }
-
-        IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
-
-        if (fut == null)
-            fut = new GridFinishedFuture<>(remapTopVer);
-
-        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        mapOnTopology();
-                    }
-                });
+                return;
             }
-        });
+
+            IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
+
+            if (fut == null)
+                fut = new GridFinishedFuture<>(remapTopVer);
+
+            fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            mapOnTopology();
+                        }
+                    });
+                }
+            });
+        }
     }
 
     /**
@@ -728,6 +736,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
     /** {@inheritDoc} */
     @Override protected void map(AffinityTopologyVersion topVer) {
+        MTC.span().addTag("topology.version", () -> Objects.toString(topVer));
+
         map(topVer, null);
     }
 
@@ -736,6 +746,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param remapKeys Keys to remap.
      */
     private void map(AffinityTopologyVersion topVer, @Nullable Collection<KeyCacheObject> remapKeys) {
+        MTC.span().addSensitiveTag("remap.keys", () -> Objects.toString(remapKeys));
+
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {

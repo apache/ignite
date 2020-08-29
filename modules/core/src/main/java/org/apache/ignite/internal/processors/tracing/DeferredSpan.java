@@ -55,6 +55,11 @@ public class DeferredSpan implements Span {
     }
 
     /** {@inheritDoc} */
+    @Override public Span addSensitiveTag(String tagName, Supplier<String> tagValSupplier) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public Span addLog(Supplier<String> logDescSupplier) {
         return this;
     }

@@ -28,7 +28,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     OpenCensusMetricExporterSpiTest.class,
     OpenCensusTracingSpiTest.class,
-    OpenCensusTxTracingTest.class,
+//    OpenCensusTxTracingTest.class,
     MixedTracingSpiTest.class,
     TracingConfigurationValidationTest.class,
     OpenCensusTxTracingConfigurationTest.class,
@@ -36,7 +36,8 @@ import org.junit.runners.Suite;
     OpenCensusTracingConfigurationGetAllTest.class,
     OpenCensusTracingConfigurationResetTest.class,
     OpenCensusTracingConfigurationResetAllTest.class,
-    OpenCensusDiscoveryTracingTest.class
+    OpenCensusDiscoveryTracingTest.class,
+    OpenCensusCacheAPITracing.class
 })
 public class IgniteOpenCensusSuite {
 }

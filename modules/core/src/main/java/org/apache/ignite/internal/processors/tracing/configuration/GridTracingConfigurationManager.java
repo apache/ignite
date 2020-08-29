@@ -80,6 +80,10 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
             new TracingConfigurationCoordinates.Builder(Scope.DISCOVERY).build(),
             TracingConfigurationManager.DEFAULT_DISCOVERY_CONFIGURATION);
 
+        tmpDfltConfigurationMap.put(
+            new TracingConfigurationCoordinates.Builder(Scope.CACHE_API_WRITE).build(),
+            TracingConfigurationManager.DEFAULT_CACHE_API_WRITE_CONFIGURATION);
+
         DEFAULT_CONFIGURATION_MAP = Collections.unmodifiableMap(tmpDfltConfigurationMap);
     }
 
