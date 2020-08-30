@@ -1242,11 +1242,4 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .build()
         );
     }
-
-    /**
-     * @return [@code True} to prevent rebalancing before test start.
-     */
-    @Override protected boolean blockRebalancing() {
-        return false;
-    }
 }

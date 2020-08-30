@@ -241,22 +241,27 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                      create(CACHE_API_PARTITIONED_SINGLE_GET_FUTURE, MTC.span()))) {
             AffinityTopologyVersion mappingTopVer;
 
-        if (topVer.topologyVersion() > 0)
-            mappingTopVer = topVer;
-        else {
-            mappingTopVer = canRemap ?
-                cctx.affinity().affinityTopologyVersion() :
-                cctx.shared().exchange().readyAffinityVersion();
-        }
+            if (topVer.topologyVersion() > 0)
+                mappingTopVer = topVer;
+            else {
+                mappingTopVer = canRemap ?
+                    cctx.affinity().affinityTopologyVersion() :
+                    cctx.shared().exchange().readyAffinityVersion();
+            }
 
-        map(mappingTopVer);
+            map(mappingTopVer);
+        }
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer){
+    private void map(AffinityTopologyVersion topVer) {
+        try (TraceSurroundings ignored =
+                 MTC.support(cctx.kernalContext().tracing().create(CACHE_API_GET_MAP, span))) {
+            MTC.span().addTag("topology.version", () -> Objects.toString(topVer));
+
             GridDhtPartitionsExchangeFuture fut = cctx.shared().exchange().lastTopologyFuture();
 
             // Finished DHT future is required for topology validation.
