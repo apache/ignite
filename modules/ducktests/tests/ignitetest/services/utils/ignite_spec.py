@@ -127,12 +127,11 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
 
     @property
     def command(self):
-        cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
+        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               self.STDOUT_STDERR_CAPTURE,
                self.STDOUT_STDERR_CAPTURE)
 
         return cmd
