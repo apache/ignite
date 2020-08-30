@@ -222,7 +222,7 @@ public class GridDhtPartitionDemander {
      */
     void stop() {
         try {
-            rebalanceFut.onStop();
+            rebalanceFut.tryCancel();
         }
         catch (Exception ignored) {
             rebalanceFut.onDone(false);
@@ -1170,9 +1170,6 @@ public class GridDhtPartitionDemander {
         /** Received keys for historical rebalance by suppliers. */
         private final Map<UUID, LongAdder> histReceivedBytes = new ConcurrentHashMap<>();
 
-        /** The flag to stop chain processing on future completion. */
-        private volatile boolean stopChain;
-
         /**
          * Creates a new rebalance future.
          *
@@ -1279,7 +1276,7 @@ public class GridDhtPartitionDemander {
             }
 
             if (ctx.kernalContext().isStopping()) {
-                onStop();
+                cancel();
 
                 return;
             }
@@ -1432,7 +1429,7 @@ public class GridDhtPartitionDemander {
                         onChainFinished();
                 }
 
-                if (next != null && !stopChain)
+                if (next != null)
                     next.requestPartitions(); // Process next group.
 
                 return true;
@@ -1511,13 +1508,6 @@ public class GridDhtPartitionDemander {
         private void tryCancel() {
             if (STATE_UPD.compareAndSet(this, RebalanceFutureState.INIT, RebalanceFutureState.MARK_CANCELLED))
                 return;
-
-            cancel();
-        }
-
-        /** */
-        public void onStop() {
-            stopChain = true;
 
             cancel();
         }
