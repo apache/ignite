@@ -45,7 +45,17 @@ namespace ignite
                  */
                 ClientTransaction(ignite::impl::thin::transactions::TransactionProxy impl) :
                     proxy(impl)
-                {}
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Default constructor.
+                 */
+                ClientTransaction()
+                {
+                    // No-op.
+                }
 
                 /**
                  * Destructor.
@@ -82,11 +92,6 @@ namespace ignite
             private:
                 /** Implementation. */
                 ignite::impl::thin::transactions::TransactionProxy proxy;
-
-                /**
-                 * Default constructor.
-                 */
-                ClientTransaction() {}
             };
         }
     }

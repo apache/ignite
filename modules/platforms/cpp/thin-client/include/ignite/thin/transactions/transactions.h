@@ -51,6 +51,15 @@ namespace ignite
                     proxy(impl),
                     label(ignite::common::concurrent::SharedPointer<ignite::common::FixedSizeArray<char> >())
                 {
+                    // No-op.
+                }
+
+                /**
+                 * Default constructor.
+                 */
+                ClientTransactions()
+                {
+                    // No-op.
                 }
 
                 /**
@@ -58,6 +67,7 @@ namespace ignite
                  */
                 ~ClientTransactions()
                 {
+                    // No-op.
                 }
 
                 /**
@@ -97,11 +107,6 @@ namespace ignite
 
                 /** Transaction specific label. */
                 ignite::common::concurrent::SharedPointer<ignite::common::FixedSizeArray<char> > label;
-
-                /**
-                 * Default constructor.
-                 */
-                ClientTransactions();
 
                 /**
                  * Constructor.

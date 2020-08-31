@@ -107,6 +107,11 @@ namespace ignite
                     }
 
                     /**
+                     * Default constructor.
+                     */
+                    TransactionsProxy() {}
+
+                    /**
                      * Destructor.
                      */
                     ~TransactionsProxy() {}
@@ -131,11 +136,6 @@ namespace ignite
                 private:
                     /** Implementation. */
                     ignite::common::concurrent::SharedPointer<void> impl;
-
-                    /**
-                     * Default constructor.
-                     */
-                    TransactionsProxy() {}
                 };
             }
         }
