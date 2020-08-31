@@ -30,10 +30,10 @@ import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DistibutedThinClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
@@ -52,11 +52,9 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -100,6 +98,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Executor service. */
     private ExecutorService execSvc;
+
+    /** Thin client distributed configuration. */
+    private DistibutedThinClientConfiguration distrThinCfg;
 
     /**
      * @param ctx Kernal context.
@@ -214,6 +215,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     new ClientConnectionViewWalker(),
                     srv.sessions(),
                     ClientConnectionView::new);
+
+                distrThinCfg = new DistibutedThinClientConfiguration(ctx);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -589,6 +592,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Show full stack on client side.
+     */
+    public boolean showFullStackOnClientSide() {
+        Boolean show = distrThinCfg.showFullStack();
+
+        return show == null ?
+            ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack() : show;
+    }
+
+    /**
      * ClientProcessorMXBean interface.
      */
     private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
@@ -652,17 +665,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void showFullStack(boolean show) {
-            IgniteCompute compute = ctx.grid().compute(ctx.grid().cluster().forServers());
-
-            compute.broadcast(new CA() {
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                @Override public void apply() {
-                    ignite.configuration().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack(show);
-                }
-            });
+        @Override public void showFullStackOnClientSide(boolean show) {
+            try {
+                distrThinCfg.updateThinClientShowStackTraceAsync(show).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ public interface ClientProcessorMXBean {
      * @param show Show flag.
      */
     @MXBeanDescription("Show error full stack.")
-    void showFullStack(
+    void showFullStackOnClientSide(
         @MXBeanParameter(name = "show", description = "Show error full stack.") boolean show
     );
 }

@@ -37,13 +37,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -51,10 +48,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Ignite {@link BinaryObject} API system tests.
  */
 public class IgniteBinaryTest extends GridCommonAbstractTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /**
      * Unmarshalling schema-less Ignite binary objects into Java static types.
      */
@@ -170,7 +163,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
                 ClientProcessorMXBean serverMxBean =
                     getMxBean(ign.name(), "Clients", ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
-                serverMxBean.showFullStack(false);
+                serverMxBean.showFullStackOnClientSide(false);
 
                 try {
                     cache.put(1, new ThinBinaryValue());

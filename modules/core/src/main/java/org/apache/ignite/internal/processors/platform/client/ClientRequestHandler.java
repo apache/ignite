@@ -120,7 +120,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
         if (X.getCause(e) != null || !X.getSuppressedList(e).isEmpty()) {
             fullStack =
-                ctx.kernalContext().config().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack();
+                ctx.kernalContext().sqlListener().showFullStackOnClientSide();
         }
 
         return new ClientResponse(req.requestId(), status, fullStack ? X.getFullStackTrace(e) : e.getMessage());

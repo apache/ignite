@@ -57,6 +57,7 @@ public class ThinClientConfiguration {
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
         maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
+        showFullStack = cfg.showFullStack;
     }
 
     /**
