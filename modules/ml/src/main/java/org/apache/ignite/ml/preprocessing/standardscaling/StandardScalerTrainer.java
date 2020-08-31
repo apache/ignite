@@ -55,7 +55,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /** Computes sum, squared sum and row count. */
     private StandardScalerData computeSum(LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        Preprocessor<K, V>  basePreprocessor) {
+        Preprocessor<K, V> basePreprocessor) {
         try (Dataset<EmptyContext, StandardScalerData> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),

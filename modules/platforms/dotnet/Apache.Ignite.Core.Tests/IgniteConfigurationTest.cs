@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable NonReadonlyMemberInGetHashCode
 #pragma warning disable 618  // Ignore obsolete, we still need to test them.
 namespace Apache.Ignite.Core.Tests
 {
@@ -136,7 +137,7 @@ namespace Apache.Ignite.Core.Tests
 
                 var enc = (KeystoreEncryptionSpi) cfg.EncryptionSpi;
                 var resEnc = (KeystoreEncryptionSpi) resCfg.EncryptionSpi;
-                
+
                 Assert.AreEqual(enc.MasterKeyName, resEnc.MasterKeyName);
                 Assert.AreEqual(enc.KeySize, resEnc.KeySize);
                 Assert.AreEqual(enc.KeyStorePath, resEnc.KeyStorePath);
@@ -208,7 +209,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
                 Assert.AreEqual(com.UsePairedConnections, resCom.UsePairedConnections);
-                
+
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
                 Assert.AreEqual(cfg.SystemWorkerBlockedTimeout, resCfg.SystemWorkerBlockedTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
@@ -428,7 +429,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (Ignition.Start(cfg))
             {
-                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+                var marshDir = Path.Combine(cfg.WorkDirectory, "db", "marshaller");
 
                 Assert.IsTrue(Directory.Exists(marshDir));
             }
@@ -518,7 +519,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, cfg.IsLateAffinityAssignment);
             Assert.AreEqual(IgniteConfiguration.DefaultIsActiveOnStart, cfg.IsActiveOnStart);
-            Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
+            Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled,
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
             Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
@@ -595,7 +596,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
-            Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity, 
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalAutoArchiveAfterInactivity);
         }
 
@@ -693,20 +694,20 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
+                        Endpoints = new[] {"127.0.0.1:47503", "127.0.0.1:47504"}
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
-                    LocalPort = 49900,
+                    LocalPort = 47503,
                     LocalPortRange = 13,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                EncryptionSpi = new KeystoreEncryptionSpi()
+                EncryptionSpi = new KeystoreEncryptionSpi
                 {
                     KeySize = 192,
                     KeyStorePassword = "love_sex_god",
@@ -762,7 +763,7 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450,
-                    ConnectionsPerNode = 12, 
+                    ConnectionsPerNode = 12,
                     UsePairedConnections = true,
                     SharedMemoryPort = 1234,
                     SocketWriteTimeout = 2222,

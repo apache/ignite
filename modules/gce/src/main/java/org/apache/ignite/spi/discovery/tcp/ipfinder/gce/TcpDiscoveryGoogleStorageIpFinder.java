@@ -17,16 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.gce;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.InputStreamContent;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.StorageScopes;
-import com.google.api.services.storage.model.Bucket;
-import com.google.api.services.storage.model.StorageObject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +27,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.InputStreamContent;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.StorageScopes;
+import com.google.api.services.storage.model.Bucket;
+import com.google.api.services.storage.model.StorageObject;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -75,7 +75,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  */
 public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Default object's content. */
-    private static final ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
+    private static final ByteArrayInputStream OBJECT_CONTENT = new ByteArrayInputStream(new byte[0]);
 
     /** Grid logger. */
     @LoggerResource
@@ -154,7 +154,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
             object.setBucket(bucketName);
             object.setName(key);
 
-            InputStreamContent content =  new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
+            InputStreamContent content = new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
 
             content.setLength(OBJECT_CONTENT.available());
 
@@ -371,7 +371,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * @return Bucket key.
      */
     private String keyFromAddr(InetSocketAddress addr) {
-        return addr.getAddress().getHostAddress() + "#" +  addr.getPort();
+        return addr.getAddress().getHostAddress() + "#" + addr.getPort();
     }
 
     /**

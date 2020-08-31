@@ -60,7 +60,7 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         super(type, ver);
 
         assert itemSize > 0 : itemSize;
-        assert canGetRow || !leaf: "leaf page always must be able to get full row";
+        assert canGetRow || !leaf : "leaf page always must be able to get full row";
 
         this.leaf = leaf;
         this.canGetRow = canGetRow;
@@ -126,7 +126,7 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     public final int getCount(long pageAddr) {
         int cnt = PageUtils.getShort(pageAddr, CNT_OFF) & 0xFFFF;
 
-        assert cnt >= 0: cnt;
+        assert cnt >= 0 : cnt;
 
         return cnt;
     }
@@ -136,7 +136,7 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @param cnt Count.
      */
     public final void setCount(long pageAddr, int cnt) {
-        assert cnt >= 0: cnt;
+        assert cnt >= 0 : cnt;
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
 
@@ -366,7 +366,7 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
 
         // Move down split key in inner pages.
         if (!isLeaf() && !emptyBranch) {
-            assert prntIdx >= 0 && prntIdx < prntCnt: prntIdx; // It must be adjusted already.
+            assert prntIdx >= 0 && prntIdx < prntCnt : prntIdx; // It must be adjusted already.
 
             // We can be sure that we have enough free space to store split key here,
             // because we've done remove already and did not release child locks.

@@ -28,7 +28,7 @@ import org.junit.Test;
  */
 public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
     /** */
-    public IgniteWarmupClosureSelfTest(){
+    public IgniteWarmupClosureSelfTest() {
         super(false);
     }
 

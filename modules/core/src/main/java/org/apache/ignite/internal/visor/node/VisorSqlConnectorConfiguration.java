@@ -58,7 +58,7 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
     private boolean tcpNoDelay;
 
     /** Thread pool size. */
-    private int threadPoolSize ;
+    private int threadPoolSize;
 
     /**
      * Default constructor.

@@ -441,8 +441,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         final Collection<Object> keys = new ArrayList<>();
 
         CI2<Object, Object> c = new CI2<Object, Object>() {
-            @Override
-            public void apply(Object k, Object v) {
+            @Override public void apply(Object k, Object v) {
                 keys.add(k);
             }
         };

@@ -274,7 +274,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    try(OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
                         authorize(req);
                     }
                 }
@@ -607,14 +607,15 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
             boolean interrupted = Thread.interrupted();
 
-            while (workersCnt.sum() != 0) {
-                try {
-                    Thread.sleep(200);
+            if (!cancel)
+                while (workersCnt.sum() != 0) {
+                    try {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException ignored) {
+                        interrupted = true;
+                    }
                 }
-                catch (InterruptedException ignored) {
-                    interrupted = true;
-                }
-            }
 
             U.interrupt(sesTimeoutCheckerThread);
 
@@ -805,6 +806,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         authCtx.subjectId(req.clientId());
         authCtx.nodeAttributes(req.userAttributes());
         authCtx.address(req.address());
+        authCtx.certificates(req.certificates());
 
         SecurityCredentials creds = credentials(req);
 

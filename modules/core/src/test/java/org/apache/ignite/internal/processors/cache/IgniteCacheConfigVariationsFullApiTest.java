@@ -6509,7 +6509,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (!entry.isNear())
                 entry.context().cache().removeEntry(entry);
 
-            return  pair;
+            return pair;
         }
     }
 

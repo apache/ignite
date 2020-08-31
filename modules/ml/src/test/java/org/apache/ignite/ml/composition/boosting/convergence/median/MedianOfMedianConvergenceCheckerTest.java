@@ -51,7 +51,7 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
         Assert.assertFalse(checker.isConverged(envBuilder, datasetBuilder, notConvergedMdl));
         Assert.assertTrue(checker.isConverged(envBuilder, datasetBuilder, convergedMdl));
 
-        try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
+        try (LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer),
             TestUtils.testEnvBuilder().buildForTrainer())) {

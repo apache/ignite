@@ -335,7 +335,7 @@ public class DmlBatchSender {
     /**
      * Batch for update.
      */
-    private static class Batch  {
+    private static class Batch {
         /** Map from keys to row numbers. */
         private Map<Object, Integer> rowNums = new HashMap<>();
 

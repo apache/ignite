@@ -58,11 +58,11 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError("KILL QUERY '" + nodeId + "_a'", expectedExceptionMessageIncorrectQueryId());
 
-        assertParseError("KILL QUERY '" + nodeId  + "_1 1'", expectedExceptionMessageIncorrectQueryId());
+        assertParseError("KILL QUERY '" + nodeId + "_1 1'", expectedExceptionMessageIncorrectQueryId());
 
         assertParseError("KILL QUERY 1'", expectedExceptionMessageNoAsyncAndQueryId());
 
-        assertParseError("KILL QUERY '" + nodeId  + "_1' 1", "Unexpected token: \"1\"");
+        assertParseError("KILL QUERY '" + nodeId + "_1' 1", "Unexpected token: \"1\"");
 
         assertParseError("KILL '" + nodeId + "_" + TEST_QRY_ID + "'", "Unexpected token: \"" + nodeId + "_341\" (expected: \"QUERY\")");
 
@@ -83,21 +83,21 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     /**
      * @return Expected exception message.
      */
-    private String expectedExceptionMessageIncorrectQueryId(){
+    private String expectedExceptionMessageIncorrectQueryId() {
         return "Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
     }
 
     /**
      * @return Expected exception message.
      */
-    private String expectedExceptionMessageNoAsyncAndQueryId(){
+    private String expectedExceptionMessageNoAsyncAndQueryId() {
         return "Expected ASYNC token or global query id. Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
     }
 
     /**
      * @return Expected exception message.
      */
-    private String expectedExceptionMessageNoQueryId(){
+    private String expectedExceptionMessageNoQueryId() {
         return "Expected global query id. Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
     }
 

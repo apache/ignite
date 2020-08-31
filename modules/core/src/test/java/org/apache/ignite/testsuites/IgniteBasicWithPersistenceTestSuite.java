@@ -23,6 +23,7 @@ import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
+import org.apache.ignite.internal.cluster.IgniteClusterIdTagTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheBigEntryTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
@@ -35,12 +36,10 @@ import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest
 import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerSslTest;
-import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -58,11 +57,6 @@ import org.junit.runners.Suite;
     SystemWorkersBlockingTest.class,
     CheckpointReadLockFailureTest.class,
 
-    GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
-    GridCommandHandlerClusterByClassTest.class,
-    GridCommandHandlerClusterByClassWithSSLTest.class,
-    GridCommandHandlerSslTest.class,
     GridInternalTaskUnusedWalSegmentsTest.class,
 
     GridNodeMetricsLogPdsSelfTest.class,
@@ -80,7 +74,13 @@ import org.junit.runners.Suite;
     MasterKeyChangeTest.class,
     MasterKeyChangeConsistencyCheckTest.class,
 
-    EncryptionMXBeanTest.class
+    EncryptionMXBeanTest.class,
+
+    IgniteSnapshotManagerSelfTest.class,
+    IgniteClusterSnapshotSelfTest.class,
+    IgniteSnapshotMXBeanTest.class,
+
+    IgniteClusterIdTagTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

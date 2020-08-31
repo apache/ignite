@@ -158,10 +158,10 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
      */
     @Test
     public void testServiceDeployment2() throws Exception {
-        for (int i = 0 ; i < 4; i++)
+        for (int i = 0; i < 4; i++)
             startGrid(i);
 
-        for (int i = 4 ; i < 6; i++)
+        for (int i = 4; i < 6; i++)
             startClientGrid(i);
 
         ignite(4).services().deploy(serviceConfig(true));

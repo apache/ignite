@@ -74,9 +74,9 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
-        try(QueryCursor<List<?>> res = cache.query(
+        try (QueryCursor<List<?>> res = cache.query(
             new SqlFieldsQuery("select _val from Integer where _key between ? and ?")
-                .setArgs(10_000, 40_000))){
+                .setArgs(10_000, 40_000))) {
 
             int cnt = 0;
 

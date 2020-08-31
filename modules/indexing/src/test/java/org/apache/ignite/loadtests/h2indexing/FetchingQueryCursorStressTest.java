@@ -87,7 +87,7 @@ public class FetchingQueryCursorStressTest {
             for (Thread t : threads)
                 t.join();
 
-            if(error.get()!=null)
+            if (error.get() != null)
                 throw error.get();
         }
         finally {
@@ -218,7 +218,7 @@ public class FetchingQueryCursorStressTest {
             System.out.println("Executor started: " + Thread.currentThread().getName());
 
             try {
-                while (error.get()==null && !Thread.currentThread().isInterrupted()) {
+                while (error.get() == null && !Thread.currentThread().isInterrupted()) {
                     long start = System.nanoTime();
 
                     SqlFieldsQuery qry = new SqlFieldsQuery(query);
@@ -238,7 +238,7 @@ public class FetchingQueryCursorStressTest {
                         System.out.println("[extIds=" + extIds.size() + ", dur=" + dur + ']');
                 }
             }
-            catch (CacheException ex){
+            catch (CacheException ex) {
                 error.compareAndSet(null, ex);
             }
         }
@@ -250,7 +250,7 @@ public class FetchingQueryCursorStressTest {
     private static class ThroughputPrinter implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
-            while (error.get()==null) {
+            while (error.get() == null) {
                 long before = CNT.get();
                 long beforeTime = System.currentTimeMillis();
 

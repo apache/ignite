@@ -246,7 +246,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      */
-    public boolean destroy(){
+    public boolean destroy() {
         return destroy;
     }
 

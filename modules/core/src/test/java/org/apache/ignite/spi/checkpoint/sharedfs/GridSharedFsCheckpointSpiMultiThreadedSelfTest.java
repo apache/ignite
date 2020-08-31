@@ -57,7 +57,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     /**
      * @return Paths.
      */
-    @GridSpiTestConfig(setterName="setDirectoryPaths")
+    @GridSpiTestConfig(setterName = "setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         return Collections.singleton(PATH);
     }
@@ -95,7 +95,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
         IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    try{
+                    try {
                         byte[] state = createTestArray((byte)2);
 
                         for (int i = 0; i < ITER_CNT; i++)

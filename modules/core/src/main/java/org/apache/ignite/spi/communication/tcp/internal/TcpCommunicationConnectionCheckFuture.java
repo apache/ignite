@@ -208,7 +208,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
             return;
 
         assert evt instanceof DiscoveryEvent : evt;
-        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
+        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
         UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 

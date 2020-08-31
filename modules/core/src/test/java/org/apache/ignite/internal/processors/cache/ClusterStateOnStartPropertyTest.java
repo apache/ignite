@@ -285,7 +285,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        for (int i=0; i < NODES_CNT; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             checkNodeConfig(grid(i).configuration(), false, state, null, activeOnStart);
 
             assertEquals(state, grid(i).cluster().state());
@@ -314,7 +314,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         crd.cluster().state(ACTIVE);
 
-        for (int i=0; i < NODES_CNT; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             checkNodeConfig(grid(i).configuration(), true, state, autoActivation, null);
 
             assertEquals(ACTIVE, grid(i).cluster().state());
@@ -327,7 +327,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        for (int i=0; i < NODES_CNT; i++)
+        for (int i = 0; i < NODES_CNT; i++)
             assertEquals(state, grid(i).cluster().state());
     }
 
@@ -343,7 +343,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        for (int i=0; i < NODES_CNT; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             checkNodeConfig(grid(i).configuration(), false, state, null, null);
 
             assertEquals(state, grid(i).cluster().state());
@@ -366,7 +366,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         crd.cluster().state(ACTIVE);
 
-        for (int i=0; i < NODES_CNT; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             checkNodeConfig(grid(i).configuration(), true, state, null, null);
 
             assertEquals(ACTIVE, grid(i).cluster().state());
@@ -376,7 +376,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        for (int i=0; i < NODES_CNT; i++)
+        for (int i = 0; i < NODES_CNT; i++)
             assertEquals(state, grid(i).cluster().state());
     }
 

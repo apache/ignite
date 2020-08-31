@@ -931,7 +931,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @param keys Keys.
      */
     private int prepareTx(Ignite ignite, List<Integer> keys) throws IgniteCheckedException {
-        try(Transaction tx = ignite.transactions().txStart()) {
+        try (Transaction tx = ignite.transactions().txStart()) {
             for (Integer key : keys)
                 ignite.cache(CACHE_NAME).put(key, key);
 
@@ -964,7 +964,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
             assertNotNull(it);
 
-            while(it.hasNextX())
+            while (it.hasNextX())
                 rows.add(it.next());
         }
 

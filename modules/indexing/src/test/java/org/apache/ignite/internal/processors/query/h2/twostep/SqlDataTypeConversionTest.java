@@ -335,10 +335,10 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void makeSureThatConvertationResultsExactTheSameAsWithinH2(Object arg,
-        PartitionParameterType ... excludedTargetTypesFromCheck) throws Exception {
+        PartitionParameterType... excludedTargetTypesFromCheck) throws Exception {
 
         Iterable<PartitionParameterType> targetTypes = excludedTargetTypesFromCheck.length > 0 ?
-            EnumSet.complementOf(EnumSet.of(excludedTargetTypesFromCheck[0], excludedTargetTypesFromCheck)):
+            EnumSet.complementOf(EnumSet.of(excludedTargetTypesFromCheck[0], excludedTargetTypesFromCheck)) :
             EnumSet.allOf(PartitionParameterType.class);
 
         for (PartitionParameterType targetType : targetTypes) {

@@ -42,9 +42,9 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -75,7 +75,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         return cfg;
     }
@@ -156,11 +156,11 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite1 = startClientGrid(1);
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         ignite1.close();
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         ignite1 = startClientGrid(1);
 
@@ -176,11 +176,13 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         startGrid(2);
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        awaitPartitionMapExchange();
+
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
         assertFalse(evtLatch1.await(1000, TimeUnit.MILLISECONDS));
     }
 

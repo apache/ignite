@@ -63,7 +63,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     @Nullable @Override public <T> T attachment() {
         TestCacheSession ses = sesHolder.get();
 
-        return ses!= null ? (T)ses.attachment() : null;
+        return ses != null ? (T)ses.attachment() : null;
     }
 
     /** {@inheritDoc} */

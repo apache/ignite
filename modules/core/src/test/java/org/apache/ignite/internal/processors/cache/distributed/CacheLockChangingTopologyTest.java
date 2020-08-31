@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -29,11 +33,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 
 /**
  *
@@ -119,7 +118,7 @@ public class CacheLockChangingTopologyTest extends GridCommonAbstractTest {
             lock.lock();
 
             try {
-                Thread t =  new Thread(new Runnable() {
+                Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
                             lock.lock();

@@ -1169,25 +1169,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
         FileDescriptor ds = new FileDescriptor(file);
 
-        try (
-            SegmentIO fileIO = ds.toIO(ioFactory);
-            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
-        ) {
-            final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
-
-            // Header record must be agnostic to the serializer version.
-            final int type = in.readUnsignedByte();
-
-            if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
-                if (log.isInfoEnabled())
-                    log.info("Reached logical end of the segment for file " + file);
-
+        try (SegmentIO fileIO = ds.toIO(ioFactory)) {
+            // File may be empty when LOG_ONLY mode is enabled and mmap is disabled
+            if (fileIO.size() == 0)
                 return null;
+
+            try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+                final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+
+                // Header record must be agnostic to the serializer version.
+                final int type = in.readUnsignedByte();
+
+                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                    if (log.isInfoEnabled())
+                        log.info("Reached logical end of the segment for file " + file);
+
+                    return null;
+                }
+
+                FileWALPointer ptr = readPosition(in);
+
+                return new FileDescriptor(file, ptr.index());
             }
-
-            FileWALPointer ptr = readPosition(in);
-
-            return new FileDescriptor(file, ptr.index());
         }
         catch (IOException e) {
             U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
@@ -1478,7 +1481,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             createFile(first);
         }
-        else
+        else if (isArchiverEnabled())
             checkFiles(0, false, null, null);
     }
 
@@ -2118,7 +2121,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
 
         /** {@inheritDoc} */
-        @Override public void body() throws InterruptedException, IgniteInterruptedCheckedException{
+        @Override public void body() throws InterruptedException, IgniteInterruptedCheckedException {
             init();
 
             super.body0();
@@ -2147,7 +2150,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private class FileCompressorWorker extends GridWorker {
         /** */
-        FileCompressorWorker(int idx,  IgniteLogger log) {
+        FileCompressorWorker(int idx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
         }
 
@@ -2164,7 +2167,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
+        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException {
             long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -2515,7 +2518,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "(WAL segment size change is not supported in 'DEFAULT' WAL mode) " +
                         "[filePath=" + checkFile.getAbsolutePath() +
                         ", fileSize=" + checkFile.length() +
-                        ", configSize=" + dsCfg.getWalSegments() + ']');
+                        ", configSize=" + dsCfg.getWalSegmentSize() + ']');
             }
             else if (create)
                 createFile(checkFile);

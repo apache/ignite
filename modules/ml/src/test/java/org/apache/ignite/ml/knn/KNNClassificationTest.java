@@ -61,9 +61,9 @@ public class KNNClassificationTest {
     @Test
     public void testBinaryClassification() {
         Map<Integer, double[]> data = new HashMap<>();
-        data.put(0, new double[] { 1.0,  1.0, 1.0});
-        data.put(1, new double[] { 1.0,  2.0, 1.0});
-        data.put(2, new double[] { 2.0,  1.0, 1.0});
+        data.put(0, new double[] { 1.0, 1.0, 1.0});
+        data.put(1, new double[] { 1.0, 2.0, 1.0});
+        data.put(2, new double[] { 2.0, 1.0, 1.0});
         data.put(3, new double[] {-1.0, -1.0, 2.0});
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});

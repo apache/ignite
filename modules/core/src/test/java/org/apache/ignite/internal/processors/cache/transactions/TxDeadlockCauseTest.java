@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.*;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +26,27 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
 
 /**
@@ -157,7 +164,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);
         final List<Integer> keys = new ArrayList<>(keysCnt);
 
-        for (int i = 0; i < keysCnt; i ++) {
+        for (int i = 0; i < keysCnt; i++) {
             keys.add(i);
             cache.put(i, new Account(i, i * 100));
         }
@@ -170,16 +177,16 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override
-            public void applyx() throws IgniteCheckedException {
-                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation, timeout, keys.size())) {
+            @Override public void applyx() throws IgniteCheckedException {
+                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation,
+                    timeout, keys.size())) {
 
                     List<Integer> keys0 = getAndFlip(reverse) ? keys : keysReversed;
 
                     for (int i = 0; i < keys0.size(); i++) {
                         Integer key = keys0.get(i);
 
-                        if(oneOp)
+                        if (oneOp)
                             cache.getAndPut(key, new Account(key, (key + 1) * 100));
                         else
                             cache.put(key, new Account(cache.get(key).id, (key + 1) * 100));
@@ -203,7 +210,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
 
         boolean detected = X.hasCause(e, TransactionDeadlockException.class);
 
-        if(!detected)
+        if (!detected)
             U.error(log, "Failed to detect a deadlock.", e);
         else
             log.info(X.cause(e, TransactionDeadlockException.class).getMessage());
@@ -229,7 +236,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         while (true) {
             boolean res = b.get();
 
-            if(b.compareAndSet(res, !res))
+            if (b.compareAndSet(res, !res))
                 return res;
         }
     }

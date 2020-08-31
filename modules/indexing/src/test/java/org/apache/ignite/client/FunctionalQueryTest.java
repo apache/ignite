@@ -41,7 +41,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Thin client functional tests.
@@ -233,6 +234,39 @@ public class FunctionalQueryTest {
                     assertEquals(0, res2.size());
                 }
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMixedQueryAndCacheApiOperations() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(
+                 new ClientConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true))
+                     .setAddresses(Config.SERVER))
+        ) {
+            String cacheName = "PersonCache";
+
+            client.query(
+                new SqlFieldsQuery(String.format(
+                    "CREATE TABLE IF NOT EXISTS Person (key INT PRIMARY KEY, name VARCHAR) WITH \"VALUE_TYPE=%s,CACHE_NAME=%s\"",
+                    Person.class.getName(), cacheName
+                )).setSchema("PUBLIC")
+            ).getAll();
+
+            client.query(new SqlFieldsQuery("INSERT INTO Person(key, name) VALUES(?, ?)")
+                .setArgs(1, "Person 1")
+                .setSchema("PUBLIC")
+            ).getAll();
+
+            ClientCache<Integer, Person> cache = client.cache(cacheName);
+
+            cache.put(2, new Person(2, "Person 2"));
+
+            assertEquals("Person 1", cache.get(1).getName());
+
+            assertEquals("Person 2", client.query(
+                new SqlFieldsQuery("SELECT name FROM PUBLIC.Person WHERE key = 2")).getAll().get(0).get(0));
         }
     }
 

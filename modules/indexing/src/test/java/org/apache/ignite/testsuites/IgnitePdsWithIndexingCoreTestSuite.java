@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalOnNodeStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
@@ -62,6 +63,7 @@ import org.junit.runners.Suite;
     WalRecoveryTxLogicalRecordsTest.class,
     WalRolloverRecordLoggingFsyncTest.class,
     WalRolloverRecordLoggingLogOnlyTest.class,
+    WalOnNodeStartTest.class,
 
     IgniteWalRecoveryTest.class,
     IgniteWalRecoveryWithCompactionTest.class,

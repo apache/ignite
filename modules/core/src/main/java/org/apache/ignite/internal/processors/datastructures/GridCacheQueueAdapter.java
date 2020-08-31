@@ -766,12 +766,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
         }
     }
 
@@ -859,12 +859,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
         }
     }
 
@@ -929,13 +929,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
             out.writeInt(size);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
             size = in.readInt();
         }
     }
@@ -1044,13 +1044,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
             out.writeObject(idx);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
             idx = (Long)in.readObject();
         }
     }

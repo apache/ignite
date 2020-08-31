@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -301,6 +301,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Collection<BinaryType> metadata() throws IgniteException;
 
     /**
+     * @param types Collection of binary types to write to.
+     * @param dir Destination directory.
+     */
+    public void saveMetadata(Collection<BinaryType> types, File dir);
+
+    /**
      * @param typeName Type name.
      * @param ord ordinal.
      * @return Enum object.
@@ -332,4 +338,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteException If failed.
      */
     public Object marshalToBinary(Object obj, boolean failIfUnregistered) throws IgniteException;
+
+    /**
+     * Remove registered binary type from grid.
+     *
+     * Attention: this is not safe feature, the grid must not contain binary objects
+     * with specified type, operations with specified type must not be processed on the cluster.
+     *
+     * @param typeId Type ID.
+     */
+    public void removeType(int typeId);
 }

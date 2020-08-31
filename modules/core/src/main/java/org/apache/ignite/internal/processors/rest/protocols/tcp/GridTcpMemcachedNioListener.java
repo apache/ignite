@@ -184,7 +184,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
         return new GridEmbeddedFuture<>(new IgniteClosure2X<GridRestResponse, Exception, GridRestResponse>() {
             @Override public GridRestResponse applyx(GridRestResponse restRes,
                 Exception ex) throws IgniteCheckedException {
-                if(ex != null)
+                if (ex != null)
                     throw U.cast(ex);
 
                 // Handle 'Stat' command (special case because several packets are included in response).

@@ -112,21 +112,21 @@ public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTo
         /**
          * Start measuring.
          */
-        public void before(){
+        public void before() {
             startTs = System.nanoTime();
         }
 
         /**
          * Stop measuring.
          */
-        public void after(){
+        public void after() {
             finishTs = System.nanoTime();
         }
 
         /**
          * @return measured duration in nanoseconds.
          */
-        public long getDurationNs(){
+        public long getDurationNs() {
             if (finishTs == 0L && startTs != 0)
                 throw new IllegalStateException("Cannot provide results of TotalTime probe; " +
                     "after() method haven't been called");

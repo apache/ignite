@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.encryption;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.junit.Test;
 
@@ -132,12 +127,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
      * @return Encryption MBean.
      */
     private EncryptionMXBean getMBean(String igniteInstanceName) throws Exception {
-        ObjectName name = U.makeMBeanName(igniteInstanceName, "Encryption", EncryptionMXBeanImpl.class.getSimpleName());
-
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        assertTrue(srv.isRegistered(name));
-
-        return MBeanServerInvocationHandler.newProxyInstance(srv, name, EncryptionMXBean.class, true);
+        return getMxBean(igniteInstanceName, "Encryption", EncryptionMXBeanImpl.class,
+            EncryptionMXBean.class);
     }
 }

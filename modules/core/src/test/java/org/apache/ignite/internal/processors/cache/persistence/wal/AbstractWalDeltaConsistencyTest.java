@@ -52,7 +52,7 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
      * @return Cache configuration.
      */
     @SuppressWarnings("unchecked")
-    protected  <K,V> CacheConfiguration<K, V> cacheConfiguration(String name) {
+    protected <K,V> CacheConfiguration<K, V> cacheConfiguration(String name) {
         return defaultCacheConfiguration().setName(name);
     }
 

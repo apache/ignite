@@ -120,7 +120,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
      * Common Assertion
      * @param h2it target iterator
      */
-    private void checkIterator(H2ResultSetIterator h2it){
+    private void checkIterator(H2ResultSetIterator h2it) {
         if (Objects.nonNull(h2it))
             assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
         else

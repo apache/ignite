@@ -165,7 +165,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     private void refreshInitialData() {
         startSignal = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++)
+        for (int i = 0; i < EXEC_COUNT; i++)
             startSignal[i] = new CountDownLatch(SPLIT_COUNT);
     }
 

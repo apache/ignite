@@ -60,7 +60,7 @@ public class CacheMvccSelectForUpdateQueryTest extends GridCommonAbstractTest {
 
                 for (int i = 1; i <= CACHE_SIZE; i++) {
                     execute(c, "insert into person(id, firstName, lastName) " +
-                        "values(" + i  + ",'firstName" + i + "','lastName" + i + "')");
+                        "values(" + i + ",'firstName" + i + "','lastName" + i + "')");
                 }
 
                 tx.commit();
@@ -175,7 +175,7 @@ public class CacheMvccSelectForUpdateQueryTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() {
-                List r =  node.cache("Person").query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
+                List r = node.cache("Person").query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
 
                 return r;
             }

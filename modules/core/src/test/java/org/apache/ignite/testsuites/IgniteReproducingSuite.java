@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.cache.RemoveAllDeadlockTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,13 +44,13 @@ public class IgniteReproducingSuite {
          * @return List of test(s) for reproduction some problem.
          */
         private static List<Class<?>> classes() {
-            List <Class<?>> suite = new ArrayList<>();
+            List<Class<?>> suite = new ArrayList<>();
 
             suite.add(IgniteReproducingSuite.TestStub.class);
 
             //uncomment to add some test
-            for (int i = 0; i < 50; i++)
-                suite.add(RemoveAllDeadlockTest.class);
+            for (int i = 0; i < 500; i++)
+                suite.add(OptimizedMarshallerPooledSelfTest.class);
 
             return suite;
         }

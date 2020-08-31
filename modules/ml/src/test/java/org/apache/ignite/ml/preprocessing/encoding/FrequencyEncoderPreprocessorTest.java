@@ -60,7 +60,7 @@ public class FrequencyEncoderPreprocessorTest {
                     put("A", 0.33);
                     put("B", 0.66);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {

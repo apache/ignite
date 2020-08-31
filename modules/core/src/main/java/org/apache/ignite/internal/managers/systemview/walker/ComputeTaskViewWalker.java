@@ -31,36 +31,40 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ComputeTaskViewWalker implements SystemViewRowAttributeWalker<ComputeTaskView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinityCacheName", String.class);
-        v.accept(1, "affinityPartitionId", int.class);
-        v.accept(2, "endTime", long.class);
-        v.accept(3, "execName", String.class);
-        v.accept(4, "internal", boolean.class);
-        v.accept(5, "jobId", IgniteUuid.class);
-        v.accept(6, "startTime", long.class);
-        v.accept(7, "taskClassName", String.class);
-        v.accept(8, "taskName", String.class);
-        v.accept(9, "taskNodeId", UUID.class);
-        v.accept(10, "userVersion", String.class);
+        v.accept(0, "id", IgniteUuid.class);
+        v.accept(1, "sessionId", IgniteUuid.class);
+        v.accept(2, "taskNodeId", UUID.class);
+        v.accept(3, "taskName", String.class);
+        v.accept(4, "taskClassName", String.class);
+        v.accept(5, "affinityPartitionId", int.class);
+        v.accept(6, "affinityCacheName", String.class);
+        v.accept(7, "startTime", long.class);
+        v.accept(8, "endTime", long.class);
+        v.accept(9, "execName", String.class);
+        v.accept(10, "internal", boolean.class);
+        v.accept(11, "jobId", IgniteUuid.class);
+        v.accept(12, "userVersion", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(ComputeTaskView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affinityCacheName", String.class, row.affinityCacheName());
-        v.acceptInt(1, "affinityPartitionId", row.affinityPartitionId());
-        v.acceptLong(2, "endTime", row.endTime());
-        v.accept(3, "execName", String.class, row.execName());
-        v.acceptBoolean(4, "internal", row.internal());
-        v.accept(5, "jobId", IgniteUuid.class, row.jobId());
-        v.acceptLong(6, "startTime", row.startTime());
-        v.accept(7, "taskClassName", String.class, row.taskClassName());
-        v.accept(8, "taskName", String.class, row.taskName());
-        v.accept(9, "taskNodeId", UUID.class, row.taskNodeId());
-        v.accept(10, "userVersion", String.class, row.userVersion());
+        v.accept(0, "id", IgniteUuid.class, row.id());
+        v.accept(1, "sessionId", IgniteUuid.class, row.sessionId());
+        v.accept(2, "taskNodeId", UUID.class, row.taskNodeId());
+        v.accept(3, "taskName", String.class, row.taskName());
+        v.accept(4, "taskClassName", String.class, row.taskClassName());
+        v.acceptInt(5, "affinityPartitionId", row.affinityPartitionId());
+        v.accept(6, "affinityCacheName", String.class, row.affinityCacheName());
+        v.acceptLong(7, "startTime", row.startTime());
+        v.acceptLong(8, "endTime", row.endTime());
+        v.accept(9, "execName", String.class, row.execName());
+        v.acceptBoolean(10, "internal", row.internal());
+        v.accept(11, "jobId", IgniteUuid.class, row.jobId());
+        v.accept(12, "userVersion", String.class, row.userVersion());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 11;
+        return 13;
     }
 }

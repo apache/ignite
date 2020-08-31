@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.isolve.lsqr;
 
-import com.github.fommil.netlib.BLAS;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -81,7 +81,7 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
             if (data.getFeatures() == null)
                 return null;
 
-            int cols =  data.getFeatures().length / data.getRows();
+            int cols = data.getFeatures().length / data.getRows();
             BLAS.getInstance().dscal(ctx.getU().length, 1 / bnorm, ctx.getU(), 1);
             double[] v = new double[cols];
             BLAS.getInstance().dgemv("T", data.getRows(), cols, 1.0, data.getFeatures(),

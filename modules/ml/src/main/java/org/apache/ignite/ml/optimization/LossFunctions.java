@@ -59,7 +59,7 @@ public class LossFunctions {
             /** {@inheritDoc} */
             @Override public Double apply(Vector vector) {
                 return groundTruth.copy().map(vector,
-                    (a, b) -> a == 1 ? - Math.log(b) : -Math.log(1 - b)
+                    (a, b) -> a == 1 ? -Math.log(b) : -Math.log(1 - b)
                 ).sum();
             }
         };

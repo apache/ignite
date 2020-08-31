@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        T InStreamOutLong<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, long, T> readAction,
+        T InStreamOutLong<T>(int type, Func<IBinaryStream, bool> writeAction, Func<IBinaryStream, long, T> readAction,
             Func<IBinaryStream, Exception> readErrorAction);
 
         /// <summary>

@@ -54,6 +54,6 @@ public class ExternalCallable implements IgniteCallable {
     @Override public Object call() {
         log.info("!!!!! I am job " + param + " on " + ignite.name());
 
-        return  42;
+        return 42;
     }
 }

@@ -76,6 +76,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -126,6 +127,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_REMOVE_PAGE;
@@ -143,6 +145,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TRACKING_PAGE_DELTA;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TRACKING_PAGE_REPAIR_DELTA;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.tree.DataInnerIO.VERSIONS;
 
@@ -189,6 +192,7 @@ public class RecordUtils {
             put(PARTITION_META_PAGE_UPDATE_COUNTERS, RecordUtils::buildMetaPageUpdatePartitionDataRecord);
             put(MEMORY_RECOVERY, RecordUtils::buildMemoryRecoveryRecord);
             put(TRACKING_PAGE_DELTA, RecordUtils::buildTrackingPageDeltaRecord);
+            put(TRACKING_PAGE_REPAIR_DELTA, RecordUtils::buildTrackingPageRepairDeltaRecord);
             put(META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID, RecordUtils::buildMetaPageUpdateLastSuccessfulSnapshotId);
             put(META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID, RecordUtils::buildMetaPageUpdateLastSuccessfulFullSnapshotId);
             put(META_PAGE_UPDATE_NEXT_SNAPSHOT_ID, RecordUtils::buildMetaPageUpdateNextSnapshotId);
@@ -216,6 +220,7 @@ public class RecordUtils {
             put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
             put(CONSISTENT_CUT, RecordUtils::buildConsistentCutRecord);
             put(BTREE_META_PAGE_INIT_ROOT_V3, RecordUtils::buildBtreeMetaPageInitRootV3);
+            put(OUT_OF_ORDER_UPDATE, RecordUtils::buildOutOfOrderRecord);
         }};
 
     /** **/
@@ -420,6 +425,11 @@ public class RecordUtils {
     }
 
     /** **/
+    public static TrackingPageRepairDeltaRecord buildTrackingPageRepairDeltaRecord() {
+        return new TrackingPageRepairDeltaRecord(1, 1);
+    }
+
+    /** **/
     public static MetaPageUpdateLastSuccessfulSnapshotId buildMetaPageUpdateLastSuccessfulSnapshotId() {
         return new MetaPageUpdateLastSuccessfulSnapshotId(1, 1, 1, 1);
     }
@@ -562,5 +572,20 @@ public class RecordUtils {
     /** **/
     public static UnsupportedWalRecord buildBtreeMetaPageInitRootV3() {
         return new UnsupportedWalRecord(BTREE_META_PAGE_INIT_ROOT_V3);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildOutOfOrderRecord() {
+        return new UnsupportedWalRecord(OUT_OF_ORDER_UPDATE);
+    }
+
+    /**
+     * Return {@code true} if include to write-ahead log.
+     *
+     * @param walRecord Instance of {@link WALRecord}.
+     * @return {@code True} if include to write-ahead log.
+     */
+    public static boolean isIncludeIntoLog(WALRecord walRecord) {
+        return !UnsupportedWalRecord.class.isInstance(walRecord) && !SwitchSegmentRecord.class.isInstance(walRecord);
     }
 }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;

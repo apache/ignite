@@ -241,7 +241,7 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
     /** */
     private int getPort(String hostPort) {
         String[] split = hostPort.split(":");
-        String portstr = split[split.length-1];
+        String portstr = split[split.length - 1];
         String[] pc = portstr.split("/");
 
         if (pc.length > 1)

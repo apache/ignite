@@ -334,7 +334,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                 }
 
                 private void parkForAWhile() {
-                    if(slowFileIoEnabled.get() && slow)
+                    if (slowFileIoEnabled.get() && slow)
                         LockSupport.parkNanos(1_000_000_000L);
                 }
             };

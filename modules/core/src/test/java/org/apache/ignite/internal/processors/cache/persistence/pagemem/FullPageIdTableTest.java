@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class FullPageIdTableTest  {
+public class FullPageIdTableTest {
     /** Per test timeout */
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
@@ -224,7 +224,7 @@ public class FullPageIdTableTest  {
         }
         finally {
             long msPassed = U.currentTimeMillis() - seed;
-            System.err.println("Seed used [" + seed + "] duration ["+ msPassed+ "] ms");
+            System.err.println("Seed used [" + seed + "] duration [" + msPassed + "] ms");
             prov.shutdown(true);
         }
     }

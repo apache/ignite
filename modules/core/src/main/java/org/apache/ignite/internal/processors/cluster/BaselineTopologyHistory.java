@@ -118,7 +118,7 @@ public class BaselineTopologyHistory implements Serializable {
 
     /** */
     void flushHistoryItems(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        while(!bufferedForStore.isEmpty()) {
+        while (!bufferedForStore.isEmpty()) {
             BaselineTopologyHistoryItem item = bufferedForStore.remove();
 
             metastorage.write(METASTORE_BLT_HIST_PREFIX + item.id(), item);

@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import javax.cache.CacheException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
@@ -35,15 +42,6 @@ import org.h2.result.SearchRow;
 import org.h2.util.DoneFuture;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
-
-import javax.cache.CacheException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Future;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
@@ -60,9 +58,6 @@ public class DistributedLookupBatch implements IndexLookupBatch {
 
     /** */
     private final GridCacheContext<?,?> cctx;
-
-    /** Query context registry. */
-    private final QueryContextRegistry qryCtxRegistry;
 
     /** */
     private final boolean ucast;
@@ -96,11 +91,10 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContextRegistry qryCtxRegistry,
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx,
         boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
-        this.qryCtxRegistry = qryCtxRegistry;
         this.ucast = ucast;
         this.affColId = affColId;
     }
@@ -155,7 +149,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
-                QueryContext qctx = qryCtxRegistry.getThreadLocal();
+                QueryContext qctx = QueryContext.threadLocal();
 
                 res = new ArrayList<>();
 
@@ -275,9 +269,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         joinCtx.putStreams(batchLookupId, rangeStreams);
 
         // Start streaming.
-        for (RangeStream stream : rangeStreams.values()) {
+        for (RangeStream stream : rangeStreams.values())
             stream.start();
-        }
     }
 
     /** {@inheritDoc} */

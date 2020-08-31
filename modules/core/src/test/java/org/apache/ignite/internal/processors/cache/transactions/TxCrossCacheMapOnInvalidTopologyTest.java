@@ -34,7 +34,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -181,7 +180,7 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
                     GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)m;
 
                     // Allow full rebalance for cache 1 and system cache.
-                    if (msg.groupId() == CU.cacheId(CACHE1) || msg.groupId() == CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME))
+                    if (msg.groupId() != CU.cacheId(CACHE2))
                         return false;
 
                     // Allow only first batch for cache 2.

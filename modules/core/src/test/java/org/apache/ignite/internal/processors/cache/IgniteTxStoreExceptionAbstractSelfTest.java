@@ -500,7 +500,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @param keys Keys.
      * @throws Exception If failed.
      */
-    private void checkPutAll(boolean putBefore, Integer ... keys) throws Exception {
+    private void checkPutAll(boolean putBefore, Integer... keys) throws Exception {
         assert keys.length > 1;
 
         if (putBefore) {

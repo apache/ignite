@@ -144,7 +144,7 @@ public class VisorNodeEventsCollectorTaskArg extends VisorDataTransferObject {
         out.writeObject(typeArg);
         out.writeObject(timeArg);
         U.writeString(out, taskName);
-        U.writeGridUuid(out, taskSesId);
+        U.writeIgniteUuid(out, taskSesId);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +153,7 @@ public class VisorNodeEventsCollectorTaskArg extends VisorDataTransferObject {
         typeArg = (int[])in.readObject();
         timeArg = (Long)in.readObject();
         taskName = U.readString(in);
-        taskSesId = U.readGridUuid(in);
+        taskSesId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

@@ -78,7 +78,7 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        if(key.getClass().isArray())
+        if (key.getClass().isArray())
             return IgniteUtils.hashCode(key);
 
         try {

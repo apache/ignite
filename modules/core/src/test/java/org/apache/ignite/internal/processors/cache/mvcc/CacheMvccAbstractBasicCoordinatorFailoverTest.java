@@ -795,7 +795,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             for (Thread t : stopThreads)
                 t.start();
         }
-        else  {
+        else {
             // We should stop the oldest node last.
             GridCachePartitionExchangeManager exch = ((IgniteEx)survivors.get(1)).context().cache().context().exchange();
 

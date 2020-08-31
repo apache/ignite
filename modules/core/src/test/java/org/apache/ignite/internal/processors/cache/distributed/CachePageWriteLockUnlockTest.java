@@ -133,7 +133,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
     private void putData(Ignite grid, int total, int part) {
         int c = 0, k = 0;
 
-        while(c < total) {
+        while (c < total) {
             if (grid(0).affinity(DEFAULT_CACHE_NAME).partition(k) == part) {
                 grid.cache(DEFAULT_CACHE_NAME).put(k, k);
 

@@ -209,9 +209,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Encodes the peek modes into a single int value.
         /// </summary>
-        public static int EncodePeekModes(CachePeekMode[] modes)
+        public static int EncodePeekModes(CachePeekMode[] modes, out bool hasPlatformCache)
         {
             var res = 0;
+            hasPlatformCache = false;
 
             if (modes == null)
             {
@@ -220,10 +221,15 @@ namespace Apache.Ignite.Core.Impl
 
             foreach (var mode in modes)
             {
-                res |= (int)mode;
+                res |= (int) mode;
             }
 
-            return res;
+            // Clear Platform bit: Java does not understand it.
+            const int platformCache = (int) CachePeekMode.Platform;
+            const int all = (int) CachePeekMode.All;
+            hasPlatformCache = (res & platformCache) == platformCache || (res & all) == all;
+            
+            return res & ~platformCache;
         }
     }
 }

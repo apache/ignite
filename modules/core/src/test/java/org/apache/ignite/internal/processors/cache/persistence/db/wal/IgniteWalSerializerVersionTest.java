@@ -218,7 +218,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
                 if (exp == 0L)
                     assertTrue(act0.timestamp() == 0L);
-                else{
+                else {
                     long diff = Math.abs(exp - act0.timestamp());
 
                     assertTrue(String.valueOf(diff), diff < 10_000);

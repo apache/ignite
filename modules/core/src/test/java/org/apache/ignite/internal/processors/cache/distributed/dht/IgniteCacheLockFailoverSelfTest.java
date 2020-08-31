@@ -31,9 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -103,8 +103,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     stopGrid(1);
 

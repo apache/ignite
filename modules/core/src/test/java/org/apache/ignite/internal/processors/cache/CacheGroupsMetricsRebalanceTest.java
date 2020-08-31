@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -44,8 +48,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -249,11 +255,16 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
-        LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
+        LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
         LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
-        LongMetric receivedBytes =  mreg.findMetric("RebalancingReceivedBytes");
+        LongMetric receivedBytes = mreg.findMetric("RebalancingReceivedBytes");
+
+        ObjectGauge<Map<UUID, Long>> fullReceivedKeys = mreg.findMetric("RebalancingFullReceivedKeys");
+        ObjectGauge<Map<UUID, Long>> histReceivedKeys = mreg.findMetric("RebalancingHistReceivedKeys");
+        ObjectGauge<Map<UUID, Long>> fullReceivedBytes = mreg.findMetric("RebalancingFullReceivedBytes");
+        ObjectGauge<Map<UUID, Long>> histReceivedBytes = mreg.findMetric("RebalancingHistReceivedBytes");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
                 "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
@@ -268,11 +279,22 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertEquals("Before the rebalancing is completed, the end time metric must be undefined.",
             -1, endTime.value());
 
-        assertEquals("Until a partition supply message has been delivered, keys cannot be received.",
-            0, receivedKeys.value());
+        ToLongFunction<Map<UUID, Long>> sumFunc = map -> map.values().stream().mapToLong(Long::longValue).sum();
 
-        assertEquals("Until a partition supply message has been delivered, bytes cannot be received.",
-            0, receivedBytes.value());
+        String zeroReceivedKeysMsg = "Until a partition supply message has been delivered, keys cannot be received.";
+        assertEquals(zeroReceivedKeysMsg, 0, receivedKeys.value());
+        assertEquals(zeroReceivedKeysMsg, 0, sumFunc.applyAsLong(fullReceivedKeys.value()));
+        assertEquals(zeroReceivedKeysMsg, 0, sumFunc.applyAsLong(histReceivedKeys.value()));
+
+        String zeroReceivedBytesMsg = "Until a partition supply message has been delivered, bytes cannot be received.";
+        assertEquals(zeroReceivedBytesMsg, 0, receivedBytes.value());
+        assertEquals(zeroReceivedBytesMsg, 0, sumFunc.applyAsLong(fullReceivedBytes.value()));
+        assertEquals(zeroReceivedBytesMsg, 0, sumFunc.applyAsLong(histReceivedBytes.value()));
+
+        checkSuppliers(
+            Arrays.asList(ignite0.localNode().id()),
+            fullReceivedKeys, histReceivedKeys, fullReceivedBytes, histReceivedBytes
+        );
 
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock();
 
@@ -293,12 +315,24 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 "[RebalancingStartTime=" + rebalancingStartTime + ", RebalancingEndTime=" + endTime.value() + "].",
             rebalancingStartTime < endTime.value());
 
-        assertEquals("The number of currently rebalanced keys for the whole cache group should be equal to the " +
-                "number of entries in the caches.", allKeysCount, receivedKeys.value());
+        String wrongReceivedKeyCntMsg = "The number of currently rebalanced keys for the whole cache group should " +
+            "be equal to the number of entries in the caches.";
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, receivedKeys.value());
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, sumFunc.applyAsLong(fullReceivedKeys.value()));
+        assertEquals(0, sumFunc.applyAsLong(histReceivedKeys.value()));
 
-        assertTrue("The number of currently rebalanced bytes of this cache group was expected more " + allKeysCount
-                * (Integer.BYTES + Long.BYTES) + " bytes, but actual: " + receivedBytes.value() + ".",
-            receivedBytes.value() > allKeysCount * (Integer.BYTES + Long.BYTES));
+        int estimateByteCnt = allKeysCount * (Integer.BYTES + Long.BYTES);
+
+        String wrongReceivedByteCntMsg = "The number of currently rebalanced bytes of this cache group was expected " +
+            "more " + estimateByteCnt + " bytes.";
+        assertTrue(wrongReceivedByteCntMsg, receivedBytes.value() > estimateByteCnt);
+        assertTrue(wrongReceivedByteCntMsg, sumFunc.applyAsLong(fullReceivedBytes.value()) > estimateByteCnt);
+        assertEquals(0, sumFunc.applyAsLong(histReceivedBytes.value()));
+
+        checkSuppliers(
+            Arrays.asList(ignite0.localNode().id()),
+            fullReceivedKeys, histReceivedKeys, fullReceivedBytes, histReceivedBytes
+        );
     }
 
     /**
@@ -311,7 +345,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
 
         for (String cacheName : cacheNames) {
-            ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).boxed()
+            ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).distinct().boxed()
                 .collect(Collectors.toMap(i -> i, i -> (long)i)));
         }
 
@@ -330,7 +364,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
-        LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
+        LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
 
@@ -591,7 +625,27 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             }
         }, 5_000);
 
-        assert(cache.localMetrics().getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY);
-        assert(cache.localMetrics().getRebalancingStartTime() > beforeStartTime + REBALANCE_DELAY);
+        assert (cache.localMetrics().getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY);
+        assert (cache.localMetrics().getRebalancingStartTime() > beforeStartTime + REBALANCE_DELAY);
+    }
+
+    /**
+     * Check suppliers in metrics.
+     *
+     * @param uuids Suppliers.
+     * @param gauges Metrics per supplier.
+     */
+    private void checkSuppliers(Collection<UUID> uuids, ObjectGauge<Map<UUID, Long>>... gauges) {
+        A.notEmpty(gauges, "gauges");
+        A.notEmpty(uuids, "uuids");
+
+        for (int i = 0; i < gauges.length; i++) {
+            Map<UUID, Long> val = gauges[i].value();
+
+            assertEquals("i=" + i, uuids.size(), val.size());
+
+            int fi = i;
+            uuids.forEach(uuid -> assertTrue(String.format("i=%s uuid=%s", fi, uuid), val.containsKey(uuid)));
+        }
     }
 }

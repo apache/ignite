@@ -45,7 +45,7 @@ public class GridRoundRobinLoadBalancingSpiLocalNodeSelfTest extends
         ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()),
             Collections.singletonList(locNode), new GridTestJob());
 
-        assert  node == locNode;
+        assert node == locNode;
 
         // Double check.
         node = getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()),

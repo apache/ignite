@@ -17,17 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static javax.management.MBeanServerInvocationHandler.newProxyInstance;
 
 /**
  * {@link PageLockTrackerMXBean} test.
@@ -56,26 +50,10 @@ public class PageLockTrackerMXBeanImplTest extends GridCommonAbstractTest {
     public void testSimple() throws Exception {
         Ignite ig = startGrid();
 
-        PageLockTrackerMXBean pageLockTrackerMXBean = getPageLockTrackerMXBean(ig);
+        PageLockTrackerMXBean pageLockTrackerMXBean = getMxBean(ig.name(),
+            CacheDiagnosticManager.MBEAN_GROUP,
+            PageLockTrackerMXBean.MBEAN_NAME, PageLockTrackerMXBean.class);
 
         Assert.assertNotNull(pageLockTrackerMXBean);
-    }
-
-    /**
-     * @param ignite Ignite.
-     */
-    private PageLockTrackerMXBean getPageLockTrackerMXBean(Ignite ignite) throws Exception {
-        ObjectName mBeanName = U.makeMBeanName(
-            ignite.name(),
-            CacheDiagnosticManager.MBEAN_GROUP,
-            PageLockTrackerMXBean.MBEAN_NAME
-        );
-
-        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mBeanSrv.isRegistered(mBeanName))
-            fail("MBean is not registered: " + mBeanName.getCanonicalName());
-
-        return newProxyInstance(mBeanSrv, mBeanName, PageLockTrackerMXBean.class, true);
     }
 }

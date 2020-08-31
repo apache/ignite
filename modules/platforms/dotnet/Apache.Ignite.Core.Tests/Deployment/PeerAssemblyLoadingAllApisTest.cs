@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         /// Tests Compute.Call.
         /// </summary>
         [Test]
-        public void TestComputeAffinityCall([Values(true, false)] bool async)
+        public void TestComputeAffinityCall([Values(true, false)] bool async, [Values(true, false)] bool withPartition)
         {
             PeerAssemblyLoadingTest.TestDeployment(ignite =>
             {
@@ -57,12 +57,17 @@ namespace Apache.Ignite.Core.Tests.Deployment
 
                 var key = TestUtils.GetPrimaryKey(ignite, cache.Name, ignite.GetCluster().ForRemotes().GetNode());
 
-                var res = async
-                    ? ignite.GetCompute().AffinityCallAsync(cache.Name, key, new ProcessNameFunc()).Result
-                    : ignite.GetCompute().AffinityCall(cache.Name, key, new ProcessNameFunc());
+                var part = ignite.GetAffinity(cache.Name).GetPartition(key);
 
-                Assert.AreEqual("Apache.Ignite",
-                    res);
+                var res = withPartition
+                    ? async
+                        ? ignite.GetCompute().AffinityCallAsync(new[] {cache.Name}, part, new ProcessNameFunc()).Result
+                        : ignite.GetCompute().AffinityCall(new[] {cache.Name}, part, new ProcessNameFunc())
+                    : async
+                        ? ignite.GetCompute().AffinityCallAsync(cache.Name, key, new ProcessNameFunc()).Result
+                        : ignite.GetCompute().AffinityCall(cache.Name, key, new ProcessNameFunc());
+
+                Assert.AreEqual("Apache.Ignite", res);
             });
         }
 

@@ -247,7 +247,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
             BenchmarkParams params = result.getParams();
             Collection<String> args1 = params.getJvmArgs();
             for (String s : args1) {
-                System.out.print(s.substring(s.length() -3, s.length()));
+                System.out.print(s.substring(s.length() - 3, s.length()));
                 System.out.print(" x ");
             }
             System.out.print(params.getThreads());

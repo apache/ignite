@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -24,8 +25,6 @@ import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import java.util.List;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
@@ -40,26 +39,12 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  */
 public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
     /**
-     * The prefix for the exception message.
+     * Format for displaying the cache name(s) and operation.
+     *
+     * @see GridCacheProcessor#CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT
      */
     private static final String CHECK_EMPTY_TRANSACTIONS_ERROR_MSG =
-        "Cannot start/stop cache within lock or transaction.";
-
-    /**
-     * Format for displaying the cache name and operation.
-     *
-     * @see GridCacheProcessor#CACHE_NAME_AND_OPERATION_FORMAT
-     */
-    private static final String CACHE_NAME_AND_OPERATION_FORMAT =
-        getFieldValue(GridCacheProcessor.class, "CACHE_NAME_AND_OPERATION_FORMAT");
-
-    /**
-     * Format for displaying the cache names and operation.
-     *
-     * @see GridCacheProcessor#CACHE_NAMES_AND_OPERATION_FORMAT
-     */
-    private static final String CACHE_NAMES_AND_OPERATION_FORMAT =
-        getFieldValue(GridCacheProcessor.class, "CACHE_NAMES_AND_OPERATION_FORMAT");
+        getFieldValue(GridCacheProcessor.class, "CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT");
 
     /** Node. */
     private static IgniteEx NODE;
@@ -94,7 +79,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> NODE.createCache(new CacheConfiguration<>(cacheName)),
-            CACHE_NAME_AND_OPERATION_FORMAT,
             cacheName,
             "dynamicStartCache"
         );
@@ -112,7 +96,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> NODE.createCaches(cacheCfgs),
-            CACHE_NAMES_AND_OPERATION_FORMAT,
             cacheNames.toString(),
             "dynamicStartCachesByStoredConf"
         );
@@ -129,7 +112,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> NODE.destroyCache(cacheName),
-            CACHE_NAME_AND_OPERATION_FORMAT,
             cacheName,
             "dynamicDestroyCache"
         );
@@ -149,7 +131,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> NODE.destroyCaches(cacheNames),
-            CACHE_NAMES_AND_OPERATION_FORMAT,
             cacheNames.toString(),
             "dynamicDestroyCaches"
         );
@@ -168,7 +149,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> cacheProcessor.dynamicCloseCache(cacheName),
-            CACHE_NAME_AND_OPERATION_FORMAT,
             cacheName,
             "dynamicCloseCache"
         );
@@ -185,7 +165,6 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
 
         opInActiveTx(
             () -> NODE.context().cache().resetCacheState(cacheNames),
-            CACHE_NAME_AND_OPERATION_FORMAT,
             cacheNames.toString(),
             "resetCacheState"
         );
@@ -215,19 +194,14 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
     /**
      * Performing an operation in an active transaction with a check that an
      * exception will be thrown with a format
-     * {@link #CHECK_EMPTY_TRANSACTIONS_ERROR_MSG} +
-     * {@link #CACHE_NAMES_AND_OPERATION_FORMAT} of
-     * {@link #CACHE_NAME_AND_OPERATION_FORMAT} message.
+     * {@link #CHECK_EMPTY_TRANSACTIONS_ERROR_MSG}.
      *
      * @param runnableX Operation in an active transaction.
-     * @param format Format for cache(s) name and operation
-     *      in the exception message.
      * @param cacheName Cache name for the exception message.
      * @param operation Operation for the exception message.
      */
-    private void opInActiveTx(RunnableX runnableX, String format, String cacheName, String operation) {
+    private void opInActiveTx(RunnableX runnableX, String cacheName, String operation) {
         assert nonNull(runnableX);
-        assert nonNull(format);
         assert nonNull(cacheName);
         assert nonNull(operation);
 
@@ -239,7 +213,7 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
                     return null;
                 },
                 IgniteException.class,
-                format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG + ' ' + format, cacheName, operation)
+                format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG, cacheName, operation)
             );
         }
 

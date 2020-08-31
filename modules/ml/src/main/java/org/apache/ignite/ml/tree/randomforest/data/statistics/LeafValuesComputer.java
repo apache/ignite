@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.statistics;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
@@ -24,11 +32,6 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Class containing logic of leaf values computing after building of all trees in random forest.
@@ -60,7 +63,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
 
         leafs.forEach((id, leaf) -> {
             T stat = stats.get(id);
-            if(stat != null) {
+            if (stat != null) {
                 double leafVal = computeLeafValue(stat);
                 leaf.setVal(leafVal);
             }

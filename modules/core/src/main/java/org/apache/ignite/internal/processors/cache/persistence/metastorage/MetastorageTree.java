@@ -20,13 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -37,7 +33,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 /**
  *
  */
-public class MetastorageTree extends BPlusTree<MetastorageSearchRow, MetastorageDataRow> {
+public class MetastorageTree extends BPlusTree<MetastorageRow, MetastorageDataRow> {
     /** Max key length (bytes num) */
     public static final int MAX_KEY_LEN = 64;
 
@@ -81,8 +77,8 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
             globalRmvId,
             metaPageId,
             reuseList,
-            MetastorageInnerIO.VERSIONS,
-            MetastoreLeafIO.VERSIONS,
+            MetastorageBPlusIO.INNER_IO_VERSIONS,
+            MetastorageBPlusIO.LEAF_IO_VERSIONS,
             failureProcessor,
             lockLsnr
         );
@@ -95,21 +91,19 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<MetastorageSearchRow> io, long pageAddr, int idx,
-        MetastorageSearchRow row) {
+    @Override protected int compare(BPlusIO<MetastorageRow> io, long pageAddr, int idx,
+        MetastorageRow row) throws IgniteCheckedException {
 
-        String key = ((DataLinkIO)io).getKey(pageAddr, idx);
+        String key = ((MetastorageBPlusIO)io).getKey(pageAddr, idx, rowStore);
 
         return key.compareTo(row.key());
     }
 
     /** {@inheritDoc} */
-    @Override public MetastorageDataRow getRow(BPlusIO<MetastorageSearchRow> io, long pageAddr, int idx,
+    @Override public MetastorageDataRow getRow(BPlusIO<MetastorageRow> io, long pageAddr, int idx,
         Object x) throws IgniteCheckedException {
-        long link = ((DataLinkIO)io).getLink(pageAddr, idx);
-        String key = ((DataLinkIO)io).getKey(pageAddr, idx);
 
-        return rowStore.dataRow(key, link);
+        return ((MetastorageBPlusIO)io).getDataRow(pageAddr, idx, rowStore);
     }
 
     /**
@@ -122,181 +116,5 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
     /** {@inheritDoc} */
     @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
         return pageMem.allocatePage(grpId, partId, FLAG_DATA);
-    }
-
-    /**
-     *
-     */
-    private interface DataLinkIO {
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Row link.
-         */
-        public long getLink(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Key size in bytes.
-         */
-        public short getKeySize(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Key.
-         */
-        public String getKey(long pageAddr, int idx);
-    }
-
-    /**
-     *
-     */
-    public static class MetastorageInnerIO extends BPlusInnerIO<MetastorageSearchRow> implements DataLinkIO {
-        /** */
-        public static final IOVersions<MetastorageInnerIO> VERSIONS = new IOVersions<>(
-            new MetastorageInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        MetastorageInnerIO(int ver) {
-            super(T_DATA_REF_METASTORAGE_INNER, ver, true, 10 + MAX_KEY_LEN);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off,
-            MetastorageSearchRow row) {
-            assert row.link() != 0;
-
-            PageUtils.putLong(pageAddr, off, row.link());
-
-            byte[] bytes = row.key().getBytes();
-            assert bytes.length <= MAX_KEY_LEN;
-
-            PageUtils.putShort(pageAddr, off + 8, (short)bytes.length);
-            PageUtils.putBytes(pageAddr, off + 10, bytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) {
-            int srcOff = srcIo.offset(srcIdx);
-            int dstOff = offset(dstIdx);
-
-            long link = ((DataLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
-            short len = ((DataLinkIO)srcIo).getKeySize(srcPageAddr, srcIdx);
-
-            byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff + 10, len);
-
-            PageUtils.putLong(dstPageAddr, dstOff, link);
-            PageUtils.putShort(dstPageAddr, dstOff + 8, len);
-            PageUtils.putBytes(dstPageAddr, dstOff + 10, payload);
-        }
-
-        /** {@inheritDoc} */
-        @Override public MetastorageSearchRow getLookupRow(BPlusTree<MetastorageSearchRow, ?> tree, long pageAddr,
-            int idx) {
-            long link = getLink(pageAddr, idx);
-            String key = getKey(pageAddr, idx);
-
-            return new MetsatorageSearchRowImpl(key, link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            assert idx < getCount(pageAddr) : idx;
-
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public short getKeySize(long pageAddr, int idx) {
-            return PageUtils.getShort(pageAddr, offset(idx) + 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getKey(long pageAddr, int idx) {
-            int len = PageUtils.getShort(pageAddr, offset(idx) + 8);
-            byte[] bytes = PageUtils.getBytes(pageAddr, offset(idx) + 10, len);
-            return new String(bytes);
-        }
-    }
-
-    /**
-     *
-     */
-    public static class MetastoreLeafIO extends BPlusLeafIO<MetastorageSearchRow> implements DataLinkIO {
-        /** */
-        public static final IOVersions<MetastoreLeafIO> VERSIONS = new IOVersions<>(
-            new MetastoreLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        MetastoreLeafIO(int ver) {
-            super(T_DATA_REF_METASTORAGE_LEAF, ver, 10 + MAX_KEY_LEN);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off,
-            MetastorageSearchRow row) {
-            assert row.link() != 0;
-
-            PageUtils.putLong(pageAddr, off, row.link());
-            byte[] bytes = row.key().getBytes();
-
-            assert bytes.length <= MAX_KEY_LEN;
-
-            PageUtils.putShort(pageAddr, off + 8, (short)bytes.length);
-            PageUtils.putBytes(pageAddr, off + 10, bytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) {
-            int srcOff = srcIo.offset(srcIdx);
-            int dstOff = offset(dstIdx);
-
-            long link = ((DataLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
-            short len = ((DataLinkIO)srcIo).getKeySize(srcPageAddr, srcIdx);
-
-            byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff + 10, len);
-
-            PageUtils.putLong(dstPageAddr, dstOff, link);
-            PageUtils.putShort(dstPageAddr, dstOff + 8, len);
-            PageUtils.putBytes(dstPageAddr, dstOff + 10, payload);
-        }
-
-        /** {@inheritDoc} */
-        @Override public MetastorageSearchRow getLookupRow(BPlusTree<MetastorageSearchRow, ?> tree, long pageAddr,
-            int idx) {
-            long link = getLink(pageAddr, idx);
-            String key = getKey(pageAddr, idx);
-
-            return new MetsatorageSearchRowImpl(key, link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            assert idx < getCount(pageAddr) : idx;
-
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public short getKeySize(long pageAddr, int idx) {
-            return PageUtils.getShort(pageAddr, offset(idx) + 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getKey(long pageAddr, int idx) {
-            int len = PageUtils.getShort(pageAddr, offset(idx) + 8);
-            byte[] bytes = PageUtils.getBytes(pageAddr, offset(idx) + 10, len);
-            return new String(bytes);
-        }
     }
 }

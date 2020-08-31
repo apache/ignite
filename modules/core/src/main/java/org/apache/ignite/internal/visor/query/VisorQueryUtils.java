@@ -503,7 +503,7 @@ public class VisorQueryUtils {
         @Override public List<T> getAll() {
             List<T> all = new ArrayList<>();
 
-            while(it.hasNext())
+            while (it.hasNext())
                 all.add(it.next());
 
             return all;

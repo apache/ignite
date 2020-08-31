@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -25,9 +27,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Collection;
-import java.util.UUID;
 
 /**
  * Cluster group get node identifiers request.
@@ -65,11 +64,11 @@ public class ClientClusterGroupGetNodeIdsRequest extends ClientRequest {
     }
 
     /** Tansforms nodes collection to node ids array. */
-    private UUID[] getNodeIds(ClusterGroup clusterGrp){
+    private UUID[] getNodeIds(ClusterGroup clusterGrp) {
         Collection<ClusterNode> nodes = clusterGrp.nodes();
         UUID[] nodeIds = new UUID[nodes.size()];
         int i = 0;
-        for(ClusterNode node : nodes){
+        for (ClusterNode node : nodes) {
             nodeIds[i++] = node.id();
         }
         return nodeIds;

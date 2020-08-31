@@ -73,7 +73,7 @@ public enum GridRestCommand {
     /** Remove several values from cache. */
     CACHE_REMOVE_ALL("rmvall"),
 
-    /** Clear the specified cache, or all caches if none is specified. */
+    /** Clear the specified cache. */
     CACHE_CLEAR("clear"),
 
     /** Replace cache value only if there is currently a mapping for it. */
@@ -160,11 +160,11 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
     @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** @deprecated Use {@link #CLUSTER_DEACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
     @Deprecated
     CLUSTER_INACTIVE("inactive"),
 

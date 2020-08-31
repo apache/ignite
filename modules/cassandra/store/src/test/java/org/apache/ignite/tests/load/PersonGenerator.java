@@ -30,7 +30,7 @@ public class PersonGenerator implements Generator {
     private static final Date DATE = new Date();
 
     /** */
-    private static final List<String> PHONES = new LinkedList<String>(){{
+    private static final List<String> PHONES = new LinkedList<String>() {{
         add("1234567");
         add("7654321");
         add("1289054");

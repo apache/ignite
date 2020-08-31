@@ -111,7 +111,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(GRID_CNT, false);
 
-            for (int i = 0; i < GRID_CNT ; i++)
+            for (int i = 0; i < GRID_CNT; i++)
                 assertTrue(nodes.compareAndSet(i, null, ignite(i)));
 
             List<IgniteInternalFuture> futs = new ArrayList<>();

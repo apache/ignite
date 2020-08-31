@@ -61,7 +61,7 @@ public class GridSqlColumn extends GridSqlElement {
     public GridSqlColumn(Column col, GridSqlAst from, String schema, String tblAlias, String colName) {
         super(Collections.<GridSqlAst>emptyList());
 
-        assert !F.isEmpty(colName): colName;
+        assert !F.isEmpty(colName) : colName;
 
         this.col = col;
         this.from = from;

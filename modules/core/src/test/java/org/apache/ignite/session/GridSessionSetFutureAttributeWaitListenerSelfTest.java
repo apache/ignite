@@ -168,7 +168,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                         startSignal.countDown();
 
                         try {
-                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false)
+                            if (!startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS))
                                 fail();
 
                             synchronized (mux) {

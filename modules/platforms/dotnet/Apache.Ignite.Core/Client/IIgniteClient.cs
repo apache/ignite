@@ -23,6 +23,8 @@ namespace Apache.Ignite.Core.Client
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -97,7 +99,7 @@ namespace Apache.Ignite.Core.Client
         IClientCluster GetCluster();
 
         /// <summary>
-        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or
         /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
@@ -129,5 +131,21 @@ namespace Apache.Ignite.Core.Client
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with EndPoint class name.")]
         EndPoint LocalEndPoint { get; }
+
+        /// <summary>
+        /// Gets all active connections. Ignite Thin Client maintains connections to multiple server nodes when
+        /// <see cref="IgniteClientConfiguration.EnablePartitionAwareness"/> is true.
+        /// </summary>
+        IEnumerable<IClientConnection> GetConnections();
+
+        /// <summary>
+        /// Gets the compute API.
+        /// </summary>
+        IComputeClient GetCompute();
+
+        /// <summary>
+        /// Gets the services API.
+        /// </summary>
+        IServicesClient GetServices();
     }
 }

@@ -38,7 +38,7 @@ public final class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorize
      *
      * @param coords Coordinates.
      */
-    public DummyVectorizer(Integer ... coords) {
+    public DummyVectorizer(Integer... coords) {
         super(coords);
     }
 

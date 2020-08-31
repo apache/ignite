@@ -412,7 +412,7 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
                         U.error(scanCtx.getLogger(), "Failed to get HTML page: " + U.hidePassword(url.toString()), e);
                 }
             }
-            finally{
+            finally {
                 U.closeQuiet(in);
             }
 

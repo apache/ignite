@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -66,10 +67,10 @@ import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
-import org.apache.ignite.testframework.junits.SystemPropertiesList;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -79,9 +80,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOC
 /**
  * Tests case when long index deletion operation happens.
  */
-@SystemPropertiesList(
-    @WithSystemProperty(key = IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, value = "5000")
-)
+@WithSystemProperty(key = IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, value = "5000")
 public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 2;
@@ -322,7 +321,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         log.info("Doing indexes validation.");
 
         VisorValidateIndexesTaskArg taskArg =
-            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1);
+            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1, true, true);
 
         VisorValidateIndexesTaskResult taskRes =
             ignite.compute().execute(VisorValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
@@ -438,7 +437,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        query(cache, "create table t (id integer primary key, p integer, f integer, p integer) with \"BACKUPS=1\"");
+        query(cache, "create table t (id integer primary key, p integer, f integer) with \"BACKUPS=1\"");
 
         createIndex(cache, multicolumn);
 
@@ -585,8 +584,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
          * @param globalRmvId
          * @param metaPageId Meta page ID.
          * @param initNew Initialize new index.
-         * @param unwrappedColsInfo
-         * @param wrappedColsInfo
+         * @param unwrappedCols Unwrapped columns.
+         * @param wrappedCols Wrapped columns.
          * @param maxCalculatedInlineSize
          * @param pk {@code true} for primary key.
          * @param affinityKey {@code true} for affinity key.
@@ -612,15 +611,18 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             AtomicLong globalRmvId,
             long metaPageId,
             boolean initNew,
-            H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,
-            H2TreeIndex.IndexColumnsInfo wrappedColsInfo,
+            List<IndexColumn> unwrappedCols,
+            List<IndexColumn> wrappedCols,
             AtomicInteger maxCalculatedInlineSize,
             boolean pk,
             boolean affinityKey,
             boolean mvccEnabled,
             @Nullable H2RowCache rowCache,
             @Nullable FailureProcessor failureProcessor,
-            IgniteLogger log, IoStatisticsHolder stats
+            IgniteLogger log,
+            IoStatisticsHolder stats,
+            InlineIndexColumnFactory factory,
+            int configuredInlineSize
         ) throws IgniteCheckedException {
             super(
                 cctx,
@@ -637,8 +639,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 globalRmvId,
                 metaPageId,
                 initNew,
-                unwrappedColsInfo,
-                wrappedColsInfo,
+                unwrappedCols,
+                wrappedCols,
                 maxCalculatedInlineSize,
                 pk,
                 affinityKey,
@@ -646,7 +648,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 rowCache,
                 failureProcessor,
                 log,
-                stats
+                stats,
+                factory,
+                configuredInlineSize
             );
         }
 

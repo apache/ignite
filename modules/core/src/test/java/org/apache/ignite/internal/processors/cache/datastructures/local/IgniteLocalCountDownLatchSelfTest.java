@@ -76,7 +76,7 @@ public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstr
 
         Thread.sleep(3000);
 
-        assert latch.countDown()  == 1;
+        assert latch.countDown() == 1;
 
         assert latch.countDown() == 0;
 

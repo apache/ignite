@@ -153,7 +153,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
-    private void startGrids() throws  Exception {
+    private void startGrids() throws Exception {
         for (int i = 0; i < nodeCnt; i++) {
             startGrid(i);
 
@@ -165,7 +165,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
-    private void stopGrids() throws  Exception {
+    private void stopGrids() throws Exception {
         for (int i = 0; i < nodeCnt; i++)
             stopGrid(i);
     }

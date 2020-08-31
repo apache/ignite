@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -147,7 +146,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         int index = 0;
         for (int j = 0; j < vector.size(); j++) {
-            if(featureIdsToSkip.contains(j)) continue;
+            if (featureIdsToSkip.contains(j)) continue;
 
             newFeaturesValues[index] = vector.get(j);
             ++index;

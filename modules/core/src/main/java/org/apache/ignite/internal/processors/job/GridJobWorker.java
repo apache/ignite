@@ -38,7 +38,6 @@ import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteResponse;
@@ -278,8 +277,28 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Create time.
      */
-    long getCreateTime() {
+    public long getCreateTime() {
         return createTime;
+    }
+
+    /** @return Start time. */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** @return Finish time. */
+    public long getFinishTime() {
+        return finishTime;
+    }
+
+    /** @return Is started. */
+    public boolean isStarted() {
+        return isStarted;
+    }
+
+    /** @return Grid reservable resource. */
+    public GridReservable getPartsReservation() {
+        return partsReservation;
     }
 
     /**
@@ -327,14 +346,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code true} if job is being finished after execution
      *      and {@code false} otherwise.
      */
-    boolean isFinishing() {
+    public boolean isFinishing() {
         return finishing.get();
     }
 
     /**
      * @return Parent task node ID.
      */
-    ClusterNode getTaskNode() {
+    public ClusterNode getTaskNode() {
         return taskNode;
     }
 
@@ -375,7 +394,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if job is timed out.
      */
-    boolean isTimedOut() {
+    public boolean isTimedOut() {
         return timedOut;
     }
 
@@ -599,7 +618,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     assert ex != null;
                 }
                 else {
-                    if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgfsOutOfSpaceException.class)) {
+                    if (X.hasCause(e, GridInternalException.class)) {
                         // Print exception for internal errors only if debug is enabled.
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);

@@ -169,7 +169,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
         startGrid(GRIDS);
         awaitPartitionMapExchange();
 
-        try(Transaction tx = near.transactions().txStart()) {
+        try (Transaction tx = near.transactions().txStart()) {
             near.cache(DEFAULT_CACHE_NAME).put(part, part);
 
             tx.commit();

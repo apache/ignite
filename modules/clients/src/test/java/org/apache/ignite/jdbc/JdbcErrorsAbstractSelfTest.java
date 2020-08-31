@@ -719,6 +719,15 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
         checkSqlErrorMessage("alter table test drop column wrong", "42000",
             "Failed to parse query. Column \"WRONG\" not found");
+
+        checkSqlErrorMessage("create table test(id integer primary key, AgE integer, AGe integer)", "42000",
+            "Duplicate column name: AGE");
+
+        checkSqlErrorMessage("create table test(\"id\" integer primary key, \"age\" integer, \"age\" integer)", "42000",
+            "Duplicate column name: age");
+
+        checkSqlErrorMessage("create table test(id integer primary key, age integer, age varchar)", "42000",
+            "Duplicate column name: AGE");
     }
 
     /**

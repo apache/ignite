@@ -22,11 +22,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Set;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -64,7 +65,7 @@ public class JdbcThinTransactionsLeaksMvccTest extends JdbcThinAbstractSelfTest 
                 s.execute("CREATE TABLE TEST (k int primary key, v int) WITH \"atomicity=transactional_snapshot\"");
 
                 for (int i = 0; i < KEYS; ++i)
-                    s.execute("INSERT INTO TEST VALUES (" + i +", " + i + ")");
+                    s.execute("INSERT INTO TEST VALUES (" + i + ", " + i + ")");
 
             }
         }
@@ -93,18 +94,18 @@ public class JdbcThinTransactionsLeaksMvccTest extends JdbcThinAbstractSelfTest 
      *
      */
     @Test
-    @WithSystemProperty(key=IGNITE_MAX_COMPLETED_TX_COUNT, value = "1024")
+    @WithSystemProperty(key = IGNITE_MAX_COMPLETED_TX_COUNT, value = "1024")
     public void testLeaks() {
         runQueries(ITERATIONS);
 
-        int prevDetachedConns = detachedConnectionCount(grid(0));
+        int prevUsedConns = usedConnectionCount(grid(0));
 
         runQueries(ITERATIONS * 2);
 
-        int curDetachedConns = detachedConnectionCount(grid(0));
+        int curUsedConns = usedConnectionCount(grid(0));
 
-        assertTrue("Detached connection leaks: prevSize=" + prevDetachedConns + ", curSize=" + curDetachedConns,
-            curDetachedConns < prevDetachedConns * 2 + 1);
+        assertTrue("Detached connection leaks: prevSize=" + prevUsedConns + ", curSize=" + curUsedConns,
+            curUsedConns < prevUsedConns * 2 + 1);
     }
 
     /**
@@ -140,11 +141,11 @@ public class JdbcThinTransactionsLeaksMvccTest extends JdbcThinAbstractSelfTest 
      * @param igx Node.
      * @return Count of detached connections.
      */
-    private int detachedConnectionCount(IgniteEx igx) {
+    private int usedConnectionCount(IgniteEx igx) {
         ConnectionManager connMgr = ((IgniteH2Indexing)igx.context().query().getIndexing()).connections();
 
-        ConcurrentMap detachedConns = GridTestUtils.getFieldValue(connMgr, "detachedConns");
+        Set<H2Connection> usedConns = GridTestUtils.getFieldValue(connMgr, "usedConns");
 
-        return detachedConns.size();
+        return usedConns.size();
     }
 }

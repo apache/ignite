@@ -73,6 +73,16 @@ public class IgniteThread extends Thread {
      *
      * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
+     */
+    public IgniteThread(String igniteInstanceName, String threadName) {
+        this(igniteInstanceName, threadName, null);
+    }
+
+    /**
+     * Creates grid thread with given name for a given Ignite instance.
+     *
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
+     * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {

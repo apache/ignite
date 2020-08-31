@@ -70,7 +70,7 @@ public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>
 
         double pNorm = Math.pow(foldMap(res.features(), Functions.PLUS, Functions.pow(p), 0d), 1.0 / p);
 
-        if(pNorm == 0) pNorm = 1;
+        if (pNorm == 0) pNorm = 1;
 
         for (int i = 0; i < res.size(); i++)
             res.set(i, res.get(i) / pNorm);
@@ -88,7 +88,7 @@ public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>
      * @return Folded value of this vector.
      */
     private double foldMap(Vector vec, IgniteBiFunction<Double,Double,Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
-        for (int i = 0;  i< vec.size(); i++)
+        for (int i = 0; i < vec.size(); i++)
             zero = foldFun.apply(zero, mapFun.apply(vec.get(i)));
 
         return zero;

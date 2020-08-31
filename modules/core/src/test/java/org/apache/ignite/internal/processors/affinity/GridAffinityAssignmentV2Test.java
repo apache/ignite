@@ -30,17 +30,17 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.Whitebox;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -152,7 +152,7 @@ public class GridAffinityAssignmentV2Test {
             // Ignored.
         }
 
-        Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
+        Set<Integer> unwrapped = U.field(
             gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
             "delegate"
         );
@@ -203,7 +203,7 @@ public class GridAffinityAssignmentV2Test {
     public void testBackupsMoreThanThreshold() {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
@@ -225,7 +225,7 @@ public class GridAffinityAssignmentV2Test {
     public void testSerialization() throws IOException, ClassNotFoundException {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(

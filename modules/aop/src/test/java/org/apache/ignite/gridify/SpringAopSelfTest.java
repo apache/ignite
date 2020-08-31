@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  * Spring AOP test.
  */
-@GridCommonTest(group="AOP")
+@GridCommonTest(group = "AOP")
 public class SpringAopSelfTest extends AbstractAopTest {
     /** {@inheritDoc} */
     @Override protected Object target() {

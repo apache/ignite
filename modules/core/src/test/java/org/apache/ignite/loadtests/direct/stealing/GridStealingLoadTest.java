@@ -144,7 +144,7 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
         if (failed.get())
             fail();
 
-        assert stolen.get() != 0: "No jobs were stolen by stealing node.";
+        assert stolen.get() != 0 : "No jobs were stolen by stealing node.";
 
         info("Stolen jobs: " + stolen.get());
     }

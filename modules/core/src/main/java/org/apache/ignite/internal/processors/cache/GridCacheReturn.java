@@ -130,7 +130,7 @@ public class GridCacheReturn implements Externalizable, Message {
      *
      */
     public boolean emptyResult() {
-        return !invokeRes && v  == null && cacheObj == null && success;
+        return !invokeRes && v == null && cacheObj == null && success;
     }
 
     /**

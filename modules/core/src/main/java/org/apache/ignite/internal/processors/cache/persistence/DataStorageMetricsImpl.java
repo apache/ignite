@@ -21,8 +21,8 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -519,7 +519,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferSize(){
+    @Override public long getCheckpointBufferSize() {
         if (!metricsEnabled)
             return 0;
 
@@ -546,7 +546,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /**
      * @param walSizeProvider Wal size provider.
      */
-    public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider){
+    public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider) {
         this.walSizeProvider = walSizeProvider;
     }
 
@@ -560,7 +560,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /**
      *
      */
-    public void regionMetrics(Collection<DataRegionMetrics> regionMetrics){
+    public void regionMetrics(Collection<DataRegionMetrics> regionMetrics) {
         this.regionMetrics = regionMetrics;
     }
 

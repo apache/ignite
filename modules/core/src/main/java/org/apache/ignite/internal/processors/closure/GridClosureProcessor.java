@@ -1030,7 +1030,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public  <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
+    public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
         try {
             return callLocal(c, plc);
         }
@@ -1195,10 +1195,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T1(GridClosureCallMode mode, Collection<? extends Runnable> jobs) {
             super(U.peerDeployAware0(jobs));
 
-            t = F.<
-                GridClosureCallMode,
-                Collection<? extends Runnable>
-                >t(mode, jobs);
+            t = F.t(mode, jobs);
         }
 
         /** {@inheritDoc} */
@@ -1253,8 +1250,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private GridTuple3<GridClosureCallMode,
             Collection<? extends Callable<R1>>,
-            IgniteReducer<R1, R2>
-            > t;
+            IgniteReducer<R1, R2>> t;
 
         /**
          *
@@ -1265,11 +1261,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T3(GridClosureCallMode mode, Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
             super(U.peerDeployAware0(jobs));
 
-            t = F.<
-                GridClosureCallMode,
-                Collection<? extends Callable<R1>>,
-                IgniteReducer<R1, R2>
-                >t(mode, jobs, rdc);
+            t = F.t(mode, jobs, rdc);
         }
 
         /** {@inheritDoc} */

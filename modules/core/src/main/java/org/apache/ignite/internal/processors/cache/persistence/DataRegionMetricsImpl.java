@@ -188,6 +188,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         totalThrottlingTime = mreg.longAdderMetric("TotalThrottlingTime",
             "Total throttling threads time in milliseconds. The Ignite throttles threads that generate " +
                 "dirty pages during the ongoing checkpoint.");
+
+        mreg.longMetric("InitialSize", "Initial memory region size in bytes defined by its data region.")
+            .value(memPlcCfg.getInitialSize());
+
+        mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
+            .value(memPlcCfg.getMaxSize());
     }
 
     /** {@inheritDoc} */
@@ -384,7 +390,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Updates page read.
      */
-    public void onPageRead(){
+    public void onPageRead() {
         if (metricsEnabled)
             readPages.increment();
     }
@@ -392,7 +398,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Updates page written.
      */
-    public void onPageWritten(){
+    public void onPageWritten() {
         if (metricsEnabled)
             writtenPages.increment();
     }

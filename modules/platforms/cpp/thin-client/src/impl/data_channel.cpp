@@ -31,11 +31,19 @@ namespace ignite
         namespace thin
         {
             const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
+            const ProtocolVersion DataChannel::VERSION_1_3_0(1, 3, 0);
             const ProtocolVersion DataChannel::VERSION_1_4_0(1, 4, 0);
-            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_4_0);
+            const ProtocolVersion DataChannel::VERSION_1_5_0(1, 5, 0);
+            const ProtocolVersion DataChannel::VERSION_1_6_0(1, 6, 0);
+            const ProtocolVersion DataChannel::VERSION_1_7_0(1, 7, 0);
+            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_7_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
+                DataChannel::VERSION_1_7_0,
+                DataChannel::VERSION_1_6_0,
+                DataChannel::VERSION_1_5_0,
                 DataChannel::VERSION_1_4_0,
+                DataChannel::VERSION_1_3_0,
                 DataChannel::VERSION_1_2_0,
             };
 
@@ -284,6 +292,14 @@ namespace ignite
 
                 writer.WriteInt8(ClientType::THIN_CLIENT);
 
+                if (propVer >= VERSION_1_7_0)
+                {
+                    // Use features for any new changes in protocol.
+                    int8_t features[] = { 0 };
+
+                    writer.WriteInt8Array(features, 0);
+                }
+
                 writer.WriteString(config.GetUser());
                 writer.WriteString(config.GetPassword());
 
@@ -321,6 +337,18 @@ namespace ignite
                     reader.ReadInt32();
 
                     return false;
+                }
+
+                if (propVer >= VERSION_1_7_0)
+                {
+                    int32_t len = reader.ReadInt8Array(0, 0);
+                    std::vector<int8_t> features;
+
+                    if (len > 0)
+                    {
+                        features.resize(static_cast<size_t>(len));
+                        reader.ReadInt8Array(features.data(), len);
+                    }
                 }
 
                 if (propVer >= VERSION_1_4_0)

@@ -17,25 +17,10 @@
 
 package org.apache.ignite.tests;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
-import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
-import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
-import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
-import org.junit.Test;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -48,6 +33,20 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
+import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
+import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CassandraSessionImplTest {
 
@@ -64,8 +63,8 @@ public class CassandraSessionImplTest {
     public void executeFailureTest() {
         Session session1 = mock(Session.class);
         Session session2 = mock(Session.class);
-        when(session1.prepare(any(String.class))).thenReturn(preparedStatement1);
-        when(session2.prepare(any(String.class))).thenReturn(preparedStatement2);
+        when(session1.prepare(nullable(String.class))).thenReturn(preparedStatement1);
+        when(session2.prepare(nullable(String.class))).thenReturn(preparedStatement2);
 
         ResultSetFuture rsFuture = mock(ResultSetFuture.class);
         ResultSet rs = mock(ResultSet.class);
@@ -102,8 +101,8 @@ public class CassandraSessionImplTest {
         cassandraSession.execute(batchExecutionAssistant, data);
 
         verify(cluster, times(2)).connect();
-        verify(session1, times(1)).prepare(any(String.class));
-        verify(session2, times(1)).prepare(any(String.class));
+        verify(session1, times(1)).prepare(nullable(String.class));
+        verify(session2, times(1)).prepare(nullable(String.class));
         assertEquals(10, batchExecutionAssistant.processedCount());
     }
 
@@ -119,41 +118,34 @@ public class CassandraSessionImplTest {
 
         private Set<Integer> processed = new HashSet<>();
 
-        @Override
-        public void process(Row row, int seqNum) {
+        @Override public void process(Row row, int seqNum) {
             if (processed.contains(seqNum))
                 return;
 
             processed.add(seqNum);
         }
 
-        @Override
-        public boolean alreadyProcessed(int seqNum) {
+        @Override public boolean alreadyProcessed(int seqNum) {
             return processed.contains(seqNum);
         }
 
-        @Override
-        public int processedCount() {
+        @Override public int processedCount() {
             return processed.size();
         }
 
-        @Override
-        public boolean tableExistenceRequired() {
+        @Override public boolean tableExistenceRequired() {
             return false;
         }
 
-        @Override
-        public String getTable() {
+        @Override public String getTable() {
             return null;
         }
 
-        @Override
-        public String getStatement() {
+        @Override public String getStatement() {
             return null;
         }
 
-        @Override
-        public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
+        @Override public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
             if (statement instanceof WrappedPreparedStatement)
                 statement = ((WrappedPreparedStatement)statement).getWrappedStatement();
 
@@ -167,18 +159,15 @@ public class CassandraSessionImplTest {
             throw new RuntimeException("unexpected");
         }
 
-        @Override
-        public KeyValuePersistenceSettings getPersistenceSettings() {
+        @Override public KeyValuePersistenceSettings getPersistenceSettings() {
             return null;
         }
 
-        @Override
-        public String operationName() {
+        @Override public String operationName() {
             return null;
         }
 
-        @Override
-        public Object processedData() {
+        @Override public Object processedData() {
             return null;
         }
 

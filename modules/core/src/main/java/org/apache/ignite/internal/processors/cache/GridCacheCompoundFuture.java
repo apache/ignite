@@ -53,7 +53,7 @@ public abstract class GridCacheCompoundFuture<T, R> extends GridCompoundFuture<T
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
-        if(super.onDone(res, err, cancel)){
+        if (super.onDone(res, err, cancel)) {
             endTime = U.currentTimeMillis();
             return true;
         }

@@ -176,15 +176,15 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // Don't serialize node ID.
-        U.writeGridUuid(out, sesId);
-        U.writeGridUuid(out, jobId);
+        U.writeIgniteUuid(out, sesId);
+        U.writeIgniteUuid(out, jobId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // Don't serialize node ID.
-        sesId = U.readGridUuid(in);
-        jobId = U.readGridUuid(in);
+        sesId = U.readIgniteUuid(in);
+        jobId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

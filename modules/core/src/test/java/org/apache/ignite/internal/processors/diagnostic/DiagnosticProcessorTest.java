@@ -259,7 +259,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
             while (it.hasNext()) {
                 WALRecord record = it.next().get2();
 
-                if (record instanceof PageSnapshot){
+                if (record instanceof PageSnapshot) {
                     PageSnapshot rec = (PageSnapshot)record;
 
                     return new T2<>(rec.groupId(), rec.fullPageId().pageId());

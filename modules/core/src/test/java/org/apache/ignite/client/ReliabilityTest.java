@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import java.lang.management.ManagementFactory;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,17 +38,22 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVTS_CACHE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * High Availability tests.
  */
-public class ReliabilityTest extends GridCommonAbstractTest {
+public class ReliabilityTest extends AbstractThinClientTest {
     /**
      * Thin clint failover.
      */
@@ -308,16 +310,46 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test server-side critical error.
+     */
+    @Test
+    public void testServerCriticalError() throws Exception {
+        AtomicBoolean failure = new AtomicBoolean();
+
+        FailureHandler hnd = (ignite, ctx) -> failure.compareAndSet(false, true);
+
+        try (Ignite ignite = startGrid(getConfiguration().setFailureHandler(hnd)
+            .setIncludeEventTypes(EVTS_CACHE)); IgniteClient client = startClient(ignite)
+        ) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+            cache.put(0, 0);
+
+            String msg = "critical error message";
+
+            ignite.events().localListen(e -> { throw new Error(msg); }, EVT_CACHE_OBJECT_READ);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.get(0), ClientServerError.class, msg);
+
+            assertFalse(failure.get());
+
+            // OutOfMemoryError should also invoke failure handler.
+            ignite.events().localListen(e -> { throw new OutOfMemoryError(msg); }, EVT_CACHE_OBJECT_REMOVED);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
+
+            assertTrue(GridTestUtils.waitForCondition(failure::get, 1_000L));
+        }
+    }
+
+    /**
      * Drop all thin client connections on given Ignite instance.
      *
      * @param ignite Ignite.
      */
     private void dropAllThinClientConnections(Ignite ignite) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Clients",
-            ClientListenerProcessor.class.getSimpleName());
-
-        ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
-            ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class, true);
+        ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
+            ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
         mxBean.dropAllConnections();
     }

@@ -107,6 +107,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         ignite2 = startGrid(2);
 
         startGrid(3);
+
+        // Make sure topology is stable to avoid topology deadlocks on lock aquisiotion.
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -178,7 +181,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         assert !cache.isLocalLocked(key, true);
 
         if (partitioned()) {
-            for(int i = 0; i < 200; i++)
+            for (int i = 0; i < 200; i++)
                 if (cache.isLocalLocked(key, false)) {
                     try {
                         Thread.sleep(10);

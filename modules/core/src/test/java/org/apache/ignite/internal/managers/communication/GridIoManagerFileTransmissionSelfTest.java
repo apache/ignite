@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -190,6 +189,11 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         assertTrue(snd.context().io().fileTransmissionSupported(rcv.localNode()));
 
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
+            @Override public void onEnd(UUID rmtNodeId) {
+                ensureResourcesFree(snd);
+                ensureResourcesFree(rcv);
+            }
+
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
                 return new File(tempStore, fileMeta.name()).getAbsolutePath();
             }
@@ -422,7 +426,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore){
+        rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
             /** {@inheritDoc} */
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
                 return new File(downloadTo, fileMeta.name()).getAbsolutePath();
@@ -698,6 +702,13 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
             /** {@inheritDoc} */
+            @Override public void onEnd(UUID rmtNodeId) {
+                U.closeQuiet(fileIo[0]);
+
+                fileIo[0] = null;
+            }
+
+            /** {@inheritDoc} */
             @Override public void onException(UUID nodeId, Throwable err) {
                 U.closeQuiet(fileIo[0]);
 
@@ -718,8 +729,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 }
 
                 return new Consumer<ByteBuffer>() {
-                    final LongAdder transferred = new LongAdder();
-
                     @Override public void accept(ByteBuffer buff) {
                         try {
                             assertTrue(buff.order() == ByteOrder.nativeOrder());
@@ -729,21 +738,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                             fileIo[0].writeFully(buff);
 
                             acceptedChunks.getAndIncrement();
-                            transferred.add(buff.capacity());
                         }
                         catch (Throwable e) {
                             throw new IgniteException(e);
-                        }
-                        finally {
-                            closeIfTransferred();
-                        }
-                    }
-
-                    private void closeIfTransferred() {
-                        if (transferred.longValue() == initMeta.count()) {
-                            U.closeQuiet(fileIo[0]);
-
-                            fileIo[0] = null;
                         }
                     }
                 };
@@ -1056,6 +1053,11 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      * The defailt implementation of transmit session.
      */
     private static class TransmissionHandlerAdapter implements TransmissionHandler {
+        /** {@inheritDoc} */
+        @Override public void onEnd(UUID rmtNodeId) {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
             return null;

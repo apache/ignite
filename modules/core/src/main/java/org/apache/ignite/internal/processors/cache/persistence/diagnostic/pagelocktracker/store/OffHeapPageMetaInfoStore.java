@@ -170,7 +170,7 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
     private long offset(long itemIdx) {
         long offset = ptr + itemIdx * 8 * ITEM_SIZE;
 
-        assert offset >= ptr && offset <= ((ptr + size) - 8 * ITEM_SIZE) :"offset=" + (offset - ptr) + ", size=" + size;
+        assert offset >= ptr && offset <= ((ptr + size) - 8 * ITEM_SIZE) : "offset=" + (offset - ptr) + ", size=" + size;
 
         return offset;
     }

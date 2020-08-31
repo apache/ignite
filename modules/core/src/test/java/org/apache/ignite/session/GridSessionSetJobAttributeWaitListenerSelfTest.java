@@ -153,7 +153,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                         startSignal.countDown();
 
                         try {
-                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false)
+                            if (!startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS))
                                 fail();
 
                             GridTaskSessionAttributeTestListener lsnr =

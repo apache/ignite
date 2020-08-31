@@ -27,14 +27,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAwareEx
+    public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAware
     {
         /** */
         private Type _keyType;
@@ -233,8 +232,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal QueryEntity(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        internal QueryEntity(IBinaryRawReader reader)
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
@@ -245,7 +243,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             var count = reader.ReadInt();
             Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x => new QueryField(reader, srvVer)).ToList();
+                : Enumerable.Range(0, count).Select(x => new QueryField(reader)).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -258,7 +256,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this instance.
         /// </summary>
-        void IBinaryRawWriteAwareEx<IBinaryRawWriter>.Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
+        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer)
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
@@ -272,7 +270,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 foreach (var field in Fields)
                 {
-                    field.Write(writer, srvVer);
+                    field.Write(writer);
                 }
             }
             else

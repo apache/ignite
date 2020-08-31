@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -33,12 +32,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -50,9 +52,19 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  *
  */
 public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
+    /** */
+    private volatile boolean client;
+
+    /** */
+    private WALMode walMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        cfg.setClientMode(client);
 
         cfg.setConsistentId("NODE$" + gridName.charAt(gridName.length() - 1));
 
@@ -63,7 +75,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
+            .setWalMode(walMode)
             .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -91,8 +103,17 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        walMode = WALMode.LOG_ONLY;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
+        client = false;
 
         stopAllGrids();
 
@@ -171,47 +192,58 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Lock lock = ig0.cache("cache1").lock(0);
+        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-        lock.lock();
+        spi.blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage sm = (GridDhtPartitionsSingleMessage)msg;
 
-        try {
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        startGrid(initGridCnt);
-                    }
-                    catch (Exception e) {
-                        fail(e.getMessage());
-                    }
+                return sm.exchangeId() != null;
+            }
+
+            return false;
+        });
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(initGridCnt));
+
+                    cfg.setCommunicationSpi(spi);
+
+                    startGrid(optimize(cfg));
                 }
-            });
-
-            boolean reserved = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    for (int g = 0; g < initGridCnt; g++) {
-                        IgniteEx ig = grid(g);
-
-                        if (isReserveListEmpty(ig))
-                            return false;
-                    }
-
-                    return true;
+                catch (Exception e) {
+                    fail(e.getMessage());
                 }
-            }, 10_000);
+            }
+        });
 
-            assert reserved;
-        }
-        finally {
-            lock.unlock();
-        }
+        spi.waitForBlocked();
+
+        boolean reserved = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int g = 0; g < initGridCnt; g++) {
+                    IgniteEx ig = grid(g);
+
+                    if (isReserveListEmpty(ig))
+                        return false;
+                }
+
+                return true;
+            }
+        }, 10_000);
+
+        assert reserved;
+
+        spi.stopBlock();
 
         boolean released = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int g = 0; g < initGridCnt; g++) {
                     IgniteEx ig = grid(g);
 
-                    if (isReserveListEmpty(ig))
+                    if (!isReserveListEmpty(ig))
                         return false;
                 }
 
@@ -427,46 +459,38 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Lock lock = cache.lock(0);
+        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-        lock.lock();
+        spi.blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage sm = (GridDhtPartitionsSingleMessage)msg;
 
-        try {
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        startGrid(initGridCnt);
-                    }
-                    catch (Exception e) {
-                        fail(e.getMessage());
-                    }
+                return sm.exchangeId() != null;
+            }
+
+            return false;
+        });
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(initGridCnt));
+
+                    cfg.setCommunicationSpi(spi);
+
+                    startGrid(optimize(cfg));
                 }
-            });
-
-            boolean reserved = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    for (int g = 0; g < initGridCnt; g++) {
-                        IgniteEx ig = grid(g);
-
-                        if (isReserveListEmpty(ig))
-                            return false;
-                    }
-
-                    return true;
+                catch (Exception e) {
+                    fail(e.getMessage());
                 }
-            }, 10_000);
+            }
+        });
 
-            assert reserved;
+        spi.waitForBlocked();
 
-            stopGrid(Integer.toString(initGridCnt - 1), true, false);
-        }
-        finally {
-            lock.unlock();
-        }
-
-        boolean released = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean reserved = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (int g = 0; g < initGridCnt - 1; g++) {
+                for (int g = 0; g < initGridCnt; g++) {
                     IgniteEx ig = grid(g);
 
                     if (isReserveListEmpty(ig))
@@ -477,8 +501,52 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             }
         }, 10_000);
 
+        assert reserved;
+
+        spi.stopBlock();
+
+        stopGrid(getTestIgniteInstanceName(initGridCnt - 1), true, false);
+
+        boolean released = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int g = 0; g < initGridCnt - 1; g++) {
+                    IgniteEx ig = grid(g);
+
+                    if (!isReserveListEmpty(ig))
+                        return false;
+                }
+
+                return true;
+            }
+        }, 10_000);
+
         assert released;
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+    public void testCheckpointsNotReserveWithWalModeNone() throws Exception {
+        walMode = WALMode.NONE;
+
+        IgniteEx grid = startGrids(2);
+
+        grid.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = grid.createCache(new CacheConfiguration<>("cache").setBackups(1));
+
+        for (int i = 0; i < 1000; i++)
+            cache.put(i, i);
+
+        stopGrid(1);
+
+        for (int i = 1000; i < 2000; i++)
+            cache.put(i, i);
+
+        startGrid(1);
     }
 }

@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdenti
 /**
  * ALTER TABLE command.
  */
-public class SqlAlterTableCommand implements SqlCommand  {
+public class SqlAlterTableCommand implements SqlCommand {
     /** Schema name. */
     private String schemaName;
 

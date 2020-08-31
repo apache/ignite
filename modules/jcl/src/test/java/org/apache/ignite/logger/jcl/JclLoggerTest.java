@@ -36,7 +36,7 @@ public class JclLoggerTest {
     public void testLogInitialize() {
         log = new JclLogger(LogFactory.getLog(JclLoggerTest.class.getName()));
 
-        assert log.isInfoEnabled() == true;
+        assert log.isInfoEnabled();
 
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");

@@ -58,7 +58,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
                 stopGrid(2);
             }
         }
-        finally{
+        finally {
             stopGrid(1);
         }
     }

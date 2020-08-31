@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -54,14 +54,15 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -83,6 +84,8 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
  * Logic related to cache discovery data processing.
@@ -157,6 +160,9 @@ public class ClusterCachesInfo {
     /** {@code True} if joined cluster while cluster state change was in progress. */
     private boolean joinOnTransition;
 
+    /** Flag that caches were already filtered out. */
+    private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
     /**
      * @param ctx Context.
      */
@@ -186,6 +192,9 @@ public class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
+        if (!alreadyFiltered.compareAndSet(false, true))
+            return;
+
         filterRegisteredCachesAndCacheGroups(localCachesOnStart);
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
@@ -200,7 +209,8 @@ public class ClusterCachesInfo {
             locJoinStartCaches,
             initCaches,
             registeredCacheGrps,
-            registeredCaches);
+            registeredCaches
+        );
     }
 
     /**
@@ -630,8 +640,8 @@ public class ClusterCachesInfo {
         }
 
         if (!F.isEmpty(reqsToComplete)) {
-            ctx.closure().callLocalSafe(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+            ctx.closure().callLocalSafe(new GridPlainCallable<Void>() {
+                @Override public Void call() {
                     for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t : reqsToComplete) {
                         final DynamicCacheChangeRequest req = t.get1();
                         AffinityTopologyVersion waitTopVer = t.get2();
@@ -698,7 +708,7 @@ public class ClusterCachesInfo {
 
             if (restartingCaches.containsKey(cacheName) &&
                 ((req.restartId() == null && restartingCaches.get(cacheName) != NULL_OBJECT)
-                    || (req.restartId() != null &&!req.restartId().equals(restartingCaches.get(cacheName))))) {
+                    || (req.restartId() != null && !req.restartId().equals(restartingCaches.get(cacheName))))) {
 
                 if (req.failIfExists()) {
                     ctx.cache().completeCacheStartFuture(req, false,
@@ -754,7 +764,8 @@ public class ClusterCachesInfo {
                     return;
                 }
 
-                processStopCacheRequest(exchangeActions, req, cacheName, desc);
+                if (!processStopCacheRequest(exchangeActions, req, res, cacheName, desc))
+                    return;
 
                 needExchange = true;
             }
@@ -775,13 +786,27 @@ public class ClusterCachesInfo {
      * @param exchangeActions Exchange actions to update.
      * @param cacheName Cache name.
      * @param desc Dynamic cache descriptor.
+     * @return {@code true} if stop request can be proceed.
      */
-    private void processStopCacheRequest(
+    private boolean processStopCacheRequest(
         ExchangeActions exchangeActions,
         DynamicCacheChangeRequest req,
+        CacheChangeProcessResult res,
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()) {
+            IgniteCheckedException err = new IgniteCheckedException(SNP_IN_PROGRESS_ERR_MSG);
+
+            U.warn(log, err);
+
+            res.errs.add(err);
+
+            ctx.cache().completeCacheStartFuture(req, false, err);
+
+            return false;
+        }
+
         DynamicCacheDescriptor old = registeredCaches.get(cacheName);
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -826,6 +851,8 @@ public class ClusterCachesInfo {
                 }
             }
         }
+
+        return true;
     }
 
     /**
@@ -934,24 +961,45 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
-        String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
-        if (conflictErr != null) {
-            U.warn(log, "Ignore cache start request. " + conflictErr);
+        IgniteCheckedException err = null;
 
-            IgniteCheckedException err = new IgniteCheckedException("Failed to start " +
-                "cache. " + conflictErr);
-
-            if (persistedCfgs)
-                res.errs.add(err);
-            else
-                ctx.cache().completeCacheStartFuture(req, false, err);
-
-            return false;
+        if (ctx.cache().context().readOnlyMode()) {
+            err = new IgniteClusterReadOnlyException(
+                String.format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, "start cache", ccfg.getGroupName(), cacheName)
+            );
         }
 
-        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
-            req.startCacheConfiguration(), registeredCaches.values());
+        if (err == null) {
+            String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+
+            if (conflictErr != null) {
+                U.warn(log, "Ignore cache start request. " + conflictErr);
+
+                err = new IgniteCheckedException("Failed to start cache. " + conflictErr);
+            }
+        }
+
+        if (err == null)
+            err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(), registeredCaches.values());
+
+        if (err == null) {
+            GridEncryptionManager encMgr = ctx.encryption();
+
+            if (ccfg.isEncryptionEnabled()) {
+                if (encMgr.isMasterKeyChangeInProgress())
+                    err = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
+                else if (encMgr.masterKeyDigest() != null &&
+                    !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
+                    err = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                        "the master key change and can't be processed.");
+                }
+
+                if (err != null)
+                    U.warn(log, "Ignore cache start request during the master key change process.", err);
+            }
+        }
 
         if (err != null) {
             if (persistedCfgs)
@@ -960,33 +1008,6 @@ public class ClusterCachesInfo {
                 ctx.cache().completeCacheStartFuture(req, false, err);
 
             return false;
-        }
-
-        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
-
-        GridEncryptionManager encMgr = ctx.encryption();
-
-        if (ccfg.isEncryptionEnabled()) {
-            IgniteCheckedException error = null;
-
-            if (encMgr.isMasterKeyChangeInProgress())
-                error = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
-            else if (encMgr.masterKeyDigest() != null &&
-                !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
-                error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
-                    "the master key change and can't be processed.");
-            }
-
-            if (error != null) {
-                U.warn(log, "Ignore cache start request during the master key change process.", error);
-
-                if (persistedCfgs)
-                    res.errs.add(error);
-                else
-                    ctx.cache().completeCacheStartFuture(req, false, error);
-
-                return false;
-            }
         }
 
         assert req.cacheType() != null : req;
@@ -1233,7 +1254,8 @@ public class ClusterCachesInfo {
                 grpDesc.persistenceEnabled(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests(),
-                splitCfg.get2());
+                splitCfg.get2() != null ? grpDesc.cacheConfigurationEnrichment() : null
+            );
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -1254,7 +1276,7 @@ public class ClusterCachesInfo {
                 desc.sql(),
                 false,
                 0,
-                splitCfg.get2()
+                splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             caches.put(desc.cacheName(), cacheData);
@@ -1277,7 +1299,7 @@ public class ClusterCachesInfo {
                 false,
                 true,
                 0,
-                splitCfg.get2()
+                splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             templates.put(desc.cacheName(), cacheData);
@@ -1884,7 +1906,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        return  null;
+        return null;
     }
 
     /**
@@ -1995,7 +2017,7 @@ public class ClusterCachesInfo {
             else if (!active && isMergeConfigSupport) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
-                QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData());
 
                 if (schemaPatch.hasConflicts()) {
                     hasSchemaPatchConflict = true;
@@ -2172,6 +2194,7 @@ public class ClusterCachesInfo {
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
      * @param encKey Encryption key.
+     * @param cacheCfgEnrichment Cache configuration enrichment.
      * @return Group descriptor.
      */
     private CacheGroupDescriptor registerCacheGroup(
@@ -2575,8 +2598,7 @@ public class ClusterCachesInfo {
          * REVERSE comparator for cache descriptors (first user caches).
          */
         static Comparator<DynamicCacheDescriptor> REVERSE = new Comparator<DynamicCacheDescriptor>() {
-            @Override
-            public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
+            @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
                 return -DIRECT.compare(o1, o2);
             }
         };

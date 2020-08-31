@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
-import org.apache.ignite.testframework.wal.record.UnsupportedWalRecord;
 import org.junit.Test;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
@@ -108,7 +107,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
             for (WALRecord.RecordType recordType : recordTypes) {
                 WALRecord record = RecordUtils.buildWalRecord(recordType);
 
-                if (!(record instanceof UnsupportedWalRecord) && !(record instanceof SwitchSegmentRecord)) {
+                if (RecordUtils.isIncludeIntoLog(record)) {
                     serializedRecords.add(new ReflectionEquals(record, "prev", "pos",
                         "updateCounter" //updateCounter for PartitionMetaStateRecord isn't serialized.
                     ));
@@ -165,11 +164,8 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
             for (WALRecord.RecordType recordType : recordTypes) {
                 WALRecord record = RecordUtils.buildWalRecord(recordType);
 
-                if (!(record instanceof UnsupportedWalRecord)
-                    && !(record instanceof SwitchSegmentRecord)
-                    && (recordType.purpose() == WALRecord.RecordPurpose.LOGICAL ||
+                if (RecordUtils.isIncludeIntoLog(record) && (recordType.purpose() == WALRecord.RecordPurpose.LOGICAL ||
                     recordType == WALRecord.RecordType.CHECKPOINT_RECORD)) {
-
                     serializedRecords.add(new ReflectionEquals(record, "prev", "pos",
                         "updateCounter" //updateCounter for PartitionMetaStateRecord isn't serialized.
                     ));

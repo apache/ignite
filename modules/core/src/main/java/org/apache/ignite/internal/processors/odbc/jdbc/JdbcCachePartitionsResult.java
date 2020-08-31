@@ -24,7 +24,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -61,28 +60,33 @@ public class JdbcCachePartitionsResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         assert mappings != null;
 
         writer.writeInt(mappings.size());
 
         for (JdbcThinPartitionAwarenessMappingGroup mappingGroup : mappings)
-            mappingGroup.writeBinary(writer, ver);
+            mappingGroup.writeBinary(writer, protoCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
+
         List<JdbcThinPartitionAwarenessMappingGroup> res = new ArrayList<>();
 
         int mappingsSize = reader.readInt();
 
         for (int i = 0; i < mappingsSize; i++)
-            res.add(JdbcThinPartitionAwarenessMappingGroup.readGroup(reader, ver));
+            res.add(JdbcThinPartitionAwarenessMappingGroup.readGroup(reader, protoCtx));
 
         mappings = res;
     }

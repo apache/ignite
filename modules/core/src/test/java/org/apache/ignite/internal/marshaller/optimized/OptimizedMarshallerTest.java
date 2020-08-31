@@ -213,15 +213,15 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         SomeSimpleSerializable newObj = new SomeSimpleSerializable();
 
-        assert(newObj.flag);
+        assert (newObj.flag);
 
         newObj.setFlagValue(false);
 
-        assert(! newObj.flag);
+        assert (!newObj.flag);
 
         SomeSimpleSerializable outObj = marsh.unmarshal(marsh.marshal(newObj), null);
 
-        assert (! outObj.flag);
+        assert !outObj.flag;
     }
 
     /**
@@ -303,8 +303,8 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(2);
 
-            String taskClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
-            String jobClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask$SingleSplitTestJob";
+            String taskClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask";
+            String jobClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask$SingleSplitTestJob";
 
             ClassLoader ldr = getExternalClassLoader();
 

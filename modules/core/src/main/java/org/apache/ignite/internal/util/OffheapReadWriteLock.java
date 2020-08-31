@@ -626,7 +626,7 @@ public class OffheapReadWriteLock {
     private long buildState(int writersWait, int readersWait, int tag, int lock) {
         assert (tag & 0xFFFF0000) == 0;
 
-        return ((long)writersWait << 48) | ((long)readersWait << 32) | ((tag & 0x0000FFFFL)  << 16) | (lock & 0xFFFFL);
+        return ((long)writersWait << 48) | ((long)readersWait << 32) | ((tag & 0x0000FFFFL) << 16) | (lock & 0xFFFFL);
     }
 
     /**

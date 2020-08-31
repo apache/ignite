@@ -86,14 +86,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
         out.writeBoolean(collocated);
         out.writeBoolean(separated);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
         collocated = in.readBoolean();
 
         try {

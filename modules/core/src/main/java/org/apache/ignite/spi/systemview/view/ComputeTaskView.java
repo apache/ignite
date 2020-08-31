@@ -18,8 +18,10 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.task.GridTaskWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Compute task representation for a {@link SystemView}.
@@ -28,11 +30,40 @@ public class ComputeTaskView {
     /** Worker for task. */
     private final GridTaskWorker worker;
 
+    /** Task id. */
+    private final IgniteUuid id;
+
     /**
+     * @param id Task id.
      * @param worker Worker for task.
      */
-    public ComputeTaskView(GridTaskWorker worker) {
+    public ComputeTaskView(IgniteUuid id, GridTaskWorker worker) {
+        this.id = id;
         this.worker = worker;
+    }
+
+    /** @return Task id. */
+    @Order
+    public IgniteUuid id() {
+        return id;
+    }
+
+    /**
+     * {@link ComputeTaskView#sessionId()} value equal to the value of {@link ComputeJobView#sessionId()}
+     * if both records represents parts of the same computation.
+     *
+     * @return Session id.
+     * @see ComputeJobView#sessionId()
+     */
+    @Order(1)
+    public IgniteUuid sessionId() {
+        return worker.getSession().getId();
+    }
+
+    /** @return Task node id. */
+    @Order(2)
+    public UUID taskNodeId() {
+        return worker.getSession().getTaskNodeId();
     }
 
     /** @return {@code True} if task is internal. */
@@ -41,28 +72,27 @@ public class ComputeTaskView {
     }
 
     /** @return Task name. */
+    @Order(3)
     public String taskName() {
         return worker.getSession().getTaskName();
     }
 
     /** @return Task class name. */
+    @Order(4)
     public String taskClassName() {
         return worker.getSession().getTaskClassName();
     }
 
-    /** @return Start time. */
+    /** @return Start time in milliseconds. */
+    @Order(7)
     public long startTime() {
         return worker.getSession().getStartTime();
     }
 
-    /** @return End time. */
+    /** @return End time in milliseconds. */
+    @Order(8)
     public long endTime() {
         return worker.getSession().getEndTime();
-    }
-
-    /** @return Task node id. */
-    public UUID taskNodeId() {
-        return worker.getSession().getTaskNodeId();
     }
 
     /** @return Executor name. */
@@ -70,17 +100,23 @@ public class ComputeTaskView {
         return worker.getSession().executorName();
     }
 
-    /** @return Affinity cache name. */
-    public String affinityCacheName() {
+    /** @return Affinity cache name or {@code null} for non affinity call. */
+    @Order(6)
+    @Nullable public String affinityCacheName() {
         return worker.affCacheName();
     }
 
-    /** @return Affinity partition id. */
+    /** @return Affinity partition id or {@code -1} for non affinity call. */
+    @Order(5)
     public int affinityPartitionId() {
         return worker.affPartId();
     }
 
-    /** @return Job id. */
+    /**
+     * @return Job id.
+     * @deprecated Use {@link #id()} or {@link #sessionId()} instead.
+     */
+    @Deprecated
     public IgniteUuid jobId() {
         return worker.getSession().getJobId();
     }

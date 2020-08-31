@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 
 /**
  *
  */
 public class MetastorageRowStore {
     /** */
-    private final PartitionMetaStorage<MetastorageDataRow> partStorage;
+    private final PartitionMetaStorage<MetastorageRowStoreEntry> partStorage;
 
     /** */
     protected final IgniteCacheDatabaseSharedManager db;
 
     /** */
-    public MetastorageRowStore(PartitionMetaStorage<MetastorageDataRow> partStorage, IgniteCacheDatabaseSharedManager db) {
+    public MetastorageRowStore(PartitionMetaStorage<MetastorageRowStoreEntry> partStorage, IgniteCacheDatabaseSharedManager db) {
         this.partStorage = partStorage;
         this.db = db;
     }
@@ -42,8 +42,10 @@ public class MetastorageRowStore {
      * @param link Row link.
      * @return Data row.
      */
-    public MetastorageDataRow dataRow(String key, long link) throws IgniteCheckedException {
-        return new MetastorageDataRow(link, key, partStorage.readRow(link));
+    public byte[] readRow(long link) throws IgniteCheckedException {
+        assert link != 0;
+
+        return partStorage.readRow(link);
     }
 
     /**
@@ -63,14 +65,18 @@ public class MetastorageRowStore {
     }
 
     /**
-     * @param row Row.
+     * @param val Value to store.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRow(MetastorageDataRow row) throws IgniteCheckedException {
+    public long addRow(byte[] val) throws IgniteCheckedException {
         db.checkpointReadLock();
 
         try {
+            MetastorageRowStoreEntry row = new MetastorageRowStoreEntry(val);
+
             partStorage.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+            return row.link();
         }
         finally {
             db.checkpointReadUnlock();

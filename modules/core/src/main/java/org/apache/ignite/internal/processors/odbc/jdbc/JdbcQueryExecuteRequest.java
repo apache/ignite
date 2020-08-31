@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.io.IOException;
+import java.sql.Statement;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * JDBC query execute request.
@@ -61,8 +57,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Flag, that signals, that query expects partition response in response. */
     private boolean partResReq;
 
-    /**
-     */
+    /** Explicit timeout. */
+    private boolean explicitTimeout;
+
+    /** */
     JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
 
@@ -79,7 +77,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, Object[] args) {
+        boolean autoCommit, boolean explicitTimeout, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -89,6 +87,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.args = args;
         this.stmtType = stmtType;
         this.autoCommit = autoCommit;
+        this.explicitTimeout = explicitTimeout;
     }
 
     /**
@@ -141,9 +140,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeString(schemaName);
         writer.writeInt(pageSize);
@@ -154,22 +155,27 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (args != null) {
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, false);
+                JdbcUtils.writeObject(writer, arg, protoCtx);
         }
 
-        if (ver.compareTo(VER_2_7_0) >= 0)
+        if (protoCtx.isAutoCommitSupported())
             writer.writeBoolean(autoCommit);
 
         writer.writeByte((byte)stmtType.ordinal());
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             writer.writeBoolean(partResReq);
+
+        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+            writer.writeBoolean(explicitTimeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         schemaName = reader.readString();
         pageSize = reader.readInt();
@@ -181,9 +187,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         args = new Object[argsNum];
 
         for (int i = 0; i < argsNum; ++i)
-            args[i] = SqlListenerUtils.readObject(reader, false);
+            args[i] = JdbcUtils.readObject(reader, protoCtx);
 
-        if (ver.compareTo(VER_2_7_0) >= 0)
+        if (protoCtx.isAutoCommitSupported())
             autoCommit = reader.readBoolean();
 
         try {
@@ -196,8 +202,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             throw new BinaryObjectException(e);
         }
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             partResReq = reader.readBoolean();
+
+        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+            explicitTimeout = reader.readBoolean();
     }
 
     /**
@@ -212,6 +221,14 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      */
     public void partitionResponseRequest(boolean partResReq) {
         this.partResReq = partResReq;
+    }
+
+    /**
+     * @return {@code true} if the query timeout is set explicitly by {@link Statement#setQueryTimeout(int)}.
+     * Otherwise returns {@code false}.
+     */
+    public boolean explicitTimeout() {
+        return explicitTimeout;
     }
 
     /** {@inheritDoc} */

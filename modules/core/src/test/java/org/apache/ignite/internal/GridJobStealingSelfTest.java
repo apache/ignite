@@ -146,7 +146,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTwoJobsPartiallyNullPredicate() throws IgniteCheckedException {
-        IgnitePredicate<ClusterNode> topPred =  new IgnitePredicate<ClusterNode>() {
+        IgnitePredicate<ClusterNode> topPred = new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode e) {
                     return ignite2.cluster().localNode().id().equals(e.id()); // Limit projection with only grid2.
                 }

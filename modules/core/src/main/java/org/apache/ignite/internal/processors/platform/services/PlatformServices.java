@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -42,14 +50,6 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Interop services.
@@ -514,9 +514,49 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Finds a suitable method in a class.
+     *
+     * @param clazz Class.
+     * @param mthdName Name.
+     * @param args Args.
+     * @return Method.
+     * @throws NoSuchMethodException On error.
+     */
+    public static Method getMethod(Class<?> clazz, String mthdName, Object[] args) throws NoSuchMethodException {
+        return ServiceProxyHolder.getMethod(clazz, mthdName, args);
+    }
+
+    /**
+     * Convert Object[] to T[] when required:
+     * Ignite loses array item types when passing arguments through GridServiceProxy.
+     *
+     * @param args Service method args.
+     * @param mtd Target method.
+     */
+    public static void convertArrayArgs(Object[] args, Method mtd) {
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+
+            if (arg instanceof Object[]) {
+                Class<?> parameterType = mtd.getParameterTypes()[i];
+
+                if (parameterType.isArray() && parameterType != Object[].class) {
+                    Object[] arr = (Object[])arg;
+                    Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
+
+                    for (int j = 0; j < arr.length; j++)
+                        Array.set(newArg, j, arr[j]);
+
+                    args[i] = newArg;
+                }
+            }
+        }
+    }
+
+    /**
      * Proxy holder.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
@@ -530,7 +570,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         /*
           Class initializer.
          */
-        static  {
+        static {
             PRIMITIVES_TO_WRAPPERS.put(boolean.class, Boolean.class);
             PRIMITIVES_TO_WRAPPERS.put(byte.class, Byte.class);
             PRIMITIVES_TO_WRAPPERS.put(char.class, Character.class);
@@ -580,6 +620,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
+                convertArrayArgs(args, mtd);
 
                 try {
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
@@ -653,7 +694,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @return Whether specified args are compatible with argTypes.
          */
         private static boolean areMethodArgsCompatible(Class[] argTypes, Object[] args) {
-            for (int i = 0; i < args.length; i++){
+            for (int i = 0; i < args.length; i++) {
                 // arg is always of a primitive wrapper class, and argTypes can have actual primitive
                 Object arg = args[i];
                 Class argType = wrap(argTypes[i]);
@@ -700,7 +741,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param val Value.
          */
         public void put(K key, V val) {
-            synchronized (this){
+            synchronized (this) {
                 if (map.containsKey(key))
                     return;
 

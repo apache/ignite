@@ -115,7 +115,8 @@ public class PageHistoryDiagnoster {
         @NotNull PageHistoryDiagnoster.DiagnosticPageBuilder builder
     ) throws IgniteCheckedException {
         if (walFolders == null) {
-            log.info("Skipping dump page history due to WAL not configured");
+            if (log.isInfoEnabled())
+                log.info("Skipping dump page history due to WAL not configured");
 
             return;
         }
@@ -151,7 +152,8 @@ public class PageHistoryDiagnoster {
         }
 
         if (descIdx == -1) {
-            log.info("Skipping dump page history due to can not reserve WAL segments: " + descToString(descs));
+            if (log.isInfoEnabled())
+                log.info("Skipping dump page history due to can not reserve WAL segments: " + descToString(descs));
 
             return;
         }

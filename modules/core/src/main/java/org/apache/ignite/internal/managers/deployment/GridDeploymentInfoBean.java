@@ -257,7 +257,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, clsLdrId);
+        U.writeIgniteUuid(out, clsLdrId);
         U.writeEnum(out, depMode);
         U.writeString(out, userVer);
         out.writeBoolean(locDepOwner);
@@ -266,7 +266,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clsLdrId = U.readGridUuid(in);
+        clsLdrId = U.readIgniteUuid(in);
         depMode = DeploymentMode.fromOrdinal(in.readByte());
         userVer = U.readString(in);
         locDepOwner = in.readBoolean();

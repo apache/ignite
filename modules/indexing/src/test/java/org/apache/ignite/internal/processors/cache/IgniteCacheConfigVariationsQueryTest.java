@@ -416,7 +416,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     private void registerEventListeners(Map<Object, Object> expMap, final boolean filterExp) {
         this.expMap = expMap != null ? expMap : Collections.emptyMap();
 
-        Set<ClusterNode> affNodes= new HashSet<>();
+        Set<ClusterNode> affNodes = new HashSet<>();
 
         if (cacheMode() != REPLICATED) {
             Affinity<Object> aff = testedGrid().affinity(cacheName());

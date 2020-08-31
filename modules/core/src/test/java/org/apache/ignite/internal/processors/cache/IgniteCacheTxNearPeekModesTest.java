@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Tests peek modes with near tx cache.

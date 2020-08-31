@@ -678,7 +678,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                 TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = mvcc ? REPEATABLE_READ :TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionIsolation isolation = mvcc ? REPEATABLE_READ : TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;

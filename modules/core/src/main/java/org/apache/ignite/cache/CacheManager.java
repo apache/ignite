@@ -199,10 +199,10 @@ public class CacheManager implements javax.cache.CacheManager {
             Cache<K, V> cache = getCache0(cacheName);
 
             if (cache != null) {
-                if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
+                if (!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
                     throw new ClassCastException();
 
-                if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
+                if (!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
                     throw new ClassCastException();
             }
 
@@ -303,7 +303,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         kernalGateway.readLock();
@@ -328,7 +328,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         kernalGateway.readLock();
@@ -382,7 +382,7 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param beanType Mxbean name.
      */
     private void unregisterCacheObject(String name, String beanType) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
@@ -428,10 +428,10 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
-        if(clazz.isAssignableFrom(getClass()))
+        if (clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
-        if(clazz.isAssignableFrom(ignite.getClass()))
+        if (clazz.isAssignableFrom(ignite.getClass()))
             return clazz.cast(ignite);
 
         throw new IllegalArgumentException();

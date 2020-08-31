@@ -79,7 +79,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
                 String k = string();
                 String v = string();
 
-                kvMap.put(k,  new T3<>(v, k.getBytes(), v.getBytes()));
+                kvMap.put(k, new T3<>(v, k.getBytes(), v.getBytes()));
             }
     }
 

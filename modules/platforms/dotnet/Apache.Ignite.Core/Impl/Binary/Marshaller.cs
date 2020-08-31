@@ -148,6 +148,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Marshal data.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="action"></param>
+        public void Marshal(IBinaryStream stream, Action<BinaryWriter> action)
+        {
+            BinaryWriter writer = StartMarshal(stream);
+
+            action(writer);
+
+            FinishMarshal(writer);
+        }
+
+        /// <summary>
         /// Marshals an object.
         /// </summary>
         /// <param name="val">Value.</param>
@@ -787,6 +801,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AssemblyRequestResult(r));
             AddSystemType<PeerLoadingObjectHolder>(0, null, serializer: new PeerLoadingObjectHolderSerializer());
             AddSystemType<MultidimensionalArrayHolder>(0, null, serializer: new MultidimensionalArraySerializer());
+            AddSystemType(BinaryTypeId.IgniteBiTuple, r => new IgniteBiTuple(r));
         }
 
         /// <summary>

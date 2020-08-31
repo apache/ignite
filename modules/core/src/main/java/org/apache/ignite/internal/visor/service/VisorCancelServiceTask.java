@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.service;
 
-import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -57,9 +57,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
 
         /** {@inheritDoc} */
         @Override protected Void run(final VisorCancelServiceTaskArg arg) {
-            IgniteServices services = ignite.services();
-
-            services.cancel(arg.getName());
+            new ServiceMXBeanImpl(ignite.context()).cancel(arg.getName());
 
             return null;
         }

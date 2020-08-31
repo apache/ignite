@@ -105,7 +105,7 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return ((Boolean)restRes.getResponse() == true ? GridRedisProtocolParser.oKString()
+        return ((Boolean)restRes.getResponse() ? GridRedisProtocolParser.oKString()
             : GridRedisProtocolParser.toGenericError("Failed to flush"));
     }
 }

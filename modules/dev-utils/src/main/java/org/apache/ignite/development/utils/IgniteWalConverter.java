@@ -18,9 +18,12 @@
 package org.apache.ignite.development.utils;
 
 import java.io.File;
-import org.apache.ignite.IgniteSystemProperties;
+import java.util.List;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -35,10 +38,33 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getEnum;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.SHOW;
+
 /**
  * Print WAL log data in human-readable form.
  */
 public class IgniteWalConverter {
+    /**
+     * System property for printing {@link WALRecord}. By default, {@code false}.
+     */
+    static final String PRINT_RECORDS = "PRINT_RECORDS";
+
+    /**
+     * System property for printing {@link WalStat}. By default, {@code true}.
+     */
+    static final String PRINT_STAT = "PRINT_STAT";
+
+    /**
+     * System property for setting {@link ProcessSensitiveData strategy} of output sensitive data.
+     * By default, {@link ProcessSensitiveData#SHOW}.
+     */
+    static final String SENSITIVE_DATA = "SENSITIVE_DATA";
+
     /**
      * @param args Args.
      * @throws Exception If failed.
@@ -54,8 +80,12 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-        boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false); //TODO read them from argumetns
-        boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true); //TODO read them from argumetns
+        boolean printRecords = getBoolean(PRINT_RECORDS, false); //TODO read them from argumetns
+        boolean printStat = getBoolean(PRINT_STAT, true); //TODO read them from argumetns
+        ProcessSensitiveData sensitiveData = getEnum(SENSITIVE_DATA, SHOW); //TODO read them from argumetns
+
+        if (printRecords && HIDE == sensitiveData)
+            System.setProperty(IGNITE_TO_STRING_INCLUDE_SENSITIVE, Boolean.FALSE.toString());
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
 
@@ -83,7 +113,7 @@ public class IgniteWalConverter {
                     stat.registerRecord(record, pointer, true);
 
                 if (printRecords)
-                    System.out.println("[W] " + record);
+                    System.out.println("[W] " + toString(record, sensitiveData));
             }
         }
 
@@ -101,7 +131,7 @@ public class IgniteWalConverter {
                         stat.registerRecord(record, pointer, false);
 
                     if (printRecords)
-                        System.out.println("[A] " + record);
+                        System.out.println("[A] " + toString(record, sensitiveData));
                 }
             }
         }
@@ -110,5 +140,30 @@ public class IgniteWalConverter {
 
         if (stat != null)
             System.out.println("Statistic collected:\n" + stat.toString());
+    }
+
+    /**
+     * Converting {@link WALRecord} to a string with sensitive data.
+     *
+     * @param walRecord Instance of {@link WALRecord}.
+     * @param sensitiveData Strategy for processing of sensitive data.
+     * @return String representation of {@link WALRecord}.
+     */
+    private static String toString(WALRecord walRecord, ProcessSensitiveData sensitiveData) {
+        if (SHOW == sensitiveData || HIDE == sensitiveData)
+            return walRecord.toString();
+
+        if (MetastoreDataRecord.class.isInstance(walRecord))
+            walRecord = new MetastoreDataRecordWrapper((MetastoreDataRecord)walRecord, sensitiveData);
+        else if (DataRecord.class.isInstance(walRecord)) {
+            DataRecord dataRecord = (DataRecord)walRecord;
+
+            List<DataEntry> entryWrappers = dataRecord.writeEntries().stream()
+                .map(dataEntry -> new DataEntryWrapper(dataEntry, sensitiveData)).collect(toList());
+
+            dataRecord.setWriteEntries(entryWrappers);
+        }
+
+        return walRecord.toString();
     }
 }

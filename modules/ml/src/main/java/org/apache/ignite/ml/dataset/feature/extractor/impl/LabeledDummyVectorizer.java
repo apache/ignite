@@ -39,7 +39,7 @@ public class LabeledDummyVectorizer<K, L> extends Vectorizer<K, LabeledVector<L>
      *
      * @param coords Coordinates.
      */
-    public LabeledDummyVectorizer(Integer ... coords) {
+    public LabeledDummyVectorizer(Integer... coords) {
         super(coords);
         labeled(-1);
     }

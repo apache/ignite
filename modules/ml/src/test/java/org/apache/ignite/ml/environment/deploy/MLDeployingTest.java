@@ -161,7 +161,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             body.accept(new CacheBasedDatasetBuilder<>(ignite1, cache)
                 .withRetriesNumber(NUMBER_OF_COMPUTE_RETRIES));
         } finally {
-            if(cache != null)
+            if (cache != null)
                 cache.destroy();
         }
     }

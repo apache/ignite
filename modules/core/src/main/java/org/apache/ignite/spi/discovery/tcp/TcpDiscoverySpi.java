@@ -62,6 +62,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -118,6 +119,7 @@ import org.jetbrains.annotations.TestOnly;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -288,6 +290,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Default connection recovery timeout in ms. */
     public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
+
+    /** Name of the discovery metrics registry. */
+    public static final String DISCO_METRICS = metricName("io", "discovery");
 
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
@@ -876,6 +881,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * If not provided {@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} will
      * be used by default.
+     * <p>
+     * <b>NOTE:</b> You should assing multiple addresses to a node only if they represent some real physical connections
+     * which can give more reliability. Providing several addresses can prolong failure detection of current node.
+     * The timeouts and settings on network operations ({@link #failureDetectionTimeout()}, {@link #sockTimeout},
+     * {@link #ackTimeout}, {@link #maxAckTimeout}, {@link #reconCnt}) work per connection/address. The exception is
+     * {@link #connRecoveryTimeout}. And node addresses are sorted out sequentially.
+     * </p>
+     * Example: if you use {@code failureDetectionTimeout} and have set 3 ip addresses for this node, previous node in
+     * the ring can take up to 'failureDetectionTimeout * 3' to detect failure of current node.
      *
      * @param ipFinder IP finder.
      * @return {@code this} for chaining.
@@ -1144,7 +1158,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             try {
                 addrs = U.resolveLocalAddresses(locHost);
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IOException e) {
                 throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
                     e);
             }
@@ -1355,7 +1369,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Pending messages registered count.
      */
     public long getPendingMessagesDiscarded() {
-        return stats.pendingMessagesDiscarded();
+        return 0;
     }
 
     /**
@@ -1432,6 +1446,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         ipFinder.onSpiContextInitialized(spiCtx);
 
         impl.onContextInitialized0(spiCtx);
+
+        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+
+        stats.registerMetrics(discoReg);
+
+        discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
+            "Message worker queue current size");
+
+        discoReg.register("CurrentTopologyVersion", () -> impl.getCurrentTopologyVersion(),
+            "Current topology version");
+
+        if (!isClientMode()) {
+            discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
+
+            discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -1572,9 +1603,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             sock.bind(new InetSocketAddress(locHost, 0));
 
-            sock.setTcpNoDelay(true);
-
-            sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
+            configureSocketOptions(sock);
 
             return sock;
         } catch (IOException e) {
@@ -1628,6 +1657,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (!cancelled)
                 throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
+    }
+
+    /**
+     * Configures socket options.
+     *
+     * @param sock Socket.
+     * @throws SocketException If failed.
+     */
+    void configureSocketOptions(Socket sock) throws SocketException {
+        sock.setTcpNoDelay(true);
+
+        sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
+
+        sock.setKeepAlive(true);
     }
 
     /**
@@ -1857,8 +1900,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 "configuration property). Will retry to send message with increased timeout " +
                 "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
                 ", rmtPort=" + sock.getPort() + ']');
-
-            stats.onAckTimeout();
 
             throw e;
         }
@@ -2473,13 +2514,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                        "failureDetectionTimeout=" + failureDetectionTimeout() :
-                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
-                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
-                    ", sockTimeout=" + sockTimeout + ']');
-
-                stats.onSocketTimeout();
+                        "'IgniteConfiguration.failureDetectionTimeout' and 'connRecoveryTimeout' configuration " +
+                            "properties) [failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' and 'connRecoveryTimeout' configuration properties) [sockTimeout="
+                            + sockTimeout) + ", connRecoveryTimeout=" + getConnectionRecoveryTimeout() + ", rmtAddr="
+                    + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ", sockTimeout=" + sockTimeout
+                    + ']');
             }
         }
 
@@ -2489,7 +2529,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
-        @Override public  IgniteUuid id() {
+        @Override public IgniteUuid id() {
             return id;
         }
 
@@ -2648,8 +2688,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         /** {@inheritDoc} */
         @Override public long getPendingMessagesDiscarded() {
-            return stats.pendingMessagesDiscarded();
-
+            return 0;
         }
 
         /** {@inheritDoc} */

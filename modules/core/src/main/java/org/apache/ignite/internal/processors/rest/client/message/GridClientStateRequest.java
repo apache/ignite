@@ -45,7 +45,7 @@ public class GridClientStateRequest extends GridClientAbstractMessage {
     /**
      *
      */
-    public void active(boolean active){
+    public void active(boolean active) {
         this.active = active;
     }
 

@@ -21,7 +21,7 @@ Thanks!
 ```
 
 ## Needed Contributions
-[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoc](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contibute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
+[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoC](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contibute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
 
 Community values code contributions, but project value non-code contributions too, from writers, editors, testers, etc.
 We value user support on the list, as well as providing a summary of [user list](https://lists.apache.org/list.html?user@ignite.apache.org) threads to Apache Ignite developers.

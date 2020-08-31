@@ -103,13 +103,13 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, setId);
+        U.writeIgniteUuid(out, setId);
         out.writeBoolean(collocated);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setId = U.readGridUuid(in);
+        setId = U.readIgniteUuid(in);
         collocated = in.readBoolean();
     }
 

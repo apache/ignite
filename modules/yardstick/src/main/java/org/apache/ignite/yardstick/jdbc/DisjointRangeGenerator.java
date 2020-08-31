@@ -57,7 +57,7 @@ public class DisjointRangeGenerator {
      * @param rangeWidth Range width.
      */
     public DisjointRangeGenerator(int maxThreadsCnt, long tableSize, long rangeWidth) {
-        if (tableSize < maxThreadsCnt *rangeWidth)
+        if (tableSize < maxThreadsCnt * rangeWidth)
             throw new IllegalArgumentException("Table size is too small to generate ranges");
 
         this.maxThreadsCnt = maxThreadsCnt;

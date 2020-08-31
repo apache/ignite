@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteBoolean(sticky);
             });
 
-            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
                 InvokeProxyMethod(javaProxy, method.Name, method, args, platform));
@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteBoolean(sticky);
             });
 
-            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return new DynamicServiceProxy((methodName, args) =>
                 InvokeProxyMethod(javaProxy, methodName, null, args, platform));
@@ -427,15 +427,15 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="methodName">Name of the method.</param>
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
-        /// <param name="platform">The platform.</param>
+        /// <param name="platformType">The platform.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, Platform platform)
+            MethodBase method, object[] args, PlatformType platformType)
         {
             return DoOutInOp(OpInvokeMethod,
-                writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platform),
+                writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
                 (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), 
                 proxy);
         }

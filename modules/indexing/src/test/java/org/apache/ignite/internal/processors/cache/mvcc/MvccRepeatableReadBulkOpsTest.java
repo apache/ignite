@@ -27,19 +27,19 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -530,7 +530,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             }
             case INVOKE: {
                 CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep =
-                    new GetAndPutEntryProcessor<Integer, MvccTestAccount>(){
+                    new GetAndPutEntryProcessor<Integer, MvccTestAccount>() {
                     /** {@inheritDoc} */
                     @Override MvccTestAccount newValForKey(Integer key) {
                         return entries.get(key);
@@ -635,7 +635,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
          * @param key Key.
          * @return New value.
          */
-        V newValForKey(K key){
+        V newValForKey(K key) {
             throw new UnsupportedOperationException();
         }
     }

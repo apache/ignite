@@ -36,14 +36,14 @@ public class EncryptedSqlTableTest extends EncryptedCacheRestartTest {
         executeSql(grid0, "CREATE INDEX enc0 ON encrypted(NAME)");
 
         if (putData) {
-            for (int i=0; i<100; i++)
+            for (int i = 0; i < 100; i++)
                 executeSql(grid0, "INSERT INTO encrypted(ID, NAME) VALUES(?, ?)", i, "" + i);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void checkData(IgniteEx grid0) {
-        for (int i=0; i<100; i++) {
+        for (int i = 0; i < 100; i++) {
             List<List<?>> res = executeSql(grid0, "SELECT NAME FROM encrypted WHERE ID = ?", i);
 
             assertEquals(1, res.size());

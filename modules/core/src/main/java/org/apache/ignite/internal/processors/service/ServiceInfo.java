@@ -51,7 +51,7 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** Topology snapshot. */
     @GridToStringInclude
-    private volatile Map<UUID, Integer> top = Collections.emptyMap();
+    private volatile Map<UUID, Integer> top;
 
     /**
      * @param originNodeId Initiating node id.
@@ -160,7 +160,16 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Integer> topologySnapshot() {
-        return Collections.unmodifiableMap(top);
+        return top == null ? Collections.emptyMap() : Collections.unmodifiableMap(top);
+    }
+
+    /**
+     * Whether service topology was initialized.
+     *
+     * @return {@code True} if service topology was initialized.
+     */
+    public boolean topologyInitialized() {
+        return top != null;
     }
 
     /** {@inheritDoc} */

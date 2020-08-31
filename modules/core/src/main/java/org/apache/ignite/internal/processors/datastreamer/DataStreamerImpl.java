@@ -230,7 +230,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 failCntr.increment();
 
                 synchronized (DataStreamerImpl.this) {
-                    if(cancellationReason == null)
+                    if (cancellationReason == null)
                         cancellationReason = err;
 
                     cancelled = true;
@@ -1672,7 +1672,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             // Another thread might already renew the batch
                             AffinityTopologyVersion bTopVer = b0.batchTopVer;
 
-                            if(bTopVer != null && topVer.compareTo(bTopVer) > 0) {
+                            if (bTopVer != null && topVer.compareTo(bTopVer) > 0) {
                                 GridFutureAdapter<Object> bFut = b0.curFut;
 
                                 b0.renewBatch(remap);

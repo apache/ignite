@@ -56,7 +56,7 @@ public interface ParallelismStrategy {
      */
     public default <T> List<Promise<T>> submit(List<IgniteSupplier<T>> tasks) {
         List<Promise<T>> results = new ArrayList<>();
-        for(IgniteSupplier<T> task : tasks)
+        for (IgniteSupplier<T> task : tasks)
             results.add(submit(task));
         return results;
     }

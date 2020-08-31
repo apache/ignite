@@ -246,8 +246,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
         // 1. Populate cache with data, calculating expected count in parallel.
         Set<Integer> exp = populateCache(ignite, loc, MAX_ITEM_COUNT, new IgnitePredicate<Integer>() {
-            @Override
-            public boolean apply(Integer x) {
+            @Override public boolean apply(Integer x) {
                 return String.valueOf(x).startsWith("1");
             }
         });

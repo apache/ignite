@@ -56,7 +56,7 @@ public class TxLabelTest extends GridCommonAbstractTest {
      * @param lbl Label.
      */
     private void testLabel0(Ignite ignite, String lbl) {
-        try(Transaction tx = ignite.transactions().withLabel(lbl).txStart()) {
+        try (Transaction tx = ignite.transactions().withLabel(lbl).txStart()) {
             assertEquals(lbl, tx.label());
 
             ignite.cache(DEFAULT_CACHE_NAME).put(0, 0);

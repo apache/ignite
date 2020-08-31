@@ -222,7 +222,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
                         U.sleep(100);
                     }
-                    catch (Throwable e){
+                    catch (Throwable e) {
                         U.error(log(), "Failed unlock.", e);
 
                         err = e;

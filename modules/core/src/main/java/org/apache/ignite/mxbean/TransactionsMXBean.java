@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
  * Transactions MXBean interface.
@@ -58,6 +59,17 @@ public interface TransactionsMXBean {
             boolean detailed,
         @MXBeanParameter(name = "kill", description = "Kill matching transactions (be careful).")
             boolean kill
+    );
+
+    /**
+     * Kills transactions by the xid.
+     *
+     * @param xid Transaction xid.
+     * @see TransactionView#xid()
+     */
+    @MXBeanDescription("Kills transactions by the xid.")
+    public void cancel(
+        @MXBeanParameter(name = "xid", description = "Transaction XID.") String xid
     );
 
     /**
@@ -233,4 +245,24 @@ public interface TransactionsMXBean {
             "receive locks for all their keys for a long time. Returns {@code 0} or less if not set."
     )
     long getLongOperationsDumpTimeout();
+
+    /**
+     * Set timeout interval for tx key contention analysis.
+     * @param timeout Interval in millis.
+     */
+    @MXBeanParametersNames("timeout")
+    @MXBeanDescription("Timeout interval (in millis) for printing tx key contention queue size info. Each transaction " +
+        "besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons per key lock queue may " +
+        "rise. This property sets the interval during which keys and appropriate queue size statistics has been " +
+        "collected.")
+    void setTxKeyCollisionsInterval(int timeout);
+
+    /**
+     * @return Current interval in millis.
+     */
+    @MXBeanDescription("Returns a timeout (in millis) for printing tx key contention queue size info. Each transaction " +
+        "besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons per key lock queue may " +
+        "rise. Returns the interval during which keys and appropriate queue size statistics has been " +
+        "collected.")
+    int getTxKeyCollisionsInterval();
 }

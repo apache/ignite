@@ -492,14 +492,14 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkResultsRow(List<List<?>> results, int rowId, Object ... expected) throws Exception {
+    private void checkResultsRow(List<List<?>> results, int rowId, Object... expected) throws Exception {
         assertTrue(rowId < results.size());
 
         List<?> row = results.get(rowId);
 
         assertEquals(expected.length, row.size());
 
-        for(int col = 0; col < expected.length; ++col)
+        for (int col = 0; col < expected.length; ++col)
             assertEquals(expected[col], row.get(col));
     }
 

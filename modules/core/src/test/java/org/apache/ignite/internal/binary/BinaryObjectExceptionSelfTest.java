@@ -24,9 +24,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -167,7 +167,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Value1{
+    private static class Value1 {
         /** */
         Value2 objVal = new Value2();
 

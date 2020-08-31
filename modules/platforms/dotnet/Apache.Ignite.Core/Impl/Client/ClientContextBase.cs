@@ -30,25 +30,20 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly IBinaryStream _stream;
 
         /** */
-        private readonly Marshaller _marshaller;
-
-        /** */
-        private readonly ClientProtocolVersion _protocolVersion;
+        private readonly ClientSocket _socket;
         
         /// <summary>
         /// Initializes a new instance of <see cref="ClientContextBase"/> class.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        /// <param name="marshaller">Marshaller.</param>
-        /// <param name="protocolVersion">Protocol version to be used for this request.</param>
-        protected ClientContextBase(IBinaryStream stream, Marshaller marshaller, ClientProtocolVersion protocolVersion)
+        /// <param name="socket">Socket.</param>
+        protected ClientContextBase(IBinaryStream stream, ClientSocket socket)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(marshaller != null);
+            Debug.Assert(socket != null);
             
             _stream = stream;
-            _marshaller = marshaller;
-            _protocolVersion = protocolVersion;
+            _socket = socket;
         }
 
         /// <summary>
@@ -64,16 +59,24 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         public Marshaller Marshaller
         {
-            get { return _marshaller; }
+            get { return _socket.Marshaller; }
         }
         
         /// <summary>
-        /// Protocol version to be used for this request.
+        /// Features for this request.
         /// (Takes partition awareness, failover and reconnect into account).
         /// </summary>
-        public ClientProtocolVersion ProtocolVersion
+        public ClientFeatures Features
         {
-            get { return _protocolVersion; }
+            get { return _socket.Features; }
+        }
+
+        /// <summary>
+        /// Gets the socket for this request.
+        /// </summary>
+        public ClientSocket Socket
+        {
+            get { return _socket; }
         }
     }
 }

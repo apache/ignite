@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -24,7 +25,17 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 /**
  * Persistent store of pages.
  */
-public interface PageStore {
+public interface PageStore extends Closeable {
+    /**
+     * @param lsnr Page write listener to set.
+     */
+    public void addWriteListener(PageWriteListener lsnr);
+
+    /**
+     * @param lsnr Page write listener to remove.
+     */
+    public void removeWriteListener(PageWriteListener lsnr);
+
     /**
      * Checks if page exists.
      *
@@ -53,9 +64,10 @@ public interface PageStore {
      * @param pageId Page ID.
      * @param pageBuf Page buffer to read into.
      * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return {@code true} if page has been read successfully, {@code false} if page hasn't been written yet.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
+    public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.

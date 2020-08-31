@@ -151,7 +151,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < arg; i++) {
                 // Recycle iterator.
-                if (iter.hasNext() == false)
+                if (!iter.hasNext())
                     iter = subgrid.iterator();
 
                 ClusterNode node = iter.next();

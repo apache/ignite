@@ -298,7 +298,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             // Since we start extra nodes, there may be extra start and cancel events,
             // so we check only the difference between start and cancel and
             // not start and cancel events individually.
-            assertEquals(name, newNodes,  DummyService.started(name) - DummyService.cancelled(name));
+            assertEquals(name, newNodes, DummyService.started(name) - DummyService.cancelled(name));
 
             checkCount(name, g, nodeCount() + newNodes);
         }
@@ -336,7 +336,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             // Since we start extra nodes, there may be extra start and cancel events,
             // so we check only the difference between start and cancel and
             // not start and cancel events individually.
-            assertEquals(name, servers,  DummyService.started(name) - DummyService.cancelled(name));
+            assertEquals(name, servers, DummyService.started(name) - DummyService.cancelled(name));
 
             checkCount(name, g, nodeCount() + servers);
         }

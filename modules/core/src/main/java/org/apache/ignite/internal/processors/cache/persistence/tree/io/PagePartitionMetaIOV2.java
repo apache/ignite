@@ -89,6 +89,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     /**
      * @param pageAddr Page address.
      * @param link Link.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setGapsLink(long pageAddr, long link) {
         if (getGapsLink(pageAddr) == link)

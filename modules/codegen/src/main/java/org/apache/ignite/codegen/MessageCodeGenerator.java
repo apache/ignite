@@ -568,9 +568,9 @@ public class MessageCodeGenerator {
 
         GridCodegenConverter fldPreproc = field.getAnnotation(GridCodegenConverter.class);
 
-        String getExp = (fldPreproc != null && !fldPreproc.get().isEmpty())? fldPreproc.get(): field.getName();
-        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class))?
-            fldPreproc.type(): field.getType();
+        String getExp = (fldPreproc != null && !fldPreproc.get().isEmpty()) ? fldPreproc.get() : field.getName();
+        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class)) ?
+            fldPreproc.type() : field.getType();
 
         returnFalseIfWriteFailed(writeType, field.getName(), colAnn != null ? colAnn.value() : null,
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false, getExp);
@@ -598,9 +598,9 @@ public class MessageCodeGenerator {
         indent++;
 
         GridCodegenConverter fldPreproc = field.getAnnotation(GridCodegenConverter.class);
-        String setExp = (fldPreproc != null && !fldPreproc.get().isEmpty())? fldPreproc.set(): "";
-        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class))?
-            fldPreproc.type(): field.getType();
+        String setExp = (fldPreproc != null && !fldPreproc.get().isEmpty()) ? fldPreproc.set() : "";
+        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class)) ?
+            fldPreproc.type() : field.getType();
 
         returnFalseIfReadFailed(writeType, field.getName(), colAnn != null ? colAnn.value() : null,
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, setExp);
@@ -892,7 +892,7 @@ public class MessageCodeGenerator {
 
         ClassLoader ldr = getClass().getClassLoader();
 
-        for (URL url :  IgniteUtils.classLoaderUrls(ldr)) {
+        for (URL url : IgniteUtils.classLoaderUrls(ldr)) {
             File file = new File(url.toURI());
 
             int prefixLen = file.getPath().length() + 1;

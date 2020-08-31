@@ -21,8 +21,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper.wrap;
 
 /**
  *
@@ -30,6 +35,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     /** */
     public boolean ignorePingResponse;
+
+    /** Interceptor of discovery messages. */
+    private DiscoveryHook discoHook;
 
     /** {@inheritDoc} */
     @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -43,5 +51,22 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     /** {@inheritDoc} */
     @Override public void simulateNodeFailure() {
         super.simulateNodeFailure();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
+        super.setListener(lsnr == null || discoHook == null ? lsnr : wrap(lsnr, discoHook));
+    }
+
+    /**
+     * Sets interceptor of discovery messages. Note that {@link DiscoveryHook} must be set before SPI start.
+     * Otherwise, this method call will take no effect.
+     *
+     * @param discoHook Interceptor of discovery messages.
+     */
+    public void discoveryHook(DiscoveryHook discoHook) {
+        assert !started();
+
+        this.discoHook = discoHook;
     }
 }

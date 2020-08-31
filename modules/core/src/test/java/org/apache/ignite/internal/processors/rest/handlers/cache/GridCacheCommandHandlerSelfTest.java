@@ -22,11 +22,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -45,8 +47,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.processor.EntryProcessorException;
 import org.junit.Test;
 
 /**
@@ -94,7 +94,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @return CacheAtomicityMode for the cache.
      */
-    protected CacheAtomicityMode atomicityMode(){
+    protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
@@ -221,13 +221,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheClear() throws Exception {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler((grid()).context());
+
+        HashMap<Object, Object> caches = new HashMap<>();
+        caches.put(DEFAULT_CACHE_NAME, null);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
-
-        req.cacheName(DEFAULT_CACHE_NAME);
-
         req.command(GridRestCommand.CACHE_CLEAR);
+        req.values(caches);
 
         try {
             // Change cache state.

@@ -232,7 +232,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     public void testClose() throws Exception {
         String url = CFG_URL_PREFIX + configURL();
 
-        try(final Connection conn = DriverManager.getConnection(url)) {
+        try (final Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
             assertFalse(conn.isClosed());
 

@@ -22,17 +22,21 @@ import java.util.UUID;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
+
+import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 
 /**
  * KILL QUERY command.
+ *
+ * @see QueryMXBean#cancelSQL(String)
+ * @see SqlQueryView#queryId()
  */
 public class SqlKillQueryCommand implements SqlCommand {
     /** */
     private static final String ASYNC = "ASYNC";
-
-    /** */
-    private static final String EXPECTED_GLOBAL_QRY_ID_FORMAT = "Global query id should have format " +
-        "'{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
 
     /** Node query id. */
     private long nodeQryId;
@@ -62,22 +66,16 @@ public class SqlKillQueryCommand implements SqlCommand {
             if (lex.tokenType() == SqlLexerTokenType.STRING) {
                 String tok = lex.token();
 
-                String[] ids = tok.split("_");
+                T2<UUID, Long> ids = parseGlobalQueryId(tok);
 
-                if (ids.length == 2) {
-                    try {
-                        nodeId = UUID.fromString(ids[0]);
+                if (ids == null)
+                    throw SqlParserUtils.error(lex, EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-                        nodeQryId = Long.parseLong(ids[1]);
+                nodeId = ids.get1();
 
-                        return;
-                    }
-                    catch (Exception ignore) {
-                        // Fall through.
-                    }
+                nodeQryId = ids.get2();
 
-                   throw SqlParserUtils.error(lex, EXPECTED_GLOBAL_QRY_ID_FORMAT);
-                }
+                return;
             }
         }
 
@@ -96,6 +94,27 @@ public class SqlKillQueryCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
         // No-op.
+    }
+
+    /**
+     * Parse global SQL query id.
+     * Format is {origin_node_id}_{query_id}.
+     *
+     * @param globalQryId Global query id.
+     * @return Results of parsing of {@code null} if parse failed.
+     */
+    public static T2<UUID, Long> parseGlobalQueryId(String globalQryId) {
+        String[] ids = globalQryId.split("_");
+
+        if (ids.length != 2)
+            return null;
+
+        try {
+            return new T2<>(UUID.fromString(ids[0]), Long.parseLong(ids[1]));
+        }
+        catch (Exception ignore) {
+            return null;
+        }
     }
 
     /**

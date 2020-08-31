@@ -76,14 +76,14 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      */
     @Deprecated
     public boolean clusterActive() {
-        return ClusterState.active(state);
+        return state.active();
     }
 
     /**
      * @return Transition success status.
      */
     public boolean success() {
-        return transitionRes == null ? ClusterState.active(state) : transitionRes;
+        return transitionRes == null ? state.active() : transitionRes;
     }
 
     /**
@@ -105,11 +105,6 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
         return false;
     }
 

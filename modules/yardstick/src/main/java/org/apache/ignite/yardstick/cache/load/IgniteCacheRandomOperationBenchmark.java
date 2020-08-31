@@ -667,7 +667,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             storeStatistics(cache.getName(), map, op);
         }
-        catch (Exception e){
+        catch (Exception e) {
             BenchmarkUtils.error(String.format("Failed to perform operation %s.", op), e);
         }
     }

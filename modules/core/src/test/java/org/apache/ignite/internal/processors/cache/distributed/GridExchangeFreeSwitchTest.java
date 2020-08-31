@@ -73,7 +73,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Cache configuration closure. */
-    private IgniteClosure<String, CacheConfiguration[]> cacheC;
+    private IgniteClosure<String, CacheConfiguration<?,?>[]> cacheC;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -284,10 +284,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param signleCnt Counter for GridDhtPartitionsSingleMessage.
+     * @param singleCnt Counter for GridDhtPartitionsSingleMessage.
      * @param fullCnt Counter for GridDhtPartitionsFullMessage.
      */
-    private void startPmeMessagesCounting(int nodes, AtomicLong signleCnt, AtomicLong fullCnt) {
+    private void startPmeMessagesCounting(int nodes, AtomicLong singleCnt, AtomicLong fullCnt) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -296,7 +296,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 @Override public void apply(ClusterNode node, Message msg) {
                     if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        signleCnt.incrementAndGet();
+                        singleCnt.incrementAndGet();
 
                     if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
@@ -337,12 +337,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     private void testNoTransactionsWaitAtNodeLeft(int backups, PartitionLossPolicy lossPlc) throws Exception {
         persistence = true;
 
-        String cacheName = "three-partitioned";
+        String cacheName = "partitioned";
 
         try {
-            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-                @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+            cacheC = new IgniteClosure<String, CacheConfiguration<?,?>[]>() {
+                @Override public CacheConfiguration<?,?>[] apply(String igniteInstanceName) {
+                    CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
 
                     ccfg.setName(cacheName);
                     ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -558,12 +558,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     public void testLateAffinityAssignmentOnBackupLeftAndJoin() throws Exception {
         String cacheName = "single-partitioned";
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
-                CacheConfiguration ccfg = new CacheConfiguration();
+        cacheC = new IgniteClosure<String, CacheConfiguration<?, ?>[]>() {
+            @Override public CacheConfiguration<?, ?>[] apply(String igniteInstanceName) {
+                CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
 
                 ccfg.setName(cacheName);
-                ccfg.setAffinity(new Map1PartitionsTo2NodesAffinityFunction());
+                ccfg.setAffinity(new Map1PartitionTo2NodesAffinityFunction());
 
                 return new CacheConfiguration[] {ccfg};
             }
@@ -662,11 +662,11 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Map1PartitionsTo2NodesAffinityFunction extends RendezvousAffinityFunction {
+    private static class Map1PartitionTo2NodesAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Default constructor.
          */
-        public Map1PartitionsTo2NodesAffinityFunction() {
+        public Map1PartitionTo2NodesAffinityFunction() {
             super(false, 1);
         }
 

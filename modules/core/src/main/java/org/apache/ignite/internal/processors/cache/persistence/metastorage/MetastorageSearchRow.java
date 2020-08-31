@@ -20,19 +20,29 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 /**
  *
  */
-public interface MetastorageSearchRow {
-    /**
-     * @return Key.
-     */
-    public String key();
+public class MetastorageSearchRow implements MetastorageRow {
+    /** */
+    private final String key;
 
     /**
-     * @return Link for this row.
+     * @param key Key.
      */
-    public long link();
+    public MetastorageSearchRow(String key) {
+        this.key = key;
+    }
 
-    /**
-     * @return Key hash code.
-     */
-    public int hash();
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String key() {
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long keyLink() {
+        return 0L;
+    }
 }

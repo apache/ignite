@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -95,7 +95,7 @@ public class EncryptedFileIO implements FileIO {
         this.encSpi = encSpi;
 
         this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
-        this.zeroes =  new byte[encryptionOverhead];
+        this.zeroes = new byte[encryptionOverhead];
     }
 
     /** {@inheritDoc} */
@@ -298,7 +298,7 @@ public class EncryptedFileIO implements FileIO {
         storedCrc |= ((int)encrypted.get() & 0xff) << 8;
         storedCrc |= encrypted.get() & 0xff;
 
-        if(crc != storedCrc) {
+        if (crc != storedCrc) {
             throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
                 ", calculatedCrd=" + crc + "]");
         }

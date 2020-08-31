@@ -84,7 +84,7 @@ public class QueryParserCacheEntry {
     /**
      * @return Metadata for the positional query parameters ('?').
      */
-    public List<JdbcParameterMeta> parametersMeta(){
+    public List<JdbcParameterMeta> parametersMeta() {
         return paramsMeta;
     }
 

@@ -44,7 +44,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     private static final int SPI_COUNT = 6;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder =  new TcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int getSpiCount() {

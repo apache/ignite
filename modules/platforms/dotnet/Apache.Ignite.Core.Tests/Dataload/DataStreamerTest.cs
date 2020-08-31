@@ -490,7 +490,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestStreamVisitor()
         {
+#if !NETCOREAPP // Serializing delegates is not supported on this platform.
             TestStreamReceiver(new StreamVisitor<int, int>((c, e) => c.Put(e.Key, e.Value + 1)));
+#endif
         }
 
         /// <summary>

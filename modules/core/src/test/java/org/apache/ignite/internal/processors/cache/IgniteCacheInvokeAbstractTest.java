@@ -319,7 +319,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         Affinity<Object> affinity = grid(0).affinity(cache.getName());
 
         for (int i = 0; i < gridCount(); i++) {
-            if(!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
+            if (!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
                 cache = jcache(i);
                 break;
             }

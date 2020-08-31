@@ -128,8 +128,8 @@ public class VisorGridJobEvent extends VisorGridEvent {
 
         U.writeString(out, taskName);
         U.writeString(out, taskClsName);
-        U.writeGridUuid(out, taskSesId);
-        U.writeGridUuid(out, jobId);
+        U.writeIgniteUuid(out, taskSesId);
+        U.writeIgniteUuid(out, jobId);
     }
 
     /** {@inheritDoc} */
@@ -140,8 +140,8 @@ public class VisorGridJobEvent extends VisorGridEvent {
 
         taskName = U.readString(in);
         taskClsName = U.readString(in);
-        taskSesId = U.readGridUuid(in);
-        jobId = U.readGridUuid(in);
+        taskSesId = U.readIgniteUuid(in);
+        jobId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

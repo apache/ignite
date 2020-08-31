@@ -81,7 +81,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSynchronousExecute() throws Exception {
-        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class,  "testArg");
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class, "testArg");
 
         assert fut != null;
 

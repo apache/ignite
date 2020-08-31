@@ -296,7 +296,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         cache.get(new PersonKey(1));
                         cache.get(new PersonKey(4));
 
-                        Map<PersonKey, Person> map =  U.newHashMap(2);
+                        Map<PersonKey, Person> map = U.newHashMap(2);
 
                         map.put(new PersonKey(5), new Person(5, rnd.nextInt(),
                             new Date(System.currentTimeMillis()), "Name" + 5, 5, Gender.random()));

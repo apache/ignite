@@ -49,7 +49,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
         assert arg != null;
-        assert subgrid.size() > 1: "Test requires at least 2 nodes. One with load and another one to steal.";
+        assert subgrid.size() > 1 : "Test requires at least 2 nodes. One with load and another one to steal.";
 
         int jobsNum = subgrid.size();
 

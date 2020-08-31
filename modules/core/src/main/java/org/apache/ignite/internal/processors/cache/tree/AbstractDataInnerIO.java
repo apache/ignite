@@ -114,7 +114,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     {
         RowLinkIO rowIo = ((RowLinkIO)srcIo);
 
-        long link =rowIo.getLink(srcPageAddr, srcIdx);
+        long link = rowIo.getLink(srcPageAddr, srcIdx);
         int hash = rowIo.getHash(srcPageAddr, srcIdx);
 
         int off = offset(dstIdx);

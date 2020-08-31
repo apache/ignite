@@ -68,7 +68,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     private static final int RMT_NODES_CNT = 3;
 
     /** */
-    private static final long HANG_TIMEOUT =  15 * 60 * 1000;
+    private static final long HANG_TIMEOUT = 15 * 60 * 1000;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {

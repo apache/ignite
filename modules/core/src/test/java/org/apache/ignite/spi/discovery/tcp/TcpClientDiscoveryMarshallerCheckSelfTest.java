@@ -35,7 +35,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (testFooter) {
             cfg.setMarshaller(new BinaryMarshaller());
@@ -43,6 +43,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
             TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
             spi.setJoinTimeout(-1); // IGNITE-605, and further tests limitation bypass
+            spi.setIpFinder(sharedStaticIpFinder);
 
             cfg.setDiscoverySpi(spi);
 

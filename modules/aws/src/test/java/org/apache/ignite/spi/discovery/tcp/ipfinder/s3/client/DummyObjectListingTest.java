@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 

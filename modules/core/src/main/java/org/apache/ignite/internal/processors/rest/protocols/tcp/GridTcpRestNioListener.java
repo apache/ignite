@@ -33,11 +33,11 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientAbstractMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequestV2;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
@@ -59,9 +59,9 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
@@ -104,6 +104,12 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Mapping of {@code GridCacheOperation} to {@code GridRestCommand}. */
     private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
+
+    /** User attributes key. */
+    private static final int USER_ATTR_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Credentials key. */
+    private static final int CREDS_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
@@ -313,7 +319,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq.command(NOOP);
 
-            restReq.credentials(req.credentials());
+            ses.addMeta(CREDS_KEY, req.credentials());
+            ses.addMeta(USER_ATTR_KEY, req.userAttributes());
         }
         else if (msg instanceof GridClientCacheRequest) {
             GridClientCacheRequest req = (GridClientCacheRequest)msg;
@@ -389,6 +396,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         else if (msg instanceof GridClientClusterStateRequest) {
             GridClientClusterStateRequest req = (GridClientClusterStateRequest)msg;
 
+            boolean forceDeactivation = !(msg instanceof GridClientClusterStateRequestV2) ||
+                ((GridClientClusterStateRequestV2)msg).forceDeactivation();
+
             GridRestClusterStateRequest restChangeReq = new GridRestClusterStateRequest();
 
             if (req.isReqCurrentState()) {
@@ -398,6 +408,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             else {
                 restChangeReq.state(req.state());
                 restChangeReq.command(CLUSTER_SET_STATE);
+
+                restChangeReq.forceDeactivation(forceDeactivation);
             }
 
             restReq = restChangeReq;
@@ -410,14 +422,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.clientId(msg.clientId());
             restReq.sessionToken(msg.sessionToken());
             restReq.address(ses.remoteAddress());
-
-            if (restReq.credentials() == null) {
-                GridClientAbstractMessage msg0 = (GridClientAbstractMessage) msg;
-
-                restReq.credentials(new SecurityCredentials(msg0.login(), msg0.password()));
-            }
-
-            restReq.userAttributes(msg.userAttributes());
+            restReq.certificates(ses.certificates());
+            restReq.credentials(ses.meta(CREDS_KEY));
+            restReq.userAttributes(ses.meta(USER_ATTR_KEY));
         }
 
         return restReq;

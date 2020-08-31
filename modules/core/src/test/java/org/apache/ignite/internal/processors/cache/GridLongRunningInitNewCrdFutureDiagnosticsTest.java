@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Test class for diagnostics of long running {@link InitNewCoordinatorFuture}.
  */
-public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAbstractTest  {
+public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAbstractTest {
     /** Node with diagnostic logger. */
     private static final int NODE_WITH_DIAGNOSTIC_LOG = 2;
 

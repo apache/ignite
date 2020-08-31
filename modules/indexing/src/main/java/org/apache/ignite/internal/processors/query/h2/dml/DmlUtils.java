@@ -137,7 +137,7 @@ public class DmlUtils {
         }
         catch (Exception e) {
             throw new IgniteSQLException("Value conversion failed [column=" + columnName + ", from=" + currCls.getName() + ", to=" +
-                expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
+                expCls.getName() + ']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
 
@@ -206,7 +206,7 @@ public class DmlUtils {
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
 
-                sender.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()),  0);
+                sender.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()), 0);
             }
 
             sender.flush();
@@ -489,7 +489,7 @@ public class DmlUtils {
         for (int i = 0; i < cntPerRow.length; i++ ) {
             int cnt = cntPerRow[i];
 
-            res.add(new UpdateResult(cnt , X.EMPTY_OBJECT_ARRAY));
+            res.add(new UpdateResult(cnt, X.EMPTY_OBJECT_ARRAY));
         }
 
         return res;

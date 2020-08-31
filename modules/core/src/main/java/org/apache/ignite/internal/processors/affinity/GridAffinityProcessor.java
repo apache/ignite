@@ -1170,7 +1170,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             int hash = backups;
             hash = 31 * hash + affFuncCls.hashCode();
             hash = 31 * hash + filterCls.hashCode();
-            hash= 31 * hash + partsCnt;
+            hash = 31 * hash + partsCnt;
 
             this.hash = hash;
         }

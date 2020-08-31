@@ -94,6 +94,15 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * @return Random transaction type.
      */
@@ -109,7 +118,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
     /**
      * @return Random transaction isolation level.
      */
-    protected TransactionIsolation transactionIsolation(){
+    protected TransactionIsolation transactionIsolation() {
         if (MvccFeatureChecker.forcedMvcc())
             return REPEATABLE_READ;
 
@@ -210,7 +219,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
         log.info("Last commited value:" + val);
 
-        if (idleVerifyResult.hasConflicts()){
+        if (idleVerifyResult.hasConflicts()) {
             SB sb = new SB();
 
             sb.a("\n");

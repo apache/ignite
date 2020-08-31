@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
@@ -31,8 +28,7 @@ public class EuclideanDistance implements DistanceMeasure {
     private static final long serialVersionUID = 1717556319784040040L;
 
     /** {@inheritDoc} */
-    @Override public double compute(Vector a, Vector b)
-        throws CardinalityException {
+    @Override public double compute(Vector a, Vector b) throws CardinalityException {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 
@@ -44,16 +40,6 @@ public class EuclideanDistance implements DistanceMeasure {
             res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
 
         return Math.sqrt(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
     }
 
     /** {@inheritDoc} */

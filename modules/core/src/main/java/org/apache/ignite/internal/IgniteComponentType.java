@@ -29,28 +29,32 @@ import org.jetbrains.annotations.Nullable;
  * Component type.
  */
 public enum IgniteComponentType {
-    /** IGFS. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     IGFS(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopProcessor",
         "org.apache.ignite.internal.processors.igfs.IgfsProcessor",
         "ignite-hadoop"
     ),
 
-    /** Hadoop. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     HADOOP(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
         "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
         "ignite-hadoop"
     ),
 
-    /** Hadoop Helper component. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     HADOOP_HELPER(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper",
         "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
         "ignite-hadoop"
     ),
 
-    /** IGFS helper component. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     IGFS_HELPER(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
         "org.apache.ignite.internal.processors.igfs.IgfsHelperImpl",
@@ -93,10 +97,18 @@ public enum IgniteComponentType {
         "ignite-schedule"
     ),
 
+    /** */
     COMPRESSION(
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
+    ),
+
+    /** OpenCensus tracing implementation. */
+    TRACING(
+        null,
+        "org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi",
+        "ignite-opencensus"
     );
 
     /** No-op class name. */

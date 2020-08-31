@@ -106,7 +106,7 @@ class GridUpdateNotifier {
         workerThread = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while(!Thread.currentThread().isInterrupted()) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Runnable cmd0 = cmd.getAndSet(null);
 
                         if (cmd0 != null)
@@ -212,8 +212,8 @@ class GridUpdateNotifier {
      * @param msg Message to log.
      */
     private void throttle(IgniteLogger log, boolean warn, String msg) {
-        assert(log != null);
-        assert(msg != null);
+        assert (log != null);
+        assert (msg != null);
 
         long now = U.currentTimeMillis();
 

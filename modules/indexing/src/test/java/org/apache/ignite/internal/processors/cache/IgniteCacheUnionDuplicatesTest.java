@@ -111,7 +111,7 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Organization org) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"part\".ORGANIZATION (_key, _val, id, name, name2) values(?, ?, ?, ?, ?)")) {
             st.setObject(1, org.id);
             st.setObject(2, org);

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -240,6 +239,24 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Perform out-in operation with a single stream.
         /// </summary>
+        /// <typeparam name="TR">The type of the r.</typeparam>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
+        /// <param name="inErrorAction">The action to read an error.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        protected TR DoOutInOpX<TR>(int type, Func<BinaryWriter, bool> outAction, Func<IBinaryStream, long, TR> inAction,
+            Func<IBinaryStream, Exception> inErrorAction)
+        {
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                inAction, inErrorAction);
+        }
+
+        /// <summary>
+        /// Perform out-in operation with a single stream.
+        /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inErrorAction">The action to read an error.</param>
@@ -247,6 +264,22 @@ namespace Apache.Ignite.Core.Impl
         /// Result.
         /// </returns>
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, Exception> inErrorAction)
+        {
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                (stream, res) => res == True, inErrorAction);
+        }
+
+        /// <summary>
+        /// Perform out-in operation with a single stream.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inErrorAction">The action to read an error.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        protected bool DoOutInOpX(int type, Func<BinaryWriter, bool> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
@@ -348,7 +381,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
         /// <returns>Future for async operation</returns>
-        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<BinaryWriter> writeAction)
         {
             return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
             {
@@ -498,13 +531,29 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Writes to stream.
         /// </summary>
-        private static void WriteToStream(Action<BinaryWriter> action, IBinaryStream stream, Marshaller marsh)
+        private static bool WriteToStream(Func<BinaryWriter, bool> action, IBinaryStream stream, Marshaller marsh)
+        {
+            var writer = marsh.StartMarshal(stream);
+
+            var res = action(writer);
+
+            marsh.FinishMarshal(writer);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Writes to stream.
+        /// </summary>
+        private static bool WriteToStream(Action<BinaryWriter> action, IBinaryStream stream, Marshaller marsh)
         {
             var writer = marsh.StartMarshal(stream);
 
             action(writer);
 
             marsh.FinishMarshal(writer);
+
+            return true;
         }
 
         /// <summary>
@@ -518,7 +567,6 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.FinishMarshal(writer);
         }
-
 
         #endregion
     }

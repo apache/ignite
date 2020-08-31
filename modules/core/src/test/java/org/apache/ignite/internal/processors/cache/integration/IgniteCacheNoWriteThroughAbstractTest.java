@@ -202,7 +202,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
             expData0.put(i, 1);
 
         cache.invokeAll(expData.keySet(), new EntryProcessor<Integer, Integer, Object>() {
-            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args)  {
+            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args) {
                 entry.setValue(1);
 
                 return null;
@@ -296,7 +296,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.invokeAll(expData.keySet(), new EntryProcessor<Integer, Integer, Object>() {
-                                @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args)  {
+                                @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args) {
                                     entry.setValue(1);
 
                                     return null;

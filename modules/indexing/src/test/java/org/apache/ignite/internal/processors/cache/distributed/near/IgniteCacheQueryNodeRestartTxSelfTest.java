@@ -29,7 +29,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest2 {
     /** {@inheritDoc} */
     @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
-        try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             qryRunnable.run();
         }
     }

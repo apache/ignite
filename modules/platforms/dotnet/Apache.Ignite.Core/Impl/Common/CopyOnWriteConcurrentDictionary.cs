@@ -90,6 +90,30 @@ namespace Apache.Ignite.Core.Impl.Common
                 _dict = dict0;
             }
         }
+
+        /// <summary>
+        /// Removes the value with the specified key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="val">Removed value, if any.</param>
+        public bool Remove(TKey key, out TValue val)
+        {
+            lock (this)
+            {
+                if (!_dict.TryGetValue(key, out val))
+                {
+                    return false;
+                }
+
+                var dict0 = new Dictionary<TKey, TValue>(_dict);
+
+                dict0.Remove(key);
+
+                _dict = dict0;
+                
+                return true;
+            }
+        }
         
         /** <inheritDoc /> */
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()

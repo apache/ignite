@@ -161,7 +161,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         File wal = new File(db, "wal");
 
-        if(setWalAndArchiveToSameVal) {
+        if (setWalAndArchiveToSameVal) {
             String walAbsPath = wal.getAbsolutePath();
 
             dsCfg.setWalPath(walAbsPath);
@@ -1279,7 +1279,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         }
 
-        log.info("Check REPLAY BETWEEN:" + exp2First + " " + exp2Last+ "\n" +
+        log.info("Check REPLAY BETWEEN:" + exp2First + " " + exp2Last + "\n" +
             "expFirst=" + exp2First + " actlFirst=" + actl2First + ", " +
             "expLast=" + exp2Last + " actlLast=" + actl2Last);
 
@@ -1303,9 +1303,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         String workDir,
         String subfolderName
     ) throws IgniteCheckedException {
-        File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
+        File binaryMeta = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            false);
         File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
-        File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
+        File marshallerMapping = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
 
         return new IteratorParametersBuilder()
             .binaryMetadataFileStoreDir(binaryMetaWithConsId)

@@ -316,12 +316,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(20, staticCache.get(20));
 
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             srv.cache(nearCache.getName()).put(i, 22);
             Object actual = nearCache.localPeek(i);
             // Change of topology may start partitions moving. It leads to invalidate near cache and
             // null-values can be valid in such case.
-            if(actual == null) {
+            if (actual == null) {
                 actual = nearCache.get(i);
                 assertEquals(22, actual);
                 actual = nearCache.localPeek(i);

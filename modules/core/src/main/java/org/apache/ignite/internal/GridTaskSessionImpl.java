@@ -759,7 +759,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @return Checkpoint.
      * @throws IgniteException If failed.
      */
-    protected  <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
+    protected <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");

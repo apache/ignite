@@ -57,7 +57,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test base for test for sql features.
@@ -352,6 +354,13 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Shortcut for {@link #executeFrom(String, Ignite, String)}, that has two String arguments.
+     */
+    protected Result executeFrom(String qry, Ignite node, String schema) {
+        return executeFrom(new SqlFieldsQuery(qry).setSchema(schema), node);
+    }
+
+    /**
      * Shortcut for {@link #execute(SqlFieldsQuery)}.
      *
      * @param qry query string.
@@ -387,7 +396,8 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
                 String explanation = (String)res.get(0).get(0);
 
-                log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
+                if (log.isDebugEnabled())
+                    log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
             }
             catch (Exception exc) {
                 log.error("Ignoring exception gotten explaining query : " + qry, exc);
@@ -1246,6 +1256,36 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(distributedJoinQry(false, qry), node),
                 IgniteSQLException.class, "Failed to parse query.");
+        });
+    }
+
+    /**
+     * Init rule for expected exception
+     */
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
+
+    /**
+     * Check schema for validation
+     */
+    @Test
+    public void testCheckEmptySchema() {
+        expectedEx.expect(IgniteSQLException.class);
+        expectedEx.expectMessage("Failed to set schema for DB connection. " +
+                "Schema name could not be an empty string"
+        );
+
+        String sqlQuery = "SELECT * FROM Employee limit 1";
+
+        testAllNodes(node -> {
+            executeFrom(sqlQuery, node, "");
+            executeFrom(sqlQuery, node, " ");
+            assertTrue("Check valid schema",
+                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+            );
+            assertTrue("Check null schema",
+                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+            );
         });
     }
 

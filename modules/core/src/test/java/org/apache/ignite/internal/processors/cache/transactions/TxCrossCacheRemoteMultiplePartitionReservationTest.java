@@ -145,7 +145,7 @@ public class TxCrossCacheRemoteMultiplePartitionReservationTest extends GridComm
 
             // By this moment a backup partition with id=evictingBackupPartId is mocked and will count reservations on
             // backup commits.
-            try(Transaction tx = client.transactions().txStart()) {
+            try (Transaction tx = client.transactions().txStart()) {
                 cache1.put(evictingBackupPartId, 0);
                 cache2.put(evictingBackupPartId, 0);
 

@@ -42,10 +42,10 @@ public class GridConcurrentLinkedHashMapBenchmark {
         System.out.printf("%8s, %8s, %12s, %12s, %12s, %8s, %8s\n",
             "Method", "Threads", "It./s.", "It./s.*th.", "Iters.", "Time", "Writes");
 
-        for (int i = 1; i <= 32; i*=2)
+        for (int i = 1; i <= 32; i *= 2)
             testGet(i, WRITE_RATE);
 
-        for (int i = 1; i <= 32; i*=2)
+        for (int i = 1; i <= 32; i *= 2)
             testGetSafe(i, WRITE_RATE);
     }
 
@@ -153,7 +153,7 @@ public class GridConcurrentLinkedHashMapBenchmark {
             iters += th.iterations();
 
         System.out.printf("%8s, %8d, %12d, %12d, %12d, %8.3f, %8.2f\n",
-            readOp.toString(), threadCnt, 1000*iters/time, 1000*iters/(time*threadCnt), iters, time/(double)1000, writeProportion);
+            readOp.toString(), threadCnt, 1000 * iters / time, 1000 * iters / (time * threadCnt), iters, time / (double)1000, writeProportion);
     }
 
     /**

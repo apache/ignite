@@ -36,7 +36,7 @@ public class SimpleStepFunctionCompressorTest {
 
         SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>();
 
-        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(new StepFunction [] {function})[0];
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(new StepFunction[] {function})[0];
 
         assertArrayEquals(new double[]{1, 2, 3, 4}, resFunction.getX(), 1e-10);
         assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4), resFunction.getY());

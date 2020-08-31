@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -195,7 +198,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (authCtx != null)
                 AuthorizationContext.context(authCtx);
 
-            try(OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
+            try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
                 resp = handler.handle(req);
             }
             finally {
@@ -213,21 +216,35 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
                 byte[] outMsg = parser.encode(resp);
 
-                ses.send(outMsg);
+                GridNioFuture<?> fut = ses.send(outMsg);
+
+                fut.listen(f -> {
+                    if (f.error() == null)
+                        resp.onSent();
+                });
             }
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             handler.unregisterRequest(req.requestId());
 
             U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
         ses.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFailure(FailureType failureType, Throwable failure) {
+        if (failure instanceof OutOfMemoryError)
+            ctx.failure().process(new FailureContext(failureType, failure));
     }
 
     /**
@@ -279,7 +296,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg), null, true);
 
@@ -306,17 +323,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(ses, clientType);
+            connCtx = prepareContext(clientType);
 
             ensureClientPermissions(clientType);
 
             if (connCtx.isVersionSupported(ver)) {
-                connCtx.initializeFromHandshake(ver, reader);
+                connCtx.initializeFromHandshake(ses, ver, reader);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
             else
-                throw new IgniteCheckedException("Unsupported version.");
+                throw new IgniteCheckedException("Unsupported version: " + ver.asString());
 
             cancelHandshakeTimeout(ses);
 
@@ -362,20 +379,19 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /**
      * Prepare context.
      *
-     * @param ses Session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
         long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);

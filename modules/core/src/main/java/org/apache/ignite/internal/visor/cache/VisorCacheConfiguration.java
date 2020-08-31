@@ -588,7 +588,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(readFromBackup);
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
-        U.writeGridUuid(out, dynamicDeploymentId);
+        U.writeIgniteUuid(out, dynamicDeploymentId);
 
         // V2
         U.writeEnum(out, diskPageCompression);
@@ -636,7 +636,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = in.readBoolean();
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
-        dynamicDeploymentId = U.readGridUuid(in);
+        dynamicDeploymentId = U.readIgniteUuid(in);
 
         if (protoVer > V1) {
             diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());

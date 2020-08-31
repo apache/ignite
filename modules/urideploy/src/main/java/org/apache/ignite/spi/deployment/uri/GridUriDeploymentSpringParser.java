@@ -60,7 +60,7 @@ final class GridUriDeploymentSpringParser {
         assert in != null;
 
         // Note: use ByteArrayResource instead of InputStreamResource because InputStreamResource doesn't work.
-        ByteArrayOutputStream out  = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
             U.copy(in, out);
@@ -72,7 +72,7 @@ final class GridUriDeploymentSpringParser {
         catch (BeansException | IOException e) {
             throw new IgniteSpiException("Failed to parse spring XML file.", e);
         }
-        finally{
+        finally {
             U.close(out, log);
         }
     }

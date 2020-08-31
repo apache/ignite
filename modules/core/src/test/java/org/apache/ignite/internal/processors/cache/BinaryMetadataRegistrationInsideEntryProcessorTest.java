@@ -140,8 +140,8 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
             Ignite ignite;
 
             /** {@inheritDoc} */
-            @Override
-            public Object process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
                 BinaryObjectBuilder builder = ignite.binary().builder("my_type");
 
                 builder.setField("new_field" + i, i);

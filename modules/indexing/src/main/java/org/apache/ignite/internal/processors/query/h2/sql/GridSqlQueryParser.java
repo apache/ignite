@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1171,8 +1173,10 @@ public class GridSqlQueryParser {
 
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
-        for (Column col : data.columns)
-            cols.put(col.getName(), parseColumn(col));
+        for (Column col : data.columns) {
+            if (cols.put(col.getName(), parseColumn(col)) != null)
+                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
+        }
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase())) {
@@ -1548,20 +1552,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode atomicityMode;
+                try {
+                    res.atomicityMode(CacheAtomicityMode.valueOf(val.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    String validVals = Arrays.stream(CacheAtomicityMode.values())
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
 
-                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.ATOMIC;
-                else if (CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-                else {
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
-                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
+                        "(should be either " + validVals + "): " + val,
+                        IgniteQueryErrorCode.PARSING, e);
                 }
-
-                res.atomicityMode(atomicityMode);
 
                 break;
 
@@ -2336,7 +2337,7 @@ public class GridSqlQueryParser {
 
                 Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
 
-                if (separator!= null)
+                if (separator != null)
                     res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
 
                 return res;

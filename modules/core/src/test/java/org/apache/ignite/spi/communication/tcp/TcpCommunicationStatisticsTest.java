@@ -17,15 +17,10 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -36,7 +31,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -115,19 +109,9 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      * @param nodeIdx Node index.
      * @return MBean instance.
      */
-    private TcpCommunicationSpiMBean mbean(int nodeIdx) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "SPIs",
-            SynchronizedCommunicationSpi.class.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (mbeanSrv.isRegistered(mbeanName))
-            return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TcpCommunicationSpiMBean.class,
-                true);
-        else
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return null;
+    private TcpCommunicationSpiMBean mbean(int nodeIdx) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "SPIs",
+            SynchronizedCommunicationSpi.class, TcpCommunicationSpiMBean.class);
     }
 
     /**

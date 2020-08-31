@@ -25,6 +25,8 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,7 +36,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -48,7 +52,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
- * File page store.
+ * FilePageStore is a PageStore implementation that uses regular files to store pages.
+ * <p>
+ * Actual read and write operations are performed with {@link FileIO} abstract interface,
+ * list of its implementations is a good source of information about functionality in Ignite Native Persistence.
+ * </p>
+ * <p>
+ * On a physical level each instance of FilePageStore corresponds to a partition file assigned to the local node or
+ * to index file of a particular cache if any secondary indexes were created.
+ * </p>
+ * <p>
+ * Instances of FilePageStore are managed by {@link FilePageStoreManager} for regular cache operations like assignment
+ * of new partition to the local node or checkpoint event and by {@link IgniteSnapshotManager} during snapshot creation.
+ * </p>
  */
 public class FilePageStore implements PageStore {
     /** Page store file signature. */
@@ -87,6 +103,9 @@ public class FilePageStore implements PageStore {
     /** Region metrics updater. */
     private final LongAdderMetric allocatedTracker;
 
+    /** List of listeners for current page store to handle. */
+    private final List<PageWriteListener> lsnrs = new CopyOnWriteArrayList<>();
+
     /** */
     protected final int pageSize;
 
@@ -120,6 +139,16 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addWriteListener(PageWriteListener lsnr) {
+        lsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeWriteListener(PageWriteListener lsnr) {
+        lsnrs.remove(lsnr);
     }
 
     /** {@inheritDoc} */
@@ -297,8 +326,11 @@ public class FilePageStore implements PageStore {
         return fileSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean delete) throws StorageException {
+    /**
+     * @param delete {@code True} to delete file.
+     * @throws IOException If fails.
+     */
+    private void stop0(boolean delete) throws IOException {
         lock.writeLock().lock();
 
         try {
@@ -324,10 +356,6 @@ public class FilePageStore implements PageStore {
                 fileExists = false;
             }
         }
-        catch (IOException e) {
-            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
-                + ", delete=" + delete + "]", e);
-        }
         finally {
             allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
@@ -335,6 +363,22 @@ public class FilePageStore implements PageStore {
 
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
+        try {
+            stop0(delete);
+        }
+        catch (IOException e) {
+            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
+                + ", delete=" + delete + "]", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        stop0(false);
     }
 
     /** {@inheritDoc} */
@@ -433,7 +477,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -453,7 +497,7 @@ public class FilePageStore implements PageStore {
             if (n < 0) {
                 pageBuf.put(new byte[pageBuf.remaining()]);
 
-                return;
+                return false;
             }
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
@@ -478,6 +522,8 @@ public class FilePageStore implements PageStore {
 
             if (keepCrc)
                 PageIO.setCrc(pageBuf, savedCrc32);
+
+            return true;
         }
         catch (IOException e) {
             throw new StorageException("Failed to read page [file=" + getFileAbsolutePath() + ", pageId=" + pageId + "]", e);
@@ -501,7 +547,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws StorageException {
+    public void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -674,6 +720,12 @@ public class FilePageStore implements PageStore {
                         "CRC hasn't been calculated, crc=0";
 
                     assert pageBuf.position() == 0 : pageBuf.position();
+
+                    for (PageWriteListener lsnr : lsnrs) {
+                        lsnr.accept(pageId, pageBuf);
+
+                        pageBuf.rewind();
+                    }
 
                     fileIO.writeFully(pageBuf, off);
 

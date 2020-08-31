@@ -312,6 +312,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
         CacheObject val;
 
+        cctx.tm().detectPossibleCollidingKeys(this);
+
         lockEntry();
 
         try {
@@ -371,6 +373,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         GridCacheVersion deferredDelVer;
 
         CacheObject val;
+
+        cctx.tm().detectPossibleCollidingKeys(this);
 
         lockEntry();
 
@@ -678,10 +682,13 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val, true);
+        boolean lockedByThreadChainVer = owner != null && owner.hasCandidate(ver);
 
-        return owner == null || !owner.hasCandidate(ver); // Will return false if locked by thread chain version.
+        // If locked by the thread chain version no need to do recursive thread chain scans for the same chain.
+        // This call must be made outside of synchronization.
+        checkOwnerChanged(prev, owner, val, lockedByThreadChainVer);
+
+        return !lockedByThreadChainVer;
     }
 
     /** {@inheritDoc} */
@@ -780,13 +787,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        lockEntry();
-
-        try {
-            return S.toString(GridDistributedCacheEntry.class, this, super.toString());
-        }
-        finally {
-            unlockEntry();
-        }
+        return toStringWithTryLock(() -> S.toString(GridDistributedCacheEntry.class, this, super.toString()));
     }
 }

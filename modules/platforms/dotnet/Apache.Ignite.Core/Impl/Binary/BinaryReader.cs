@@ -725,7 +725,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? _marsh.GetDescriptor(ReadUnregisteredType(typeOverride))
                         : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true, null, typeOverride);
 
-                    // Instantiate object. 
+                    if (desc == null)
+                    {
+                        throw new BinaryObjectException(string.Format(
+                            "No matching type found for object [typeId={0}, userType={1}].",
+                            hdr.TypeId, hdr.IsUserType));
+                    }
+
                     if (desc.Type == null)
                     {
                         throw new BinaryObjectException(string.Format(

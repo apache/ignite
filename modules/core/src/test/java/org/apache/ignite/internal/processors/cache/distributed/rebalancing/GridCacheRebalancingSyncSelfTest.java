@@ -404,7 +404,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void checkPartitionMapExchangeFinished() {
+    public static void checkPartitionMapExchangeFinished() {
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 

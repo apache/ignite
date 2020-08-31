@@ -102,8 +102,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
                         .setTableName("INT_KEY_TAB"),
                     new QueryEntity(SuperKey.class, String.class)
                         .setTableName("SUPER_TAB")
-                ))
-            , "testCache");
+                )), "testCache");
     }
 
     /** {@inheritDoc} */

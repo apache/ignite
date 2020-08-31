@@ -33,7 +33,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
      *
      */
     @Test
-    public void testCheckValueAfterActivation(){
+    public void testCheckValueAfterActivation() {
         String cacheName = "my-cache";
 
         Ignite ig1P = primary(0);

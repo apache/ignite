@@ -21,8 +21,12 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,16 +37,29 @@ public class IgniteSecurityProcessorTest {
     /**
      * Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case a node ID is unknown.
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() {
         GridKernalContext ctx = mock(GridKernalContext.class);
         when(ctx.config()).thenReturn(new IgniteConfiguration());
         when(ctx.discovery()).thenReturn(mock(GridDiscoveryManager.class));
 
+        LogListener logLsnr = LogListener
+            .matches(s -> s.contains("Failed to obtain a security context."))
+            .times(1)
+            .build();
+
+        ListeningTestLogger log = new ListeningTestLogger(false);
+
+        log.registerListener(logLsnr);
+
+        when(ctx.log(IgniteSecurityProcessor.class)).thenReturn(log);
+
         GridSecurityProcessor secPrc = mock(GridSecurityProcessor.class);
 
         IgniteSecurityProcessor ignSecPrc = new IgniteSecurityProcessor(ctx, secPrc);
 
-        ignSecPrc.withContext(UUID.randomUUID());
+        assertThrowsWithCause(() -> ignSecPrc.withContext(UUID.randomUUID()), IllegalStateException.class);
+
+        assertTrue(logLsnr.check());
     }
 }

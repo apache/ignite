@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.scanne
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -183,6 +183,8 @@ public class WalScannerTest {
 
         IgniteLogger log = mock(IgniteLogger.class);
 
+        when(log.isInfoEnabled()).thenReturn(true);
+
         ArgumentCaptor<String> valCapture = ArgumentCaptor.forClass(String.class);
         doNothing().when(log).info(valCapture.capture());
 
@@ -280,6 +282,8 @@ public class WalScannerTest {
         int grpId = 123;
 
         IgniteLogger log = mock(IgniteLogger.class);
+
+        when(log.isInfoEnabled()).thenReturn(true);
 
         ArgumentCaptor<String> valCapture = ArgumentCaptor.forClass(String.class);
         doNothing().when(log).info(valCapture.capture());

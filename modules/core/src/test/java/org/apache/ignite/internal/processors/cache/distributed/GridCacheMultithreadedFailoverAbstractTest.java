@@ -257,7 +257,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                         startBarrier.await();
                     }
                     catch (InterruptedException | BrokenBarrierException ignore) {
-                        return ;
+                        return;
                     }
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -308,7 +308,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                                 expVals.remove(key);
                         }
                         catch (Exception e) {
-                            log.error("Cache update failed [putMap=" + putMap+ ", rmvSet=" + rmvSet + ']', e);
+                            log.error("Cache update failed [putMap=" + putMap + ", rmvSet=" + rmvSet + ']', e);
 
                             errCtr.incrementAndGet();
                         }
@@ -490,7 +490,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
-        for (int i = 0 ; i < dataNodes(); i++) {
+        for (int i = 0; i < dataNodes(); i++) {
             IgniteCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;

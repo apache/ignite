@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+
 /** */
 public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -153,7 +155,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
 
             log.info(">>> Try to deactivate ...");
 
-            state.active(false);
+            state.state(INACTIVE, true);
         }
     }
 }

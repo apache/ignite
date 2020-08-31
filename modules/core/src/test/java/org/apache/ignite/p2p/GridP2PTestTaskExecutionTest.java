@@ -36,7 +36,7 @@ public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGridP2PTestTask() throws IgniteCheckedException {
-        try (Ignite g  = G.start()) {
+        try (Ignite g = G.start()) {
             assert g != null;
 
             assert !g.cluster().forRemotes().nodes().isEmpty() : "Test requires at least 1 remote node.";

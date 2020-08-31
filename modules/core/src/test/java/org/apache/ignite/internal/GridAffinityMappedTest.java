@@ -103,12 +103,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();
 
         assertNotNull(id1);
-        assertEquals(second.id(),  id1);
+        assertEquals(second.id(), id1);
 
         UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2).id();
 
         assertNotNull(id2);
-        assertEquals(first.id(),  id2);
+        assertEquals(first.id(), id2);
     }
 
     /**

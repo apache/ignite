@@ -46,10 +46,10 @@ public class MinMaxScalerPreprocessorTest {
         );
 
         double[][] standardData = new double[][]{
-            {2. / 4, (4. - 4.) / 18.,  0.},
-            {1. / 4, (8. - 4.) / 18.,  (22. - 1.) / 299.},
-            {1.,     (10. - 4.) / 18., (100. - 1.) / 299.},
-            {0.,     (22. - 4.) / 18., (300. - 1.) / 299.}
+            {2. / 4, (4. - 4.) / 18., 0.},
+            {1. / 4, (8. - 4.) / 18., (22. - 1.) / 299.},
+            {1., (10. - 4.) / 18., (100. - 1.) / 299.},
+            {0., (22. - 4.) / 18., (300. - 1.) / 299.}
         };
 
        for (int i = 0; i < data.length; i++)
@@ -61,7 +61,7 @@ public class MinMaxScalerPreprocessorTest {
     public void testApplyDivisionByZero() {
         double[][] data = new double[][]{{1.}, {1.}, {1.}, {1.}};
 
-        MinMaxScalerPreprocessor<Integer,  double[]> preprocessor = new MinMaxScalerPreprocessor<>(
+        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = new MinMaxScalerPreprocessor<>(
             new double[] {1.},
             new double[] {1.},
             new DoubleArrayVectorizer<>(0)

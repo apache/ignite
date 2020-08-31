@@ -454,4 +454,17 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     @Override public CacheGroupContext context() {
         return grp;
     }
+
+    /** {@inheritDoc} */
+    @Override public PartitionUpdateCounter copy() {
+        PartitionUpdateCounterTrackingImpl copy = new PartitionUpdateCounterTrackingImpl(grp);
+
+        copy.cntr.set(cntr.get());
+        copy.first = first;
+        copy.queue = new TreeMap<>(queue);
+        copy.initCntr = initCntr;
+        copy.reserveCntr.set(reserveCntr.get());
+
+        return copy;
+    }
 }

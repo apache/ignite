@@ -111,7 +111,7 @@ public class ClientClusterGroupProjection {
         /**
          * Attribute value.
          */
-        private final String val;
+        private final Object val;
 
         /**
          * Ctor.
@@ -120,7 +120,7 @@ public class ClientClusterGroupProjection {
          */
         public ForAttributeProjectionItem(BinaryRawReader reader) {
             name = reader.readString();
-            val = reader.readString();
+            val = reader.readObject();
         }
 
         /**

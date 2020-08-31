@@ -169,8 +169,9 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from Integer"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_key_pk"));
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
+            String res = ((String)result.get(0).get(0)).toLowerCase();
+            assertTrue(res, res.contains("_key_pk"));
+            assertTrue(res, res.contains("direct lookup"));
         }
     }
 
@@ -250,7 +251,7 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
 
             result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals((count - 1)/groupSize, result.get(0).get(0));//groupVal
+            assertEquals((count - 1) / groupSize, result.get(0).get(0));//groupVal
             assertEquals(count - groupSize, result.get(0).get(1));//min(idxVal)
             assertEquals(count - 1, result.get(0).get(2));//max(idxVal)
             assertEquals(count - groupSize, result.get(0).get(3));//min(nonIdxVal)

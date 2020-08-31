@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.dml.SelectUnion;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.LEFT_TABLE_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.RIGHT_TABLE_CHILD;
@@ -283,7 +282,7 @@ public final class SplitterQueryModel {
             }
             else {
                 // Here we must be inside of generated unique alias for FROM clause element.
-                assert prnt == uniqueAlias: prnt.getClass();
+                assert prnt == uniqueAlias : prnt.getClass();
 
                 if (child instanceof GridSqlTable)
                     childModels.add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
@@ -357,7 +356,7 @@ public final class SplitterQueryModel {
     public GridSqlJoin findJoin(int idx) {
         assert type == SplitterQueryModelType.SELECT : type;
         assert childModels.size() > 1; // It must be at least one join with at least two child tables.
-        assert idx < childModels.size(): idx;
+        assert idx < childModels.size() : idx;
 
         //     join2
         //      / \

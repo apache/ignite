@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -28,10 +29,12 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -376,4 +379,37 @@ public interface IgniteSpiContext {
      * @param err Error.
      */
     public void resolveCommunicationFailure(ClusterNode node, Exception err);
+
+    /**
+     * Returns exisiting or newly created instance of metric registry with given name.
+     *
+     * @param name Metric registry name.
+     * @return Exisiting or newly created instance of metric registry.
+     */
+    @IgniteExperimental
+    public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name);
+
+    /**
+     * Removes metric registry with given name.
+     *
+     * @param name Metric registry name.
+     */
+    @IgniteExperimental
+    public void removeMetricRegistry(String name);
+
+    /**
+     * Returns all registered metric registries.
+     *
+     * @return All registered metric registries.
+     */
+    @IgniteExperimental
+    public Iterable<ReadOnlyMetricRegistry> metricRegistries();
+
+    /**
+     * Register listener which will be notified on metric registry creation.
+     *
+     * @param lsnr Listener.
+     */
+    @IgniteExperimental
+    public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }

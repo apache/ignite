@@ -233,7 +233,7 @@ public class IgniteWalIteratorFactory {
      * @return List of tuples, low and high index segments with gap.
      */
     public List<T2<Long, Long>> hasGaps(
-         @NotNull  List<FileDescriptor> descriptors
+         @NotNull List<FileDescriptor> descriptors
     ) throws IllegalArgumentException {
 
         List<T2<Long, Long>> gaps = new ArrayList<>();
@@ -284,8 +284,7 @@ public class IgniteWalIteratorFactory {
             if (file.isDirectory()) {
                 try {
                     walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
                             addFileDescriptor(path.toFile(), ioFactory, descriptors);
 
                             return FileVisitResult.CONTINUE;
@@ -377,7 +376,7 @@ public class IgniteWalIteratorFactory {
 
         return new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
-            null, null, null, dbMgr, null,
+            null, null, null, dbMgr, null, null,
             null, null, null, null, null,
             null, null, null, null, null, null
         );
@@ -457,7 +456,7 @@ public class IgniteWalIteratorFactory {
          * @param log Logger.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder log(IgniteLogger log){
+        public IteratorParametersBuilder log(IgniteLogger log) {
             this.log = log;
 
             return this;

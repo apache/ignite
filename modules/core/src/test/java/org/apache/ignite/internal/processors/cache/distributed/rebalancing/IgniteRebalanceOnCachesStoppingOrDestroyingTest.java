@@ -325,7 +325,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         /**
          * @param cacheId Cache id.
          */
-        public synchronized void resume(int cacheId){
+        public synchronized void resume(int cacheId) {
             for (T3<UUID, Message, IgniteRunnable> t : suspendedMessages.remove(cacheId))
                 super.notifyListener(t.get1(), t.get2(), t.get3());
         }

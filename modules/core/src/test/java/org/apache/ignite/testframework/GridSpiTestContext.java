@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -45,12 +46,14 @@ import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -62,6 +65,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -90,7 +94,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private final Map<ClusterNode, Serializable> sentMsgs = new HashMap<>();
 
     /** */
-    private final ConcurrentMap<String, Map> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Map<?, ?>> cache = new ConcurrentHashMap<>();
 
     /** */
     private MessageFormatter formatter;
@@ -109,6 +113,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Collection<ClusterNode> remoteNodes() {
         return rmtNodes;
     }
@@ -611,14 +616,33 @@ public class GridSpiTestContext implements IgniteSpiContext {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+        return new MetricRegistry(name, null, null, new NullLogger());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeMetricRegistry(String name) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+        // No-op.
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.
      */
-    @SuppressWarnings("unchecked")
     private <K, V> Map<K, V> getOrCreateCache(String cacheName) {
         synchronized (cache) {
-            Map<K, V> map = cache.get(cacheName);
+            Map<K, V> map = (Map<K, V>)cache.get(cacheName);
 
             if (map == null)
                 cache.put(cacheName, map = new ConcurrentHashMap<>());

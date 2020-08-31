@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -41,8 +42,32 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
         throws BinaryObjectException {
+        return readObject(reader, binObjAllow,true);
+    }
+
+    /**
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+        throws BinaryObjectException {
         byte type = reader.readByte();
 
+        return readObject(type, reader, binObjAllow, keepBinary);
+    }
+
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+        boolean keepBinary) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -134,8 +159,13 @@ public abstract class SqlListenerUtils {
             default:
                 reader.in().position(reader.in().position() - 1);
 
-                if (binObjAllow)
-                    return reader.readObjectDetached();
+                if (binObjAllow) {
+                    Object res = reader.readObjectDetached();
+
+                    return !keepBinary && res instanceof BinaryObject
+                        ? ((BinaryObject)res).deserialize()
+                        : res;
+                }
                 else
                     throw new BinaryObjectException("Custom objects are not supported");
         }

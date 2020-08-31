@@ -1527,8 +1527,8 @@ public abstract class GridUnsafe {
         }
         catch (SecurityException ignored) {
             try {
-                return AccessController.doPrivileged
-                    (new PrivilegedExceptionAction<Unsafe>() {
+                return AccessController.doPrivileged(
+                    new PrivilegedExceptionAction<Unsafe>() {
                         @Override public Unsafe run() throws Exception {
                             Field f = Unsafe.class.getDeclaredField("theUnsafe");
 

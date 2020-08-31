@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -518,6 +520,41 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Checks that scan query is thread-safe and throws correct exception when disposed from another thread.
+        /// </summary>
+        [Test]
+        public void TestScanQueryDisposedFromAnotherThreadThrowsObjectDisposedException()
+        {
+            var cache = GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            const int totalCount = 10000;
+            cache.PutAll(Enumerable.Range(1, totalCount).ToDictionary(x => x, x => x));
+
+            var scanQuery = new ScanQuery<int, int>
+            {
+                Filter = new ScanQueryFilter<int> {AcceptAll = true}
+            };
+
+            var cursor = cache.Query(scanQuery);
+
+            long count = 0;
+            Task.Factory.StartNew(() =>
+            {
+                // ReSharper disable once AccessToModifiedClosure
+                while (Interlocked.Read(ref count) < totalCount / 10) { }
+                cursor.Dispose();
+            });
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                foreach (var unused in cursor)
+                {
+                    Interlocked.Increment(ref count);
+                }
+            });
+        }
+
+        /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
         [Test]
@@ -846,6 +883,76 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the FieldsMetadata property.
+        /// </summary>
+        [Test]
+        public void TestFieldsMetadata()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 5, x => true);
+
+            // Get before iteration.
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
+            var cur = cache.Query(qry);
+            var metas = cur.Fields;
+
+            ValidateFieldsMetadata(
+                metas,
+                new[] {"AGE", "NAME"},
+                new[] {typeof(int), typeof(string)},
+                new[] {"java.lang.Integer", "java.lang.String"}
+            );
+
+            cur.Dispose();
+            Assert.AreSame(metas, cur.Fields);
+
+            Assert.Throws<NotSupportedException>(() => cur.Fields.Add(default(IQueryCursorField)));
+
+            // Custom order, key-val, get after iteration.
+            qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.GetAll();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"NAME", "_KEY", "AGE", "_VAL"},
+                new[] {typeof(string), typeof(object), typeof(int), typeof(object)},
+                new[] {"java.lang.String", "java.lang.Object", "java.lang.Integer", "java.lang.Object"}
+            );
+
+            // Get after disposal.
+            qry.Sql = "SELECT 1, AGE FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.Dispose();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"1", "AGE"},
+                new[] {typeof(int), typeof(int)},
+                new[] {"java.lang.Integer", "java.lang.Integer"}
+            );
+        }
+
+        /// <summary>
+        /// Validates fields metadata collection
+        /// </summary>
+        /// <param name="metadata">Metadata</param>
+        /// <param name="expectedNames">Expected field names</param>
+        /// <param name="expectedTypes">Expected field types</param>
+        /// <param name="expectedJavaTypeNames">Expected java type names</param>
+        private static void ValidateFieldsMetadata(
+            IList<IQueryCursorField> metadata,
+            string[] expectedNames,
+            Type[] expectedTypes,
+            string[] expectedJavaTypeNames
+        )
+        {
+            Assert.AreEqual(expectedNames, metadata.Select(m => m.Name));
+            Assert.AreEqual(expectedTypes, metadata.Select(m => m.Type));
+            Assert.AreEqual(expectedJavaTypeNames, metadata.Select(m => m.JavaTypeName));
+        }
+
+        /// <summary>
         /// Validates the query results.
         /// </summary>
         /// <param name="cache">Cache.</param>
@@ -1046,6 +1153,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Error flag
+        public bool AcceptAll { get; set; }
+
         // Injection test
         [InstanceResource]
         public IIgnite Ignite { get; set; }
@@ -1058,7 +1168,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
-            return entry.Key < 50;
+            return entry.Key < 50 || AcceptAll;
         }
     }
 

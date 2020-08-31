@@ -175,7 +175,7 @@ public abstract class BinaryPrimitives {
     public static char readChar(byte[] arr, int off) {
         long pos = GridUnsafe.BYTE_ARR_OFF + off;
 
-        return BIG_ENDIAN ? GridUnsafe.getCharLE(arr, pos): GridUnsafe.getChar(arr, pos);
+        return BIG_ENDIAN ? GridUnsafe.getCharLE(arr, pos) : GridUnsafe.getChar(arr, pos);
     }
 
     /**

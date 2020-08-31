@@ -52,6 +52,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -657,7 +658,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     boolean isInterrupted = Thread.interrupted();
 
                     try {
-                        while(true) {
+                        while (true) {
                             try {
                                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                                     AtomicDataStructureValue val = cache.get(key);
@@ -1570,7 +1571,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
         final boolean separated = !collocated &&
-            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE,  ctx.grid().cluster().nodes());
+            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, ctx.grid().cluster().nodes());
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
@@ -1662,6 +1663,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
             try {
                 return c.applyx();
+            }
+            catch (NodeStoppingException e) {
+                throw e;
             }
             catch (IgniteCheckedException e) {
                 if (i == GridCacheAdapter.MAX_RETRIES - 1)

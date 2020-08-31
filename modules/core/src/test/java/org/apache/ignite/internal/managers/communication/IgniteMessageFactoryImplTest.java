@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -40,6 +41,9 @@ public class IgniteMessageFactoryImplTest {
 
     /** Test message 2 type. */
     private static final short TEST_MSG_2_TYPE = 2;
+
+    /** Test message 42 type. */
+    private static final short TEST_MSG_42_TYPE = 42;
 
     /** Unknown message type. */
     private static final short UNKNOWN_MSG_TYPE = 0;
@@ -63,7 +67,7 @@ public class IgniteMessageFactoryImplTest {
     public void testCreate() {
         MessageFactory[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
-        IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
+        IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(factories);
 
         Message msg;
 
@@ -73,8 +77,12 @@ public class IgniteMessageFactoryImplTest {
         msg = msgFactory.create(TEST_MSG_2_TYPE);
         assertTrue(msg instanceof TestMessage2);
 
-        msg = msgFactory.create(TEST_MSG_2_TYPE);
-        assertTrue(msg instanceof TestMessage2);
+        msg = msgFactory.create(TEST_MSG_42_TYPE);
+        assertTrue(msg instanceof TestMessage42);
+
+        short[] directTypes = msgFactory.registeredDirectTypes();
+
+        assertArrayEquals(directTypes, new short[] {TEST_MSG_1_TYPE, TEST_MSG_2_TYPE, TEST_MSG_42_TYPE});
     }
 
     /**
@@ -111,6 +119,7 @@ public class IgniteMessageFactoryImplTest {
         /** {@inheritDoc} */
         @Override public void registerAll(IgniteMessageFactory factory) {
             factory.register(TEST_MSG_1_TYPE, TestMessage1::new);
+            factory.register(TEST_MSG_42_TYPE, TestMessage42::new);
         }
     }
 
@@ -154,7 +163,7 @@ public class IgniteMessageFactoryImplTest {
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            return 1;
+            return TEST_MSG_1_TYPE;
         }
 
         /** {@inheritDoc} */
@@ -182,7 +191,35 @@ public class IgniteMessageFactoryImplTest {
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            return 2;
+            return TEST_MSG_2_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+    }
+
+    /** Test message. */
+    private static class TestMessage42 implements Message {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return TEST_MSG_42_TYPE;
         }
 
         /** {@inheritDoc} */

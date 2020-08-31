@@ -17,10 +17,9 @@
 
 package org.apache.ignite.tests.pojos;
 
+import java.io.Serializable;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
-import java.io.Serializable;
 
 /**
  * Simple POJO without getters/setters which could be stored as a key in Ignite cache

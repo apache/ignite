@@ -47,7 +47,7 @@ import org.junit.Test;
  */
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** Tx sizes. */
-    private static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int[] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;

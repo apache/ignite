@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests.utils;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
@@ -26,8 +27,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Dummy transaction for test purposes.

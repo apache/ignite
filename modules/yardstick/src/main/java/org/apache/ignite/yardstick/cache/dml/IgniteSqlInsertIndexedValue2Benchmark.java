@@ -35,7 +35,7 @@ public class IgniteSqlInsertIndexedValue2Benchmark extends IgniteCacheAbstractBe
         int key = insCnt.getAndIncrement();
 
         cache.query(new SqlFieldsQuery("insert into Person2(_key, val1, val2) values (?, ?, ?)")
-                .setArgs(key, key, key+1));
+                .setArgs(key, key, key + 1));
 
         return true;
     }

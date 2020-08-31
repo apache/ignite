@@ -107,7 +107,7 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      *
      * @return Address for thin driver.
      */
-    private String findThinAddress(){
+    private String findThinAddress() {
         for (ClusterNode n : ignite().cluster().forClients().nodes()) {
             if (n.isLocal())
                 continue;
@@ -163,8 +163,8 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @param sql - sql query for statement.
      * @return Prepared statement.
      */
-    final ThreadLocal<PreparedStatement> newStatement(final String sql){
-        return new ThreadLocal<PreparedStatement>(){
+    final ThreadLocal<PreparedStatement> newStatement(final String sql) {
+        return new ThreadLocal<PreparedStatement>() {
             @Override protected PreparedStatement initialValue() {
                 try {
                     return conn.get().prepareStatement(sql);

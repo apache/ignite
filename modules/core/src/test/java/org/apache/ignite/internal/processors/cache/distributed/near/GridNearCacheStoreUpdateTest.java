@@ -355,7 +355,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
                 }
             });
 
-            IgniteInternalFuture<Object> fut2 =  GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     latch.await();
 

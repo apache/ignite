@@ -400,7 +400,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
      *
      */
     private void checkDetectionFuts() {
-        for (int i = 0; i < NODES_CNT ; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             Ignite ignite = ignite(i);
 
             IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();

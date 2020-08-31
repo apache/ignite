@@ -74,7 +74,7 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
 
     /** {@inheritDoc} */
     @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res) {
-        if(res.success())
+        if (res.success())
             cnt++;
     }
 }

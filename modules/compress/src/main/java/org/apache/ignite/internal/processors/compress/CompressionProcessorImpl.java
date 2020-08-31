@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import com.github.luben.zstd.Zstd;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import com.github.luben.zstd.Zstd;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
@@ -101,7 +101,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         int compressLevel
     ) throws IgniteCheckedException {
         assert compression != null && compression != DiskPageCompression.DISABLED : compression;
-        assert U.isPow2(blockSize): blockSize;
+        assert U.isPow2(blockSize) : blockSize;
         assert page.position() == 0 && page.limit() >= pageSize;
 
         int oldPageLimit = page.limit();
@@ -187,8 +187,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return The given page.
      */
     private static ByteBuffer setCompressionInfo(ByteBuffer page, DiskPageCompression compression, int compressedSize, int compactedSize) {
-        assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE: compressedSize;
-        assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE: compactedSize;
+        assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE : compressedSize;
+        assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE : compactedSize;
 
         PageIO.setCompressionType(page, getCompressionType(compression));
         PageIO.setCompressedSize(page, (short)compressedSize);
@@ -402,7 +402,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          * @return Compressor.
          */
         static LZ4Compressor getCompressor(int level) {
-            assert level >= 0 && level <= 17: level;
+            assert level >= 0 && level <= 17 : level;
             return level == 0 ? fastCompressor : factory.highCompressor(level);
         }
 

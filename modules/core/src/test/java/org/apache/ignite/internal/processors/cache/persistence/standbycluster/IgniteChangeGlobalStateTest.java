@@ -482,7 +482,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @param ig Node.
      */
-    private void checkExceptionTryUseDataStructure(final Ignite ig){
+    private void checkExceptionTryUseDataStructure(final Ignite ig) {
         assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgniteAtomicSequence seq = ig.atomicSequence("seq", 0, true);

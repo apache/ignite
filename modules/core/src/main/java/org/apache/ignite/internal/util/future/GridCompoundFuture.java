@@ -220,7 +220,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @param fut Future to add.
      */
-    public final void add(IgniteInternalFuture<T> fut) {
+    public final GridCompoundFuture<T, R> add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
         synchronized (this) {
@@ -248,6 +248,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(e);
             }
         }
+
+        return this;
     }
 
     /**
@@ -268,9 +270,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Mark this future as initialized.
      */
-    public final void markInitialized() {
+    public final GridCompoundFuture<T, R> markInitialized() {
         if (FLAGS_UPD.compareAndSet(this, 0, INIT_FLAG))
             checkComplete();
+
+        return this;
     }
 
     /**

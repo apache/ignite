@@ -37,7 +37,7 @@ public interface FileIOFactory extends Serializable {
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    default FileIO create(File file) throws IOException{
+    default FileIO create(File file) throws IOException {
         return create(file, CREATE, READ, WRITE);
     }
 
