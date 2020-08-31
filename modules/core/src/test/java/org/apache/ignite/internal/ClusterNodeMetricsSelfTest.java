@@ -31,6 +31,8 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -419,6 +421,33 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(Collections.singleton(nodeId2), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false,
             true));
         assertEquals(Collections.emptySet(), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCpuLoadMetric() throws Exception {
+        Ignite ignite = grid();
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                assertTrue(GridTestUtils.waitForCondition(
+                    () -> ignite.cluster().localNode().metrics().getCurrentCpuLoad() > 0, 10000L));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        final IgniteCache cache = ignite.getOrCreateCache(new CacheConfiguration<>("TEST")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.REPLICATED));
+
+        for (int i = 0; i < MAX_VALS_AMOUNT * 1000; i++)
+            cache.put(i, i);
+
+        fut.get();
     }
 
     /**

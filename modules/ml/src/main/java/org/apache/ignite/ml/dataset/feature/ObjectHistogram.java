@@ -17,7 +17,11 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Basic implementation of {@link Histogram} that implements also {@link DistributionComputer}.

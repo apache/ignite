@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
+import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.UUID;
 
 /**
  * Schema index create operation.

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEventFilter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;

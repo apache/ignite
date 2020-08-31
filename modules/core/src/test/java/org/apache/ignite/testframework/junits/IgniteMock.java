@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -67,12 +66,15 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -312,16 +314,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
         return null;
     }
@@ -497,6 +489,11 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
+        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */

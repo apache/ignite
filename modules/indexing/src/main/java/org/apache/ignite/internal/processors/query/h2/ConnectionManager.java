@@ -76,7 +76,8 @@ public class ConnectionManager {
     private final Long stmtCleanupPeriod = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
-    private final Long stmtTimeout = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+    private final Long stmtTimeout = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000)
+        * 1_000_000; // convert millis to nanos
 
     /** Database URL. */
     private final String dbUrl;
@@ -224,10 +225,8 @@ public class ConnectionManager {
      * Called periodically to clean up the statement cache.
      */
     private void cleanupStatements() {
-        long now = U.currentTimeMillis();
-
         connPool.forEach(c -> {
-            if (now - c.statementCache().lastUsage() > stmtTimeout)
+            if (c.statementCache().inactiveFor(stmtTimeout))
                 c.clearStatementCache();
         });
     }

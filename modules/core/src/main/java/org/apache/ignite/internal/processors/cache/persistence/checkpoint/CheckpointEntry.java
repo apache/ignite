@@ -62,7 +62,7 @@ public class CheckpointEntry {
      * @param cpId Checkpoint ID.
      * @param cacheGrpStates Cache groups states.
      */
-    public CheckpointEntry(
+    CheckpointEntry(
         long cpTs,
         WALPointer cpMark,
         UUID cpId,

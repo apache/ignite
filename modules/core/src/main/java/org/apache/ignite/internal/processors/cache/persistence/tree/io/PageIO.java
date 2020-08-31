@@ -257,10 +257,13 @@ public abstract class PageIO {
     public static final short T_DATA_PART = 32;
 
     /** */
-    public static final short T_DEFRAG_LINK_MAPPING_INNER = 33;
+    public static final short T_MARKER_PAGE = 33;
 
     /** */
-    public static final short T_DEFRAG_LINK_MAPPING_LEAF = 34;
+    public static final short T_DEFRAG_LINK_MAPPING_INNER = 34;
+
+    /** */
+    public static final short T_DEFRAG_LINK_MAPPING_LEAF = 35;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;

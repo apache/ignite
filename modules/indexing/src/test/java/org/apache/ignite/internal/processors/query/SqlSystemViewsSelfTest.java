@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import com.google.common.collect.Sets;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.Timestamp;
@@ -36,6 +35,7 @@ import java.util.stream.LongStream;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -322,7 +322,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
+                assertEquals(Integer.toString(i), expRow[j], String.valueOf(resRow.get(j)));
         }
     }
 

@@ -442,7 +442,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STRIPED_THREADPOOL_QUEUE",
                 "SYS.DATASTREAM_THREADPOOL_QUEUE",
                 "SYS.CACHE_GROUP_PAGE_LISTS",
-                "SYS.DATA_REGION_PAGE_LISTS"
+                "SYS.DATA_REGION_PAGE_LISTS",
+                "SYS.PARTITION_STATES"
             ))
         );
     }
@@ -982,8 +983,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_NUMBER.null.10",
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_SIZE.null.19",
                 "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null.10",
-                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
-            ));
+                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10",
+                "SYS.PARTITION_STATES.CACHE_GROUP_ID.null.10",
+                "SYS.PARTITION_STATES.PARTITION_ID.null.10",
+                "SYS.PARTITION_STATES.NODE_ID.null.2147483647",
+                "SYS.PARTITION_STATES.STATE.null.2147483647",
+                "SYS.PARTITION_STATES.IS_PRIMARY.null.1"
+                ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

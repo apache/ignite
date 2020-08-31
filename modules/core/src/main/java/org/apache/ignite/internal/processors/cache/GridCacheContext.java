@@ -48,6 +48,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -157,7 +159,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgniteLogger log;
 
     /** Cache configuration. */
-    private CacheConfiguration cacheCfg;
+    private volatile CacheConfiguration cacheCfg;
 
     /** Affinity manager. */
     private GridCacheAffinityManager affMgr;
@@ -2348,6 +2350,39 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
         return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
             contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
+    }
+
+    /**
+     * Apply changes from {@link SchemaAddQueryEntityOperation}.
+     *
+     * @param op Add query entity schema operation.
+     */
+    public void onSchemaAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        onSchemaAddQueryEntity(op.entities(), op.schemaName(), op.isSqlEscape(),
+                op.queryParallelism());
+    }
+
+    /**
+     * Apply changes on enable indexing.
+     *
+     * @param entities New query entities.
+     * @param sqlSchema Sql schema name.
+     * @param isSqlEscape Sql escape flag.
+     * @param qryParallelism Query parallelism parameter.
+     */
+    public void onSchemaAddQueryEntity(
+            Collection<QueryEntity> entities,
+            String sqlSchema,
+            boolean isSqlEscape,
+            int qryParallelism
+    ) {
+        CacheConfiguration oldCfg = cacheCfg;
+
+        if (oldCfg != null)
+            cacheCfg = GridCacheUtils.patchCacheConfiguration(oldCfg, entities, sqlSchema, isSqlEscape, qryParallelism);
+
+        if (qryMgr != null)
+            qryMgr.enable();
     }
 
     /**

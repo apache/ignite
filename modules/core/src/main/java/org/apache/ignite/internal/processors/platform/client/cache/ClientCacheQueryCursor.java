@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base query cursor holder.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.store.cassandra.session;
 
-import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
-
 import java.io.Closeable;
 import java.util.List;
+import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 
 /**
  * Wrapper around Cassandra driver session, to automatically handle:

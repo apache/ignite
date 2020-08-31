@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -33,7 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 
 /**

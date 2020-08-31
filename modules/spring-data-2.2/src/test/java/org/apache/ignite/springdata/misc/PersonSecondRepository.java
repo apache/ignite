@@ -18,6 +18,7 @@
 package org.apache.ignite.springdata.misc;
 
 import java.util.List;
+
 import javax.cache.Cache;
 import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.apache.ignite.springdata22.repository.config.Query;

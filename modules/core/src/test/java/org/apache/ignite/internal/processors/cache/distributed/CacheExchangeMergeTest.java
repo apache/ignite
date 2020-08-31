@@ -78,6 +78,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -150,11 +151,21 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 cacheConfiguration("c8", TRANSACTIONAL, PARTITIONED, 2),
                 cacheConfiguration("c9", TRANSACTIONAL, PARTITIONED, 10),
                 cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0),
-                cacheConfiguration("c11", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
-                cacheConfiguration("c12", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
-                cacheConfiguration("c13", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
-                cacheConfiguration("c14", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
-                cacheConfiguration("c15", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
+                cacheConfiguration("c11", ATOMIC, PARTITIONED, 0),
+                cacheConfiguration("c12", ATOMIC, PARTITIONED, 1),
+                cacheConfiguration("c13", ATOMIC, PARTITIONED, 2),
+                cacheConfiguration("c14", ATOMIC, PARTITIONED, 10),
+                cacheConfiguration("c15", ATOMIC, REPLICATED, 0),
+                cacheConfiguration("c16", TRANSACTIONAL, PARTITIONED, 0),
+                cacheConfiguration("c17", TRANSACTIONAL, PARTITIONED, 1),
+                cacheConfiguration("c18", TRANSACTIONAL, PARTITIONED, 2),
+                cacheConfiguration("c19", TRANSACTIONAL, PARTITIONED, 10),
+                cacheConfiguration("c20", TRANSACTIONAL, REPLICATED, 0),
+                cacheConfiguration("c21", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
+                cacheConfiguration("c22", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
+                cacheConfiguration("c23", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
+                cacheConfiguration("c24", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
+                cacheConfiguration("c25", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
             );
         }
 
@@ -165,7 +176,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
+            new IgniteThreadFactory("testscope", "cache-exchange-merge-tests"));
     }
 
     /** {@inheritDoc} */

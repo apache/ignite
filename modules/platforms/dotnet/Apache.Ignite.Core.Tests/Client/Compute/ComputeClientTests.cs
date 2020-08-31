@@ -80,6 +80,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     Assert.Fail(entry.Message);
                 }
             }
+
+            Assert.IsEmpty(Client.GetActiveNotificationListeners());
         }
 
         /// <summary>
@@ -137,8 +139,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 var task = client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, (long) 10000);
                 ignite.Dispose();
 
-                var ex = Assert.Throws<AggregateException>(() => task.Wait()).GetInnermostException();
-                StringAssert.StartsWith("Task cancelled due to stopping of the grid", ex.Message);
+                Assert.Throws<AggregateException>(() => task.Wait());
             }
             finally
             {
@@ -314,12 +315,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var nodeIds = Client.GetCluster().GetNodes().Select(n => n.Id).ToArray();
 
             CollectionAssert.AreEquivalent(nodeIds, getProjection(Client.GetCompute()));
+            Assert.AreSame(Client.GetCluster(), Client.GetCompute().ClusterGroup);
 
             // One node.
             var nodeId = nodeIds[1];
             var proj = Client.GetCluster().ForPredicate(n => n.Id == nodeId);
 
             Assert.AreEqual(new[]{nodeId}, getProjection(proj.GetCompute()));
+            Assert.AreEqual(new[]{nodeId}, proj.GetCompute().ClusterGroup.GetNodes().Select(n => n.Id));
 
             // Two nodes.
             proj = Client.GetCluster().ForPredicate(n => n.Id != nodeId);

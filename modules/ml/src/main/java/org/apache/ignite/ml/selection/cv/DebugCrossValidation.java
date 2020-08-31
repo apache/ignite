@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-
-import java.util.Map;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the

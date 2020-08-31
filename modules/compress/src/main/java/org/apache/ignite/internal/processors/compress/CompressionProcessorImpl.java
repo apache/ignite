@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import com.github.luben.zstd.Zstd;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import com.github.luben.zstd.Zstd;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
