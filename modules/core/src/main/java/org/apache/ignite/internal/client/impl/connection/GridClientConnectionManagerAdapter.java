@@ -93,7 +93,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     private GridNioServer srv;
 
     /** Active connections. */
-    private final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
+    public final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
 
     /** Active connections of nodes. */
     private final ConcurrentMap<UUID, GridClientConnection> nodeConns = new ConcurrentHashMap<>();
@@ -237,6 +237,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
 
                 try {
                     conn = connect(null, srvsCp);
+                    conns.putIfAbsent(conn.serverAddress(), conn);
 
                     if (!handshakeOnly)
                         conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null).get();

@@ -426,7 +426,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @throws GridClientConnectionResetException If request failed.
      * @throws GridClientClosedException If client was closed.
      */
-    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, TcpClientFuture<R> fut)
+    public <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, TcpClientFuture<R> fut)
         throws GridClientConnectionResetException, GridClientClosedException {
         return makeRequest(msg, fut, false);
     }
@@ -1085,7 +1085,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /**
      * Future extension that holds client tcp message and auth retry flag.
      */
-    private static class TcpClientFuture<R> extends GridClientFutureAdapter<R> {
+    public static class TcpClientFuture<R> extends GridClientFutureAdapter<R> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1113,7 +1113,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         /**
          * Creates new future with {@code forward} flag set to {@code false}.
          */
-        private TcpClientFuture() {
+        public TcpClientFuture() {
             forward = false;
             keepBinaries = false;
         }

@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.rest.handlers.user.UserActionComman
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
@@ -229,7 +230,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @return Future.
      */
     private IgniteInternalFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
-        if (startLatch.getCount() > 0) {
+        if (!GridRestClusterNameRequest.class.isInstance(req) && startLatch.getCount() > 0) {
             try {
                 startLatch.await();
             }

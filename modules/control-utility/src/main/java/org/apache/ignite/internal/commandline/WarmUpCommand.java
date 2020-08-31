@@ -20,6 +20,12 @@ package org.apache.ignite.internal.commandline;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerOsImpl;
+import org.apache.ignite.internal.client.impl.connection.GridClientNioTcpConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientNioTcpConnection.TcpClientFuture;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
 
 /**
  * Command for interacting with warm-up.
@@ -43,6 +49,19 @@ public class WarmUpCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg, true)) {
+
+            GridClientImpl client1 = (GridClientImpl)client;
+            GridClientConnectionManagerOsImpl connMgr = (GridClientConnectionManagerOsImpl)client1.connectionManager();
+            GridClientNioTcpConnection conn = (GridClientNioTcpConnection)connMgr.conns.values().iterator().next();
+
+            TcpClientFuture<Object> fut = new TcpClientFuture<>();
+
+            GridClientFutureAdapter<Object> resFut = conn.makeRequest(new GridClientClusterNameRequest(), fut);
+
+            resFut.get();
+
+            System.out.println(conn);
+
             // TODO: 28.08.2020 Implement.
         }
         return null;

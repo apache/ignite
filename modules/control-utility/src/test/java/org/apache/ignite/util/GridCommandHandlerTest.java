@@ -2344,12 +2344,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
 
-        BlockedWarmUpStrategy blockedWarmUpStrategy = (BlockedWarmUpStrategy)provider.strats.get(1);
-        U.await(blockedWarmUpStrategy.startLatch);
+        BlockedWarmUpStrategy blockedWarmUpStgy = (BlockedWarmUpStrategy)provider.strats.get(1);
+        U.await(blockedWarmUpStgy.startLatch);
 
         assertEquals(EXIT_CODE_OK, execute("--warm-up"));
 
-        blockedWarmUpStrategy.stopLatch.countDown();
+        blockedWarmUpStgy.stopLatch.countDown();
         fut.get();
     }
 

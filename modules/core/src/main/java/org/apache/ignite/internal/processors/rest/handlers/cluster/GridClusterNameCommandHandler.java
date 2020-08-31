@@ -58,7 +58,8 @@ public class GridClusterNameCommandHandler extends GridRestCommandHandlerAdapter
         final GridRestResponse res = new GridRestResponse();
 
         try {
-            res.setResponse(ctx.cluster().clusterName());
+            res.setResponse("Stop warm-up= + ctx.cache().context().cache().stopWarmUp());
+            //res.setResponse(ctx.cluster().clusterName());
 
             fut.onDone(res);
         }
