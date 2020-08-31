@@ -23,8 +23,10 @@ from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -68,41 +70,36 @@ class CellularAffinity(IgniteTest):
                     attr=CellularAffinity.ATTRIBUTE,
                     cacheName=CellularAffinity.CACHE_NAME)
 
-    def setUp(self):
-        pass
-
-    def teardown(self):
-        pass
-
     @cluster(num_nodes=NUM_NODES * 3 + 1)
     @parametrize(version=str(DEV_BRANCH))
     def test(self, version):
         """
         Test Cellular Affinity scenario (partition distribution).
         """
-        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
-        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'])
-        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'])
+        cell1 = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
+        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], joined_cluster=cell1)
+        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'], joined_cluster=cell1)
 
         checker = IgniteApplicationService(
             self.test_context,
+            IgniteClientConfiguration(version=IgniteVersion(version), discovery_spi=from_ignite_cluster(cell1)),
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.DistributionChecker",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
-                    "nodesPerCell": self.NUM_NODES},
-            version=version)
+                    "nodesPerCell": self.NUM_NODES})
 
         checker.run()
 
-    def start_cell(self, ignite_version, jvm_opts):
+    def start_cell(self, version, jvm_opts, joined_cluster=None):
         """
         Starts cell.
         """
-        ignites = IgniteService(
-            self.test_context,
-            num_nodes=CellularAffinity.NUM_NODES,
-            version=ignite_version,
-            properties=self.properties(),
-            jvm_opts=jvm_opts)
+        config = IgniteConfiguration(version=IgniteVersion(version), properties=self.properties())
+        if joined_cluster:
+            config = config._replace(discovery_spi=from_ignite_cluster(joined_cluster))
+
+        ignites = IgniteService(self.test_context, config, num_nodes=CellularAffinity.NUM_NODES, jvm_opts=jvm_opts)
 
         ignites.start()
+
+        return ignites

@@ -20,16 +20,16 @@ This module contains Spec classes that describes config and command line to star
 import base64
 import importlib
 import json
+from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils.ignite_path import IgnitePath
-from ignitetest.services.utils.ignite_config import IgniteClientConfig, IgniteServerConfig
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.utils.version import DEV_BRANCH
 
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 
 
-# pylint: disable=no-else-return
-def resolve_spec(service, context, **kwargs):
+def resolve_spec(service, context, config, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -47,41 +47,40 @@ def resolve_spec(service, context, **kwargs):
         return len(impl_filter) > 0
 
     if is_impl("IgniteService"):
-        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(**kwargs)
-    elif is_impl("IgniteApplicationService"):
-        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, **kwargs)
-    else:
-        raise Exception("There is no specification for class %s" % type(service))
+        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(config=config, **kwargs)
+
+    if is_impl("IgniteApplicationService"):
+        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, config=config, **kwargs)
+
+    raise Exception("There is no specification for class %s" % type(service))
 
 
-class IgniteSpec:
+class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
-    def __init__(self, version, project, client_mode, jvm_opts):
-        if isinstance(version, IgniteVersion):
-            self.version = version
-        else:
-            self.version = IgniteVersion(version)
-
+    def __init__(self, config, project, jvm_opts):
+        self.version = config.version
         self.path = IgnitePath(self.version, project)
         self.envs = {}
         self.jvm_opts = jvm_opts or []
-        self.client_mode = client_mode
+        self.config = config
 
-    def config(self):
+    @property
+    def config_template(self):
         """
         :return: config that service will use to start on a node
         """
-        if self.client_mode:
-            return IgniteClientConfig()
-        return IgniteServerConfig()
+        if self.config.client_mode:
+            return IgniteClientConfigTemplate()
+        return IgniteServerConfigTemplate()
 
+    @property
+    @abstractmethod
     def command(self):
         """
         :return: string that represents command to run service on a node
         """
-        raise NotImplementedError()
 
     def _envs(self):
         """
@@ -102,14 +101,13 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
-
+    @property
     def command(self):
-        cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
+        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self.CONFIG_FILE,
-               self.STDOUT_STDERR_CAPTURE,
                self.STDOUT_STDERR_CAPTURE)
 
         return cmd
@@ -126,19 +124,16 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     def _app_args(self):
         return ",".join(self.args)
 
+    @property
     def command(self):
-        cmd = "%s %s %s %s 1>> %s 2>> %s &" % \
+        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               self.STDOUT_STDERR_CAPTURE,
                self.STDOUT_STDERR_CAPTURE)
 
         return cmd
-
-
-###
 
 
 class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
@@ -208,5 +203,5 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
             aws = self.path.module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
-        else:
-            return []
+
+        return []
