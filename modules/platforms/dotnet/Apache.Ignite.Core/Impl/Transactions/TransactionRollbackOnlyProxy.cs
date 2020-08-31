@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
@@ -201,10 +202,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 {
                     _txs.TxRemove(this);
                 }
-                // catch(IgniteIllegalStateException)
-                // {
-                //     // No-op. Dispose should not throw.
-                // }
+                catch(IgniteIllegalStateException)
+                {
+                    // No-op. Dispose should not throw.
+                }
                 finally
                 {
                     _isClosed = true;
