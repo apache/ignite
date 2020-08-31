@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 /**
@@ -41,7 +42,9 @@ public class WarmUpCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        // TODO: 27.08.2020 Add.
+        try (GridClient client = Command.startClient(clientCfg, true)) {
+            // TODO: 28.08.2020 Implement.
+        }
         return null;
     }
 }

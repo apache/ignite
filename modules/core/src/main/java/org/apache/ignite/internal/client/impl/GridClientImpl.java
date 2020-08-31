@@ -134,12 +134,18 @@ public class GridClientImpl implements GridClient {
      * @param id Client identifier.
      * @param cfg0 Client configuration.
      * @param routerClient Router client flag.
+     * @param handshakeOnly Without getting/update a topology.
      * @throws GridClientException If client configuration is incorrect.
      * @throws GridServerUnreachableException If none of the servers specified in configuration can
      *      be reached.
      */
     @SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-    public GridClientImpl(UUID id, GridClientConfiguration cfg0, boolean routerClient) throws GridClientException {
+    public GridClientImpl(
+        UUID id,
+        GridClientConfiguration cfg0,
+        boolean routerClient,
+        boolean handshakeOnly
+    ) throws GridClientException {
         this.id = id;
 
         cfg = new GridClientConfiguration(cfg0);
@@ -189,7 +195,7 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null, routerClient);
+            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null, routerClient, handshakeOnly);
 
             try {
                 // Init connection manager, it should cause topology update.
@@ -425,7 +431,7 @@ public class GridClientImpl implements GridClient {
      */
     public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId, boolean routerClient)
         throws GridClientException {
-        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId, routerClient);
+        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId, routerClient, false);
     }
 
     /**
@@ -434,13 +440,14 @@ public class GridClientImpl implements GridClient {
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
+     * @param handshakeOnly Without getting/update a topology.
      * @throws GridClientException In case of error.
      */
     private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
         GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
-        @Nullable Byte marshId, boolean routerClient)
-        throws GridClientException {
-        return new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
+        @Nullable Byte marshId, boolean routerClient, boolean handshakeOnly) throws GridClientException {
+        return new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient,
+            handshakeOnly);
     }
 
     /**

@@ -124,7 +124,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** Command handlers. */
     protected final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
 
-    /** */
+    /** */ // TODO: 31.08.2020 Rework.
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Busy lock. */
@@ -571,6 +571,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                         ctx.addNodeAttribute(key, p.getValue());
                     }
                 }
+
+                proto.onKernalStart();
             }
         }
     }
@@ -585,8 +587,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (isRestEnabled()) {
-            for (GridRestProtocol proto : protos)
-                proto.onKernalStart();
+//            for (GridRestProtocol proto : protos)
+//                proto.onKernalStart();
 
             sesTimeoutCheckerThread.setDaemon(true);
 

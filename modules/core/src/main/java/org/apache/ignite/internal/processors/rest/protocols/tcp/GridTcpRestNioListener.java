@@ -131,8 +131,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         SUPP_VERS.add((short)1);
     }
 
-    /** */
-    private final CountDownLatch marshMapLatch = new CountDownLatch(1);
+    /** */ // TODO: 31.08.2020 Remove.
+    private final CountDownLatch marshMapLatch = new CountDownLatch(0);
 
     /** Marshallers map. */
     private Map<Byte, GridClientMarshaller> marshMap;
