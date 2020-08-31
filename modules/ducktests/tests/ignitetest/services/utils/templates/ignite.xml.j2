@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
+{#
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
@@ -15,7 +15,12 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
+#}
+
+{% import 'discovery_macro.j2' as disco_utils %}
+{% import 'cache_macro.j2' as cache_utils %}
+{% import 'datastorage_macro.j2' as datastorage_utils %}
+{% import 'misc_macro.j2' as misc_utils %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -29,12 +34,20 @@
             </bean>
         </property>
 
-        <property name="clientMode" value="{{ client_mode or False | lower }}"/>
-        {% if consistent_id %}
-            <property name="consistentId" value="{{ consistent_id }}"/>
-        {% endif %}
-        {% if properties %}
-            {{ properties }}
+        <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
+        <property name="consistentId" value="{{ config.consistent_id }}"/>
+        <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
+
+        {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
+
+        {{ disco_utils.discovery_spi(config.discovery_spi) }}
+
+        {{ datastorage_utils.data_storage(config.data_storage) }}
+
+        {{ cache_utils.cache_configs(config.caches) }}
+
+        {% if config.properties %}
+            {{ config.properties }}
         {% endif %}
     </bean>
 </beans>

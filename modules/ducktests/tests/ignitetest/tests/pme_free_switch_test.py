@@ -25,6 +25,9 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
@@ -35,29 +38,6 @@ class PmeFreeSwitchTest(IgniteTest):
     Tests PME free switch scenarios.
     """
     NUM_NODES = 3
-
-    @staticmethod
-    def properties():
-        """
-        :return: Rendered configuration properties.
-        """
-        return """
-            <property name="cacheConfiguration">
-                <list>
-                    <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                        <property name="name" value="test-cache"/>
-                        <property name="backups" value="2"/>
-                        <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    </bean>
-                </list>
-            </property>
-        """
-
-    def setUp(self):
-        pass
-
-    def teardown(self):
-        pass
 
     @cluster(num_nodes=NUM_NODES + 2)
     @parametrize(version=str(DEV_BRANCH))
@@ -72,22 +52,25 @@ class PmeFreeSwitchTest(IgniteTest):
 
         ignite_version = IgniteVersion(version)
 
-        ignites = IgniteService(
-            self.test_context,
-            num_nodes=self.NUM_NODES,
-            properties=self.properties(),
-            version=ignite_version)
+        config = IgniteConfiguration(
+            version=ignite_version,
+            caches=[CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
+        )
+
+        ignites = IgniteService(self.test_context, config, num_nodes=self.NUM_NODES)
 
         ignites.start()
 
         self.stage("Starting long_tx_streamer")
 
+        client_config = config._replace(client_mode=True,
+                                        discovery_spi=from_ignite_cluster(ignites, slice(0, self.NUM_NODES - 1)))
+
         long_tx_streamer = IgniteApplicationService(
             self.test_context,
+            client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
-            properties=self.properties(),
-            params={"cacheName": "test-cache"},
-            version=ignite_version)
+            params={"cacheName": "test-cache"})
 
         long_tx_streamer.start()
 
@@ -95,11 +78,10 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
+            client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test."
                             "SingleKeyTxStreamerApplication",
-            properties=self.properties(),
-            params={"cacheName": "test-cache", "warmup": 1000},
-            version=ignite_version)
+            params={"cacheName": "test-cache", "warmup": 1000})
 
         single_key_tx_streamer.start()
 
@@ -108,7 +90,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         self.stage("Stopping server node")
 
-        ignites.stop_node(ignites.nodes[1])
+        ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
         long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 

@@ -33,7 +33,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     """
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, properties, **kwargs):
+    def __init__(self, context, config, num_nodes, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -43,9 +43,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         # IgniteAwareService uses IgnitePersistenceAware mixin to override default Service 'log' definition.
         self.log_level = "DEBUG"
 
-        self.properties = properties
+        self.config = config
 
-        self.spec = resolve_spec(self, context, **kwargs)
+        self.spec = resolve_spec(self, context, config, **kwargs)
 
     def start_node(self, node):
         self.init_persistent(node)
@@ -63,13 +63,26 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         super().init_persistent(node)
 
-        node_config = self.spec.config().render(config_dir=self.PERSISTENT_ROOT,
-                                                work_dir=self.WORK_DIR,
-                                                properties=self.properties,
-                                                consistent_id=node.account.externally_routable_ip)
+        node_config = self._prepare_config(node)
+
+        node.account.create_file(self.CONFIG_FILE, node_config)
+
+    def _prepare_config(self, node):
+        if not self.config.consistent_id:
+            config = self.config._replace(consistent_id=node.account.externally_routable_ip)
+        else:
+            config = self.config
+
+        config.discovery_spi.prepare_on_start(cluster=self)
+
+        node_config = self.spec.config_template.render(config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR,
+                                                       config=config)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
-        node.account.create_file(self.CONFIG_FILE, node_config)
+
+        self.logger.debug("Config for node %s: %s" % (node.account.hostname, node_config))
+
+        return node_config
 
     @abstractmethod
     def pids(self, node):
@@ -81,7 +94,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command()
+        cmd = self.spec.command
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 

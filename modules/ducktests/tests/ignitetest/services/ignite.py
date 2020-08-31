@@ -31,7 +31,6 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteService(IgniteAwareService):
@@ -42,10 +41,8 @@ class IgniteService(IgniteAwareService):
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes, jvm_opts=None, properties="", client_mode=False, modules=None,
-                 version=DEV_BRANCH):
-        super().__init__(context, num_nodes, properties, client_mode=client_mode, modules=modules, version=version,
-                         jvm_opts=jvm_opts)
+    def __init__(self, context, config, num_nodes, jvm_opts=None, modules=None):
+        super().__init__(context, config, num_nodes, modules=modules, jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
@@ -82,21 +79,15 @@ class IgniteService(IgniteAwareService):
             self.thread_dump(node)
             raise
 
-    def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
-        """
-        Stops the nodes asynchronously.
-        """
-        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
-
-        sem = CountDownLatch(len(nodes))
+    def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
+        sem = CountDownLatch(len(nodes)) if simultaneously else None
         time_holder = AtomicValue()
 
         delay = 0
         threads = []
 
         for node in nodes:
-            thread = Thread(target=self.__stop_node,
-                            args=(node, next(iter(self.pids(node))), sig, sem, delay, time_holder))
+            thread = Thread(target=self.__exec_on_node, args=(node, task, sem, delay, time_holder))
 
             threads.append(thread)
 
@@ -107,25 +98,16 @@ class IgniteService(IgniteAwareService):
         for thread in threads:
             thread.join(timeout_sec)
 
-        if wait_for_stop:
-            try:
-                wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
-                           timeout_sec=timeout_sec, err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-            except Exception:
-                for node in nodes:
-                    self.thread_dump(node)
-                raise
-
         return time_holder.get()
 
     @staticmethod
-    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
+    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
 
         if delay_ms > 0:
-            time.sleep(delay_ms/1000.0)
+            time.sleep(delay_ms / 1000.0)
 
         if time_holder:
             mono = monotonic()
@@ -133,7 +115,7 @@ class IgniteService(IgniteAwareService):
 
             time_holder.compare_and_set(None, (mono, timestamp))
 
-        node.account.signal(pid, sig, False)
+        task(node)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)

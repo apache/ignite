@@ -20,11 +20,11 @@ import os
 
 from jinja2 import FileSystemLoader, Environment
 
-DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/config"
+DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/templates"
 DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
 
 
-class Config:
+class ConfigTemplate:
     """
     Basic configuration.
     """
@@ -47,7 +47,7 @@ class Config:
         return res
 
 
-class IgniteServerConfig(Config):
+class IgniteServerConfigTemplate(ConfigTemplate):
     """
     Ignite server node configuration.
     """
@@ -55,7 +55,7 @@ class IgniteServerConfig(Config):
         super().__init__(path)
 
 
-class IgniteClientConfig(Config):
+class IgniteClientConfigTemplate(ConfigTemplate):
     """
     Ignite client node configuration.
     """
@@ -64,7 +64,7 @@ class IgniteClientConfig(Config):
         self.default_params.update(client_mode=True)
 
 
-class IgniteLoggerConfig(Config):
+class IgniteLoggerConfigTemplate(ConfigTemplate):
     """
     Ignite logger configuration.
     """
