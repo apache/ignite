@@ -97,6 +97,9 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Direct memory buffer with a size of one page. */
+    private ByteBuffer pageBuf;
+
     /**
      * @param sharedCtx Cache shared context.
      * @param defrgCtx Defragmentation context.
@@ -114,6 +117,8 @@ public class CachePartitionDefragmentationManager {
     /** */
     public void executeDefragmentation() {
         System.setProperty(SKIP_CP_ENTRIES, "true");
+
+        pageBuf = ByteBuffer.allocateDirect(sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize());
 
         try {
             FilePageStoreManager filePageStoreMgr = (FilePageStoreManager)sharedCtx.pageStore();
@@ -256,6 +261,8 @@ public class CachePartitionDefragmentationManager {
         }
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);
+
+            pageBuf = null;
         }
     }
 
@@ -526,9 +533,7 @@ public class CachePartitionDefragmentationManager {
 
         long leafId = findFirstLeafId(grpId, tree.getMetaPageId(), pageMemory);
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(pageMemory.pageSize());
-
-        long bufAddr = GridUnsafe.bufferAddress(buf);
+        long bufAddr = GridUnsafe.bufferAddress(pageBuf);
 
         while (leafId != 0L) {
             long leafPage = pageMemory.acquirePage(grpId, leafId);

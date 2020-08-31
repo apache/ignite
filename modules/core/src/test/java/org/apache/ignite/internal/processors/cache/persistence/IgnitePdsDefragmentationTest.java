@@ -53,7 +53,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final String CACHE_2_NAME = "cache2";
 
     /** */
-    public static final int PARTS = 4;
+    public static final int PARTS = 1;
 
     /** */
     public static final int ADDED_KEYS_COUNT = 5;
@@ -111,25 +111,27 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setWalSegmentSize(4 * 1024 * 1024);
 
-        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().
-            setInitialSize(100L * 1024 * 1024).
-            setMaxSize(200L * 1024 * 1024).
-            setPersistenceEnabled(true));
+        dsCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setInitialSize(100L * 1024 * 1024)
+                .setMaxSize(200L * 1024 * 1024)
+                .setPersistenceEnabled(true)
+        );
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        CacheConfiguration cache1Config = new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(TRANSACTIONAL)
-                .setGroupName(GRP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+        CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setGroupName(GRP_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
-        CacheConfiguration cache2Config = new CacheConfiguration(CACHE_2_NAME)
-                .setAtomicityMode(TRANSACTIONAL)
-                .setGroupName(GRP_NAME)
-                .setExpiryPolicyFactory(new PolicyFactory())
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+        CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setGroupName(GRP_NAME)
+            .setExpiryPolicyFactory(new PolicyFactory())
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
-        cfg.setCacheConfiguration(cache1Config, cache2Config);
+        cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
         return cfg;
     }
