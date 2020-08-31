@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 {
                     _txs.TxRemove(this);
                 }
-                // catch()
+                // catch(IgniteIllegalStateException)
                 // {
                 //     // No-op. Dispose should not throw.
                 // }

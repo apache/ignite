@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
@@ -405,10 +406,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 Close();
             }
-            // catch
-            // {
-            //     // No-op. Dispose should not throw.
-            // }
+            catch(IgniteIllegalStateException)
+            {
+                // No-op. Dispose should not throw.
+            }
             finally
             {
                 GC.SuppressFinalize(this);
