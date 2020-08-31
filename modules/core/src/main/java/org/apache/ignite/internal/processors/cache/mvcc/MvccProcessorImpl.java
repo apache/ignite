@@ -34,6 +34,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -506,25 +507,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             // 2. Notify previous queries.
             prevQueries.onNodeFailed(nodeId);
 
-            // 3. Recover transactions started by the failed node.
-            recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
-                // Put synthetic vote from another failed node
-                ballotBox.vote(nodeId);
+            if (mvccEnabled) {
+                // 3. Recover transactions started by the failed node.
+                recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
+                    // Put synthetic vote from another failed node
+                    ballotBox.vote(nodeId);
 
-                tryFinishRecoveryVoting(nearNodeId, ballotBox);
-            });
+                    tryFinishRecoveryVoting(nearNodeId, ballotBox);
+                });
 
-            if (evt.eventNode().isClient()) {
-                RecoveryBallotBox ballotBox = recoveryBallotBoxes
-                    .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
+                if (evt.eventNode().isClient()) {
+                    RecoveryBallotBox ballotBox = recoveryBallotBoxes
+                        .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
-                ballotBox.voters(evt.topologyNodes().stream()
-                    // Nodes not supporting MVCC will never send votes to us. So, filter them away.
-                    .filter(this::supportsMvcc)
-                    .map(ClusterNode::id)
-                    .collect(Collectors.toList()));
+                    ballotBox.voters(evt.topologyNodes().stream()
+                        // Nodes not supporting MVCC will never send votes to us. So, filter them away.
+                        .filter(this::supportsMvcc)
+                        .map(ClusterNode::id)
+                        .collect(Collectors.toList()));
 
-                tryFinishRecoveryVoting(nodeId, ballotBox);
+                    tryFinishRecoveryVoting(nodeId, ballotBox);
+                }
             }
         }
     }
@@ -1858,6 +1861,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @param msg Message.
      */
     private void processRecoveryFinishedMessage(UUID nodeId, MvccRecoveryFinishedMessage msg) {
+        if (!mvccEnabled)
+            return;
+
         UUID nearNodeId = msg.nearNodeId();
 
         RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nearNodeId, uuid -> new RecoveryBallotBox());

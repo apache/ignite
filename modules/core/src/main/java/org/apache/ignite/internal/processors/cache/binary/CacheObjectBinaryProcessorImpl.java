@@ -1110,8 +1110,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
             (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName()) &&
-            !GridCacheUtils.isIgfsCache(ctx.config(), ccfg.getName());
+        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
 
         AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
 
