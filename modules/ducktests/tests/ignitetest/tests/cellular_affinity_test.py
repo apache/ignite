@@ -94,7 +94,7 @@ class CellularAffinity(IgniteTest):
         """
         Starts cell.
         """
-        config = IgniteConfiguration(version=IgniteVersion(version), properties = self.properties())
+        config = IgniteConfiguration(version=IgniteVersion(version), properties=self.properties())
         if joined_cluster:
             config = config._replace(discovery_spi=from_ignite_cluster(joined_cluster))
 
