@@ -110,6 +110,7 @@ class TcpDiscoverySpi(DiscoverySpi):
     def prepare_on_start(self, **kwargs):
         self.ip_finder.prepare_on_start(**kwargs)
 
+
 def from_ignite_cluster(cluster, subset=None):
     """
     Form TcpDiscoverySpi from cluster or its subset.

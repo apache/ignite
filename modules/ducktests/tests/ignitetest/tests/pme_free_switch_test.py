@@ -39,7 +39,6 @@ class PmeFreeSwitchTest(IgniteTest):
     """
     NUM_NODES = 3
 
-
     @cluster(num_nodes=NUM_NODES + 2)
     @parametrize(version=str(DEV_BRANCH))
     @parametrize(version=str(LATEST_2_7))

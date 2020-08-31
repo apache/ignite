@@ -31,7 +31,6 @@ setup(name="ignitetest",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
       install_requires=['ducktape==0.8.0'],
-      dependency_links = [
+      dependency_links=[
           'https://github.com/confluentinc/ducktape/tarball/master#egg=ducktape-0.8.0'
-      ]
-)
+      ])

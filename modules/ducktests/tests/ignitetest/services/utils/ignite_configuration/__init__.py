@@ -38,6 +38,7 @@ class IgniteConfiguration(NamedTuple):
     data_storage: DataStorageConfiguration = None
     caches: list = []
 
+
 class IgniteClientConfiguration(IgniteConfiguration):
     """
     Ignite client configuration.

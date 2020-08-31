@@ -59,14 +59,15 @@ class AddNodeRebalanceTest(IgniteTest):
 
         self.stage("Starting DataGenerationApplication")
 
-        node_config = node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
         # This client just put some data to the cache.
-        IgniteApplicationService(self.test_context, config=node_config,
+        app_config = node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
+        IgniteApplicationService(self.test_context, config=app_config,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
                                  params={"cacheName": "test-cache", "range": self.DATA_AMOUNT},
                                  timeout_sec=self.PRELOAD_TIMEOUT).run()
 
-        ignite = IgniteService(self.test_context, node_config._replace(client_mode=False), num_nodes=1)
+        ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
+                               num_nodes=1)
 
         self.stage("Starting Ignite node")
 

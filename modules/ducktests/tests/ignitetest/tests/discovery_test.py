@@ -30,7 +30,8 @@ from ignitetest.services.ignite import IgniteAwareService
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
+    TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils.ignite_test import IgniteTest
@@ -91,18 +92,20 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
-        ignite_config = IgniteConfiguration(
-            version=test_config.version,
-            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
-        )
-        modules = None
+        modules = ['zookeeper'] if test_config.with_zk else None
 
         if test_config.with_zk:
             zk_quorum = start_zookeeper(self.test_context, 3)
 
-            ignite_config = ignite_config._replace(discovery_spi=from_zookeeper_cluster(zk_quorum))
+            discovery_spi = from_zookeeper_cluster(zk_quorum)
+        else:
+            discovery_spi = TcpDiscoverySpi()
 
-            modules = ['zookeeper']
+        ignite_config = IgniteConfiguration(
+            version=test_config.version,
+            discovery_spi=discovery_spi,
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
+        )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
