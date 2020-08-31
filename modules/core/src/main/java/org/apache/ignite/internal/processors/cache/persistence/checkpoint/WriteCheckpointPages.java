@@ -27,6 +27,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -185,7 +187,7 @@ public class WriteCheckpointPages implements Runnable {
 
         CheckpointMetricsTracker tracker = persStoreMetrics.metricsEnabled() ? this.tracker : null;
 
-        PageStoreWriter pageStoreWriter = createPageStoreWriter(pagesToRetry);
+        Map<PageMemoryEx, PageStoreWriter> pageStoreWriters = new HashMap<>();
 
         ByteBuffer tmpWriteBuf = threadBuf.get();
 
@@ -207,6 +209,8 @@ public class WriteCheckpointPages implements Runnable {
             snapshotMgr.beforePageWrite(fullId);
 
             tmpWriteBuf.rewind();
+
+            PageStoreWriter pageStoreWriter = pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
 
@@ -234,18 +238,20 @@ public class WriteCheckpointPages implements Runnable {
     /**
      * Factory method for create {@link PageStoreWriter}.
      *
+     * @param pageMemEx
      * @param pagesToRetry List pages for retry.
      * @return Checkpoint page write context.
      */
-    private PageStoreWriter createPageStoreWriter(Map<PageMemoryEx, List<FullPageId>> pagesToRetry) {
+    private PageStoreWriter createPageStoreWriter(
+        PageMemoryEx pageMemEx,
+        Map<PageMemoryEx, List<FullPageId>> pagesToRetry
+    ) {
         return new PageStoreWriter() {
             /** {@inheritDoc} */
             @Override public void writePage(FullPageId fullPageId, ByteBuffer buf,
                 int tag) throws IgniteCheckedException {
                 if (tag == PageMemoryImpl.TRY_AGAIN_TAG) {
-                    PageMemoryEx pageMem = pageMemoryGroupResolver.apply(fullPageId.groupId());
-
-                    pagesToRetry.computeIfAbsent(pageMem, k -> new ArrayList<>()).add(fullPageId);
+                    pagesToRetry.computeIfAbsent(pageMemEx, k -> new ArrayList<>()).add(fullPageId);
 
                     return;
                 }
@@ -265,7 +271,19 @@ public class WriteCheckpointPages implements Runnable {
 
                 curCpProgress.updateWrittenPages(1);
 
-                PageStore store = storeMgr.writeInternal(groupId, pageId, buf, tag, true);
+                PageStore store = pageMemEx.pageStoreManager().write(groupId, pageId, buf, tag, true);
+
+                // Temporary debug logs.
+                log.info(S.toString(
+                    "Page checkpointed",
+                    "grpId", Integer.toHexString(groupId), false,
+                    "partition", (short)PageIdUtils.partId(pageId), false,
+                    "idx", PageIdUtils.pageIndex(pageId), false,
+                    "io", PageIO.getPageIO(buf).getClass().getSimpleName(), false,
+                    "pageStore", pageMemEx.pageStoreManager(), false
+                ));
+
+                assert store != null;
 
                 updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
             }

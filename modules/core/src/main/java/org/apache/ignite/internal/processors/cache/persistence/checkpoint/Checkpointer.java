@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -947,8 +948,10 @@ public class Checkpointer extends GridWorker {
      * @param type Checkpoint entry type.
      * @throws StorageException If failed to write checkpoint entry.
      */
-    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp,
-        CheckpointEntryType type) throws StorageException {
+    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws StorageException {
+        if (System.getProperty(CachePartitionDefragmentationManager.SKIP_CP_ENTRIES) != null)
+            return;
+
         String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
 
