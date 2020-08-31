@@ -1972,7 +1972,7 @@ public class GridDhtPartitionDemander {
                     ", topVer=" + topologyVersion() +
                     ", progress=" + (routines - remainingRoutines) + "/" + routines + "]");
             }
-            catch (Throwable t){
+            catch (Throwable t) {
                 U.error(log, "Completed " + ((remainingRoutines == 0 ? "(final) " : "") +
                     "rebalancing [grp=" + grp.cacheOrGroupName() +
                     ", supplier=" + nodeId +
