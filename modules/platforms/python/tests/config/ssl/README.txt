@@ -1,0 +1,1 @@
+These files generated using script $IGNITE_SRC/modules/platforms/cpp/thin-client-test/config/ssl/generate_certificates.sh
