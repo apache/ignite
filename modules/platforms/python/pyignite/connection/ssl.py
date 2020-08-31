@@ -30,7 +30,7 @@ def wrap(client, _socket):
 
         password = client.init_kwargs.get('ssl_keyfile_password', None)
         ssl_version = client.init_kwargs.get('ssl_version', SSL_DEFAULT_VERSION)
-        ciphers = ciphers=client.init_kwargs.get('ssl_ciphers', SSL_DEFAULT_CIPHERS)
+        ciphers = client.init_kwargs.get('ssl_ciphers', SSL_DEFAULT_CIPHERS)
         cert_reqs = client.init_kwargs.get('ssl_cert_reqs', ssl.CERT_NONE)
         ca_certs = client.init_kwargs.get('ssl_ca_certfile', None)
 
