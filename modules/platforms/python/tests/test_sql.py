@@ -163,56 +163,19 @@ def test_long_multipage_query(client):
     The goal is to ensure that all the values are selected in a right order.
     """
 
-    field_range = range(1, 13)
+    fields = ["id", "abc", "ghi", "def", "jkl", "prs", "mno", "tuw", "zyz", "abc1", "def1", "jkl1", "prs1"]
 
-    record_range = range(1, 21)
+    client.sql('DROP TABLE LongMultipageQuery IF EXISTS')
 
-    drop_query = 'DROP TABLE LongMultipageQuery IF EXISTS'
+    client.sql("CREATE TABLE LongMultiPageQuery (%s, %s)" % \
+               (fields[0] + " INT(11) PRIMARY KEY", ",".join(map(lambda f: f + " INT(11)", fields[1:]))))
 
-    create_query = '''CREATE TABLE LongMultipageQuery (
-        id INT(11) PRIMARY KEY,
-        abc INT(11),
-        ghi INT(11),
-        def INT(11),
-        jkl INT(11),
-        prs INT(11),
-        mno INT(11),
-        tuw INT(11),
-        zyz INT(11),
-        abc1 INT(11),
-        def1 INT(11),
-        jkl1 INT(11),
-        prs1 INT(11),
-    )'''
-
-    insert_query = '''INSERT INTO LongMultipageQuery (
-        id,
-        abc,
-        ghi,
-        def,
-        jkl,
-        prs,
-        mno,
-        tuw,
-        zyz,
-        abc1,
-        def1,
-        jkl1,
-        prs1,
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-
-    select_query = 'SELECT * FROM LongMultipageQuery'
-
-    client.sql(drop_query)
-    client.sql(create_query)
-
-    for id in record_range:
+    for id in range(1, 21):
         client.sql(
-            insert_query,
-            query_args=[id] + list(i * id for i in field_range),
-        )
+            "INSERT INTO LongMultipageQuery (%s) VALUES (%s)" % (",".join(fields), ",".join("?" * len(fields))),
+            query_args=[id] + list(i * id for i in range(1, 13)))
 
-    result = client.sql(select_query, page_size=1)
+    result = client.sql('SELECT * FROM LongMultipageQuery', page_size=1)
     for page in result:
         assert len(page) == 13
         id = page[0]
