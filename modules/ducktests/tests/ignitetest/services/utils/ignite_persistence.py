@@ -19,7 +19,7 @@ This module contains classes that represent persistent artifacts of tests
 
 import os
 
-from ignitetest.services.utils.ignite_config import IgniteLoggerConfig
+from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
 
 
 class PersistenceAware:
@@ -66,5 +66,5 @@ class IgnitePersistenceAware(PersistenceAware):
         """
         super().init_persistent(node)
 
-        logger_config = IgniteLoggerConfig().render(work_dir=self.WORK_DIR)
+        logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.WORK_DIR)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)

@@ -20,7 +20,6 @@ This module contains the base class to build Ignite aware application written on
 import re
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.utils.version import DEV_BRANCH
 
 
 class IgniteApplicationService(IgniteAwareService):
@@ -31,18 +30,10 @@ class IgniteApplicationService(IgniteAwareService):
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
-    def __init__(self, context, java_class_name, params="", properties="", timeout_sec=60, modules=None,
-                 client_mode=True, version=DEV_BRANCH, servicejava_class_name=SERVICE_JAVA_CLASS_NAME,
-                 jvm_opts=None, start_ignite=True):
-        super().__init__(context, 1, properties,
-                         client_mode=client_mode,
-                         version=version,
-                         modules=modules,
-                         servicejava_class_name=servicejava_class_name,
-                         java_class_name=java_class_name,
-                         params=params,
-                         jvm_opts=jvm_opts,
-                         start_ignite=start_ignite)
+    def __init__(self, context, config, java_class_name, params="", timeout_sec=60, modules=None,
+                 servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
+        super().__init__(context, config, 1, modules=modules, servicejava_class_name=servicejava_class_name,
+                         java_class_name=java_class_name, params=params, jvm_opts=jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
