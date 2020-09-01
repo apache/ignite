@@ -476,7 +476,7 @@ final class ReliableChannel implements NotificationListener {
     ) {
         for (NotificationListener lsnr : notificationLsnrs) {
             try {
-                lsnr.acceptNotification(ch, op, rsrcId,  payload, err);
+                lsnr.acceptNotification(ch, op, rsrcId, payload, err);
             }
             catch (Exception ignore) {
                 // No-op.

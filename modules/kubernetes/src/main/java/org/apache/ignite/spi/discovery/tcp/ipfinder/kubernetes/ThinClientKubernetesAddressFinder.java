@@ -19,9 +19,9 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
 import java.net.InetAddress;
 import java.util.function.Supplier;
-import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
 import org.apache.ignite.kubernetes.KubernetesConnectorConfigurator;
 import org.apache.ignite.kubernetes.KubernetesConnectorDefaults;
+import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
 
 /**
  * Address finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to

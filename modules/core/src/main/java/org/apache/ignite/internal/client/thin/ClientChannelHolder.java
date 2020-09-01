@@ -99,7 +99,7 @@ class ClientChannelHolder {
     ClientChannel getOrCreateChannel(boolean ignoreThrottling)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         if (ch == null && !close) {
-            synchronized(this) {
+            synchronized (this) {
                 if (ch != null)
                     return ch;
 
@@ -137,7 +137,7 @@ class ClientChannelHolder {
      */
     void closeChannel() {
         if (ch != null) {
-            synchronized(this) {
+            synchronized (this) {
                 if (ch != null) {
                     U.closeQuiet(ch);
                     onChannelClose.accept(ch);

@@ -27,7 +27,6 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 
-
 /**
  * Communication channel with failover and partition awareness.
  */
@@ -44,7 +43,7 @@ final class ReliableChannelFacade implements AutoCloseable {
     /** Affinity map update is in progress. */
     private final AtomicBoolean affUpdateInProgress = new AtomicBoolean();
 
-    /**ß
+    /**
      * Constructor.
      */
     ReliableChannelFacade(
