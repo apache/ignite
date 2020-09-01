@@ -173,13 +173,12 @@ def test_long_multipage_query(client):
     for id in range(1, 21):
         client.sql(
             "INSERT INTO LongMultipageQuery (%s) VALUES (%s)" % (",".join(fields), ",".join("?" * len(fields))),
-            query_args=[id] + list(i * id for i in range(1, 13)))
+            query_args=[id] + list(i * id for i in range(1, len(fields))))
 
     result = client.sql('SELECT * FROM LongMultipageQuery', page_size=1)
     for page in result:
-        assert len(page) == 13
-        id = page[0]
+        assert len(page) == len(fields)
         for field_number, value in enumerate(page[1:], start=1):
-            assert value == field_number * id
+            assert value == field_number * page[0]
 
     client.sql(drop_query)
