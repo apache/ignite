@@ -75,12 +75,8 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
 
                     ++loaded;
 
-                    if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
+                    if (notifyTime + U.millisToNanos(1500) < System.nanoTime())
                         notifyTime = System.nanoTime();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Streamed " + i + " entries.");
-                    }
 
                     // Delayed notify of the initialization to make sure the data load has completelly began and
                     // has produced some valuable amount of data.
@@ -103,9 +99,10 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
      */
     private boolean skipDataKey(int dataKey) {
         if (!nodesToLoad.isEmpty()) {
-            for (ClusterNode n : nodesToLoad)
-                if (aff.isPrimaryOrBackup(n, dataKey))
+            for (ClusterNode n : nodesToLoad) {
+                if (aff.isPrimary(n, dataKey))
                     return false;
+            }
 
             return true;
         }
