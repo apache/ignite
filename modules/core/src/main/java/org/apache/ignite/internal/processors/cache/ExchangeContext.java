@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -37,7 +38,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  *
  */
 public class ExchangeContext {
-    /** */
+    /** Enables exchange compatibility with protocol version 1. */
+    @IgniteSystemProperty(description = "Enables exchange compatibility with protocol version 1.", type = Boolean.class)
     public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
 
     /** Logger. */
