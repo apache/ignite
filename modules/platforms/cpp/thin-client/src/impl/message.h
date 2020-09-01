@@ -28,6 +28,8 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
+#include <ignite/thin/transactions/transaction_consts.h>
+
 #include "impl/protocol_version.h"
 #include "impl/affinity/affinity_topology_version.h"
 #include "impl/affinity/partition_awareness_group.h"
@@ -38,6 +40,11 @@ namespace ignite
     {
         namespace thin
         {
+            /** "Transactional" flag mask. */
+            #define TRANSACTIONAL_FLAG_MASK 0x02;
+
+            #define KEEP_BINARY_FLAG_MASK 0x01;
+
             /* Forward declaration. */
             class Readable;
 
@@ -151,6 +158,12 @@ namespace ignite
 
                     /** Put binary type info. */
                     PUT_BINARY_TYPE = 3003,
+
+                    /** Start new transaction. */
+                    OP_TX_START = 4000,
+
+                    /** Commit transaction. */
+                    OP_TX_END = 4001,
                 };
             };
 
@@ -344,7 +357,8 @@ namespace ignite
                  */
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
-                    binary(binary)
+                    binary(binary),
+                    actTx(false)
                 {
                     // No-op.
                 }
@@ -358,13 +372,36 @@ namespace ignite
                 }
 
                 /**
+                 * Sets transaction active flag and appropriate txId.
+                 * @param active Transaction activity flag.
+                 * @param id Transaction id.
+                 */
+                void activeTx(bool active, int32_t id) {
+                    actTx = active;
+
+                    txId = id;
+                }
+
+                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
                 {
                     writer.WriteInt32(cacheId);
-                    writer.WriteBool(binary);
+
+                    int8_t flags = 0;
+
+                    if (binary)
+                        flags |= KEEP_BINARY_FLAG_MASK;
+
+                    if (actTx)
+                        flags |= TRANSACTIONAL_FLAG_MASK;
+
+                    writer.WriteInt8(flags);
+
+                    if (actTx)
+                        writer.WriteInt32(txId);
                 }
 
             private:
@@ -373,6 +410,10 @@ namespace ignite
 
                 /** Binary flag. */
                 bool binary;
+
+                bool actTx;
+
+                int32_t txId;
             };
 
             /**
@@ -490,6 +531,15 @@ namespace ignite
                 }
 
                 /**
+                 * Sets transaction active flag and appropriate txId.
+                 * @param active Transaction activity flag.
+                 * @param id Transaction id.
+                 */
+                void activeTx(bool active, int32_t id) {
+                    CacheRequest<OpCode>::activeTx(active, id);
+                }
+
+                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  * @param ver Version.
@@ -567,6 +617,108 @@ namespace ignite
 
                 /** Value 3. */
                 const Writable& val3;
+            };
+
+            /**
+             * Tx start request.
+             */
+            class TxStartRequest : public Request<RequestType::OP_TX_START>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
+                               ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
+                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl) :
+                    concurrency(conc),
+                    isolation(isolationLvl),
+                    timeout(tmOut),
+                    size(sz),
+                    label(lbl)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxStartRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
+                    writer.WriteInt8(concurrency);
+                    writer.WriteInt8(isolation);
+                    writer.WriteInt64(timeout);
+                    label.IsValid() ? writer.WriteString(label.Get()->GetData()) : writer.WriteNull();
+                }
+
+            private:
+                /** Cncurrency. */
+                ignite::thin::transactions::TransactionConcurrency::Type concurrency;
+
+                /** Isolation. */
+                ignite::thin::transactions::TransactionIsolation::Type isolation;
+
+                /** Timeout. */
+                const int64_t timeout;
+
+                /** Size. */
+                const int32_t size;
+
+                /** Tx label. */
+                ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label;
+            };
+
+            /**
+             * Tx end request.
+             */
+            class TxEndRequest : public Request<RequestType::OP_TX_END>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param id Transaction id.
+                 * @param comm Need to commit flag.
+                 */
+                TxEndRequest(int32_t id, bool comm) :
+                    commited(comm),
+                    txId(id)
+                {
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxEndRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
+                    writer.WriteInt32(txId);
+                    writer.WriteBool(commited);
+                }
+
+            private:
+                /** Tx id. */
+                const int32_t txId;
+
+                /** Need to commit flag. */
+                const bool commited;
             };
 
             /**
@@ -1009,6 +1161,51 @@ namespace ignite
             private:
                 /** Value. */
                 int64_t value;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class Int32Response : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Int32Response() :
+                    value(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Int32Response()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get received value.
+                 *
+                 * @return Received bool value.
+                 */
+                int32_t GetValue() const
+                {
+                    return value;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                int32_t value;
             };
         }
     }
