@@ -108,4 +108,16 @@ public class BasicCacheOperations {
             // end::async[]
         }
     }
+
+    void readRepair() {
+
+        try (Ignite ignite = Ignition.start()) {
+            //tag::read-repair[]
+            IgniteCache<Object, Object> cache = ignite.cache("my_cache").withReadRepair();
+
+            Object value = cache.get(10);
+            //end::read-repair[]
+        }
+
+    }
 }

@@ -13,7 +13,6 @@ import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
-import io.opencensus.common.Duration;
 import io.opencensus.exporter.trace.zipkin.ZipkinExporterConfiguration;
 import io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter;
 

@@ -125,8 +125,15 @@ section.page-docs {
 	}
 	table tr.even,table tr.alt{background:#f8f8f7}
     table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd),table.stripes-even tr:nth-of-type(even),table.stripes-hover tr:hover{background:#f8f8f7}
+}
 
-
+.copyright {
+    margin-top: 3em;
+    padding-top: 1em;
+    border-top: 1px solid #f0f0f0;
+    font-size: 0.9em;
+    line-height: 1.8em;
+    color: #757575;
 }
 
 body.hide-left-nav {

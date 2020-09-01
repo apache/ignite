@@ -127,6 +127,8 @@
       url: /key-value-api/binary-objects
     - title: Using Scan Queries
       url: /key-value-api/using-scan-queries
+    - title: Read Repair
+      url: /read-repair
 - title: Using Continuous Queries
   url: /key-value-api/continuous-queries
 - title: Performing Transactions
