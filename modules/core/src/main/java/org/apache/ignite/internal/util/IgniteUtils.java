@@ -302,7 +302,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
+@SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
     /** */
     public static final long MB = 1024L * 1024;
@@ -513,6 +513,9 @@ public abstract class IgniteUtils {
 
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
+
+    /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
+    public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
 
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
@@ -2059,7 +2062,7 @@ public abstract class IgniteUtils {
         try {
             InetAddress inetAddr = InetAddress.getByName(addr);
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 for (InetAddress itfAddr : asIterable(itf.getInetAddresses()))
                     if (itfAddr.equals(inetAddr))
                         return itf.getDisplayName();
@@ -2170,10 +2173,9 @@ public abstract class IgniteUtils {
      * @param locAddr Local address to resolve.
      * @return Resolved available addresses of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
-        throws IOException, IgniteCheckedException {
+        throws IOException {
         return resolveLocalAddresses(locAddr, false);
     }
 
@@ -2186,10 +2188,9 @@ public abstract class IgniteUtils {
      * @param allHostNames If {@code true} then include host names for all addresses.
      * @return Resolved available addresses and host names of given local address.
      * @throws IOException If failed.
-     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr,
-        boolean allHostNames) throws IOException, IgniteCheckedException {
+        boolean allHostNames) throws IOException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
@@ -2202,7 +2203,7 @@ public abstract class IgniteUtils {
             if (res == null) {
                 List<InetAddress> locAddrs = new ArrayList<>();
 
-                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
                             locAddrs.add(addr);
@@ -2215,7 +2216,7 @@ public abstract class IgniteUtils {
                     addresses(addr, addrs, hostNames, allHostNames);
 
                 if (F.isEmpty(addrs))
-                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+                    return F.t(Collections.emptyList(), Collections.emptyList());
 
                 res = F.t(addrs, hostNames);
 
@@ -2288,7 +2289,7 @@ public abstract class IgniteUtils {
         else {
             List<NetworkInterface> itfs = new ArrayList<>();
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces()))
+            for (NetworkInterface itf : asIterable(INTERFACE_SUPPLIER.getInterfaces()))
                 itfs.add(itf);
 
             Collections.sort(itfs, new Comparator<NetworkInterface>() {
@@ -2385,7 +2386,7 @@ public abstract class IgniteUtils {
         List<String> ips = new ArrayList<>(4);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -2450,7 +2451,7 @@ public abstract class IgniteUtils {
         List<String> macs = new ArrayList<>(3);
 
         try {
-            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> itfs = INTERFACE_SUPPLIER.getInterfaces();
 
             if (itfs != null) {
                 for (NetworkInterface itf : asIterable(itfs)) {
@@ -12029,5 +12030,12 @@ public abstract class IgniteUtils {
 
             return sb.toString();
         }
+    }
+
+    /** Explicit class for {@code Supplier<Enumeration<NetworkInterface>>}. */
+    @FunctionalInterface
+    public interface InterfaceSupplier {
+        /** Return collection of local network interfaces. */
+        Enumeration<NetworkInterface> getInterfaces() throws SocketException;
     }
 }
