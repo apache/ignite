@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import io.opencensus.trace.SpanId;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.tracing.Scope;
@@ -1204,7 +1205,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
         GridTestUtils.assertThrows(
             log,
             () -> client.cache(ATOMIC_CACHE).put(null,1),
-            NullPointerException.class,
+            IgniteException.class,
             "Ouch! Argument cannot be null: key");
 
         handler().flush();
