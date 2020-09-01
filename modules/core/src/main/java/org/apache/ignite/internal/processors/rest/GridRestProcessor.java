@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.rest.handlers.user.UserActionComman
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
@@ -125,7 +124,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** Command handlers. */
     protected final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
 
-    /** */ // TODO: 31.08.2020 Rework.
+    /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Busy lock. */
@@ -230,7 +229,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @return Future.
      */
     private IgniteInternalFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
-        if (!GridRestClusterNameRequest.class.isInstance(req) && startLatch.getCount() > 0) {
+        if (startLatch.getCount() > 0) {
             try {
                 startLatch.await();
             }
@@ -572,8 +571,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                         ctx.addNodeAttribute(key, p.getValue());
                     }
                 }
-
-                proto.onKernalStart();
             }
         }
     }
@@ -588,8 +585,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (isRestEnabled()) {
-//            for (GridRestProtocol proto : protos)
-//                proto.onKernalStart();
+            for (GridRestProtocol proto : protos)
+                proto.onKernalStart();
 
             sesTimeoutCheckerThread.setDaemon(true);
 

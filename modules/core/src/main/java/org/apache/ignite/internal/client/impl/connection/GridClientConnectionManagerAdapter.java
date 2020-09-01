@@ -93,7 +93,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     private GridNioServer srv;
 
     /** Active connections. */
-    public final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
 
     /** Active connections of nodes. */
     private final ConcurrentMap<UUID, GridClientConnection> nodeConns = new ConcurrentHashMap<>();
@@ -128,9 +128,6 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     /** Marshaller ID. */
     private final Byte marshId;
 
-    /** Without getting/update a topology. */
-    private final boolean handshakeOnly;
-
     /**
      * @param clientId Client ID.
      * @param sslCtx SSL context to enable secured connection or {@code null} to use unsecured one.
@@ -138,7 +135,6 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
      * @param marshId Marshaller ID.
-     * @param handshakeOnly Without getting/update a topology.
      * @throws GridClientException In case of error.
      */
     @SuppressWarnings("unchecked")
@@ -148,9 +144,8 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         Collection<InetSocketAddress> routers,
         GridClientTopology top,
         @Nullable Byte marshId,
-        boolean routerClient,
-        boolean handshakeOnly
-    ) throws GridClientException {
+        boolean routerClient)
+        throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
         assert routers != null : "routers != null";
@@ -161,7 +156,6 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         this.cfg = cfg;
         this.routers = new ArrayList<>(routers);
         this.top = top;
-        this.handshakeOnly = handshakeOnly;
 
         log = Logger.getLogger(getClass().getName());
 
@@ -224,6 +218,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
     @Override public void init(Collection<InetSocketAddress> srvs) throws GridClientException, InterruptedException {
         init0();
 
@@ -237,10 +232,8 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
 
                 try {
                     conn = connect(null, srvsCp);
-                    conns.putIfAbsent(conn.serverAddress(), conn);
 
-                    if (!handshakeOnly)
-                        conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null).get();
+                    conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null).get();
 
                     return;
                 }

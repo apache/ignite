@@ -44,32 +44,18 @@ public class GridClientFactory {
     /**
      * Starts a client with given configuration. Starting client will be assigned a randomly generated
      * UUID which can be obtained by {@link GridClient#id()} method.
-     * Invoke {@link #start(GridClientConfiguration, boolean)} with {@code handshakeOnly == false}.
      *
      * @param cfg Client configuration.
      * @return Started client.
      * @throws GridClientException If client could not be created.
      */
     public static GridClient start(GridClientConfiguration cfg) throws GridClientException {
-        return start(cfg, false);
-    }
-
-    /**
-     * Starts a client with given configuration. Starting client will be assigned a randomly generated
-     * UUID which can be obtained by {@link GridClient#id()} method.
-     *
-     * @param cfg Client configuration.
-     * @param handshakeOnly Without getting/update a topology.
-     * @return Started client.
-     * @throws GridClientException If client could not be created.
-     */
-    public static GridClient start(GridClientConfiguration cfg, boolean handshakeOnly) throws GridClientException {
         busyLock.readLock().lock();
 
         try {
             UUID clientId = UUID.randomUUID();
 
-            GridClientImpl client = new GridClientImpl(clientId, cfg, false, handshakeOnly);
+            GridClientImpl client = new GridClientImpl(clientId, cfg, false);
 
             GridClientImpl old = openClients.putIfAbsent(clientId, client);
 

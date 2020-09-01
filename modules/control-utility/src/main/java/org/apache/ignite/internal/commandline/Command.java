@@ -43,26 +43,13 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 public interface Command<T> {
     /**
      * Method to create thin client for communication with cluster.
-     * Invoke {@link #startClient(GridClientConfiguration, boolean)} with {@code handshakeOnly == false}.
      *
      * @param clientCfg Thin client configuration.
      * @return Grid thin client instance which is already connected to cluster.
      * @throws Exception If error occur.
      */
     public static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
-        return startClient(clientCfg, false);
-    }
-
-    /**
-     * Method to create thin client for communication with cluster.
-     *
-     * @param clientCfg Thin client configuration.
-     * @param handshakeOnly Without getting/update a topology.
-     * @return Grid thin client instance which is already connected to cluster.
-     * @throws Exception If error occur.
-     */
-    public static GridClient startClient(GridClientConfiguration clientCfg, boolean handshakeOnly) throws Exception {
-        GridClient client = GridClientFactory.start(clientCfg, handshakeOnly);
+        GridClient client = GridClientFactory.start(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
         if (!client.connected()) {

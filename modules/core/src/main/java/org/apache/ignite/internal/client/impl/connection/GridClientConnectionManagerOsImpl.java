@@ -34,13 +34,12 @@ public class GridClientConnectionManagerOsImpl extends GridClientConnectionManag
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
-     * @param handshakeOnly Without getting/update a topology.
      * @throws GridClientException In case of error.
      */
     public GridClientConnectionManagerOsImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, Byte marshId, boolean routerClient,
-        boolean handshakeOnly) throws GridClientException {
-        super(clientId, sslCtx, cfg, routers, top, marshId, routerClient, handshakeOnly);
+        Collection<InetSocketAddress> routers, GridClientTopology top, Byte marshId, boolean routerClient)
+        throws GridClientException {
+        super(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
     }
 
     /** {@inheritDoc} */
