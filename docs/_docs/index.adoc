@@ -1,0 +1,5 @@
+---
+layout: toc
+---
+
+= Apache Ignite Documentation
