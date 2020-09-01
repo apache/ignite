@@ -1264,6 +1264,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (ctx.config().getPlatformConfiguration() != null)
                     startProcessor(new PlatformPluginProcessor(ctx));
 
+                mBeansMgr.registerMBeansDuringInitPhase();
+
                 ctx.cluster().initDiagnosticListeners();
 
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
@@ -1355,9 +1357,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.cluster().registerMetrics();
 
             // Register MBeans.
-            mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
-                mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
-                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
+            mBeansMgr.registerMBeansAfterNodeStarted(utilityCachePool, execSvc, svcExecSvc, sysExecSvc,
+                stripedExecSvc, p2pExecSvc, mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
+                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs,
+                ctx.workersRegistry());
 
             ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
 
