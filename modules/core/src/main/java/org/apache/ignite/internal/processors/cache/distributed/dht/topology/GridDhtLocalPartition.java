@@ -614,12 +614,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Forcibly moves partition to a MOVING state.
+     *
+     * @return {@code True} is a partition was switched to MOVING state.
      */
-    public void moving() {
+    public boolean moving() {
         while (true) {
             long state = this.state.get();
 
             GridDhtPartitionState partState = getPartState(state);
+
+            if (partState == EVICTED)
+                return false;
 
             assert partState == OWNING || partState == RENTING :
                 "Only partitions in state OWNING or RENTING can be moved to MOVING state " + partState + " " + id;
@@ -628,7 +633,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 // The state is switched under global topology lock, safe to record version here.
                 clearVer = ctx.versions().localOrder();
 
-                break;
+                return true;
             }
         }
     }

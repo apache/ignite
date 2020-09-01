@@ -2510,14 +2510,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         // Prevent renting.
         if (part.state() == RENTING) {
-            if (part.reserve()) {
-                part.moving();
-                part.release();
-            }
-            else {
+            if (!part.moving()) {
                 assert part.state() == EVICTED : part;
 
                 part = getOrCreatePartition(p);
+
+                if (part.state() == LOST)
+                    return part;
             }
         }
 

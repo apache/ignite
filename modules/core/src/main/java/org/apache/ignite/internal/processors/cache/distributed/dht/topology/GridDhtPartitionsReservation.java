@@ -181,10 +181,8 @@ public class GridDhtPartitionsReservation implements GridReservable {
         if (parts == null)  // Can be not initialized yet.
             return;
 
-        for (GridDhtLocalPartition part : parts) {
-            if (part.state() == RENTING)
-                part.clearAsync();
-        }
+        for (GridDhtLocalPartition part : parts)
+            part.clearAsync();
     }
 
     /**
