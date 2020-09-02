@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
-import org.apache.ignite.internal.commandline.Command;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,41 +24,27 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see EncryptionCommand
  */
-public enum EncryptionSubcommands {
+public enum EncryptionSubcommand {
     /** Subcommand to get the current master key name. */
-    GET_MASTER_KEY_NAME("get_master_key_name", new GetMasterKeyNameCommand()),
+    GET_MASTER_KEY_NAME("get_master_key_name"),
 
     /** Subcommand to change the master key. */
-    CHANGE_MASTER_KEY("change_master_key", new ChangeMasterKeyCommand());
+    CHANGE_MASTER_KEY("change_master_key");
 
     /** Subcommand name. */
     private final String name;
 
-    /** Command. */
-    private final Command command;
-
-    /**
-     * @param name Encryption subcommand name.
-     * @param command Command implementation.
-     */
-    EncryptionSubcommands(String name, Command command) {
+    /** @param name Encryption subcommand name. */
+    EncryptionSubcommand(String name) {
         this.name = name;
-        this.command = command;
-    }
-
-    /**
-     * @return Cache subcommand implementation.
-     */
-    public Command subcommand() {
-        return command;
     }
 
     /**
      * @param text Command text (case insensitive).
      * @return Command for the text. {@code Null} if there is no such command.
      */
-     @Nullable public static EncryptionSubcommands of(String text) {
-        for (EncryptionSubcommands cmd : EncryptionSubcommands.values()) {
+     @Nullable public static EncryptionSubcommand of(String text) {
+        for (EncryptionSubcommand cmd : EncryptionSubcommand.values()) {
             if (cmd.name.equalsIgnoreCase(text))
                 return cmd;
         }

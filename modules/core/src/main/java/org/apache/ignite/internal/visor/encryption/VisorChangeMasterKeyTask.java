@@ -29,17 +29,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteEncryption#changeMasterKey(String)
  */
 @GridInternal
-public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, Void> {
+public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, Void> job(String arg) {
+    @Override protected VisorJob<String, String> job(String arg) {
         return new VisorChangeMasterKeyJob(arg, debug);
     }
 
     /** The job for changing the master key. */
-    private static class VisorChangeMasterKeyJob extends VisorJob<String, Void> {
+    private static class VisorChangeMasterKeyJob extends VisorJob<String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -54,10 +54,10 @@ public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String masterKeyName) throws IgniteException {
+        @Override protected String run(String masterKeyName) throws IgniteException {
             ignite.encryption().changeMasterKey(masterKeyName).get();
 
-            return null;
+            return "The master key changed.";
         }
     }
 }
