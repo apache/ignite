@@ -45,8 +45,9 @@ class ZookeeperDiscoverySpi(DiscoverySpi):
     """
     ZookeeperDiscoverySpi.
     """
-    def __init__(self, connection_string, root_path):
-        self.connection_string = connection_string
+    def __init__(self, zoo_service, root_path):
+        self.connection_string = zoo_service.connection_string()
+        self.port = zoo_service.settings.client_port
         self.root_path = root_path
 
     @property
@@ -100,8 +101,10 @@ class TcpDiscoverySpi(DiscoverySpi):
     """
     TcpDiscoverySpi.
     """
-    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder()):
+    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100):
         self.ip_finder = ip_finder
+        self.port = port
+        self.port_range = port_range
 
     @property
     def type(self):
@@ -138,4 +141,4 @@ def from_zookeeper_cluster(cluster, root_path="/apacheIgnite"):
     """
     assert isinstance(cluster, ZookeeperService)
 
-    return ZookeeperDiscoverySpi(cluster.connection_string(), root_path=root_path)
+    return ZookeeperDiscoverySpi(cluster, root_path=root_path)

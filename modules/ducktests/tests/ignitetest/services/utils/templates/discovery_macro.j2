@@ -15,15 +15,15 @@
  limitations under the License.
 #}
 
-{% macro ip_finder(finder) %}
-    {% if finder %}
+{% macro ip_finder(spi) %}
+    {% if spi.finder %}
         <property name="ipFinder">
-            {% if finder.type == 'VM' %}
+            {% if spi.finder.type == 'VM' %}
                 <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                     <property name="addresses">
                         <list>
                             {% for address in finder.addresses %}
-                                <value>{{ address }}</value>
+                                <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
                             {% endfor %}
                         </list>
                     </property>
@@ -42,7 +42,9 @@
 
 {% macro tcp_discovery_spi(spi) %}
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-        {{ ip_finder(spi.ip_finder) }}
+        <property name="localPort" value="{{ spi.port }}"/>
+        <property name="localPortRange" value="{{ spi.port_range }}"/>
+        {{ ip_finder(spi) }}
     </bean>
 {% endmacro %}
 

@@ -22,6 +22,7 @@ import re
 from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
+from jinja2 import Template
 
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
@@ -115,8 +116,10 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT, modules=modules)
 
-        data = simulate_nodes_failure(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
+        data = simulate_nodes_failure(servers, ignite_config, test_config)
+
         data['Ignite cluster start time (s)'] = start_servers_sec
+
         return data
 
 
@@ -186,17 +189,15 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, kill_coordinator, nodes_to_kill):
+def simulate_nodes_failure(servers, ignite_config, test_config):
     """
     Perform node failure scenario
     """
-    failed_nodes, survived_node = choose_node_to_kill(servers, kill_coordinator, nodes_to_kill)
+    failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
 
     ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-
-
-    _, first_terminated = servers.exec_on_nodes_async(failed_nodes, )
+    _, first_terminated = servers.exec_on_nodes_async(failed_nodes, network_fail_task(ignite_config, test_config))
 
     # Keeps dates of logged node failures.
     logged_timestamps = []
@@ -223,3 +224,22 @@ def simulate_nodes_failure(servers, kill_coordinator, nodes_to_kill):
     data['Nodes failed'] = len(failed_nodes)
 
     return data
+
+
+def network_fail_task(ignite_config, test_config):
+    """
+    Creates proper command task to simulate network failure depending on the configurations.
+    """
+    if test_config.with_zk:
+        tpl = Template("sudo iptables -A {{ chain }} -p tcp --dport " + str(ignite_config.discovery_spi.port)
+                       + " -j DROP")
+    else:
+        port = ignite_config.discovery_spi.port
+        port_to = port + ignite_config.discovery_spi.port_range
+
+        tpl = Template("sudo iptables -A {{ chain }} -p tcp --dport " + str(port) + ":" + str(port_to) + " -j DROP")
+
+    return lambda node: (
+        node.account.ssh_client.exec_command(tpl.render(chain="INPUT")),
+        node.account.ssh_client.exec_command(tpl.render(chain="OUTPUT"))
+    )
