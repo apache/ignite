@@ -383,6 +383,7 @@ public final class CommandLineStartup {
     /** Prints properties info to console. */
     private static void printSystemPropertiesInfo() {
         Map<String, Field> props = new TreeMap<>();
+        int maxLength = 0;
 
         for (Class<?> cls : PROPS_CLS) {
             for (Field field : cls.getFields()) {
@@ -390,7 +391,11 @@ public final class CommandLineStartup {
 
                 if (ann != null) {
                     try {
-                        props.put(U.staticField(cls, field.getName()), field);
+                        String name = U.staticField(cls, field.getName());
+
+                        maxLength = Math.max(maxLength, name.length());
+
+                        props.put(name, field);
                     }
                     catch (IgniteCheckedException ignored) {
                         // No-op.
@@ -399,12 +404,14 @@ public final class CommandLineStartup {
             }
         }
 
+        String fmt = "%-" + maxLength + "s - %s[%s] %s";
+
         props.forEach((name, field) -> {
             String deprecated = field.isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
 
             SystemProperty prop = field.getAnnotation(SystemProperty.class);
 
-            X.println(format("%-40s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.value()));
+            X.println(format(fmt, name, deprecated, prop.type().getSimpleName(), prop.value()));
         });
     }
 }

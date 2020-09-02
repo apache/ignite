@@ -38,7 +38,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.PROPS_CLS;
 /** Tests print Ignite system properties. */
 public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
     /** Ignite system property pattern. */
-    private final Pattern propPtrn = Pattern.compile("^([\\w.]+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
+    private final Pattern propPtrn = Pattern.compile("^([\\w.]+).* +- (\\[Deprecated] |)\\[\\w+] (.*)");
 
     /** @throws Exception If failed. */
     @Test
