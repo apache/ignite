@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 
 /**
  * Tests a scenario when a clearing partition is attempted to evict after a call to
- * {@link GridDhtPartitionTopology#tryEvict(GridDhtLocalPartition)}.
+ * {@link GridDhtPartitionTopology#tryFinishEviction(GridDhtLocalPartition)}.
  *
  * Such a scenario can leave a partition in RENTING state until the next exchange, but it's look acceptable.
  */

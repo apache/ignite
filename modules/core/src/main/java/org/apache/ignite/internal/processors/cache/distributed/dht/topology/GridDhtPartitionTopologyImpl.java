@@ -2795,7 +2795,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tryEvict(GridDhtLocalPartition part) {
+    @Override public boolean tryFinishEviction(GridDhtLocalPartition part) {
         ctx.database().checkpointReadLock();
 
         try {

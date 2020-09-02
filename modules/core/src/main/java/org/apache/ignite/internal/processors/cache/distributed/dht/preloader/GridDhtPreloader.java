@@ -418,12 +418,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param part Evicted partition.
      */
-    public void tryEvictPartition(GridDhtLocalPartition part) {
+    public void tryFinishEviction(GridDhtLocalPartition part) {
         if (!enterBusy())
             return;
 
         try {
-            if (top.tryEvict(part)) {
+            if (top.tryFinishEviction(part)) {
                 if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
                     grp.addUnloadEvent(part.id());
             }

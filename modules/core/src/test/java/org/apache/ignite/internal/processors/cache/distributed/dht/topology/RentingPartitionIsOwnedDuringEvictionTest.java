@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,8 +31,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,6 +46,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Tests if currently evicting partition is eventually moved to OWNING state after last supplier has left.
  */
+@WithSystemProperty(key = "IGNITE_PRELOAD_RESEND_TIMEOUT", value = "0")
 public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstractTest {
     /** */
     private boolean persistence;
@@ -80,34 +84,65 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOwnedAfterEviction() throws Exception {
-        testOwnedAfterEviction(false, 0);
+        testOwnedAfterEviction(false, 0, 0);
     }
 
     /** */
     @Test
     public void testOwnedAfterEvictionWithPersistence() throws Exception {
-        testOwnedAfterEviction(true, 0);
+        testOwnedAfterEviction(true, 0, 0);
     }
 
     /** */
     @Test
     public void testOwnedAfterEviction_2() throws Exception {
-        testOwnedAfterEviction(false, 1);
+        testOwnedAfterEviction(false, 1, 0);
     }
 
     /** */
     @Test
     public void testOwnedAfterEvictionWithPersistence_2() throws Exception {
-        testOwnedAfterEviction(true, 1);
+        testOwnedAfterEviction(true, 1, 0);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEvictionGroupReservation() throws Exception {
+        testOwnedAfterEviction(false, 0, 0);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEviction_PartitionReserved() throws Exception {
+        testOwnedAfterEviction(false, 1, 1);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEviction_PartitionReserved_2() throws Exception {
+        testOwnedAfterEviction(true, 1, 1);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEviction_GroupReserved() throws Exception {
+        testOwnedAfterEviction(false, 1, 2);
+    }
+
+    /** */
+    @Test
+    public void testOwnedAfterEviction_GroupReserved_2() throws Exception {
+        testOwnedAfterEviction(true, 1, 2);
     }
 
     /**
      * @param persistence Persistence.
      * @param backups Backups.
+     * @param reservation Reservation: 0 - absent, 1 - partition reserved, 2 - group reserved.
      *
      * @throws Exception If failed.
      */
-    private void testOwnedAfterEviction(boolean persistence, int backups) throws Exception {
+    private void testOwnedAfterEviction(boolean persistence, int backups, int reservation) throws Exception {
         this.persistence = persistence;
 
         try {
@@ -138,25 +173,45 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
                     ds.addData(key, key);
             }
 
+            GridCacheContext<Object, Object> ctx0 = g0.cachex(DEFAULT_CACHE_NAME).context();
+            GridDhtLocalPartition evicting = ctx0.topology().localPartition(p0);
+
+            if (reservation == 2) {
+                GridDhtPartitionsReservation grpR =
+                    new GridDhtPartitionsReservation(ctx0.topology().readyTopologyVersion(), ctx0, "TEST");
+
+                evicting.reserve();
+                assertTrue(grpR.register(Collections.singleton(evicting)));
+                evicting.release();
+
+                assertTrue(grpR.reserve());
+            }
+            else if (reservation == 1)
+                evicting.reserve();
+
             IgniteEx joining = startGrid(backups + 1);
 
             if (persistence)
                 resetBaselineTopology();
 
-            GridDhtLocalPartition evicting = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
+            doSleep(500);
 
-            boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return evicting.state() == RENTING || evicting.state() == EVICTED;
-                }
-            }, GridDhtLocalPartitionSyncEviction.TIMEOUT);
+            if (reservation > 0)
+                assertTrue(evicting.toString(), evicting.state() == OWNING);
+            else {
+                boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return evicting.state() == RENTING || evicting.state() == EVICTED;
+                    }
+                }, GridDhtLocalPartitionSyncEviction.TIMEOUT);
 
-            if (!res)
-                fail("Failed to wait for eviction " + evicting);
+                if (!res)
+                    fail("Failed to wait for eviction " + evicting);
+            }
 
-            GridDhtPartitionState state = evicting.state();
+            doSleep(500);
 
-            assertTrue(state.toString(), state == RENTING || state == EVICTED);
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
 
             // These updates should not be lost.
             IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
@@ -175,7 +230,7 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
 
             awaitPartitionMapExchange(true, true, null);
 
-            GridDhtLocalPartition part = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
+            GridDhtLocalPartition part = ctx0.topology().localPartition(p0);
 
             assertEquals(backups == 0 && persistence ? LOST : OWNING, part.state());
 
@@ -184,7 +239,7 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
             assertPartitionsSame(idleVerify(g0, DEFAULT_CACHE_NAME));
 
             if (backups > 0)
-                assertEquals(cnt + cnt2, part.dataStore().fullSize());
+                assertEquals(cnt + cnt2 - 1 /** One key was removed before. */, part.dataStore().fullSize());
         }
         finally {
             stopAllGrids();

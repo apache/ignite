@@ -1222,7 +1222,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tryEvict(GridDhtLocalPartition part) {
+    @Override public boolean tryFinishEviction(GridDhtLocalPartition part) {
         lock.writeLock().lock();
 
         try {

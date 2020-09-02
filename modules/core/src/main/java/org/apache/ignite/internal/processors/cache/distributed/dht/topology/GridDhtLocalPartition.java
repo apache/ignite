@@ -492,14 +492,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
                 // If no more reservations try to continue delayed renting.
-                if (reservations == 0) {
-                    if (delayedRentingTopVer != 0 &&
-                        // Prevents delayed renting on topology which expects ownership.
-                        delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
-                        rent();
-                    else if (getPartState(state) == RENTING) // If was reserved in renting state continue clearing.
-                        clearAsync();
-                }
+                if (reservations == 0)
+                    tryContinueClearing();
 
                 return;
             }
@@ -615,7 +609,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Forcibly moves partition to a MOVING state.
      *
-     * @return {@code True} is a partition was switched to MOVING state.
+     * @return {@code True} if a partition was switched to MOVING state.
      */
     public boolean moving() {
         while (true) {
@@ -683,7 +677,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // Store current topology version to check on partition release.
         delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
 
-        if (getReservations(state0) == 0 && casState(state0, RENTING)) {
+        if (tryInvalidateGroupReservations() && getReservations(state0) == 0 && casState(state0, RENTING)) {
             delayedRentingTopVer = 0;
 
             // Evict asynchronously, as the 'rent' method may be called
@@ -695,7 +689,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Initiates partition clearing attempt.
+     * Continue clearing if it was delayed before due to a reservation and topology version has not been changed.
+     */
+    public void tryContinueClearing() {
+        if (delayedRentingTopVer != 0 &&
+            delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
+            rent();
+    }
+
+    /**
+     * Initiates a partition clearing attempt.
      *
      * @return A future what will be finished then a current clearing attempt is done.
      */
@@ -1046,7 +1049,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
 
             // Attempt to destroy.
-            ((GridDhtPreloader)grp.preloader()).tryEvictPartition(this);
+            ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
         }
         catch (NodeStoppingException e) {
             if (log.isDebugEnabled())
