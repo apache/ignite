@@ -60,6 +60,7 @@ class DiscoveryTestConfig(NamedTuple):
     with_zk: bool = False
 
 
+# pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
     """
     Test various node failure scenarios (TCP and ZooKeeper).
