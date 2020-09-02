@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -2334,9 +2335,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         new IgniteCacheGroupsWithRestartsTest().testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
     }
 
-    /** TODO: 28.08.2020 Add. */
+    /**
+     * Verification of successful warm-up stop.
+     * <p/>
+     * Steps:
+     * 1)Starting node with warm-up;
+     * 2)Stop warm-up;
+     * 3)Waiting for a successful stop of warm-up and start of node.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test() throws Exception {
+    public void testSuccessStopWarmUp() throws Exception {
         WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(provider);
@@ -2345,12 +2355,28 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
 
         BlockedWarmUpStrategy blockedWarmUpStgy = (BlockedWarmUpStrategy)provider.strats.get(1);
-        U.await(blockedWarmUpStgy.startLatch);
+        U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
-        assertEquals(EXIT_CODE_OK, execute("--warm-up"));
+        assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes"));
 
-        blockedWarmUpStgy.stopLatch.countDown();
-        fut.get();
+        fut.get(60_000);
+    }
+
+    /**
+     * Check that command will not be executed because node has already started.
+     * <p/>
+     * Steps:
+     * 1)Starting node;
+     * 2)Attempt to stop warm-up;
+     * 3)Waiting for an error because node has already started.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailStopWarmUp() throws Exception {
+        startGrid(0);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop", "--yes"));
     }
 
     /**

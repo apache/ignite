@@ -29,15 +29,15 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
+import org.apache.ignite.internal.client.impl.connection.GridClientImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
@@ -51,13 +51,13 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailab
  */
 public class GridRouterClientImpl implements GridClient {
     /** Decorated client implementation. */
-    private final GridClientImpl clientImpl;
+    private final org.apache.ignite.internal.client.impl.GridClientImpl clientImpl;
 
     /** Client configuration. */
     private final GridClientConfiguration cliCfg;
 
     /** TCP connection managers. */
-    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Byte, GridClientImpl> connMgrMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a new TCP client based on the given configuration.
@@ -77,7 +77,7 @@ public class GridRouterClientImpl implements GridClient {
 
         this.cliCfg = cliCfg;
 
-        clientImpl = new GridClientImpl(id, cliCfg, true);
+        clientImpl = new org.apache.ignite.internal.client.impl.GridClientImpl(id, cliCfg, true, false);
 
         if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
@@ -112,7 +112,7 @@ public class GridRouterClientImpl implements GridClient {
         if (dest == null)
             throw new GridServerUnreachableException("Failed to resolve node for specified destination ID: " + destId);
 
-        GridClientConnectionManager connMgr = connectionManager(marshId);
+        GridClientImpl connMgr = connectionManager(marshId);
 
         GridClientConnection conn = null;
 
@@ -148,12 +148,12 @@ public class GridRouterClientImpl implements GridClient {
      * @return Connection manager.
      * @throws GridClientException In case of error.
      */
-    private GridClientConnectionManager connectionManager(byte marshId) throws GridClientException {
-        GridClientConnectionManager mgr = connMgrMap.get(marshId);
+    private GridClientImpl connectionManager(byte marshId) throws GridClientException {
+        GridClientImpl mgr = connMgrMap.get(marshId);
 
         if (mgr == null) {
-            GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
-                clientImpl.newConnectionManager(marshId, true));
+            GridClientImpl old = connMgrMap.putIfAbsent(marshId, mgr =
+                clientImpl.newConnectionManager(marshId, true, beforeStartState() != null));
 
             if (old != null)
                 mgr = old;
@@ -218,5 +218,10 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientException checkLastError() {
         return clientImpl.checkLastError();
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public GridClientNodeStateBeforeStart beforeStartState() {
+        return clientImpl.beforeStartState();
     }
 }
