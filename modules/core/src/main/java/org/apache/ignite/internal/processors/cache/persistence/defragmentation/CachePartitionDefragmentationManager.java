@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -120,7 +121,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    public void executeDefragmentation() {
+    public void executeDefragmentation() throws IgniteCheckedException {
         System.setProperty(SKIP_CP_ENTRIES, "true");
 
         pageBuf = ByteBuffer.allocateDirect(pageSize);
@@ -157,7 +158,13 @@ public class CachePartitionDefragmentationManager {
 
                     FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
-                    //TODO Index partition file has to be deleted before we begin, otherwise there's a chance of reading corrupted file.
+                    // Index partition file has to be deleted before we begin, otherwise there's a chance of reading
+                    // corrupted file.
+                    // There is a time period when index is already defragmented but marker file is not created yet.
+                    // If node is failed in that time window then index will be deframented once again. That's fine,
+                    // situation is rare but code to fix that would add unnecessary complications.
+                    U.delete(defragmentedIndexTmpFile(workDir));
+
                     PageStore idxPageStore = pageStoreFactory.createPageStore(
                         FLAG_IDX,
                         () -> defragmentedIndexTmpFile(workDir).toPath(),
@@ -252,17 +259,13 @@ public class CachePartitionDefragmentationManager {
 
                     renameTempIndexFile(workDir);
 
-                    writeDefragmentationCompletionMarker(workDir, log);
+                    writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
 
                     batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 
                     defrgCtx.onCacheGroupDefragmented(grpId);
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            // No-op for now.
-            e.printStackTrace();
         }
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);

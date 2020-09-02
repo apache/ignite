@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -72,8 +72,9 @@ public class DefragmentationFileUtils {
      *
      * @param workDir Cache group working directory.
      * @param log Logger to write messages.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      */
-    public static void beforeInitPageStores(File workDir, IgniteLogger log) {
+    public static void beforeInitPageStores(File workDir, IgniteLogger log) throws IgniteCheckedException {
         assert System.getProperty(CachePartitionDefragmentationManager.DEFRAGMENTATION) == null;
 
         batchRenameDefragmentedCacheGroupPartitions(workDir, log);
@@ -83,22 +84,27 @@ public class DefragmentationFileUtils {
         for (File file : workDir.listFiles()) {
             String fileName = file.getName();
 
-            if (fileName.startsWith(DFRG_PARTITION_FILE_PREFIX) || fileName.startsWith(DFRG_INDEX_FILE_NAME))
+            if (
+                fileName.startsWith(DFRG_PARTITION_FILE_PREFIX)
+                || fileName.startsWith(DFRG_INDEX_FILE_NAME)
+                || fileName.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)
+            )
                 U.delete(file);
         }
     }
 
     /**
-     * Checks whether cache group defragmentation completed or not.
+     * Checks whether cache group defragmentation completed or not. Completes it if all that's left is renaming.
      *
      * @param workDir Cache group working directory.
      * @param grpId Cache group Id of cache group belonging to the given working directory.
      * @param log Logger to write messages.
      * @return {@code true} if given cache group is already defragmented.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#defragmentationCompletionMarkerFile(File)
      */
-    public static boolean skipAlreadyDefragmentedCacheGroup(File workDir, int grpId, IgniteLogger log) {
+    public static boolean skipAlreadyDefragmentedCacheGroup(File workDir, int grpId, IgniteLogger log) throws IgniteCheckedException {
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
 
         if (completionMarkerFile.exists()) {
@@ -110,6 +116,8 @@ public class DefragmentationFileUtils {
                     "workDir", workDir.getAbsolutePath(), false
                 ));
             }
+
+            batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 
             return true;
         }
@@ -126,12 +134,13 @@ public class DefragmentationFileUtils {
      * @param partId Partionion index to check.
      * @param log Logger to write messages.
      * @return {@code true} if given partition is already defragmented.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#defragmentedPartTmpFile(File, int)
      * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
      * @see DefragmentationFileUtils#defragmentedPartMappingFile(File, int)
      */
-    public static boolean skipAlreadyDefragmentedPartition(File workDir, int grpId, int partId, IgniteLogger log) {
+    public static boolean skipAlreadyDefragmentedPartition(File workDir, int grpId, int partId, IgniteLogger log) throws IgniteCheckedException {
         File defragmentedPartFile = defragmentedPartFile(workDir, partId);
         File defragmentedPartMappingFile = defragmentedPartMappingFile(workDir, partId);
 
@@ -160,8 +169,7 @@ public class DefragmentationFileUtils {
             Files.deleteIfExists(defragmentedPartMappingFile.toPath());
         }
         catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
+            handleIoException(e);
         }
 
         return false;
@@ -179,10 +187,11 @@ public class DefragmentationFileUtils {
      *
      * @param workDir Cache group working directory.
      * @param log Logger to write messages.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(File, IgniteLogger)
+     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, File, IgniteLogger)
      */
-    public static void batchRenameDefragmentedCacheGroupPartitions(File workDir, IgniteLogger log) {
+    public static void batchRenameDefragmentedCacheGroupPartitions(File workDir, IgniteLogger log) throws IgniteCheckedException {
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
 
         if (!completionMarkerFile.exists())
@@ -209,8 +218,7 @@ public class DefragmentationFileUtils {
             }
         }
         catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
+            handleIoException(e);
         }
     }
 
@@ -353,7 +361,7 @@ public class DefragmentationFileUtils {
      * @param workDir Cache group working directory.
      * @return File.
      *
-     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(File, IgniteLogger)
+     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, File, IgniteLogger)
      * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(File, IgniteLogger)
      */
     public static File defragmentationCompletionMarkerFile(File workDir) {
@@ -363,24 +371,30 @@ public class DefragmentationFileUtils {
     /**
      * Creates empty completion marker file in given directory.
      *
+     * @param ioFactory File IO factory.
      * @param workDir Cache group working directory.
      * @param log Logger to write messages.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#defragmentationCompletionMarkerFile(File)
      */
-    public static void writeDefragmentationCompletionMarker(File workDir, IgniteLogger log) {
-        try {
-            FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+    public static void writeDefragmentationCompletionMarker(
+        FileIOFactory ioFactory,
+        File workDir,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        File completionMarker = defragmentationCompletionMarkerFile(workDir);
 
-            File completionMarker = defragmentationCompletionMarkerFile(workDir);
-
-            try (FileIO io = ioFactory.create(completionMarker, CREATE_NEW, WRITE)) {
-                io.force(true);
-            }
+        try (FileIO io = ioFactory.create(completionMarker, CREATE_NEW, WRITE)) {
+            io.force(true);
         }
         catch (IOException e) {
-            //TODO Handle.
-            e.printStackTrace();
+            handleIoException(e);
         }
+    }
+
+    /** */
+    private static void handleIoException(IOException e) throws IgniteCheckedException {
+        throw new IgniteCheckedException(e);
     }
 }
