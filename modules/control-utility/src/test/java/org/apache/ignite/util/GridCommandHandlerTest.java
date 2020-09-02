@@ -2352,14 +2352,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(provider);
         cfg.getDataStorageConfiguration().setDefaultWarmUpConfiguration(new BlockedWarmUpConfiguration());
 
+        cfg.getConnectorConfiguration().setHost("localhost");
+
         IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
 
         BlockedWarmUpStrategy blockedWarmUpStgy = (BlockedWarmUpStrategy)provider.strats.get(1);
-        U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
-        assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes"));
+        try {
+            U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
-        fut.get(60_000);
+            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes"));
+
+            fut.get(60_000);
+        }
+        catch (Throwable t) {
+            blockedWarmUpStgy.stopLatch.countDown();
+
+            throw t;
+        }
     }
 
     /**
