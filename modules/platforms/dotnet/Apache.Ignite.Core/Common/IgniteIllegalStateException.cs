@@ -18,11 +18,15 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization;
 
     /// <summary>
     /// Indicates that ignite in invalid state was accessed.
     /// </summary>
+    [SuppressMessage("Microsoft.Usage", "CA2240:ImplementISerializableCorrectly", 
+        Justification = "No need to implement GetObjectData because there are no custom fields.")]
+    [Serializable]
     public class IgniteIllegalStateException : IgniteException
     {
         /// <summary>
