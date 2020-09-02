@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -46,6 +47,12 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -144,6 +151,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
 
     /** */
+    private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
+
+    /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(
@@ -189,6 +199,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
+        durableBackgroundTaskTestLsnr = null;
+
         super.afterTest();
     }
 
@@ -217,7 +229,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         int nodeCnt = NODES_COUNT;
 
-        Ignite ignite = prepareAndPopulateCluster(nodeCnt, multicolumn);
+        Ignite ignite = prepareAndPopulateCluster(nodeCnt, multicolumn, false);
 
         Ignite aliveNode = grid(ALWAYS_ALIVE_NODE_NUM);
 
@@ -428,8 +440,17 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @return Ignite instance.
      * @throws Exception If failed.
      */
-    private IgniteEx prepareAndPopulateCluster(int nodeCnt, boolean multicolumn) throws Exception {
+    private IgniteEx prepareAndPopulateCluster(int nodeCnt, boolean multicolumn, boolean createLsnr) throws Exception {
         IgniteEx ignite = startGrids(nodeCnt);
+
+        if (createLsnr) {
+            GridCacheSharedContext ctx = ignite.context().cache().context();
+
+            durableBackgroundTaskTestLsnr = new DurableBackgroundTaskTestListener(ctx.database().metaStorage());
+
+            ((GridCacheDatabaseSharedManager) ctx.cache().context().database())
+                    .addCheckpointListener(durableBackgroundTaskTestLsnr);
+        }
 
         ignite.cluster().active(true);
 
@@ -538,7 +559,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     public void testDestroyTaskLifecycle() throws Exception {
         taskLifecycleListener.reset();
 
-        IgniteEx ignite = prepareAndPopulateCluster(1, false);
+        IgniteEx ignite = prepareAndPopulateCluster(1, false, false);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -561,6 +582,22 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
 
         assertTrue(taskLifecycleListener.check());
+    }
+
+    /**
+     * Tests that task removed from metastorage in beginning of next checkpoint.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexDeletionTaskRemovedAfterCheckpointFinished() throws Exception {
+        prepareAndPopulateCluster(1, false, true);
+
+        awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
+
+        forceCheckpoint();
+
+        assertTrue(durableBackgroundTaskTestLsnr.check());
     }
 
     /**
@@ -675,6 +712,68 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             }
 
             return super.destroyDownPages(bag, pageId, lvl, c, lockHoldStartTime, lockMaxTime, lockedPages);
+        }
+    }
+
+    /**
+     *
+     */
+    private class DurableBackgroundTaskTestListener implements DbCheckpointListener {
+        /**
+         * Prefix for metastorage keys for durable background tasks.
+         */
+        private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
+
+        /**
+         * Metastorage.
+         */
+        private volatile ReadOnlyMetastorage metastorage;
+
+        /**
+         * Task keys in metastorage.
+         */
+        private List<String> savedTasks = new ArrayList<>();
+
+        /** */
+        public DurableBackgroundTaskTestListener(ReadWriteMetastorage metastorage) {
+            this.metastorage = metastorage;
+        }
+
+        /**
+         * Checks that saved tasks from before checkpoint begin step removed from metastorage.
+         * Сall after the end of the checkpoint.
+         *
+         * @return true if check is successful.
+         */
+        public boolean check() throws IgniteCheckedException {
+            if (savedTasks.isEmpty())
+                return false;
+
+            for (String taskKey : savedTasks) {
+                DurableBackgroundTask task = (DurableBackgroundTask)metastorage.read(taskKey);
+
+                if (task != null)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            /* No op. */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            /* No op. */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
+                    (key, val) -> savedTasks.add(key),
+                    true);
         }
     }
 }

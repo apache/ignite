@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count, "Unexpected number of nodes in the cluster.");
         }
 
         /// <summary>

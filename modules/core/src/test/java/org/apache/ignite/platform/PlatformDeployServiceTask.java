@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -411,6 +412,16 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
+        }
+
+        /** */
+        public void sleep(long delayMs) {
+            try {
+                U.sleep(delayMs);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }
