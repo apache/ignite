@@ -1660,7 +1660,7 @@ public class Checkpointer extends GridWorker {
                     long pageId = fullPageId.pageId();
 
                     // Write buf to page store.
-                    PageStore store = storeMgr.writeInternal(groupId, pageId, buf, tag, true);
+                    PageStore store = storeMgr.write(groupId, pageId, buf, tag, true);
 
                     // Save store for future fsync.
                     updStores.add(store);

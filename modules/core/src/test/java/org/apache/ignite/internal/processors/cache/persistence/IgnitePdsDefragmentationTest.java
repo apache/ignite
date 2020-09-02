@@ -27,6 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -38,6 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -53,13 +55,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final String CACHE_2_NAME = "cache2";
 
     /** */
-    public static final int PARTS = 1;
+    public static final int PARTS = 5;
 
     /** */
-    public static final int ADDED_KEYS_COUNT = 5;
-
-    /** */
-    public static final int REMOVED_KEYS_COUNT = ADDED_KEYS_COUNT / 2;
+    public static final int ADDED_KEYS_COUNT = 10;
 
     /** */
     private static final String GRP_NAME = "group";
@@ -114,7 +113,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setInitialSize(100L * 1024 * 1024)
-                .setMaxSize(200L * 1024 * 1024)
+                .setMaxSize(1024L * 1024 * 1024)
                 .setPersistenceEnabled(true)
         );
 
@@ -145,13 +144,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         fillCache(ig.cache(DEFAULT_CACHE_NAME));
 
+        ig.context().cache().context().database()
+            .forceCheckpoint("test")
+            .futureFor(CheckpointState.FINISHED)
+            .get();
+
         stopGrid(0);
 
         File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
         File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
         File workDir = new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
 
-        long oldPart0Len = new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0)).length();
+        long[] oldPartLen = partitionSizes(workDir);
+
         long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
         System.setProperty(DEFRAGMENTATION, "true");
@@ -165,18 +170,34 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        long newPart0Len = new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0)).length();
+        long[] newPartLen = partitionSizes(workDir);
+
+        for (int p = 0; p < PARTS; p++)
+            assertTrue(newPartLen[p] < oldPartLen[p]);
+
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        assertTrue(newPart0Len < oldPart0Len);
         assertTrue(newIdxFileLen <= oldIdxFileLen);
+
+        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(workDir);
+        assertTrue(completionMarkerFile.exists());
 
         stopGrid(0);
 
         IgniteCache<Object, Object> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
+        assertFalse(completionMarkerFile.exists());
+
         for (int k = 0; k < ADDED_KEYS_COUNT; k++)
             cache.get(k);
+    }
+
+    /** */
+    public long[] partitionSizes(File workDir) {
+        return IntStream.range(0, PARTS)
+            .mapToObj(p -> new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, p)))
+            .mapToLong(File::length)
+            .toArray();
     }
 
     /** */
@@ -248,10 +269,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             cache.put(i, val);
         }
 
-        for (int i = 0; i < REMOVED_KEYS_COUNT; i++) {
-            int key = new Random().nextInt(ADDED_KEYS_COUNT);
-
-            cache.remove(key);
-        }
+        for (int i = 0; i < ADDED_KEYS_COUNT / 2; i++)
+            cache.remove(i * 2);
     }
 }

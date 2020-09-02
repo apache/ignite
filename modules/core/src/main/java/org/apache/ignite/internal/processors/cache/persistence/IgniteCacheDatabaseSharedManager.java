@@ -57,7 +57,6 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -77,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFre
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
@@ -413,14 +413,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param dataStorageCfg Database config.
      * @param dataRegionCfg Data region config.
-     * @param storeMgr Page store manager.
+     * @param pmPageMgr Page manager.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     protected void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable,
-        @Nullable IgnitePageStoreManager storeMgr
+        PageMemoryPageManager pmPageMgr
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
 
@@ -434,7 +434,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             cctx.kernalContext().metric(),
             dataRegionMetricsProvider(dataRegionCfg));
 
-        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, storeMgr);
+        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);
 
         dataRegionMap.put(dataRegionName, region);
 
@@ -1188,7 +1188,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg memory configuration with common parameters.
      * @param plcCfg data region with PageMemory specific parameters.
      * @param memMetrics {@link DataRegionMetrics} object to collect memory usage metrics.
-     * @param storeMgr Page store manager.
+     * @param pmPageMgr Page manager.
      * @return data region instance.
      *
      * @throws IgniteCheckedException If failed to initialize swap path.
@@ -1198,9 +1198,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
         boolean trackable,
-        @Nullable IgnitePageStoreManager storeMgr
+        PageMemoryPageManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, storeMgr);
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1299,7 +1299,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Memory configuartion.
      * @param memPlcCfg data region configuration.
      * @param memMetrics DataRegionMetrics to collect memory usage metrics.
-     * @param storeMgr Page store manager.
+     * @param pmPageMgr Page manager.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
@@ -1308,7 +1308,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration memPlcCfg,
         DataRegionMetricsImpl memMetrics,
         boolean trackable,
-        @Nullable IgnitePageStoreManager storeMgr
+        PageMemoryPageManager pmPageMgr
     ) {
         memMetrics.persistenceEnabled(false);
 

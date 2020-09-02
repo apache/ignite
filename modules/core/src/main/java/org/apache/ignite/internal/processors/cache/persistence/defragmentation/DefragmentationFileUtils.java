@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -40,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Everything related to file management during defragmentation process.
  */
-class DefragmentationFileUtils {
+public class DefragmentationFileUtils {
     /** Prefix for link mapping files. */
     private static final String DFRG_LINK_MAPPING_FILE_PREFIX = PART_FILE_PREFIX + "map-";
 
@@ -64,6 +65,28 @@ class DefragmentationFileUtils {
 
     /** Defragmented partition temp file template. */
     private static final String DFRG_PARTITION_TMP_FILE_TEMPLATE = DFRG_PARTITION_FILE_TEMPLATE + TMP_SUFFIX;
+
+    /**
+     * Performs cleanup of work dir before initializing file page stores.
+     * Will finish batch renaming if defragmentation was completed or delete garbage if it wasn't.
+     *
+     * @param workDir Cache group working directory.
+     * @param log Logger to write messages.
+     */
+    public static void beforeInitPageStores(File workDir, IgniteLogger log) {
+        assert System.getProperty(CachePartitionDefragmentationManager.DEFRAGMENTATION) == null;
+
+        batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+
+        U.delete(defragmentationCompletionMarkerFile(workDir));
+
+        for (File file : workDir.listFiles()) {
+            String fileName = file.getName();
+
+            if (fileName.startsWith(DFRG_PARTITION_FILE_PREFIX) || fileName.startsWith(DFRG_INDEX_FILE_NAME))
+                U.delete(file);
+        }
+    }
 
     /**
      * Checks whether cache group defragmentation completed or not.

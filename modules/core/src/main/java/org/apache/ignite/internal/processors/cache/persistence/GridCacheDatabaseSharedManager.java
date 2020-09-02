@@ -131,6 +131,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -791,8 +792,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log
         );
 
-        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), true, defrgCtx.partPageStoreManager());
-        addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), true, defrgCtx.mappingPageStoreManager());
+        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), true, defrgCtx.partPageManager());
+        addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), true, defrgCtx.mappingPageManager());
 
         defrgMgr = new CachePartitionDefragmentationManager(cctx, defrgCtx);
     }
@@ -1199,10 +1200,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
         final boolean trackable,
-        @Nullable IgnitePageStoreManager storeMgr
+        PageMemoryPageManager pmPageMgr
     ) {
         if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, storeMgr);
+            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
 
         memMetrics.persistenceEnabled(true);
 
@@ -1243,7 +1244,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 chpBufSize
             ),
             cctx,
-            storeMgr,
+            pmPageMgr,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
                 memMetrics.onPageWritten();
@@ -1252,7 +1253,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 snapshotMgr.beforePageWrite(fullId);
 
                 // Write page to disk.
-                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
+                pmPageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },

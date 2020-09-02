@@ -111,7 +111,7 @@ public class TxLog implements DbCheckpointListener {
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
                 PageMemoryEx pageMemory = (PageMemoryEx)mgr.dataRegion(TX_LOG_CACHE_NAME).pageMemory();
 
-                long metaId = pageMemory.metaPageId(TX_LOG_CACHE_ID);
+                long metaId = PageMemory.META_PAGE_ID;
                 long metaPage = pageMemory.acquirePage(TX_LOG_CACHE_ID, metaId);
 
                 long treeRoot, reuseListRoot;

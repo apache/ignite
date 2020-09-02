@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.pagemem.store;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 
 /**
  * A collection that contains {@link PageStore} elements.

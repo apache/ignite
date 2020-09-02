@@ -66,9 +66,9 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -76,10 +76,13 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManagerImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -158,6 +161,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Marshaller. */
     private final Marshaller marshaller;
 
+    private final PageMemoryPageManager pmPageMgr;
+
     /**
      * Executor to disallow running code that modifies data in idxCacheStores concurrently with cleanup of file page
      * store.
@@ -189,9 +194,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private File storeWorkDir;
 
     /** */
-    private final long metaPageId = PageIdUtils.pageId(-1, PageMemory.FLAG_IDX, 0);
-
-    /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
@@ -218,6 +220,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         pageStoreV1FileIoFactory = pageStoreFileIoFactory = dsCfg.getFileIOFactory();
 
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        pmPageMgr = new PageMemoryPageManagerImpl(ctx, this, FilePageStoreManager.class.getSimpleName());
     }
 
     /** {@inheritDoc} */
@@ -540,34 +544,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
-        read(grpId, pageId, pageBuf, false);
-    }
-
-    /**
-     * Will preserve crc in buffer if keepCrc is true.
-     *
-     * @param grpId Group ID.
-     * @param pageId Page ID.
-     * @param pageBuf Page buffer.
-     * @param keepCrc Keep CRC flag.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        PageStore store = getStore(grpId, PageIdUtils.partId(pageId));
-
-        try {
-            store.read(pageId, pageBuf, keepCrc);
-
-            assert keepCrc || PageIO.getCrc(pageBuf) == 0 : store.size() - store.pageOffset(pageId);
-
-            cctx.kernalContext().compress().decompressPage(pageBuf, store.getPageSize());
-        }
-        catch (StorageException e) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
+    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        pmPageMgr.read(grpId, pageId, pageBuf, keepCrc);
     }
 
     /** {@inheritDoc} */
@@ -593,7 +571,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
-        return writeInternal(grpId, pageId, pageBuf, tag, calculateCrc);
+        return pmPageMgr.write(grpId, pageId, pageBuf, tag, calculateCrc);
     }
 
     /** {@inheritDoc} */
@@ -601,59 +579,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, PageIdUtils.partId(pageId));
 
         return store.pageOffset(pageId);
-    }
-
-    /**
-     * @param cacheId Cache ID to write.
-     * @param pageId Page ID.
-     * @param pageBuf Page buffer.
-     * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
-     * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
-     * @return PageStore to which the page has been written.
-     * @throws IgniteCheckedException If IO error occurred.
-     */
-    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc)
-        throws IgniteCheckedException {
-        int partId = PageIdUtils.partId(pageId);
-
-        PageStore store = getStore(cacheId, partId);
-
-        try {
-            int pageSize = store.getPageSize();
-            int compressedPageSize = pageSize;
-
-            GridCacheContext cctx0 = cctx.cacheContext(cacheId);
-
-            if (cctx0 != null) {
-                assert pageBuf.position() == 0 && pageBuf.limit() == pageSize : pageBuf;
-
-                ByteBuffer compressedPageBuf = cctx0.compress().compressPage(pageBuf, store);
-
-                if (compressedPageBuf != pageBuf) {
-                    compressedPageSize = PageIO.getCompressedSize(compressedPageBuf);
-
-                    if (!calculateCrc) {
-                        calculateCrc = true;
-                        PageIO.setCrc(compressedPageBuf, 0); // It will be recalculated over compressed data further.
-                    }
-
-                    PageIO.setCrc(pageBuf, 0); // It is expected to be reset to 0 after each write.
-                    pageBuf = compressedPageBuf;
-                }
-            }
-
-            store.write(pageId, pageBuf, tag, calculateCrc);
-
-            if (pageSize > compressedPageSize)
-                store.punchHole(pageId, compressedPageSize); // TODO maybe add async punch mode?
-        }
-        catch (StorageException e) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
-
-        return store;
     }
 
     /**
@@ -747,6 +672,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean encrypted) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
+
+            if (dirExisted) {
+                if (System.getProperty(CachePartitionDefragmentationManager.DEFRAGMENTATION) == null)
+                    DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
+            }
 
             File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
 
@@ -935,25 +865,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        PageStore store = getStore(grpId, partId);
-
-        try {
-            long pageIdx = store.allocatePage();
-
-            return PageIdUtils.pageId(partId, flags, (int)pageIdx);
-        }
-        catch (StorageException e) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long metaPageId(final int grpId) {
-        return metaPageId;
+        return pmPageMgr.allocatePage(grpId, partId, flags);
     }
 
     /** {@inheritDoc} */

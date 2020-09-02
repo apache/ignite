@@ -22,11 +22,12 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManagerImpl;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.IntHashMap;
@@ -95,13 +96,13 @@ public class CacheDefragmentationContext {
     }
 
     /** */
-    public IgnitePageStoreManager partPageStoreManager() {
-        return new DefragmentationPageStoreManager(ctx, partPageStoresMap, "defrgPartitionsStore");
+    public PageMemoryPageManager partPageManager() {
+        return new PageMemoryPageManagerImpl(ctx, partPageStoresMap, "defrgPartitionsStore");
     }
 
     /** */
-    public IgnitePageStoreManager mappingPageStoreManager() {
-        return new DefragmentationPageStoreManager(ctx, mappingPageStoresMap, "defrgLinkMappingStore");
+    public PageMemoryPageManager mappingPageManager() {
+        return new PageMemoryPageManagerImpl(ctx, mappingPageStoresMap, "defrgLinkMappingStore");
     }
 
     public File workDirForGroupId(int grpId) {

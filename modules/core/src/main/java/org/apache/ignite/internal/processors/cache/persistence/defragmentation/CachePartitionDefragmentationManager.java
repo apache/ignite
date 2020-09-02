@@ -97,6 +97,9 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Offheap page size. */
+    private final int pageSize;
+
     /** Direct memory buffer with a size of one page. */
     private ByteBuffer pageBuf;
 
@@ -112,13 +115,15 @@ public class CachePartitionDefragmentationManager {
         this.defrgCtx = defrgCtx;
 
         log = sharedCtx.logger(getClass());
+
+        pageSize = sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize();
     }
 
     /** */
     public void executeDefragmentation() {
         System.setProperty(SKIP_CP_ENTRIES, "true");
 
-        pageBuf = ByteBuffer.allocateDirect(sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize());
+        pageBuf = ByteBuffer.allocateDirect(pageSize);
 
         try {
             FilePageStoreManager filePageStoreMgr = (FilePageStoreManager)sharedCtx.pageStore();
@@ -219,7 +224,7 @@ public class CachePartitionDefragmentationManager {
                                     "partId", partId, false,
                                     "oldPages", defrgCtx.pageStore(grpId, partId).pages(), false,
                                     "newPages", partPagesAllocated.get(), false,
-                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partPagesAllocated.get()) * partRegion.pageMemory().pageSize(), false,
+                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partPagesAllocated.get()) * pageSize, false,
                                     "mappingPages", mappingPagesAllocated.get(), false,
                                     "partFile", defragmentedPartFile(workDir, partId).getName(), false,
                                     "workDir", workDir, false
@@ -423,7 +428,7 @@ public class CachePartitionDefragmentationManager {
                             access(ACCESS_WRITE, newPageMemory, grpId, nextNewCountersPageIdRef.get(), newCountersPageAddr -> {
                                 PagePartitionCountersIO newPartCountersIo = PagePartitionCountersIO.VERSIONS.latest();
 
-                                newPartCountersIo.initNewPage(newCountersPageAddr, nextNewCountersPageIdRef.get(), oldPageMemory.pageSize());
+                                newPartCountersIo.initNewPage(newCountersPageAddr, nextNewCountersPageIdRef.get(), pageSize);
 
                                 PagePartitionCountersIO oldCountersPageIo = PageIO.getPageIO(oldCountersPageAddr);
 
@@ -524,6 +529,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
+    // TODO Prefetch future pages.
     private <L, T extends L> void iterate(
         BPlusTree<L, T> tree,
         PageMemoryEx pageMemory,
@@ -548,7 +554,7 @@ public class CachePartitionDefragmentationManager {
 
                     assert io instanceof BPlusLeafIO : io;
 
-                    GridUnsafe.copyMemory(leafPageAddr, bufAddr, pageMemory.pageSize());
+                    GridUnsafe.copyMemory(leafPageAddr, bufAddr, pageSize);
                 }
                 finally {
                     pageMemory.readUnlock(grpId, leafId, leafPage);

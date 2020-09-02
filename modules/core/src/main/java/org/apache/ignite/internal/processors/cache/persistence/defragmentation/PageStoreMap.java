@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
+import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 

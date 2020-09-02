@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -65,14 +64,6 @@ public interface PageMemoryEx extends PageMemory {
      */
     void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore);
-
-    /**
-     * Gets metadata page for specified grpId.
-     *
-     * @param grpId Group ID.
-     * @return Meta page for grpId.
-     */
-    public long metaPageId(int grpId);
 
     /**
      * Gets partition metadata page for specified grpId and partId.
@@ -154,7 +145,7 @@ public interface PageMemoryEx extends PageMemory {
      ) throws IgniteCheckedException;
 
      /** */
-     public IgnitePageStoreManager pageStoreManager();
+     public PageMemoryPageManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

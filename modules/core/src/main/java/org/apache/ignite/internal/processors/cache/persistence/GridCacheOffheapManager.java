@@ -785,7 +785,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-        long metaPageId = pageMem.metaPageId(grpId);
+        long metaPageId = PageMemory.META_PAGE_ID;
         long metaPage = pageMem.acquirePage(grpId, metaPageId);
 
         try {
@@ -950,7 +950,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         IgniteWriteAheadLogManager wal = ctx.wal();
 
         int grpId = grp.groupId();
-        long metaId = pageMem.metaPageId(grpId);
+        long metaId = PageMemory.META_PAGE_ID;
         long metaPage = pageMem.acquirePage(grpId, metaId);
 
         try {

@@ -89,8 +89,8 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
-
+    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -150,11 +150,6 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
             allocator = F.addIfAbsent(allocators, fullId, new AtomicInteger(2));
 
         return allocator.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long metaPageId(int grpId) {
-        return 1;
     }
 
     /** {@inheritDoc} */

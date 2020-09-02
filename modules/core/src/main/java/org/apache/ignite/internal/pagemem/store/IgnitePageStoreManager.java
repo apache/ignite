@@ -28,12 +28,13 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
+public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport, PageMemoryPageManager {
     /**
      * Invoked before starting checkpoint recover.
      */
@@ -102,16 +103,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
 
     /**
-     * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
-     *
-     * @param grpId Cache group ID.
-     * @param pageId PageID to read.
-     * @param pageBuf Page buffer to write to.
-     * @throws IgniteCheckedException If failed to read the page.
-     */
-    public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
-
-    /**
      * Checks if partition store exists.
      *
      * @param grpId Cache group ID.
@@ -139,7 +130,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
+    @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.
@@ -176,7 +167,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return Allocated page ID.
      * @throws IgniteCheckedException If IO exception occurred while allocating a page ID.
      */
-    public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
+    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * Gets total number of allocated pages for the given space.
@@ -187,14 +178,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @throws IgniteCheckedException If failed.
      */
     public int pages(int grpId, int partId) throws IgniteCheckedException;
-
-    /**
-     * Gets meta page ID for specified cache.
-     *
-     * @param grpId Cache group ID.
-     * @return Meta page ID.
-     */
-    public long metaPageId(int grpId);
 
     /**
      * @return Saved cache configurations.

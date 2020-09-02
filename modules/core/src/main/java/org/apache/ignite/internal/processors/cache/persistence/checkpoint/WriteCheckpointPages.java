@@ -271,7 +271,7 @@ public class WriteCheckpointPages implements Runnable {
 
                 curCpProgress.updateWrittenPages(1);
 
-                PageStore store = pageMemEx.pageStoreManager().write(groupId, pageId, buf, tag, true);
+                PageStore store = pageMemEx.pageManager().write(groupId, pageId, buf, tag, true);
 
                 // Temporary debug logs.
                 log.info(S.toString(
@@ -280,7 +280,7 @@ public class WriteCheckpointPages implements Runnable {
                     "partition", (short)PageIdUtils.partId(pageId), false,
                     "idx", PageIdUtils.pageIndex(pageId), false,
                     "io", PageIO.getPageIO(buf).getClass().getSimpleName(), false,
-                    "pageStore", pageMemEx.pageStoreManager(), false
+                    "pageMgr", pageMemEx.pageManager(), false
                 ));
 
                 assert store != null;

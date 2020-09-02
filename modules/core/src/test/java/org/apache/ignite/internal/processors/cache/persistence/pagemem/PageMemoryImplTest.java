@@ -704,7 +704,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         private Map<FullPageId, byte[]> storedPages = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             byte[] bytes = storedPages.get(fullPageId);
