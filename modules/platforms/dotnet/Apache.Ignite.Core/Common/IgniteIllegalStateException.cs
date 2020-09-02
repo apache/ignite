@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
-        private IgniteIllegalStateException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+        protected IgniteIllegalStateException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
         {
             // No-op.
         }
