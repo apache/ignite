@@ -221,7 +221,7 @@ public class KubernetesServiceAddressResolver {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class Address {
         /** */
-        String ip;
+        public String ip;
     }
 
     /**
@@ -230,10 +230,10 @@ public class KubernetesServiceAddressResolver {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class Subset {
         /** */
-        List<Address> addresses;
+        public List<Address> addresses;
 
         /** */
-        List<Address> notReadyAddresses;
+        public List<Address> notReadyAddresses;
     }
 
     /**
@@ -242,6 +242,6 @@ public class KubernetesServiceAddressResolver {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class Endpoints {
         /** */
-        List<Subset> subsets;
+        public List<Subset> subsets;
     }
 }
