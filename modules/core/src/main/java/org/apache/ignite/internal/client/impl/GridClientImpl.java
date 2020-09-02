@@ -505,7 +505,6 @@ public class GridClientImpl implements GridClient {
         }
     }
 
-
     /**
      * Getting a client connection without topology information.
      *
