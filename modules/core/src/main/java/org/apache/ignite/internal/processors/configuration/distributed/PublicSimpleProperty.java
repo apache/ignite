@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 /**
  * Implements type-independent part of the public property.
  */
-public class PublicSimpleProperty<T extends Serializable> implements PublicProperty<T> {
+public class PublicSimpleProperty <T extends Serializable> implements PublicProperty<T> {
     /** Description. */
     private final String desc;
 
