@@ -727,7 +727,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 exchangeActions.stateChangeRequest(req);
 
-                exchangeActions.securitySubjectId(msg.securitySubjectId());
+                exchangeActions.securitySubjectId(SecurityUtils.securitySubjectId(ctx));
 
                 msg.exchangeActions(exchangeActions);
 
@@ -1147,8 +1147,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
-
-        msg.securitySubjectId(SecurityUtils.securitySubjectId(ctx));
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 

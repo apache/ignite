@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -525,7 +526,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 discoNtfWrk.submit(notificationFut, () -> {
                     synchronized (discoEvtMux) {
-                        onDiscovery0(notification);
+                        if (notification.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                            UUID secSubjId = null;
+
+                            if (notification.getCustomMsgData() != null && notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper)
+                                secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
+
+                            if (secSubjId == null)
+                                secSubjId = ctx.localNodeId();
+
+                            try (OperationSecurityContext s = ctx.security().withContext(secSubjId)) {
+                                onDiscovery0(notification);
+                            }
+                        }
+                        else
+                            onDiscovery0(notification);
                     }
                 });
 
@@ -2182,7 +2197,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
-            getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+            getSpi().sendCustomEvent(ctx.security().enabled()
+                ? new SecurityAwareCustomMessageWrapper(msg, ctx.security().securityContext().subject().id())
+                : new CustomMessageWrapper(msg));
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();

@@ -4096,11 +4096,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(sndReqs);
-
-                batch.securitySubjectId(securitySubjectId(ctx));
-
-                ctx.discovery().sendCustomEvent(batch);
+                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
                 err = checkNodeState();
             }

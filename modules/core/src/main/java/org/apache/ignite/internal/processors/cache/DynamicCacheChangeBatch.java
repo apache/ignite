@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -58,9 +57,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** Affinity (cache related) services updates to be processed on services deployment process. */
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
-
-    /** Security subject id. */
-    private UUID secSubjId;
 
     /**
      * @param reqs Requests.
@@ -134,20 +130,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
         this.serviceDeploymentActions = serviceDeploymentActions;
-    }
-
-    /**
-     * Sets Security subject id.
-     */
-    public void securitySubjectId(UUID id) {
-        secSubjId = id;
-    }
-
-    /**
-     * @return Security subject id.
-     */
-    public UUID securitySubjectId() {
-        return secSubjId;
     }
 
     /**

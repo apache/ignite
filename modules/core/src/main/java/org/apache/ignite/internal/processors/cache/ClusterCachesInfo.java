@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -587,7 +588,7 @@ public class ClusterCachesInfo {
             if (res.needExchange) {
                 assert !exchangeActions.empty() : exchangeActions;
 
-                exchangeActions.securitySubjectId(batch.securitySubjectId());
+                exchangeActions.securitySubjectId(SecurityUtils.securitySubjectId(ctx));
 
                 batch.exchangeActions(exchangeActions);
             }
