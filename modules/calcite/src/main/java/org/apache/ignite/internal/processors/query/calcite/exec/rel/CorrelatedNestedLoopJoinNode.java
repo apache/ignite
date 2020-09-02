@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,11 +70,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     private int rightIdx;
 
     /** */
-    private State state = State.NEW;
+    private State state = State.INITIAL;
 
     /** */
     private enum State {
-        NEW, FILLING_LEFT, FILLING_RIGHT, READY, IN_LOOP, END
+        INITIAL, FILLING_LEFT, FILLING_RIGHT, IDLE, IN_LOOP, END
     }
 
     /**
@@ -96,18 +97,23 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        assert !F.isEmpty(sources) && sources.size() == 2;
+        assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        onRequest();
+            requested = rowsCnt;
+
+            onRequest();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void resetInternal() {
+    @Override protected void onRewind() {
         leftInBuf = null;
         rightInBuf = null;
 
@@ -118,7 +124,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         waitingLeft = 0;
         waitingRight = 0;
 
-        state = State.NEW;
+        state = State.INITIAL;
     }
 
     /** {@inheritDoc} */
@@ -163,14 +169,14 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private void pushLeft(Row row) {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waitingLeft > 0;
 
-        waitingLeft--;
-
         try {
+            checkState();
+
+            waitingLeft--;
+
             if (leftInBuf == null)
                 leftInBuf = new ArrayList<>(leftInBufferSize);
 
@@ -185,14 +191,14 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private void pushRight(Row row) {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waitingRight > 0;
 
-        waitingRight--;
-
         try {
+            checkState();
+
+            waitingRight--;
+
             if (rightInBuf == null)
                 rightInBuf = new ArrayList<>(rightInBufferSize);
 
@@ -207,16 +213,16 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private void endLeft() {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waitingLeft > 0;
 
         try {
-            if (leftInBuf == null)
-                leftInBuf = Collections.emptyList();
+            checkState();
 
             waitingLeft = -1;
+
+            if (leftInBuf == null)
+                leftInBuf = Collections.emptyList();
 
             onEndLeft();
         }
@@ -227,16 +233,16 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private void endRight() {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waitingRight > 0;
 
         try {
-            if (rightInBuf == null)
-                rightInBuf = Collections.emptyList();;
+            checkState();
 
             waitingRight = -1;
+
+            if (rightInBuf == null)
+                rightInBuf = Collections.emptyList();
 
             onEndRight();
         }
@@ -246,20 +252,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-    }
-
-    /** */
     private void onRequest() {
         switch (state) {
             case IN_LOOP:
                 break;
-            case NEW:
+            case INITIAL:
                 assert waitingLeft == 0;
                 assert waitingRight == 0;
                 assert F.isEmpty(leftInBuf);
@@ -267,8 +264,10 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 context().execute(() -> {
                     try {
+                        checkState();
+
                         state = State.FILLING_LEFT;
-                        sources.get(0).request(waitingLeft = leftInBufferSize);
+                        leftSource().request(waitingLeft = leftInBufferSize);
                     }
                     catch (Exception e) {
                         onError(e);
@@ -276,7 +275,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 });
 
                 break;
-            case READY:
+            case IDLE:
                 assert rightInBuf != null;
                 assert leftInBuf != null;
                 assert waitingRight == -1 || waitingRight == 0 && rightInBuf.size() == rightInBufferSize;
@@ -284,7 +283,9 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 context().execute(() -> {
                     try {
-                        doJoin();
+                        checkState();
+
+                        join();
                     }
                     catch (Exception e) {
                         onError(e);
@@ -309,15 +310,15 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
             prepareCorrelations();
 
             if (waitingRight == -1)
-                sources.get(1).reset();
+                rightSource().rewind();
 
             state = State.FILLING_RIGHT;
-            sources.get(1).request(waitingRight = rightInBufferSize);
+            rightSource().request(waitingRight = rightInBufferSize);
         }
     }
 
     /** */
-    private void onPushRight() {
+    private void onPushRight() throws IgniteCheckedException {
         assert state == State.FILLING_RIGHT : "Unexpected state:" + state;
         assert !F.isEmpty(leftInBuf);
         assert waitingLeft == -1 || waitingLeft == 0 && leftInBuf.size() == leftInBufferSize;
@@ -325,9 +326,9 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         if (rightInBuf.size() == rightInBufferSize) {
             assert waitingRight == 0;
 
-            state = State.READY;
+            state = State.IDLE;
 
-            doJoin();
+            join();
         }
     }
 
@@ -343,34 +344,34 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
             state = State.END;
 
             requested = 0;
-            downstream.end();
+            downstream().end();
         }
         else {
             prepareCorrelations();
 
             if (waitingRight == -1)
-                sources.get(1).reset();
+                rightSource().rewind();
 
             state = State.FILLING_RIGHT;
-            sources.get(1).request(waitingRight = rightInBufferSize);
+            rightSource().request(waitingRight = rightInBufferSize);
         }
     }
 
     /** */
-    private void onEndRight() {
+    private void onEndRight() throws IgniteCheckedException {
         assert state == State.FILLING_RIGHT : "Unexpected state:" + state;
         assert waitingRight == -1;
         assert !F.isEmpty(leftInBuf);
         assert waitingLeft == -1 || waitingLeft == 0 && leftInBuf.size() == leftInBufferSize;
 
-        state = State.READY;
+        state = State.IDLE;
 
-        doJoin();
+        join();
     }
 
     /** */
-    private void doJoin() {
-        assert state == State.READY;
+    private void join() throws IgniteCheckedException {
+        assert state == State.IDLE;
 
         state = State.IN_LOOP;
         try {
@@ -379,18 +380,16 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                     leftIdx = 0;
 
                 while (requested > 0 && leftIdx < leftInBuf.size()) {
+                    checkState();
+
                     Row row = handler.concat(leftInBuf.get(leftIdx), rightInBuf.get(rightIdx));
 
                     leftIdx++;
 
                     if (cond.test(row)) {
                         requested--;
-                        downstream.push(row);
+                        downstream().push(row);
                     }
-
-                    // Execution may be reset or cancelled by downstream.
-                    if (state != State.IN_LOOP)
-                        return;
                 }
 
                 if (leftIdx == leftInBuf.size())
@@ -398,8 +397,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
             }
         }
         finally {
-            if (state == State.IN_LOOP)
-                state = State.READY;
+            state = State.IDLE;
         }
 
         if (rightIdx == rightInBuf.size()) {
@@ -411,7 +409,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 state = State.FILLING_RIGHT;
 
-                sources.get(1).request(waitingRight = rightInBufferSize);
+                rightSource().request(waitingRight = rightInBufferSize);
 
                 return;
             }
@@ -422,7 +420,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 state = State.FILLING_LEFT;
 
-                sources.get(0).request(waitingLeft = leftInBufferSize);
+                leftSource().request(waitingLeft = leftInBufferSize);
 
                 return;
             }
@@ -436,7 +434,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 state = State.END;
 
                 requested = 0;
-                downstream.end();
+                downstream().end();
 
                 return;
             }
@@ -445,6 +443,16 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
             leftInBuf = Collections.emptyList();
             rightInBuf = Collections.emptyList();
         }
+    }
+
+    /** */
+    private Node<Row> leftSource() {
+        return sources().get(0);
+    }
+
+    /** */
+    private Node<Row> rightSource() {
+        return sources().get(1);
     }
 
     private void prepareCorrelations() {

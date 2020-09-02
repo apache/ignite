@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec.rel;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.IgniteCheckedException;
 
-/**
- * A node with a single input
- */
-public interface SingleNode<Row> extends Node<Row> {
-    /** */
-    default void register(@NotNull Node<Row> src) {
-        register(F.asList(src));
-    }
-
-    /** */
-    default @NotNull Node<Row> source() {
-        return F.first(sources());
-    }
+/** */
+public class ExecutionCancelledException extends IgniteCheckedException {
 }

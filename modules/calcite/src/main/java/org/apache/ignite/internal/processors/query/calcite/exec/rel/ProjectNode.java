@@ -40,22 +40,19 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** {@inheritDoc} */
-    @Override protected void resetInternal() {
+    @Override protected void onRewind() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
         try {
-            F.first(sources).request(rowsCnt);
+            checkState();
+
+            source().request(rowsCnt);
         }
         catch (Exception e) {
             onError(e);
@@ -64,15 +61,12 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
 
         try {
-            downstream.push(prj.apply(row));
+            checkState();
+
+            downstream().push(prj.apply(row));
         }
         catch (Throwable e) {
             onError(e);
@@ -81,23 +75,16 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
+        assert downstream() != null;
 
-        if (isClosed())
-            return;
+        try {
+            checkState();
 
-        assert downstream != null;
-
-        downstream.end();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
+            downstream().end();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */

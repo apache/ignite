@@ -39,20 +39,20 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
 
     /** {@inheritDoc} */
     @Override protected Downstream<Row> requestDownstream(int idx) {
-        assert sources != null;
-        assert idx >= 0 && idx < sources.size();
+        assert sources() != null;
+        assert idx >= 0 && idx < sources().size();
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        assert !F.isEmpty(sources);
+        assert !F.isEmpty(sources());
         assert rowsCnt > 0 && waiting == 0;
 
         try {
+            checkState();
+
             source().request(waiting = rowsCnt);
         }
         catch (Exception e) {
@@ -62,29 +62,34 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting--;
+        try {
+            checkState();
 
-        downstream.push(row);
+            waiting--;
+
+            downstream().push(row);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
         try {
-            if (++curSrc < sources.size())
+            checkState();
+
+            if (++curSrc < sources().size())
                 source().request(waiting);
             else {
                 waiting = -1;
-                downstream.end();
+                downstream().end();
             }
         }
         catch (Exception e) {
@@ -93,22 +98,13 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void resetInternal() {
+    @Override protected void onRewind() {
         curSrc = 0;
         waiting = 0;
     }
 
     /** */
     private Node<Row> source() {
-        return sources.get(curSrc);
+        return sources().get(curSrc);
     }
 }

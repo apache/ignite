@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -49,6 +50,13 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
+    @Override protected void onRewind() {
+        requested = 0;
+        waiting = 0;
+        rows.clear();
+    }
+
+    /** {@inheritDoc} */
     @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
@@ -58,77 +66,74 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
         assert waiting <= 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else if (!inLoop)
-            context().execute(this::flushFromBuffer);
+            requested = rowsCnt;
+
+            if (waiting == 0)
+                source().request(waiting = IN_BUFFER_SIZE);
+            else if (!inLoop)
+                context().execute(this::doFlush);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void doFlush() {
+        try {
+            flush();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting--;
-
         try {
+            checkState();
+
+            waiting--;
+
             rows.add(row);
 
             if (waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
+                source().request(waiting = IN_BUFFER_SIZE);
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting = -1;
-
         try {
-            flushFromBuffer();
+            checkState();
+
+            waiting = -1;
+
+            flush();
         }
         catch (Exception e) {
-            downstream.onError(e);
+            downstream().onError(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
     }
 
     /** */
-    private void flushFromBuffer() {
+    private void flush() throws IgniteCheckedException {
         assert waiting == -1;
 
         int processed = 0;
@@ -136,20 +141,22 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         inLoop = true;
         try {
             while (requested > 0 && !rows.isEmpty()) {
+                checkState();
+
                 requested--;
 
-                downstream.push(rows.poll());
+                downstream().push(rows.poll());
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::flushFromBuffer);
+                    context().execute(this::doFlush);
 
                     return;
                 }
             }
 
             if (requested >= 0) {
-                downstream.end();
+                downstream().end();
                 requested = 0;
             }
         }

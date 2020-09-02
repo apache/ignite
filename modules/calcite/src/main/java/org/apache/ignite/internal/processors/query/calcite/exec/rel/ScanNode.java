@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -52,31 +52,46 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        if (!inLoop)
-            context().execute(this::pushInternal);
+            requested = rowsCnt;
+
+            if (!inLoop)
+                context().execute(this::doPush);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void doPush() {
+        try {
+            checkState();
+
+            push();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (isClosed())
-            return;
+    @Override public void onClose() {
+        super.onClose();
 
         Commons.closeQuiet(it);
-
         it = null;
-
         Commons.closeQuiet(src);
+    }
 
-        super.close();
+    /** {@inheritDoc} */
+    @Override protected void onRewind() {
+        Commons.closeQuiet(it);
+        it = null;
     }
 
     /** {@inheritDoc} */
@@ -90,62 +105,37 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** */
-    private void pushInternal() {
-        if (isClosed())
-            return;
-
+    private void push() throws IgniteCheckedException {
         inLoop = true;
         try {
             if (it == null)
                 it = src.iterator();
 
             int processed = 0;
-
-            Thread thread = Thread.currentThread();
-
             while (requested > 0 && it.hasNext()) {
-                if (isClosed())
-                    return;
-
-                if (thread.isInterrupted())
-                    throw new IgniteInterruptedCheckedException("Thread was interrupted.");
+                checkState();
 
                 requested--;
-                downstream.push(it.next());
+                downstream().push(it.next());
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::pushInternal);
+                    context().execute(this::doPush);
 
                     return;
                 }
             }
-
-            if (requested > 0 && !it.hasNext()) {
-                downstream.end();
-                requested = 0;
-
-                Commons.closeQuiet(it);
-
-                it = null;
-            }
-        }
-        catch (Throwable e) {
-            onError(e);
         }
         finally {
             inLoop = false;
         }
-    }
 
-    /** */
-    private void onError(Throwable e) {
-        checkThread();
+        if (requested > 0 && !it.hasNext()) {
+            Commons.closeQuiet(it);
+            it = null;
 
-        assert downstream != null;
-
-        downstream.onError(e);
-
-        close();
+            requested = 0;
+            downstream().end();
+        }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -89,44 +90,40 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        if (!inLoop)
-            tryEnd();
-    }
+            requested = rowsCnt;
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
-        throw new UnsupportedOperationException();
+            if (!inLoop)
+                tryEnd();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
         assert state == State.UPDATING;
 
-        waiting--;
-
         try {
+            checkState();
+
+            waiting--;
+
             switch (op) {
                 case DELETE:
                 case UPDATE:
                 case INSERT:
-                    addToBatch(row);
+                    tuples.add(desc.toTuple(context(), row, op, cols));
+
+                    flushTuples(false);
 
                     break;
                 default:
@@ -134,7 +131,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             }
 
             if (waiting == 0)
-                F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
+                source().request(waiting = MODIFY_BATCH_SIZE);
         }
         catch (Exception e) {
             onError(e);
@@ -143,27 +140,25 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting = -1;
-        state = State.UPDATED;
+        try {
+            checkState();
 
-        tryEnd();
+            waiting = -1;
+            state = State.UPDATED;
+
+            tryEnd();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
+    @Override protected void onRewind() {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -175,48 +170,36 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private void addToBatch(Row row) throws IgniteCheckedException {
-        tuples.add(desc.toTuple(context(), row, op, cols));
+    private void tryEnd() throws IgniteCheckedException {
+        assert downstream() != null;
 
-        flush(false);
-    }
+        if (state == State.UPDATING && waiting == 0)
+            source().request(waiting = MODIFY_BATCH_SIZE);
 
-    /** */
-    private void tryEnd() {
-        assert downstream != null;
+        if (state == State.UPDATED && requested > 0) {
+            flushTuples(true);
 
-        try {
-            if (state == State.UPDATING && waiting == 0)
-                F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
+            state = State.END;
 
-            if (state == State.UPDATED && requested > 0) {
-                flush(true);
-
-                state = State.END;
-
-                inLoop = true;
-                try {
-                    requested--;
-                    downstream.push(ctx.rowHandler().factory(long.class).create(updatedRows));
-                }
-                finally {
-                    inLoop = false;
-                }
+            inLoop = true;
+            try {
+                requested--;
+                downstream().push(context().rowHandler().factory(long.class).create(updatedRows));
             }
-
-            if (state == State.END && requested > 0) {
-                requested = 0;
-                downstream.end();
+            finally {
+                inLoop = false;
             }
         }
-        catch (Exception e) {
-            onError(e);
+
+        if (state == State.END && requested > 0) {
+            requested = 0;
+            downstream().end();
         }
     }
 
     /** */
     @SuppressWarnings("unchecked")
-    private void flush(boolean force) throws IgniteCheckedException {
+    private void flushTuples(boolean force) throws IgniteCheckedException {
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
@@ -230,14 +213,13 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
         if (op == TableModify.Operation.INSERT && updated != res.size()) {
-            List<Object> duplicates = new ArrayList<>(res.size());
+            List<Object> duplicates = res.entrySet().stream()
+                .filter(e -> e.getValue().get() == 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
-            for (Map.Entry<?, EntryProcessorResult<Long>> e : res.entrySet()) {
-                if (e.getValue().get() == 0)
-                    duplicates.add(e.getKey());
-            }
-
-            throw duplicateKeysException(duplicates);
+            throw new IgniteSQLException("Failed to INSERT some keys because they are already in cache. " +
+                "[keys=" + duplicates + ']', DUPLICATE_KEY);
         }
 
         updatedRows += updated;
@@ -268,12 +250,6 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         }
 
         return procMap;
-    }
-
-    /** */
-    private IgniteSQLException duplicateKeysException(List<Object> keys) {
-        return new IgniteSQLException("Failed to INSERT some keys because they are already in cache [keys=" +
-            keys + ']', DUPLICATE_KEY);
     }
 
     /** */

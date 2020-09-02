@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.config.CalciteSystemProperty;
@@ -288,5 +289,10 @@ public final class Commons {
         A.ensure(required >= 0, "capacity must not be negative");
 
         return array.length <= required ? Arrays.copyOf(array, U.nextPowerOf2(required)) : array;
+    }
+
+    /** */
+    public static <T> Predicate<T> negate(Predicate<T> p) {
+        return p.negate();
     }
 }

@@ -1028,7 +1028,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 running.remove(ctx.queryId());
 
                 // 2) close local fragment
-                root.proceedClose();
+                root.onClose();
 
                 // 3) close remote fragments
                 for (UUID nodeId : remotes) {

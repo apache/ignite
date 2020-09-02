@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -55,24 +56,16 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
-
-        if (!inLoop)
-            context().execute(this::filter);
-    }
-
-    /** */
-    private void filter() {
         try {
-            filterInternal();
+            checkState();
+
+            requested = rowsCnt;
+
+            if (!inLoop)
+                context().execute(this::doFilter);
         }
         catch (Exception e) {
             onError(e);
@@ -81,21 +74,18 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting--;
-
         try {
+            checkState();
+
+            waiting--;
+
             if (pred.test(row))
                 inBuf.add(row);
 
-            filterInternal();
+            filter();
         }
         catch (Exception e) {
             onError(e);
@@ -104,31 +94,19 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting = -1;
-
         try {
-            filterInternal();
+            checkState();
+
+            waiting = -1;
+
+            filter();
         }
         catch (Exception e) {
             onError(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
     }
 
     /** {@inheritDoc} */
@@ -140,19 +118,33 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override protected void resetInternal() {
+    @Override protected void onRewind() {
         requested = 0;
         waiting = 0;
         inBuf.clear();
     }
 
     /** */
-    public void filterInternal() {
+    private void doFilter() {
+        try {
+            checkState();
+
+            filter();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void filter() throws IgniteCheckedException {
         inLoop = true;
         try {
             while (requested > 0 && !inBuf.isEmpty()) {
+                checkState();
+
                 requested--;
-                downstream.push(inBuf.remove());
+                downstream().push(inBuf.remove());
             }
         }
         finally {
@@ -160,13 +152,13 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         }
 
         if (inBuf.isEmpty() && waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+            source().request(waiting = IN_BUFFER_SIZE);
 
         if (waiting == -1 && requested > 0) {
             assert inBuf.isEmpty();
 
             requested = 0;
-            downstream.end();
+            downstream().end();
         }
     }
 }

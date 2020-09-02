@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
+
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -41,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends H2IndexCostedBase, implements GridIndex<H2Row> {
+public abstract class GridH2IndexBase extends H2IndexCostedBase implements GridIndex<H2Row> {
     /**
      * Constructor.
      *

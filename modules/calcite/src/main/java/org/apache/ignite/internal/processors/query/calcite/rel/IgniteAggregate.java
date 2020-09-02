@@ -228,7 +228,6 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                     break;
                 }
 
-
                 b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
 
                 break;

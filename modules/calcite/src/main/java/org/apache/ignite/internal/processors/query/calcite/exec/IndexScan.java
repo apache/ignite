@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,10 +87,10 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     private final Predicate<Row> filters;
 
     /** Lower index scan bound. */
-    private final Row lowerBound;
+    private final Supplier<Row> lowerBound;
 
     /** Upper index scan bound. */
-    private final Row upperBound;
+    private final Supplier<Row> upperBound;
 
     /** */
     private final int[] partsArr;
@@ -111,8 +112,8 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         ExecutionContext<Row> ectx,
         IgniteIndex igniteIdx,
         Predicate<Row> filters,
-        Row lowerBound,
-        Row upperBound
+        Supplier<Row> lowerBound,
+        Supplier<Row> upperBound
     ) {
         this.ectx = ectx;
         desc = igniteIdx.table().descriptor();
@@ -128,7 +129,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         this.filters = filters;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        partsArr = ectx.partitions();
+        partsArr = ectx.localPartitions();
         mvccSnapshot = ectx.mvccSnapshot();
     }
 
@@ -136,8 +137,8 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     @Override public synchronized Iterator<Row> iterator() {
         reserve();
         try {
-            H2Row lower = lowerBound == null ? null : new H2PlainRow(values(coCtx, ectx, lowerBound));
-            H2Row upper = upperBound == null ? null : new H2PlainRow(values(coCtx, ectx, upperBound));
+            H2Row lower = lowerBound == null ? null : new H2PlainRow(values(coCtx, ectx, lowerBound.get()));
+            H2Row upper = upperBound == null ? null : new H2PlainRow(values(coCtx, ectx, upperBound.get()));
 
             return new IteratorImpl(idx.find(lower, upper, filterClosure()));
         }
