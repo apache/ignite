@@ -21,7 +21,6 @@ package org.apache.ignite.internal.processors.configuration.distributed;
  * Implementation of {@link DistributedProperty} for {@link Long}.
  */
 public class DistributedLongProperty extends DistributedComparableProperty<Long> {
-
     /** {@inheritDoc} */
     DistributedLongProperty(String name) {
         super(name);

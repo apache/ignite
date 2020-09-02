@@ -21,6 +21,7 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
+import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
@@ -74,7 +75,10 @@ public enum CommandList {
     SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+
+    /** */
+    PROPERTY("--property", new PropertyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

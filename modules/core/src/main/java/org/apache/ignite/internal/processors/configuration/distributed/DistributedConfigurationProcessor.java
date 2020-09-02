@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -151,6 +154,29 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
         doAllAllowableActions(prop);
 
         return prop;
+    }
+
+    /**
+     * @return Public properties.
+     */
+    public List<SimpleDistributedPublicProperty<Serializable>> publicProperties() {
+        return props.values().stream()
+            .filter(p -> p instanceof SimpleDistributedPublicProperty)
+            .map(p -> (SimpleDistributedPublicProperty<Serializable>)p)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param name Property name.
+     * @return Public property.
+     */
+    public SimpleDistributedPublicProperty<Serializable> publicProperty(String name) {
+        DistributedChangeableProperty<?> p = props.get(name);
+
+        if (!(p instanceof SimpleDistributedPublicProperty))
+            return null;
+        else
+            return (SimpleDistributedPublicProperty<Serializable>)p;
     }
 
     /**
