@@ -37,7 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperty;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -140,7 +140,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /** Property name for entry lock timeout in milliseconds. Default is 1000. */
-    @IgniteSystemProperty(description = "Property name for entry lock timeout in milliseconds. Default is 1000.",
+    @SystemProperty(value = "Entry lock timeout in milliseconds. Default is 1000.",
         type = Long.class)
     public static final String ENTRY_LOCK_TIMEOUT_ENV = "ENTRY_LOCK_TIMEOUT";
 

@@ -29,10 +29,10 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
-public @interface IgniteSystemProperty {
+public @interface SystemProperty {
     /** Description. */
-    String description();
+    String value();
 
     /** Type. */
-    Class<?> type();
+    Class<?> type() default Boolean.class;
 }

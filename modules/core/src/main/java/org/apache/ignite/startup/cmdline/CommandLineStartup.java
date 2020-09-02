@@ -38,8 +38,8 @@ import javax.swing.ImageIcon;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.IgniteSystemProperty;
 import org.apache.ignite.IgnitionListener;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -386,7 +386,7 @@ public final class CommandLineStartup {
 
         for (Class<?> cls : PROPS_CLS) {
             for (Field field : cls.getFields()) {
-                IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
+                SystemProperty ann = field.getAnnotation(SystemProperty.class);
 
                 if (ann != null) {
                     try {
@@ -402,9 +402,9 @@ public final class CommandLineStartup {
         props.forEach((name, field) -> {
             String deprecated = field.isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
 
-            IgniteSystemProperty prop = field.getAnnotation(IgniteSystemProperty.class);
+            SystemProperty prop = field.getAnnotation(SystemProperty.class);
 
-            X.println(format("%-40s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.description()));
+            X.println(format("%-40s - [%s]%s %s", name, prop.type().getSimpleName(), deprecated, prop.value()));
         });
     }
 }

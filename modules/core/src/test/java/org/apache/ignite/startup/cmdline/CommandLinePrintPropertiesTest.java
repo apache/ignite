@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.IgniteSystemProperty;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -35,9 +35,7 @@ import static java.lang.reflect.Modifier.isStatic;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.PRINT_PROPS_COMMAND;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.PROPS_CLS;
 
-/**
- * Tests print Ignite system properties.
- */
+/** Tests print Ignite system properties. */
 public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
     /** Ignite system property pattern. */
     private final Pattern propPtrn = Pattern.compile("^([\\w.]+).* +- \\[\\w+](\\[Deprecated]|) (.*)");
@@ -54,8 +52,8 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
                 expProps.put(U.staticField(IgniteSystemProperties.class, field.getName()), field);
 
                 assertTrue("Ignite system property must be annotated by @" +
-                        IgniteSystemProperty.class.getSimpleName() + " [field=" + field + ']',
-                    field.isAnnotationPresent(IgniteSystemProperty.class));
+                        SystemProperty.class.getSimpleName() + " [field=" + field + ']',
+                    field.isAnnotationPresent(SystemProperty.class));
             }
         }
 
@@ -64,7 +62,7 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
                 continue;
 
             for (Field field : cls.getFields()) {
-                IgniteSystemProperty ann = field.getAnnotation(IgniteSystemProperty.class);
+                SystemProperty ann = field.getAnnotation(SystemProperty.class);
 
                 if (ann != null)
                     expProps.put(U.staticField(cls, field.getName()), field);
