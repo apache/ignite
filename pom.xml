@@ -74,10 +74,8 @@
         <module>modules/mesos</module>
         <module>modules/kafka</module>
         <module>modules/yarn</module>
-        <module>modules/jms11</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
-        <module>modules/camel</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
