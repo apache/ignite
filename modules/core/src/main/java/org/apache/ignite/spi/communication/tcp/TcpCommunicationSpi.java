@@ -74,13 +74,16 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -858,8 +861,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             @Override public void onMessage(final GridNioSession ses, Message msg) {
-                MTC.span().addLog(() -> "Communication received");
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                Span span = MTC.span();
+
+                span.addLog(() -> "Communication received");
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
@@ -2631,7 +2636,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
                     !clientMode && slowClientQueueLimit > 0 ? this::checkClientQueueSize : null;
 
-                GridNioFilter[] filters;
+                List<GridNioFilter> filters = new ArrayList<>();
+
+                if (tracing instanceof GridTracingManager && ((GridManager)tracing).enabled())
+                    filters.add(new GridNioTracerFilter(log, tracing));
+
+                filters.add(new GridNioCodecFilter(parser, log, true));
+                filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
@@ -2643,19 +2654,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     sslFilter.wantClientAuth(true);
                     sslFilter.needClientAuth(true);
 
-                    filters = new GridNioFilter[] {
-                        new GridNioTracerFilter(log, tracing),
-                        new GridNioCodecFilter(parser, log, true),
-                        new GridConnectionBytesVerifyFilter(log),
-                        sslFilter
-                    };
+                    filters.add(sslFilter);
                 }
-                else
-                    filters = new GridNioFilter[] {
-                        new GridNioTracerFilter(log, tracing),
-                        new GridNioCodecFilter(parser, log, true),
-                        new GridConnectionBytesVerifyFilter(log)
-                    };
 
                 GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
                     .address(locHost)
@@ -2674,7 +2674,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     .directMode(true)
                     .writeTimeout(sockWriteTimeout)
                     .selectorSpins(selectorSpins)
-                    .filters(filters)
+                    .filters(filters.toArray(new GridNioFilter[filters.size()]))
                     .writerFactory(writerFactory)
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
