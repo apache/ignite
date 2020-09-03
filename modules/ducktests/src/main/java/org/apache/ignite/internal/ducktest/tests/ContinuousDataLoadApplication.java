@@ -19,9 +19,9 @@ package org.apache.ignite.internal.ducktest.tests;
 
 import java.util.Random;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -54,7 +54,7 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
 
             streamed++;
 
-            if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
+            if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime()) {
                 notifyTime = System.nanoTime();
 
                 if (log.isDebugEnabled())

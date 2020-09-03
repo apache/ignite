@@ -24,7 +24,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import ignite_versions
+from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -71,6 +71,7 @@ class CellularAffinity(IgniteTest):
                     cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NUM_NODES * 3 + 1)
+    @version_if(lambda version: version >= DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test(self, ignite_version):
         """
