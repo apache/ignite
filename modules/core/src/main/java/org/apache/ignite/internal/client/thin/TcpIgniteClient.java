@@ -65,7 +65,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  */
 public class TcpIgniteClient implements IgniteClient {
     /** Channel. */
-    private final ReliableChannelFacade ch;
+    private final ReliableChannel ch;
 
     /** Ignite Binary. */
     private final IgniteBinary binary;
@@ -113,7 +113,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         binary = new ClientBinary(marsh);
 
-        ch = new ReliableChannelFacade(chFactory, cfg, binary);
+        ch = new ReliableChannel(chFactory, cfg, binary);
 
         ch.addChannelFailListener(() -> metadataHandler.onReconnect());
 

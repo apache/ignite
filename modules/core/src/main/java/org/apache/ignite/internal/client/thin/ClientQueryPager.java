@@ -34,7 +34,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
 
     /** Constructor. */
     ClientQueryPager(
-        ReliableChannelFacade ch,
+        ReliableChannel ch,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,

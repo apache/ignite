@@ -56,7 +56,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     private static final byte NO_RESULT_CACHE_FLAG_MASK = 0x02;
 
     /** Channel. */
-    private final ReliableChannelFacade ch;
+    private final ReliableChannel ch;
 
     /** Binary marshaller. */
     private final ClientBinaryMarshaller marsh;
@@ -74,7 +74,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     private final ReadWriteLock guard = new ReentrantReadWriteLock();
 
     /** Constructor. */
-    ClientComputeImpl(ReliableChannelFacade ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
+    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
         this.ch = ch;
         this.marsh = marsh;
         this.dfltGrp = dfltGrp;

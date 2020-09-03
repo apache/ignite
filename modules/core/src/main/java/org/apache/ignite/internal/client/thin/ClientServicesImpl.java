@@ -35,7 +35,7 @@ import org.apache.ignite.platform.PlatformServiceMethod;
  */
 class ClientServicesImpl implements ClientServices {
     /** Channel. */
-    private final ReliableChannelFacade ch;
+    private final ReliableChannel ch;
 
     /** Binary marshaller. */
     private final ClientBinaryMarshaller marsh;
@@ -47,7 +47,7 @@ class ClientServicesImpl implements ClientServices {
     private final ClientClusterGroupImpl grp;
 
     /** Constructor. */
-    ClientServicesImpl(ReliableChannelFacade ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp) {
+    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp) {
         this.ch = ch;
         this.marsh = marsh;
         this.grp = grp;
