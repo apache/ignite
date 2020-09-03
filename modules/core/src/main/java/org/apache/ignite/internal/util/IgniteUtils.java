@@ -218,6 +218,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -294,6 +295,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
@@ -11105,11 +11107,12 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException if parallel execution was failed.
      */
     public static <T, R> Collection<R> doInParallel(
+        IgniteSecurity security,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
         IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
+        return doInParallel(srcDatas.size(), security, executorSvc, srcDatas, operation);
     }
 
     /**
@@ -11125,11 +11128,12 @@ public abstract class IgniteUtils {
      */
     public static <T, R> Collection<R> doInParallel(
         int parallelismLvl,
+        IgniteSecurity security,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
         IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, false);
+        return doInParallel(parallelismLvl, security, executorSvc, srcDatas, operation, false);
     }
 
     /**
@@ -11145,11 +11149,12 @@ public abstract class IgniteUtils {
      */
     public static <T, R> Collection<R> doInParallelUninterruptibly(
         int parallelismLvl,
+        IgniteSecurity security,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
         IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, true);
+        return doInParallel(parallelismLvl, security, executorSvc, srcDatas, operation, true);
     }
 
     /**
@@ -11166,6 +11171,7 @@ public abstract class IgniteUtils {
      */
     private static <T, R> Collection<R> doInParallel(
         int parallelismLvl,
+        IgniteSecurity security,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
         IgniteThrowableFunction<T, R> operation,
@@ -11195,6 +11201,8 @@ public abstract class IgniteUtils {
             batches.add(batch);
         }
 
+        final UUID secSubjId = security.enabled() ? security.securityContext().subject().id() : null;
+
         batches = batches.stream()
             .filter(batch -> !batch.tasks.isEmpty())
             // Add to set only after check that batch is not empty.
@@ -11207,8 +11215,10 @@ public abstract class IgniteUtils {
 
                 Collection<R> results = new ArrayList<>(batch.tasks.size());
 
-                for (T item : batch.tasks)
-                    results.add(operation.apply(item));
+                withContextIfNeed(secSubjId, security, () -> {
+                    for (T item : batch.tasks)
+                        results.add(operation.apply(item));
+                });
 
                 return results;
             }))

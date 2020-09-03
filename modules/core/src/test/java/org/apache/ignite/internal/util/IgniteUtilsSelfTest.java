@@ -64,6 +64,10 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -73,6 +77,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
@@ -95,6 +104,58 @@ import static org.junit.Assert.assertArrayEquals;
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
+
+    /** */
+    private static final IgniteSecurity IGNITE_SECURITY = new IgniteSecurity() {
+        @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
+            return null;
+        }
+
+        @Override public OperationSecurityContext withContext(UUID nodeId) {
+            return null;
+        }
+
+        @Override public SecurityContext securityContext() {
+            return null;
+        }
+
+        @Override public SecurityContext authenticateNode(ClusterNode node,
+            SecurityCredentials cred) throws IgniteCheckedException {
+            return null;
+        }
+
+        @Override public boolean isGlobalNodeAuthentication() {
+            return false;
+        }
+
+        @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+            return null;
+        }
+
+        @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+            return null;
+        }
+
+        @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+            return null;
+        }
+
+        @Override public void onSessionExpired(UUID subjId) {
+
+        }
+
+        @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
+
+        }
+
+        @Override public IgniteSandbox sandbox() {
+            return null;
+        }
+
+        @Override public boolean enabled() {
+            return false;
+        }
+    };
 
     /**
      * @return 120 character length string.
@@ -912,6 +973,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             IgniteUtils.doInParallel(3,
+                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {
@@ -941,6 +1003,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             IgniteUtils.doInParallel(2,
+                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {
@@ -1045,6 +1108,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         AtomicInteger poolThreadCnt = new AtomicInteger();
 
         Collection<Integer> res = U.doInParallel(10,
+            IGNITE_SECURITY,
             executorService,
             data,
             new IgniteThrowableFunction<Integer, Integer>() {
@@ -1122,6 +1186,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             res = U.doInParallel(10,
+                IGNITE_SECURITY,
                 executorService,
                 data,
                 new IgniteThrowableFunction<Integer, Integer>() {
@@ -1166,6 +1231,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> results = IgniteUtils.doInParallel(
             parallelism,
+            IGNITE_SECURITY,
             executorService,
             list,
             i -> i * 2
@@ -1194,6 +1260,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             IgniteUtils.doInParallel(
                 1,
+                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {

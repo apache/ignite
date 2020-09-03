@@ -274,6 +274,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Cache change requests. */
     private ExchangeActions exchActions;
 
+    private UUID secSubjId;
+
     /** */
     private final IgniteLogger exchLog;
 
@@ -406,6 +408,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
         ExchangeActions exchActions,
+        UUID secSubjId,
         CacheAffinityChangeMessage affChangeMsg
     ) {
         assert busyLock != null;
@@ -417,6 +420,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.busyLock = busyLock;
         this.exchId = exchId;
         this.exchActions = exchActions;
+        this.secSubjId = secSubjId;
         this.affChangeMsg = affChangeMsg;
         this.validator = new GridDhtPartitionsStateValidator(cctx);
         if (exchActions != null && exchActions.deactivate())
@@ -472,6 +476,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return secSubjId;
     }
 
     /**
@@ -1775,6 +1784,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 // Update local maps, see CachePartitionLossWithRestartsTest.
                 doInParallel(
                     U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
+                    cctx.kernalContext().security(),
                     cctx.kernalContext().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
@@ -3605,6 +3615,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Reserve at least 2 threads for system operations.
             doInParallelUninterruptibly(
                 U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.affinity().cacheGroups().values(),
                 desc -> {
@@ -3636,6 +3647,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             doInParallelUninterruptibly(
                 U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.affinity().caches().values(),
                 desc -> {
@@ -3832,6 +3844,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 doInParallel(
                     parallelismLvl,
+                    cctx.kernalContext().security(),
                     cctx.kernalContext().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
@@ -3857,6 +3870,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             doInParallel(
                 parallelismLvl,
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 msgs.values(),
                 msg -> {
@@ -4139,6 +4153,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void validatePartitionsState() {
         try {
             U.doInParallel(
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroupDescriptors(),
                 grpDesc -> {
@@ -4194,6 +4209,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             U.doInParallel(
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroupDescriptors(),
                 grpDesc -> {
@@ -4290,6 +4306,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             U.<CacheGroupContext, Void>doInParallelUninterruptibly(
                 parallelismLvl,
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),
                 grp -> {
@@ -4754,6 +4771,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             doInParallel(
                 parallelismLvl,
+                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 msg.partitions().keySet(), grpId -> {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -5243,6 +5261,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     try {
                         U.doInParallel(
                             parallelismLvl,
+                            cctx.kernalContext().security(),
                             cctx.kernalContext().getSystemExecutorService(),
                             msgs.entrySet(),
                             entry -> {

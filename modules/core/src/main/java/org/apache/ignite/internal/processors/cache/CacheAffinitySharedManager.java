@@ -90,7 +90,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
 
 /**
@@ -864,8 +863,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         fut.timeBag().finishGlobalStage("Update caches registry");
 
-        withContextIfNeed(exchActions.securitySubjectId(), cctx.kernalContext(),
-            () -> processCacheStartRequests(fut, crd, exchActions));
+        processCacheStartRequests(fut, crd, exchActions);
 
         Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions, false);
 
@@ -1032,6 +1030,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         U.doInParallel(
+            cctx.kernalContext().security(),
             cctx.kernalContext().getSystemExecutorService(),
             startedGroups,
             grpDesc -> {
@@ -1278,7 +1277,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().security(), cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;
@@ -1298,7 +1297,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().security(), cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;

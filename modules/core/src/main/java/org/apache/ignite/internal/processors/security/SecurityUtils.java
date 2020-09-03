@@ -159,12 +159,10 @@ public class SecurityUtils {
      * with passed {@code secSubjId} if security is enabled.
      *
      * @param secSubjId Security subject id.
-     * @param ctx Grid kernal context.
+     * @param security Ignite security.
      * @param r Runnable.
      */
-    public static void withContextIfNeed(UUID secSubjId, GridKernalContext ctx, RunnableX r) {
-        IgniteSecurity security = ctx.security();
-
+    public static void withContextIfNeed(UUID secSubjId, IgniteSecurity security, RunnableX r) {
         if (security.enabled() && secSubjId != null) {
             try (OperationSecurityContext s = security.withContext(secSubjId)) {
                 r.run();
@@ -179,14 +177,12 @@ public class SecurityUtils {
      * with passed {@code secSubjId} if security is enabled.
      *
      * @param secSubjId Security subject id.
-     * @param ctx Grid kernal context.
+     * @param security Ignite security.
      * @param c Callable.
      * @return Result of passed callable.
      */
-    public static <T> T withContextIfNeed(UUID secSubjId, GridKernalContext ctx, Callable<T> c)
+    public static <T> T withContextIfNeed(UUID secSubjId, IgniteSecurity security, Callable<T> c)
         throws IgniteCheckedException {
-        IgniteSecurity security = ctx.security();
-
         try {
             if (security.enabled() && secSubjId != null) {
                 try (OperationSecurityContext s = security.withContext(secSubjId)) {

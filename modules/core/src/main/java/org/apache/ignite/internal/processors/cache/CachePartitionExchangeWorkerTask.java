@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
+
 /**
  * Cache partition exchange worker task marker interface.
  */
@@ -25,4 +27,9 @@ public interface CachePartitionExchangeWorkerTask {
      * @return {@code False} if exchange merge should stop if this task is found in exchange worker queue.
      */
     boolean skipForExchangeMerge();
+
+    /** Security subject id. */
+    default UUID securitySubjectId() {
+        return null;
+    }
 }

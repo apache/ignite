@@ -170,6 +170,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -525,22 +527,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
-                    synchronized (discoEvtMux) {
-                        if (notification.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                            UUID secSubjId = null;
+                    if (notification.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                        UUID secSubjId = null;
 
-                            if (notification.getCustomMsgData() != null && notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper)
-                                secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
+                        if (notification.getCustomMsgData() != null && notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper)
+                            secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
 
-                            if (secSubjId == null)
-                                secSubjId = ctx.localNodeId();
+                        if (secSubjId == null)
+                            secSubjId = ctx.localNodeId();
 
-                            try (OperationSecurityContext s = ctx.security().withContext(secSubjId)) {
+                        try (OperationSecurityContext s = ctx.security().withContext(secSubjId)) {
+                            synchronized (discoEvtMux) {
                                 onDiscovery0(notification);
                             }
                         }
-                        else
+                    }
+                    else {
+                        synchronized (discoEvtMux) {
                             onDiscovery0(notification);
+                        }
                     }
                 });
 
@@ -851,7 +856,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                         discoCache0,
                                         notification.getTopSnapshot(),
                                         null,
-                                        notification.getSpanContainer()
+                                        notification.getSpanContainer(),
+                                        null
                                     )
                                 );
                             }
@@ -872,7 +878,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             node, discoCache,
                             notification.getTopSnapshot(),
                             customMsg,
-                            notification.getSpanContainer()
+                            notification.getSpanContainer(),
+                            securitySubjectId(ctx)
                         )
                     );
 
@@ -885,7 +892,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             discoCache,
                             notification.getTopSnapshot(),
                             stateFinishMsg,
-                            notification.getSpanContainer()
+                            notification.getSpanContainer(),
+                            securitySubjectId(ctx)
                         )
                     );
 
@@ -2229,6 +2237,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     null,
                     Collections.<ClusterNode>emptyList(),
                     new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose),
+                    null,
                     null
                 )
             );
@@ -2249,6 +2258,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 node,
                 discoCache,
                 discoCache.nodeMap.values(),
+                null,
                 null,
                 null
             )
@@ -2640,6 +2650,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                     locNodeOnlyTop),
                                 locNodeOnlyTop,
                                 null,
+                                null,
                                 null
                             )
                         );
@@ -2791,6 +2802,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Span container. */
         SpanContainer spanContainer;
 
+        /** Security subject id. */
+        UUID secSubjId;
+
         /**
          * @param type Type.
          * @param topVer Topology version.
@@ -2807,7 +2821,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             DiscoCache discoCache,
             Collection<ClusterNode> topSnapshot,
             @Nullable DiscoveryCustomMessage data,
-            SpanContainer spanContainer
+            SpanContainer spanContainer,
+            @Nullable  UUID secSubjId
         ) {
             this.type = type;
             this.topVer = topVer;
@@ -2816,6 +2831,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             this.topSnapshot = topSnapshot;
             this.data = data;
             this.spanContainer = spanContainer;
+            this.secSubjId = secSubjId;
         }
     }
 
@@ -3099,7 +3115,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             evt.discoCache = discoCache;
                         }
 
-                        ctx.event().record(customEvt, evt.discoCache);
+                        withContextIfNeed(evt.secSubjId, ctx.security(), () -> ctx.event().record(customEvt, evt.discoCache));
                     }
 
                     return;

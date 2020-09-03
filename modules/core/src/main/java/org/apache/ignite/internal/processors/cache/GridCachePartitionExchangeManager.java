@@ -184,6 +184,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -1814,7 +1816,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsExchangeFuture fut;
 
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
+            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions,
+                securitySubjectId(cctx.kernalContext()), affChangeMsg));
 
         if (old != null) {
             fut = old;
@@ -3252,7 +3255,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         continue; // Main while loop.
 
                     if (!isExchangeTask(task)) {
-                        processCustomTask(task);
+                        final CachePartitionExchangeWorkerTask customTask = task;
+
+                        withContextIfNeed(task.securitySubjectId(), cctx.kernalContext().security(),
+                            () -> processCustomTask(customTask));
 
                         continue;
                     }
@@ -3348,80 +3354,91 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         exchFut.timeBag().finishGlobalStage("Waiting in exchange queue");
 
-                        exchFut.init(newCrd);
+                        final GridDhtPartitionsExchangeFuture fut = exchFut;
+                        final boolean nCrd = newCrd;
 
-                        int dumpCnt = 0;
+                        resVer = withContextIfNeed(task.securitySubjectId(), cctx.kernalContext().security(),
+                            () -> {
+                                AffinityTopologyVersion res;
 
-                        long waitStartNanos = System.nanoTime();
+                                fut.init(nCrd);
 
-                        // Call rollback logic only for client node, for server nodes
-                        // rollback logic is in GridDhtPartitionsExchangeFuture.
-                        boolean txRolledBack = !cctx.localNode().isClient();
+                                int dumpCnt = 0;
 
-                        IgniteConfiguration cfg = cctx.gridConfig();
+                                long waitStartNanos = System.nanoTime();
 
-                        final long dumpTimeout = 2 * cfg.getNetworkTimeout();
+                                // Call rollback logic only for client node, for server nodes
+                                // rollback logic is in GridDhtPartitionsExchangeFuture.
+                                boolean txRolledBack = !cctx.localNode().isClient();
 
-                        long nextDumpTime = 0;
+                                IgniteConfiguration cfg = cctx.gridConfig();
 
-                        while (true) {
-                            // Read txTimeoutOnPME from configuration after every iteration.
-                            long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+                                final long dumpTimeout = 2 * cfg.getNetworkTimeout();
 
-                            try {
-                                long exchTimeout = curTimeout > 0 && !txRolledBack
-                                    ? Math.min(curTimeout, dumpTimeout)
-                                    : dumpTimeout;
+                                long nextDumpTime = 0;
 
-                                blockingSectionBegin();
-
-                                try {
-                                    resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
-                                } finally {
-                                    blockingSectionEnd();
-                                }
-
-                                onIdle();
-
-                                break;
-                            }
-                            catch (IgniteFutureTimeoutCheckedException ignored) {
-                                updateHeartbeat();
-
-                                if (nextDumpTime <= U.currentTimeMillis()) {
-                                    U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
-                                        "topVer=" + exchFut.initialVersion() +
-                                        ", node=" + cctx.localNodeId() + "]. " +
-                                        (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
-                                        "TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
-                                        " to non default value to avoid this message. " : "") +
-                                        "Dumping pending objects that might be the cause: ");
+                                while (true) {
+                                    // Read txTimeoutOnPME from configuration after every iteration.
+                                    long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
 
                                     try {
-                                        dumpDebugInfo(exchFut);
+                                        long exchTimeout = curTimeout > 0 && !txRolledBack
+                                            ? Math.min(curTimeout, dumpTimeout)
+                                            : dumpTimeout;
+
+                                        blockingSectionBegin();
+
+                                        try {
+                                            res = fut.get(exchTimeout, TimeUnit.MILLISECONDS);
+                                        }
+                                        finally {
+                                            blockingSectionEnd();
+                                        }
+
+                                        onIdle();
+
+                                        break;
+                                    }
+                                    catch (IgniteFutureTimeoutCheckedException ignored) {
+                                        updateHeartbeat();
+
+                                        if (nextDumpTime <= U.currentTimeMillis()) {
+                                            U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
+                                                "topVer=" + fut.initialVersion() +
+                                                ", node=" + cctx.localNodeId() + "]. " +
+                                                (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
+                                                    "TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
+                                                    " to non default value to avoid this message. " : "") +
+                                                "Dumping pending objects that might be the cause: ");
+
+                                            try {
+                                                dumpDebugInfo(fut);
+                                            }
+                                            catch (Exception e) {
+                                                U.error(diagnosticLog, "Failed to dump debug information: " + e, e);
+                                            }
+
+                                            nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
+                                        }
+
+                                        long passedMillis = U.millisSinceNanos(waitStartNanos);
+
+                                        if (!txRolledBack && curTimeout > 0 && passedMillis >= curTimeout) {
+                                            txRolledBack = true; // Try automatic rollback only once.
+
+                                            cctx.tm().rollbackOnTopologyChange(fut.initialVersion());
+                                        }
                                     }
                                     catch (Exception e) {
-                                        U.error(diagnosticLog, "Failed to dump debug information: " + e, e);
+                                        if (fut.reconnectOnError(e))
+                                            throw new IgniteNeedReconnectException(cctx.localNode(), e);
+
+                                        throw e;
                                     }
-
-                                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                                 }
 
-                                long passedMillis = U.millisSinceNanos(waitStartNanos);
-
-                                if (!txRolledBack && curTimeout > 0 && passedMillis >= curTimeout) {
-                                    txRolledBack = true; // Try automatic rollback only once.
-
-                                    cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
-                                }
-                            }
-                            catch (Exception e) {
-                                if (exchFut.reconnectOnError(e))
-                                    throw new IgniteNeedReconnectException(cctx.localNode(), e);
-
-                                throw e;
-                            }
-                        }
+                                return res;
+                            });
 
                         removeMergedFutures(resVer, exchFut);
 
