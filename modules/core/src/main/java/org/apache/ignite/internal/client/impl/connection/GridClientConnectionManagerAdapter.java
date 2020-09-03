@@ -69,6 +69,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.logging.Level.INFO;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CLIENT_CLOSED;
@@ -229,10 +230,14 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientIm
         init0();
 
         connect(srvs, conn -> {
-            if (beforeNodeStart)
-                conn.nodeStateBeforeStart(new GridClientNodeStateBeforeStartRequest()).get();
-            else
-                conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null).get();
+            if (beforeNodeStart) {
+                conn.nodeStateBeforeStart(new GridClientNodeStateBeforeStartRequest())
+                    .get(cfg.getConnectTimeout(), MILLISECONDS);
+            }
+            else {
+                conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null)
+                    .get(cfg.getConnectTimeout(), MILLISECONDS);
+            }
         });
     }
 
