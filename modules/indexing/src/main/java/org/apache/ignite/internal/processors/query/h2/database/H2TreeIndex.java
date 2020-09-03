@@ -78,6 +78,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
+import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -227,7 +230,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param wrappedCols Index columns as is.
      * @param inlineSize Inline size.
      * @param segmentsCnt Count of tree segments.
-     * @param qryCtxRegistry Query context registry.
      * @throws IgniteCheckedException If failed.
      */
     public static H2TreeIndex createIndex(
@@ -241,8 +243,26 @@ public class H2TreeIndex extends H2TreeIndexBase {
         List<IndexColumn> wrappedCols,
         int inlineSize,
         int segmentsCnt,
-        QueryContextRegistry qryCtxRegistry,
         IgniteLogger log
+    ) throws IgniteCheckedException {
+        return createIndex(cctx, rowCache, tbl, idxName, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segmentsCnt, cctx.dataRegion().pageMemory(),
+                (integer, treeName) -> getMetaPage(cctx, treeName, integer), log);
+    }
+
+    public static H2TreeIndex createIndex(
+            GridCacheContext<?, ?> cctx,
+            @Nullable H2RowCache rowCache,
+            GridH2Table tbl,
+            String idxName,
+            boolean pk,
+            boolean affinityKey,
+            List<IndexColumn> unwrappedCols,
+            List<IndexColumn> wrappedCols,
+            int inlineSize,
+            int segmentsCnt,
+            PageMemory pageMemory,
+            IgniteThrowableBiFunction<Integer, String, RootPage> rootPageAllocator,
+            IgniteLogger log
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
@@ -261,10 +281,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
         IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-            SORTED_INDEX,
-            cctx.name(),
-            idxName,
-            cctx.kernalContext().metric()
+                SORTED_INDEX,
+                cctx.name(),
+                idxName,
+                cctx.kernalContext().metric()
         );
 
         InlineIndexColumnFactory idxHelperFactory = new InlineIndexColumnFactory(tbl.getCompareMode());
@@ -273,7 +293,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             db.checkpointReadLock();
 
             try {
-                RootPage page = getMetaPage(cctx, treeName, i);
+                RootPage page = rootPageAllocator.apply(i, treeName);
 
                 segments[i] = h2TreeFactory.create(
                     cctx,
@@ -285,7 +305,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     cctx.offheap().reuseListForIndex(treeName),
                     cctx.groupId(),
                     cctx.group().name(),
-                    cctx.dataRegion().pageMemory(),
+                    pageMemory,
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
                     page.pageId().pageId(),
@@ -593,7 +613,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param segment Segment Id.
      * @return Snapshot for requested segment if there is one.
      */
-    private H2Tree treeForRead(int segment) {
+    public H2Tree treeForRead(int segment) {
         return segments[segment];
     }
 

@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -44,11 +46,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.TreeRowClosure;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -58,7 +55,8 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -68,8 +66,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PageAccessType.ACCESS_READ;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PageAccessType.ACCESS_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -80,6 +76,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedCacheGroup;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedPartition;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.writeDefragmentationCompletionMarker;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator.PageAccessType.ACCESS_READ;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator.PageAccessType.ACCESS_WRITE;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator.access;
 
 /** */
 public class CachePartitionDefragmentationManager {
@@ -98,12 +97,6 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Offheap page size. */
-    private final int pageSize;
-
-    /** Direct memory buffer with a size of one page. */
-    private ByteBuffer pageBuf;
-
     /**
      * @param sharedCtx Cache shared context.
      * @param defrgCtx Defragmentation context.
@@ -116,15 +109,15 @@ public class CachePartitionDefragmentationManager {
         this.defrgCtx = defrgCtx;
 
         log = sharedCtx.logger(getClass());
-
-        pageSize = sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize();
     }
 
     /** */
     public void executeDefragmentation() throws IgniteCheckedException {
-        System.setProperty(SKIP_CP_ENTRIES, "true");
+        int pageSize = sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize();
 
-        pageBuf = ByteBuffer.allocateDirect(pageSize);
+        TreeIterator treeIterator = new TreeIterator(pageSize);
+
+        System.setProperty(SKIP_CP_ENTRIES, "true");
 
         try {
             FilePageStoreManager filePageStoreMgr = (FilePageStoreManager)sharedCtx.pageStore();
@@ -184,9 +177,30 @@ public class CachePartitionDefragmentationManager {
 
                     PageMemoryEx oldPageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
+                    Map<Integer, LinkMap> mappingByPartition = new HashMap<>();
+
                     for (int partId : parts) {
-                        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log))
+                        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
+                            createMappingPageStore(grpId, workDir, pageStoreFactory, partId);
+
+                            DataRegion mappingRegion = defrgCtx.mappingDataRegion();
+
+                            PageMemory memory = mappingRegion.pageMemory();
+
+                            sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
+                            try {
+                                FullPageId linkMapMetaPageId = new FullPageId(PageIdUtils.pageId(partId, FLAG_DATA, 2), grpId);
+
+                                LinkMap existingMapping = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId(), false);
+
+                                mappingByPartition.put(partId, existingMapping);
+                            }
+                            finally {
+                                sharedCtx.database().checkpointReadUnlock();
+                            }
+
                             continue;
+                        }
 
                         AtomicLong partPagesAllocated = new AtomicLong();
 
@@ -201,22 +215,13 @@ public class CachePartitionDefragmentationManager {
 
                         defrgCtx.addPartPageStore(grpId, partId, partPageStore);
 
-                        AtomicLong mappingPagesAllocated = new AtomicLong();
-
-                        PageStore mappingPageStore = pageStoreFactory.createPageStore(
-                            FLAG_DATA,
-                            () -> defragmentedPartMappingFile(workDir, partId).toPath(),
-                            mappingPagesAllocated::addAndGet
-                        );
-
-                        mappingPageStore.sync();
-
-                        defrgCtx.addMappingPageStore(grpId, partId, mappingPageStore);
+                        AtomicLong mappingPagesAllocated = createMappingPageStore(grpId, workDir, pageStoreFactory, partId);
 
                         sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
 
                         try {
-                            defragmentSinglePartition(grpCtx, partId);
+                            LinkMap map = defragmentSinglePartition(grpCtx, partId, treeIterator, pageSize);
+                            mappingByPartition.put(partId, map);
                         }
                         finally {
                             sharedCtx.database().checkpointReadUnlock();
@@ -225,7 +230,9 @@ public class CachePartitionDefragmentationManager {
                         //TODO Move inside of defragmentSinglePartition, get rid of that ^ stupid checkpoint read lock.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
-                                oldPageMem.invalidate(grpId, partId);
+                                // TODO: This dirty hack is needed (for now) for index defragmentation
+                                // oldPageMem.invalidate(grpId, partId);
+
                                 ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, partId);
 
                                 renameTempPartitionFile(workDir, partId);
@@ -257,10 +264,23 @@ public class CachePartitionDefragmentationManager {
                     cmpFut.markInitialized().get();
 
                     if (sharedCtx.pageStore().hasIndexStore(grpId)) {
-                        //TODO Defragment index file.
+                        sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
+
+                        try {
+                            defragmentIndexPartition(grpCtx, mappingByPartition);
+                        }
+                        finally {
+                            sharedCtx.database().checkpointReadUnlock();
+                        }
                     }
+                    idxPageStore.sync();
+
+                    sharedCtx.database()
+                            .forceCheckpoint("index") //TODO Provide a good reason.
+                            .futureFor(CheckpointState.FINISHED).get();
 
                     oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                    ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
                     renameTempIndexFile(workDir);
 
@@ -274,13 +294,58 @@ public class CachePartitionDefragmentationManager {
         }
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);
-
-            pageBuf = null;
         }
     }
 
-    /** */
-    private void defragmentSinglePartition(CacheGroupContext grpCtx, int partId) throws IgniteCheckedException {
+    /**
+     * Create page store for link mapping.
+     *
+     * @param grpId
+     * @param workDir
+     * @param pageStoreFactory
+     * @param partId
+     *
+     * @throws IgniteCheckedException If failed.
+     * @return
+     */
+    public AtomicLong createMappingPageStore(
+        int grpId,
+        File workDir,
+        FilePageStoreFactory pageStoreFactory,
+        int partId
+    ) throws IgniteCheckedException {
+        AtomicLong mappingPagesAllocated = new AtomicLong();
+
+        PageStore mappingPageStore = pageStoreFactory.createPageStore(
+                FLAG_DATA,
+                () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+                mappingPagesAllocated::addAndGet
+        );
+
+        mappingPageStore.sync();
+
+        defrgCtx.addMappingPageStore(grpId, partId, mappingPageStore);
+
+        return mappingPagesAllocated;
+    }
+
+    /**
+     * Defragmentate partition ang get link mapping (from old link to new link).
+     *
+     * @param grpCtx
+     * @param partId
+     * @param treeIterator
+     * @param pageSize
+     *
+     * @return Link mapping.
+     * @throws IgniteCheckedException If failed.
+     */
+    private LinkMap defragmentSinglePartition(
+        CacheGroupContext grpCtx,
+        int partId,
+        TreeIterator treeIterator,
+        int pageSize
+    ) throws IgniteCheckedException {
         DataRegion partRegion = defrgCtx.partitionsDataRegion();
         PageMemoryEx partPageMem = (PageMemoryEx)partRegion.pageMemory();
 
@@ -317,7 +382,7 @@ public class CachePartitionDefragmentationManager {
 
         FullPageId linkMapMetaPageId = new FullPageId(memory.allocatePage(grpId, partId, FLAG_DATA), grpId);
 
-        LinkMap m = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId());
+        LinkMap m = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId(), true);
 
         Iterable<CacheDataStore> stores = grpCtx.offheap().cacheDataStores();
 
@@ -334,9 +399,8 @@ public class CachePartitionDefragmentationManager {
         PendingEntriesTree newPendingTree = newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = newCacheDataStore.getCacheStoreFreeList();
 
-        iterate(tree, cachePageMem, (tree0, io, pageAddr, idx) -> {
+        treeIterator.iterate(tree, cachePageMem, (tree0, io, pageAddr, idx) -> {
             AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
-
             CacheDataRow row = tree.getRow(io, pageAddr, idx);
 
             int cacheId = row.cacheId();
@@ -374,11 +438,13 @@ public class CachePartitionDefragmentationManager {
             partPageMem,
             newCacheDataStore,
             grpId,
-            partId
+            partId,
+            pageSize
         );
 
         //TODO Invalidate mapping in mapping region?
         //TODO Invalidate PageStore for this partition.
+        return m;
     }
 
     /** */
@@ -388,7 +454,8 @@ public class CachePartitionDefragmentationManager {
         PageMemoryEx newPageMemory,
         CacheDataStore newCacheDataStore,
         int grpId,
-        int partId
+        int partId,
+        int pageSize
     ) throws IgniteCheckedException {
         long partMetaPageId = oldPageMemory.partitionMetaPageId(grpId, partId); // Same for all page memories.
 
@@ -485,107 +552,26 @@ public class CachePartitionDefragmentationManager {
         });
     }
 
-    // Performance impact of constant closures allocation is not clear. So this method should be avoided in massive
-    // operations like tree leaves access.
-    /** */
-    private static <T> T access(
-        PageAccessType access,
-        PageMemoryEx pageMemory,
-        int grpId,
-        long pageId,
-        PageAccessor<T> accessor
+    /**
+     * Defragmentate indexing partition.
+     *
+     * @param grpCtx
+     * @param mappingByPartition
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void defragmentIndexPartition(
+        CacheGroupContext grpCtx,
+        Map<Integer, LinkMap> mappingByPartition
     ) throws IgniteCheckedException {
-        assert access != null;
-        long page = pageMemory.acquirePage(grpId, pageId);
+        GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
 
-        try {
-            long pageAddr = access == ACCESS_READ
-                ? pageMemory.readLock(grpId, pageId, page)
-                : pageMemory.writeLock(grpId, pageId, page);
+        if (!query.moduleEnabled())
+            return;
 
-            try {
-                return accessor.access(pageAddr);
-            }
-            finally {
-                if (access == ACCESS_READ)
-                    pageMemory.readUnlock(grpId, pageId, page);
-                else
-                    pageMemory.writeUnlock(grpId, pageId, page, null, true);
-            }
-        }
-        finally {
-            pageMemory.releasePage(grpId, pageId, page);
-        }
+        final GridQueryIndexing idx = query.getIndexing();
+
+        idx.defragmentator().defragmentate(grpCtx, defrgCtx, mappingByPartition, log);
     }
 
-    /** */
-    @SuppressWarnings("PackageVisibleInnerClass")
-    enum PageAccessType {
-        /** Read access. */
-        ACCESS_READ,
-
-        /** Write access. */
-        ACCESS_WRITE;
-    }
-
-    /** */
-    @FunctionalInterface
-    private interface PageAccessor<T> {
-        /** */
-        public T access(long pageAddr) throws IgniteCheckedException;
-    }
-
-    /** */
-    // TODO Prefetch future pages.
-    private <L, T extends L> void iterate(
-        BPlusTree<L, T> tree,
-        PageMemoryEx pageMemory,
-        TreeRowClosure<L, T> c
-    ) throws IgniteCheckedException {
-        int grpId = tree.groupId();
-
-        long leafId = findFirstLeafId(grpId, tree.getMetaPageId(), pageMemory);
-
-        long bufAddr = GridUnsafe.bufferAddress(pageBuf);
-
-        while (leafId != 0L) {
-            long leafPage = pageMemory.acquirePage(grpId, leafId);
-
-            BPlusIO<L> io;
-
-            try {
-                long leafPageAddr = pageMemory.readLock(grpId, leafId, leafPage);
-
-                try {
-                    io = PageIO.getBPlusIO(leafPageAddr);
-
-                    assert io instanceof BPlusLeafIO : io;
-
-                    GridUnsafe.copyMemory(leafPageAddr, bufAddr, pageSize);
-                }
-                finally {
-                    pageMemory.readUnlock(grpId, leafId, leafPage);
-                }
-            }
-            finally {
-                pageMemory.releasePage(grpId, leafId, leafPage);
-            }
-
-            int cnt = io.getCount(bufAddr);
-
-            for (int idx = 0; idx < cnt; idx++)
-                c.apply(tree, io, bufAddr, idx);
-
-            leafId = io.getForward(bufAddr);
-        }
-    }
-
-    /** */
-    private long findFirstLeafId(int grpId, long metaPageId, PageMemoryEx partPageMemory) throws IgniteCheckedException {
-        return access(ACCESS_READ, partPageMemory, grpId, metaPageId, metaPageAddr -> {
-            BPlusMetaIO metaIO = PageIO.getPageIO(metaPageAddr);
-
-            return metaIO.getFirstPageId(metaPageAddr, 0);
-        });
-    }
 }

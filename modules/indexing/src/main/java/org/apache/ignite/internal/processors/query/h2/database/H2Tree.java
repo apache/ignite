@@ -289,7 +289,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      *
      * @return Indexed columns.
      */
-    IndexColumn[] cols() {
+    public IndexColumn[] cols() {
         return cols;
     }
 
@@ -359,6 +359,14 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         }
         else
             return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+    }
+
+    public boolean getPk() {
+        return pk;
+    }
+
+    public boolean getAffinityKey() {
+        return affinityKey;
     }
 
     /**

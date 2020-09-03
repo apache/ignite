@@ -116,6 +116,7 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final GridH2RowDescriptor desc;
+    private final H2TableDescriptor tblDesc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -196,6 +197,7 @@ public class GridH2Table extends TableBase {
         assert tblDesc != null;
 
         this.desc = desc;
+        this.tblDesc = tblDesc;
         this.cacheInfo = cacheInfo;
 
         affKeyCol = calculateAffinityKeyColumn();
@@ -434,6 +436,10 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
+    }
+
+    public H2TableDescriptor getTableDescriptor() {
+        return tblDesc;
     }
 
     /**

@@ -182,6 +182,10 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         }
     }
 
+    public CacheDataRow getRow() {
+        return row;
+    }
+
     /**
      * @return {@code True} if this is removed row (doesn't have value).
      */

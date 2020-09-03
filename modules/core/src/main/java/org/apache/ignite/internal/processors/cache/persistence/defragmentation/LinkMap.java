@@ -48,11 +48,13 @@ public class LinkMap {
      * @param context Cache group context.
      * @param pageMem Page memory.
      * @param metaPageId Meta page id.
+     * @param initNew If tree should be (re)created.
      */
     public LinkMap(CacheGroupContext context,
                    PageMemory pageMem,
-                   long metaPageId) throws IgniteCheckedException {
-        this(context.groupId(), context.name(), pageMem, metaPageId);
+                   long metaPageId,
+                   boolean initNew) throws IgniteCheckedException {
+        this(context.groupId(), context.name(), pageMem, metaPageId, initNew);
     }
 
     /**
@@ -60,11 +62,13 @@ public class LinkMap {
      * @param groupName Cache group name.
      * @param pageMem Page memory.
      * @param metaPageId Meta page id.
+     * @param initNew If tree should be (re)created.
      */
     public LinkMap(int groupId,
                    String groupName,
                    PageMemory pageMem,
-                   long metaPageId) throws IgniteCheckedException {
+                   long metaPageId,
+                   boolean initNew) throws IgniteCheckedException {
         tree = new LinkTree(
             "link-map",
             groupId,
@@ -77,7 +81,8 @@ public class LinkMap {
             LinkMappingInnerIO.VERSIONS,
             LinkMappingLeafIO.VERSIONS,
             null,
-            null
+            null,
+                initNew
         );
     }
 
@@ -116,14 +121,30 @@ public class LinkMap {
          * @param innerIos Inner IO versions.
          * @param leafIos Leaf IO versions.
          * @param failureProcessor if the tree is corrupted.
+         * @param initNew If tree should be (re)created.
+         *
          * @throws IgniteCheckedException If failed.
          */
-        protected LinkTree(String name, int cacheGrpId, String cacheGrpName, PageMemory pageMem, IgniteWriteAheadLogManager wal, AtomicLong globalRmvId, long metaPageId, ReuseList reuseList, IOVersions<? extends BPlusInnerIO<LinkMapping>> innerIos, IOVersions<? extends BPlusLeafIO<LinkMapping>> leafIos, @Nullable FailureProcessor failureProcessor, @Nullable PageLockListener lockLsnr) throws IgniteCheckedException {
+        protected LinkTree(
+           String name,
+           int cacheGrpId,
+           String cacheGrpName,
+           PageMemory pageMem,
+           IgniteWriteAheadLogManager wal,
+           AtomicLong globalRmvId,
+           long metaPageId,
+           ReuseList reuseList,
+           IOVersions<? extends BPlusInnerIO<LinkMapping>> innerIos,
+           IOVersions<? extends BPlusLeafIO<LinkMapping>> leafIos,
+           @Nullable FailureProcessor failureProcessor,
+           @Nullable PageLockListener lockLsnr,
+           boolean initNew
+        ) throws IgniteCheckedException {
             super(name, cacheGrpId, cacheGrpName, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor, lockLsnr);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
-            initTree(true);
+            initTree(initNew);
         }
 
         /** {@inheritDoc} */

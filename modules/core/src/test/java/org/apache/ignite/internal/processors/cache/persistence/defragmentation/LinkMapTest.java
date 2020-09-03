@@ -51,7 +51,7 @@ public class LinkMapTest extends GridCommonAbstractTest {
 
         FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGroupId, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX), cacheGroupId);
 
-        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId());
+        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true);
 
         for (int i = 0; i < 10_000; i++)
             map.put(i, i + 1);

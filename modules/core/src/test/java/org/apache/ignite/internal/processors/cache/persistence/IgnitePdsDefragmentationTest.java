@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,10 +70,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final int PARTS = 5;
 
     /** */
-    public static final int ADDED_KEYS_COUNT = 10;
+    public static final int ADDED_KEYS_COUNT = 100;
 
     /** */
-    private static final String GRP_NAME = "group";
+    protected static final String GRP_NAME = "group";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -93,7 +94,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class PolicyFactory implements Factory<ExpiryPolicy> {
+    protected static class PolicyFactory implements Factory<ExpiryPolicy> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -473,7 +474,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void fillCache(IgniteCache<Integer, Object> cache) {
+    protected void fillCache(IgniteCache<Integer, Object> cache) {
         for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
             byte[] val = new byte[8192];
             new Random().nextBytes(val);
