@@ -24,7 +24,6 @@ import org.apache.ignite.internal.commandline.property.PropertySubCommandsList;
 import org.apache.ignite.internal.commandline.property.tasks.PropertyOperationResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertyTask;
 
-
 /** */
 public class PropertyGetCommand extends PropertyAbstractSubCommand<PropertyArgs, PropertyOperationResult>
 {

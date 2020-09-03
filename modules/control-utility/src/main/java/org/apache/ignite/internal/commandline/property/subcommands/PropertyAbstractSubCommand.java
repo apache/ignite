@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.commandline.property.subcommands;
 
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.util.Collection;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
@@ -29,7 +27,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.commandline.property.PropertyArgs;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -39,9 +36,6 @@ public abstract class PropertyAbstractSubCommand<
     MetadataArgsDto extends IgniteDataTransferObject,
     MetadataResultDto extends IgniteDataTransferObject>
     implements Command<MetadataArgsDto> {
-    /** Filesystem. */
-    protected static final FileSystem FS = FileSystems.getDefault();
-
     /** */
     private MetadataArgsDto args;
 
