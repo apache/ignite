@@ -17,8 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,10 +27,13 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
+
 /**
  * Thin client distributed configuration.
  */
-public class DistibutedThinClientConfiguration {
+public class DistributedThinClientConfiguration {
     /** */
     private final IgniteLogger log;
 
@@ -47,10 +48,10 @@ public class DistibutedThinClientConfiguration {
     /**
      * @param ctx Kernal context.
      */
-    public DistibutedThinClientConfiguration(
+    public DistributedThinClientConfiguration(
         GridKernalContext ctx
     ) {
-        log = ctx.log(DistibutedThinClientConfiguration.class);
+        log = ctx.log(DistributedThinClientConfiguration.class);
 
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
@@ -68,14 +69,15 @@ public class DistibutedThinClientConfiguration {
     /**
      * @param showStack If {@code true} shows full stack trace on the client side.
      */
-    public GridFutureAdapter<?> updateThinClientShowStackTraceAsync(boolean showStack) throws IgniteCheckedException {
+    public GridFutureAdapter<?> updateThinClientSendServerStackTraceAsync(boolean showStack) throws IgniteCheckedException {
         return showStackTrace.propagateAsync(showStack);
     }
 
     /**
-     * @return If {@code true} shows full stack trace on the client side.
+     * @return If {@code true}, thin client response will include full stack trace when exception occurs.
+     * When {@code false}, only top level exception message is included.
      */
-    @Nullable public Boolean showFullStack() {
+    @Nullable public Boolean sendServerExceptionStackTraceToClient() {
         return showStackTrace.get();
     }
 }

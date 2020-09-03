@@ -136,7 +136,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
             .setCacheConfiguration(new CacheConfiguration("test").setInterceptor(new ThinBinaryValueInterceptor()));
 
         String castErr = "cannot be cast to";
-        String treeErr = "Tree is corrupted";
+        String treeErr = "B+Tree is corrupted";
 
         ListeningTestLogger srvLog = new ListeningTestLogger(log);
 

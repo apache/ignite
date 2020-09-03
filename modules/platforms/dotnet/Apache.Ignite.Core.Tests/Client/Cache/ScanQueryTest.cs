@@ -170,11 +170,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 var qry = new ScanQuery<int, Person>(new PersonFilter(x =>
                 {
-                    throw new ArithmeticException("ArithmeticException_foo");
+                    throw new ArithmeticException("foo");
                 }));
 
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry).GetAll());
-                StringAssert.Contains("ArithmeticException_foo", ex.Message);
+                Assert.IsTrue(ex.Message.StartsWith("foo"));
             }
         }
 #endif

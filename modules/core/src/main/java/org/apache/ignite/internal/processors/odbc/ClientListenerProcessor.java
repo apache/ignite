@@ -33,7 +33,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.DistibutedThinClientConfiguration;
+import org.apache.ignite.configuration.DistributedThinClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
@@ -100,7 +100,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     private ExecutorService execSvc;
 
     /** Thin client distributed configuration. */
-    private DistibutedThinClientConfiguration distrThinCfg;
+    private DistributedThinClientConfiguration distrThinCfg;
 
     /**
      * @param ctx Kernal context.
@@ -216,7 +216,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     srv.sessions(),
                     ClientConnectionView::new);
 
-                distrThinCfg = new DistibutedThinClientConfiguration(ctx);
+                distrThinCfg = new DistributedThinClientConfiguration(ctx);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -595,7 +595,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * @return Show full stack on client side.
      */
     public boolean showFullStackOnClientSide() {
-        Boolean show = distrThinCfg.showFullStack();
+        Boolean show = distrThinCfg.sendServerExceptionStackTraceToClient();
 
         return show == null ?
             ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().showFullStack() : show;
@@ -667,7 +667,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void showFullStackOnClientSide(boolean show) {
             try {
-                distrThinCfg.updateThinClientShowStackTraceAsync(show).get();
+                distrThinCfg.updateThinClientSendServerStackTraceAsync(show).get();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
