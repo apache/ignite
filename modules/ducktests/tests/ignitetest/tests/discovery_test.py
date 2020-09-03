@@ -34,6 +34,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_zookee
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
+from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion
 
@@ -64,29 +65,29 @@ class DiscoveryTest(IgniteTest):
     DATA_AMOUNT = 100000
 
     @cluster(num_nodes=NUM_NODES)
-    @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_node_fail_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
+    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=False)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=NUM_NODES + 3)
-    @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             with_load=[False, True])
-    def test_node_fail_zk(self, version, kill_coordinator, nodes_to_kill, with_load):
+    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test node failure scenario with ZooKeeperSpi.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)

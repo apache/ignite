@@ -17,7 +17,6 @@
 This module contains Cellular Affinity tests.
 """
 
-from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 from jinja2 import Template
 
@@ -25,6 +24,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -71,18 +71,19 @@ class CellularAffinity(IgniteTest):
                     cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NUM_NODES * 3 + 1)
-    @parametrize(version=str(DEV_BRANCH))
-    def test(self, version):
+    @ignite_versions(str(DEV_BRANCH))
+    def test(self, ignite_version):
         """
         Test Cellular Affinity scenario (partition distribution).
         """
-        cell1 = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
-        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], joined_cluster=cell1)
-        self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'], joined_cluster=cell1)
+        cell1 = self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
+        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], joined_cluster=cell1)
+        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'],
+                        joined_cluster=cell1)
 
         checker = IgniteApplicationService(
             self.test_context,
-            IgniteClientConfiguration(version=IgniteVersion(version), discovery_spi=from_ignite_cluster(cell1)),
+            IgniteClientConfiguration(version=IgniteVersion(ignite_version), discovery_spi=from_ignite_cluster(cell1)),
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.DistributionChecker",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,

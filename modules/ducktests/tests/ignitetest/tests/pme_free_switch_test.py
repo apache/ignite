@@ -19,7 +19,6 @@ This module contains PME free switch tests.
 
 import time
 
-from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -28,6 +27,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
@@ -40,9 +40,8 @@ class PmeFreeSwitchTest(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES + 2)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_7))
-    def test(self, version):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
+    def test(self, ignite_version):
         """
         Test PME free scenario (node stop).
         """
@@ -50,10 +49,8 @@ class PmeFreeSwitchTest(IgniteTest):
 
         self.stage("Starting nodes")
 
-        ignite_version = IgniteVersion(version)
-
         config = IgniteConfiguration(
-            version=ignite_version,
+            version=IgniteVersion(ignite_version),
             caches=[CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
         )
 
@@ -85,7 +82,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer.start()
 
-        if ignite_version >= V_2_8_0:
+        if IgniteVersion(ignite_version) >= V_2_8_0:
             ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
 
         self.stage("Stopping server node")

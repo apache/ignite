@@ -16,7 +16,7 @@
 """
 This module contains control.sh utility tests.
 """
-from ducktape.mark import parametrize
+
 from ducktape.mark.resource import cluster
 from ducktape.utils.util import wait_until
 
@@ -25,7 +25,7 @@ from ignitetest.services.utils.control_utility import ControlUtility, ControlUti
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import version_if
+from ignitetest.utils import version_if, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
 
@@ -38,15 +38,13 @@ class BaselineTests(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_8))
-    @parametrize(version=str(LATEST_2_7))
-    def test_baseline_set(self, version):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    def test_baseline_set(self, ignite_version):
         """
         Test baseline set.
         """
         blt_size = self.NUM_NODES - 2
-        servers = self.__start_ignite_nodes(version, blt_size)
+        servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
         control_utility = ControlUtility(servers, self.test_context)
         control_utility.activate()
@@ -57,7 +55,7 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_in_baseline(servers.nodes, baseline)
 
         # Set baseline using list of consisttent ids.
-        new_node = self.__start_ignite_nodes(version, 1, join_cluster=servers)
+        new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
         control_utility.set_baseline(servers.nodes + new_node.nodes)
         blt_size += 1
 
@@ -66,7 +64,7 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
         # Set baseline using topology version.
-        new_node = self.__start_ignite_nodes(version, 1, join_cluster=servers)
+        new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
         _, version, _ = control_utility.cluster_state()
         control_utility.set_baseline(version)
         blt_size += 1
@@ -76,22 +74,20 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_8))
-    @parametrize(version=str(LATEST_2_7))
-    def test_baseline_add_remove(self, version):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    def test_baseline_add_remove(self, ignite_version):
         """
         Test add and remove nodes from baseline.
         """
         blt_size = self.NUM_NODES - 1
-        servers = self.__start_ignite_nodes(version, blt_size)
+        servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
         control_utility = ControlUtility(servers, self.test_context)
 
         control_utility.activate()
 
         # Add node to baseline.
-        new_node = self.__start_ignite_nodes(version, 1, join_cluster=servers)
+        new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
         control_utility.add_to_baseline(new_node.nodes)
         blt_size += 1
 
@@ -120,14 +116,12 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_not_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_8))
-    @parametrize(version=str(LATEST_2_7))
-    def test_activate_deactivate(self, version):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    def test_activate_deactivate(self, ignite_version):
         """
         Test activate and deactivate cluster.
         """
-        servers = self.__start_ignite_nodes(version, self.NUM_NODES)
+        servers = self.__start_ignite_nodes(ignite_version, self.NUM_NODES)
 
         control_utility = ControlUtility(servers, self.test_context)
 
@@ -145,21 +139,20 @@ class BaselineTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @version_if(lambda version: version >= V_2_8_0)
-    @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(LATEST_2_8))
-    def test_baseline_autoadjust(self, version):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    def test_baseline_autoadjust(self, ignite_version):
         """
         Test activate and deactivate cluster.
         """
         blt_size = self.NUM_NODES - 2
-        servers = self.__start_ignite_nodes(version, blt_size)
+        servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
         control_utility = ControlUtility(servers, self.test_context)
         control_utility.activate()
 
         # Add node.
         control_utility.enable_baseline_auto_adjust(2000)
-        new_node = self.__start_ignite_nodes(version, 1, join_cluster=servers)
+        new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
         blt_size += 1
 
         wait_until(lambda: len(control_utility.baseline()) == blt_size, timeout_sec=5)
@@ -170,7 +163,7 @@ class BaselineTests(IgniteTest):
         # Add node when auto adjust disabled.
         control_utility.disable_baseline_auto_adjust()
         old_topology = control_utility.cluster_state().topology_version
-        new_node = self.__start_ignite_nodes(version, 1, join_cluster=servers)
+        new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
 
         wait_until(lambda: control_utility.cluster_state().topology_version != old_topology, timeout_sec=5)
         baseline = control_utility.baseline()
