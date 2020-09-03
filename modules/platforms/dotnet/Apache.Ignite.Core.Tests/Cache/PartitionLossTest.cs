@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var node = ignite.GetCluster().GetLocalNode();
                 Func<int, bool> isPrimary = x => affinity.IsPrimary(node, x);
                 TestUtils.WaitForTrueCondition(() => keys.Any(isPrimary));
-​
+
                 return keys.First(isPrimary);
             }
         }
