@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
+package org.apache.ignite.client;
 
 import java.net.InetAddress;
 import java.util.function.Supplier;
@@ -24,7 +24,7 @@ import org.apache.ignite.kubernetes.KubernetesConnectorDefaults;
 import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
 
 /**
- * Address finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to
+ * Address finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to be
  * deployed as Kubernetes pods in order to be found. Applications and Ignite nodes running outside of Kubernetes
  * will not be able to reach the containerized counterparts.
  * <p>
@@ -37,7 +37,7 @@ import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
  * configuration excluding endpoints of irrelevant Kubernetes pods running in parallel.
  * <p>
  * The address finder, in its turn, will call this service to retrieve Ignite pods IP addresses. The port will be
- * set with {@link ReliableChannel#parseAddresses(String[])}. Make sure that all Ignite pods occupy a similar
+ * set later within {@link IgniteClient}. Make sure that all Ignite pods occupy a similar
  * ClientConnector port, otherwise they will not be able to connect each other using this address finder.
  * <h2 class="header">Optional configuration</h2>
  * <ul>

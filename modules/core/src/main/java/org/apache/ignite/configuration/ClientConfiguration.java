@@ -116,11 +116,8 @@ public final class ClientConfiguration implements Serializable {
     /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
     private int reconnectThrottlingRetries = 3;
 
-    /**
-     * Try use other limited number of channels to send a request if default channel is not responding.
-     * 0 means try use all configured channels before fail.
-     */
-    private int channelsAttemptsLimit = 0;
+    /** Retry limit. */
+    private int retryLimit = 0;
 
     /**
      * @return Host addresses.
@@ -510,19 +507,20 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Get channels attempts limit.
+     * Get retry limit.
      */
-    public int getChannelsAttemptsLimit() {
-        return channelsAttemptsLimit;
+    public int getRetryLimit() {
+        return retryLimit;
     }
 
     /**
-     * Sets channels attempts limit.
+     * Try use limited number of channels to send a request if default channel is not responding.
+     * 0 means try use all configured channels before fail.
      *
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setChannelsAttemptsLimit(int channelsAttemptsLimit) {
-        this.channelsAttemptsLimit = channelsAttemptsLimit;
+    public ClientConfiguration setRetryLimit(int retryLimit) {
+        this.retryLimit = retryLimit;
 
         return this;
     }

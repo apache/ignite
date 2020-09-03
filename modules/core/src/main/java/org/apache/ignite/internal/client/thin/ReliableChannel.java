@@ -399,7 +399,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         chFailLsnrs.add(chFailLsnr);
     }
 
-
     /** Should the channel initialization be stopped. */
     private boolean stopInitCondition() {
         return scheduledChannelsReinit.get() || closed;
@@ -534,8 +533,8 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         channelsInit(false);
 
         List<ClientChannelHolder> holders = channels.get();
-        int attemptsLimit = clientCfg.getChannelsAttemptsLimit() > 0 ?
-            Math.min(clientCfg.getChannelsAttemptsLimit(), holders.size()) : holders.size();
+        int attemptsLimit = clientCfg.getRetryLimit() > 0 ?
+            Math.min(clientCfg.getRetryLimit(), holders.size()) : holders.size();
 
         ClientConnectionException failure = null;
 
