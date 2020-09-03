@@ -129,7 +129,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * Default is {@code 5}. Iterator starts from 5 updates earlier than expected.
      *
      */
-    public final long walAtomicCacheMargin = IgniteSystemProperties.getLong(
+    private final long walAtomicCacheMargin = IgniteSystemProperties.getLong(
         "WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE", 5);
 
     /**
@@ -1027,11 +1027,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         FileWALPointer latestReservedPointer = (FileWALPointer)database.latestWalPointerReservedForPreloading();
 
-        if (latestReservedPointer == null) {
-            log.warning("Historical iterator wasn't created, because WAL isn't reserved.");
-
-            return null;
-        }
+        if (latestReservedPointer == null)
+            throw new IgniteHistoricalIteratorException("Historical iterator wasn't created, because WAL isn't reserved.");
 
         Map<Integer, Long> partsCounters = new HashMap<>();
 

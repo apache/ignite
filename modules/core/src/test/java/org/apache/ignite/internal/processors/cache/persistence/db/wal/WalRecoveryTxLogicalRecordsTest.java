@@ -372,7 +372,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 map.addHistorical(0, i, entries, PARTS);
 
                 GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",
-                    new FileWALPointer(0,0,0));
+                    new FileWALPointer(0, 0, 0));
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -391,14 +391,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",null);
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
 
                 GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",
-                    new FileWALPointer(0,0,0));
+                    new FileWALPointer(0, 0, 0));
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -417,7 +417,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",null);
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
             }
 
@@ -439,7 +439,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 map.addHistorical(0, i, entries, PARTS);
 
                 GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",
-                    new FileWALPointer(0,0,0));
+                    new FileWALPointer(0, 0, 0));
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     long end = System.currentTimeMillis();
@@ -468,14 +468,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",null);
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
 
                 GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",
-                    new FileWALPointer(0,0,0));
+                    new FileWALPointer(0, 0, 0));
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -494,7 +494,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     assertFalse(it.hasNext());
                 }
                 finally {
-                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",null);
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
             }
         }
@@ -987,7 +987,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         List<CacheDataRow> rows = new ArrayList<>();
 
         GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",
-            new FileWALPointer(0,0,0));
+            new FileWALPointer(0, 0, 0));
 
         try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
             assertNotNull(it);
@@ -996,7 +996,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 rows.add(it.next());
         }
         finally {
-            GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading",null);
+            GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
         }
 
         return rows;

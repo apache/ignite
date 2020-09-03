@@ -68,11 +68,11 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -262,9 +262,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         int totalSize = 0;
 
         for (Ignite ignite : IgnitionEx.allGrids()) {
-            for (String cacheName : CACHE_NAMES) {
+            for (String cacheName : CACHE_NAMES)
                 totalSize += ignite.cache(cacheName).size();
-            }
         }
 
         return totalSize / IgnitionEx.allGrids().size();

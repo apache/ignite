@@ -3541,7 +3541,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
 
             NavigableSet<Long> nonMaxCntrs = e.getValue().headSet(maxCntr, false)
-                //Empty partition cannot be rebalanced by history effectively.
+                // Empty partition cannot be rebalanced by history effectively.
                 .tailSet(0L, false);
 
             // If minimal counter equals maximum then historical supplier does not necessary.
