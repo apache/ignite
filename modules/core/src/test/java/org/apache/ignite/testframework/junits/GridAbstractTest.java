@@ -1387,7 +1387,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+        return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs(),
+            additionalRemoteJvmClasspath());
     }
 
     /**
@@ -1409,6 +1410,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected List<String> additionalRemoteJvmArgs() {
         return new ArrayList<>();
+    }
+
+    /**
+     * @return Additional JVM classpath for remote instances.
+     */
+    protected List<String> additionalRemoteJvmClasspath() {
+        return Collections.emptyList();
     }
 
     /**

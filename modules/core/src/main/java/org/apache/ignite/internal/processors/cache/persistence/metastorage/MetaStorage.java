@@ -26,9 +26,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
@@ -38,6 +40,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -72,6 +75,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
 
@@ -145,6 +149,13 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** Cctx. */
     private final GridCacheSharedContext cctx;
 
+    /**
+     * Keys that should be skipped on cluster start.
+     *
+     * @see IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP
+     */
+    private final Set<String> keysToSkip;
+
     /** */
     public MetaStorage(
         GridCacheSharedContext<?, ?> cctx,
@@ -159,6 +170,15 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
+
+        keysToSkip = new HashSet<>(Arrays.asList(
+            IgniteSystemProperties.getString(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
+
+        if (!keysToSkip.isEmpty()) {
+            log.warning("System property " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP + " is set. " +
+                "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
+        }
+
     }
 
     /** */
