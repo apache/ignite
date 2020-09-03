@@ -26,6 +26,7 @@ import java.util.function.ToIntFunction;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -35,29 +36,26 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AntiJoinNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.FullOuterJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.InnerJoinNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.LeftJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.RightJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.SemiJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -78,6 +75,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
  * Implements a query plan.
@@ -125,7 +124,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSender rel) {
         IgniteDistribution distribution = rel.distribution();
 
-        Destination dest = distribution.function().destination(partSvc, ctx.targetMapping(), distribution.getKeys());
+        Destination<Row> dest = distribution.function().destination(ctx, partSvc, ctx.targetMapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
         Outbox<Row> outbox =
@@ -178,54 +177,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteJoin rel) {
-        RelDataType rowType = Commons.combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
+    @Override public Node<Row> visit(IgniteNestedLoopJoin rel) {
+        RelDataType leftType = rel.getLeft().getRowType();
+        RelDataType rightType = rel.getRight().getRowType();
+        JoinRelType joinType = rel.getJoinType();
 
+        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        AbstractJoinNode<Row> node;
-        switch (rel.getJoinType()) {
-            case INNER:
-                node = new InnerJoinNode<>(ctx, cond);
-
-                break;
-
-            case LEFT: {
-                RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRight().getRowType());
-                node = new LeftJoinNode<>(ctx, cond, rowFactory);
-
-                break;
-            }
-
-            case RIGHT: {
-                RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getLeft().getRowType());
-                node = new RightJoinNode<>(ctx, cond, rowFactory);
-
-                break;
-            }
-
-            case FULL: {
-                RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getLeft().getRowType());
-                RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRight().getRowType());
-
-                node = new FullOuterJoinNode<>(ctx, cond, leftRowFactory, rightRowFactory);
-
-                break;
-            }
-
-            case SEMI:
-                node = new SemiJoinNode<>(ctx, cond);
-
-                break;
-
-            case ANTI:
-                node = new AntiJoinNode<>(ctx, cond);
-
-                break;
-
-            default:
-                throw new IllegalStateException("Join type \"" + rel.getJoinType() + "\" is not supported yet");
-        }
+        Node<Row> node = NestedLoopJoinNode.create(ctx, leftType, rightType, joinType, cond);
 
         Node<Row> leftInput = visit(rel.getLeft());
         Node<Row> rightInput = visit(rel.getRight());
@@ -236,23 +196,39 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteTableScan scan) {
-        Predicate<Row> filters = scan.condition() == null ? null :
-            expressionFactory.predicate(scan.condition(), scan.getRowType());
+    @Override public Node<Row> visit(IgniteCorrelatedNestedLoopJoin rel) {
+        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
 
-        List<RexNode> lowerCond = scan.lowerIndexCondition();
-        Row lowerBound = lowerCond == null ? null :
-            expressionFactory.asRow(lowerCond, scan.getRowType());
+        Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        List<RexNode> upperCond = scan.upperIndexCondition();
-        Row upperBound = upperCond == null ? null :
-            expressionFactory.asRow(upperCond, scan.getRowType());
+        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
 
-        IgniteTable tbl = scan.igniteTable();
+        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, cond, rel.getVariablesSet());
 
-        IgniteIndex idx = tbl.getIndex(scan.indexName());
+        Node<Row> leftInput = visit(rel.getLeft());
+        Node<Row> rightInput = visit(rel.getRight());
 
-        Iterable<Row> rowsIter = idx.scan(ctx, filters, lowerBound, upperBound);
+        node.register(F.asList(leftInput, rightInput));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexScan rel) {
+        RexNode condition = rel.condition();
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+
+        List<RexNode> lowerCond = rel.lowerIndexCondition();
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
+
+        List<RexNode> upperCond = rel.upperIndexCondition();
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
+
+        IgniteTable tbl = rel.igniteTable();
+
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+
+        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper);
 
         return new ScanNode<>(ctx, rowsIter);
     }
@@ -391,10 +367,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     private Predicate<Row> partitionFilter(IgniteDistribution distr) {
         assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
 
-        ImmutableBitSet filter = ImmutableBitSet.of(ctx.partitions());
+        ImmutableBitSet filter = ImmutableBitSet.of(ctx.localPartitions());
         DistributionFunction function = distr.function();
         ImmutableIntList keys = distr.getKeys();
-        ToIntFunction<Object> partFunction = function.partitionFunction(partSvc, ctx.partitionsCount(), keys);
+        ToIntFunction<Row> partFunction = function.partitionFunction(ctx, partSvc, keys);
 
         return o -> filter.get(partFunction.applyAsInt(o));
     }

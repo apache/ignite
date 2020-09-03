@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Client iterator.
@@ -64,13 +65,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
      * @param ctx Execution context.
      */
     public RootNode(ExecutionContext<Row> ctx) {
-        super(ctx);
-
-        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
-        lock = new ReentrantLock();
-        cond = lock.newCondition();
-
-        onClose = this::proceedClose;
+        this(ctx, null);
     }
 
     /**
@@ -91,20 +86,6 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         return context().queryId();
     }
 
-    /** */
-    public void proceedClose() {
-        context().execute(() -> {
-            checkThread();
-
-            if (isClosed())
-                return;
-
-            buff.clear();
-
-            super.close();
-        });
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         lock.lock();
@@ -122,54 +103,83 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             lock.unlock();
         }
 
-        onClose.run();
+        if (onClose == null)
+            onClose();
+        else
+            onClose.run();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClosed() {
+        return state == State.CANCELLED || state == State.CLOSED;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClose() {
+        context().execute(() -> {
+            buff.clear();
+
+            U.closeQuiet(super::close);
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
+        assert waiting > 0;
 
-        int req = 0;
-
-        lock.lock();
         try {
-            assert waiting > 0 : "waiting=" + waiting;
+            checkState();
 
-            waiting--;
+            int req = 0;
 
-            if (state != State.RUNNING)
-                return;
+            lock.lock();
+            try {
+                if (state != State.RUNNING)
+                    return;
 
-            buff.offer(row);
+                waiting--;
 
-            if (waiting == 0)
-                waiting = req = IN_BUFFER_SIZE - buff.size();
+                buff.offer(row);
 
-            cond.signalAll();
+                if (waiting == 0)
+                    waiting = req = IN_BUFFER_SIZE - buff.size();
+
+                cond.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+
+            if (req > 0)
+                source().request(req);
         }
-        finally {
-            lock.unlock();
+        catch (Exception e) {
+            onError(e);
         }
-
-        if (req > 0)
-            F.first(sources).request(req);
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        lock.lock();
         try {
-            assert waiting > 0 : "waiting=" + waiting;
+            checkState();
 
-            waiting = -1;
+            lock.lock();
+            try {
+                assert waiting > 0 : "waiting=" + waiting;
 
-            if (state != State.RUNNING)
-                return;
+                waiting = -1;
 
-            cond.signalAll();
+                if (state != State.RUNNING)
+                    return;
+
+                cond.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
         }
-        finally {
-            lock.unlock();
+        catch (Exception e) {
+            onError(e);
         }
     }
 
@@ -178,7 +188,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (!ex.compareAndSet(null, e))
             ex.get().addSuppressed(e);
 
-        close();
+        U.closeQuiet(this);
     }
 
     /** {@inheritDoc} */
@@ -216,13 +226,18 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
+    @Override protected void onRewind() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         throw new UnsupportedOperationException();
     }
 
     /** */
     private Row take() {
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
 
         lock.lock();
         try {
@@ -236,7 +251,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                     break;
                 else if (waiting == 0) {
                     int req = waiting = IN_BUFFER_SIZE;
-                    context().execute(() -> F.first(sources).request(req));
+                    context().execute(() -> source().request(req));
                 }
 
                 cond.await();

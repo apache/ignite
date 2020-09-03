@@ -114,13 +114,26 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .setSqlSchema("PUBLIC");
     }
 
+    /** */
+    @Test
+    public void testIndexLoopJoin() {
+        assertQuery("" +
+            "SELECT d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
+            .matches(containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .returns("Bach", "Bach")
+            .returns("Beethoven", "Beethoven")
+            .returns("Mozart", "Mozart")
+            .returns("Strauss", "Strauss")
+            .check();
+    }
+
     // ===== No filter =====
 
     /** */
     @Test
     public void testNoFilter() {
         assertQuery("SELECT * FROM Developer")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -134,7 +147,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key=1")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -143,7 +156,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key>3")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
     }
@@ -153,7 +166,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key>=?")
             .withParams(3)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
@@ -164,7 +177,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<?")
             .withParams(3)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -174,7 +187,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key<=2")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -186,7 +199,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id=2")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
     }
@@ -196,7 +209,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyAliasGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE id>?")
             .withParams(3)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
     }
@@ -205,7 +218,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id>=3")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
@@ -215,7 +228,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE id<3")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -225,7 +238,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id<=2")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -237,7 +250,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE depId=2")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
@@ -248,7 +261,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testIndexedFieldGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE depId>2")
             .withParams(3)
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -257,7 +270,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE depId>=2")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(4, "Strauss", 2, "Munich", 66)
@@ -269,7 +282,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testIndexedFieldLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE depId<?")
             .withParams(3)
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
@@ -281,7 +294,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testIndexedFieldLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE depId<=?")
             .withParams(2)
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
@@ -295,7 +308,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testNonIndexedFieldEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE age=?")
             .withParams(44)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
     }
@@ -305,7 +318,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testNonIndexedFieldGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE age>?")
             .withParams(50)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .check();
@@ -316,7 +329,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testNonIndexedFieldGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE age>=?")
             .withParams(34)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
@@ -328,7 +341,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testNonIndexedFieldLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE age<?")
             .withParams(56)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -340,7 +353,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testNonIndexedFieldLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE age<=?")
             .withParams(55)
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -353,7 +366,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition1() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -363,7 +376,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testComplexIndexCondition2() {
         assertQuery("SELECT * FROM Developer WHERE depId=? AND name=?")
             .withParams(3, "Mozart")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -372,7 +385,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition3() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -381,7 +394,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition4() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Leipzig'")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .check();
     }
 
@@ -389,7 +402,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition5() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND city='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -398,7 +411,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition6() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -407,7 +420,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition7() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2")
-            .and(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -416,7 +429,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition8() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2 AND age>20")
-            .and(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -425,7 +438,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition9() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'")
-            .and(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX, DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -434,7 +447,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition10() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'")
-            .and(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -443,7 +456,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition11() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -452,7 +465,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition12() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -461,7 +474,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition13() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=3 AND city='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -470,7 +483,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition14() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -479,7 +492,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition15() {
         assertQuery("SELECT * FROM Developer WHERE age=33 AND city='Vienna'")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -488,7 +501,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition16() {
         assertQuery("SELECT * FROM Developer WHERE age=33 AND (city='Vienna' AND depId=3)")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -497,7 +510,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testEmptyResult() {
         assertQuery("SELECT * FROM Developer WHERE age=33 AND city='Leipzig'")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .check();
     }
 
@@ -505,12 +518,12 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition1() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR age=55")
-            .and(containsUnion(true))
-            .and(anyOf(
+            .matches(containsUnion(true))
+            .matches(anyOf(
                 containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
                 containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             )
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -520,8 +533,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition2() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -530,8 +543,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition3() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -540,8 +553,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition4() {
         assertQuery("SELECT * FROM Developer WHERE depId=1 OR (name='Mozart' AND depId=3)")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -554,8 +567,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByKey() {
         assertQuery("SELECT id, name, depId, age FROM Developer ORDER BY _key")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
-            .and(not(containsSubPlan("IgniteSort")))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -568,8 +581,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByKeyAlias() {
         assertQuery("SELECT * FROM Developer ORDER BY id")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
-            .and(not(containsSubPlan("IgniteSort")))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK_ALIAS))
+            .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
@@ -582,8 +595,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByDepId() {
         assertQuery("SELECT * FROM Developer ORDER BY depId")
-            .and(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
-            .and(not(containsSubPlan("IgniteSort")))
+            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .matches(not(containsSubPlan("IgniteSort")))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(2, "Beethoven", 2, "Vienna", 44)
@@ -596,8 +609,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByNameCityAsc() {
         assertQuery("SELECT * FROM Developer ORDER BY name, city")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
-            .and(containsSubPlan("IgniteSort"))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsSubPlan("IgniteSort"))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(1, "Mozart", 3, "Vienna", 33)
@@ -610,8 +623,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByNameCityDesc() {
         assertQuery("SELECT * FROM Developer ORDER BY name DESC, city DESC")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
-            .and(not(containsSubPlan("IgniteSort")))
+            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
+            .matches(not(containsSubPlan("IgniteSort")))
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
@@ -624,8 +637,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByNoIndexedColumn() {
         assertQuery("SELECT * FROM Developer ORDER BY age DESC")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
-            .and(containsSubPlan("IgniteSort"))
+            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
+            .matches(containsSubPlan("IgniteSort"))
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(2, "Beethoven", 2, "Vienna", 44)

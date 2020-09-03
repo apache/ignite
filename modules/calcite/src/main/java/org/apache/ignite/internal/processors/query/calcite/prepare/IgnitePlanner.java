@@ -34,7 +34,6 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
@@ -341,10 +339,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         /** {@inheritDoc} */
         @Override public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
-            if (rel instanceof IgniteRel && ((IgniteRel)rel).distribution().getType() == RelDistribution.Type.ANY)
-                return getCostFactory().makeInfiniteCost(); // force certain distributions
-
-            return super.getCost(rel, mq);
+            return mq.getCumulativeCost(rel);
         }
     }
 }

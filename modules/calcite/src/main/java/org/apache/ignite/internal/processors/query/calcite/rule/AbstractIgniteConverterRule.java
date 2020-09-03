@@ -29,7 +29,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 public abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
     /** */
     protected AbstractIgniteConverterRule(Class<T> clazz) {
-        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, clazz.getName() + "Converter");
+        this(clazz, clazz.getName() + "Converter");
+    }
+
+    /** */
+    protected AbstractIgniteConverterRule(Class<T> clazz, String descriptionPreffix) {
+        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPreffix);
     }
 
     /** {@inheritDoc} */

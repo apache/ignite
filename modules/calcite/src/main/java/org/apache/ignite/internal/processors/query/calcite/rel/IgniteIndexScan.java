@@ -38,9 +38,14 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -59,12 +64,14 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.OR;
+import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.makeCast;
 
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableScan extends TableScan implements IgniteRel {
+public class IgniteIndexScan extends TableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
@@ -98,13 +105,13 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      *
      * @param input Serialized representation.
      */
-    public IgniteTableScan(RelInput input) {
+    public IgniteIndexScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+        igniteTbl = getTable().unwrap(IgniteTable.class);
         idxName = input.getString("index");
         cond = input.getExpression("filters");
-        lowerIdxCond = input.getExpressionList("lower");
-        upperIdxCond = input.getExpressionList("upper");
-        igniteTbl = getTable().unwrap(IgniteTable.class);
+        lowerIdxCond = input.get("lower") == null ? ImmutableList.of() : input.getExpressionList("lower");
+        upperIdxCond = input.get("upper") == null ? ImmutableList.of() : input.getExpressionList("upper");
         collation = igniteTbl.getIndex(idxName).collation();
     }
 
@@ -116,7 +123,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      * @param idxName Index name.
      * @param cond Filters for scan.
      */
-    public IgniteTableScan(
+    public IgniteIndexScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
@@ -166,7 +173,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             for (RexCall pred : collFldPreds) {
                 RexNode cond = removeCast(pred.operands.get(1));
 
-                assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
+                assert supports(cond) : cond;
 
                 SqlOperator op = pred.getOperator();
                 switch (op.kind) {
@@ -262,7 +269,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         if (cond == null)
             return false;
 
-        RexCall dnf = ((RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond));
+        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond);
 
         if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
@@ -280,12 +287,19 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         leftOp = removeCast(leftOp);
         rightOp = removeCast(rightOp);
 
-        if (leftOp instanceof RexLocalRef && (rightOp instanceof RexLiteral || rightOp instanceof RexDynamicParam))
+        if (leftOp instanceof RexLocalRef && supports(rightOp))
             return leftOp;
-        else if ((leftOp instanceof RexLiteral || leftOp instanceof RexDynamicParam) && rightOp instanceof RexLocalRef)
+        else if (supports(leftOp) && rightOp instanceof RexLocalRef)
             return rightOp;
 
         return null;
+    }
+
+    /** */
+    private static boolean supports(RexNode op) {
+        return op instanceof RexLiteral
+            || op instanceof RexDynamicParam
+            || op instanceof RexFieldAccess;
     }
 
     /** */
@@ -320,7 +334,9 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** */
     public List<RexNode> buildIndexCondition(Iterable<RexNode> idxCond) {
-        List<RexNode> lowerIdxCond = makeListOfNullLiterals(rowType.getFieldCount());
+        List<RexNode> res = makeListOfNullLiterals(rowType);
+        List<RelDataType> fieldTypes = RelOptUtil.getFieldTypeList(rowType);
+        RexBuilder rexBuilder = getCluster().getRexBuilder();
 
         for (RexNode pred : idxCond) {
             assert pred instanceof RexCall;
@@ -329,22 +345,24 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             RexLocalRef ref = (RexLocalRef)removeCast(call.operands.get(0));
             RexNode cond = removeCast(call.operands.get(1));
 
-            assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
+            assert supports(cond) : cond;
 
-            lowerIdxCond.set(ref.getIndex(), cond);
+            res.set(ref.getIndex(), makeCast(rexBuilder, fieldTypes.get(ref.getIndex()), cond));
         }
 
-        return lowerIdxCond;
+        return res;
     }
 
     /** */
-    private List<RexNode> makeListOfNullLiterals(int size) {
-        List<RexNode> list = new ArrayList<>(size);
-        RexNode nullLiteral = getCluster().getRexBuilder()
-            .makeNullLiteral(getCluster().getTypeFactory().createJavaType(Object.class));
-        for (int i = 0; i < size; i++) {
-            list.add(nullLiteral);
-        }
+    private List<RexNode> makeListOfNullLiterals(RelDataType rowType) {
+        assert rowType.isStruct();
+
+        RexBuilder builder = getCluster().getRexBuilder();
+
+        List<RexNode> list = new ArrayList<>(rowType.getFieldCount());
+        for (RelDataTypeField field : rowType.getFieldList())
+            list.add(builder.makeNullLiteral(field.getType()));
+
         return list;
     }
 
@@ -352,10 +370,10 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         return pw.item("index", idxName )
-            .itemIf("lower", lowerIdxCond, lowerIdxCond != null)
-            .itemIf("upper", upperIdxCond, upperIdxCond != null)
+            .item("collation", collation)
             .itemIf("filters", cond, cond != null)
-            .item("collation", collation);
+            .itemIf("lower", lowerIdxCond, !F.isEmpty(lowerIdxCond))
+            .itemIf("upper", upperIdxCond, !F.isEmpty(upperIdxCond));
     }
 
     /** {@inheritDoc} */
@@ -389,23 +407,21 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rows = estimateRowCount(mq);
+        double tableRows = table.getRowCount() * idxSelectivity;
 
-        return planner.getCostFactory().makeCost(rows, 0, 0);
+        if (!PK_INDEX_NAME.equals(indexName()))
+            tableRows = RelMdUtil.addEpsilon(tableRows);
+
+        return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        double rows = table.getRowCount();
+        double rows = table.getRowCount() * idxSelectivity;
 
-        double rowsIn = rows * idxSelectivity;
-        double rowsOut = rowsIn;
+        if (cond != null)
+            rows *= mq.getSelectivity(this, cond);
 
-        if (cond != null) {
-            Double sel = mq.getSelectivity(this, cond);
-            rowsOut *= sel;
-        }
-
-        return rowsIn + rowsOut;
+        return rows;
     }
 }

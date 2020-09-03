@@ -21,10 +21,14 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.metadata.RelMdUtil;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
@@ -81,5 +85,12 @@ public class IgniteFilter extends Filter implements IgniteRel {
         childTraits = fixTraits(childTraits);
 
         return Pair.of(childTraits, ImmutableList.of(childTraits));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(getInput());
+        rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated filter
+        return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

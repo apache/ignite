@@ -44,12 +44,17 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteJoin rel);
+    T visit(IgniteNestedLoopJoin rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteTableScan rel);
+    T visit(IgniteCorrelatedNestedLoopJoin rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteIndexScan rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

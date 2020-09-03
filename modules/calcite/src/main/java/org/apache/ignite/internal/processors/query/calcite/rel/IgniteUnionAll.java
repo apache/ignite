@@ -17,29 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.calcite.plan.DeriveMode;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 
 /**
  *
  */
-public class IgniteUnionAll extends Union implements IgniteRel {
+public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
     /** */
     public IgniteUnionAll(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
         super(cluster, traits, inputs, true);
@@ -66,46 +66,70 @@ public class IgniteUnionAll extends Union implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode passThrough(RelTraitSet required) {
-        IgniteDistribution toDistr = TraitUtils.distribution(required);
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
 
-        // Union erases collation and only distribution trait can be passed through.
-        // So that, it's no use to pass ANY distribution.
-        if (toDistr == any())
-            return null;
+        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        RelTraitSet traits = getCluster().traitSetOf(IgniteConvention.INSTANCE)
-            .replace(toDistr);
-
-        List<RelNode> inputs0 = Commons.transform(inputs,
-            input -> RelOptRule.convert(input, traits));
-
-        return copy(traits, inputs0);
+        return ImmutableList.of(Pair.of(nodeTraits,
+            Commons.transform(inputTraits, t -> t.replace(rewindability))));
     }
 
     /** {@inheritDoc} */
-    @Override public List<RelNode> derive(List<List<RelTraitSet>> inputTraits) {
-        RelOptCluster cluster = getCluster();
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
 
-        Set<RelTraitSet> traits = inputTraits.stream()
-            .flatMap(List::stream)
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
+
+        return ImmutableList.of(Pair.of(nodeTraits,
+            Commons.transform(inputTraits, t -> t.replace(distribution))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node erases collation. TODO union all using merge sort algorythm
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
+        boolean rewindable = inputTraits.stream()
+            .map(TraitUtils::rewindability)
+            .allMatch(RewindabilityTrait::rewindable);
+
+        if (rewindable)
+            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+            Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
+        Set<IgniteDistribution> distributions = inputTraits.stream()
             .map(TraitUtils::distribution)
-            .filter(d -> d != any())
-            .map(distr -> cluster.traitSetOf(IgniteConvention.INSTANCE).replace(distr))
             .collect(Collectors.toSet());
 
-        List<RelNode> res = new ArrayList<>(traits.size());
-        for (RelTraitSet traits0 : traits) {
-            List<RelNode> inputs0 = Commons.transform(inputs,
-                input -> RelOptRule.convert(input, traits0));
-            res.add(copy(traits0, inputs0));
-        }
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-        return res;
+        for (IgniteDistribution distribution : distributions)
+            b.add(Pair.of(nodeTraits.replace(distribution),
+                Commons.transform(inputTraits, t -> t.replace(distribution))));
+
+        return b.build();
     }
 
     /** {@inheritDoc} */
-    @Override public DeriveMode getDeriveMode() {
-        return DeriveMode.OMAKASE;
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node erases collation. TODO union all using merge sort algorythm
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 }

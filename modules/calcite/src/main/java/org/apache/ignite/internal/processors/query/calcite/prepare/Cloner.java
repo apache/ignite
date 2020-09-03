@@ -24,10 +24,12 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
@@ -36,7 +38,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -113,16 +114,24 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteJoin rel) {
+    @Override public IgniteRel visit(IgniteNestedLoopJoin rel) {
         RelNode left = visit((IgniteRel) rel.getLeft());
         RelNode right = visit((IgniteRel) rel.getRight());
 
-        return new IgniteJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return new IgniteNestedLoopJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableScan rel) {
-        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.condition());
+    @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
+        RelNode left = visit((IgniteRel) rel.getLeft());
+        RelNode right = visit((IgniteRel) rel.getRight());
+
+        return new IgniteCorrelatedNestedLoopJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteIndexScan rel) {
+        return new IgniteIndexScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.condition());
     }
 
     /** {@inheritDoc} */

@@ -39,60 +39,72 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
 
     /** {@inheritDoc} */
     @Override protected Downstream<Row> requestDownstream(int idx) {
-        assert sources != null;
-        assert idx >= 0 && idx < sources.size();
+        assert sources() != null;
+        assert idx >= 0 && idx < sources().size();
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        assert !F.isEmpty(sources);
+        assert !F.isEmpty(sources());
         assert rowsCnt > 0 && waiting == 0;
 
-        source().request(waiting = rowsCnt);
-    }
+        try {
+            checkState();
 
-    /** {@inheritDoc} */
-    @Override public void push(Row row) {
-        checkThread();
-
-        assert downstream != null;
-        assert waiting > 0;
-
-        waiting--;
-
-        downstream.push(row);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void end() {
-        checkThread();
-
-        assert downstream != null;
-        assert waiting > 0;
-
-        if (++curSrc < sources.size())
-            source().request(waiting);
-        else {
-            waiting = -1;
-            downstream.end();
+            source().request(waiting = rowsCnt);
+        }
+        catch (Exception e) {
+            onError(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
+    @Override public void push(Row row) {
+        assert downstream() != null;
+        assert waiting > 0;
 
-        assert downstream != null;
+        try {
+            checkState();
 
-        downstream.onError(e);
+            waiting--;
+
+            downstream().push(row);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void end() {
+        assert downstream() != null;
+        assert waiting > 0;
+
+        try {
+            checkState();
+
+            if (++curSrc < sources().size())
+                source().request(waiting);
+            else {
+                waiting = -1;
+                downstream().end();
+            }
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onRewind() {
+        curSrc = 0;
+        waiting = 0;
     }
 
     /** */
     private Node<Row> source() {
-        return sources.get(curSrc);
+        return sources().get(curSrc);
     }
 }

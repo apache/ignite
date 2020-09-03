@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -31,9 +32,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 /**
@@ -48,7 +49,7 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsScan(String schema, String tblName) {
-        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]]");
+        return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]]");
     }
 
     /**
@@ -60,7 +61,7 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsScan(String schema, String tblName, String idxName) {
-        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
+        return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
     }
 
     /**
@@ -84,7 +85,7 @@ public abstract class QueryChecker {
     public static Matcher<String> containsAnyScan(final String schema, final String tblName, String... idxNames) {
         return CoreMatchers.anyOf(
             Arrays.stream(idxNames).map(idx -> CoreMatchers.containsString(
-                "IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idx + ']'
+                "IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idx + ']'
             )).collect(Collectors.toList()));
     }
 
@@ -141,8 +142,8 @@ public abstract class QueryChecker {
     }
 
     /** */
-    public QueryChecker and(Matcher<String> condition) {
-        planMatchers.add(condition);
+    public QueryChecker matches(Matcher<String>... planMatcher) {
+        Collections.addAll(planMatchers, planMatcher);
         return this;
     }
 
@@ -166,15 +167,8 @@ public abstract class QueryChecker {
         String actualPlan = (String)explainRes.get(0).get(0);
 
         if (!F.isEmpty(planMatchers)) {
-            Matcher<String> matcher = CoreMatchers.allOf(planMatchers.toArray(new Matcher[planMatchers.size()]));
-
-            if (!matcher.matches(actualPlan)) {
-                final StringDescription desc = new StringDescription();
-
-                matcher.describeTo(desc);
-
-                fail(desc.toString());
-            }
+            for (Matcher<String> matcher : planMatchers)
+                assertThat(actualPlan, matcher);
         }
 
         if (exactPlan != null) {

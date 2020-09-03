@@ -67,7 +67,6 @@ class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoCloseabl
      * {@inheritDoc}
      */
     @Override public void close() throws Exception {
-        if (it instanceof AutoCloseable)
-            ((AutoCloseable) it).close();
+        Commons.close(it);
     }
 }

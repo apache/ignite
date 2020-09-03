@@ -17,35 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
 
-/** */
-public final class Partitioned implements Destination {
-    /** */
-    private final List<UUID> nodes;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
+/** */
+public final class Partitioned<Row> implements Destination<Row> {
     /** */
     private final List<List<UUID>> assignments;
 
     /** */
-    private final ToIntFunction<Object> partFun;
+    private final ToIntFunction<Row> partFun;
 
     /** */
-    public Partitioned(List<UUID> nodes, List<List<UUID>> assignments, ToIntFunction<Object> partFun) {
-        this.nodes = nodes;
+    public Partitioned(List<List<UUID>> assignments, ToIntFunction<Row> partFun) {
         this.assignments = assignments;
         this.partFun = partFun;
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> targets(Object row) {
+    @Override public List<UUID> targets(Row row) {
         return assignments.get(partFun.applyAsInt(row));
     }
 
     /** {@inheritDoc} */
     @Override public List<UUID> targets() {
-        return nodes;
+        Set<UUID> targets = U.newHashSet(assignments.size());
+        for (List<UUID> assignment : assignments) {
+            if (!F.isEmpty(assignment))
+                targets.addAll(assignment);
+        }
+
+        return new ArrayList<>(targets);
     }
 }

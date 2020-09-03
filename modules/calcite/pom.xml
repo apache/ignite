@@ -30,6 +30,7 @@
         <janino.version>3.0.11</janino.version>
         <avatica.version>1.16.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
+        <reflections.version>0.9.10</reflections.version>
     </properties>
 
     <parent>
@@ -124,6 +125,12 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <version>${jsonpath.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
         </dependency>
 
         <dependency>

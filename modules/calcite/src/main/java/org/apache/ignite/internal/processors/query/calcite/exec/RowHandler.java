@@ -62,6 +62,9 @@ public interface RowHandler<Row> {
     @SuppressWarnings("PublicInnerClass")
     interface RowFactory<Row> {
         /** */
+        RowHandler<Row> handler();
+
+        /** */
         Row create();
 
         /** */

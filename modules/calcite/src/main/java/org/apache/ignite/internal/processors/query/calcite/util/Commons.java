@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.config.CalciteSystemProperty;
@@ -34,9 +36,6 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
@@ -46,8 +45,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -217,27 +216,6 @@ public final class Commons {
     }
 
     /** */
-    public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-
-        Set<String> names = new HashSet<>();
-
-        for (RelDataType type : types) {
-            for (RelDataTypeField field : type.getFieldList()) {
-                int idx = 0;
-                String fieldName = field.getName();
-
-                while (!names.add(fieldName))
-                    fieldName = field.getName() + idx++;
-
-                builder.add(fieldName, field.getType());
-            }
-        }
-
-        return builder.build();
-    }
-
-    /** */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());
     }
@@ -298,5 +276,23 @@ public final class Commons {
         } catch (Exception e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    public static void checkRange(@NotNull Object[] array, int idx) {
+        if (idx < 0 || idx >= array.length)
+            throw new ArrayIndexOutOfBoundsException(idx);
+    }
+
+    /** */
+    public static <T> T[] ensureCapacity(T[] array, int required) {
+        A.ensure(required >= 0, "capacity must not be negative");
+
+        return array.length <= required ? Arrays.copyOf(array, U.nextPowerOf2(required)) : array;
+    }
+
+    /** */
+    public static <T> Predicate<T> negate(Predicate<T> p) {
+        return p.negate();
     }
 }

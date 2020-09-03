@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -36,6 +37,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static java.util.stream.Collectors.toCollection;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.negate;
 
 /**
  *
@@ -95,75 +99,68 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        if (waiting == -1 && !inLoop)
-            context().execute(this::flushFromBuffer);
-        else if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else
-            throw new AssertionError();
+            requested = rowsCnt;
+
+            if (waiting == 0)
+                source().request(waiting = IN_BUFFER_SIZE);
+            else if (!inLoop)
+                context().execute(this::doFlush);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting--;
-
         try {
+            checkState();
+
+            waiting--;
+
             for (Grouping grouping : groupings)
                 grouping.add(row);
 
             if (waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
+                source().request(waiting = IN_BUFFER_SIZE);
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        checkThread();
-
-        if (isClosed())
-            return;
-
-        assert downstream != null;
+        assert downstream() != null;
         assert waiting > 0;
 
-        waiting = -1;
-
         try {
-            flushFromBuffer();
+            checkState();
+
+            waiting = -1;
+
+            flush();
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
+    @Override protected void onRewind() {
+        requested = 0;
+        waiting = 0;
+        groupings.forEach(grouping -> grouping.groups.clear());
     }
 
     /** {@inheritDoc} */
@@ -175,30 +172,43 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     }
 
     /** */
-    public void flushFromBuffer() {
+    private void doFlush() {
+        try {
+            checkState();
+
+            flush();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void flush() throws IgniteCheckedException {
         assert waiting == -1;
+
+        int processed = 0;
+        ArrayDeque<Grouping> groupingsQueue = groupingsQueue();
 
         inLoop = true;
         try {
-            int processed = 0;
-
-            ArrayDeque<Grouping> groupingsQueue = groupingsQueue();
-
             while (requested > 0 && !groupingsQueue.isEmpty()) {
                 Grouping grouping = groupingsQueue.peek();
 
                 int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
                 for (Row row : grouping.getRows(toSnd)) {
+                    checkState();
+
                     requested--;
-                    downstream.push(row);
+                    downstream().push(row);
 
                     processed++;
                 }
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::flushFromBuffer);
+                    context().execute(this::doFlush);
 
                     return;
                 }
@@ -206,27 +216,22 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
                 if (grouping.isEmpty())
                     groupingsQueue.remove();
             }
-
-            if (requested > 0) {
-                downstream.end();
-                requested = 0;
-            }
         }
         finally {
             inLoop = false;
+        }
+
+        if (requested > 0) {
+            requested = 0;
+            downstream().end();
         }
     }
 
     /** */
     private ArrayDeque<Grouping> groupingsQueue() {
-        ArrayDeque<Grouping> res = new ArrayDeque<>(groupings.size());
-
-        for (Grouping grouping : groupings) {
-            if (!grouping.isEmpty())
-                res.add(grouping);
-        }
-
-        return res;
+        return groupings.stream()
+            .filter(negate(Grouping::isEmpty))
+            .collect(toCollection(ArrayDeque::new));
     }
 
     /** */
@@ -261,7 +266,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
             this.grpId = grpId;
             this.grpFields = grpFields;
 
-            handler = ctx.rowHandler();
+            handler = context().rowHandler();
         }
 
         /** */

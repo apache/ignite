@@ -111,7 +111,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
         // It's important to set proper context here because
         // because the one, that is created on a first message
         // received doesn't have all context variables in place.
-        this.ctx = ctx;
+        context(ctx);
         this.comp = comp;
 
         // memory barier
@@ -120,28 +120,27 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        checkThread();
-
-        if (isClosed())
-            return;
-
         assert srcNodeIds != null;
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
+        try {
+            checkState();
 
-        if (!inLoop)
-            context().execute(this::pushInternal);
+            requested = rowsCnt;
+
+            if (!inLoop)
+                context().execute(this::doPush);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (isClosed())
-            return;
+    @Override public void onClose() {
+        super.onClose();
 
         registry.unregister(this);
-
-        super.close();
     }
 
     /** {@inheritDoc} */
@@ -154,6 +153,11 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void onRewind() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Pushes a batch into a buffer.
      *
@@ -163,66 +167,52 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param rows Rows.
      */
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
-        checkThread();
+        try {
+            checkState();
 
-        if (isClosed())
-            return;
+            Buffer buf = getOrCreateBuffer(src);
 
-        Buffer buf = getOrCreateBuffer(src);
+            boolean waitingBefore = buf.check() == State.WAITING;
 
-        boolean waitingBefore = buf.check() == State.WAITING;
+            buf.offer(batchId, last, rows);
 
-        buf.offer(batchId, last, rows);
-
-        if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
-            pushInternal();
-    }
-
-    /**
-     * @param e Error.
-     */
-    private void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-
-        close();
+            if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
+                push();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** */
-    private void pushInternal() {
-        if (isClosed())
-            return;
-
-        assert downstream != null;
-
-        inLoop = true;
-
+    private void doPush() {
         try {
-            if (buffers == null) {
-                for (UUID node : srcNodeIds)
-                    checkNode(node);
+            checkState();
 
-                buffers = srcNodeIds.stream()
-                    .map(this::getOrCreateBuffer)
-                    .collect(Collectors.toList());
-
-                assert buffers.size() == perNodeBuffers.size();
-            }
-
-            if (comp != null)
-                pushOrdered();
-            else
-                pushUnordered();
+            push();
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             onError(e);
         }
-        finally {
-            inLoop = false;
+    }
+
+    /** */
+    private void push() throws IgniteCheckedException {
+        if (buffers == null) {
+            for (UUID node : srcNodeIds)
+                checkNode(node);
+
+            buffers = srcNodeIds.stream()
+                .map(this::getOrCreateBuffer)
+                .collect(Collectors.toList());
+
+            assert buffers.size() == perNodeBuffers.size();
         }
+
+        if (comp != null)
+            pushOrdered();
+        else
+            pushUnordered();
     }
 
     /** */
@@ -250,35 +240,40 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
             }
         }
 
-        while (requested > 0 && !heap.isEmpty()) {
-            if (isClosed())
-                return;
+        inLoop = true;
+        try {
+            while (requested > 0 && !heap.isEmpty()) {
+                checkState();
 
-            Buffer buf = heap.poll().right;
+                Buffer buf = heap.poll().right;
 
-            requested--;
-            downstream.push(buf.remove());
+                requested--;
+                downstream().push(buf.remove());
 
-            switch (buf.check()) {
-                case END:
-                    buffers.remove(buf);
+                switch (buf.check()) {
+                    case END:
+                        buffers.remove(buf);
 
-                    break;
-                case READY:
-                    heap.offer(Pair.of(buf.peek(), buf));
+                        break;
+                    case READY:
+                        heap.offer(Pair.of(buf.peek(), buf));
 
-                    break;
-                case WAITING:
+                        break;
+                    case WAITING:
 
-                    return;
+                        return;
+                }
             }
+        }
+        finally {
+            inLoop = false;
         }
 
         if (requested > 0 && heap.isEmpty()) {
             assert buffers.isEmpty();
 
-            downstream.end();
             requested = 0;
+            downstream().end();
         }
     }
 
@@ -286,37 +281,42 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     private void pushUnordered() throws IgniteCheckedException {
         int idx = 0, noProgress = 0;
 
-        while (requested > 0 && !buffers.isEmpty()) {
-            if (isClosed())
-                return;
+        inLoop = true;
+        try {
+            while (requested > 0 && !buffers.isEmpty()) {
+                checkState();
 
-            Buffer buf = buffers.get(idx);
+                Buffer buf = buffers.get(idx);
 
-            switch (buf.check()) {
-                case END:
-                    buffers.remove(idx--);
+                switch (buf.check()) {
+                    case END:
+                        buffers.remove(idx--);
 
-                    break;
-                case READY:
-                    noProgress = 0;
-                    requested--;
-                    downstream.push(buf.remove());
+                        break;
+                    case READY:
+                        noProgress = 0;
+                        requested--;
+                        downstream().push(buf.remove());
 
-                    break;
-                case WAITING:
-                    if (++noProgress >= buffers.size())
-                        return;
+                        break;
+                    case WAITING:
+                        if (++noProgress >= buffers.size())
+                            return;
 
-                    break;
+                        break;
+                }
+
+                if (++idx == buffers.size())
+                    idx = 0;
             }
-
-            if (++idx == buffers.size())
-                idx = 0;
+        }
+        finally {
+            inLoop = false;
         }
 
         if (requested > 0 && buffers.isEmpty()) {
-            downstream.end();
             requested = 0;
+            downstream().end();
         }
     }
 
@@ -337,18 +337,23 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
     /** */
     public void onNodeLeft(UUID nodeId) {
-        if (ctx.originatingNodeId().equals(nodeId) && srcNodeIds == null)
-            ctx.execute(this::close);
+        if (context().originatingNodeId().equals(nodeId) && srcNodeIds == null)
+            context().execute(this::close);
         else if (srcNodeIds != null && srcNodeIds.contains(nodeId))
-            ctx.execute(() -> onNodeLeft0(nodeId));
+            context().execute(() -> onNodeLeft0(nodeId));
     }
 
     /** */
     private void onNodeLeft0(UUID nodeId) {
-        checkThread();
+        try {
+            checkState();
 
-        if (getOrCreateBuffer(nodeId).check() != State.END)
-            onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']'));
+            if (getOrCreateBuffer(nodeId).check() != State.END)
+                onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']'));
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** */

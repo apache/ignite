@@ -26,7 +26,7 @@ import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
@@ -45,7 +45,7 @@ public interface IgniteTable extends TranslatableTable, ProjectableFilterableTab
      * @param relOptTbl Table.
      * @return Table relational expression.
      */
-    IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
+    IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
 
     /**
      * Returns nodes mapping.

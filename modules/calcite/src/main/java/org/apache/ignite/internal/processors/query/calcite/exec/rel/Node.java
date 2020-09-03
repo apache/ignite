@@ -36,11 +36,23 @@ public interface Node<Row> extends AutoCloseable {
     ExecutionContext<Row> context();
 
     /**
+     * @return Node downstream.
+     */
+    Downstream<Row> downstream();
+
+    /**
      * Registers node sources.
      *
      * @param sources Sources collection.
      */
     void register(List<Node<Row>> sources);
+
+    /**
+     * Returns registered node sources.
+     *
+     * @return Node sources.
+     */
+    List<Node<Row>> sources();
 
     /**
      * Registers downstream.
@@ -53,4 +65,10 @@ public interface Node<Row> extends AutoCloseable {
      * Requests next bunch of rows.
      */
     void request(int rowsCnt);
+
+
+    /**
+     * Rewinds upstream.
+     */
+    void rewind();
 }

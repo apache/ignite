@@ -16,21 +16,27 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.rex.RexVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.simplifier;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -38,7 +44,7 @@ import org.apache.ignite.internal.util.typedef.F;
 public class PushFilterIntoScanRule extends RelOptRule {
     /** Instance. */
     public static final PushFilterIntoScanRule FILTER_INTO_SCAN =
-        new PushFilterIntoScanRule(Filter.class, "IgniteFilterIntoScanRule");
+        new PushFilterIntoScanRule(LogicalFilter.class, "IgniteFilterIntoScanRule");
 
     /**
      * Constructor.
@@ -48,42 +54,50 @@ public class PushFilterIntoScanRule extends RelOptRule {
      */
     private PushFilterIntoScanRule(Class<? extends RelNode> clazz, String desc) {
         super(operand(clazz,
-            operand(IgniteTableScan.class, none())),
+            operand(IgniteIndexScan.class, none())),
             RelFactories.LOGICAL_BUILDER,
             desc);
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        Filter filter = call.rel(0);
-        IgniteTableScan scan = call.rel(1);
+        LogicalFilter filter = call.rel(0);
+        IgniteIndexScan scan = call.rel(1);
+
+        RelOptCluster cluster = scan.getCluster();
+        RelMetadataQuery mq = call.getMetadataQuery();
 
         RexNode cond = filter.getCondition();
 
+        RexSimplify simplifier = simplifier(cluster);
+
+        // Let's remove from the condition common with the scan filter parts.
+        cond = simplifier
+            .withPredicates(mq.getPulledUpPredicates(scan))
+            .simplifyUnknownAsFalse(cond);
+
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        RexVisitor<RexNode> inputRefReplacer = new InputRefReplacer();
-        cond = cond.accept(inputRefReplacer);
+        cond = cond.accept(new InputRefReplacer());
 
-        RexNode cond0 = scan.condition();
+        // Combine the condition with the scan filter.
+        cond = RexUtil.composeConjunction(builder(cluster), F.asList(cond, scan.condition()));
 
-        if (cond0 != null) {
-            ImmutableList<RexNode> nodes = RexUtil.flattenAnd(ImmutableList.of(cond0));
-            if (nodes.contains(cond))
-                return;
-
-            RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-            cond = RexUtil.composeConjunction(rexBuilder, F.concat(true, cond, nodes));
-        }
+        // Final simplification. We need several phases because simplifier sometimes
+        // (see RexSimplify.simplifyGenericNode) leaves UNKNOWN nodes that can be
+        // eliminated on next simplify attempt. We limit attempts count not to break
+        // planning performance on complex condition.
+        Set<RexNode> nodes = new HashSet<>();
+        while (nodes.add(cond) && nodes.size() < 3)
+            cond = simplifier.simplifyUnknownAsFalse(cond);
 
         call.transformTo(
-            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
+            new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
     }
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
     private static class InputRefReplacer extends RexShuttle {
         @Override public RexNode visitInputRef(RexInputRef inputRef) {
-            int idx = inputRef.getIndex();
-            return new RexLocalRef(idx, inputRef.getType());
+            return new RexLocalRef(inputRef.getIndex(), inputRef.getType());
         }
     }
 }
