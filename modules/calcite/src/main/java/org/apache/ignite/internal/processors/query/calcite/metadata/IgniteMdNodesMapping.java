@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 /**
  * Implementation class for {@link RelMetadataQueryEx#nodesMapping(RelNode)} method call.
  */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdNodesMapping implements MetadataHandler<NodesMappingMetadata> {
     /**
      * Metadata provider, responsible for nodes mapping request. It uses this implementation class under the hood.

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 /**
  * Implementation class for {@link RelMetadataQuery#distribution(RelNode)} method call.
  */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Distribution> {
     /**
      * Metadata provider, responsible for distribution type request. It uses this implementation class under the hood.

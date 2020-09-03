@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.calcite.util.NumberUtil.multiply;
 
 /** */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdRowCount extends RelMdRowCount {
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(

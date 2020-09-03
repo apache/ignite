@@ -32,6 +32,7 @@ import org.apache.calcite.util.BuiltInMethod;
 /**
  * See {@link org.apache.calcite.rel.metadata.RelMdPercentageOriginalRows}
  */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMetadata.PercentageOriginalRows> {
     /** */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(

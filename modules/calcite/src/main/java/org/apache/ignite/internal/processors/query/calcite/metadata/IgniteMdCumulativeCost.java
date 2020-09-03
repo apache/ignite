@@ -35,6 +35,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
 
 /** */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.CumulativeCost> {
     /** */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(

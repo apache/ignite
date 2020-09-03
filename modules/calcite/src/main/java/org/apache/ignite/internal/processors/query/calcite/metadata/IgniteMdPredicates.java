@@ -32,6 +32,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 
 /** */
+@SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPredicates extends RelMdPredicates {
     /** */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider

@@ -81,6 +81,7 @@ public class IgniteMetadata {
                 RelMdAllPredicates.SOURCE,
                 RelMdCollation.SOURCE));
 
+    /** */
     public interface NodesMappingMetadata extends Metadata {
         MetadataDef<NodesMappingMetadata> DEF = MetadataDef.of(NodesMappingMetadata.class,
             NodesMappingMetadata.Handler.class, IgniteMethod.NODES_MAPPING.method());
