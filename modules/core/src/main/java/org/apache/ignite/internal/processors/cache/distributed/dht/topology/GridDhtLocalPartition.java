@@ -689,7 +689,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Continue clearing if it was delayed before due to a reservation and topology version has not been changed.
+     * Continue clearing if it was delayed before due to reservation and topology version not changed.
      */
     public void tryContinueClearing() {
         if (delayedRentingTopVer != 0 &&
@@ -710,7 +710,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         boolean evictionRequested = partState == RENTING;
         boolean clearingRequested = partState == MOVING;
 
-        if (!evictionRequested && !clearingRequested || !tryInvalidateGroupReservations())
+        if (!evictionRequested && !clearingRequested)
             return new GridFinishedFuture<>();
 
         GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
@@ -768,8 +768,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         long state0 = this.state.get();
 
         GridDhtPartitionState state = getPartState(state0);
-
-        assert state != EVICTED : this;
 
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
