@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests <see cref="ITransactions.GetLocalActiveTransactions"/>.
     /// </summary>
-    public class GetLocalActiveTransactionsTest : TestBase
+    public class CacheLocalActiveTransactionsTest : TestBase
     {
         private const string IgniteInstanceName = "GetLocalActiveTransactionsTest";
 
