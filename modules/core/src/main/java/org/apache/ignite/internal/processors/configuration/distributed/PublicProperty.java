@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
  * Inner interface to describe public property that can be managed by command line interface.
  * See more {@code CommandHandler} and {@code PropertyCommand}.
  */
-public interface PublicProperty <T extends Serializable>  {
+public interface PublicProperty<T extends Serializable> {
     /**
      * @return Property description.
      */
