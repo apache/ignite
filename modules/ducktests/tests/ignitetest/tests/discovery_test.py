@@ -44,9 +44,9 @@ class ClusterLoad(IntEnum):
     """
     Type of cluster loading.
     """
-    no_load = 0
+    none = 0
     atomic = 1
-    transactional_load = 2
+    transactional = 2
 
 
 class DiscoveryTestConfig(NamedTuple):
@@ -56,7 +56,7 @@ class DiscoveryTestConfig(NamedTuple):
     version: IgniteVersion
     nodes_to_kill: int = 1
     kill_coordinator: bool = False
-    with_load: ClusterLoad = ClusterLoad.no_load
+    load_type: ClusterLoad = ClusterLoad.none
     with_zk: bool = False
 
 
@@ -80,14 +80,14 @@ class DiscoveryTest(IgniteTest):
     @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
-            with_load=[ClusterLoad.no_load, ClusterLoad.atomic, ClusterLoad.transactional_load])
-    def test_node_fail_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
+            load_type=[ClusterLoad.none, ClusterLoad.atomic, ClusterLoad.transactional])
+    def test_node_fail_tcp(self, version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
-        :param with_load: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
+        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=False)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -95,14 +95,14 @@ class DiscoveryTest(IgniteTest):
     @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
             kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
-            with_load=[ClusterLoad.no_load, ClusterLoad.atomic, ClusterLoad.transactional_load])
-    def test_node_fail_zk(self, version, kill_coordinator, nodes_to_kill, with_load):
+            load_type=[ClusterLoad.none, ClusterLoad.atomic, ClusterLoad.transactional])
+    def test_node_fail_zk(self, version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi.
-        :param with_load: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
+        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=True)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -121,7 +121,7 @@ class DiscoveryTest(IgniteTest):
             discovery_spi=discovery_spi,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
             caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL' if
-            test_config.atomic == ClusterLoad.transactional_load else 'ATOMIC')]
+            test_config.load_type == ClusterLoad.transactional else 'ATOMIC')]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
@@ -129,12 +129,12 @@ class DiscoveryTest(IgniteTest):
         failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator,
                                                           test_config.nodes_to_kill)
 
-        if test_config.atomic is not ClusterLoad.no_load:
+        if test_config.load_type is not ClusterLoad.none:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
             tran_nodes = [n.discovery_info().node_id for n in failed_nodes] \
-                if test_config.atomic == ClusterLoad.transactional_load else None
+                if test_config.load_type == ClusterLoad.transactional else None
 
             params = {"cacheName": "test-cache",
                       "range": self.DATA_AMOUNT,
