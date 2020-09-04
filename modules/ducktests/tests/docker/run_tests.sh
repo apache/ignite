@@ -76,6 +76,10 @@ The options are as follows:
     - ignite_client_config_path: abs path within container to Ignite client config template
     - ignite_server_config_path: abs path within container to Ignite server config template
     - jvm_opts: array of JVM options to use when Ignite node started
+    - ignite_version: string representing ignite_versions to test against.
+
+-gj|--global-json)
+    Use specified json as globals to pass to test context. Can be extended with -g|--global
 
 -t|--tc-paths
     Path to ducktests. Must be relative path to 'IGNITE/modules/ducktests/tests' directory
@@ -119,6 +123,7 @@ while [[ $# -ge 1 ]]; do
         -p|--param) duck_add_param "$2"; shift 2;;
         -pj|--params-json) PARAMETERS="$2"; shift 2;;
         -g|--global) duck_add_global "$2"; shift 2;;
+        -gj|--global-json) GLOBALS="$2"; shift 2;;
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;

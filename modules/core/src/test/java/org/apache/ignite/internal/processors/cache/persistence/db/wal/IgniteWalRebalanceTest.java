@@ -198,12 +198,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         IgniteEx ig1 = startGrid(1);
 
         final int entryCnt = PARTS_CNT * 100;
+        final int preloadEntryCnt = PARTS_CNT * 101;
 
         ig0.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
-        for (int k = 0; k < entryCnt; k++)
+        for (int k = 0; k < preloadEntryCnt; k++)
             cache.put(k, new IndexedObject(k));
 
         forceCheckpoint();
@@ -240,12 +241,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         IgniteEx ig1 = startGrid(1);
 
         final int entryCnt = PARTS_CNT * 100;
+        final int preloadEntryCnt = PARTS_CNT * 135;
 
         ig0.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
-        for (int k = 0; k < entryCnt; k++)
+        for (int k = 0; k < preloadEntryCnt; k++)
             cache.put(k, new IndexedObject(k));
 
         forceCheckpoint();
@@ -293,11 +295,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         crd.cluster().active(true);
 
         final int entryCnt = PARTS_CNT * 10;
+        final int preloadEntryCnt = PARTS_CNT * 11;
 
         {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
-            for (int k = 0; k < entryCnt; k++)
+            for (int k = 0; k < preloadEntryCnt; k++)
                 cache.put(k, new IndexedObject(k - 1));
         }
 
@@ -385,10 +388,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         final int entryCnt = PARTS_CNT * 10;
 
+        final int preloadEntryCnt = PARTS_CNT * 11;
+
         {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
-            for (int k = 0; k < entryCnt; k++)
+            //Preload should be more that data coming through historical rebalance
+            //Otherwise cluster may to choose a full rebalance instead of historical one.
+            for (int k = 0; k < preloadEntryCnt; k++)
                 cache.put(k, new IndexedObject(k - 1));
         }
 
@@ -466,11 +473,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         crd.cluster().active(true);
 
         final int entryCnt = PARTS_CNT * 10;
+        final int preloadEntryCnt = PARTS_CNT * 11;
 
         {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
-            for (int k = 0; k < entryCnt; k++)
+            for (int k = 0; k < preloadEntryCnt; k++)
                 cache.put(k, new IndexedObject(k - 1));
         }
 
@@ -579,7 +587,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         // Fill initial data and force checkpoint.
         final int entryCnt = PARTS_CNT * 200;
-        for (int k = 0; k < entryCnt; k++)
+        final int preloadEntryCnt = PARTS_CNT * 201;
+
+        for (int k = 0; k < preloadEntryCnt; k++)
             cache0.put(k, new IndexedObject(k));
 
         forceCheckpoint();
@@ -823,7 +833,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         // Fill initial data.
         final int entryCnt = PARTS_CNT * 200;
-        for (int k = 0; k < entryCnt; k++) {
+        final int preloadEntryCnt = PARTS_CNT * 400;
+
+        for (int k = 0; k < preloadEntryCnt; k++) {
             c1.put(k, new IndexedObject(k));
 
             c2.put(k, new IndexedObject(k));

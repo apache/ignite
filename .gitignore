@@ -81,6 +81,12 @@ packages
 #NodeJs files
 /modules/platforms/nodejs/node_modules
 
+#Python temp files
+**/.eggs
+**/venv
+**/.pytest_cache
+**/pyignite.egg-info
+
 #Ducktape
 /results
 .ducktape

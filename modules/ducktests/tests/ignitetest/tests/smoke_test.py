@@ -17,15 +17,15 @@
 This module contains smoke tests that checks that services work
 """
 
-from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.spark import SparkService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
+from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -37,26 +37,32 @@ class SmokeServicesTest(IgniteTest):
     """
 
     @cluster(num_nodes=1)
-    @parametrize(version=str(DEV_BRANCH))
-    def test_ignite_start_stop(self, version):
+    @ignite_versions(str(DEV_BRANCH))
+    def test_ignite_start_stop(self, ignite_version):
         """
         Test that IgniteService correctly start and stop
         """
-        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(version)), num_nodes=1)
+        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
+                               num_nodes=1)
+        print(self.test_context)
         ignite.start()
         ignite.stop()
 
     @cluster(num_nodes=2)
-    @parametrize(version=str(DEV_BRANCH))
-    def test_ignite_app_start_stop(self, version):
+    @ignite_versions(str(DEV_BRANCH))
+    def test_ignite_app_start_stop(self, ignite_version):
         """
         Test that IgniteService and IgniteApplicationService correctly start and stop
         """
-        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(version)), num_nodes=1)
+        server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
+        ignite = IgniteService(self.test_context, server_configuration, num_nodes=1)
+
+        client_configuration = server_configuration._replace(client_mode=True,
+                                                             discovery_spi=from_ignite_cluster(ignite))
         app = IgniteApplicationService(
             self.test_context,
-            IgniteClientConfiguration(version=IgniteVersion(version), discovery_spi=from_ignite_cluster(ignite)),
+            client_configuration,
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication")
 
         ignite.start()

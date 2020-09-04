@@ -18,9 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
@@ -852,10 +850,9 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallJavaService()
         {
             // Deploy Java service
-            const string javaSvcName = "javaService";
-            DeployJavaService(javaSvcName);
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            // Verify decriptor
+            // Verify descriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
@@ -968,9 +965,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            const string javaSvcName = "javaService";
-            DeployJavaService(javaSvcName);
-
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
             var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
             // Basics
@@ -1042,17 +1038,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
-        }
-
-        /// <summary>
-        /// Deploys the java service.
-        /// </summary>
-        private void DeployJavaService(string javaSvcName)
-        {
-            Grid1.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
-
-            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
         }
 
         /// <summary>
@@ -1502,148 +1487,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private class BinarizableObject
         {
             public int Val { get; set; }
-        }
-
-        /// <summary>
-        /// Java service proxy interface.
-        /// </summary>
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        public interface IJavaService
-        {
-            /** */
-            bool isCancelled();
-
-            /** */
-            bool isInitialized();
-
-            /** */
-            bool isExecuted();
-
-            /** */
-            byte test(byte x);
-
-            /** */
-            short test(short x);
-
-            /** */
-            int test(int x);
-
-            /** */
-            long test(long x);
-
-            /** */
-            float test(float x);
-
-            /** */
-            double test(double x);
-
-            /** */
-            char test(char x);
-
-            /** */
-            string test(string x);
-
-            /** */
-            bool test(bool x);
-
-            /** */
-            DateTime test(DateTime x);
-
-            /** */
-            Guid test(Guid x);
-
-            /** */
-            byte? testWrapper(byte? x);
-
-            /** */
-            short? testWrapper(short? x);
-
-            /** */
-            int? testWrapper(int? x);
-
-            /** */
-            long? testWrapper(long? x);
-
-            /** */
-            float? testWrapper(float? x);
-
-            /** */
-            double? testWrapper(double? x);
-
-            /** */
-            char? testWrapper(char? x);
-
-            /** */
-            bool? testWrapper(bool? x);
-
-            /** */
-            byte[] testArray(byte[] x);
-
-            /** */
-            short[] testArray(short[] x);
-
-            /** */
-            int[] testArray(int[] x);
-
-            /** */
-            long[] testArray(long[] x);
-
-            /** */
-            float[] testArray(float[] x);
-
-            /** */
-            double[] testArray(double[] x);
-
-            /** */
-            char[] testArray(char[] x);
-
-            /** */
-            string[] testArray(string[] x);
-
-            /** */
-            bool[] testArray(bool[] x);
-
-            /** */
-            DateTime?[] testArray(DateTime?[] x);
-
-            /** */
-            Guid?[] testArray(Guid?[] x);
-
-            /** */
-            int test(int x, string y);
-
-            /** */
-            int test(string x, int y);
-
-            /** */
-            int? testNull(int? x);
-
-            /** */
-            DateTime? testNullTimestamp(DateTime? x);
-
-            /** */
-            Guid? testNullUUID(Guid? x);
-
-            /** */
-            int testParams(params object[] args);
-
-            /** */
-            PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
-
-            /** */
-            object[] testBinarizableArrayOfObjects(object[] x);
-
-            /** */
-            IBinaryObject[] testBinaryObjectArray(IBinaryObject[] x);
-
-            /** */
-            PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
-
-            /** */
-            ICollection testBinarizableCollection(ICollection x);
-
-            /** */
-            IBinaryObject testBinaryObject(IBinaryObject x);
         }
 
         /// <summary>

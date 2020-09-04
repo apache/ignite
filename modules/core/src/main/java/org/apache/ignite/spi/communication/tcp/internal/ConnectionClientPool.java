@@ -21,6 +21,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -681,7 +682,7 @@ public class ConnectionClientPool {
 
             GridFutureAdapter<GridCommunicationClient> fut = clientFuts.remove(connKey);
             if (nonNull(fut))
-                fut.get().forceClose();
+                Optional.ofNullable(fut.get()).ifPresent(GridCommunicationClient::forceClose);
         }
     }
 

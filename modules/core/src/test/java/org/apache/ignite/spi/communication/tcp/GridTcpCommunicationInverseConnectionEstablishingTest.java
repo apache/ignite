@@ -250,7 +250,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         for (int i = 0; i < SRVS_NUM; i++) {
             ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
 
-            startGrid(i, cfg -> {
+            startGrid(i, (UnaryOperator<IgniteConfiguration>) cfg -> {
                 ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
 
                 log.registerListener(lsnr);
@@ -284,7 +284,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             "Failed to wait for establishing inverse communication connection"
         ).build();
 
-        startGrid(SRVS_NUM - 1, cfg -> {
+        startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>) cfg -> {
             ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
 
             log.registerListener(lsnr);
