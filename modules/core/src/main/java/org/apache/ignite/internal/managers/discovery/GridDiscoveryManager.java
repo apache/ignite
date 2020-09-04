@@ -2206,7 +2206,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
             getSpi().sendCustomEvent(ctx.security().enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, ctx.security().securityContext().subject().id())
+                ? new SecurityAwareCustomMessageWrapper(msg, securitySubjectId(ctx))
                 : new CustomMessageWrapper(msg));
         }
         catch (IgniteClientDisconnectedException e) {

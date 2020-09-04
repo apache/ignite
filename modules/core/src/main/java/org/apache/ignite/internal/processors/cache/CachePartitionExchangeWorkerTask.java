@@ -28,7 +28,9 @@ public interface CachePartitionExchangeWorkerTask {
      */
     boolean skipForExchangeMerge();
 
-    /** Security subject id. */
+    /**
+     * @return Security subject id.
+     */
     default UUID securitySubjectId() {
         return null;
     }
