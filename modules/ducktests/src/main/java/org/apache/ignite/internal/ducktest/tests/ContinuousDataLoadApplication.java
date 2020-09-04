@@ -20,6 +20,7 @@ package org.apache.ignite.internal.ducktest.tests;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -29,7 +30,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -75,7 +75,7 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
 
                     ++loaded;
 
-                    if (notifyTime + U.millisToNanos(1500) < System.nanoTime())
+                    if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime())
                         notifyTime = System.nanoTime();
 
                     // Delayed notify of the initialization to make sure the data load has completelly began and
