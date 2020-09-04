@@ -17,11 +17,20 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
-import java.util.Random;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -32,43 +41,130 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(ContinuousDataLoadApplication.class.getName());
 
+    /** */
+    private IgniteCache<Integer, Integer> cache;
+
+    /** Node set to exclusively put data on if required. */
+    private List<ClusterNode> nodesToLoad = Collections.emptyList();
+
+    /** */
+    private Affinity<Integer> aff;
+
+    /** Data number to put before notifying of the initialized state. */
+    private int warmUpCnt;
+
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
-        String cacheName = jsonNode.get("cacheName").asText();
-        int range = jsonNode.get("range").asInt();
+        Config cfg = parseConfig(jsonNode);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
-
-        int warmUpCnt = (int)Math.max(1, 0.1f * range);
-
-        Random rnd = new Random();
-
-        long streamed = 0;
+        init(cfg);
 
         log.info("Generating data in background...");
 
         long notifyTime = System.nanoTime();
 
+        int loaded = 0;
+
         while (active()) {
-            cache.put(rnd.nextInt(range), rnd.nextInt(range));
+            try (Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null) {
+                for (int i = 0; i < cfg.range && active(); ++i) {
+                    if (skipDataKey(i))
+                        continue;
 
-            streamed++;
+                    cache.put(i, i);
 
-            if (notifyTime + U.millisToNanos(1500) < System.nanoTime()) {
-                notifyTime = System.nanoTime();
+                    ++loaded;
 
-                if (log.isDebugEnabled())
-                    log.debug("Streamed " + streamed + " entries.");
+                    if (notifyTime + U.millisToNanos(1500) < System.nanoTime())
+                        notifyTime = System.nanoTime();
+
+                    // Delayed notify of the initialization to make sure the data load has completelly began and
+                    // has produced some valuable amount of data.
+                    if (!inited() && warmUpCnt == loaded)
+                        markInitialized();
+                }
+
+                if (tx != null && active())
+                    tx.commit();
             }
-
-            // Delayed notify of the initialization to make sure the data load has completelly began and
-            // has produced some valuable amount of data.
-            if (!inited() && warmUpCnt == streamed)
-                markInitialized();
         }
 
         log.info("Background data generation finished.");
 
         markFinished();
+    }
+
+    /**
+     * @return {@code True} if data should not be put for {@code dataKey}. {@code False} otherwise.
+     */
+    private boolean skipDataKey(int dataKey) {
+        if (!nodesToLoad.isEmpty()) {
+            for (ClusterNode n : nodesToLoad) {
+                if (aff.isPrimary(n, dataKey))
+                    return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepares run settings based on {@code cfg}.
+     */
+    private void init(Config cfg) {
+        cache = ignite.getOrCreateCache(cfg.cacheName);
+
+        if (cfg.targetNodes != null && !cfg.targetNodes.isEmpty()) {
+            nodesToLoad = ignite.cluster().nodes().stream().filter(n -> cfg.targetNodes.contains(n.id().toString()))
+                .collect(Collectors.toList());
+
+            aff = ignite.affinity(cfg.cacheName);
+        }
+
+        warmUpCnt = cfg.warmUpRange < 1 ? (int)Math.max(1, 0.1f * cfg.range) : cfg.warmUpRange;
+    }
+
+    /**
+     * Converts Json-represented config into {@code Config}.
+     */
+    private static Config parseConfig(JsonNode node) {
+        ObjectMapper objMapper = new ObjectMapper();
+        objMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+        Config cfg;
+
+        try {
+            cfg = objMapper.treeToValue(node, Config.class);
+        }
+        catch (Exception e) {
+            throw new IllegalStateException("Unable to parse config.", e);
+        }
+
+        return cfg;
+    }
+
+    /**
+     * The configuration holder.
+     */
+    private static class Config {
+        /** Name of the cache. */
+        private String cacheName;
+
+        /** Data/keys number to load. */
+        private int range;
+
+        /** Node id set. If not empty, data will be load only on this nodes. */
+        private Set<String> targetNodes;
+
+        /** If {@code true}, data will be put within transaction. */
+        private boolean transactional;
+
+        /**
+         * Data number to warn-up and to delay the init-notification. If < 1, ignored and considered default 10% of
+         * {@code range}.
+         */
+        private int warmUpRange;
     }
 }
