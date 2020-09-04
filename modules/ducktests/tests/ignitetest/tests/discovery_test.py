@@ -19,6 +19,7 @@ Module contains discovery tests.
 
 import random
 import re
+from enum import IntEnum
 from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
@@ -30,6 +31,7 @@ from ignitetest.services.ignite import IgniteAwareService
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
@@ -39,6 +41,15 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
 
 
+class ClusterLoad(IntEnum):
+    """
+    Type of cluster loading.
+    """
+    none = 0
+    atomic = 1
+    transactional = 2
+
+
 class DiscoveryTestConfig(NamedTuple):
     """
     Configuration for DiscoveryTest.
@@ -46,7 +57,7 @@ class DiscoveryTestConfig(NamedTuple):
     version: IgniteVersion
     nodes_to_kill: int = 1
     kill_coordinator: bool = False
-    with_load: bool = False
+    load_type: ClusterLoad = ClusterLoad.none
     with_zk: bool = False
 
 
@@ -62,19 +73,22 @@ class DiscoveryTest(IgniteTest):
 
     FAILURE_DETECTION_TIMEOUT = 2000
 
-    DATA_AMOUNT = 100000
+    DATA_AMOUNT = 5_000_000
+
+    WARMUP_DATA_AMOUNT = 10_000
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
-            with_load=[False, True])
-    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+            load_type=[ClusterLoad.none, ClusterLoad.atomic, ClusterLoad.transactional])
+    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
+        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=False)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -83,13 +97,14 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
-            with_load=[False, True])
-    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, with_load):
+            load_type=[ClusterLoad.none, ClusterLoad.atomic, ClusterLoad.transactional])
+    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi.
+        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, with_load=with_load, with_zk=True)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -106,19 +121,35 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
+            caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL' if
+            test_config.load_type == ClusterLoad.transactional else 'ATOMIC')]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
-        if test_config.with_load:
+        failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator,
+                                                          test_config.nodes_to_kill)
+
+        if test_config.load_type is not ClusterLoad.none:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT, modules=modules)
+            tran_nodes = [n.discovery_info().node_id for n in failed_nodes] \
+                if test_config.load_type == ClusterLoad.transactional else None
 
-        data = simulate_nodes_failure(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
+            params = {"cacheName": "test-cache",
+                      "range": self.DATA_AMOUNT,
+                      "warmUpRange": self.WARMUP_DATA_AMOUNT,
+                      "targetNodes": tran_nodes,
+                      "transactional": bool(tran_nodes)}
+
+            start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
+
+        data = simulate_nodes_failure(servers, failed_nodes, survived_node)
+
         data['Ignite cluster start time (s)'] = start_servers_sec
+
         return data
 
 
@@ -144,7 +175,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
     return servers, round(monotonic() - start, 1)
 
 
-def start_load_app(test_context, ignite_config, data_amount, modules=None):
+def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
@@ -155,7 +186,7 @@ def start_load_app(test_context, ignite_config, data_amount, modules=None):
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
-        params={"cacheName": "test-cache", "range": data_amount})
+        params=params)
 
     loader.start()
 
@@ -188,12 +219,10 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, kill_coordinator, nodes_to_kill):
+def simulate_nodes_failure(servers, failed_nodes, survived_node):
     """
     Perform node failure scenario
     """
-    failed_nodes, survived_node = choose_node_to_kill(servers, kill_coordinator, nodes_to_kill)
-
     ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
     _, first_terminated = servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
