@@ -50,6 +50,16 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** Is closed. */
         private volatile bool _isClosed;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="id">ID.</param>
+        /// <param name="txs">Transactions.</param>
+        /// <param name="concurrency">TX concurrency.</param>
+        /// <param name="isolation">TX isolation.</param>
+        /// <param name="timeout">Timeout.</param>
+        /// <param name="label">TX label.</param>
+        /// <param name="nodeId">The originating node identifier.</param>
         public TransactionRollbackOnlyProxy(
             TransactionsImpl txs,
             long id,

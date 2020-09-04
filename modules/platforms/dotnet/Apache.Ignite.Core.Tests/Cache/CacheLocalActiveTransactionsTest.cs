@@ -31,31 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheLocalActiveTransactionsTest : TestBase
     {
-        private const string IgniteInstanceName = "GetLocalActiveTransactionsTest";
-
-        /// <summary>
-        /// Fixture setup.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void SetUp()
-        {
-            IgniteConfiguration cfg = new IgniteConfiguration(GetConfig())
-            {
-                IgniteInstanceName = IgniteInstanceName
-            };
-
-            Ignition.Start(cfg);
-        }
-
-        /// <summary>
-        /// Fixture teardown.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void TearDown()
-        {
-            Ignition.StopAll(true);
-        }
-
         /// <summary>
         /// Tests that transaction properties are applied and propagated properly.
         /// </summary>
@@ -222,8 +197,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private ICache<int, int> Cache()
         {
-            var ignite = Ignition.GetIgnite(IgniteInstanceName);
-
+            var ignite = Ignition.GetIgnite();
             return ignite.GetOrCreateCache<int, int>(new CacheConfiguration
             {
                 Name = TestUtils.TestName,
