@@ -149,11 +149,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
 
         @Override public void onSessionExpired(UUID subjId) {
-
+            // No-op.
         }
 
         @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
-
+            // No-op.
         }
 
         @Override public IgniteSandbox sandbox() {
