@@ -115,6 +115,8 @@
   url: /data-rebalancing 
 - title: Partition Loss Policy
   url: /partition-loss-policy
+- title: Deploying User Code
+  url: /deploying-user-code
 - title: Peer Class Loading
   url: /peer-class-loading
 - title: Data Streaming
@@ -183,6 +185,20 @@
   url: /near-cache
 - title: .NET Platform Cache
   url: /platform-cache
+- title: Services
+  url: /services/services
+- title: Distributed Data Structures
+  items:
+    - title: Queue and Set
+      url: /data-structures/queue-and-set
+    - title: Atomic Types 
+      url: /data-structures/atomic-types
+    - title: CountDownLatch 
+      url: /data-structures/countdownlatch
+    - title: Atomic Sequence 
+      url: /data-structures/atomic-sequence
+    - title:  Semaphore 
+      url: /data-structures/semaphore
 - title: Monitoring
   items:
     - title: Introduction
