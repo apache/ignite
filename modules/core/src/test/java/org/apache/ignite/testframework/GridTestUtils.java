@@ -2425,6 +2425,24 @@ public final class GridTestUtils {
         }
 
         /**
+         * Delays execution for {@code duration} milliseconds.
+         *
+         * @param duration Duration.
+         * @return amount of milliseconds to delay.
+         */
+        @QuerySqlFunction
+        public static long delay(long duration) {
+            try {
+                Thread.sleep(duration);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return duration;
+        }
+
+        /**
          * Function do fail in case of {@code fail} is true, return 0 otherwise.
          *
          * @return in case of {@code fail} is false return 0, fail otherwise.

@@ -191,6 +191,8 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                         locked = false;
                     }
 
+                    cctx.cache().metrics0().addIndexRebuildKeyProcessed(1);
+
                     if (locPart.state() == RENTING)
                         break;
                 }

@@ -225,6 +225,39 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that there's at least one span with given spanType and attributes.
+     *
+     * @param spanType Span type to be found.
+     * @param expAttrs Expected attributes.
+     * @return {@code true} if Span with given type and attributes was found, false otherwise.
+     */
+    boolean checkSpanExistences(
+        SpanType spanType,
+        /* tagName: tagValue*/ Map<String, String> expAttrs
+    ) {
+        java.util.List<SpanData> gotSpans = hnd.allSpans()
+            .filter(span -> spanType.spanName().equals(span.getName())).collect(Collectors.toList());
+
+        for (SpanData specificTypeSpans : gotSpans) {
+            Map<String, AttributeValue> attrs = specificTypeSpans.getAttributes().getAttributeMap();
+
+            boolean matchFound = true;
+
+            for (Map.Entry<String, String> entry : expAttrs.entrySet()) {
+                if (!entry.getValue().equals(attributeValueToString(attrs.get(entry.getKey())))) {
+                    matchFound = false;
+
+                    break;
+                }
+            }
+            if (matchFound && expAttrs.size() == attrs.size())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Verify that given spanData contains all (and only) propagated expected attributes.
      * @param spanData Span data to check.
      * @param expAttrs Attributes to check.

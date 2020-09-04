@@ -164,12 +164,10 @@ public class QueryParser {
             batchedArgs = qry0.batchedArguments();
         }
 
-        int timeout;
+        int timeout = qry.getTimeout();
 
-        if (qry.getTimeout() >= 0)
-            timeout = qry.getTimeout();
-        else
-            timeout = (int)idx.kernalContext().config().getSqlConfiguration().getDefaultQueryTimeout();
+        if (timeout < 0)
+            timeout = (int)idx.distributedConfiguration().defaultQueryTimeout();
 
         return new QueryParameters(
             qry.getArgs(),

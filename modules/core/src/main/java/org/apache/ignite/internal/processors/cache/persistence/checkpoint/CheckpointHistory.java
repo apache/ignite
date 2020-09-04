@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -549,21 +550,22 @@ public class CheckpointHistory {
      *
      * @param groupsAndPartitions Groups and partitions to find and reserve earliest valid checkpoint.
      *
-     * @return Map (groupId, Reason (the reason why reservation cannot be made deeper): Map
-     * (partitionId, earliest valid checkpoint to history search)).
+     * @return Checkpoint history reult: Map (groupId, Reason (the reason why reservation cannot be made deeper): Map
+     * (partitionId, earliest valid checkpoint to history search)) and reserved checkpoint.
      */
-    public Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> searchAndReserveCheckpoints(
+    public CheckpointHistoryResult searchAndReserveCheckpoints(
         final Map<Integer, Set<Integer>> groupsAndPartitions
     ) {
-        if (F.isEmpty(groupsAndPartitions))
-            return Collections.emptyMap();
+        if (F.isEmpty(groupsAndPartitions) ||
+            cctx.kernalContext().config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
+            return new CheckpointHistoryResult(Collections.emptyMap(), null);
 
         final Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> res = new HashMap<>();
 
         CheckpointEntry oldestCpForReservation = null;
 
         synchronized (earliestCp) {
-            CheckpointEntry oldestHistoryCpEntry = firstCheckpoint();
+            CheckpointEntry oldestHistCpEntry = firstCheckpoint();
 
             for (Integer grpId : groupsAndPartitions.keySet()) {
                 CheckpointEntry oldestGrpCpEntry = null;
@@ -585,7 +587,7 @@ public class CheckpointHistory {
                         .get2().put(part, cpEntry);
                 }
 
-                if (oldestGrpCpEntry == null || oldestGrpCpEntry != oldestHistoryCpEntry)
+                if (oldestGrpCpEntry == null || oldestGrpCpEntry != oldestHistCpEntry)
                     res.computeIfAbsent(grpId, (partCpMap) ->
                         new T2<>(ReservationReason.CHECKPOINT_NOT_APPLICABLE, null))
                         .set1(ReservationReason.CHECKPOINT_NOT_APPLICABLE);
@@ -598,10 +600,12 @@ public class CheckpointHistory {
 
                 for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : res.entrySet())
                     entry.setValue(new T2<>(ReservationReason.WAL_RESERVATION_ERROR, null));
+
+                oldestCpForReservation = null;
             }
         }
 
-        return res;
+        return new CheckpointHistoryResult(res, oldestCpForReservation);
     }
 
     /**
