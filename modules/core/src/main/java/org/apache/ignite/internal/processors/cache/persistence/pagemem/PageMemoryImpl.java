@@ -95,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -186,12 +187,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP, true);
 
     /** */
-    private final ExecutorService asyncRunner = new ThreadPoolExecutor(
-        0,
-        Runtime.getRuntime().availableProcessors(),
-        30L,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()));
+    private final ExecutorService asyncRunner;
 
     /** Page store manager. */
     private IgnitePageStoreManager storeMgr;
@@ -328,6 +324,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.memMetrics = memMetrics;
+
+        asyncRunner = new ThreadPoolExecutor(
+            0,
+            Runtime.getRuntime().availableProcessors(),
+            30L,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
     }
 
     /** {@inheritDoc} */
@@ -710,8 +714,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
         assert started;
 
-        FullPageId fullId = new FullPageId(pageId, grpId);
-
         int partId = PageIdUtils.partId(pageId);
 
         Segment seg = segment(grpId, pageId);
@@ -745,6 +747,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         DelayedDirtyPageStoreWrite delayedWriter = delayedPageReplacementTracker != null
             ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
+        FullPageId fullId = new FullPageId(pageId, grpId);
+
         seg.writeLock().lock();
 
         long lockedPageAbsPtr = -1;
@@ -754,7 +758,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             // Double-check.
             long relPtr = seg.loadedPages.get(
                 grpId,
-                PageIdUtils.effectivePageId(pageId),
+                fullId.effectivePageId(),
                 seg.partGeneration(grpId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
@@ -785,7 +789,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 seg.loadedPages.put(
                     grpId,
-                    PageIdUtils.effectivePageId(pageId),
+                    fullId.effectivePageId(),
                     relPtr,
                     seg.partGeneration(grpId, partId)
                 );

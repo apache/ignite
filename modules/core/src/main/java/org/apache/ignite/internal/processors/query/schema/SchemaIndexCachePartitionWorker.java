@@ -62,7 +62,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final AtomicBoolean stop;
 
     /** Cancellation token between all workers for all caches. */
-    private final SchemaIndexOperationCancellationToken cancel;
+    @Nullable private final SchemaIndexOperationCancellationToken cancel;
 
     /** Index closure. */
     private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
@@ -91,7 +91,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         GridCacheContext cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
-        SchemaIndexOperationCancellationToken cancel,
+        @Nullable SchemaIndexOperationCancellationToken cancel,
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<SchemaIndexCacheStat> fut,
         AtomicInteger partsCnt
@@ -190,6 +190,8 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
 
                         locked = false;
                     }
+
+                    cctx.cache().metrics0().addIndexRebuildKeyProcessed(1);
 
                     if (locPart.state() == RENTING)
                         break;

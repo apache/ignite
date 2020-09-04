@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -69,9 +68,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  */
 public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private UUID nearNodeId;
 
     /** Near future ID. */
@@ -99,13 +95,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** Transaction label. */
     private @Nullable String lb;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxLocal() {
-        // No-op.
-    }
 
     /**
      * @param nearNodeId Near node ID that initiated transaction.

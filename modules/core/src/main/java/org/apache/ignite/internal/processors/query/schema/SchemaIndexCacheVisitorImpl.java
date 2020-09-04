@@ -55,7 +55,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private final GridCacheContext cctx;
 
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancel;
+    @Nullable private final SchemaIndexOperationCancellationToken cancel;
 
     /** Future for create/rebuild index. */
     protected final GridFutureAdapter<Void> buildIdxFut;
@@ -102,6 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
 
         cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();
 
