@@ -100,16 +100,16 @@ public class ThinClientConfiguration {
     }
 
     /**
-     * @return {@code true} If sends full stack into client side.
+     * @return If {@code true} sends full stack into client side.
      */
-    public boolean showFullStack() {
+    public boolean showFullStackOnClientSide() {
         return showFullStack;
     }
 
     /**
      * @param showFullStack If {@code true} sends full stack into client side.
      */
-    public void showFullStack(boolean showFullStack) {
+    public void showFullStackOnClientSide(boolean showFullStack) {
         this.showFullStack = showFullStack;
     }
 

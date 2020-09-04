@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].",
                 arg.GetType().FullName);
 
-            StringAssert.Contains(expected, clientEx.Message);
+            Assert.IsTrue(clientEx.Message.StartsWith(expected));
         }
 
         /// <summary>
