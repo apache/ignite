@@ -22,7 +22,7 @@ from abc import ABCMeta, abstractmethod
 
 class CommunicationSpi(metaclass=ABCMeta):
     """
-    Abstract class for DiscoverySpi.
+    Abstract class for CommunicationSpi.
     """
     @property
     @abstractmethod
