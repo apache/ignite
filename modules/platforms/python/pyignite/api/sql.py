@@ -441,10 +441,7 @@ def sql_fields_cursor_get_page(
         'more': value['more']
     }
     for row_dict in value['data']:
-        row = []
-        for field_key in sorted(row_dict.keys()):
-            row.append(row_dict[field_key])
-        result.value['data'].append(row)
+        result.value['data'].append(list(row_dict.values()))
     return result
 
 

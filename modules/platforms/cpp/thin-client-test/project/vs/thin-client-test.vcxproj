@@ -26,6 +26,7 @@
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\test_utils.cpp" />
+    <ClCompile Include="..\..\src\tx_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\complex_type.h" />
