@@ -68,7 +68,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            node.account.signal(pid, sig, False)
+            node.account.signal(pid, sig, allow_fail=False)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -78,6 +78,9 @@ class IgniteService(IgniteAwareService):
             raise
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
+        """
+        Executes given task/lambda on the nodes.
+        """
         sem = CountDownLatch(len(nodes)) if simultaneously else None
         time_holder = AtomicValue()
 
