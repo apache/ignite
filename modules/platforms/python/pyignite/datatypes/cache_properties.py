@@ -68,7 +68,7 @@ def prop_map(code: int):
         PROP_CACHE_KEY_CONFIGURATION: PropCacheKeyConfiguration,
         PROP_DEFAULT_LOCK_TIMEOUT: PropDefaultLockTimeout,
         PROP_MAX_CONCURRENT_ASYNC_OPERATIONS: PropMaxConcurrentAsyncOperation,
-        PROP_PARTITION_LOSS_POLICY: PartitionLossPolicy,
+        PROP_PARTITION_LOSS_POLICY: PropPartitionLossPolicy,
         PROP_EAGER_TTL: PropEagerTTL,
         PROP_STATISTICS_ENABLED: PropStatisticsEnabled,
     }[code]
