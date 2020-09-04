@@ -2149,19 +2149,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
-        Object res = h.getLastOperationResult();
-
-        assertEquals(ignite.encryption().getMasterKeyName(), res);
+        assertContains(log, testOut.toString(), ignite.encryption().getMasterKeyName());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertContains(log, testOut.toString(), "The master key changed.");
 
         assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
-        res = h.getLastOperationResult();
-
-        assertEquals(MASTER_KEY_NAME_2, res);
+        assertContains(log, testOut.toString(), ignite.encryption().getMasterKeyName());
 
         testOut.reset();
 
