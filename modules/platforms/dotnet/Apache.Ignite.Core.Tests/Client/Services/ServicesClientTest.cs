@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 .GetServiceProxy<ITestService>(ServiceName);
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
-            Assert.AreEqual("Failed to find deployed service: " + ServiceName, ex.Message);
+            Assert.IsTrue(ex.Message.StartsWith("Failed to find deployed service: " + ServiceName));
         }
 
         /// <summary>
