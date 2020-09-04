@@ -1,4 +1,4 @@
-    # Licensed to the Apache Software Foundation (ASF) under one or more
+# Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
 # The ASF licenses this file to You under the Apache License, Version 2.0
@@ -14,25 +14,33 @@
 # limitations under the License
 
 """
-This module contains classes and utilities for Ignite DataStorage configuration.
+Module contains classes and utility methods to create communication configuration for ignite nodes.
 """
 
-from typing import NamedTuple
+from abc import ABCMeta, abstractmethod
 
 
-class DataRegionConfiguration(NamedTuple):
+class CommunicationSpi(metaclass=ABCMeta):
     """
-    Ignite DataRegion Configuration
+    Abstract class for DiscoverySpi.
     """
-    name: str = "default"
-    persistent: bool = False
-    init_size: int = 100 * 1024 * 1024
-    max_size: int = 512 * 1024 * 1024
+    @property
+    @abstractmethod
+    def type(self):
+        """
+        Type of CommunicationSpi.
+        """
 
 
-class DataStorageConfiguration(NamedTuple):
+class TcpCommunicationSpi(CommunicationSpi):
     """
-    Ignite DataStorage configuration
+    TcpCommunicationSpi.
     """
-    default: DataRegionConfiguration = DataRegionConfiguration()
-    regions: list = []
+    def __init__(self, port=47100, port_range=100):
+        self.port = port
+        self.port_range = port_range
+
+    @property
+    def type(self):
+        return "TCP"
+

@@ -17,8 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import functools
-import operator
 import os
 import signal
 import time
@@ -70,7 +68,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            self.__stop_node(node, pid, sig)
+            node.account.signal(pid, sig, False)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,

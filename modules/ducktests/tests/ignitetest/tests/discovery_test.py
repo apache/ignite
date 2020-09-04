@@ -17,6 +17,7 @@
 Module contains discovery tests.
 """
 
+import os
 import random
 import re
 from datetime import datetime
@@ -27,12 +28,12 @@ from jinja2 import Template
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteAwareService
-from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils.ignite_test import IgniteTest
@@ -64,11 +65,13 @@ class DiscoveryTest(IgniteTest):
 
     DATA_AMOUNT = 100000
 
+    NET_CFG_PATH = os.path.join(PersistenceAware.PERSISTENT_ROOT, "discovery_test", "netfilter.cfg")
+
     @cluster(num_nodes=NUM_NODES)
-    @matrix(version=[str(DEV_BRANCH), str(LATEST_2_8)],
-            kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
-            with_load=[False, True])
+    @matrix(version=[str(LATEST_2_8)],
+            kill_coordinator=[True],
+            nodes_to_kill=[2],
+            with_load=[True])
     def test_node_fail_tcp(self, version, kill_coordinator, nodes_to_kill, with_load):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -108,19 +111,31 @@ class DiscoveryTest(IgniteTest):
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT
         )
 
-        servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
+        self.servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
         if test_config.with_load:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
-                ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
+                ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.servers))
 
             start_load_app(self.test_context, ignite_config=load_config, data_amount=self.DATA_AMOUNT, modules=modules)
 
-        data = simulate_nodes_failure(servers, ignite_config, test_config)
+        data = simulate_nodes_failure(self.servers, ignite_config, test_config)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         return data
+
+    def setup(self):
+        IgniteTest.setup(self)
+
+        for node in self.test_context.cluster.nodes:
+            node.account.ssh_client.exec_command("sudo iptables-save > " + self.NET_CFG_PATH)
+
+    def teardown(self):
+        IgniteTest.teardown(self)
+
+        for node in self.test_context.cluster.nodes:
+            node.account.ssh_client.exec_command("sudo iptables-legacy-restore < " + self.NET_CFG_PATH)
 
 
 def start_zookeeper(test_context, num_nodes):
@@ -230,16 +245,19 @@ def network_fail_task(ignite_config, test_config):
     """
     Creates proper command task to simulate network failure depending on the configurations.
     """
-    if test_config.with_zk:
-        tpl = Template("sudo iptables -A {{ chain }} -p tcp --dport " + str(ignite_config.discovery_spi.port)
-                       + " -j DROP")
-    else:
-        port = ignite_config.discovery_spi.port
-        port_to = port + ignite_config.discovery_spi.port_range
+    cm_spi = ignite_config.communication_spi
+    dsc_spi = ignite_config.discovery_spi
 
-        tpl = Template("sudo iptables -A {{ chain }} -p tcp --dport " + str(port) + ":" + str(port_to) + " -j DROP")
+    cm_ports = str(cm_spi.port) + ':' + str(cm_spi.port + cm_spi.port_range)
+
+    tpl = Template("sudo iptables -A {{ chain }} -p tcp -m multiport --dport {{ dsc_ports }},{{ cm_ports }} -j DROP")
+
+    if test_config.with_zk:
+        dsc_ports = str(ignite_config.discovery_spi.port)
+    else:
+        dsc_ports = str(dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
     return lambda node: (
-        node.account.ssh_client.exec_command(tpl.render(chain="INPUT")),
-        node.account.ssh_client.exec_command(tpl.render(chain="OUTPUT"))
+        node.account.ssh_client.exec_command(tpl.render(chain="INPUT", dsc_ports=dsc_ports, cm_ports=cm_ports)),
+        node.account.ssh_client.exec_command(tpl.render(chain="OUTPUT", dsc_ports=dsc_ports, cm_ports=cm_ports))
     )

@@ -17,6 +17,7 @@
  limitations under the License.
 #}
 
+{% import 'communication_macro.j2' as communication %}
 {% import 'discovery_macro.j2' as disco_utils %}
 {% import 'cache_macro.j2' as cache_utils %}
 {% import 'datastorage_macro.j2' as datastorage_utils %}
@@ -39,6 +40,8 @@
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
 
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
+
+        {{ communication.communication_spi(config.communication_spi) }}
 
         {{ disco_utils.discovery_spi(config.discovery_spi) }}
 
