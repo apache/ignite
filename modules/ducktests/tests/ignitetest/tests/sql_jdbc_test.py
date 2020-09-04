@@ -64,7 +64,7 @@ class SqlJdbcTest(IgniteTest):
         else:
             core_jar_path = str(ignite_core_jar(ignites, node))
 
-        self.logger.info("Path to ignite-core.java: " + core_jar_path)
+        self.logger.info("Path to ignite-core.java: >" + core_jar_path + "<")
 
         _ip = node.account.externally_routable_ip
 
