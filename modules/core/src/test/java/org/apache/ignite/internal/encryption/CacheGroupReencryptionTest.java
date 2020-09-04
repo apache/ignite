@@ -57,6 +57,7 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -82,13 +83,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     private int backups;
 
     /** Re-encryption rate limit. */
-    private double pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+    private double pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int pageScanBatchSize = EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
-
-    /** Disable background re-encryption flag. */
-    private boolean pageScanDisabled = EncryptionConfiguration.DFLT_REENCRYPTION_DISABLED;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -100,7 +98,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         EncryptionConfiguration encrCfg = new EncryptionConfiguration()
             .setReencryptionBatchSize(pageScanBatchSize)
-            .setReencryptionDisabled(pageScanDisabled)
             .setReencryptionRateLimit(pageScanRate);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -373,7 +370,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
-        pageScanRate = EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+        pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
         startTestGrids(false);
 
@@ -530,7 +527,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     @Test
     public void testReencryptionStartsAfterNodeRestart() throws Exception {
-        pageScanDisabled = true;
+        pageScanRate = 0.000000001;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -559,7 +556,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids();
 
-        pageScanDisabled = false;
+        pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
         startTestGrids(false);
 
@@ -722,7 +719,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** @throws Exception If failed. */
     @Test
     public void testReencryptionMetrics() throws Exception {
-        pageScanDisabled = true;
+        pageScanRate = 0.000000001;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
@@ -736,7 +733,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         validateMetrics(node0, false);
         validateMetrics(node1, false);
 
-        pageScanDisabled = false;
+        pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
         stopAllGrids();
 

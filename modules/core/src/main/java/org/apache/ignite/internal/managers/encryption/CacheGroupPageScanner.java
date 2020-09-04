@@ -145,21 +145,11 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     }
 
     /**
-     * @return {@code True} If reencryption is disabled.
-     */
-    public boolean disabled() {
-        return encrCfg.isReencryptionDisabled();
-    }
-
-    /**
      * Schedule scanning partitions.
      *
      * @param grpId Cache group ID.
      */
     public IgniteInternalFuture<Void> schedule(int grpId) throws IgniteCheckedException {
-        if (disabled())
-            throw new IgniteCheckedException("Reencryption is disabled.");
-
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
         if (grp == null) {

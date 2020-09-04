@@ -32,17 +32,11 @@ public class EncryptionConfiguration implements Serializable {
     /** Default number of pages that is scanned during reencryption under checkpoint lock. The value is {@code 100}. */
     public static final int DFLT_REENCRYPTION_BATCH_SIZE = 100;
 
-    /** By default background re-encryption is enabled. */
-    public static final boolean DFLT_REENCRYPTION_DISABLED = false;
-
     /** Re-encryption rate limit in megabytes per second (set {@code 0} for unlimited scanning). */
     private double reencryptionRateLimit = DFLT_REENCRYPTION_RATE_MBPS;
 
     /** The number of pages that is scanned during re-encryption under checkpoint lock. */
     private int reencryptionBatchSize = DFLT_REENCRYPTION_BATCH_SIZE;
-
-    /** Set up this property to disable background re-encryption. */
-    private boolean reencryptionDisabled = DFLT_REENCRYPTION_DISABLED;
 
     /**
      * Creates valid encryption configuration with all default values.
@@ -60,7 +54,6 @@ public class EncryptionConfiguration implements Serializable {
         assert cfg != null;
 
         reencryptionBatchSize = cfg.getReencryptionBatchSize();
-        reencryptionDisabled = cfg.isReencryptionDisabled();
         reencryptionRateLimit = cfg.getReencryptionRateLimit();
     }
 
@@ -81,27 +74,6 @@ public class EncryptionConfiguration implements Serializable {
      */
     public EncryptionConfiguration setReencryptionRateLimit(double reencryptionRateLimit) {
         this.reencryptionRateLimit = reencryptionRateLimit;
-
-        return this;
-    }
-
-    /**
-     * Gets the disabled status of background re-encryption.
-     *
-     * @return {@code True} if background re-encryption is disabled.
-     */
-    public boolean isReencryptionDisabled() {
-        return reencryptionDisabled;
-    }
-
-    /**
-     * Sets the disabled status for background re-encryption.
-     *
-     * @param reencryptionDisabled Set {@code True} to disable background re-encryption.
-     * @return {@code this} for chaining.
-     */
-    public EncryptionConfiguration setReencryptionDisabled(boolean reencryptionDisabled) {
-        this.reencryptionDisabled = reencryptionDisabled;
 
         return this;
     }

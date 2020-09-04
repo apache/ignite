@@ -785,9 +785,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If reencryption is disabled.
      */
     public IgniteInternalFuture<Void> reencryptionFuture(int grpId) throws IgniteCheckedException {
-        if (pageScanner.disabled() && reencryptionRequired(grpId))
-            throw new IgniteCheckedException("Reencryption is disabled.");
-
         return pageScanner.statusFuture(grpId);
     }
 
@@ -1132,9 +1129,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void startReencryption(Collection<Integer> grpIds) throws IgniteCheckedException {
-        if (pageScanner.disabled())
-            return;
-
         for (int grpId : grpIds) {
             IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
