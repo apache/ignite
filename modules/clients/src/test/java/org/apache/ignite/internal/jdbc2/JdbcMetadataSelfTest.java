@@ -449,6 +449,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
+        }
+    }
+
+    /**
      * Assert that specified ResultSet contains no rows.
      *
      * @param rs result set to check.
