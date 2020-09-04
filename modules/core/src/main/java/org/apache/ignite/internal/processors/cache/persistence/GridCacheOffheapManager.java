@@ -1684,7 +1684,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** */
-        public AbstractFreeList getCacheStoreFreeList() {
+        public AbstractFreeList<CacheDataRow> getCacheStoreFreeList() {
             return freeList;
         }
 

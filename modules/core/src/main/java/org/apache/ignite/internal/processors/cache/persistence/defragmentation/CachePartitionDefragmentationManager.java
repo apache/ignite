@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -55,7 +53,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -153,6 +153,11 @@ public class CachePartitionDefragmentationManager {
                     grpCtx.caches().stream()
                         .filter(cacheCtx -> cacheCtx.groupId() == grpId)
                         .forEach(cacheCtx -> cacheCtx.ttl().unregister());
+
+                    // Technically wal is already disabled, but PageHandler.isWalDeltaRecordNeeded doesn't care and
+                    // WAL records will be allocated anyway just to be ignored later if we don't disable WAL for
+                    // cache group explicitly.
+                    grpCtx.localWalEnabled(false, false);
 
                     boolean encrypted = grpCtx.config().isEncryptionEnabled();
 
@@ -327,36 +332,33 @@ public class CachePartitionDefragmentationManager {
 
         CacheDataTree newTree = newCacheDataStore.tree();
         PendingEntriesTree newPendingTree = newCacheDataStore.pendingTree();
-        AbstractFreeList<?> freeList = newCacheDataStore.getCacheStoreFreeList();
-
-        List<GridCacheContext> cacheContexts = grpCtx.caches();
+        AbstractFreeList<CacheDataRow> freeList = newCacheDataStore.getCacheStoreFreeList();
 
         iterate(tree, cachePageMem, (tree0, io, pageAddr, idx) -> {
+            AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
+
             CacheDataRow row = tree.getRow(io, pageAddr, idx);
-            row.key().partition(partId); // Hmmmm....
 
             int cacheId = row.cacheId();
 
-            GridCacheContext ctx;
+            // Reuse row that we just read.
+            row.link(0);
 
-            //TODO Finding the context via iteration is a bad thing.
-            if (cacheId == CU.UNDEFINED_CACHE_ID)
-                ctx = cacheContexts.get(0);
-            else
-                ctx = cacheContexts.stream().filter(c -> c.cacheId() == cacheId).findFirst().orElse(null);
+            // "insertDataRow" will corrupt page memory if we don't do this.
+            if (row instanceof DataRow && !grpCtx.storeCacheIdInDataPage())
+                ((DataRow)row).cacheId(CU.UNDEFINED_CACHE_ID);
 
-            assert ctx != null;
+            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-            //TODO mvcc?
-            CacheDataRow newRow = newCacheDataStore.createRow(ctx, row.key(), row.value(), row.version(), row.expireTime(), null);
+            // Put it back.
+            if (row instanceof DataRow)
+                ((DataRow)row).cacheId(cacheId);
 
-            long link = row.link();
+            newTree.putx(row);
 
-            newTree.put(newRow);
+            long newLink = row.link();
 
-            long newLink = newRow.link();
-
-            m.put(link, newLink);
+            m.put(leafIo.getLink(pageAddr, idx), newLink);
 
             if (row.expireTime() != 0)
                 newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
@@ -472,6 +474,8 @@ public class CachePartitionDefragmentationManager {
                     newCacheDataStore.partStorage().insertDataRow(gapsDataRow, IoStatisticsHolderNoOp.INSTANCE);
 
                     newPartMetaIo.setGapsLink(newPartMetaPageAddr, gapsDataRow.link());
+
+                    newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
 
                 return null;
