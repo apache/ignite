@@ -27,3 +27,6 @@ cellular_affinity:
 
 rebalance:
   - ../add_node_rebalance_test.py
+
+sql_jdbc:
+  - ../sql_jdbc_test.py

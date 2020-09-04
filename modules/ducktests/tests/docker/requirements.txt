@@ -15,4 +15,5 @@
 
 pytest==6.0.1
 mock==4.0.2
+JayDeBeApi==1.2.3
 git+https://github.com/confluentinc/ducktape
