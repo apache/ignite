@@ -105,7 +105,7 @@ class IgniteVersionParametrize(Mark):
     def name(self):
         """
         This function should return "PARAMETRIZE" string in order to ducktape's method parametrization works.
-        Should be fixed after apropriete path in ducktape will be merged.
+        Should be fixed after apropriate patch in ducktape will be merged.
         """
         return "PARAMETRIZE"
 
