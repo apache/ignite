@@ -130,14 +130,14 @@ class DiscoveryTest(IgniteTest):
             test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
         )
 
-        self.servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
+        servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
         failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator,
                                                           test_config.nodes_to_kill)
 
         if test_config.load_type is not ClusterLoad.NONE:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
-                ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.servers))
+                ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
             tran_nodes = [n.discovery_info().node_id for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
@@ -150,7 +150,7 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        data = simulate_nodes_failure(self.servers, failed_nodes, survived_node)
+        data = simulate_nodes_failure(servers, ignite_config, test_config)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
@@ -235,10 +235,12 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, failed_nodes, survived_node):
+def simulate_nodes_failure(servers, ignite_config, test_config):
     """
     Perform node failure scenario
     """
+    failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
+
     ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
     _, first_terminated = servers.exec_on_nodes_async(failed_nodes, network_fail_task(ignite_config, test_config))
@@ -248,8 +250,8 @@ def simulate_nodes_failure(servers, failed_nodes, survived_node):
     data = {}
 
     for failed_id in ids_to_wait:
-        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20,
-                                    from_the_beginning=True, backoff_sec=0.1)
+        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 40,
+                                    from_the_beginning=True, backoff_sec=0.5)
 
         _, stdout, _ = survived_node.account.ssh_client.exec_command(
             "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
