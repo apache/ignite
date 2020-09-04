@@ -80,7 +80,6 @@ The following modules are available:
 - ignite-hibernate5 (for Hibernate5 integration)
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
-- ignite-jms11 (for streaming messaging from JMS queue or topic into Ignite)
 - ignite-jta (for XA integration)
 - ignite-kafka (for streaming messages from Apache Kafka into Ignite)
 - ignite-logj4 (for Log4j logging)

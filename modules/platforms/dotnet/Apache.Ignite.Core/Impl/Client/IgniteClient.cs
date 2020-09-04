@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
@@ -36,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Compute;
+    using Apache.Ignite.Core.Impl.Client.Services;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
@@ -71,6 +73,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Compute. */
         private readonly ComputeClient _compute;
 
+        /** Services. */
+        private readonly IServicesClient _services;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
         /// </summary>
@@ -95,6 +100,8 @@ namespace Apache.Ignite.Core.Impl.Client
             _cluster = new ClientCluster(this);
 
             _compute = new ComputeClient(this, ComputeClientFlags.None, TimeSpan.Zero, null);
+
+            _services = new ServicesClient(this);
         }
 
         /// <summary>
@@ -243,6 +250,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public IComputeClient GetCompute()
         {
             return _compute;
+        }
+
+        /** <inheritDoc /> */
+        public IServicesClient GetServices()
+        {
+            return _services;
         }
 
         /** <inheritDoc /> */
