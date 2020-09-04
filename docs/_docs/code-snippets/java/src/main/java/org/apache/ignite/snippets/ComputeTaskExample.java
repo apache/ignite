@@ -13,7 +13,7 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
 //tag::compute-task-example[]
 public class ComputeTaskExample {
-    private static class CharacterCountTask extends ComputeTaskSplitAdapter<String, Integer> {
+    public static class CharacterCountTask extends ComputeTaskSplitAdapter<String, Integer> {
         // 1. Splits the received string into words
         // 2. Creates a child job for each word
         // 3. Sends the jobs to other nodes for processing.

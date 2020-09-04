@@ -9,33 +9,33 @@ import org.junit.jupiter.api.Test;
 public class ClusteringOverview {
 
     @Test
-     void clientModeCfg() {
-        Ignite serverNode = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("server-node"));
-        // tag::clientCfg[]
-        IgniteConfiguration cfg = new IgniteConfiguration();
+    void clientModeCfg() {
+        try (Ignite serverNode = Ignition
+                .start(new IgniteConfiguration().setIgniteInstanceName("server-node"))) {
+            // tag::clientCfg[]
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // Enable client mode.
-        cfg.setClientMode(true);
+            // Enable client mode.
+            cfg.setClientMode(true);
 
-        // Start the node in client mode.
-        Ignite ignite = Ignition.start(cfg);
-        // end::clientCfg[]
+            // Start the node in client mode.
+            Ignite ignite = Ignition.start(cfg);
+            // end::clientCfg[]
 
-        ignite.close();
-        serverNode.close();
+            ignite.close();
+        }
     }
 
-    @Test
-     void setClientModeEnabledByIgnition() {
+    void setClientModeEnabledByIgnition() {
 
-        Ignite serverNode = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("server-node"));
+        Ignite serverNode = Ignition
+                .start(new IgniteConfiguration().setIgniteInstanceName("server-node"));
         // tag::clientModeIgnition[]
         Ignition.setClientMode(true);
 
         // Start the node in client mode.
         Ignite ignite = Ignition.start();
         // end::clientModeIgnition[]
-        
 
         ignite.close();
         serverNode.close();
@@ -44,7 +44,8 @@ public class ClusteringOverview {
     @Test
     void communicationSpiDemo() {
 
-        Ignite serverNode = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("server-node"));
+        Ignite serverNode = Ignition
+                .start(new IgniteConfiguration().setIgniteInstanceName("server-node"));
         // tag::commSpi[]
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -52,15 +53,12 @@ public class ClusteringOverview {
         commSpi.setLocalPort(4321);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
-        // end::commSpi[]
-        // tag::commSpi[]
-
         cfg.setCommunicationSpi(commSpi);
 
         // Start the node.
-        Ignition.start(cfg);
+        Ignite ignite = Ignition.start(cfg);
         // end::commSpi[]
+        ignite.close();
         serverNode.close();
-        Ignition.ignite().close();
     }
 }

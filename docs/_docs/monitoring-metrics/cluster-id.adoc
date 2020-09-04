@@ -20,7 +20,7 @@ group=IgniteCluster,name=IgniteClusterMXBeanImpl
 |===
 | Attribute | Type | Description
 |Id| String | The cluster ID.
-|Tag | long | The cluster tag.
+|Tag | String | The cluster tag.
 |===
 
 [cols="4,9", opts="header"]

@@ -118,7 +118,7 @@ public class CollocatedComputations {
     // tag::sum-by-partition[]
     // this task sums up the value of the 'salary' field for all objects stored in
     // the given partition
-    private static class SumByPartitionTask implements IgniteCallable<BigDecimal> {
+    public static class SumByPartitionTask implements IgniteCallable<BigDecimal> {
         private int partId;
 
         public SumByPartitionTask(int partId) {

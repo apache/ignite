@@ -44,10 +44,8 @@ public class Tracing {
         ignite.close();
     }
 
-    @Test
     void exportToZipkin() {
         //tag::export-to-zipkin[]
-
         //register Zipkin exporter
         ZipkinTraceExporter.createAndRegister(
                 ZipkinExporterConfiguration.builder().setV2Url("http://localhost:9411/api/v2/spans")

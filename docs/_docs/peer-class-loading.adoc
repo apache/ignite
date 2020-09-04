@@ -4,7 +4,7 @@
 
 Peer class loading refers to loading classes from a local node where they are defined to remote nodes.
 With peer class loading enabled, you don't have to manually deploy your Java code on each node in the cluster and re-deploy it each time it changes.
-Ignite automatically loads the classes from the node where they are defined to the nodes where they are required.
+Ignite automatically loads the classes from the node where they are defined to the nodes where they are used.
 
 For example, when link:key-value-api/using-scan-queries[querying data] with a custom transformer, you only need to define your tasks on the client node that initiates the computation, and Ignite loads the classes to the server nodes.
 
@@ -30,7 +30,7 @@ The peer class loading functionality allows any client to deploy custom code to 
 
 This is what happens when a class is required on remote nodes:
 
-* Ignite checks if the class is available in the local classpath, i.e. if it has been loaded at system initialization, and if it has, it is returned. No class loading from a peer node takes place in this case.
+* Ignite checks if the class is available in the local classpath, i.e. if it was loaded during system initialization, and if it was, it is returned. No class loading from a peer node takes place in this case.
 * If the class is not available locally, then a request for the class definition is sent to the originating node. The originating node sends the class's byte-code and the class is loaded on the worker node. This happens once per class. When the class definition is loaded on a node, it does not have to be loaded again.
 
 [NOTE]

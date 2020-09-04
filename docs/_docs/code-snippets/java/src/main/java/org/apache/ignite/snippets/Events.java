@@ -29,7 +29,7 @@ public class Events {
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_PUT, EventType.EVT_CACHE_OBJECT_READ,
                 EventType.EVT_CACHE_OBJECT_REMOVED, EventType.EVT_NODE_JOINED, EventType.EVT_NODE_LEFT);
 
-        // Start a node.
+        // Start the node.
         Ignite ignite = Ignition.start(cfg);
         // end::enabling-events[]
 
@@ -75,7 +75,7 @@ public class Events {
             return true; // Continue listening.
         };
 
-        // Subscribe to specified cache events occurring on the local node.
+        // Subscribe to the cache events that are triggered on the local node.
         events.localListen(localListener, EventType.EVT_CACHE_OBJECT_PUT, EventType.EVT_CACHE_OBJECT_READ,
                 EventType.EVT_CACHE_OBJECT_REMOVED);
         // end::local[]
@@ -90,7 +90,7 @@ public class Events {
             return true;
         };
 
-        // Subscribe to specified cache events on all nodes that have cache running.
+        // Subscribe to the cache events on all nodes where the cache is hosted.
         UUID uuid = events.remoteListen(new IgniteBiPredicate<UUID, CacheEvent>() {
 
             @Override
@@ -108,10 +108,10 @@ public class Events {
         // tag::batching[]
         Ignite ignite = Ignition.ignite();
 
-        // Get an instance of named cache.
+        // Get an instance of the cache.
         final IgniteCache<Integer, String> cache = ignite.cache("cacheName");
 
-        // Sample remote filter which only accepts events for keys
+        // Sample remote filter which only accepts events for the keys
         // that are greater than or equal to 10.
         IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
             @Override
@@ -124,8 +124,8 @@ public class Events {
             }
         };
 
-        // Subscribe to cache events occurring on all nodes
-        // that have the specified cache running.
+        // Subscribe to the cache events that are triggered on all nodes
+        // that host the cache.
         // Send notifications in batches of 10.
         ignite.events(ignite.cluster().forCacheNodes("cacheName")).remoteListen(10 /* batch size */,
                 0 /* time intervals */, false, null, rmtLsnr, EventType.EVTS_CACHE);

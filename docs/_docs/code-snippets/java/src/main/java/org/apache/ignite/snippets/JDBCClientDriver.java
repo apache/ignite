@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 public class JDBCClientDriver {
 
-    @Test
     void registerDriver() throws ClassNotFoundException, SQLException {
         //tag::register[]
         // Registering the JDBC driver.
@@ -23,7 +22,6 @@ public class JDBCClientDriver {
         conn.close();
     }
 
-    @Test
     void streaming() throws ClassNotFoundException, SQLException {
         // Register JDBC driver.
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
@@ -35,7 +33,6 @@ public class JDBCClientDriver {
         conn.close();
     }
     
-    @Test
     void timeBasedFlushing() throws ClassNotFoundException, SQLException {
         //tag::time-based-flushing[]
      // Register JDBC driver.
