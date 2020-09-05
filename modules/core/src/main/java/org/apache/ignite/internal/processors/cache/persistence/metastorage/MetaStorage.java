@@ -150,7 +150,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private final GridCacheSharedContext cctx;
 
     /**
-     * Keys that should be skipped on cluster start.
+     * Keys that should be skipped on metastorage iteration.
      *
      * @see IgniteSystemProperties#IGNITE_METASTORAGE_KEYS_TO_SKIP
      */
@@ -174,10 +174,9 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             IgniteSystemProperties.getString(IGNITE_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
 
         if (!keysToSkip.isEmpty()) {
-            log.warning("System property " + IGNITE_METASTORAGE_KEYS_TO_SKIP + " is set. " +
+            log.info("System property " + IGNITE_METASTORAGE_KEYS_TO_SKIP + " is set. " +
                 "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
         }
-
     }
 
     /** */

@@ -33,12 +33,13 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_METASTORAGE_KEYS_TO_SKIP;
 
 /**
- * Tests the distributed metastorage keys skip.
+ * Tests the metastorage keys skip.
  *
  * @see IgniteSystemProperties#IGNITE_METASTORAGE_KEYS_TO_SKIP
  */
@@ -123,52 +124,34 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
     public void testSkipKeys() throws Exception {
         excludeKeys = 0;
 
-        IgniteEx ign = startGrid(0);
+        IgniteEx ign = startGrids();
 
-        // 1. Start remote JVM ignite instance and write to the metastorage a value with class.
-        startGrid(1);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
+        // Write key1 and key2 to metastorage.
         int res = ign.compute(ign.cluster().forRemotes()).apply(new WriteToMetastorage(), 0);
 
         assertEquals(0, res);
 
         stopAllGrids();
 
-        System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
-
-        excludeKeys = 1;
-
         try {
-            ign = startGrid(0);
+            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
 
-            startGrid(1);
+            excludeKeys = 1;
 
-            ign.cluster().state(ClusterState.ACTIVE);
+            ign = startGrids();
 
             // Check key1 excluded and key2 available.
             res = ign.compute(ign.cluster().forRemotes()).apply(new CheckMetastorage(), 0);
 
             assertEquals(0, res);
-        }
-        finally {
-            System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
 
             stopAllGrids();
-        }
 
-        System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
+            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
 
-        excludeKeys = 2;
+            excludeKeys = 2;
 
-        try {
-            ign = startGrid(0);
-
-            // 3. Recovery metastorage from remote node data and check on local JVM.
-            startGrid(1);
-
-            ign.cluster().state(ClusterState.ACTIVE);
+            ign = startGrids();
 
             // Check key1 and key2 excluded.
             res = ign.compute(ign.cluster().forRemotes()).apply(new CheckMetastorage2(), 0);
@@ -178,6 +161,17 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
         finally {
             System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
         }
+    }
+
+    /** */
+    @NotNull private IgniteEx startGrids() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        startGrid(1);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        return ign;
     }
 
     /** Job for a remote JVM Ignite instance to add event listener. */
