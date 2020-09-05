@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
-import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -117,6 +116,7 @@ import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.PARTIALLY_REPLICATED;
@@ -2364,11 +2364,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         List<Fragment> fragments = new Splitter().go((IgniteRel)rel);
         List<String> serialized = new ArrayList<>(fragments.size());
 
-        for (Fragment fragment : fragments) {
-            RelJsonWriter writer = new RelJsonWriter();
-            fragment.root().explain(writer);
-            serialized.add(writer.asString());
-        }
+        for (Fragment fragment : fragments)
+            serialized.add(toJson(fragment.root()));
 
         assertNotNull(serialized);
 

@@ -32,6 +32,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
  * Callback for a relational expression to dump itself as JSON.
@@ -39,6 +40,9 @@ import org.apache.ignite.IgniteException;
  * @see RelJsonReader
  */
 public class RelJsonWriter implements RelWriter {
+    /** */
+    private static final boolean PRETTY_PRINT = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_REL_JSON_PRETTY_PRINT", false);
+
     /** */
     private final RelJson relJson = new RelJson();
 
@@ -58,13 +62,8 @@ public class RelJsonWriter implements RelWriter {
     private List<Pair<String, Object>> items = new ArrayList<>();
 
     /** */
-    public RelJsonWriter() {
-        this(false);
-    }
-
-    /** */
     public static String toJson(RelNode rel) {
-        RelJsonWriter writer = new RelJsonWriter();
+        RelJsonWriter writer = new RelJsonWriter(PRETTY_PRINT);
         rel.explain(writer);
 
         return writer.asString();

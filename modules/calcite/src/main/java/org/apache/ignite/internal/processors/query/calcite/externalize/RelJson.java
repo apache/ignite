@@ -95,6 +95,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utilities for converting {@link RelNode} into JSON format.
@@ -110,23 +112,11 @@ import org.apache.ignite.internal.util.typedef.F;
 @SuppressWarnings({"rawtypes", "unchecked"})
 class RelJson {
     /** */
-    @FunctionalInterface
+    @SuppressWarnings("PublicInnerClass") @FunctionalInterface
     public static interface RelFactory extends Function<RelInput, RelNode> {
         /** {@inheritDoc} */
         @Override RelNode apply(RelInput input);
     }
-
-    private static final Map<String,Class> PRIMITIVE_CLASSES = ImmutableMap.<String,Class>builder()
-        .put("int", Integer.TYPE)
-        .put("long", Long.TYPE)
-        .put("double", Double.TYPE)
-        .put("float", Float.TYPE)
-        .put("boolean", Boolean.TYPE)
-        .put("char", Character.TYPE)
-        .put("byte", Byte.TYPE)
-        .put("void", Void.TYPE)
-        .put("short", Short.TYPE)
-        .build();
 
     /** */
     private static final LoadingCache<String, RelFactory> FACTORIES_CACHE = CacheBuilder.newBuilder()
@@ -154,12 +144,12 @@ class RelJson {
             constructor = (Constructor<RelNode>)clazz.getConstructor(RelInput.class);
         }
         catch (NoSuchMethodException e) {
-            throw new RuntimeException("class does not have required constructor, "
+            throw new IgniteException("class does not have required constructor, "
                 + clazz + "(RelInput)");
         }
 
-        ParameterExpression input_ = Expressions.parameter(RelInput.class);
         BlockBuilder builder = new BlockBuilder();
+        ParameterExpression input_ = Expressions.parameter(RelInput.class);
         builder.add(Expressions.new_(constructor, input_));
         MethodDeclaration declaration = Expressions.methodDecl(
             Modifier.PUBLIC, RelNode.class, "apply", F.asList(input_), builder.toBlock());
@@ -208,18 +198,14 @@ class RelJson {
     /** */
     private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
-            Class aClass = PRIMITIVE_CLASSES.get(typeName);
-            if (aClass == null)
-                aClass = Class.forName(typeName);
-
-            return aClass;
+            return U.forName(typeName, U.gridClassLoader());
         }
         catch (ClassNotFoundException e) {
-            if (skipNotFound)
-                return null;
-
-            throw new RuntimeException("unknown type " + typeName);
+            if (!skipNotFound)
+                throw new IgniteException("unknown type " + typeName);
         }
+
+        return null;
     }
 
     /** */
