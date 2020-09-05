@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -1343,14 +1344,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
-    /**
-     * Comma separated list of keys that {@link DistributedMetaStorage} will skip on cluster start
-     * ({@link DistributedMetaStorageListener} and the iterator will ignore they). Explicit
-     * operations will not be ignored.
-     * <b>NOTE:</b> Should be set for each node before cluster start.
-     */
-    public static final String IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP =
-        "IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP";
+    /** Comma separated list of keys that {@link MetaStorage} will skip on start. */
+    public static final String IGNITE_METASTORAGE_KEYS_TO_SKIP = "IGNITE_METASTORAGE_KEYS_TO_SKIP";
 
     /**
      * Enforces singleton.

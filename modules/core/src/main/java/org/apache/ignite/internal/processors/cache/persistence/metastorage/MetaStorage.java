@@ -75,7 +75,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
 
@@ -152,7 +152,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /**
      * Keys that should be skipped on cluster start.
      *
-     * @see IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP
+     * @see IgniteSystemProperties#IGNITE_METASTORAGE_KEYS_TO_SKIP
      */
     private final Set<String> keysToSkip;
 
@@ -170,12 +170,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
-
-        keysToSkip = new HashSet<>(Arrays.asList(
-            IgniteSystemProperties.getString(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
+        this.keysToSkip = new HashSet<>(Arrays.asList(
+            IgniteSystemProperties.getString(IGNITE_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
 
         if (!keysToSkip.isEmpty()) {
-            log.warning("System property " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP + " is set. " +
+            log.warning("System property " + IGNITE_METASTORAGE_KEYS_TO_SKIP + " is set. " +
                 "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
         }
 
@@ -402,7 +401,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         String key,
         byte[] valBytes
     ) throws IgniteCheckedException {
-        if (valBytes != TOMBSTONE) {
+        if (valBytes != TOMBSTONE && !keysToSkip.contains(key)) {
             if (unmarshal) {
                 Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
 
