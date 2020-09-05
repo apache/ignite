@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }
             catch(IgniteIllegalStateException)
             {
-                // No-op. Dispose should not throw.
+                _state = new StateHolder(TransactionState.Unknown);
             }
             finally
             {
