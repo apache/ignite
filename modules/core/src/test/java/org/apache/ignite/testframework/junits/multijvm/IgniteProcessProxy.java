@@ -149,7 +149,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Function<Void, Ignite> locJvmGrid, boolean discovery)
         throws Exception {
-        this(cfg, log, locJvmGrid, discovery, Collections.emptyList(), Collections.emptyList());
+        this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
     }
 
     /**
@@ -157,8 +157,6 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
-     * @param additionalArgs Additional JVM args for remote instances.
-     * @param additionalCp Additional JVM classpath for remote instances.
      * @throws Exception On error.
      */
     public IgniteProcessProxy(
@@ -166,8 +164,7 @@ public class IgniteProcessProxy implements IgniteEx {
         IgniteLogger log,
         Function<Void, Ignite> locJvmGrid,
         boolean resetDiscovery,
-        List<String> additionalArgs,
-        List<String> additionalCp
+        List<String> additionalArgs
     )
         throws Exception {
         this.cfg = cfg;
@@ -186,11 +183,6 @@ public class IgniteProcessProxy implements IgniteEx {
             locJvmGrid.apply(null).events()
                 .localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
-        String cp = System.getProperty("surefire.test.class.path");
-
-        for (String path : additionalCp)
-            cp += System.getProperty("path.separator") + path;
-
         proc = GridJavaProcess.exec(
             igniteNodeRunnerClassName(),
             params,
@@ -204,7 +196,7 @@ public class IgniteProcessProxy implements IgniteEx {
             null,
             System.getProperty(TEST_MULTIJVM_JAVA_HOME),
             filteredJvmArgs, // JVM Args.
-            cp
+            System.getProperty("surefire.test.class.path")
         );
 
         if (locJvmGrid != null)

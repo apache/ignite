@@ -17,26 +17,26 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.io.Serializable;
+import java.net.URL;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_METASTORAGE_KEYS_TO_SKIP;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests the metastorage keys skip.
@@ -56,9 +56,6 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
     /** Test value 2. */
     private static final String VALUE_2 = "test-value-2";
 
-    /** */
-    private int excludeKeys;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -74,200 +71,71 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isRemoteJvm(String igniteInstanceName) {
-        return igniteInstanceName.contains("1");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<String> additionalRemoteJvmClasspath() {
-        if (excludeKeys == 0)
-            return Collections.singletonList(GridTestProperties.getProperty("p2p.uri.classpath"));
-        else
-            return Collections.emptyList();
-    }
-
-    @Override protected List<String> additionalRemoteJvmArgs() {
-        if (excludeKeys == 0)
-            return Collections.emptyList();
-        else if (excludeKeys == 1)
-            return Collections.singletonList("-D" + IGNITE_METASTORAGE_KEYS_TO_SKIP + "=" + KEY_1);
-        else
-            return Collections.singletonList("-D" + IGNITE_METASTORAGE_KEYS_TO_SKIP + "=" + KEY_1 + "," + KEY_2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
     /** @throws Exception If failed. */
     @Test
     public void testSkipKeys() throws Exception {
-        excludeKeys = 0;
+        IgniteEx ign = startGrid(0);
+        ign.cluster().state(ClusterState.ACTIVE);
 
-        IgniteEx ign = startGrids();
+        assertTrue(!U.inClassPath(VALUE_1_CLASSNAME));
 
         // Write key1 and key2 to metastorage.
-        int res = ign.compute(ign.cluster().forRemotes()).apply(new WriteToMetastorage(), 0);
+        IgniteCacheDatabaseSharedManager db = ign.context().cache().context().database();
 
-        assertEquals(0, res);
+        db.checkpointReadLock();
+
+        try {
+            GridTestExternalClassLoader ldr =
+                new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+
+            db.metaStorage().write(KEY_1,
+                (Serializable)ldr.loadClass(VALUE_1_CLASSNAME).newInstance());
+            db.metaStorage().write(KEY_2, VALUE_2);
+        }
+        finally {
+            ign.context().cache().context().database().checkpointReadUnlock();
+        }
+
+        assertThrowsWithCause(() -> db.metaStorage().read(KEY_1), ClassNotFoundException.class);
+
+        assertThrowsWithCause(() -> {
+            try {
+                db.metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, ClassNotFoundException.class);
 
         stopAllGrids();
 
         try {
             System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
 
-            excludeKeys = 1;
+            ign = startGrid(0);
+            ign.cluster().state(ClusterState.ACTIVE);
 
-            ign = startGrids();
+            MetaStorage metaStorage = ign.context().cache().context().database().metaStorage();
 
-            // Check key1 excluded and key2 available.
-            res = ign.compute(ign.cluster().forRemotes()).apply(new CheckMetastorage(), 0);
+            metaStorage.iterate(KEY_1, (key, val) -> fail(), true);
 
-            assertEquals(0, res);
+            assertEquals(metaStorage.read(KEY_2), VALUE_2);
 
             stopAllGrids();
 
             System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
 
-            excludeKeys = 2;
+            ign = startGrid(0);
 
-            ign = startGrids();
+            ign.cluster().state(ClusterState.ACTIVE);
 
-            // Check key1 and key2 excluded.
-            res = ign.compute(ign.cluster().forRemotes()).apply(new CheckMetastorage2(), 0);
+            metaStorage = ign.context().cache().context().database().metaStorage();
 
-            assertEquals(0, res);
+            metaStorage.iterate(KEY_1, (key, val) -> fail(), true);
+            metaStorage.iterate(KEY_2, (key, val) -> fail(), true);
         }
         finally {
             System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
-        }
-    }
-
-    /** */
-    @NotNull private IgniteEx startGrids() throws Exception {
-        IgniteEx ign = startGrid(0);
-
-        startGrid(1);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        return ign;
-    }
-
-    /** Job for a remote JVM Ignite instance to add event listener. */
-    private static class WriteToMetastorage implements IgniteClosure<Integer, Integer> {
-        /** Auto injected ignite instance. */
-        @IgniteInstanceResource
-        IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(Integer i) {
-            if (!U.inClassPath(VALUE_1_CLASSNAME))
-                return -1;
-
-
-            ignite.context().cache().context().database().checkpointReadLock();
-
-            try {
-                ignite.context().cache().context().database().metaStorage().write(KEY_1,
-                    U.newInstance(VALUE_1_CLASSNAME));
-                ignite.context().cache().context().database().metaStorage().write(KEY_2, VALUE_2);
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-
-                return -2;
-            } finally {
-                ignite.context().cache().context().database().checkpointReadUnlock();
-            }
-
-            return 0;
-        }
-    }
-
-    /** */
-    private static class CheckMetastorage implements IgniteClosure<Integer, Integer> {
-        /** Auto injected ignite instance. */
-        @IgniteInstanceResource
-        IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(Integer i) {
-            if ((U.inClassPath(VALUE_1_CLASSNAME)))
-                return -1;
-
-            MetaStorage metastorage = ignite.context().cache().context().database().metaStorage();
-
-            try {
-                final boolean[] res = {true};
-
-                metastorage.iterate(KEY_1, (key, val) -> res[0] = false, false);
-
-                if (!res[0])
-                    return -2;
-
-                if (!Objects.equals(metastorage.read(KEY_2), VALUE_2))
-                    return -3;
-            }
-            catch (IgniteCheckedException e) {
-                return -4;
-            }
-
-            return 0;
-        }
-    }
-
-    /** */
-    private static class CheckMetastorage2 implements IgniteClosure<Integer, Integer> {
-        /** Auto injected ignite instance. */
-        @IgniteInstanceResource
-        IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(Integer i) {
-            if ((U.inClassPath(VALUE_1_CLASSNAME)))
-                return -1;
-
-            MetaStorage metastorage = ignite.context().cache().context().database().metaStorage();
-
-            try {
-                final boolean[] res = {true};
-
-                metastorage.iterate(KEY_1, (key, val) -> res[0] = false, false);
-
-                if (!res[0])
-                    return -2;
-
-                metastorage.iterate(KEY_2, (key, val) -> res[0] = false, false);
-
-                if (!res[0])
-                    return -3;
-            }
-            catch (IgniteCheckedException e) {
-                return -4;
-            }
-
-            return 0;
         }
     }
 }
