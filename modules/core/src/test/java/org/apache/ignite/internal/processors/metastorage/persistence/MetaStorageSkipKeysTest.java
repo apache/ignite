@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -60,8 +59,6 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(igniteInstanceName);
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
@@ -74,12 +71,30 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testSkipKeys() throws Exception {
+        assertFalse(U.inClassPath(VALUE_1_CLASSNAME));
+
+        writeKeysToMetastore();
+
+        try {
+            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
+
+            checkKey1Excluded();
+
+            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
+
+            checkKey1AndKey2Excluded();
+        }
+        finally {
+            System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
+        }
+    }
+
+    /** */
+    private void writeKeysToMetastore() throws Exception {
         IgniteEx ign = startGrid(0);
+
         ign.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(!U.inClassPath(VALUE_1_CLASSNAME));
-
-        // Write key1 and key2 to metastorage.
         IgniteCacheDatabaseSharedManager db = ign.context().cache().context().database();
 
         db.checkpointReadLock();
@@ -93,7 +108,7 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
             db.metaStorage().write(KEY_2, VALUE_2);
         }
         finally {
-            ign.context().cache().context().database().checkpointReadUnlock();
+            db.checkpointReadUnlock();
         }
 
         assertThrowsWithCause(() -> db.metaStorage().read(KEY_1), ClassNotFoundException.class);
@@ -108,34 +123,28 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
         }, ClassNotFoundException.class);
 
         stopAllGrids();
+    }
 
-        try {
-            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
+    /** */
+    private void checkKey1Excluded() throws Exception {
+        IgniteEx ign = startGrid(0);
 
-            ign = startGrid(0);
-            ign.cluster().state(ClusterState.ACTIVE);
+        ign.cluster().state(ClusterState.ACTIVE);
 
-            MetaStorage metaStorage = ign.context().cache().context().database().metaStorage();
+        ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
 
-            metaStorage.iterate(KEY_1, (key, val) -> fail(), true);
+        assertEquals(VALUE_2, ign.context().cache().context().database().metaStorage().read(KEY_2));
 
-            assertEquals(metaStorage.read(KEY_2), VALUE_2);
+        stopAllGrids();
+    }
 
-            stopAllGrids();
+    /** */
+    private void checkKey1AndKey2Excluded() throws Exception {
+        IgniteEx ign = startGrid(0);
 
-            System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
+        ign.cluster().state(ClusterState.ACTIVE);
 
-            ign = startGrid(0);
-
-            ign.cluster().state(ClusterState.ACTIVE);
-
-            metaStorage = ign.context().cache().context().database().metaStorage();
-
-            metaStorage.iterate(KEY_1, (key, val) -> fail(), true);
-            metaStorage.iterate(KEY_2, (key, val) -> fail(), true);
-        }
-        finally {
-            System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
-        }
+        ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
+        ign.context().cache().context().database().metaStorage().iterate(KEY_2, (key, val) -> fail(), true);
     }
 }
