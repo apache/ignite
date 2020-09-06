@@ -177,10 +177,10 @@ public class RunningQueryManager {
 
         Span qrySpan = qry.span();
 
-        if (failed)
-            qrySpan.addTag(ERROR, failReason::getMessage);
-
         try {
+            if (failed)
+                qrySpan.addTag(ERROR, failReason::getMessage);
+
             //We need to collect query history and metrics only for SQL queries.
             if (isSqlQuery(qry)) {
                 qry.runningFuture().onDone();
