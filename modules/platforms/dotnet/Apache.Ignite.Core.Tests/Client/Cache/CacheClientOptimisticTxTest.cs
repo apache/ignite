@@ -54,10 +54,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var old = cache[1];
 
                 Task.Factory.StartNew(() =>
-                    {
-                        Assert.IsNull(transactions.Tx);
-                        cache[1] = -1;
-                    })
+                        {
+                            Assert.IsNull(transactions.Tx);
+                            cache[1] = -1;
+                        },
+                        TaskCreationOptions.LongRunning)
                     .Wait();
 
                 Assert.AreEqual(old, cache[1]);
@@ -94,10 +95,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(TransactionIsolation.Serializable, igniteTx.Isolation);
 
             Task.Factory.StartNew(() =>
-                {
-                    Assert.IsNull(transactions.Tx);
-                    cache[1] = -1;
-                })
+                    {
+                        Assert.IsNull(transactions.Tx);
+                        cache[1] = -1;
+                    },
+                    TaskCreationOptions.LongRunning)
                 .Wait();
 
             Assert.AreEqual(old, cache[1]);

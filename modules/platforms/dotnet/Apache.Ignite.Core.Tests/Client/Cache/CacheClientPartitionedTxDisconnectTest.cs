@@ -27,12 +27,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Tests client transactions for multiple nodes with partition awareness.
     /// </summary>
-    public class CachePartitionedTxDisconnectTest : ClientTestBase
+    public class CacheClientPartitionedTxDisconnectTest : ClientTestBase
     {
         /// <summary>
-        ///  Initializes a new instance of the <see cref="CachePartitionedTxDisconnectTest"/> class.
+        ///  Initializes a new instance of the <see cref="CacheClientPartitionedTxDisconnectTest"/> class.
         /// </summary>
-        public CachePartitionedTxDisconnectTest() : base(3, enablePartitionAwareness: true)
+        public CacheClientPartitionedTxDisconnectTest() : base(3, enablePartitionAwareness: true)
         {
             // No-op.
         }
