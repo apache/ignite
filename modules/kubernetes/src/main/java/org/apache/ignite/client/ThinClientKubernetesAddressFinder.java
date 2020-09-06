@@ -19,82 +19,37 @@ package org.apache.ignite.client;
 
 import java.net.InetAddress;
 import java.util.function.Supplier;
-import org.apache.ignite.kubernetes.KubernetesConnectorConfigurator;
-import org.apache.ignite.kubernetes.KubernetesConnectorDefaults;
-import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
+import org.apache.ignite.internal.kubernetes.connection.KubernetesServiceAddressResolver;
+import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
 /**
- * Address finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to be
- * deployed as Kubernetes pods in order to be found. Applications and Ignite nodes running outside of Kubernetes
+ * Address finder for automatic lookup of Ignite server nodes running in Kubernetes environment. All Ignite nodes have
+ * to be deployed as Kubernetes pods in order to be found. Applications and Ignite nodes running outside of Kubernetes
  * will not be able to reach the containerized counterparts.
  * <p>
- * The implementation is based on a distinct Kubernetes service that has to be created and should be deployed prior
- * Ignite nodes startup. The service will maintain a list of all endpoints (internal IP addresses) of all containerized
- * Ignite pods running so far. The name of the service must be equal to {@link #setServiceName(String)} which is
- * `ignite` by default.
- * <p>
- * As for Ignite pods, it's recommended to label them in such a way that the service will use the label in its selector
- * configuration excluding endpoints of irrelevant Kubernetes pods running in parallel.
+ * The implementation is based on a distinct Kubernetes service. The name of the service must be set with
+ * {@code KubernetesConnectionConfiguration}. As for Ignite pods, it's recommended to label them in such a way that
+ * the service will target only server nodes.
  * <p>
  * The address finder, in its turn, will call this service to retrieve Ignite pods IP addresses. The port will be
- * set later within {@link IgniteClient}. Make sure that all Ignite pods occupy a similar
- * ClientConnector port, otherwise they will not be able to connect each other using this address finder.
- * <h2 class="header">Optional configuration</h2>
- * <ul>
- *      <li>The Kubernetes service name for IP addresses lookup (see {@link #setServiceName(String)})</li>
- *      <li>The Kubernetes service namespace for IP addresses lookup (see {@link #setNamespace(String)}</li>
- *      <li>The host name of the Kubernetes API server (see {@link #setMasterUrl(String)})</li>
- *      <li>Path to the service token (see {@link #setAccountToken(String)}</li>
- *      <li>To include not-ready pods (see {@link #includeNotReadyAddresses(boolean)}</li>
- * </ul>
+ * set later within {@link IgniteClient}. Make sure that all Ignite pods occupy a similar ClientConnector port,
+ * otherwise they will not be able to connect each other using this address finder.
  * <p>
  */
-public class ThinClientKubernetesAddressFinder implements Supplier<String[]>, KubernetesConnectorConfigurator {
-    /** Ignite's Kubernetes Service name. */
-    private String srvcName = KubernetesConnectorDefaults.SRVC_NAME;
+public class ThinClientKubernetesAddressFinder implements Supplier<String[]> {
+    /** Kubernetes connection configuration */
+    private final KubernetesConnectionConfiguration cfg;
 
-    /** Ignite Pod setNamespace name. */
-    private String namespace = KubernetesConnectorDefaults.NAMESPACE;
+    /** Constructor */
+    public ThinClientKubernetesAddressFinder(KubernetesConnectionConfiguration cfg) {
+        this.cfg = cfg;
+    }
 
-    /** Kubernetes API server URL in a string form. */
-    private String master = KubernetesConnectorDefaults.MASTER;
-
-    /** Account token location. */
-    private String accountToken = KubernetesConnectorDefaults.ACCOUNT_TOKEN;
-
-    /** Whether addresses of pods in not-ready state should be included. */
-    private boolean includeNotReadyAddresses = KubernetesConnectorDefaults.INCLUDE_NOT_READY_ADDR;
-
-    /** */
+    /** {@inheritDoc} */
     @Override public String[] get() {
-        return new KubernetesServiceAddressResolver(srvcName, namespace, master, accountToken, includeNotReadyAddresses)
+        return new KubernetesServiceAddressResolver(cfg)
             .getServiceAddresses()
             .stream().map(InetAddress::getHostAddress)
             .toArray(String[]::new);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setServiceName(String service) {
-        this.srvcName = service;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMasterUrl(String master) {
-        this.master = master;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setAccountToken(String accountToken) {
-        this.accountToken = accountToken;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void includeNotReadyAddresses(boolean includeNotReadyAddresses) {
-        this.includeNotReadyAddresses = includeNotReadyAddresses;
     }
 }

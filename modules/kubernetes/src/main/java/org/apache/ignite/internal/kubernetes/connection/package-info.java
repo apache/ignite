@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.kubernetes;
-
 /**
- * Default values for Kubernetes connector configuration.
+ * <!-- Package description. -->
+ * Contains Kubernetes connection classes.
  */
-public class KubernetesConnectorDefaults {
-    /** Ignite's Kubernetes Service name. */
-    public static final String SRVC_NAME = "ignite";
 
-    /** Ignite Pod setNamespace name. */
-    public static final String NAMESPACE = "default";
-
-    /** Kubernetes API server URL in a string form. */
-    public static final String MASTER = "https://kubernetes.default.svc.cluster.local:443";
-
-    /** Account token location. */
-    public static final String ACCOUNT_TOKEN = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-
-    /** Whether addresses of pods in not-ready state should be included. */
-    public static final boolean INCLUDE_NOT_READY_ADDR = false;
-}
+package org.apache.ignite.internal.kubernetes.connection;

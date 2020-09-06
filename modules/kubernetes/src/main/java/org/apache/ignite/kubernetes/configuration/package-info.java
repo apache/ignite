@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains Kubernetes connection utils.
+ * Contains Kubernetes configuration classes.
  */
 
-package org.apache.ignite.kubernetes;
+package org.apache.ignite.kubernetes.configuration;

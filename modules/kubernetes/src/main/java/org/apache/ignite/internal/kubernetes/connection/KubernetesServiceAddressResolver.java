@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.kubernetes;
+package org.apache.ignite.internal.kubernetes.connection;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -43,31 +43,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
 /**
  * The class is responsible to fetch list of IP address for all pods that runs the specified kubernetes service.
  */
 public class KubernetesServiceAddressResolver {
-    /** Kubernetes Service name. */
-    private final String srvcName;
-
-    /** Pod namespace name. */
-    private final String namespace;
-
-    /** Kubernetes API server URL in a string form. */
-    private final String master;
-
-    /** Account token location. */
-    private final String accountToken;
-
     /** Kubernetes API server URL. */
     private URL url;
 
     /** SSL context */
     private SSLContext ctx;
 
-    /** Whether addresses of pods in not-ready state should be included. */
-    private final boolean includeNotReadyAddresses;
+    /** Kubernetes connection configuration */
+    private final KubernetesConnectionConfiguration cfg;
 
     /** Init routine guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -94,13 +83,8 @@ public class KubernetesServiceAddressResolver {
     };
 
     /** Constructor. */
-    public KubernetesServiceAddressResolver(String srvcName, String namespace, String master, String accountToken,
-                               boolean includeNotReadyAddresses) {
-        this.srvcName = srvcName;
-        this.namespace = namespace;
-        this.master = master;
-        this.accountToken = accountToken;
-        this.includeNotReadyAddresses = includeNotReadyAddresses;
+    public KubernetesServiceAddressResolver(KubernetesConnectionConfiguration cfg) {
+        this.cfg = cfg;
     }
 
     /** Return IP addresses of pods that runs the service. */
@@ -115,7 +99,7 @@ public class KubernetesServiceAddressResolver {
             conn.setHostnameVerifier(trustAllHosts);
 
             conn.setSSLSocketFactory(ctx.getSocketFactory());
-            conn.addRequestProperty("Authorization", "Bearer " + serviceAccountToken(accountToken));
+            conn.addRequestProperty("Authorization", "Bearer " + serviceAccountToken(cfg.getAccountToken()));
 
             // Sending the request and processing a response.
             ObjectMapper mapper = new ObjectMapper();
@@ -126,7 +110,7 @@ public class KubernetesServiceAddressResolver {
                 for (Subset subset : endpoints.subsets) {
                     addrs.addAll(parseAddresses(subset.addresses));
 
-                    if (includeNotReadyAddresses)
+                    if (cfg.getIncludeNotReadyAddresses())
                         addrs.addAll(parseAddresses(subset.notReadyAddresses));
                 }
             }
@@ -143,22 +127,12 @@ public class KubernetesServiceAddressResolver {
      */
     private void init() {
         if (initGuard.compareAndSet(false, true)) {
-
-            if (srvcName == null || srvcName.isEmpty() ||
-                namespace == null || namespace.isEmpty() ||
-                master == null || master.isEmpty() ||
-                accountToken == null || accountToken.isEmpty()) {
-                throw new IgniteException(
-                    "One or more configuration parameters are invalid [setServiceName=" +
-                        srvcName + ", setNamespace=" + namespace + ", setMasterUrl=" +
-                        master + ", setAccountToken=" + accountToken + "]");
-            }
-
             try {
                 // Preparing the URL and SSL context to be used for connection purposes.
-                String path = String.format("/api/v1/namespaces/%s/endpoints/%s", namespace, srvcName);
+                String path = String.format("/api/v1/namespaces/%s/endpoints/%s",
+                    cfg.getNamespace(), cfg.getServiceName());
 
-                url = new URL(master + path);
+                url = new URL(cfg.getMaster() + path);
 
                 ctx = SSLContext.getInstance("SSL");
 

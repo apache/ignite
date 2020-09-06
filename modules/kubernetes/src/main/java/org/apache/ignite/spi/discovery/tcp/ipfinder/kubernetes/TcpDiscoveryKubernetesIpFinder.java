@@ -21,9 +21,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import org.apache.ignite.kubernetes.KubernetesConnectorConfigurator;
-import org.apache.ignite.kubernetes.KubernetesConnectorDefaults;
-import org.apache.ignite.kubernetes.KubernetesServiceAddressResolver;
+import org.apache.ignite.internal.kubernetes.connection.KubernetesServiceAddressResolver;
+import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
@@ -34,26 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  * cluster is required to be containerized as well. Applications and Ignite nodes running outside of Kubernetes will
  * not be able to reach the containerized counterparts.
  * <p>
- * The implementation is based on a distinct Kubernetes service that has to be created and should be deployed prior
- * Ignite nodes startup. The service will maintain a list of all endpoints (internal IP addresses) of all containerized
- * Ignite pods running so far. The name of the service must be equal to {@link #setServiceName(String)} which is
- * `ignite` by default.
- * <p>
- * As for Ignite pods, it's recommended to label them in such a way that the service will use the label in its selector
- * configuration excluding endpoints of irrelevant Kubernetes pods running in parallel.
+ * The implementation is based on a distinct Kubernetes service. The name of the service must be set with
+ * {@code KubernetesConnectionConfiguration}. As for Ignite pods, it's recommended to label them in such way
+ * that the service will target only nodes that are able to be discovered, i.e. server and thick client nodes.
  * <p>
  * The IP finder, in its turn, will call this service to retrieve Ignite pods IP addresses. The port will be
  * either the one that is set with {@link TcpDiscoverySpi#setLocalPort(int)} or {@link TcpDiscoverySpi#DFLT_PORT}.
  * Make sure that all Ignite pods occupy a similar discovery port, otherwise they will not be able to discover each
  * other using this IP finder.
- * <h2 class="header">Optional configuration</h2>
- * <ul>
- *      <li>The Kubernetes service name for IP addresses lookup (see {@link #setServiceName(String)})</li>
- *      <li>The Kubernetes service namespace for IP addresses lookup (see {@link #setNamespace(String)}</li>
- *      <li>The host name of the Kubernetes API server (see {@link #setMasterUrl(String)})</li>
- *      <li>Path to the service token (see {@link #setAccountToken(String)}</li>
- *      <li>To include not-ready pods (see {@link #includeNotReadyAddresses(boolean)}</li>
- * </ul>
  * <p>
  * Both {@link #registerAddresses(Collection)} and {@link #unregisterAddresses(Collection)} have no effect.
  * <p>
@@ -61,34 +48,29 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  * Choose another implementation of {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} for local
  * or home network tests.
  */
-public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter
-    implements KubernetesConnectorConfigurator {
-    /** Ignite's Kubernetes Service name. */
-    private String srvcName = KubernetesConnectorDefaults.SRVC_NAME;
-
-    /** Ignite Pod setNamespace name. */
-    private String namespace = KubernetesConnectorDefaults.NAMESPACE;
-
-    /** Kubernetes API server URL in a string form. */
-    private String master = KubernetesConnectorDefaults.MASTER;
-
-    /** Account token location. */
-    private String accountToken = KubernetesConnectorDefaults.ACCOUNT_TOKEN;
-
-    /** Whether addresses of pods in not-ready state should be included. */
-    private boolean includeNotReadyAddresses = KubernetesConnectorDefaults.INCLUDE_NOT_READY_ADDR;
+public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter {
+    /** Kubernetes connection configuration */
+    private final KubernetesConnectionConfiguration cfg;
 
     /**
      * Creates an instance of Kubernetes IP finder.
      */
     public TcpDiscoveryKubernetesIpFinder() {
+        this(new KubernetesConnectionConfiguration());
+    }
+
+    /**
+     * Creates an instance of Kubernetes IP finder.
+     */
+    public TcpDiscoveryKubernetesIpFinder(KubernetesConnectionConfiguration cfg) {
         setShared(true);
+        this.cfg = cfg;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         try {
-            return new KubernetesServiceAddressResolver(srvcName, namespace, master, accountToken, includeNotReadyAddresses)
+            return new KubernetesServiceAddressResolver(cfg)
                 .getServiceAddresses()
                 .stream().map(addr -> new InetSocketAddress(addr, 0))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -107,28 +89,43 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter
         // No-op
     }
 
-    /** {@inheritDoc} */
-    @Override public void setServiceName(String service) {
-        this.srvcName = service;
+    /**
+     * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
+     */
+    @Deprecated
+    public void setServiceName(String service) {
+        cfg.setServiceName(service);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setNamespace(String namespace) {
-        this.namespace = namespace;
+    /**
+     * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
+     */
+    @Deprecated
+    public void setNamespace(String namespace) {
+        cfg.setNamespace(namespace);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setMasterUrl(String master) {
-        this.master = master;
+    /**
+     * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
+     */
+    @Deprecated
+    public void setMasterUrl(String master) {
+        cfg.setMasterUrl(master);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setAccountToken(String accountToken) {
-        this.accountToken = accountToken;
+    /**
+     * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
+     */
+    @Deprecated
+    public void setAccountToken(String accountToken) {
+        cfg.setAccountToken(accountToken);
     }
 
-    /** {@inheritDoc} */
-    @Override public void includeNotReadyAddresses(boolean includeNotReadyAddresses) {
-        this.includeNotReadyAddresses = includeNotReadyAddresses;
+    /**
+     * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
+     */
+    @Deprecated
+    public void includeNotReadyAddresses(boolean includeNotReadyAddresses) {
+        cfg.setIncludeNotReadyAddresses(includeNotReadyAddresses);
     }
 }
