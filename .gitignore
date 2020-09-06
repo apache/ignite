@@ -67,7 +67,6 @@ ipch/
 !/bin
 !/modules/core/src/test/bin
 !/modules/sqlline/bin
-!/modules/web-console/web-agent/bin
 [Dd]ebug*/
 [Rr]elease*/
 packages
@@ -81,3 +80,9 @@ packages
 
 #NodeJs files
 /modules/platforms/nodejs/node_modules
+
+#Python temp files
+**/.eggs
+**/venv
+**/.pytest_cache
+**/pyignite.egg-info

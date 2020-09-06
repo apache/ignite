@@ -49,6 +49,9 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
     /** Count of restart iterations. */
     public static final int ITERATIONS = 10;
 
+    /** Cache partiton count. */
+    public static final int PARTS = 64;
+
     /** Count of backup for default cache. */
     private int backups = 1;
 
@@ -65,7 +68,7 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(true)))
             .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setAffinity(new RendezvousAffinityFunction(false, 64))
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS))
                 .setBackups(backups));
     }
 
@@ -177,11 +180,11 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Load some data to default cache.
+     * Load keys for preloading significant more than for updates and covers all cache partitions.
      *
-     * @param sequentially True for loading sequential keys, false for random.
+     * @param preload True for preloading keys, false otherwise.
      */
-    public void loadData(boolean sequentially) {
+    public void loadData(boolean preload) {
         Random random = new Random();
 
         Ignite ignite = G.allGrids().get(0);
@@ -189,10 +192,10 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < (preload ? 100 * PARTS : 100); i++) {
                 Integer ranDomKey = random.nextInt(10_000);
 
-                streamer.addData(sequentially ? i : ranDomKey, "Val " + ranDomKey);
+                streamer.addData(preload ? i : ranDomKey, "Val " + ranDomKey);
             }
         }
     }

@@ -21,9 +21,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
@@ -53,6 +57,59 @@ import org.h2.value.ValueUuid;
  * SQL system view to export {@link SystemView} data.
  */
 public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
+    /** */
+    private static final Map<Class<?>, Function<Object, ? extends Value>> CLS_TO_VAL = new HashMap<>();
+
+    /** */
+    private static final Function<Object, ? extends Value> DFLT_FUNC = val -> ValueString.get(Objects.toString(val));
+
+    /** */
+    private static final Map<Class<?>, Integer> CLS_TO_VAL_TYPE = new HashMap<>();
+
+    static {
+        CLS_TO_VAL_TYPE.put(String.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(IgniteUuid.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(UUID.class, Value.UUID);
+        CLS_TO_VAL_TYPE.put(Class.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(InetSocketAddress.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(BigDecimal.class, Value.DECIMAL);
+        CLS_TO_VAL_TYPE.put(BigInteger.class, Value.DECIMAL);
+        CLS_TO_VAL_TYPE.put(Date.class, Value.TIMESTAMP);
+        CLS_TO_VAL_TYPE.put(boolean.class, Value.BOOLEAN);
+        CLS_TO_VAL_TYPE.put(Boolean.class, Value.BOOLEAN);
+        CLS_TO_VAL_TYPE.put(byte.class, Value.BYTE);
+        CLS_TO_VAL_TYPE.put(Byte.class, Value.BYTE);
+        CLS_TO_VAL_TYPE.put(short.class, Value.SHORT);
+        CLS_TO_VAL_TYPE.put(Short.class, Value.SHORT);
+        CLS_TO_VAL_TYPE.put(int.class, Value.INT);
+        CLS_TO_VAL_TYPE.put(Integer.class, Value.INT);
+        CLS_TO_VAL_TYPE.put(long.class, Value.LONG);
+        CLS_TO_VAL_TYPE.put(Long.class, Value.LONG);
+        CLS_TO_VAL_TYPE.put(char.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(Character.class, Value.STRING);
+        CLS_TO_VAL_TYPE.put(float.class, Value.FLOAT);
+        CLS_TO_VAL_TYPE.put(Float.class, Value.FLOAT);
+        CLS_TO_VAL_TYPE.put(double.class, Value.DOUBLE);
+        CLS_TO_VAL_TYPE.put(Double.class, Value.DOUBLE);
+
+        CLS_TO_VAL.put(String.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(IgniteUuid.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(UUID.class, val -> ValueUuid.get((UUID) val));
+        CLS_TO_VAL.put(Class.class, val -> ValueString.get(((Class<?>) val).getName()));
+        CLS_TO_VAL.put(InetSocketAddress.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(BigDecimal.class, val -> ValueDecimal.get((BigDecimal) val));
+        CLS_TO_VAL.put(BigInteger.class, val -> ValueDecimal.get(new BigDecimal((BigInteger) val)));
+        CLS_TO_VAL.put(Date.class, val -> ValueTimestamp.fromMillis(((Date) val).getTime()));
+        CLS_TO_VAL.put(Boolean.class, val -> ValueBoolean.get((Boolean) val));
+        CLS_TO_VAL.put(Byte.class, val -> ValueByte.get((Byte) val));
+        CLS_TO_VAL.put(Short.class, val -> ValueShort.get((Short) val));
+        CLS_TO_VAL.put(Integer.class, val -> ValueInt.get((Integer) val));
+        CLS_TO_VAL.put(Long.class, val -> ValueLong.get((Long) val));
+        CLS_TO_VAL.put(Character.class, val -> ValueString.get(Objects.toString(val)));
+        CLS_TO_VAL.put(Float.class, val -> ValueFloat.get((Float) val));
+        CLS_TO_VAL.put(Double.class, val -> ValueDouble.get((Double) val));
+    }
+
     /** System view for export. */
     protected final SystemView<R> sysView;
 
@@ -100,38 +157,8 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
-                        else if (clazz.isAssignableFrom(Class.class))
-                            data[idx] = ValueString.get(((Class)val).getName());
-                        else if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                            clazz.isAssignableFrom(IgniteUuid.class) ||
-                            clazz.isAssignableFrom(InetSocketAddress.class))
-                            data[idx] = ValueString.get(Objects.toString(val));
-                        else if (clazz.isAssignableFrom(UUID.class))
-                            data[idx] = ValueUuid.get((UUID)val);
-                        else if (clazz.isAssignableFrom(BigDecimal.class))
-                            data[idx] = ValueDecimal.get((BigDecimal)val);
-                        else if (clazz.isAssignableFrom(BigInteger.class))
-                            data[idx] = ValueDecimal.get(new BigDecimal((BigInteger)val));
-                        else if (clazz.isAssignableFrom(Date.class))
-                            data[idx] = ValueTimestamp.fromMillis(((Date)val).getTime());
-                        else if (clazz.isAssignableFrom(Boolean.class))
-                            data[idx] = ValueBoolean.get((Boolean)val);
-                        else if (clazz.isAssignableFrom(Byte.class))
-                            data[idx] = ValueByte.get((Byte)val);
-                        else if (clazz.isAssignableFrom(Character.class))
-                            data[idx] = ValueString.get(Objects.toString(val));
-                        else if (clazz.isAssignableFrom(Short.class))
-                            data[idx] = ValueShort.get((Short)val);
-                        else if (clazz.isAssignableFrom(Integer.class))
-                            data[idx] = ValueInt.get((Integer)val);
-                        else if (clazz.isAssignableFrom(Long.class))
-                            data[idx] = ValueLong.get((Long)val);
-                        else if (clazz.isAssignableFrom(Float.class))
-                            data[idx] = ValueFloat.get((Float)val);
-                        else if (clazz.isAssignableFrom(Double.class))
-                            data[idx] = ValueDouble.get((Double)val);
                         else
-                            data[idx] = ValueString.get(val.toString());
+                            data[idx] = CLS_TO_VAL.getOrDefault(clazz, DFLT_FUNC).apply(val);
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
@@ -184,38 +211,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                int type;
-
-                if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                    clazz.isAssignableFrom(IgniteUuid.class) ||
-                    clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
-                    type = Value.STRING;
-                else if (clazz.isAssignableFrom(UUID.class))
-                    type = Value.UUID;
-                else if (clazz.isAssignableFrom(BigDecimal.class))
-                    type = Value.DECIMAL;
-                else if (clazz.isAssignableFrom(BigInteger.class))
-                    type = Value.DECIMAL;
-                else if (clazz.isAssignableFrom(Date.class))
-                    type = Value.TIMESTAMP;
-                else if (clazz == boolean.class || clazz.isAssignableFrom(Boolean.class))
-                    type = Value.BOOLEAN;
-                else if (clazz == byte.class || clazz.isAssignableFrom(Byte.class))
-                    type = Value.BYTE;
-                else if (clazz == char.class || clazz.isAssignableFrom(Character.class))
-                    type = Value.STRING;
-                else if (clazz == short.class || clazz.isAssignableFrom(Short.class))
-                    type = Value.SHORT;
-                else if (clazz == int.class || clazz.isAssignableFrom(Integer.class))
-                    type = Value.INT;
-                else if (clazz == long.class || clazz.isAssignableFrom(Long.class))
-                    type = Value.LONG;
-                else if (clazz == float.class || clazz.isAssignableFrom(Float.class))
-                    type = Value.FLOAT;
-                else if (clazz == double.class || clazz.isAssignableFrom(Double.class))
-                    type = Value.DOUBLE;
-                else
-                    type = Value.STRING;
+                int type = CLS_TO_VAL_TYPE.getOrDefault(clazz, Value.STRING);
 
                 cols[idx] = newColumn(sqlName(name), type);
             }

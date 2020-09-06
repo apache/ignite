@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +62,7 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -640,8 +640,8 @@ public class ClusterCachesInfo {
         }
 
         if (!F.isEmpty(reqsToComplete)) {
-            ctx.closure().callLocalSafe(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+            ctx.closure().callLocalSafe(new GridPlainCallable<Void>() {
+                @Override public Void call() {
                     for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t : reqsToComplete) {
                         final DynamicCacheChangeRequest req = t.get1();
                         AffinityTopologyVersion waitTopVer = t.get2();
@@ -2194,6 +2194,7 @@ public class ClusterCachesInfo {
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
      * @param encKey Encryption key.
+     * @param cacheCfgEnrichment Cache configuration enrichment.
      * @return Group descriptor.
      */
     private CacheGroupDescriptor registerCacheGroup(

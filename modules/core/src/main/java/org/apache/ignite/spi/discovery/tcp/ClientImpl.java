@@ -38,8 +38,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Queue;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -47,7 +45,9 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
@@ -120,6 +121,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -196,7 +198,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
     /** */
-    private final Timer timer = new Timer("TcpDiscoverySpi.timer");
+    private final ScheduledExecutorService executorService;
 
     /** */
     private MessageWorker msgWorker;
@@ -213,6 +215,12 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     ClientImpl(TcpDiscoverySpi adapter) {
         super(adapter);
+
+        String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
+            ? "client-node" : adapter.ignite().name();
+
+        executorService = Executors.newSingleThreadScheduledExecutor(
+            new IgniteThreadFactory(instanceName, "tcp-discovery-exec"));
     }
 
     /** {@inheritDoc} */
@@ -308,10 +316,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
-        timer.schedule(
-            new MetricsSender(),
-            spi.metricsUpdateFreq,
-            spi.metricsUpdateFreq);
+        executorService.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -362,7 +367,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         while (!U.join(sockReader, log, 200))
             U.interrupt(sockReader);
 
-        timer.cancel();
+        executorService.shutdownNow();
 
         spi.printStopInfo();
     }
@@ -428,17 +433,15 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     final GridFutureAdapter<Boolean> finalFut = fut;
 
-                    timer.schedule(new TimerTask() {
-                        @Override public void run() {
-                            if (pingFuts.remove(nodeId, finalFut)) {
-                                if (ClientImpl.this.state == DISCONNECTED)
-                                    finalFut.onDone(new IgniteClientDisconnectedCheckedException(null,
-                                        "Failed to ping node, client node disconnected."));
-                                else
-                                    finalFut.onDone(false);
-                            }
+                    executorService.schedule(() -> {
+                        if (pingFuts.remove(nodeId, finalFut)) {
+                            if (ClientImpl.this.state == DISCONNECTED)
+                                finalFut.onDone(new IgniteClientDisconnectedCheckedException(null,
+                                    "Failed to ping node, client node disconnected."));
+                            else
+                                finalFut.onDone(false);
                         }
-                    }, spi.netTimeout);
+                    }, spi.netTimeout, MILLISECONDS);
 
                     sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
                 }
@@ -509,7 +512,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             throw new IgniteClientDisconnectedException(null, "Failed to send custom message: client is disconnected.");
 
         try {
-            TcpDiscoveryAbstractMessage msg;
+            TcpDiscoveryCustomEventMessage msg;
 
             if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
@@ -518,7 +521,19 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
 
+            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
+                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
+                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                    () -> locNode.consistentId().toString())
+                .addTag(SpanTags.MESSAGE_CLASS, () -> ((CustomMessageWrapper)evt).delegate().getClass().getSimpleName())
+                .addLog(() -> "Created");
+
+            // This root span will be parent both from local and remote nodes.
+            msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
             sockWriter.sendMessage(msg);
+
+            rootSpan.addLog(() -> "Sent").end();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -730,8 +745,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 assert rmtNodeId != null;
                 assert !getLocalNodeId().equals(rmtNodeId);
-
-                spi.stats.onClientSocketInitialized(U.millisSinceNanos(tsNanos));
 
                 locNode.clientRouterNodeId(rmtNodeId);
 
@@ -1064,7 +1077,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     /**
      * Metrics sender.
      */
-    private class MetricsSender extends TimerTask {
+    private class MetricsSender implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
@@ -1732,8 +1745,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             updateHeartbeat();
 
-            spi.stats.onJoinStarted();
-
             try {
                 tryJoin();
 
@@ -1782,11 +1793,21 @@ class ClientImpl extends TcpDiscoveryImpl {
                         assert spi.getSpiContext().isStopping();
 
                         if (connected && currSock != null) {
-                            TcpDiscoveryAbstractMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
+                            TcpDiscoveryNodeLeftMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
 
                             leftMsg.client(true);
 
+                            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(leftMsg.getClass()))
+                                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> locNode.id().toString())
+                                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                                    () -> locNode.consistentId().toString())
+                                .addLog(() -> "Created");
+
+                            leftMsg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
                             sockWriter.sendMessage(leftMsg);
+
+                            rootSpan.addLog(() -> "Sent").end();
                         }
                         else
                             leaveLatch.countDown();
@@ -2119,11 +2140,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
 
-                timer.schedule(new TimerTask() {
-                    @Override public void run() {
+                executorService.schedule(() -> {
                         queue.add(new JoinTimeout(joinCnt0));
-                    }
-                }, spi.joinTimeout);
+                    }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
@@ -2319,8 +2338,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "remote event listeners created by this client will be unsubscribed, consider " +
                             "listening to EVT_CLIENT_NODE_RECONNECTED event to restore them.");
                     }
-                    else
-                        spi.stats.onJoinFinished();
 
                     joinErr.set(null);
 
@@ -2699,6 +2716,20 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         void addMessage(Object msg) {
+            //TODO: https://ggsystems.atlassian.net/browse/GG-22502
+            if (msg instanceof TraceableMessage && msg instanceof TcpDiscoveryAbstractMessage) {
+                TraceableMessage tMsg = (TraceableMessage)msg;
+
+                if (!((TcpDiscoveryAbstractMessage)msg).verified() &&
+                    tMsg.spanContainer().serializedSpanBytes() == null) {
+                    Span rootSpan = tracing.create(TraceableMessagesTable.traceName(tMsg.getClass()))
+                        .end();
+
+                    // This root span will be parent both from local and remote nodes.
+                    tMsg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+                }
+            }
+
             queue.add(msg);
         }
 

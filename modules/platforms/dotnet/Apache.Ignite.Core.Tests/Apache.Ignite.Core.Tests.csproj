@@ -114,8 +114,10 @@
     <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
+    <Compile Include="Cache\CacheTransactionGridStopTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\CacheLocalActiveTransactionsTest.cs" />
     <Compile Include="Cache\NearCacheTest.cs" />
     <Compile Include="Cache\OptimisticTransactionTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTestCreateDestroy.cs" />
@@ -193,6 +195,16 @@
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
+    <Compile Include="Client\Services\ITestService.cs" />
+    <Compile Include="Client\Services\ITestServiceClient.cs" />
+    <Compile Include="Client\Services\ITestServiceDataTypes.cs" />
+    <Compile Include="Client\Services\ITestServiceGenericMethods.cs" />
+    <Compile Include="Client\Services\ITestServiceOverloads.cs" />
+    <Compile Include="Client\Services\ServicesClientTest.cs" />
+    <Compile Include="Client\Services\TestService.cs" />
+    <Compile Include="Client\Services\TestServiceDataTypes.cs" />
+    <Compile Include="Client\Services\TestServiceGenericMethods.cs" />
+    <Compile Include="Client\Services\TestServiceOverloads.cs" />
     <Compile Include="Common\IgniteProductVersionTests.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Compute\ComputeWithExecutorTest.cs" />
@@ -268,6 +280,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Services\IJavaService.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
