@@ -220,8 +220,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 0.1;
 
+    /** @see IgniteSystemProperties#IGNITE_PDS_WAL_REBALANCE_THRESHOLD */
+    public static final int DFLT_PDS_WAL_REBALANCE_THRESHOLD = 500;
+
     /** */
-    private final int walRebalanceThreshold = getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500);
+    private final int walRebalanceThreshold =
+        getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
     /** Prefer historical rebalance flag. */
     private final boolean preferWalRebalance = getBoolean(IGNITE_PREFER_WAL_REBALANCE);
@@ -341,8 +345,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile long checkpointReadLockTimeout;
 
     /** Flag allows to log additional information about partitions during recovery phases. */
-    private final boolean recoveryVerboseLogging =
-        getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, false);
+    private final boolean recoveryVerboseLogging = getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING);
 
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();

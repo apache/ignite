@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 public class GridLocalConfigManager {
     /** */
     private final boolean startClientCaches =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN);
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq = new LinkedList<>();

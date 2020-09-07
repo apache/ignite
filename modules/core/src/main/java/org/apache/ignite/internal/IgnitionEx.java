@@ -2317,7 +2317,7 @@ public class IgnitionEx {
                 Boolean threadClient = clientMode.get();
 
                 if (threadClient == null)
-                    myCfg.setClientMode(IgniteSystemProperties.getBoolean(IGNITE_CACHE_CLIENT, false));
+                    myCfg.setClientMode(IgniteSystemProperties.getBoolean(IGNITE_CACHE_CLIENT));
                 else
                     myCfg.setClientMode(threadClient);
             }

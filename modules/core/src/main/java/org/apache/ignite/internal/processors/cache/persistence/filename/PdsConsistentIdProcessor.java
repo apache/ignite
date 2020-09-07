@@ -167,7 +167,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (ctx.clientNode())
             return new PdsFolderSettings(pstStoreBasePath, UUID.randomUUID());
 
-        if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
+        if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
         // compatible mode from configuration is used fot this case

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 public class FileHandleManagerFactory {
     /**   */
     private final boolean walFsyncWithDedicatedWorker =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER);
 
     /** Data storage configuration. */
     private final DataStorageConfiguration dsConf;

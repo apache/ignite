@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,82 +51,59 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
  *
  */
 public class SharedPageLockTracker implements LifecycleAware, PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
-    /**
-     *
-     */
+    /** */
     private static final long OVERHEAD_SIZE = 16 + (8 * 8) + (4 * 3);
 
-    /**
-     *
-     */
+    /** @see IgniteSystemProperties#IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL */
+    public static final int DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL = 60_000;
+
+    /** */
     private final MemoryCalculator memCalc;
 
-    /**
-     *
-     */
+    /** */
     public final int threadLimits;
 
-    /**
-     *
-     */
+    /** */
     private final Map<Long, PageLockTracker<? extends PageLockDump>> threadStacks = new HashMap<>();
 
-    /**
-     *
-     */
+    /** */
     private final Map<Long, Thread> threadIdToThreadRef = new HashMap<>();
 
-    /**
-     *
-     */
+    /** */
     private final Map<String, Integer> structureNameToId = new HashMap<>();
 
     /** Thread for clean terminated threads from map. */
     private final TimeOutWorker timeOutWorker;
 
-    /**
-     *
-     */
+    /** */
     private Map<Long, SharedPageLockTracker.State> prevThreadsState = new HashMap<>();
 
-    /**
-     *
-     */
+    /** */
     private int idGen;
 
-    /**
-     *
-     */
+    /** */
     private final Consumer<Set<SharedPageLockTracker.State>> hangThreadsCallBack;
 
-    /**
-     *
-     */
+    /** */
     private final ThreadLocal<PageLockTracker> lockTracker = ThreadLocal.withInitial(this::createTracker);
 
-    /**
-     *
-     */
+    /** */
     public SharedPageLockTracker() {
         this((ids) -> {
         }, new MemoryCalculator());
     }
 
-    /**
-     *
-     */
+    /** */
     public SharedPageLockTracker(Consumer<Set<State>> hangThreadsCallBack, MemoryCalculator memCalc) {
         this(
             1000,
-            getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, 60_000),
+            getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL),
             hangThreadsCallBack,
             memCalc
         );
     }
 
-    /**
-     *
-     */
+    /** */
     public SharedPageLockTracker(
         int threadLimits,
         int timeOutWorkerInterval,

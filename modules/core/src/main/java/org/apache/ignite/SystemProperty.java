@@ -33,4 +33,7 @@ public @interface SystemProperty {
 
     /** Type. */
     Class<?> type() default Boolean.class;
+
+    /** Default value. */
+    String defaultValue() default "";
 }

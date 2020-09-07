@@ -30,16 +30,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
+    /** @see IgniteSystemProperties#IGNITE_AFFINITY_BACKUPS_THRESHOLD */
+    int DFLT_AFFINITY_BACKUPS_THRESHOLD = 5;
+
     /** Size threshold to use Map instead of List view. */
     int IGNITE_AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
-        5
+        DFLT_AFFINITY_BACKUPS_THRESHOLD
     );
 
     /** Disable memory affinity optimizations. */
     boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
-        false
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION
     );
 
     /**

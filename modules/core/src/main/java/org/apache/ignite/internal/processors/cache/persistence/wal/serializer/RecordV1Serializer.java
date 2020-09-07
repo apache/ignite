@@ -75,7 +75,7 @@ public class RecordV1Serializer implements RecordSerializer {
     public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
 
     /** Skip CRC calculation/check flag */
-    public static boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
+    public static boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
 
     /** V1 data serializer. */
     private final RecordDataV1Serializer dataSerializer;

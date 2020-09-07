@@ -77,7 +77,7 @@ public class GridClientImpl implements GridClient {
 
     /* Suppression logging if needed. */
     static {
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_GRID_CLIENT_LOG_ENABLED, false)) {
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_GRID_CLIENT_LOG_ENABLED)) {
             boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
             try {

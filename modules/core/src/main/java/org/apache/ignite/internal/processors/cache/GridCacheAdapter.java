@@ -162,7 +162,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_KEY_VALIDATION_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -186,15 +186,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** @see IgniteSystemProperties#IGNITE_CACHE_START_SIZE */
+    public static final int DFLT_CACHE_START_SIZE = 4096;
+
     /** Default cache start size. */
     public static final int DFLT_START_CACHE_SIZE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_CACHE_START_SIZE, 4096);
+        IgniteSystemProperties.IGNITE_CACHE_START_SIZE, DFLT_CACHE_START_SIZE);
 
     /** Size of keys batch to removeAll. */
     private static final int REMOVE_ALL_KEYS_BATCH = 10000;
 
+    /** @see IgniteSystemProperties#IGNITE_CACHE_RETRIES_COUNT */
+    public static final int DFLT_CACHE_RETRIES_COUNT = 100;
+
     /** Maximum number of retries when topology changes. */
-    public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+    public static final int MAX_RETRIES =
+        IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, DFLT_CACHE_RETRIES_COUNT);
 
     /** Minimum version supporting partition preloading. */
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
@@ -489,7 +496,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -510,7 +517,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -526,7 +533,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
@@ -549,7 +556,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -565,7 +572,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -581,7 +588,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+            ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }

@@ -82,7 +82,7 @@ public abstract class PagesList extends DataStructure {
 
     /** */
     private final boolean pagesListCachingDisabledSysProp =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, false);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING);
 
     /** */
     protected final AtomicLongArray bucketsSize;

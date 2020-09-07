@@ -102,7 +102,7 @@ public class SecurityUtils {
      * @return Security compatibility mode flag.
      */
     public static boolean isSecurityCompatibilityMode() {
-        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE, false);
+        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE);
     }
 
     /**

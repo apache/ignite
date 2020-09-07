@@ -90,6 +90,9 @@ public final class CommandLineStartup {
         GridJmxPortFinder.class
     };
 
+    /** @see IgniteSystemProperties#IGNITE_PROG_NAME */
+    public static final String DFLT_PROG_NAME = "ignite.{sh|bat}";
+
     /** Build date. */
     private static Date releaseDate;
 
@@ -179,7 +182,7 @@ public final class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, DFLT_PROG_NAME);
 
         int space = runner.indexOf(' ');
 

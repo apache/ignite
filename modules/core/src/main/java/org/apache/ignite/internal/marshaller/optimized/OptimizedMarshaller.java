@@ -87,7 +87,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
     public static final boolean USE_DFLT_SUID =
-        IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
+        IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID);
 
     /** Default class loader. */
     private final ClassLoader dfltClsLdr = getClass().getClassLoader();
