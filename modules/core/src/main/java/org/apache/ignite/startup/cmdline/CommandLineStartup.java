@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -407,14 +408,21 @@ public final class CommandLineStartup {
             }
         }
 
-        String fmt = "%-" + maxLength + "s - %s[%s] %s";
+        String fmt = "%-" + maxLength + "s - %s[%s] %s.%s";
 
         props.forEach((name, field) -> {
             String deprecated = field.isAnnotationPresent(Deprecated.class) ? "[Deprecated] " : "";
 
             SystemProperty prop = field.getAnnotation(SystemProperty.class);
 
-            X.println(format(fmt, name, deprecated, prop.type().getSimpleName(), prop.value()));
+            String defaults = prop.defaults();
+
+            if (prop.type() == Boolean.class && defaults.isEmpty())
+                defaults = " Default is false.";
+            else if (!defaults.isEmpty())
+                defaults = " Default is " + defaults + '.';
+
+            X.println(format(fmt, name, deprecated, prop.type().getSimpleName(), prop.value(), defaults));
         });
     }
 }

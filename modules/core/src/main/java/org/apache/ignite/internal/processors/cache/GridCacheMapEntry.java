@@ -139,13 +139,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
+    /** @see GridCacheMapEntry#ENTRY_LOCK_TIMEOUT */
+    public static final int DFLT_LOCK_TIMEOUT_ENV = 1000;
+
     /** Property name for entry lock timeout in milliseconds. Default is 1000. */
-    @SystemProperty(value = "Sets the entry's lock timeout in milliseconds. Defaults to 1000 milliseconds.",
-        type = Long.class)
+    @SystemProperty(value = "Sets the entry's lock timeout in milliseconds",
+        type = Long.class, defaults = "" + DFLT_LOCK_TIMEOUT_ENV)
+
+    /** */
     public static final String ENTRY_LOCK_TIMEOUT_ENV = "ENTRY_LOCK_TIMEOUT";
 
     /** Entry lock time awaiting. */
-    private static final long ENTRY_LOCK_TIMEOUT = getLong(ENTRY_LOCK_TIMEOUT_ENV, 1000);
+    private static final long ENTRY_LOCK_TIMEOUT = getLong(ENTRY_LOCK_TIMEOUT_ENV, DFLT_LOCK_TIMEOUT_ENV);
 
     /** */
     private static final byte IS_DELETED_MASK = 0x01;

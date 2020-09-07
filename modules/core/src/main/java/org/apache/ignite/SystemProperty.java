@@ -35,5 +35,5 @@ public @interface SystemProperty {
     Class<?> type() default Boolean.class;
 
     /** Default value. */
-    String defaultValue() default "";
+    String defaults() default "";
 }

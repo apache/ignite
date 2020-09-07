@@ -32,7 +32,7 @@ import org.apache.ignite.SystemProperty;
  */
 public class GridJmxPortFinder {
     /** Environment variable for overriding JMX port. */
-    @SystemProperty(value = "JMX port.", type = Integer.class)
+    @SystemProperty(value = "JMX port", type = Integer.class)
     public static final String IGNITE_JMX_PORT = "IGNITE_JMX_PORT";
 
     /** Minimum port number. */
