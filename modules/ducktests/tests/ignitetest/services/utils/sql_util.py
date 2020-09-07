@@ -16,25 +16,28 @@
 """
 This module contains JDBC driver wrapper.
 """
+from random import randint
+
 import jaydebeapi
 
+from ignitetest.services.ignite import IgniteService
 
 # pylint: disable=W0223
-class SqlUtil:
+from ignitetest.utils.version import DEV_BRANCH
+
+
+class SqlClient:
     """
     SQL util using the JDBC driver.
     """
 
     # pylint: disable=R0913
-    def __init__(self, url: str,
-                 jar_path: str,
-                 jdbc_driver_name: str = 'org.apache.ignite.IgniteJdbcThinDriver'):
+    def __init__(self, ignite_service: IgniteService):
         """
-        :param url: URL to connect.
-        :param jar_path: path to jar contains driver class name.
-        :param jdbc_driver_name: Jdbc driver class name.
+        :param ignite_service: IgniteService.
         """
-        self.conn = SqlUtil.connection(url, jar_path, jdbc_driver_name)
+        self.ignite_service = ignite_service
+        self.conn = connection(ignite_service)
 
     def __enter__(self):
         return self
@@ -64,16 +67,22 @@ class SqlUtil:
             curs.executemany(operation, seq_of_parameters)
             return curs.rowcount
 
-    @staticmethod
-    def connection(url: str,
-                   jar_path: str,
-                   jdbc_driver_name: str = 'org.apache.ignite.IgniteJdbcThinDriver'):
-        """
-        :param url: URL to connect.
-        :param jar_path: path to jar contains driver class name.
-        :param jdbc_driver_name: Jdbc driver class name.
-        :return Connection.
-        """
-        return jaydebeapi.connect(jclassname=jdbc_driver_name,
-                                  url=url,
-                                  jars=jar_path)
+
+def connection(ignite_service: IgniteService):
+    """
+    :param ignite_service: IgniteService.
+    :return Connection.
+    """
+    if ignite_service.config.version == DEV_BRANCH:
+        core_jar_path = 'modules/core/target/ignite-core-2.10.0-SNAPSHOT.jar'
+    else:
+        core_jar_path = str(
+            "%s/libs/ignite-core-%s.jar" % (ignite_service.spec.path.home, ignite_service.config.version))
+
+    node = ignite_service.nodes[randint(0, ignite_service.num_nodes - 1)]
+
+    _ip = node.account.externally_routable_ip
+    url = "jdbc:ignite:thin://" + _ip
+    return jaydebeapi.connect(jclassname='org.apache.ignite.IgniteJdbcThinDriver',
+                              url=url,
+                              jars=core_jar_path)
