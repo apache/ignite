@@ -159,14 +159,22 @@ class DiscoveryTest(IgniteTest):
     def setup(self):
         IgniteTest.setup(self)
 
+        self.logger.info("Storing iptables settings to " + self.NET_CFG_PATH)
+
         for node in self.test_context.cluster.nodes:
-            node.account.ssh_client.exec_command("sudo iptables-save > " + self.NET_CFG_PATH)
+            res, _, serr = node.account.ssh_client.exec_command("sudo iptables-save > " + self.NET_CFG_PATH)
+
+            assert res == 0, "Wrong result of iptables-store: " + str(serr.read())
 
     def teardown(self):
         IgniteTest.teardown(self)
 
+        self.logger.info("Restoring iptables settings from " + self.NET_CFG_PATH)
+
         for node in self.test_context.cluster.nodes:
-            node.account.ssh_client.exec_command("sudo iptables-legacy-restore < " + self.NET_CFG_PATH)
+            res, _, serr = node.account.ssh_client.exec_command("sudo iptables-legacy-restore < " + self.NET_CFG_PATH)
+
+            assert res == 0, "Wrong result of iptables-restore: " + str(serr.read())
 
 
 def start_zookeeper(test_context, num_nodes):
