@@ -61,7 +61,7 @@ public class ExchangeContext {
     private final ExchangeDiscoveryEvents evts;
 
     /** */
-    private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
+    private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
     /**
      * @param cctx Context.

@@ -58,7 +58,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Force mvcc. */
     protected static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
 
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 400L;

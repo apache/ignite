@@ -35,7 +35,7 @@ import static org.junit.Assert.fail;
 public class MvccFeatureChecker {
     /** */
     private static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IGNITE_FORCE_MVCC_MODE_IN_TESTS);
+        IgniteSystemProperties.getBoolean(IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
 
     /** */
     public enum Feature {

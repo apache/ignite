@@ -2168,10 +2168,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (pendingMsgs.length() > 0 && diagnosticLog.isInfoEnabled())
             diagnosticLog.info(pendingMsgs.toString());
 
-        if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT))
+        if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false))
             cctx.gridIO().dumpStats();
 
-        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT))
+        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
             U.dumpThreads(diagnosticLog);
 
         if (diagCtx != null)
@@ -2434,17 +2434,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     nextLongRunningOpsDumpTime = U.currentTimeMillis() +
                         nextDumpTimeout(longRunningOpsDumpStep++, timeout);
 
-                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT)) {
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
                         U.warn(diagnosticLog, "Found long running cache operations, dump threads.");
 
                         U.dumpThreads(diagnosticLog);
                     }
 
-                    if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT)) {
+                    if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
                         U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
 
                         // Dump IO manager statistics.
-                        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT))
+                        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
                             cctx.gridIO().dumpStats();
                     }
                 }

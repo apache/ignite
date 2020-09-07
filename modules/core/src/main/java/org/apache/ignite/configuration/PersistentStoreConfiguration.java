@@ -143,7 +143,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /** Factory to provide I/O interface for files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY) ?
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**

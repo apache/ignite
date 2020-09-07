@@ -132,7 +132,6 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -155,7 +154,8 @@ public class CommandProcessor {
     private final IgniteLogger log;
 
     /** Is backward compatible handling of UUID through DDL enabled. */
-    private static final boolean handleUuidAsByte = IgniteSystemProperties.getBoolean(IGNITE_SQL_UUID_DDL_BYTE_FORMAT);
+    private static final boolean handleUuidAsByte =
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
     /** Query cancel request counter. */
     private final AtomicLong qryCancelReqCntr = new AtomicLong();

@@ -88,7 +88,7 @@ public class BinaryUtils {
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
-        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** Map from class to associated write replacer. */
     public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
