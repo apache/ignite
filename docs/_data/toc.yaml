@@ -273,30 +273,25 @@
   url: /plugins
 - title: SQLLine 
   url: /sqlline
-
-#    - title: Capacity Planning
-#      url: /capacity-planning
-#    - title: Performance and Troubleshooting Guide
-#      url: /perf-troubleshooting-guide/general-perf-tips
-#      items:
-#        - title: General Performance Tips
-#          url: /perf-troubleshooting-guide/general-perf-tips
-#        - title: Memory and JVM Tuning
-#          url: /perf-troubleshooting-guide/memory-tuning
-#        - title: Persistence Tuning
-#          url: /perf-troubleshooting-guide/persistence-tuning
-#        - title: SQL Tuning
-#          url: /perf-troubleshooting-guide/sql-tuning
-#        - title: Thread Pools Tuning
-#          url: /perf-troubleshooting-guide/thread-pools-tuning
-#        - title: Troubleshooting and Debugging
-#          url: /perf-troubleshooting-guide/troubleshooting
-#
+- title: Ignite for Spark
+  items: 
+    - title: Overview
+      url: /ignite-for-spark/overview
+    - title: IgniteContext and IgniteRDD 
+      url:  /ignite-for-spark/ignitecontext-and-rdd
+    - title: Ignite DataFrame  
+      url: /ignite-for-spark/ignite-dataframe 
+    - title: Installation 
+      url: /ignite-for-spark/installation 
+    - title: Test Ignite with Spark-shell  
+      url: /ignite-for-spark/spark-shell
+    - title: Troubleshooting 
+      url: /ignite-for-spark/troubleshooting
 - title: SQL Reference
   url: /sql-reference/sql-reference-overview
   items:
-#    - title: SQL Conformance
-#      url: /sql-reference/sql-conformance
+    - title: SQL Conformance
+      url: /sql-reference/sql-conformance
     - title: Data Definition Language (DDL)
       url: /sql-reference/ddl
     - title: Data Manipulation Language (DML)
