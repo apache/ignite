@@ -1443,36 +1443,51 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     if (optimistic() && !implicit()) {
                         try {
                             if (needReadVer) {
-                                EntryGetResult res = primaryLocal(entry) ?
-                                    entry.innerGetVersioned(
+                                if (primaryLocal(entry)) {
+                                    cctx.database().checkpointReadLock();
+
+                                    try {
+                                        EntryGetResult res = entry.innerGetVersioned(
+                                            null,
+                                            this,
+                                            /*metrics*/retval,
+                                            /*events*/retval,
+                                            CU.subjectId(this, cctx),
+                                            entryProcessor,
+                                            resolveTaskName(),
+                                            null,
+                                            keepBinary,
+                                            null);
+
+                                        if (res != null) {
+                                            old = res.value();
+                                            readVer = res.version();
+                                        }
+                                    }
+                                    finally {
+                                        cctx.database().checkpointReadUnlock();
+                                    }
+                                }
+                            }
+                            else {
+                                cctx.database().checkpointReadLock();
+
+                                try {
+                                    old = entry.innerGet(
                                         null,
                                         this,
+                                        /*read through*/false,
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
-                                        keepBinary,
-                                        null) : null;
-
-                                if (res != null) {
-                                    old = res.value();
-                                    readVer = res.version();
+                                        keepBinary);
                                 }
-                            }
-                            else {
-                                old = entry.innerGet(
-                                    null,
-                                    this,
-                                    /*read through*/false,
-                                    /*metrics*/retval,
-                                    /*events*/retval,
-                                    CU.subjectId(this, cctx),
-                                    entryProcessor,
-                                    resolveTaskName(),
-                                    null,
-                                    keepBinary);
+                                finally {
+                                    cctx.database().checkpointReadUnlock();
+                                }
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
