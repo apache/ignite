@@ -77,9 +77,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -87,7 +86,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         storageCfg.setPageSize(1024).setWalMode(LOG_ONLY).setWalSegmentSize(4 * 1024 * 1024);
 
-        storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)
+        storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
             .setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(storageCfg);
