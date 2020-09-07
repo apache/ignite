@@ -150,7 +150,7 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        data = simulate_nodes_failure(servers, ignite_config, test_config)
+        data = simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, survived_node)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
@@ -235,12 +235,10 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, ignite_config, test_config):
+def simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, survived_node):
     """
     Perform node failure scenario
     """
-    failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator, test_config.nodes_to_kill)
-
     ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
     _, first_terminated = servers.exec_on_nodes_async(failed_nodes, network_fail_task(ignite_config, test_config))
