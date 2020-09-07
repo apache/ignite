@@ -555,7 +555,7 @@ public final class IgniteSystemProperties {
 
     /** Flag indicating whether atomic operations allowed for use inside transactions. */
     @SystemProperty(value = "Allows atomic operations inside transactions.",
-        defaultValue = "" + DFLT_ALLOW_ATOMIC_OPS_IN_TX)
+        defaultValue = "true")
     public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
 
     /** Atomic cache deferred update response buffer size. */
