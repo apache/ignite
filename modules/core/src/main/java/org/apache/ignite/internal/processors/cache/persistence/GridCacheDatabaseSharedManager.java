@@ -191,11 +191,13 @@ import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** */
-    @SystemProperty(value = "Skip IO sync on checkpoint.")
+    @SystemProperty(value = "Sets the flag controlling if the I/O sync needs to be skipped on a checkpoint. " +
+        "Defaults to false")
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
     /** Skip checkpoint on node stop flag. */
-    @SystemProperty(value = "Skip checkpoint on node stop flag.")
+    @SystemProperty(value = "Sets the flag controlling of a checkpoint needs to be skipped during a node termination." +
+        " Defaults to false.")
     public static final String IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP = "IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP";
 
     /** Log read lock holders. */

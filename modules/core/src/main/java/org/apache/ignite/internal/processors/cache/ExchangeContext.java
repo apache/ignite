@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  */
 public class ExchangeContext {
     /** Enables exchange compatibility with protocol version 1. */
-    @SystemProperty(value = "Enables exchange compatibility with protocol version 1.")
+    @SystemProperty(value = "Enables the compatibility mode for the exchange protocol of version 1.")
     public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
 
     /** Logger. */

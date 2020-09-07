@@ -140,7 +140,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /** Property name for entry lock timeout in milliseconds. Default is 1000. */
-    @SystemProperty(value = "Entry lock timeout in milliseconds. Default is 1000.",
+    @SystemProperty(value = "Sets the entry's lock timeout in milliseconds. Defaults to 1000 milliseconds.",
         type = Long.class)
     public static final String ENTRY_LOCK_TIMEOUT_ENV = "ENTRY_LOCK_TIMEOUT";
 

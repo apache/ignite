@@ -79,7 +79,7 @@ public final class IgniteSystemProperties {
      * node start as a daemon node. Node that this system property will override
      * {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()} configuration.
      */
-    @SystemProperty(value = "If true Ignite will start as a daemon node. Note that this system property " +
+    @SystemProperty("If true Ignite will start as a daemon node. Note that this system property " +
         "will override IgniteConfiguration.isDaemon() configuration.")
     public static final String IGNITE_DAEMON = "IGNITE_DAEMON";
 
@@ -88,7 +88,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code true} - no shutdown hook will be set. */
-    @SystemProperty(value = "If true then no shutdown hook will be set.")
+    @SystemProperty("If true then no shutdown hook will be set.")
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -99,7 +99,7 @@ public final class IgniteSystemProperties {
      * {@link org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
      * be allowed.
      */
-    @SystemProperty(value = "If true requirement for proper node ordering " +
+    @SystemProperty("If true requirement for proper node ordering " +
         "by discovery SPI will be disabled. Use with care, as proper node ordering is required for cache consistency. If set to true, " +
         "then any discovery SPI can be used with distributed cache, otherwise, only discovery SPIs that have " +
         "annotation @GridDiscoverySpiOrderSupport(true) will be allowed.")
@@ -120,7 +120,7 @@ public final class IgniteSystemProperties {
      * during the start of the first node in the cluster. The chosen value will survive the first node shutdown
      * and will override the property value on all newly joining nodes.
      */
-    @SystemProperty(value = "If this system property is set to false - no checks for new versions will " +
+    @SystemProperty("If this system property is set to false - no checks for new versions will " +
         "be performed by Ignite. By default, Ignite periodically checks for the new version and prints out the " +
         "message into the log if a new version of Ignite is available for download. Update notifier enabled flag is " +
         "a cluster-wide value and determined according to the local setting during the start of the first node in " +
@@ -140,7 +140,7 @@ public final class IgniteSystemProperties {
      * If this system property is present (any value) - no ASCII logo will
      * be printed.
      */
-    @SystemProperty(value = "If this system property is present (any value) - no ASCII logo will be printed.")
+    @SystemProperty("If this system property is present (any value) - no ASCII logo will be printed.")
     public static final String IGNITE_NO_ASCII = "IGNITE_NO_ASCII";
 
     /**
@@ -158,7 +158,7 @@ public final class IgniteSystemProperties {
     /**
      * This property does not allow Ignite to override Jetty log configuration for REST processor.
      */
-    @SystemProperty(value = "If true then disallow Ignite to override Jetty log configuration for REST processor.")
+    @SystemProperty("If true then disallow Ignite to override Jetty log configuration for REST processor.")
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
     /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
@@ -180,7 +180,7 @@ public final class IgniteSystemProperties {
      * This property allows to override default behavior that rest processor
      * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
      */
-    @SystemProperty(value = "Enables start of the rest processor on client node. Default is false.")
+    @SystemProperty("Enables start of the rest processor on client node. Default is false.")
     public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
 
     /**
@@ -190,7 +190,7 @@ public final class IgniteSystemProperties {
      * @deprecated Should be made default in Apache Ignite 3.0.
      */
     @Deprecated
-    @SystemProperty(value = "If true output format of GridRestCommand.CACHE_GET_ALL will change from " +
+    @SystemProperty("If true output format of GridRestCommand.CACHE_GET_ALL will change from " +
         "{k: v, ...} to [{\"key\": k, \"value\": v}, ...] to allow non-string keys output.")
     public static final String IGNITE_REST_GETALL_AS_ARRAY = "IGNITE_REST_GETALL_AS_ARRAY";
 
@@ -211,9 +211,9 @@ public final class IgniteSystemProperties {
      * Note that if you use <tt>ignite.{sh|bat}</tt> scripts to start Ignite they
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
-    @SystemProperty(value = "In quiet mode, only warning and errors are printed into the log additionally to a shortened version of " +
-        "standard output on the start. Note that if you use ignite.{sh|bat} scripts to start Ignite they start by " +
-        "default in quiet mode. You can supply -v flag to override it.")
+    @SystemProperty("In quiet mode, only warning and errors are printed into the log additionally to a " +
+        "shortened version of standard output on the start. Note that if you use ignite.{sh|bat} scripts to start " +
+        "Ignite they start by default in quiet mode. You can supply -v flag to override it.")
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
@@ -221,13 +221,13 @@ public final class IgniteSystemProperties {
      * Troubleshooting logger makes logging more verbose without enabling debug mode
      * to provide more detailed logs without performance penalty.
      */
-    @SystemProperty(value = "Enables troubleshooting logger. " +
+    @SystemProperty("Enables troubleshooting logger. " +
         "Troubleshooting logger makes logging more verbose without enabling debug mode to provide more detailed " +
         "logs without performance penalty.")
     public static final String IGNITE_TROUBLESHOOTING_LOGGER = "IGNITE_TROUBLESHOOTING_LOGGER";
 
     /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
-    @SystemProperty(value = "Enables writing sensitive information in toString() output.")
+    @SystemProperty("Enables writing sensitive information in toString() output.")
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /** Maximum length for {@code toString()} result. */
@@ -244,7 +244,7 @@ public final class IgniteSystemProperties {
      * in configuration, then default console appender will be added.
      * Set this property to {@code false} if no appenders should be added.
      */
-    @SystemProperty(value = "If true (default) and Ignite is launched in verbose mode (see IGNITE_QUIET) " +
+    @SystemProperty("If true (default) and Ignite is launched in verbose mode (see IGNITE_QUIET) " +
         "and no console appenders can be found in configuration, then default console appender will be added. " +
         "Set this property to false if no appenders should be added.")
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
@@ -258,7 +258,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
     /** PME-free switch explicitly disabled. */
-    @SystemProperty(value = "Disables PME-free switch.")
+    @SystemProperty("Disables PME-free switch.")
     public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
 
     /** Name of the system property defining name of command line program. */
@@ -374,7 +374,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
     /** System property to enable experimental commands in control.sh script. */
-    @SystemProperty(value = "Enables experimental commands in control.sh script.")
+    @SystemProperty("Enables experimental commands in control.sh script.")
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
     /** System property to hold SSH user name for visor-started nodes. */
@@ -397,7 +397,7 @@ public final class IgniteSystemProperties {
      * System property to disable {@link HostnameVerifier} for SSL connections.
      * Can be used for development with self-signed certificates. Default value is {@code false}.
      */
-    @SystemProperty(value = "Disables HostnameVerifier for SSL connections. " +
+    @SystemProperty("Disables HostnameVerifier for SSL connections. " +
         "Can be used for development with self-signed certificates. Default value is false.")
     public static final String IGNITE_DISABLE_HOSTNAME_VERIFIER = "IGNITE_DISABLE_HOSTNAME_VERIFIER";
 
@@ -416,7 +416,7 @@ public final class IgniteSystemProperties {
      * Flag that will force Ignite to fill memory block with some recognisable pattern right before
      * this memory block is released. This will help to recognize cases when already released memory is accessed.
      */
-    @SystemProperty(value = "Force Ignite to fill memory block with some recognisable pattern right before this " +
+    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
         "memory block is released. This will help to recognize cases when already released memory is accessed.")
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
@@ -439,11 +439,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TCP_DISCOVERY_ADDRESSES = "IGNITE_TCP_DISCOVERY_ADDRESSES";
 
     /** Flag indicating whether performance suggestions output on start should be disabled. */
-    @SystemProperty(value = "Disables performance suggestions output on start.")
+    @SystemProperty("Disables performance suggestions output on start.")
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /** Flag indicating whether atomic operations allowed for use inside transactions. */
-    @SystemProperty(value = "Allows atomic operations inside transactions.")
+    @SystemProperty("Allows atomic operations inside transactions.")
     public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
 
     /** Atomic cache deferred update response buffer size. */
@@ -493,16 +493,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /** If this property is set to {@code true} then shared memory space native debug will be enabled. */
-    @SystemProperty(value = "Enables native debug of the shared memory space.")
+    @SystemProperty("Enables native debug of the shared memory space.")
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /** Property allowing to skip configuration consistency checks. */
-    @SystemProperty(value = "Skip configuration consistency checks.")
+    @SystemProperty("Skip configuration consistency checks.")
     public static final String IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
         "IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
 
     /** Flag indicating whether validation of keys put to cache should be disabled. */
-    @SystemProperty(value = "Disables validation of keys put to cache.")
+    @SystemProperty("Disables validation of keys put to cache.")
     public static final String IGNITE_CACHE_KEY_VALIDATION_DISABLED = "IGNITE_CACHE_KEY_VALIDATION_DISABLED";
 
     /** Environment variable to override logging directory that has been set in logger configuration. */
@@ -527,7 +527,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Default is {@code false}.
      */
-    @SystemProperty(value = "Enables Ignite to append hash code of Ignite class as hex string and append JVM name " +
+    @SystemProperty("Enables Ignite to append hash code of Ignite class as hex string and append JVM name " +
         "returned by RuntimeMXBean.getName(). This may be helpful when running Ignite in some application server " +
         "clusters or similar environments to avoid MBean name collisions. Default is false.")
     public static final String IGNITE_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
@@ -538,7 +538,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables Ignite to append hash code of class loader to MXBean name. Default is true.")
+    @SystemProperty("Enables Ignite to append hash code of class loader to MXBean name. Default is true.")
     public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
 
     /**
@@ -547,7 +547,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}
      */
-    @SystemProperty(value = "Disable MBeans registration. This may be helpful if MBeans are not allowed " +
+    @SystemProperty("Disable MBeans registration. This may be helpful if MBeans are not allowed " +
         "e.g. for security reasons. Default is false")
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
@@ -556,7 +556,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty(value = "Enables test features. Default is false.")
+    @SystemProperty("Enables test features. Default is false.")
     public static final String IGNITE_TEST_FEATURES_ENABLED = "IGNITE_TEST_FEATURES_ENABLED";
 
     /** Property controlling size of buffer holding last exception. Default value of {@code 1000}. */
@@ -564,7 +564,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /** Property controlling default behavior of cache client flag. */
-    @SystemProperty(value = "Starts node in client mode. Have lower priority than configuration value.")
+    @SystemProperty("Starts node in client mode. Have lower priority than configuration value.")
     public static final String IGNITE_CACHE_CLIENT = "IGNITE_CACHE_CLIENT";
 
     /**
@@ -572,7 +572,7 @@ public final class IgniteSystemProperties {
      * is passed in. This is needed to pass TCK tests which use default URL and assume isolated cache managers
      * for different class loaders.
      */
-    @SystemProperty(value = "Enables CacheManager to start grid with isolated " +
+    @SystemProperty("Enables CacheManager to start grid with isolated " +
         "IP finder when default URL is passed in. This is needed to pass TCK tests which use default URL and " +
         "assume isolated cache managers for different class loaders.")
     public static final String IGNITE_JCACHE_DEFAULT_ISOLATED = "IGNITE_CACHE_CLIENT";
@@ -596,7 +596,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE = "IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE";
 
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
-    @SystemProperty(value = "Disables fallback to H2 SQL parser if the internal SQL parser fails to " +
+    @SystemProperty("Disables fallback to H2 SQL parser if the internal SQL parser fails to " +
         "parse the statement.")
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
@@ -606,11 +606,11 @@ public final class IgniteSystemProperties {
      * @deprecated Since version 2.8.
      */
     @Deprecated
-    @SystemProperty(value = "Force all SQL queries to be processed lazily regardless of what clients request.")
+    @SystemProperty("Force all SQL queries to be processed lazily regardless of what clients request.")
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
-    @SystemProperty(value = "Disables SQL system views")
+    @SystemProperty("Disables SQL system views")
     public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
 
     /** SQL retry timeout in milliseconds. */
@@ -618,7 +618,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 
     /** Enable backward compatible handling of UUID through DDL. */
-    @SystemProperty(value = "Enables backward compatible handling of UUID through DDL.")
+    @SystemProperty("Enables backward compatible handling of UUID through DDL.")
     public static final String IGNITE_SQL_UUID_DDL_BYTE_FORMAT = "IGNITE_SQL_UUID_DDL_BYTE_FORMAT";
 
     /** Maximum size for affinity assignment history. */
@@ -651,15 +651,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
     /** If this property is set to {@code true} then Ignite will log thread dump in case of partition exchange timeout. */
-    @SystemProperty(value = "Enables logging thread dump in case of partition exchange timeout.")
+    @SystemProperty("Enables logging thread dump in case of partition exchange timeout.")
     public static final String IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT = "IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT";
 
     /** Enable dump SPI stats to diagnostic logs. */
-    @SystemProperty(value = "Enables dump SPI stats to diagnostic log.")
+    @SystemProperty("Enables dump SPI stats to diagnostic log.")
     public static final String IGNITE_IO_DUMP_ON_TIMEOUT = "IGNITE_IO_DUMP_ON_TIMEOUT";
 
     /** Diagnostic flag. */
-    @SystemProperty(value = "Enables diagnostic flag.")
+    @SystemProperty("Enables diagnostic flag.")
     public static final String IGNITE_DIAGNOSTIC_ENABLED = "IGNITE_DIAGNOSTIC_ENABLED";
 
     /** Cache operations that take more time than value of this property will be output to log. Set to {@code 0} to disable. */
@@ -686,14 +686,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
-    @SystemProperty(value = "Enables local store keeps primary only. Backward compatibility flag.")
+    @SystemProperty("Enables local store keeps primary only. Backward compatibility flag.")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
 
     /**
      * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
      * {@link Serializable} classes.
      */
-    @SystemProperty(value = "Manages OptimizedMarshaller behavior of serialVersionUID computation " +
+    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
         "for Serializable classes.")
     public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
@@ -703,7 +703,7 @@ public final class IgniteSystemProperties {
      * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
      * in algorithms that encrypts data in String format.
      */
-    @SystemProperty(value = "Manages type of serialization mechanism for String that is " +
+    @SystemProperty("Manages type of serialization mechanism for String that is " +
         "marshalled/unmarshalled by BinaryMarshaller. Should be used for cases when a String contains a surrogate " +
         "symbol without its pair one. This is frequently used in algorithms that encrypts data in String format.")
     public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
@@ -727,7 +727,7 @@ public final class IgniteSystemProperties {
      * Default value is {@code false}. Should be switched to {@code true} if there are
      * any problems in communication layer.
      */
-    @SystemProperty(value = "Enables default selected keys set to be used inside GridNioServer " +
+    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
         "which lead to some extra garbage generation when processing selected keys. Default value is false. " +
         "Should be switched to true if there are any problems in communication layer.")
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
@@ -767,7 +767,7 @@ public final class IgniteSystemProperties {
      * that fixes P2P class loading for {@link CacheEntryProcessor}, but it will be incompatible with old versions
      * of Ignite.
      */
-    @SystemProperty(value = "Enables backward compatibility of StreamTransformer.from(CacheEntryProcessor) method. " +
+    @SystemProperty("Enables backward compatibility of StreamTransformer.from(CacheEntryProcessor) method. " +
         "If the property is true, then the wrapped CacheEntryProcessor won't be able to be loaded " +
         "over P2P class loading. If the property is false, then another implementation of StreamTransformer " +
         "will be returned, that fixes P2P class loading for CacheEntryProcessor, " +
@@ -783,7 +783,7 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
-    @SystemProperty(value = "If enabled then tree-based data structures - TreeMap and TreeSet - will " +
+    @SystemProperty("If enabled then tree-based data structures - TreeMap and TreeSet - will " +
         "not be wrapped into special holders introduced to overcome serialization issue caused by missing " +
         "Comparable interface on BinaryObject.")
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
@@ -792,7 +792,7 @@ public final class IgniteSystemProperties {
      * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
      * only one node for host in cluster.
      */
-    @SystemProperty(value = "Enables consistent ID to calculate by host name, without port, " +
+    @SystemProperty("Enables consistent ID to calculate by host name, without port, " +
         "and you can use only one node for host in cluster.")
     public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
 
@@ -818,7 +818,7 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
-    @SystemProperty(value = "Enables fields to be written by BinaryMarshaller in sorted order. " +
+    @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used.")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
 
@@ -827,7 +827,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
      */
-    @SystemProperty(value = "Whether Ignite can access unaligned memory addresses. Defaults to false, " +
+    @SystemProperty("Whether Ignite can access unaligned memory addresses. Defaults to false, " +
         "meaning that unaligned access will be performed only on x86 architecture.")
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
@@ -849,7 +849,7 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
-    @SystemProperty(value = "If enabled BinaryObject will be unwrapped before passing to " +
+    @SystemProperty("If enabled BinaryObject will be unwrapped before passing to " +
         "IndexingSpi to preserve old behavior query processor with IndexingSpi.")
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
@@ -894,11 +894,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
 
     /** Property to setup locally start all existing caches on client node start. */
-    @SystemProperty(value = "Enables local start all existing caches on client node start.")
+    @SystemProperty("Enables local start all existing caches on client node start.")
     public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
 
     /** Skip CRC calculation flag. */
-    @SystemProperty(value = "Skip CRC calculation flag.")
+    @SystemProperty("Skip CRC calculation flag.")
     public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
 
     /**
@@ -920,7 +920,7 @@ public final class IgniteSystemProperties {
      * This property is intended for integration or performance tests.
      * Default is {@code false}.
      */
-    @SystemProperty(value = "Prefer historical rebalance if there's enough history regardless off all heuristics. " +
+    @SystemProperty("Prefer historical rebalance if there's enough history regardless off all heuristics. " +
         "This property is intended for integration or performance tests. Default is false.")
     public static final String IGNITE_PREFER_WAL_REBALANCE = "IGNITE_PREFER_WAL_REBALANCE";
 
@@ -936,7 +936,7 @@ public final class IgniteSystemProperties {
      *     Default is {@code false}, which means that service security permissions will be respected.
      * </p>
      */
-    @SystemProperty(value = "Enables Ignite to switch to compatibility mode with versions that " +
+    @SystemProperty("Enables Ignite to switch to compatibility mode with versions that " +
         "don't support service security permissions. In this case security permissions will be ignored (if they set)." +
         " Default is false, which means that service security permissions will be respected.")
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
@@ -979,7 +979,7 @@ public final class IgniteSystemProperties {
      * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
      * connection.
      */
-    @SystemProperty(value = "Enables node to forcible fail a remote node when it " +
+    @SystemProperty("Enables node to forcible fail a remote node when it " +
         "fails to establish a communication connection.")
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
@@ -994,7 +994,7 @@ public final class IgniteSystemProperties {
             "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
 
     /** If this property is set, then Ignite will use Async File IO factory by default. */
-    @SystemProperty(value = "If this property is set, then Ignite will use Async File IO factory by default.")
+    @SystemProperty("If this property is set, then Ignite will use Async File IO factory by default.")
     public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
 
     /**
@@ -1003,9 +1003,8 @@ public final class IgniteSystemProperties {
      *
      * Default value is {@code false}.
      */
-    @SystemProperty(value = "If the property is set " +
-        "org.apache.ignite.internal.pagemem.wal.record.TxRecord records will be logged to WAL. " +
-        "Default value is false.")
+    @SystemProperty("If the property is set org.apache.ignite.internal.pagemem.wal.record.TxRecord records " +
+        "will be logged to WAL. Default value is false.")
     public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
 
     /** Max amount of remembered errors for {@link GridLogThrottle}. */
@@ -1025,8 +1024,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /** Property for setup Ignite WAL segment sync timeout. */
-    @SystemProperty(value = "WAL segment sync timeout in milliseconds.",
-        type = Long.class)
+    @SystemProperty(value = "WAL segment sync timeout in milliseconds.", type = Long.class)
     public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
 
     /**
@@ -1034,11 +1032,11 @@ public final class IgniteSystemProperties {
      *
      * Default value is {@code false}.
      */
-    @SystemProperty(value = "Enables usage of legacy node comparator (based on node order). Default value is false.")
+    @SystemProperty("Enables usage of legacy node comparator (based on node order). Default value is false.")
     public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
 
     /** Property that indicates should be mapped byte buffer used or not. */
-    @SystemProperty(value = "Enables usage of the mapped byte buffer.")
+    @SystemProperty("Enables usage of the mapped byte buffer.")
     public static final String IGNITE_WAL_MMAP = "IGNITE_WAL_MMAP";
 
     /**
@@ -1046,14 +1044,14 @@ public final class IgniteSystemProperties {
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
-    @SystemProperty(value = "When set to true, Data store folders are generated only by consistent id, " +
+    @SystemProperty("When set to true, Data store folders are generated only by consistent id, " +
         "and no consistent ID will be set based on existing data store folders. This option also enables compatible " +
         "folder generation mode as it was before 2.3.")
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID =
         "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /** Ignite JVM pause detector disabled. */
-    @SystemProperty(value = "Disables JVM pause detector.")
+    @SystemProperty("Disables JVM pause detector.")
     public static final String IGNITE_JVM_PAUSE_DETECTOR_DISABLED = "IGNITE_JVM_PAUSE_DETECTOR_DISABLED";
 
     /** Ignite JVM pause detector precision. */
@@ -1075,7 +1073,7 @@ public final class IgniteSystemProperties {
      * @deprecated Is not used anymore.
      */
     @Deprecated
-    @SystemProperty(value = "Enables WAL debug log on recovery. Default value is false.")
+    @SystemProperty("Enables WAL debug log on recovery. Default value is false.")
     public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
 
     /** Number of checkpoint history entries held in memory. */
@@ -1084,7 +1082,7 @@ public final class IgniteSystemProperties {
         "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
 
     /** If this property is set to {@code true} enable logging in {@link GridClient}. */
-    @SystemProperty(value = "Enables logging in GridClient.")
+    @SystemProperty("Enables logging in GridClient.")
     public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
@@ -1092,7 +1090,7 @@ public final class IgniteSystemProperties {
      * feature is available in classpath and OS and filesystem settings allows to enable this mode.
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables direct IO. Direct IO enabled only if JAR " +
+    @SystemProperty("Enables direct IO. Direct IO enabled only if JAR " +
         "file with corresponding feature is available in classpath and OS and filesystem settings allows to enable " +
         "this mode. Default is true.")
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
@@ -1101,14 +1099,14 @@ public final class IgniteSystemProperties {
      * When set to {@code true}, warnings that are intended for development environments and not for production
      * (such as coding mistakes in code using Ignite) will not be logged.
      */
-    @SystemProperty(value = "Enables development environments warnings.")
+    @SystemProperty("Enables development environments warnings.")
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
      * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      */
-    @SystemProperty(value = "When set to true (default), pages are written to page store without " +
+    @SystemProperty("When set to true (default), pages are written to page store without " +
         "holding segment lock (with delay). Because other thread may require exactly the same page to be loaded " +
         "from store, reads are protected by locking.")
     public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
@@ -1117,7 +1115,7 @@ public final class IgniteSystemProperties {
      * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
      * Default is {@code false}.
      */
-    @SystemProperty(value = "When set to true, WAL implementation with dedicated worker will be used " +
+    @SystemProperty("When set to true, WAL implementation with dedicated worker will be used " +
         "even in FSYNC mode. Default is false.")
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
@@ -1126,7 +1124,7 @@ public final class IgniteSystemProperties {
      * {@link CacheConfiguration#setOnheapCacheEnabled(boolean)}.
      * Default is {@code false}.
      */
-    @SystemProperty(value = "When set to true, on-heap cache cannot be enabled - see " +
+    @SystemProperty("When set to true, on-heap cache cannot be enabled - see " +
         "CacheConfiguration.setOnheapCacheEnabled(boolean). Default is false.")
     public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
 
@@ -1135,7 +1133,7 @@ public final class IgniteSystemProperties {
      * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
      * Default is {@code true}.
      */
-    @SystemProperty(value = "When set to false, loaded pages implementation is switched to previous " +
+    @SystemProperty("When set to false, loaded pages implementation is switched to previous " +
         "version of implementation, FullPageIdTable. True value enables 'Robin Hood hashing: backward shift " +
         "deletion'. Default is true.")
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
@@ -1174,7 +1172,7 @@ public final class IgniteSystemProperties {
      *
      * @see CacheConfiguration#isReadFromBackup()
      */
-    @SystemProperty(value = "Enables read load balancing, that means 'get' requests will be distributed " +
+    @SystemProperty("Enables read load balancing, that means 'get' requests will be distributed " +
         "between primary and backup nodes if it is possible and CacheConfiguration.isReadFromBackup() is true. " +
         "Default is true.")
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
@@ -1207,7 +1205,7 @@ public final class IgniteSystemProperties {
      * OWNING state.
      * Default is {@code true}.
      */
-    @SystemProperty(value = "When set to false, WAL will not be automatically disabled during " +
+    @SystemProperty("When set to false, WAL will not be automatically disabled during " +
         "rebalancing if there is no partition in OWNING state. Default is true.")
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
@@ -1216,7 +1214,7 @@ public final class IgniteSystemProperties {
      * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
      * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
      */
-    @SystemProperty(value = "Enables pending transaction tracker. Affects impact of " +
+    @SystemProperty("Enables pending transaction tracker. Affects impact of " +
         IGNITE_DISABLE_WAL_DURING_REBALANCING + " property: if this property is set, WAL anyway won't be " +
         "disabled during rebalancing triggered by baseline topology change.")
     public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
@@ -1228,7 +1226,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty(value = "When property is set false each next exchange will try to compare with previous. " +
+    @SystemProperty("When property is set false each next exchange will try to compare with previous. " +
         "If last rebalance is equivalent with new possible one, new rebalance does not trigger. " +
         "Set the property true and each exchange will try to trigger new rebalance. Default is false.")
     public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION =
@@ -1249,7 +1247,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty(value = "Enables Ignite to skip partitions sizes check on partition " +
+    @SystemProperty("Enables Ignite to skip partitions sizes check on partition " +
         "validation after rebalance has finished. Partitions sizes may differs on nodes when Expiry Policy is in " +
         "use and it is ok due to lazy entry eviction mechanics. There is no need to disable partition size " +
         "validation either in normal case or when expiry policy is configured for cache. But it should be disabled " +
@@ -1261,7 +1259,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables threads dumping on critical node failure. Default is true.")
+    @SystemProperty("Enables threads dumping on critical node failure. Default is true.")
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
@@ -1298,7 +1296,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty(value = "When set to true, Ignite will allow execute DML operation " +
+    @SystemProperty("When set to true, Ignite will allow execute DML operation " +
         "(MERGE|INSERT|UPDATE|DELETE) within transaction for non MVCC mode. Default is false.")
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
@@ -1319,7 +1317,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
 
     /** Try reuse memory on deactivation. Useful in case of huge page memory region size. */
-    @SystemProperty(value = "Try reuse memory on deactivation.")
+    @SystemProperty("Try reuse memory on deactivation.")
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
@@ -1358,11 +1356,11 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables start caches in parallel. Default is true.")
+    @SystemProperty("Enables start caches in parallel. Default is true.")
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /** For test purposes only. Force Mvcc mode. */
-    @SystemProperty(value = "For test purposes only. Force Mvcc mode.")
+    @SystemProperty("For test purposes only. Force Mvcc mode.")
     public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
 
     /**
@@ -1370,7 +1368,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Allows to log additional information about all restored partitions after " +
+    @SystemProperty("Allows to log additional information about all restored partitions after " +
         "binary and logical recovery phases. Default is true.")
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
@@ -1379,7 +1377,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty(value = "Disables cache interceptor triggering in case of conflicts. Default is false.")
+    @SystemProperty("Disables cache interceptor triggering in case of conflicts. Default is false.")
     public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /** Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}. */
@@ -1401,7 +1399,7 @@ public final class IgniteSystemProperties {
      * <p/>
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Manages the type of the implementation of the service processor " +
+    @SystemProperty("Manages the type of the implementation of the service processor " +
         "(implementation of the IgniteServices). All nodes in the cluster must have the same value of this property. " +
         "If the property is true then event-driven implementation of the service processor will be used. If the " +
         "property is false then internal cache based implementation of service processor will be used.")
@@ -1416,7 +1414,7 @@ public final class IgniteSystemProperties {
      * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
      * metrics will be unavailable via JMX too.
      */
-    @SystemProperty(value = "When set to true, cache metrics are not included into the discovery metrics " +
+    @SystemProperty("When set to true, cache metrics are not included into the discovery metrics " +
         "update message (in this case message contains only cluster metrics). By default cache metrics are included " +
         "into the message and calculated each time the message is sent. Cache metrics sending can also be turned off " +
         "by disabling statistics per each cache, but in this case some cache metrics will be unavailable via JMX too.")
@@ -1451,7 +1449,7 @@ public final class IgniteSystemProperties {
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
-    @SystemProperty(value = "Disables memory optimization: BitSets instead of HashSets to store " +
+    @SystemProperty("Disables memory optimization: BitSets instead of HashSets to store " +
         "partitions. When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to " +
         "improve contains() which leads to extra memory consumption, otherwise we use view on the list of cluster " +
         "nodes to reduce memory consumption on redundant data structures.")
@@ -1476,13 +1474,13 @@ public final class IgniteSystemProperties {
      * Flag to enable triggering failure handler for node if unrecoverable partition inconsistency is
      * discovered during partition update counters exchange.
      */
-    @SystemProperty(value = "Enables triggering failure handler for node if unrecoverable " +
+    @SystemProperty("Enables triggering failure handler for node if unrecoverable " +
         "partition inconsistency is discovered during partition update counters exchange.")
     public static final String IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY =
         "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
 
     /** Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements. */
-    @SystemProperty(value = "Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.")
+    @SystemProperty("Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.")
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
 
     /** Interval between logging of time of next auto-adjust. */
@@ -1503,13 +1501,13 @@ public final class IgniteSystemProperties {
      * is set, static cache configuration will override persisted configuration. DDL operations are not allowed
      * when this system property is set.
      */
-    @SystemProperty(value = "Keep static cache configuration even if stored cache data differs from " +
+    @SystemProperty("Keep static cache configuration even if stored cache data differs from " +
         "the static config. When this property is set, static cache configuration will override persisted " +
         "configuration. DDL operations are not allowed when this system property is set.")
     public static final String IGNITE_KEEP_STATIC_CACHE_CONFIGURATION = "IGNITE_KEEP_STATIC_CACHE_CONFIGURATION";
 
     /** Enable backward compatible to use 'IGNITE' as SQL system schema. */
-    @SystemProperty(value = "Enable backward compatible to use 'IGNITE' as SQL system schema.")
+    @SystemProperty("Enable backward compatible to use 'IGNITE' as SQL system schema.")
     public static final String IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE = "IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE";
 
     /**
@@ -1517,7 +1515,7 @@ public final class IgniteSystemProperties {
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      */
-    @SystemProperty(value = "Shows if dump requests from local node to near node are allowed, when " +
+    @SystemProperty("Shows if dump requests from local node to near node are allowed, when " +
         "long running transaction is found. If allowed, the compute request to near node will be made to get " +
         "thread dump of transaction owner thread.")
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
@@ -1559,13 +1557,13 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables threads locks dumping on critical node failure. Default is true.")
+    @SystemProperty("Enables threads locks dumping on critical node failure. Default is true.")
     public static final String IGNITE_DUMP_PAGE_LOCK_ON_FAILURE = "IGNITE_DUMP_PAGE_LOCK_ON_FAILURE";
 
     /**
      * Scan the classpath on startup and log all the files containing in it.
      */
-    @SystemProperty(value = "Scan the classpath on startup and log all the files containing in it.")
+    @SystemProperty("Scan the classpath on startup and log all the files containing in it.")
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
 
     /**
@@ -1608,7 +1606,7 @@ public final class IgniteSystemProperties {
      * onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such onheap caching.
      * Default value is <code>false</code>.
      */
-    @SystemProperty(value = "Disables onheap caching of pages lists (free lists and reuse lists). " +
+    @SystemProperty("Disables onheap caching of pages lists (free lists and reuse lists). " +
         "If persistence is enabled changes to page lists are not stored to page memory immediately, they are " +
         "cached in onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such " +
         "onheap caching. Default value is false.")
@@ -1634,7 +1632,7 @@ public final class IgniteSystemProperties {
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
      * restart.
      */
-    @SystemProperty(value = "Enables extended logging of indexes create/rebuild process. Default false. " +
+    @SystemProperty("Enables extended logging of indexes create/rebuild process. Default false. " +
         "Warning: enabling that option can lead to performance degradation of index creation, rebuilding and " +
         "node restart.")
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
@@ -1645,7 +1643,7 @@ public final class IgniteSystemProperties {
      * that have backups configured.
      */
     @IgniteExperimental
-    @SystemProperty(value = "Enables node to wait until all of its data is backed up before " +
+    @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured.")
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
@@ -1656,7 +1654,7 @@ public final class IgniteSystemProperties {
      * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
      * compatibility. By default, {@code false}.
      */
-    @SystemProperty(value = "Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
+    @SystemProperty("Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
         "when value IgniteConfiguration#getLocalHost is ip, for backward compatibility. By default, false.")
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
