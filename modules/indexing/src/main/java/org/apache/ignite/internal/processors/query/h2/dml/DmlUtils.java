@@ -200,7 +200,7 @@ public class DmlUtils {
             try (
                 MTC.TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
                     .create(SQL_CACHE_UPDATE, MTC.span())
-                    .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(1)))
+                    .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
                 if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
@@ -311,7 +311,7 @@ public class DmlUtils {
             try (
                 MTC.TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
                     .create(SQL_CACHE_UPDATE, MTC.span())
-                    .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(1)))
+                    .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
                 cctx.cache().put(t.getKey(), t.getValue());
             }
