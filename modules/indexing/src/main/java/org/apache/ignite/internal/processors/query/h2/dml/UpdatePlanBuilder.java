@@ -82,7 +82,7 @@ public final class UpdatePlanBuilder {
 
     /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
     private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_SQL_ALLOW_KEY_VAL_UPDATES);
+        IgniteSystemProperties.IGNITE_SQL_ALLOW_KEY_VAL_UPDATES, false);
 
     /**
      * Constructor.

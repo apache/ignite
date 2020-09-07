@@ -284,7 +284,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             SchemaIndexCacheVisitorClosure clo
         ) {
             this.clo = clo;
-            indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING) ? new SchemaIndexCacheStat() : null;
+            indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
         }
 
         /** {@inheritDoc} */

@@ -41,7 +41,8 @@ public interface AffinityAssignment {
 
     /** Disable memory affinity optimizations. */
     boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
+        false
     );
 
     /**

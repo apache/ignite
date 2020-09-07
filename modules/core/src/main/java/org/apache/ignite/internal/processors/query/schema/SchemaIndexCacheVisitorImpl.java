@@ -49,7 +49,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
  */
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Is extra index rebuild logging enabled. */
-    private final boolean collectStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING);
+    private final boolean collectStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */
     private final GridCacheContext cctx;

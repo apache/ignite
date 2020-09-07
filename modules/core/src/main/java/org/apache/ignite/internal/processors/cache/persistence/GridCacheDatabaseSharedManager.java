@@ -345,7 +345,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile long checkpointReadLockTimeout;
 
     /** Flag allows to log additional information about partitions during recovery phases. */
-    private final boolean recoveryVerboseLogging = getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING);
+    private final boolean recoveryVerboseLogging =
+        getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, false);
 
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
