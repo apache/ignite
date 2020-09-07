@@ -60,7 +60,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     public static final String BINARY_QUEUE = "BINARY_QUEUE";
 
     /** Binary queue mode. */
-    private static final boolean BINARY_QUEUE_MODE = IgniteSystemProperties.getBoolean(BINARY_QUEUE, false);
+    private static final boolean BINARY_QUEUE_MODE = IgniteSystemProperties.getBoolean(BINARY_QUEUE);
 
     /** */
     private static final int QUEUE_CAPACITY = 3;

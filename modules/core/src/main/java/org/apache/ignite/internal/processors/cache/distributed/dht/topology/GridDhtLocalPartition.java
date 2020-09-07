@@ -102,7 +102,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public static final int DFLT_CACHE_REMOVE_ENTRIES_TTL = 10_000;
 
     /** ONLY FOR TEST PURPOSES: force test checkpoint on partition eviction. */
-    private static boolean forceTestCheckpointOnEviction = IgniteSystemProperties.getBoolean("TEST_CHECKPOINT_ON_EVICTION", false);
+    private static boolean forceTestCheckpointOnEviction = IgniteSystemProperties.getBoolean("TEST_CHECKPOINT_ON_EVICTION");
 
     /** ONLY FOR TEST PURPOSES: partition id where test checkpoint was enforced during eviction. */
     static volatile Integer partWhereTestCheckpointEnforced;

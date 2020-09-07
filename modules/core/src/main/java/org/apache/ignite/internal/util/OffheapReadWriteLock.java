@@ -40,7 +40,7 @@ public class OffheapReadWriteLock {
     public static final int SPIN_CNT = IgniteSystemProperties.getInteger("IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT", 32);
 
     /** */
-    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean("IGNITE_OFFHEAP_RANDOM_RW_POLICY", false);
+    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean("IGNITE_OFFHEAP_RANDOM_RW_POLICY");
 
     /** Always lock tag. */
     public static final int TAG_LOCK_ALWAYS = -1;

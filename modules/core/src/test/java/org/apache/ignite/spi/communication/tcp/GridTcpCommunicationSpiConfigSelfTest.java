@@ -115,7 +115,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
      */
     @Test
     public void testEmptyHostNameAttrByDefault() throws Exception {
-        assertFalse(getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false));
+        assertFalse(getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES));
 
         IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(
             new InetSocketAddress(0).getAddress()

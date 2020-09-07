@@ -80,7 +80,7 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-        boolean printRecords = getBoolean(PRINT_RECORDS, false); //TODO read them from argumetns
+        boolean printRecords = getBoolean(PRINT_RECORDS); //TODO read them from argumetns
         boolean printStat = getBoolean(PRINT_STAT, true); //TODO read them from argumetns
         ProcessSensitiveData sensitiveData = getEnum(SENSITIVE_DATA, SHOW); //TODO read them from argumetns
 
