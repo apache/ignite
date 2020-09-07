@@ -33,7 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.LongUnaryOperator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.jetbrains.annotations.Nullable;
@@ -189,7 +188,7 @@ public class CacheContinuousQueryEventBuffer {
                     continue;
             }
             else {
-                if (batch.endCntr < ackedUpdCntr.get() && batch.tryRollOver(entry.topologyVersion()) == RETRY)
+                if (batch.endCntr < ackedUpdCntr.get() && batch.tryRollOver() == RETRY)
                     continue;
 
                 pendingCurrSize.incrementAndGet();
@@ -246,13 +245,14 @@ public class CacheContinuousQueryEventBuffer {
      * @return Current batch.
      */
     private Batch initBatch(boolean backup) {
-        Batch batch = curBatch.get();
+        Batch batch;
 
-        if (batch != null)
-            return batch;
+        for (;;) {
+            batch = curBatch.get();
 
-        for (; ; ) {
-            // todo refactor this
+            if (batch != null)
+                return batch;
+
             long curCntr = currPartCntr.applyAsLong(backup ? 1 : 0);
 
             if (curCntr == -1)
@@ -261,11 +261,6 @@ public class CacheContinuousQueryEventBuffer {
             batch = new Batch(curCntr + 1, 0L, new CacheContinuousQueryEntry[BUF_SIZE]);
 
             if (curBatch.compareAndSet(null, batch))
-                return batch;
-
-            batch = curBatch.get();
-
-            if (batch != null)
                 return batch;
         }
     }
@@ -482,26 +477,24 @@ public class CacheContinuousQueryEventBuffer {
                     lastProc = pos;
 
                     if (pos == entries.length - 1)
-                        rollOver(startCntr + BUF_SIZE, filtered, entry.topologyVersion());
+                        rollOver(startCntr + BUF_SIZE, filtered);
                 }
                 else if (endCntr < ackedUpdCntr0)
-                    rollOver(ackedUpdCntr0 + 1, 0, entry.topologyVersion());
+                    rollOver(ackedUpdCntr0 + 1, 0);
 
                 return res;
             }
         }
 
-        /**
-         * @param topVer Topology version of current processing entry.
-         */
-        private synchronized Object tryRollOver(AffinityTopologyVersion topVer) {
+        /** Try to change batch to the new one. */
+        private synchronized Object tryRollOver() {
             if (entries == null)
                 return RETRY;
 
             long ackedUpdCntr0 = ackedUpdCntr.get();
 
             if (endCntr < ackedUpdCntr0) {
-                rollOver(ackedUpdCntr0 + 1, 0, topVer);
+                rollOver(ackedUpdCntr0 + 1, 0);
 
                 return RETRY;
             }
@@ -512,9 +505,8 @@ public class CacheContinuousQueryEventBuffer {
         /**
          * @param startCntr Start batch position.
          * @param filtered Number of filtered entries prior start position.
-         * @param topVer Next topology version based on cache entry.
          */
-        private void rollOver(long startCntr, long filtered, AffinityTopologyVersion topVer) {
+        private void rollOver(long startCntr, long filtered) {
             Arrays.fill(entries, null);
 
             Batch nextBatch = new Batch(startCntr,
