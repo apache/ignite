@@ -178,15 +178,29 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     }
 
     /**
-     * Tests tracing of MERGE query.
+     * Tests tracing of multiple MERGE query.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testMerge() throws Exception {
+    public void testMultipleMerge() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
-        checkDmlQuerySpans("MERGE INTO " + prsnTable + "(_key, prsnVal) SELECT _key, 0 FROM " + prsnTable);
+        checkDmlQuerySpans("MERGE INTO " + prsnTable + "(_key, prsnVal) SELECT _key, 0 FROM " + prsnTable,
+            true, TEST_TABLE_POPULATION);
+    }
+
+    /**
+     * Tests tracing of single MERGE query.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSingleMerge() throws Exception {
+        String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
+
+        checkDmlQuerySpans("MERGE INTO " + prsnTable + "(_key, prsnId, prsnVal) VALUES (" + keyCntr.get() + ", 0, 0)",
+            false, 1);
     }
 
     /**
@@ -198,7 +212,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     public void testUpdate() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
-        checkDmlQuerySpans("UPDATE " + prsnTable + " SET prsnVal = (prsnVal + 1)");
+        checkDmlQuerySpans("UPDATE " + prsnTable + " SET prsnVal = (prsnVal + 1)",
+            true, TEST_TABLE_POPULATION);
     }
 
     /**
@@ -210,33 +225,34 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     public void testDelete() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
-        checkDmlQuerySpans("DELETE FROM " + prsnTable );
+        checkDmlQuerySpans("DELETE FROM " + prsnTable, true, TEST_TABLE_POPULATION);
     }
 
     /**
-     * Tests tracing of INSERT query.
+     * Tests tracing of multiple INSERT query.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testInsert() throws Exception {
+    public void testMultipleInsert() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
-        SpanId rootSpan = executeAndCheckRootSpan(
-            "INSERT INTO " + prsnTable + "(_key, prsnId, prsnVal) VALUES" +
-                " (" + keyCntr.incrementAndGet() + ", 0, 0)," +
-                " (" + keyCntr.incrementAndGet() + ", 1, 1)",
-            TEST_SCHEMA, false, false, false);
+        checkDmlQuerySpans("INSERT INTO " + prsnTable + "(_key, prsnId, prsnVal) VALUES" +
+            " (" + keyCntr.incrementAndGet() + ", 0, 0)," +
+            " (" + keyCntr.incrementAndGet() + ", 1, 1)", false, 2);
+    }
 
-        checkChildSpan(SQL_QRY_PARSE, rootSpan);
+    /**
+     * Tests tracing of single INSERT query.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSingleInsert() throws Exception {
+        String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
-        SpanId dmlExecSpan = checkChildSpan(SQL_DML_QRY_EXECUTE, rootSpan);
-
-        int cacheUpdates = findChildSpans(SQL_CACHE_UPDATE, dmlExecSpan).stream()
-            .mapToInt(span -> getAttribute(span, SQL_CACHE_UPDATES))
-            .sum();
-
-        assertEquals(2, cacheUpdates);
+        checkDmlQuerySpans("INSERT INTO " + prsnTable + "(_key, prsnId, prsnVal) VALUES" +
+            " (" + keyCntr.incrementAndGet() + ", 0, 0)", false, 1);
     }
 
     /**
@@ -419,26 +435,32 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
     /**
      * Executes DML query and checks corresponding span tree.
+     *
+     * @param qry SQL query to execute.
+     * @param fetchRequired Whether query need to fetch data before cache update.
      */
-    private void checkDmlQuerySpans(String qry) throws Exception {
+    private void checkDmlQuerySpans(String qry, boolean fetchRequired, int expCacheUpdates) throws Exception {
         SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false,false,false);
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
 
         SpanId dmlExecSpan = checkChildSpan(SQL_DML_QRY_EXECUTE, rootSpan);
 
-        checkChildSpan(SQL_ITER_OPEN, dmlExecSpan);
+        if (fetchRequired) {
+            checkChildSpan(SQL_ITER_OPEN, dmlExecSpan);
 
-        int fetchedRows = findChildSpans(SQL_PAGE_FETCH, null).stream()
-            .mapToInt(span -> getAttribute(span, SQL_PAGE_ROWS))
-            .sum();
+            int fetchedRows = findChildSpans(SQL_PAGE_FETCH, null).stream()
+                .mapToInt(span -> getAttribute(span, SQL_PAGE_ROWS))
+                .sum();
+
+            assertEquals(expCacheUpdates, fetchedRows);
+        }
 
         int cacheUpdates = findChildSpans(SQL_CACHE_UPDATE, dmlExecSpan).stream()
             .mapToInt(span -> getAttribute(span, SQL_CACHE_UPDATES))
             .sum();
 
-        assertEquals(TEST_TABLE_POPULATION, fetchedRows);
-        assertEquals(TEST_TABLE_POPULATION, cacheUpdates);
+        assertEquals(expCacheUpdates, cacheUpdates);
     }
 
     /**
