@@ -331,6 +331,14 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
+                AffinityTopologyVersion lockedTopVer = tx.topologyVersionSnapshot();
+
+                if (lockedTopVer == null && tx.local()) {
+                    // Update write version to match current topology, otherwise it can lag behind joining node's
+                    // init version. Reproduced by IgniteCacheEntryProcessorNodeJoinTest.testAllEntryProcessorNodeJoin.
+                    tx.writeVersion(cctx.versions().next(topVer.topologyVersion()));
+                }
+
                 tx.topologyVersion(topVer);
 
                 if (this.topVer == null)

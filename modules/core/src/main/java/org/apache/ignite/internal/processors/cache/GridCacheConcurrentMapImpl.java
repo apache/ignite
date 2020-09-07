@@ -61,13 +61,13 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         GridCacheContext ctx,
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         final boolean create,
-        final boolean touch) {
-        return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, touch);
+        final boolean skipReserve) {
+        return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, skipReserve);
     }
 
     /**
@@ -76,7 +76,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param topVer Topology version.
      * @param key Key.
      * @param create Create flag.
-     * @param clearing {@code True} if called by partition clearing.
+     * @param skipReserve {@code True} if a partition reservation should be skipped.
      */
     protected final GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         @Nullable CacheMapHolder hld,
@@ -84,7 +84,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         final boolean create,
-        final boolean clearing
+        final boolean skipReserve
     ) {
         if (hld == null)
             hld = entriesMapIfExists(ctx.cacheIdBoxed());
@@ -95,7 +95,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         GridCacheMapEntry doomed = null;
 
         boolean done = false;
-        boolean reserved = clearing;
+        boolean reserved = skipReserve;
         int sizeChange = 0;
 
         try {
@@ -218,7 +218,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             return cur;
         }
         finally {
-            if (!clearing) {
+            if (!skipReserve) {
                 if (reserved)
                     release(sizeChange, hld, cur);
                 else {

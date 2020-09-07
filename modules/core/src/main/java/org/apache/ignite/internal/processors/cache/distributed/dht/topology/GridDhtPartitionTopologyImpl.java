@@ -2832,15 +2832,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 List<GridDhtLocalPartition> parts = localPartitions();
 
-                int renting = 0;
+                boolean renting = false;
 
                 for (GridDhtLocalPartition part0 : parts) {
-                    if (part0.state() == RENTING)
-                        renting++;
+                    if (part0.state() == RENTING) {
+                        renting = true;
+
+                        break;
+                    }
                 }
 
                 // Refresh partitions when all is evicted and local map is updated.
-                if (renting == 0)
+                if (!renting)
                     ctx.exchange().scheduleResendPartitions();
 
                 return true;

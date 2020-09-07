@@ -223,10 +223,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
-                // State should be switched to MOVING (or partition recreated) during PME.
-                assert part.state() != RENTING && part.state() != EVICTED : part;
-
-                if (part.state() != MOVING && part.state() != OWNING) {
+                // State should be switched to MOVING during PME.
+                if (part.state() != MOVING) {
                     throw new AssertionError("Partition has invalid state for rebalance "
                         + aff.topologyVersion() + " " + part);
                 }
