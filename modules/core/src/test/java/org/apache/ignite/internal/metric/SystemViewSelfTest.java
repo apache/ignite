@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -78,6 +80,7 @@ import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
@@ -87,6 +90,7 @@ import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -100,6 +104,7 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
@@ -114,7 +119,6 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -641,7 +645,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(g.localNode().id(), txv.localNodeId());
                 assertEquals(txv.isolation(), REPEATABLE_READ);
                 assertEquals(txv.concurrency(), PESSIMISTIC);
-                assertEquals(txv.state(), ACTIVE);
+                assertEquals(txv.state(), TransactionState.ACTIVE);
                 assertNotNull(txv.xid());
                 assertFalse(txv.system());
                 assertFalse(txv.implicit());
@@ -685,7 +689,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertEquals(g.localNode().id(), tx.localNodeId());
                     assertEquals(tx.isolation(), SERIALIZABLE);
                     assertEquals(tx.concurrency(), OPTIMISTIC);
-                    assertEquals(tx.state(), ACTIVE);
+                    assertEquals(tx.state(), TransactionState.ACTIVE);
                     assertNotNull(tx.xid());
                     assertFalse(tx.system());
                     assertFalse(tx.implicit());
@@ -1070,6 +1074,41 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             ));
 
             assertEquals(2, F.size(iter));
+        }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true)
+                )))) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+            SystemView<MetastorageView> metaStoreView = ignite.context().systemView().view(METASTORE_VIEW);
+
+            assertNotNull(metaStoreView);
+
+            String name = "test-key";
+            String val = "test-value";
+
+            db.checkpointReadLock();
+
+            try {
+                db.metaStorage().write(name, val);
+            } finally {
+                db.checkpointReadUnlock();
+            }
+
+            MetastorageView testKey = F.find(metaStoreView, null,
+                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+
+            assertNotNull(testKey);
         }
     }
 

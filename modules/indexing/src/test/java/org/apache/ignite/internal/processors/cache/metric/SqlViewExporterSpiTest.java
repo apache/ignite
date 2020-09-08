@@ -62,6 +62,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,6 +70,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -81,6 +83,7 @@ import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFOR
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
@@ -451,7 +454,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DATASTREAM_THREADPOOL_QUEUE",
             "DATA_REGION_PAGE_LISTS",
             "CACHE_GROUP_PAGE_LISTS",
-            "PARTITION_STATES"
+            "PARTITION_STATES",
+            "METASTORAGE"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -1069,6 +1073,30 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         finally {
             ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
         }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite0.context().cache().context().database();
+
+        SystemView<MetastorageView> metaStoreView = ignite0.context().systemView().view(METASTORE_VIEW);
+
+        assertNotNull(metaStoreView);
+
+        String name = "test-key";
+        String val = "test-value";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            name, val).size());
     }
 
     /**
