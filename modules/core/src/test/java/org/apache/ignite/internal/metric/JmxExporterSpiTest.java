@@ -66,6 +66,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -75,8 +76,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.transactions.Transaction;
@@ -98,6 +97,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -1033,10 +1033,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     public void testMetastorage() throws Exception {
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
-        SystemView<MetastorageView> metaStoreView = ignite.context().systemView().view(METASTORE_VIEW);
-
-        assertNotNull(metaStoreView);
-
         String name = "test-key";
         String val = "test-value";
 
@@ -1058,6 +1054,47 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         fail();
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        try(IgniteEx ignite1 = startGrid(1)) {
+            DistributedMetaStorage dms = ignite.context().distributedMetastorage();
+
+            String name = "test-distributed-key";
+            String val = "test-distributed-value";
+
+            dms.write(name, val);
+
+            TabularDataSupport view = systemView(DISTRIBUTED_METASTORE_VIEW);
+
+            boolean found = false;
+
+            for (int i = 0; i < view.size(); i++) {
+                CompositeData row = view.get(new Object[] {i});
+
+                if (row.get("name").equals(name) && row.get("value").equals(val)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            assertTrue(found);
+
+            assertTrue(waitForCondition(() -> {
+                TabularDataSupport view1 = systemView(ignite1, DISTRIBUTED_METASTORE_VIEW);
+
+                for (int i = 0; i < view1.size(); i++) {
+                    CompositeData row = view1.get(new Object[] {i});
+
+                    if (row.get("name").equals(name) && row.get("value").equals(val))
+                        return true;
+                }
+
+                return false;
+            }, getTestTimeout()));
+        }
     }
 
     /** */

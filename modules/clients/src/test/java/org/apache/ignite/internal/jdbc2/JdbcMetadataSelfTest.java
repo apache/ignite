@@ -345,7 +345,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "STRIPED_THREADPOOL_QUEUE",
             "DATASTREAM_THREADPOOL_QUEUE",
             "CACHE_GROUP_PAGE_LISTS",
-            "PARTITION_STATES"
+            "PARTITION_STATES",
+            "DISTRIBUTED_METASTORAGE"
         ));
 
         Set<String> actViews = new HashSet<>();

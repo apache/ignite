@@ -208,7 +208,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final String METASTORE_VIEW = "metastorage";
 
     /** Description of the system view for a {@link MetaStorage}. */
-    public static final String METASTORE_VIEW_DESC = "Local metastorage keys";
+    public static final String METASTORE_VIEW_DESC = "Local metastorage data";
 
     /**
      * Threshold to calculate limit for pages list on-heap caches.

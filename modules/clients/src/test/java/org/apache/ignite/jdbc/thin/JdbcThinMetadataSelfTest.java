@@ -443,7 +443,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATASTREAM_THREADPOOL_QUEUE",
                 "SYS.CACHE_GROUP_PAGE_LISTS",
                 "SYS.DATA_REGION_PAGE_LISTS",
-                "SYS.PARTITION_STATES"
+                "SYS.PARTITION_STATES",
+                "SYS.DISTRIBUTED_METASTORAGE"
             ))
         );
     }
@@ -988,7 +989,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PARTITION_STATES.PARTITION_ID.null.10",
                 "SYS.PARTITION_STATES.NODE_ID.null.2147483647",
                 "SYS.PARTITION_STATES.STATE.null.2147483647",
-                "SYS.PARTITION_STATES.IS_PRIMARY.null.1"
+                "SYS.PARTITION_STATES.IS_PRIMARY.null.1",
+                "SYS.DISTRIBUTED_METASTORAGE.NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
