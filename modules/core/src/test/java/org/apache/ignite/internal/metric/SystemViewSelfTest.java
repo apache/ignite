@@ -90,7 +90,6 @@ import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -119,6 +118,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -645,7 +645,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(g.localNode().id(), txv.localNodeId());
                 assertEquals(txv.isolation(), REPEATABLE_READ);
                 assertEquals(txv.concurrency(), PESSIMISTIC);
-                assertEquals(txv.state(), TransactionState.ACTIVE);
+                assertEquals(txv.state(), ACTIVE);
                 assertNotNull(txv.xid());
                 assertFalse(txv.system());
                 assertFalse(txv.implicit());
@@ -689,7 +689,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertEquals(g.localNode().id(), tx.localNodeId());
                     assertEquals(tx.isolation(), SERIALIZABLE);
                     assertEquals(tx.concurrency(), OPTIMISTIC);
-                    assertEquals(tx.state(), TransactionState.ACTIVE);
+                    assertEquals(tx.state(), ACTIVE);
                     assertNotNull(tx.xid());
                     assertFalse(tx.system());
                     assertFalse(tx.implicit());

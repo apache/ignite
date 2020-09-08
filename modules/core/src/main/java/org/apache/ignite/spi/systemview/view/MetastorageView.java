@@ -24,10 +24,10 @@ import org.apache.ignite.internal.managers.systemview.walker.Order;
  */
 public class MetastorageView {
     /** */
-    String name;
+    private final String name;
 
     /** */
-    String value;
+    private final String value;
 
     /**
      * @param name Name.
