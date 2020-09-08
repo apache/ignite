@@ -179,6 +179,26 @@ public class CachePartitionDefragmentationManager {
 
                     Map<Integer, LinkMap> mappingByPartition = new HashMap<>();
 
+                    CacheGroupContext newCtx = new CacheGroupContext(
+                        sharedCtx,
+                        grpId,
+                        grpCtx.receivedFrom(),
+                        CacheType.USER,
+                        grpCtx.config(),
+                        grpCtx.affinityNode(),
+                        partRegion,
+                        grpCtx.cacheObjectContext(),
+                        null,
+                        null,
+                        grpCtx.localStartVersion(),
+                        true,
+                        false,
+                        true
+                    );
+
+                    // This will initialize partition meta in index partition - meta tree and reuse list.
+                    newCtx.start();
+
                     for (int partId : parts) {
                         if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
                             createMappingPageStore(grpId, workDir, pageStoreFactory, partId);
@@ -220,7 +240,7 @@ public class CachePartitionDefragmentationManager {
                         sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
 
                         try {
-                            LinkMap map = defragmentSinglePartition(grpCtx, partId, treeIterator, pageSize);
+                            LinkMap map = defragmentSinglePartition(grpCtx, newCtx, partId, treeIterator, pageSize);
                             mappingByPartition.put(partId, map);
                         }
                         finally {
@@ -272,12 +292,11 @@ public class CachePartitionDefragmentationManager {
                         finally {
                             sharedCtx.database().checkpointReadUnlock();
                         }
-                    }
-                    idxPageStore.sync();
 
-                    sharedCtx.database()
-                            .forceCheckpoint("index") //TODO Provide a good reason.
-                            .futureFor(CheckpointState.FINISHED).get();
+                        sharedCtx.database()
+                                .forceCheckpoint("index") //TODO Provide a good reason.
+                                .futureFor(CheckpointState.FINISHED).get();
+                    }
 
                     oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
                     ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
@@ -342,6 +361,7 @@ public class CachePartitionDefragmentationManager {
      */
     private LinkMap defragmentSinglePartition(
         CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
         int partId,
         TreeIterator treeIterator,
         int pageSize
@@ -354,25 +374,6 @@ public class CachePartitionDefragmentationManager {
         PageMemoryEx cachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
         int grpId = grpCtx.groupId();
-
-        CacheGroupContext newCtx = new CacheGroupContext(
-            sharedCtx,
-            grpId,
-            grpCtx.receivedFrom(),
-            CacheType.USER,
-            grpCtx.config(),
-            grpCtx.affinityNode(),
-            partRegion,
-            grpCtx.cacheObjectContext(),
-            null,
-            null,
-            grpCtx.localStartVersion(),
-            true,
-            false,
-            true
-        );
-
-        newCtx.start();
 
         GridCacheOffheapManager.GridCacheDataStore newCacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newCtx, partId, true, defrgCtx.busyLock(), defrgCtx.log);
 
