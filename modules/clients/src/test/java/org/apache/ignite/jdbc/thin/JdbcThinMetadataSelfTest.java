@@ -999,11 +999,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647"
                 ));
 
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
