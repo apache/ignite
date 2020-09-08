@@ -126,7 +126,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     public static final String ACTIVE_BASELINE_NODES = "ActiveBaselineNodes";
 
     /** @see IgniteSystemProperties#IGNITE_UPDATE_NOTIFIER */
-    public static final boolean DFLT_IGNITE_UPDATE_NOTIFIER = true;
+    public static final boolean DFLT_UPDATE_NOTIFIER = true;
 
     /** @see IgniteSystemProperties#IGNITE_DIAGNOSTIC_ENABLED */
     public static final boolean DFLT_DIAGNOSTIC_ENABLED = true;
@@ -182,7 +182,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_IGNITE_UPDATE_NOTIFIER));
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
 

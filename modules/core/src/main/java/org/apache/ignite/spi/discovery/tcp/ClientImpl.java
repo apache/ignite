@@ -141,7 +141,7 @@ import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.DISCONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.SEGMENTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.STARTING;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.STOPPED;
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_CLIENT_RECONNECT_DELAY;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL;
 
 /**
@@ -1939,7 +1939,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             if (forceFailMsg != null) {
                                 long delay = IgniteSystemProperties.getLong(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY,
-                                    DFLT_DISCO_CLIENT_RECONNECT_DELAY);
+                                    DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY);
 
                                 if (delay > 0) {
                                     U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +

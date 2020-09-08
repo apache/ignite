@@ -108,7 +108,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DFLT_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.DFLT_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_DIAGNOSTIC_ENABLED;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_UPDATE_NOTIFIER;
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
 import static org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl.DFLT_ATOMIC_CACHE_QUERY_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DFLT_DUMP_PAGE_LOCK_ON_FAILURE;
@@ -133,7 +133,7 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_CLIENT_RECONNECT_DELAY;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.DFLT_PROG_NAME;
@@ -194,14 +194,14 @@ public final class IgniteSystemProperties {
      * be allowed.
      */
     @SystemProperty("If true requirement for proper node ordering " +
-        "by discovery SPI will be disabled. Use with care, as proper node ordering is required for cache consistency. If set to true, " +
-        "then any discovery SPI can be used with distributed cache, otherwise, only discovery SPIs that have " +
-        "annotation @GridDiscoverySpiOrderSupport(true) will be allowed")
+        "by discovery SPI will be disabled. Use with care, as proper node ordering is required for cache consistency. " +
+        "If set to true, then any discovery SPI can be used with distributed cache, otherwise, " +
+        "only discovery SPIs that have annotation @GridDiscoverySpiOrderSupport(true) will be allowed")
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
 
     /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
     @SystemProperty(value = "Reconnect delay in milliseconds for client node that was failed forcible",
-        type = Long.class, defaults = DFLT_DISCO_CLIENT_RECONNECT_DELAY + " milliseconds")
+        type = Long.class, defaults = DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY + " milliseconds")
     public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
 
     /**
@@ -219,7 +219,7 @@ public final class IgniteSystemProperties {
         "message into the log if a new version of Ignite is available for download. Update notifier enabled flag is " +
         "a cluster-wide value and determined according to the local setting during the start of the first node in " +
         "the cluster. The chosen value will survive the first node shutdown and will override the property value " +
-        "on all newly joining nodes", defaults = "" + DFLT_IGNITE_UPDATE_NOTIFIER)
+        "on all newly joining nodes", defaults = "" + DFLT_UPDATE_NOTIFIER)
     public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
     /**

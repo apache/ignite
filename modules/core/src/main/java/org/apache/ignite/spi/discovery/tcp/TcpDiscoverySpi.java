@@ -299,7 +299,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     public static final int DFLT_NODE_IDS_HISTORY_SIZE = 50;
 
     /** @see IgniteSystemProperties#IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY */
-    public static final int DFLT_DISCO_CLIENT_RECONNECT_DELAY = 10_000;
+    public static final int DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY = 10_000;
 
     /** @see IgniteSystemProperties#CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL */
     public static final int DFLT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL = 2 * 60_000;
