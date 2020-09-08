@@ -27,8 +27,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.junit.Test;
@@ -73,6 +77,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
         return cfg;
+    }
+
+    @Override
+    protected void afterTest() throws Exception {
+        super.afterTest();
+
+        GridQueryProcessor.idxCls = null;
     }
 
     /** */
@@ -124,7 +135,15 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
+        GridQueryProcessor.idxCls = CaptureRebuildGridQueryIndexing.class;
+
         IgniteEx node = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        CaptureRebuildGridQueryIndexing indexing = (CaptureRebuildGridQueryIndexing) node.context().query().getIndexing();
+
+        assertFalse(indexing.didRebuildIndexes());
 
         IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
@@ -138,6 +157,33 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         for (int k = 0; k < ADDED_KEYS_COUNT; k++)
             cache.get(k);
+    }
+
+    /**
+     * IgniteH2Indexing that captures index rebuild operations.
+     */
+    public static class CaptureRebuildGridQueryIndexing extends IgniteH2Indexing {
+        /**
+         * Whether index rebuild happened.
+         */
+        private boolean rebuiltIndexes;
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+            IgniteInternalFuture<?> future = super.rebuildIndexesFromHash(cctx);
+            rebuiltIndexes = future != null;
+            return future;
+        }
+
+        /**
+         * Get index rebuild flag.
+         *
+         * @return Whether index rebuild happened.
+         */
+        public boolean didRebuildIndexes() {
+            return rebuiltIndexes;
+        }
+
     }
 
 }
