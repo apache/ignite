@@ -452,6 +452,9 @@ public final class IgniteSystemProperties {
      * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
      * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
      */
+    @SystemProperty(value = "Enables pending transaction tracker. " +
+        "Affects impact of IGNITE_DISABLE_WAL_DURING_REBALANCING property:  if this property is set, " +
+        "WAL anyway won't be disabled during rebalancing triggered by baseline topology change.")
     public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
 
     /**
@@ -913,7 +916,7 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty(value = "Period in milliseconds between calls of the SQL " +
         "statements cache cleanup task. Cleanup tasks clears cache for terminated threads and for threads which did " +
-        "not perform SQL queries within timeout configured via " + IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT +
+        "not perform SQL queries within timeout configured via IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT" +
         " property", type = Long.class, defaults = "10 seconds")
     public static final String IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD = "IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD";
 
@@ -1817,7 +1820,7 @@ public final class IgniteSystemProperties {
         "will be dumped in log with information about how much time did it spent in system time (time while aquiring " +
         "locks, preparing, commiting, etc) and user time (time when client node runs some code while holding " +
         "transaction and not waiting it). Equals 0 if not set. No long transactions are dumped in log if nor " +
-        "this parameter neither " + IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is set", type = Long.class)
+        "this parameter neither IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT is set", type = Long.class)
     public static final String IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD = "IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD";
 
     /**
