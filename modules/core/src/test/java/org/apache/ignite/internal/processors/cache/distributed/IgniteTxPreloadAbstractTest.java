@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -36,7 +35,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -89,14 +87,12 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    int idx = gridIdx.getAndIncrement();
+            () -> {
+                int idx = gridIdx.getAndIncrement();
 
-                    startGrid(idx);
+                startGrid(idx);
 
-                    return null;
-                }
+                return null;
             },
             GRID_CNT - 1,
             "grid-starter-" + getName()

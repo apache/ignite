@@ -45,7 +45,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -158,11 +157,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture fut) {
-                            if (fut.error() != null)
-                                onDone(fut.error());
-                        }
+                    fut.listen(future -> {
+                        if (future.error() != null)
+                            onDone(future.error());
                     });
                 }
                 else if (fut.error() != null)

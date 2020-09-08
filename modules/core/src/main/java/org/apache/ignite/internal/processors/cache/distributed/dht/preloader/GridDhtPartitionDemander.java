@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -271,13 +270,11 @@ public class GridDhtPartitionDemander {
                     if (t.error() == null) {
                         IgniteInternalFuture<Boolean> fut0 = ctx.exchange().forceRebalance(exchFut.exchangeId());
 
-                        fut0.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                            @Override public void apply(IgniteInternalFuture<Boolean> fut1) {
-                                try {
-                                    fut.onDone(fut1.get());
-                                } catch (Exception e) {
-                                    fut.onDone(e);
-                                }
+                        fut0.listen(future -> {
+                            try {
+                                fut.onDone(future.get());
+                            } catch (Exception e) {
+                                fut.onDone(e);
                             }
                         });
                     }

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -580,13 +579,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     @Override public String toString() {
         synchronized (this) {
             Map<UUID, String> dhtRes = F.viewReadOnly(mappings,
-                new IgniteClosure<GridDhtAtomicAbstractUpdateRequest, String>() {
-                    @Override public String apply(GridDhtAtomicAbstractUpdateRequest req) {
-                        return "[res=" + req.hasResponse() +
-                            ", size=" + req.size() +
-                            ", nearSize=" + req.nearSize() + ']';
-                    }
-                }
+                req -> "[res=" + req.hasResponse() +
+                    ", size=" + req.size() +
+                    ", nearSize=" + req.nearSize() + ']'
             );
 
             return S.toString(GridDhtAtomicAbstractUpdateFuture.class, this, "dhtRes", dhtRes);

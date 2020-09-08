@@ -90,29 +90,27 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteInternalFuture<Long> gridAndCacheAccessFut = GridTestUtils.runMultiThreadedAsync(new Callable<Integer>() {
-            @Override public Integer call() throws Exception {
-                final Set<Integer> keysSet = new LinkedHashSet<>();
+        IgniteInternalFuture<Long> gridAndCacheAccessFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            final Set<Integer> keysSet = new LinkedHashSet<>();
 
-                keysSet.add(1);
-                keysSet.add(2);
-                keysSet.add(FAILING_KEY);
-                keysSet.add(4);
-                keysSet.add(5);
+            keysSet.add(1);
+            keysSet.add(2);
+            keysSet.add(FAILING_KEY);
+            keysSet.add(4);
+            keysSet.add(5);
 
-                while (!done.get()) {
-                    try {
-                        grid(DATA_READ_GRID_IDX).<Integer, Integer>cache("config").getAll(keysSet);
-                    }
-                    catch (Throwable ignore) {
-                        // No-op.
-                    }
-                    if (Thread.currentThread().isInterrupted())
-                        throw new IgniteInterruptedCheckedException("Execution of [" + Thread.currentThread().getName() + "] Interrupted. Test is probably timed out");
+            while (!done.get()) {
+                try {
+                    grid(DATA_READ_GRID_IDX).<Integer, Integer>cache("config").getAll(keysSet);
                 }
-
-                return null;
+                catch (Throwable ignore) {
+                    // No-op.
+                }
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteInterruptedCheckedException("Execution of [" + Thread.currentThread().getName() + "] Interrupted. Test is probably timed out");
             }
+
+            return null;
         }, 4, "loader");
 
         IgniteInternalFuture<Void> startFut = GridTestUtils.runAsync(new Callable<Void>() {

@@ -231,23 +231,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 }
 
                 fut.listen(
-                    new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                        @Override public void apply(IgniteInternalFuture<Object> fut) {
-                            Throwable e = fut.error();
+                    future -> {
+                        Throwable e = future.error();
 
-                            if (e != null) { // Check error first.
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to request keys from preloader " +
-                                        "[keys=" + key + ", err=" + e + ']');
+                        if (e != null) { // Check error first.
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to request keys from preloader " +
+                                    "[keys=" + key + ", err=" + e + ']');
 
-                                if (e instanceof NodeStoppingException)
-                                    return;
+                            if (e instanceof NodeStoppingException)
+                                return;
 
-                                onDone(e);
-                            }
-                            else
-                                map0(true);
+                            onDone(e);
                         }
+                        else
+                            map0(true);
                     }
                 );
 
@@ -413,31 +411,29 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             final ReaderArguments args = readerArgs;
 
             rdrFut.listen(
-                new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        Throwable e = fut.error();
+                future -> {
+                    Throwable e = future.error();
 
-                        if (e != null) {
-                            onDone(e);
+                    if (e != null) {
+                        onDone(e);
 
-                            return;
-                        }
-
-                        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut0 =
-                            cache().getDhtAllAsync(
-                                Collections.singleton(key),
-                                args,
-                                readThrough,
-                                subjId,
-                                taskName,
-                                expiryPlc,
-                                skipVals,
-                                recovery,
-                                null,
-                                mvccSnapshot);
-
-                        fut0.listen(createGetFutureListener());
+                        return;
                     }
+
+                    IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut0 =
+                        cache().getDhtAllAsync(
+                            Collections.singleton(key),
+                            args,
+                            readThrough,
+                            subjId,
+                            taskName,
+                            expiryPlc,
+                            skipVals,
+                            recovery,
+                            null,
+                            mvccSnapshot);
+
+                    fut0.listen(createGetFutureListener());
                 }
             );
 
@@ -455,13 +451,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      */
     @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>
     createGetFutureListener() {
-        return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>() {
-            @Override public void apply(
-                IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut
-            ) {
-                onResult(fut);
-            }
-        };
+        return this::onResult;
     }
 
     /**

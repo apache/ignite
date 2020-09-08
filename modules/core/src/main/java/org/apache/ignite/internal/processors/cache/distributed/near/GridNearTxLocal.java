@@ -109,8 +109,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -548,11 +546,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
-            @Override public Object apply(GridCacheDrInfo val) {
-                return val.value();
-            }
-        });
+        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, GridCacheDrInfo::value);
 
         return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
@@ -1128,16 +1122,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            try {
-                                fut.get();
+                    loadFut.listen(future -> {
+                        try {
+                            future.get();
 
-                                finishFuture(enlistFut, null, true);
-                            }
-                            catch (IgniteCheckedException e) {
-                                finishFuture(enlistFut, e, true);
-                            }
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
                         }
                     });
 
@@ -1330,16 +1322,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            try {
-                                fut.get();
+                    loadFut.listen(future -> {
+                        try {
+                            future.get();
 
-                                finishFuture(enlistFut, null, true);
-                            }
-                            catch (IgniteCheckedException e) {
-                                finishFuture(enlistFut, e, true);
-                            }
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
                         }
                     });
 
@@ -4058,11 +4048,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return prepFut;
 
             if (trackTimeout) {
-                prepFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> f) {
-                        GridNearTxLocal.this.removeTimeoutHandler();
-                    }
-                });
+                prepFut.listen(future -> GridNearTxLocal.this.removeTimeoutHandler());
             }
 
             if (timeout == -1) {
@@ -4303,41 +4289,37 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commit) {
                 final GridNearTxFinishFuture rollbackFut = new GridNearTxFinishFuture<>(cctx, this, false);
 
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
-                        if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
-                            switch (tx.state()) {
-                                case COMMITTED:
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to rollback, transaction is already committed: " + tx);
+                fut.listen(future -> {
+                    if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
+                        switch (tx.state()) {
+                            case COMMITTED:
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to rollback, transaction is already committed: " + tx);
 
-                                    // Fall-through.
+                                // Fall-through.
 
-                                case ROLLED_BACK:
-                                    rollbackFut.forceFinish();
+                            case ROLLED_BACK:
+                                rollbackFut.forceFinish();
 
-                                    assert rollbackFut.isDone() : rollbackFut;
+                                assert rollbackFut.isDone() : rollbackFut;
 
-                                    break;
+                                break;
 
-                                default: // First finish attempt was unsuccessful. Try again.
-                                    rollbackFut.finish(false, clearThreadMap, onTimeout);
+                            default: // First finish attempt was unsuccessful. Try again.
+                                rollbackFut.finish(false, clearThreadMap, onTimeout);
+                        }
+                    }
+                    else {
+                        finishFut.listen(f -> {
+                            try {
+                                f.get();
+
+                                rollbackFut.markInitialized();
                             }
-                        }
-                        else {
-                            finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                    try {
-                                        fut.get();
-
-                                        rollbackFut.markInitialized();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        rollbackFut.onDone(e);
-                                    }
-                                }
-                            });
-                        }
+                            catch (IgniteCheckedException e) {
+                                rollbackFut.onDone(e);
+                            }
+                        });
                     }
                 });
 
@@ -4346,15 +4328,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             else {
                 final GridFutureAdapter<IgniteInternalTx> fut0 = new GridFutureAdapter<>();
 
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                        if (timedOut())
-                            fut0.onDone(new IgniteTxTimeoutCheckedException("Failed to commit transaction, " +
-                                "transaction is concurrently rolled back on timeout: " + tx));
-                        else
-                            fut0.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction, " +
-                                "transaction is concurrently rolled back: " + tx));
-                    }
+                fut.listen(future -> {
+                    if (timedOut())
+                        fut0.onDone(new IgniteTxTimeoutCheckedException("Failed to commit transaction, " +
+                            "transaction is concurrently rolled back on timeout: " + tx));
+                    else
+                        fut0.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction, " +
+                            "transaction is concurrently rolled back: " + tx));
                 });
 
                 return fut0;
@@ -5144,15 +5124,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         if (proceed || (state() == MARKED_ROLLBACK)) {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    // Note: if rollback asynchronously on timeout should not clear thread map
-                    // since thread started tx still should be able to see this tx.
-                    rollbackNearTxLocalAsync(false, true);
+            cctx.kernalContext().closure().runLocalSafe(() -> {
+                // Note: if rollback asynchronously on timeout should not clear thread map
+                // since thread started tx still should be able to see this tx.
+                rollbackNearTxLocalAsync(false, true);
 
-                    U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this));
-                }
+                U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
+                    CU.txString(GridNearTxLocal.this));
             });
         }
         else {

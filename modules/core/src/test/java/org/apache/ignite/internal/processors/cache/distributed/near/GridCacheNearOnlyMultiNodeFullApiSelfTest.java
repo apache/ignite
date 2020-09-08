@@ -38,7 +38,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -46,9 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -141,11 +138,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
 
-        return F.view(super.affinityNodes(), new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return !F.eq(grid(n).name(), grid(nearIdx).name());
-            }
-        });
+        return F.view(super.affinityNodes(), n -> !F.eq(grid(n).name(), grid(nearIdx).name()));
     }
 
     /**
@@ -565,21 +558,19 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    switch (evt.type()) {
-                        case EVT_CACHE_OBJECT_LOCKED:
-                            lockCnt.countDown();
+            grid(0).events().localListen(event -> {
+                switch (event.type()) {
+                    case EVT_CACHE_OBJECT_LOCKED:
+                        lockCnt.countDown();
 
-                            break;
-                        case EVT_CACHE_OBJECT_UNLOCKED:
-                            unlockCnt.countDown();
+                        break;
+                    case EVT_CACHE_OBJECT_UNLOCKED:
+                        unlockCnt.countDown();
 
-                            break;
-                    }
-
-                    return true;
+                        break;
                 }
+
+                return true;
             }, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
             IgniteCache<String, Integer> nearCache = jcache();

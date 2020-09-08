@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -103,18 +102,16 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
 //        }
 
         multithreaded(
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    long start = U.currentTimeMillis();
+            () -> {
+                long start = U.currentTimeMillis();
 
-                    Ignite grid = startGrid(Thread.currentThread().getName());
+                Ignite grid = startGrid(Thread.currentThread().getName());
 
-                    System.out.println(
-                        ">>> Time to start: " + (U.currentTimeMillis() - start) +
-                            ", topSize=" + grid.cluster().nodes().size());
+                System.out.println(
+                    ">>> Time to start: " + (U.currentTimeMillis() - start) +
+                        ", topSize=" + grid.cluster().nodes().size());
 
-                    return null;
-                }
+                return null;
             },
             THREAD_CNT);
     }

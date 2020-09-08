@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
@@ -94,19 +93,16 @@ public class IgniteCacheMessageWriteTimeoutTest extends GridCommonAbstractTest {
     private IgniteInternalFuture<?> startJobThreads(int cnt) {
         final CyclicBarrier b = new CyclicBarrier(cnt);
 
-        return GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int idx = b.await();
+        return GridTestUtils.runMultiThreadedAsync(() -> {
+            int idx = b.await();
 
-                Ignite node = ignite(idx % 3);
+            Ignite node = ignite(idx % 3);
 
-                IgniteCompute comp = node.compute(node.cluster().forRemotes());
+            IgniteCompute comp = node.compute(node.cluster().forRemotes());
 
-                comp.run(new TestJob());
+            comp.run(new TestJob());
 
-                return null;
-            }
-
+            return null;
         }, cnt, "job-thread");
     }
 

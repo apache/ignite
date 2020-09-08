@@ -48,9 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -292,16 +290,14 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
-            spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-                @Override public void apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        singleCnt.incrementAndGet();
+            spi.closure((node, msg) -> {
+                if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                    singleCnt.incrementAndGet();
 
-                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        fullCnt.incrementAndGet();
-                }
+                if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                    fullCnt.incrementAndGet();
             });
         }
     }
@@ -340,19 +336,17 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         String cacheName = "partitioned";
 
         try {
-            cacheC = new IgniteClosure<String, CacheConfiguration<?,?>[]>() {
-                @Override public CacheConfiguration<?,?>[] apply(String igniteInstanceName) {
-                    CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
+            cacheC = igniteInstanceName -> {
+                CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
 
-                    ccfg.setName(cacheName);
-                    ccfg.setWriteSynchronizationMode(FULL_SYNC);
-                    ccfg.setBackups(backups);
-                    ccfg.setPartitionLossPolicy(lossPlc);
-                    ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-                    ccfg.setAffinity(new Map4PartitionsTo4NodesAffinityFunction());
+                ccfg.setName(cacheName);
+                ccfg.setWriteSynchronizationMode(FULL_SYNC);
+                ccfg.setBackups(backups);
+                ccfg.setPartitionLossPolicy(lossPlc);
+                ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+                ccfg.setAffinity(new Map4PartitionsTo4NodesAffinityFunction());
 
-                    return new CacheConfiguration[] {ccfg};
-                }
+                return new CacheConfiguration[] {ccfg};
             };
 
             int nodes = 4;
@@ -558,15 +552,13 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     public void testLateAffinityAssignmentOnBackupLeftAndJoin() throws Exception {
         String cacheName = "single-partitioned";
 
-        cacheC = new IgniteClosure<String, CacheConfiguration<?, ?>[]>() {
-            @Override public CacheConfiguration<?, ?>[] apply(String igniteInstanceName) {
-                CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
+        cacheC = igniteInstanceName -> {
+            CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
 
-                ccfg.setName(cacheName);
-                ccfg.setAffinity(new Map1PartitionTo2NodesAffinityFunction());
+            ccfg.setName(cacheName);
+            ccfg.setAffinity(new Map1PartitionTo2NodesAffinityFunction());
 
-                return new CacheConfiguration[] {ccfg};
-            }
+            return new CacheConfiguration[] {ccfg};
         };
 
         persistence = true;

@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -164,37 +163,35 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         final CyclicBarrier b = new CyclicBarrier(CLIENTS);
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                try {
-                    b.await();
+        GridTestUtils.runMultiThreaded(idx -> {
+            try {
+                b.await();
 
-                    Ignite node = startClientGrid(idx + SRVS);
+                Ignite node = startClientGrid(idx + SRVS);
 
-                    if (createCache) {
-                        for (int c = 0; c < 5; c++) {
-                            for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                boolean updated = false;
+                if (createCache) {
+                    for (int c = 0; c < 5; c++) {
+                        for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
+                            boolean updated = false;
 
-                                while (!updated) {
-                                    try {
-                                        cache.put(c, c);
+                            while (!updated) {
+                                try {
+                                    cache.put(c, c);
 
-                                        updated = true;
-                                    }
-                                    catch (Exception e) {
-                                        assertMvccWriteConflict(e);
-                                    }
+                                    updated = true;
                                 }
-
-                                assertEquals(c, cache.get(c));
+                                catch (Exception e) {
+                                    assertMvccWriteConflict(e);
+                                }
                             }
+
+                            assertEquals(c, cache.get(c));
                         }
                     }
                 }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
             }
         }, CLIENTS, "start-client");
 

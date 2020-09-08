@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -64,17 +62,15 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
         final AtomicInteger preloadStartCnt = new AtomicInteger();
         final AtomicInteger preloadStopCnt = new AtomicInteger();
 
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event e) {
-                if (e.type() == EVT_CACHE_REBALANCE_STARTED)
-                    preloadStartCnt.incrementAndGet();
-                else if (e.type() == EVT_CACHE_REBALANCE_STOPPED)
-                    preloadStopCnt.incrementAndGet();
-                else
-                    fail("Unexpected event type: " + e.type());
+        ignite.events().localListen(e -> {
+            if (e.type() == EVT_CACHE_REBALANCE_STARTED)
+                preloadStartCnt.incrementAndGet();
+            else if (e.type() == EVT_CACHE_REBALANCE_STOPPED)
+                preloadStopCnt.incrementAndGet();
+            else
+                fail("Unexpected event type: " + e.type());
 
-                return true;
-            }
+            return true;
         }, EVT_CACHE_REBALANCE_STARTED, EVT_CACHE_REBALANCE_STOPPED);
 
         startGrid(1);

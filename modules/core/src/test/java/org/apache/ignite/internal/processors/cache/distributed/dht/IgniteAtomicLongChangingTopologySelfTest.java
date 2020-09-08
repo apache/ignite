@@ -127,13 +127,11 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      */
     @Test
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
-        testFailoverWithClient(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite ignite) {
-                for (int i = 0; i < 100; i++) {
-                    IgniteAtomicLong l = ignite.atomicLong("long-" + 1, 0, true);
+        testFailoverWithClient(ignite -> {
+            for (int i = 0; i < 100; i++) {
+                IgniteAtomicLong l = ignite.atomicLong("long-" + 1, 0, true);
 
-                    l.close();
-                }
+                l.close();
             }
         });
     }
@@ -143,19 +141,17 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      */
     @Test
     public void testClientQueueCreateCloseFailover() throws Exception {
-        testFailoverWithClient(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite ignite) {
-                for (int i = 0; i < 100; i++) {
-                    CollectionConfiguration colCfg = new CollectionConfiguration();
+        testFailoverWithClient(ignite -> {
+            for (int i = 0; i < 100; i++) {
+                CollectionConfiguration colCfg = new CollectionConfiguration();
 
-                    colCfg.setBackups(1);
-                    colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+                colCfg.setBackups(1);
+                colCfg.setCacheMode(PARTITIONED);
+                colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
 
-                    IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
+                IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
 
-                    q.close();
-                }
+                q.close();
             }
         });
     }
@@ -182,20 +178,18 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     private void checkClientSetCreateCloseFailover(boolean collocated) throws Exception {
-        testFailoverWithClient(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite ignite) {
-                for (int i = 0; i < 100; i++) {
-                    CollectionConfiguration colCfg = new CollectionConfiguration();
+        testFailoverWithClient(ignite -> {
+            for (int i = 0; i < 100; i++) {
+                CollectionConfiguration colCfg = new CollectionConfiguration();
 
-                    colCfg.setCollocated(collocated);
-                    colCfg.setBackups(1);
-                    colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+                colCfg.setCollocated(collocated);
+                colCfg.setBackups(1);
+                colCfg.setCacheMode(PARTITIONED);
+                colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
 
-                    IgniteSet set = ignite.set("set-" + i, colCfg);
+                IgniteSet set = ignite.set("set-" + i, colCfg);
 
-                    set.close();
-                }
+                set.close();
             }
         });
     }
@@ -416,22 +410,20 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         final CountDownLatch startLatch,
         final AtomicBoolean run)
         throws Exception {
-        return multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    Ignite ignite = startGrid(i);
+        return multithreadedAsync(() -> {
+            try {
+                Ignite ignite = startGrid(i);
 
-                    startLatch.countDown();
+                startLatch.countDown();
 
-                    while (run.get()) {
-                        IgniteAtomicLong cntr = ignite.atomicLong(ATOMIC_LONG_NAME, 0, true);
+                while (run.get()) {
+                    IgniteAtomicLong cntr = ignite.atomicLong(ATOMIC_LONG_NAME, 0, true);
 
-                        queue.add(cntr.getAndIncrement());
-                    }
+                    queue.add(cntr.getAndIncrement());
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }, 1, "grunner-" + i);
     }

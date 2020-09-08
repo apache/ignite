@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteException;
@@ -123,12 +122,10 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
 
         try {
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    grid(0).cache(DEFAULT_CACHE_NAME).get(nearKey());
+            GridTestUtils.assertThrows(log, () -> {
+                grid(0).cache(DEFAULT_CACHE_NAME).get(nearKey());
 
-                    return null;
-                }
+                return null;
             }, CacheLoaderException.class, null);
         }
         finally {

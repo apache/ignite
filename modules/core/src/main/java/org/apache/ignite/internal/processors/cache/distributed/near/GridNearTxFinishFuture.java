@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
@@ -428,16 +427,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             }
         }
 
-        curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                try {
-                    fut.get();
+        curFut.listen(future -> {
+            try {
+                future.get();
 
-                    rollbackAsyncSafe(onTimeout);
-                }
-                catch (IgniteCheckedException e) {
-                    doFinish(false, false);
-                }
+                rollbackAsyncSafe(onTimeout);
+            }
+            catch (IgniteCheckedException e) {
+                doFinish(false, false);
             }
         });
     }
