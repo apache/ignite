@@ -1046,11 +1046,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param key Entry key.
      * @param topVer Topology version at the time of creation.
      * @param create Flag to create entry if it does not exist.
-     * @param touch Flag to touch created entry (only if entry was actually created).
+     * @param skipReserve Flag to skip partition reservation.
      * @return Entry or <tt>null</tt>.
      */
     @Nullable private GridCacheEntryEx entry0(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create,
-        boolean touch) {
+        boolean skipReserve) {
         GridCacheMapEntry cur = map.getEntry(ctx, key);
 
         if (cur == null || cur.obsolete()) {
@@ -1058,7 +1058,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx,
                 topVer,
                 key,
-                create, touch);
+                create,
+                skipReserve);
         }
 
         return cur;

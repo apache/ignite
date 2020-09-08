@@ -1837,6 +1837,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public WALPointer latestWalPointerReservedForPreloading() {
+        return reservedForPreloading;
+    }
+
     /**
      *
      */

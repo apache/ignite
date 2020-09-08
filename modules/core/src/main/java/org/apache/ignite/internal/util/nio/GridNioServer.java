@@ -730,6 +730,8 @@ public class GridNioServer<T> {
 
             ses0.resend(futs);
 
+            ses0.procWrite.set(true);
+
             // Wake up worker.
             ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
         }
@@ -1091,11 +1093,15 @@ public class GridNioServer<T> {
      * Stop polling for write availability if write queue is empty.
      */
     private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
-        if (ses.writeQueue().isEmpty()) {
+        if (ses.procWrite.get()) {
             ses.procWrite.set(false);
 
-            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
         }
     }
 
@@ -2293,7 +2299,7 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
+                if (ses.procWrite.get() && (key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
                 // Update timestamp to protected against false write timeout.

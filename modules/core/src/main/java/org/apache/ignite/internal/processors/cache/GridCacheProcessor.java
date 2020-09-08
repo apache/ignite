@@ -2750,6 +2750,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
             .collect(Collectors.toList());
 
+        // Wait until all evictions are finished.
         grpsToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
 
         if (!exchActions.cacheStopRequests().isEmpty())

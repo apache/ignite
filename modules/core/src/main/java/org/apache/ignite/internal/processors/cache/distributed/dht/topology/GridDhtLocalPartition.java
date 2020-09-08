@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -60,6 +58,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -80,8 +79,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.CLEARING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.EVICTION;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
@@ -126,17 +123,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final AtomicLong state = new AtomicLong((long)MOVING.ordinal() << 32);
 
-    /** Evict guard. Must be CASed to -1 only when partition state is EVICTED. */
-    @GridToStringExclude
-    private final AtomicInteger evictGuard = new AtomicInteger();
-
     /** Rent future. */
     @GridToStringExclude
     private final GridFutureAdapter<?> rent;
-
-    /** Clear future. */
-    @GridToStringExclude
-    private final ClearFuture clearFuture;
 
     /** */
     @GridToStringExclude
@@ -174,8 +163,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile long delayedRentingTopVer;
 
-    /** Set if topology update sequence should be updated on partition destroy. */
-    private boolean updateSeqOnDestroy;
+    /** */
+    private final AtomicReference<GridFutureAdapter<?>> finishFutRef = new AtomicReference<>();
+
+    /** */
+    private volatile long clearVer;
 
     /**
      * @param ctx Context.
@@ -212,8 +204,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         };
 
-        clearFuture = new ClearFuture();
-
         int delQueueSize = grp.systemCache() ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
 
@@ -246,6 +236,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (log.isDebugEnabled())
             log.debug("Partition has been created [grp=" + grp.cacheOrGroupName()
                 + ", p=" + id + ", state=" + state() + "]");
+
+        clearVer = ctx.versions().localOrder();
     }
 
     /**
@@ -451,6 +443,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Reserves the partition so it won't be cleared or evicted.
+     * Only MOVING, OWNING and LOST partitions can be reserved.
      *
      * @return {@code True} if reserved.
      */
@@ -458,7 +451,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             long state = this.state.get();
 
-            if (getPartState(state) == EVICTED)
+            int ordinal = ordinal(state);
+
+            if (ordinal == RENTING.ordinal() || ordinal == EVICTED.ordinal())
                 return false;
 
             long newState = setReservations(state, getReservations(state) + 1);
@@ -504,14 +499,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
                 // If no more reservations try to continue delayed renting.
-                if (reservations == 0) {
-                    if (delayedRentingTopVer != 0 &&
-                        // Prevents delayed renting on topology which expects ownership.
-                        delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
-                        rent(true);
-                    else if (getPartState(state) == RENTING) // If was reserved in renting state continue clearing.
-                        tryContinueClearing();
-                }
+                if (reservations == 0)
+                    tryContinueClearing();
 
                 return;
             }
@@ -626,18 +615,27 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Forcibly moves partition to a MOVING state.
+     *
+     * @return {@code True} if a partition was switched to MOVING state.
      */
-    public void moving() {
+    public boolean moving() {
         while (true) {
             long state = this.state.get();
 
             GridDhtPartitionState partState = getPartState(state);
 
-            assert partState == OWNING || partState == RENTING :
-                "Only partitions in state OWNING or RENTING can be moved to MOVING state";
+            if (partState == EVICTED)
+                return false;
 
-            if (casState(state, MOVING))
-                break;
+            assert partState == OWNING || partState == RENTING :
+                "Only partitions in state OWNING or RENTING can be moved to MOVING state " + partState + " " + id;
+
+            if (casState(state, MOVING)) {
+                // The state is switched under global topology lock, safe to record version here.
+                clearVer = ctx.versions().localOrder();
+
+                return true;
+            }
         }
     }
 
@@ -659,57 +657,59 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Initiates partition eviction process.
+     * Initiates partition eviction process and returns an eviction future.
+     * Future will be completed when a partition is moved to EVICTED state (possibly not yet physically deleted).
      *
      * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
      *
-     * @param updateSeq If {@code true} topology update sequence will be updated after eviction is finished.
-     * @return Future to signal that this node is no longer an owner or backup.
-     */
-    public IgniteInternalFuture<?> rent(boolean updateSeq) {
-        return rent(updateSeq, true);
-    }
-
-    /**
-     * Initiates partition eviction process.
-     *
-     * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
-     *
-     * @param updateSeq If {@code true} topology update sequence will be updated after eviction is finished.
-     * @param alwaysReturnRentingFut If {@code true} renting future is returned in any way.
      * @return Future to signal that this node is no longer an owner or backup or null if corresponding partition
      * state is {@code RENTING} or {@code EVICTED}.
      */
-    public IgniteInternalFuture<?> rent(boolean updateSeq, boolean alwaysReturnRentingFut) {
+    public IgniteInternalFuture<?> rent() {
         long state0 = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state0);
 
-        if (partState == RENTING || partState == EVICTED)
-            return alwaysReturnRentingFut ? rent : null;
+        if (partState == EVICTED)
+            return rent;
 
+        if (partState == RENTING) {
+            // If for some reason a partition has stuck in renting state try restart clearing.
+            if (finishFutRef.get() == null)
+                clearAsync();
+
+            return rent;
+        }
+
+        // Store current topology version to check on partition release.
         delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
 
-        if (getReservations(state0) == 0 && casState(state0, RENTING)) {
+        if (tryInvalidateGroupReservations() && getReservations(state0) == 0 && casState(state0, RENTING)) {
             delayedRentingTopVer = 0;
 
             // Evict asynchronously, as the 'rent' method may be called
             // from within write locks on local partition.
-            clearAsync0(updateSeq);
+            clearAsync();
         }
 
         return rent;
     }
 
     /**
-     * Starts clearing process asynchronously if it's requested and not running at the moment.
-     * Method may finish clearing process ahead of time if partition is empty and doesn't have reservations.
-     *
-     * @param updateSeq {@code True} will cause partition map state refresh after eviction in
-     * {@link GridDhtPreloader#onPartitionEvicted(GridDhtLocalPartition, boolean) onPartitionEvicted}.
+     * Continue clearing if it was delayed before due to reservation and topology version not changed.
      */
-    private void clearAsync0(boolean updateSeq) {
-        // Method expected to be called  from exchange worker or rebalancing thread when rebalancing is done.
+    public void tryContinueClearing() {
+        if (delayedRentingTopVer != 0 &&
+            delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
+            rent();
+    }
+
+    /**
+     * Initiates a partition clearing attempt.
+     *
+     * @return A future what will be finished then a current clearing attempt is done.
+     */
+    public IgniteInternalFuture<?> clearAsync() {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -718,81 +718,46 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         boolean clearingRequested = partState == MOVING;
 
         if (!evictionRequested && !clearingRequested)
-            return;
+            return new GridFinishedFuture<>();
 
-        boolean reinitialized = clearFuture.initialize(updateSeq, evictionRequested);
+        GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
-        // Clearing process is already running at the moment. No need to run it again.
-        if (!reinitialized)
-            return;
+        do {
+            GridFutureAdapter<?> curFut = finishFutRef.get();
 
-        // Reset the initial update counter value to prevent historical rebalancing on this partition.
-        if (grp.persistenceEnabled())
-            store.resetInitialUpdateCounter();
-
-        // Make sure current rebalance future is finished before start clearing
-        // to avoid clearing currently rebalancing partition (except "initial" dummy rebalance).
-        if (clearingRequested) {
-            GridDhtPartitionDemander.RebalanceFuture rebFut =
-                (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
-
-            if (!rebFut.isInitial() && !rebFut.isDone()) {
-                rebFut.listen(fut -> {
-                    // Partition could be owned after rebalance future is done. Skip clearing in such case.
-                    // Otherwise continue clearing.
-                    if (fut.error() == null && state() == MOVING) {
-                        if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
-                            clearFuture.finish();
-
-                            return;
-                        }
-
-                        ctx.evict().evictPartitionAsync(grp, this, CLEARING);
-                    }
-                });
-
-                return;
-            }
+            if (curFut != null)
+                return curFut;
         }
+        while (!finishFutRef.compareAndSet(null, finishFut));
+
+        finishFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
+                // A partition cannot be reused after the eviction, it's not necessary to reset a clearing state.
+                if (state() == EVICTED)
+                    rent.onDone(fut.error());
+                else
+                    finishFutRef.set(null);
+            }
+        });
 
         // Evict partition asynchronously to avoid deadlocks.
-        ctx.evict().evictPartitionAsync(grp, this, EVICTION);
+        ctx.evict().evictPartitionAsync(grp, this, finishFut);
+
+        return finishFut;
     }
 
     /**
-     * Initiates single clear process if partition is in MOVING state or continues cleaning for RENTING state.
-     * Method does nothing if clear process is already running.
+     * Invalidates all partition group reservations, so they can't be reserved again any more.
      *
-     * IMPORTANT: if clearing is required when after return from method call clear future must be initialized.
-     * This enforces clearing happens before sending demand requests.
+     * @return {@code true} If all group reservations are invalidated (or no such reservations).
      */
-    public void clearAsync() {
-        GridDhtPartitionState state0 = state();
-
-        if (state0 != MOVING && state0 != RENTING)
-            return;
-
-        clearAsync0(false);
-    }
-
-    /**
-     * Continues delayed clearing of partition if possible.
-     * Clearing may be delayed because of existing reservations.
-     */
-    public void tryContinueClearing() {
-        clearAsync0(true);
-    }
-
-    /**
-     * @return {@code true} If there is a group reservation.
-     */
-    private boolean groupReserved() {
+    private boolean tryInvalidateGroupReservations() {
         for (GridDhtPartitionsReservation reservation : reservations) {
             if (!reservation.invalidate())
-                return true; // Failed to invalidate reservation -> we are reserved.
+                return false; // Failed to invalidate reservation -> we are reserved.
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -804,160 +769,25 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code True} if evicting thread was added.
-     */
-    private boolean addEvicting() {
-        return evictGuard.compareAndSet(0, 1);
-    }
-
-    /**
-     * Clears evicting flag.
-     */
-    private void clearEvicting() {
-        evictGuard.set(0);
-    }
-
-    /**
-     * @return {@code True} if partition is marked for destroy.
-     */
-    public boolean markForDestroy() {
-        return evictGuard.compareAndSet(0, -1);
-    }
-
-    /**
      * Moves partition state to {@code EVICTED} if possible.
-     * and initiates partition destroy process after successful moving partition state to {@code EVICTED} state.
-     *
-     * @param updateSeq If {@code true} increment update sequence on cache group topology after successful eviction.
      */
-    private void finishEviction(boolean updateSeq) {
+    public void finishEviction() {
         long state0 = this.state.get();
 
         GridDhtPartitionState state = getPartState(state0);
 
-        assert state != EVICTED : this;
-
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
         // A partition is promoted to EVICTED state if it is not reserved and empty.
-        if (getReservations(state0) == 0 && store.isEmpty() && state == RENTING && casState(state0, EVICTED))
-            updateSeqOnDestroy = updateSeq;
-    }
-
-    /**
-     * Destroys partition data store and invokes appropriate callbacks.
-     * <p>
-     * Should be called by partition eviction manager to avoid deadlocks.
-     */
-    public void destroy() {
-        assert state() == EVICTED : this;
-        assert reservations() == 0;
-        assert evictGuard.get() == -1;
-
-        grp.onPartitionEvicted(id);
-
-        destroyCacheDataStore();
-
-        rent.onDone();
-
-        ((GridDhtPreloader)grp.preloader()).onPartitionEvicted(this, updateSeqOnDestroy);
-
-        clearDeferredDeletes();
-    }
-
-    /**
-     * Awaits completion of partition destroy process in case of {@code EVICTED} partition state.
-     */
-    public void awaitDestroy() {
-        if (state() != EVICTED)
-            return;
-
-        final long timeout = 10_000;
-
-        for (;;) {
-            try {
-                rent.get(timeout);
-
-                break;
-            }
-            catch (IgniteFutureTimeoutCheckedException ignored) {
-                U.warn(log, "Failed to await partition destroy within timeout " + this);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to await partition destroy " + this, e);
-            }
-        }
-    }
-
-    /**
-     * Adds listener on {@link #clearFuture} finish.
-     *
-     * @param lsnr Listener.
-     */
-    public void onClearFinished(IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
-        clearFuture.listen(lsnr);
+        if (store.isEmpty() && getReservations(state0) == 0 && state == RENTING)
+            casState(state0, EVICTED);
     }
 
     /**
      * @return {@code True} if clearing process is running at the moment on the partition.
      */
     public boolean isClearing() {
-        return !clearFuture.isDone();
-    }
-
-    /**
-     * Tries to start partition clear process {@link GridDhtLocalPartition#clearAll(EvictionContext)}).
-     * Only one thread is allowed to do such process concurrently.
-     * At the end of clearing method completes {@code clearFuture}.
-     *
-     * @param evictionCtx Eviction context.
-     *
-     * @return {@code false} if clearing is not started due to existing reservations.
-     * @throws Exception If failed.
-     */
-    public boolean tryClear(EvictionContext evictionCtx) throws Exception {
-        if (clearFuture.isDone())
-            return true;
-
-        long state = this.state.get();
-
-        if (getReservations(state) != 0 || groupReserved())
-            return false;
-
-        if (addEvicting()) {
-            try {
-                // Attempt to evict partition entries from cache.
-                long clearedEntities = clearAll(evictionCtx);
-
-                if (log.isDebugEnabled())
-                    log.debug("Partition has been cleared [grp=" + grp.cacheOrGroupName()
-                        + ", p=" + id + ", state=" + state() + ", clearedCnt=" + clearedEntities + "]");
-
-                clearFuture.finish(); // Invokes clear future listeners.
-            }
-            catch (Throwable e) {
-                clearFuture.finish(e);
-
-                throw e;
-            }
-            finally {
-                clearEvicting();
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Release created data store for this partition.
-     */
-    private void destroyCacheDataStore() {
-        try {
-            grp.offheap().destroyCacheDataStore(dataStore());
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
-        }
+        return finishFutRef.get() != null;
     }
 
     /**
@@ -1125,8 +955,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Number of rows cleared from page memory.
      * @throws NodeStoppingException If node stopping.
      */
-    private long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
-        long order = ctx.versions().localOrder();
+    protected long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
+        long order = clearVer;
 
         GridCacheVersion clearVer = ctx.versions().startVersion();
 
@@ -1134,14 +964,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         boolean rec = grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        if (grp.sharedGroup())
-            cacheMaps.forEach((key, hld) -> clear(hld.map, extras, rec));
-        else
-            clear(singleCacheEntryMap.map, extras, rec);
-
         long cleared = 0;
-
-        final int stopCheckingFreq = 1000;
+        int stopCntr = 0;
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
@@ -1149,6 +973,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
             while (it0.hasNext()) {
+                if ((stopCntr = (stopCntr + 1) & 1023) == 0 && evictionCtx.shouldStop())
+                    return cleared;
+
                 ctx.database().checkpointReadLock();
 
                 try {
@@ -1158,7 +985,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     // This is required because normal updates are possible to moving partition which is currently cleared.
                     // We can clean OWNING partition if a partition has been reset from lost state.
                     // In this case new updates must be preserved.
-                    if (row.version().order() > order)
+                    // Partition state can be switched from RENTING to MOVING and vice versa during clearing.
+                    long order0 = row.version().order();
+
+                    if (state() == MOVING && (order0 == 0 /** Inserted by isolated updater. */ || order0 > order))
                         continue;
 
                     if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
@@ -1172,9 +1002,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         grp.affinity().lastVersion(),
                         row.key(),
                         true,
-                        false);
+                        true);
 
-                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                    assert cached != null : "Expecting the reservation " + this;
+
+                    if (cached.deleted())
+                        continue;
+
+                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry) cached).clearInternal(clearVer, extras)) {
                         removeEntry(cached);
 
                         if (rec && !hld.cctx.config().isEventsDisabled()) {
@@ -1197,10 +1032,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         cleared++;
                     }
-
-                    // For each 'stopCheckingFreq' cleared entities check clearing process to stop.
-                    if (cleared % stopCheckingFreq == 0 && evictionCtx.shouldStop())
-                        return cleared;
                 }
                 catch (GridDhtInvalidPartitionException e) {
                     assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
@@ -1221,6 +1052,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     partWhereTestCheckpointEnforced = id;
                 }
             }
+
+            // Attempt to destroy.
+            ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
         }
         catch (NodeStoppingException e) {
             if (log.isDebugEnabled())
@@ -1297,7 +1131,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Removes all deferred delete requests from {@code rmvQueue}.
      */
-    private void clearDeferredDeletes() {
+    public void clearDeferredDeletes() {
         for (RemovedEntryHolder e : rmvQueue)
             removeVersionedEntry(e.cacheId(), e.key(), e.version());
     }
@@ -1418,6 +1252,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private static GridDhtPartitionState getPartState(long state) {
         return GridDhtPartitionState.fromOrdinal((int)(state & (0x0000000000000007L)));
+    }
+
+    /**
+     * @param state State.
+     */
+    private static int ordinal(long state) {
+        return (int)(state & (0x0000000000000007L));
     }
 
     /**
@@ -1542,144 +1383,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RemovedEntryHolder.class, this);
-        }
-    }
-
-    /**
-     * Future is needed to control partition clearing process.
-     * Future can be used both for single clearing or eviction processes.
-     */
-    class ClearFuture extends GridFutureAdapter<Boolean> {
-        /** Flag indicates that eviction callback was registered on the current future. */
-        private volatile boolean evictionCbRegistered;
-
-        /** Flag indicates that clearing callback was registered on the current future. */
-        private volatile boolean clearingCbRegistered;
-
-        /** Flag indicates that future with all callbacks was finished. */
-        private volatile boolean finished;
-
-        /**
-         * Constructor.
-         */
-        ClearFuture() {
-            onDone();
-            finished = true;
-        }
-
-        /**
-         * Registers finish eviction callback on the future.
-         *
-         * @param updateSeq If {@code true} update topology sequence after successful eviction.
-         */
-        private void registerEvictionCallback(boolean updateSeq) {
-            if (evictionCbRegistered)
-                return;
-
-            synchronized (this) {
-                // Double check
-                if (evictionCbRegistered)
-                    return;
-
-                evictionCbRegistered = true;
-
-                // Initiates partition eviction and destroy.
-                listen(f -> {
-                    try {
-                        // Check for errors.
-                        f.get();
-
-                        finishEviction(updateSeq);
-                    }
-                    catch (Exception e) {
-                        rent.onDone(e);
-                    }
-
-                    evictionCbRegistered = false;
-                });
-            }
-        }
-
-        /**
-         * Registers clearing callback on the future.
-         */
-        private void registerClearingCallback() {
-            if (clearingCbRegistered)
-                return;
-
-            synchronized (this) {
-                // Double check
-                if (clearingCbRegistered)
-                    return;
-
-                clearingCbRegistered = true;
-
-                // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
-                listen(f -> {
-                    clearingCbRegistered = false;
-                });
-            }
-        }
-
-        /**
-         * Successfully finishes the future.
-         */
-        public void finish() {
-            synchronized (this) {
-                onDone();
-                finished = true; // Marks state when all future listeners are finished.
-            }
-        }
-
-        /**
-         * Finishes the future with error.
-         *
-         * @param t Error.
-         */
-        public void finish(Throwable t) {
-            synchronized (this) {
-                onDone(t);
-                finished = true;
-            }
-        }
-
-        /**
-         * Reuses future if it's done.
-         * Adds appropriate callbacks to the future in case of eviction or single clearing.
-         *
-         * @param updateSeq Update sequence.
-         * @param evictionRequested If {@code true} adds eviction callback, in other case adds single clearing callback.
-         * @return {@code true} if future has been reinitialized.
-         */
-        public boolean initialize(boolean updateSeq, boolean evictionRequested) {
-            // In case of running clearing just try to add missing callbacks to avoid extra synchronization.
-            if (!finished) {
-                if (evictionRequested)
-                    registerEvictionCallback(updateSeq);
-                else
-                    registerClearingCallback();
-
-                return false;
-            }
-
-            synchronized (this) {
-                boolean done = isDone();
-
-                if (done) {
-                    reset();
-
-                    finished = false;
-                    evictionCbRegistered = false;
-                    clearingCbRegistered = false;
-                }
-
-                if (evictionRequested)
-                    registerEvictionCallback(updateSeq);
-                else
-                    registerClearingCallback();
-
-                return done;
-            }
         }
     }
 }
