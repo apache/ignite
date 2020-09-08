@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite Java client API.
@@ -152,16 +151,4 @@ public interface GridClient extends AutoCloseable {
      * @return {@code Exception} if client was not connected.
      */
     public GridClientException checkLastError();
-
-    /**
-     * Getting a client projection of node state before its start.
-     *
-     * For getting, need to get a {@link GridClient} instance through a
-     * {@link GridClientFactory#start(GridClientConfiguration, boolean)} otherwise {@code null}.
-     *
-     * @return Projection of node state before its start.
-     *
-     * @see GridClientNodeStateBeforeStart
-     */
-    @Nullable public GridClientNodeStateBeforeStart beforeStartState();
 }

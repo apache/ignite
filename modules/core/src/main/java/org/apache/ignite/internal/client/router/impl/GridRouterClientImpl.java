@@ -29,12 +29,12 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailab
  */
 public class GridRouterClientImpl implements GridClient {
     /** Decorated client implementation. */
-    private final org.apache.ignite.internal.client.impl.GridClientImpl clientImpl;
+    private final GridClientImpl clientImpl;
 
     /** Client configuration. */
     private final GridClientConfiguration cliCfg;
@@ -77,7 +77,7 @@ public class GridRouterClientImpl implements GridClient {
 
         this.cliCfg = cliCfg;
 
-        clientImpl = new org.apache.ignite.internal.client.impl.GridClientImpl(id, cliCfg, true, false);
+        clientImpl = new GridClientImpl(id, cliCfg, true, false);
 
         if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
@@ -153,7 +153,7 @@ public class GridRouterClientImpl implements GridClient {
 
         if (mgr == null) {
             GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
-                clientImpl.newConnectionManager(marshId, true, beforeStartState() != null));
+                clientImpl.newConnectionManager(marshId, true));
 
             if (old != null)
                 mgr = old;
@@ -218,10 +218,5 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientException checkLastError() {
         return clientImpl.checkLastError();
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public GridClientNodeStateBeforeStart beforeStartState() {
-        return clientImpl.beforeStartState();
     }
 }

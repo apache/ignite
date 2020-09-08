@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
-import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
@@ -78,8 +78,8 @@ public class WarmUpCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg, true)) {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        try (GridClientBeforeNodeStart client = Command.startClientBeforeNodeStart(clientCfg)) {
             client.beforeStartState().stopWarmUp();
         }
         catch (GridClientDisconnectedException e) {
@@ -93,6 +93,7 @@ public class WarmUpCommand implements Command<Void> {
      * Warm-up command arguments name.
      */
     private enum WarmUpCommandArg implements CommandArg {
+        /** Stop warm-up argument. */
         STOP("--stop");
 
         /** Option name. */
