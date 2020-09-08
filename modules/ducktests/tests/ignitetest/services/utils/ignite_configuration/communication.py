@@ -43,4 +43,3 @@ class TcpCommunicationSpi(CommunicationSpi):
     @property
     def type(self):
         return "TCP"
-
