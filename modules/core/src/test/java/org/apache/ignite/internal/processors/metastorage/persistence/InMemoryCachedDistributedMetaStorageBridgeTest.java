@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -83,7 +84,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
             keys.add(key);
             values.add((String)value);
-        });
+        }, Collections.emptySet());
 
         assertEquals(asList("key1", "key2", "key3"), keys);
         assertEquals(asList("val1", "val2", "val3"), values);

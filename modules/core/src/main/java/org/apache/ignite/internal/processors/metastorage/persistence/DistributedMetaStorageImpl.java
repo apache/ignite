@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageL
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -69,6 +73,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
@@ -178,6 +183,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private final DmsDataWriterWorker worker;
 
     /**
+     * Keys that should be skipped on cluster start.
+     *
+     * @see IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP
+     */
+    private final Set<String> keysToSkip;
+
+    /**
      * @param ctx Kernal context.
      */
     public DistributedMetaStorageImpl(GridKernalContext ctx) {
@@ -216,6 +228,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
 
         ctx.discovery().localJoinFuture().listen(this::notifyReadyForWrite);
+
+        String keysToSkipProp = IgniteSystemProperties.getString(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP);
+
+        if (!F.isEmpty(keysToSkipProp)) {
+            String[] keys = keysToSkipProp.split(",");
+
+            keysToSkip = new HashSet<>(keys.length);
+
+            keysToSkip.addAll(Arrays.asList(keys));
+
+            log.warning("System property " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP + " is set. " +
+                "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
+        }
+        else
+            keysToSkip = Collections.emptySet();
     }
 
     /**
@@ -483,7 +510,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.readLock().lock();
 
         try {
-            bridge.iterate(keyPrefix, cb);
+            bridge.iterate(keyPrefix, cb, keysToSkip);
         }
         finally {
             lock.readLock().unlock();
@@ -707,10 +734,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private String validatePayload(DistributedMetaStorageJoiningNodeData joiningData) {
         for (DistributedMetaStorageHistoryItem item : joiningData.hist) {
             for (int i = 0; i < item.keys().length; i++) {
+                if (keysToSkip.contains(item.keys()[i]))
+                    continue;
+
                 try {
                     unmarshal(marshaller, item.valuesBytesArray()[i]);
                 }
                 catch (IgniteCheckedException e) {
+                    log.error("Unable to unmarshal the distributed metastorage entry. If the key will not be " +
+                        "used it can be ignored via the " + IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP +
+                        " system property [key=" + item.keys()[i] +']', e);
+
                     return "Unable to unmarshal key=" + item.keys()[i];
                 }
             }
@@ -753,7 +787,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         int hv = (int)(v - remoteVer.id() + hist.length - 1);
 
                         try {
-                            completeWrite(hist[hv]);
+                            completeWrite(hist[hv], true);
                         }
                         catch (IgniteCheckedException ex) {
                             log.error("Unable to unmarshal new metastore data. update=" + hist[hv], ex);
@@ -970,7 +1004,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 if (nodeData.updates != null) {
                     for (DistributedMetaStorageHistoryItem update : nodeData.updates)
-                        completeWrite(update);
+                        completeWrite(update, true);
                 }
             }
             else if (!isClient && ver.id() > 0) {
@@ -1058,7 +1092,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false);
         }
         catch (IgniteInterruptedCheckedException e) {
             throw U.convertException(e);
@@ -1114,10 +1148,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param histItem {@code <key, value>} pair to process.
+     * @param skipNotify {@code True} if skip notifying for ignored keys.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
      */
     private void completeWrite(
-        DistributedMetaStorageHistoryItem histItem
+        DistributedMetaStorageHistoryItem histItem,
+        boolean skipNotify
     ) throws IgniteCheckedException {
         lock.writeLock().lock();
 
@@ -1129,8 +1165,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = ver.nextVersion(histItem);
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++)
-                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]), unmarshal(marshaller, histItem.valuesBytesArray()[i]));
+            for (int i = 0, len = histItem.keys().length; i < len; i++) {
+                if (skipNotify && keysToSkip.contains(histItem.keys()[i]))
+                    continue;
+
+                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]),
+                    unmarshal(marshaller, histItem.valuesBytesArray()[i]));
+            }
 
             for (int i = 0, len = histItem.keys().length; i < len; i++)
                 bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
@@ -1201,7 +1242,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param msg Message with all required data.
-     * @see #completeWrite(DistributedMetaStorageHistoryItem)
+     * @see #completeWrite(DistributedMetaStorageHistoryItem, boolean)
      */
     private void completeCas(
         DistributedMetaStorageCasMessage msg
@@ -1220,7 +1261,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
-        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false);
     }
 
     /**
@@ -1288,12 +1329,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             int c = oldKey.compareTo(newKey);
 
             if (c < 0) {
-                notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
+                if (!keysToSkip.contains(oldKey))
+                    notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
 
                 ++oldIdx;
             }
             else if (c > 0) {
-                notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
+                if (!keysToSkip.contains(newKey))
+                    notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
 
                 ++newIdx;
             }
@@ -1302,7 +1345,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(marshaller, newValBytes);
 
-                notifyListeners(oldKey, oldVal, newVal);
+                if (!keysToSkip.contains(oldKey))
+                    notifyListeners(oldKey, oldVal, newVal);
 
                 ++oldIdx;
 
@@ -1310,11 +1354,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             }
         }
 
-        for (; oldIdx < oldData.length; ++oldIdx)
-            notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
+        for (; oldIdx < oldData.length; ++oldIdx) {
+            if (!keysToSkip.contains(oldData[oldIdx].key))
+                notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
+        }
 
-        for (; newIdx < newData.length; ++newIdx)
-            notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
+        for (; newIdx < newData.length; ++newIdx) {
+            if (!keysToSkip.contains(oldData[newIdx].key))
+                notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
+        }
     }
 
     /**
