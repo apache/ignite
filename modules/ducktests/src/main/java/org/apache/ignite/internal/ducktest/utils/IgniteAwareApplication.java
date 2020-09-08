@@ -126,7 +126,7 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    private void markBroken() {
+    public void markBroken() {
         assert !finished;
         assert !broken;
 

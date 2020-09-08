@@ -12,18 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-smoke:
-  - ../smoke_test.py
+#
+#smoke:
+#  - ../smoke_test.py
 
 control_utility:
-  - ../control_utility_test.py
-
-pme_free_switch:
-  - ../pme_free_switch_test.py
-
-cellular_affinity:
-  - ../cellular_affinity_test.py
-
-rebalance:
-  - ../add_node_rebalance_test.py
+  - ../control_utility
+#
+#pme_free_switch:
+#  - ../pme_free_switch_test.py
+#
+#cellular_affinity:
+#  - ../cellular_affinity_test.py
+#
+#rebalance:
+#  - ../add_node_rebalance_test.py

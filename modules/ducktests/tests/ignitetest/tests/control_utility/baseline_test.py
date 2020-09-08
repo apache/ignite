@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains control.sh utility tests.
+This module contains manipulating baseline test throuhg control utility.
 """
 
 from ducktape.mark.resource import cluster
@@ -30,7 +30,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
 
 
-# pylint: disable=W0223
 class BaselineTests(IgniteTest):
     """
     Tests baseline command

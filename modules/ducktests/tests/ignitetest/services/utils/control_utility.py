@@ -19,6 +19,7 @@ This module contains control utility wrapper.
 import random
 import re
 from collections import namedtuple
+from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
@@ -103,6 +104,36 @@ class ControlUtility:
         """
         return self.__run("--deactivate --yes")
 
+    def tx_info(self):
+        output = self.__run("--tx")
+        res = self.__parse_tx_list(output)
+        return res if res else output
+
+    @staticmethod
+    def __parse_tx_list(output):
+        tx_pattern = re.compile(
+            "Tx: \\[xid=(?P<xid>[^\\s]+), "
+            "label=(?P<label>[^\\s]+), state=(?P<state>[^\\s]+), "
+            "startTime=(?P<start_time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}), duration=(?P<duration>\\d+), "
+            "isolation=(?P<isolation>[^\\s]+), concurrency=(?P<concurrency>[^\\s]+), "
+            "topVer=AffinityTopologyVersion \\[topVer=(?P<top_ver>\\d+), minorTopVer=(?P<minor_top_ver>\\d+)\\], "
+            "timeout=(?P<timeout>\\d+), size=(?P<size>\\d+), dhtNodes=\\[(?P<dht_nodes>.*)\\], "
+            "nearXid=(?P<near_xid>[^\\s]+), parentNodeIds=\\[(?P<parent_nodes>.*)\\]\\]")
+
+        str_fields = ['xid', 'label', 'state', 'start_time', 'isolation', 'concurrency', 'near_xid']
+        int_fields = ['timeout', 'size', 'duration']
+        list_fields = ['parent_nodes', 'dht_nodes']
+
+        tx_list = []
+        for match in tx_pattern.finditer(output):
+            kwargs = {v: match.group(v) for v in str_fields}
+            kwargs.update({v: int(match.group(v)) for v in int_fields})
+            kwargs['top_ver'] = (int(match.group('top_ver')), int(match.group('minor_top_ver')))
+            kwargs.update({v: match.group(v).split(',') for v in list_fields})
+            tx_list.append(TxInfo(**kwargs))
+
+        return tx_list
+
     @staticmethod
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
@@ -159,8 +190,31 @@ class ControlUtility:
         return [node for node in self._cluster.nodes if self._cluster.alive(node)]
 
 
-BaselineNode = namedtuple("BaselineNode", ["consistent_id", "state", "order"])
-ClusterState = namedtuple("ClusterState", ["state", "topology_version", "baseline"])
+class BaselineNode(NamedTuple):
+    consistent_id: str
+    state: str
+    order: int
+
+
+class ClusterState(NamedTuple):
+    state: str
+    topology_version: int
+    baseline: list
+
+class TxInfo(NamedTuple):
+    xid: str
+    near_xid: str
+    label: str
+    state: str
+    start_time: str
+    duration: int
+    isolation: str
+    concurrency: str
+    top_ver: tuple
+    timeout: int
+    size: int
+    dht_nodes: list = []
+    parent_nodes: list = []
 
 
 class ControlUtilityError(RemoteCommandError):
