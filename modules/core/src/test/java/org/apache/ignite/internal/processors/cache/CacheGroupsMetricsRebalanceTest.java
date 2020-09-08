@@ -40,7 +40,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
@@ -104,6 +103,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_COUNT = 10_000;
 
+    /** Acceptable time inaccuracy for testRebalanceEstimateFinishTime() */
+    public static final long ACCEPTABLE_TIME_INACCURACY = 25_000L;
+
+    /** */
+    private long rebalanceDelay;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -140,7 +145,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true)
-            .setRebalanceDelay(REBALANCE_DELAY);
+            .setRebalanceDelay(rebalanceDelay);
 
         CacheConfiguration cfg4 = new CacheConfiguration()
             .setAffinity(new RendezvousAffinityFunction())
@@ -159,6 +164,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        rebalanceDelay = 0;
     }
 
     /**
@@ -340,6 +352,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingLastCancelledTime() throws Exception {
+        rebalanceDelay = REBALANCE_DELAY; // Used for trigger rebalance cancellation.
+
         IgniteEx ignite0 = startGrid(0);
 
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
@@ -479,40 +493,22 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceEstimateFinishTime() throws Exception {
-        System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
+        System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(10_000));
 
         Ignite ig1 = startGrid(1);
 
-        final int KEYS = 4_000_000;
+        final int KEYS = 300_000;
 
         try (IgniteDataStreamer<Integer, String> st = ig1.dataStreamer(CACHE1)) {
             for (int i = 0; i < KEYS; i++)
                 st.addData(i, CACHE1 + "-" + i);
         }
 
-        final CountDownLatch finishRebalanceLatch = new CountDownLatch(1);
-
         final Ignite ig2 = startGrid(2);
 
-        ig2.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                CacheRebalancingEvent rebEvent = (CacheRebalancingEvent)evt;
+        boolean rebalancingStartTimeGot = waitForCondition(() -> ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L, 5_000);
 
-                if (rebEvent.cacheName().equals(CACHE1)) {
-                    log.info("CountDown rebalance stop latch: " + rebEvent.cacheName());
-
-                    finishRebalanceLatch.countDown();
-                }
-
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
-
-        waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L;
-            }
-        }, 5_000);
+        assertTrue("Unable to resolve rebalancing start time.", rebalancingStartTimeGot);
 
         CacheMetrics metrics = ig2.cache(CACHE1).localMetrics();
 
@@ -524,47 +520,47 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        runAsync(new Runnable() {
-            @Override public void run() {
-                // Waiting 25% keys will be rebalanced.
-                int partKeys = KEYS / 2;
+        runAsync(() -> {
+            // Waiting 75% keys will be rebalanced.
+            int partKeys = KEYS / 2;
 
-                final long keysLine = partKeys * 3L / 4L;
+            final long keysLine = (long)partKeys / 4L;
 
-                log.info("Wait until keys left will be less than: " + keysLine);
+            log.info("Wait until keys left will be less than: " + keysLine);
 
-                while (true) {
-                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+            while (true) {
+                CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                    long keyLeft = m.getKeysToRebalanceLeft();
+                long keyLeft = m.getKeysToRebalanceLeft();
 
-                    if (keyLeft > 0 && keyLeft < keysLine) {
-                        latch.countDown();
+                if (keyLeft < keysLine) {
+                    latch.countDown();
 
-                        break;
-                    }
+                    break;
+                }
 
-                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+                log.info("Keys left: " + m.getKeysToRebalanceLeft());
 
-                    try {
-                        Thread.sleep(1_000);
-                    }
-                    catch (InterruptedException e) {
-                        log.warning("Interrupt thread", e);
+                try {
+                    Thread.sleep(1_000);
+                }
+                catch (InterruptedException e) {
+                    log.warning("Interrupt thread", e);
 
-                        Thread.currentThread().interrupt();
-                    }
+                    Thread.currentThread().interrupt();
                 }
             }
         });
 
         assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        waitForCondition(new PA() {
+        boolean estimatedRebalancingFinishTimeGot = waitForCondition(new PA() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime() != -1L;
             }
         }, 5_000L);
+
+        assertTrue("Unable to resolve estimated rebalancing finish time.", estimatedRebalancingFinishTimeGot);
 
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
@@ -580,11 +576,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 //        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
 //            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
 
-        waitForCondition(new GridAbsPredicate() {
+        boolean allKeysRebalanced = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
             }
-        }, timeLeft + 12_000L);
+        }, timeLeft + ACCEPTABLE_TIME_INACCURACY);
+
+        assertTrue("Some keys aren't rebalanced.", allKeysRebalanced);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +
@@ -599,7 +597,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         long diff = finishTime - currTime;
 
-        assertTrue("Expected less than 12000, but actual: " + diff, Math.abs(diff) < 12_000L);
+        assertTrue("Expected less than " + ACCEPTABLE_TIME_INACCURACY + ", but actual: " + diff,
+            Math.abs(diff) < ACCEPTABLE_TIME_INACCURACY);
     }
 
     /**
@@ -607,9 +606,20 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceDelay() throws Exception {
+        rebalanceDelay = REBALANCE_DELAY;
+
         Ignite ig1 = startGrid(1);
 
-        final IgniteCache<Object, Object> cache = ig1.cache(CACHE3);
+        CacheConfiguration cfg3 = new CacheConfiguration()
+            .setName(CACHE3)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setRebalanceBatchSize(100)
+            .setStatisticsEnabled(true)
+            .setRebalanceDelay(REBALANCE_DELAY);
+
+        final IgniteCache<Object, Object> cache = ig1.getOrCreateCache(cfg3);
 
         for (int i = 0; i < KEYS_COUNT; i++)
             cache.put(i, CACHE3 + "-" + i);

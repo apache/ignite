@@ -222,7 +222,7 @@ public class GridDhtPartitionDemander {
      */
     void stop() {
         try {
-            rebalanceFut.cancel();
+            rebalanceFut.tryCancel();
         }
         catch (Exception ignored) {
             rebalanceFut.onDone(false);
@@ -388,19 +388,6 @@ public class GridDhtPartitionDemander {
 
             if (oldFut.isInitial())
                 fut.listen(f -> oldFut.onDone(f.result()));
-
-            // Make sure partitions scheduled for full rebalancing are cleared first.
-            if (grp.persistenceEnabled()) {
-                for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
-                    for (Integer partId : e.getValue().partitions().fullSet()) {
-                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-                        assert part.state() == MOVING : part;
-
-                        part.clearAsync();
-                    }
-                }
-            }
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
@@ -979,34 +966,42 @@ public class GridDhtPartitionDemander {
         try {
             GridCacheEntryEx cached = null;
 
-            try {
-                cached = cctx.cache().entryEx(info.key(), topVer);
-
-                if (log.isTraceEnabled())
-                    log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
-
-                if (cached.mvccPreloadEntry(history)) {
-                    cached.touch(); // Start tracking.
-
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                        cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, null, true, null,
-                            false, null, null, null, true);
-
-                    return true;
-                }
-                else {
-                    cached.touch(); // Start tracking.
+            while (true) {
+                try {
+                    cached = cctx.cache().entryEx(info.key(), topVer);
 
                     if (log.isTraceEnabled())
-                        log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                            ", part=" + p + ']');
+                        log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
+
+                    if (cached.mvccPreloadEntry(history)) {
+                        cached.touch(); // Start tracking.
+
+                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
+                                null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, null, true, null,
+                                false, null, null, null, true);
+                    }
+                    else {
+                        cached.touch(); // Start tracking.
+
+                        if (log.isTraceEnabled())
+                            log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
+
+                    break;
                 }
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                if (log.isTraceEnabled())
-                    log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
-                        cached.key() + ", part=" + p + ']');
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isTraceEnabled())
+                        log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
+                            cached.key() + ", part=" + p + ']');
+                }
+                catch (GridDhtInvalidPartitionException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Partition became invalid during rebalancing (will ignore): " + p);
+
+                    return false;
+                }
             }
         }
         catch (IgniteInterruptedCheckedException | ClusterTopologyCheckedException e) {
@@ -1280,6 +1275,12 @@ public class GridDhtPartitionDemander {
                 return;
             }
 
+            if (ctx.kernalContext().isStopping()) {
+                cancel();
+
+                return;
+            }
+
             if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
                 if (log.isTraceEnabled())
                     log.trace("Cancel partition demand because rebalance disabled on current node.");
@@ -1299,7 +1300,7 @@ public class GridDhtPartitionDemander {
             final CacheConfiguration cfg = grp.config();
 
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
-                final ClusterNode node = e.getKey();
+                ClusterNode node = e.getKey();
 
                 GridDhtPartitionDemandMessage d = e.getValue();
 
@@ -1323,144 +1324,92 @@ public class GridDhtPartitionDemander {
                     d.rebalanceId(rebalanceId);
                     d.timeout(grp.preloader().timeout());
 
-                    IgniteInternalFuture<?> clearAllFut = clearFullPartitions(this, d.partitions().fullSet());
+                    // Make sure partitions scheduled for full rebalancing are cleared first.
+                    // Clearing attempt is also required for in-memory caches because some partitions can be switched
+                    // from RENTING to MOVING state in the middle of clearing.
+                    final int fullSetSize = d.partitions().fullSet().size();
 
-                    // Start rebalancing after clearing full partitions is finished.
-                    clearAllFut.listen(f -> ctx.kernalContext().closure().runLocalSafe(() -> {
-                        if (isDone())
-                            return;
+                    AtomicInteger waitCnt = new AtomicInteger(fullSetSize);
 
-                        try {
-                            if (log.isInfoEnabled())
-                                log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
-                                    ", topVer=" + topologyVersion() +
-                                    ", supplier=" + node.id() +
-                                    ", fullPartitions=" + S.compact(parts.fullSet()) +
-                                    ", histPartitions=" + S.compact(parts.historicalSet()) + "]");
+                    for (Integer partId : d.partitions().fullSet()) {
+                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-                            ctx.io().sendOrderedMessage(node, d.topic(),
-                                d.convertIfNeeded(node.version()), grp.ioPolicy(), d.timeout());
+                        // Due to rebalance cancellation it's possible for a group to be already partially rebalanced,
+                        // so the partition could be in OWNING state.
+                        // Due to async eviction it's possible for the partition to be in RENTING/EVICTED state.
 
-                            // Cleanup required in case partitions demanded in parallel with cancellation.
-                            synchronized (this) {
-                                if (isDone())
-                                    cleanupRemoteContexts(node.id());
+                        // Reset the initial update counter value to prevent historical rebalancing on this partition.
+                        part.dataStore().resetInitialUpdateCounter();
+
+                        part.clearAsync().listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                if (fut.error() != null) {
+                                    tryCancel();
+
+                                    log.error("Failed to clear a partition, cancelling rebalancing for a group [grp="
+                                        + grp.cacheOrGroupName() + ", part=" + part.id() + ']', fut.error());
+
+                                    return;
+                                }
+
+                                if (waitCnt.decrementAndGet() == 0)
+                                    ctx.kernalContext().closure().runLocalSafe(() -> requestPartitions0(node, parts, d));
                             }
-                        }
-                        catch (IgniteCheckedException e1) {
-                            ClusterTopologyCheckedException cause = e1.getCause(ClusterTopologyCheckedException.class);
+                        });
+                    }
 
-                            if (cause != null)
-                                log.warning("Failed to send initial demand request to node. " + e1.getMessage());
-                            else
-                                log.error("Failed to send initial demand request to node.", e1);
-
-                            cancel();
-                        }
-                        catch (Throwable th) {
-                            log.error("Runtime error caught during initial demand request sending.", th);
-
-                            cancel();
-                        }
-                    }, true));
+                    // The special case for historical only rebalancing.
+                    if (d.partitions().fullSet().isEmpty() && !d.partitions().historicalSet().isEmpty())
+                        ctx.kernalContext().closure().runLocalSafe(() -> requestPartitions0(node, parts, d));
                 }
             }
         }
 
         /**
-         * Creates future which will be completed when all {@code fullPartitions} are cleared.
-         *
-         * @param fut Rebalance future.
-         * @param fullPartitions Set of full partitions need to be cleared.
-         * @return Future which will be completed when given partitions are cleared.
+         * @param supplierNode Supplier node.
+         * @param parts Map.
+         * @param msg Demand message.
          */
-        private IgniteInternalFuture<?> clearFullPartitions(RebalanceFuture fut, Set<Integer> fullPartitions) {
-            final GridFutureAdapter clearAllFuture = new GridFutureAdapter();
+        private void requestPartitions0(
+            ClusterNode supplierNode,
+            IgniteDhtDemandedPartitionsMap parts,
+            GridDhtPartitionDemandMessage msg
+        ) {
+            if (isDone())
+                return;
 
-            if (fullPartitions.isEmpty()) {
-                clearAllFuture.onDone();
+            try {
+                if (log.isInfoEnabled())
+                    log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
+                        ", topVer=" + topVer +
+                        ", supplier=" + supplierNode.id() +
+                        ", fullPartitions=" + S.compact(parts.fullSet()) +
+                        ", histPartitions=" + S.compact(parts.historicalSet()) + ']');
 
-                return clearAllFuture;
-            }
+                ctx.io().sendOrderedMessage(supplierNode, msg.topic(),
+                    msg.convertIfNeeded(supplierNode.version()), grp.ioPolicy(), msg.timeout());
 
-            for (GridCacheContext cctx : grp.caches()) {
-                if (cctx.statisticsEnabled()) {
-                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
-
-                    metrics.rebalanceClearingPartitions(fullPartitions.size());
+                // Cleanup required in case partitions demanded in parallel with cancellation.
+                synchronized (this) {
+                    if (isDone())
+                        cleanupRemoteContexts(supplierNode.id());
                 }
             }
+            catch (IgniteCheckedException e1) {
+                ClusterTopologyCheckedException cause = e1.getCause(ClusterTopologyCheckedException.class);
 
-            final AtomicInteger clearingPartitions = new AtomicInteger(fullPartitions.size());
+                if (cause != null)
+                    log.warning("Failed to send initial demand request to node. " + e1.getMessage());
+                else
+                    log.error("Failed to send initial demand request to node.", e1);
 
-            for (int partId : fullPartitions) {
-                if (fut.isDone()) {
-                    clearAllFuture.onDone();
-
-                    return clearAllFuture;
-                }
-
-                GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-                if (part != null && part.state() == MOVING) {
-                    part.onClearFinished(f -> {
-                        if (!fut.isDone()) {
-                            // Cancel rebalance if partition clearing was failed.
-                            if (f.error() != null) {
-                                for (GridCacheContext cctx : grp.caches()) {
-                                    if (cctx.statisticsEnabled()) {
-                                        final CacheMetricsImpl metrics = cctx.cache().metrics0();
-
-                                        metrics.rebalanceClearingPartitions(0);
-                                    }
-                                }
-
-                                log.error("Unable to await partition clearing " + part, f.error());
-
-                                fut.cancel();
-
-                                clearAllFuture.onDone(f.error());
-                            }
-                            else {
-                                int remaining = clearingPartitions.decrementAndGet();
-
-                                for (GridCacheContext cctx : grp.caches()) {
-                                    if (cctx.statisticsEnabled()) {
-                                        final CacheMetricsImpl metrics = cctx.cache().metrics0();
-
-                                        metrics.rebalanceClearingPartitions(remaining);
-                                    }
-                                }
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Partition is ready for rebalance [grp=" + grp.cacheOrGroupName()
-                                        + ", p=" + part.id() + ", remaining=" + remaining + "]");
-
-                                if (remaining == 0)
-                                    clearAllFuture.onDone();
-                            }
-                        }
-                        else
-                            clearAllFuture.onDone();
-                    });
-                }
-                else {
-                    int remaining = clearingPartitions.decrementAndGet();
-
-                    for (GridCacheContext cctx : grp.caches()) {
-                        if (cctx.statisticsEnabled()) {
-                            final CacheMetricsImpl metrics = cctx.cache().metrics0();
-
-                            metrics.rebalanceClearingPartitions(remaining);
-                        }
-                    }
-
-                    if (remaining == 0)
-                        clearAllFuture.onDone();
-                }
+                cancel();
             }
+            catch (Throwable th) {
+                log.error("Runtime error caught during initial demand request sending.", th);
 
-            return clearAllFuture;
+                cancel();
+            }
         }
 
         /** {@inheritDoc} */
