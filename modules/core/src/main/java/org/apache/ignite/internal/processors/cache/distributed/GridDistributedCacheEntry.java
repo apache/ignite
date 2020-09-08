@@ -591,7 +591,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         @Nullable Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        boolean sysInvalidate) throws GridCacheEntryRemovedException {
+        boolean sysInvalidate
+    ) throws GridCacheEntryRemovedException {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
