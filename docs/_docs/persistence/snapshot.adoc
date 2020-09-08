@@ -18,7 +18,7 @@ snapshots.
 The cluster-wide snapshot consistency is achieved by triggering the
 link:https://cwiki.apache.org/confluence/display/IGNITE/%28Partition+Map%29+Exchange+-+under+the+hood[Partition-Map-Exchange]
 procedure. Doing this the cluster will eventually get a point in time when all previously started transactions are
-finished on primary and backups, and new ones are hold until a new snapshot operation will be initiated.
+finished on primary and backups, and new ones are hold until a new snapshot operation is initiated.
 
 The local system files (e.g. cache group partition files, binary metadata files, configuration files) consistency is achieved
 by copying them to the destination snapshot directory with tracking all concurrent ongoing changes. Tracking concurrent
@@ -72,7 +72,7 @@ work
 === Requirements
 
 A configured Ignite native persistence directory requires additional disk space (up to the current size of this directory).
-This space will be used for storing intermediate snapshot results and cleaned up after the snapshot operation completes.
+This space will be used for storing intermediate snapshot results and cleaned up after the snapshot operation is completed.
 
 === Limitations
 
@@ -81,7 +81,7 @@ The snapshot procedure has some limitations that you should be aware of before u
 * taking a snapshot of a particular cache or cache group is not supported;
 * in-memory caches will not be included into a snapshot;
 * encrypted caches are not supported and will be ignored;
-* only one snapshot operation at a time can be started;
+* only one snapshot operation at a time can be initiated;
 * snapshot procedure will be interrupted if any baseline node leaves the cluster;
 * snapshot may be restored only at the same baseline topology with the same node consistent IDs;
 
