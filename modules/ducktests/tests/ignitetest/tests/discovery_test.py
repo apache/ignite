@@ -161,10 +161,14 @@ class DiscoveryTest(IgniteTest):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("mkdir -p $(dirname " + self.NETFILTER_SAVED_SETTINGS + ')')
 
-            err = node.account.ssh_client.exec_command(
-                "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read()
+            err = str(node.account.ssh_client.exec_command(
+                "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
 
-            assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + str(err)
+            if "Warning: iptables-legacy tables present" in err:
+                err = str(node.account.ssh_client.exec_command(
+                    "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
+
+            assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + err
 
     def teardown(self):
         self.logger.info("Restoring iptables settings from " + self.NETFILTER_SAVED_SETTINGS)
