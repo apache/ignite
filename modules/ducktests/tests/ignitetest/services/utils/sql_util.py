@@ -16,19 +16,16 @@
 """
 This module contains JDBC driver wrapper.
 """
+
 from random import randint
-
 import jaydebeapi
-
 from ignitetest.services.ignite import IgniteService
-
-# pylint: disable=W0223
 from ignitetest.utils.version import DEV_BRANCH
 
 
 class SqlClient:
     """
-    SQL util using the JDBC driver.
+    SQL Client using the JDBC driver.
     """
 
     # pylint: disable=R0913
@@ -76,13 +73,13 @@ def connection(ignite_service: IgniteService):
     if ignite_service.config.version == DEV_BRANCH:
         core_jar_path = 'modules/core/target/ignite-core-2.10.0-SNAPSHOT.jar'
     else:
-        core_jar_path = str(
-            "%s/libs/ignite-core-%s.jar" % (ignite_service.spec.path.home, ignite_service.config.version))
+        core_jar_path = str("%s/libs/ignite-core-%s.jar" %
+                            (ignite_service.spec.path.home, ignite_service.config.version))
 
     node = ignite_service.nodes[randint(0, ignite_service.num_nodes - 1)]
 
-    _ip = node.account.externally_routable_ip
-    url = "jdbc:ignite:thin://" + _ip
+    url = "jdbc:ignite:thin://" + node.account.externally_routable_ip
+
     return jaydebeapi.connect(jclassname='org.apache.ignite.IgniteJdbcThinDriver',
                               url=url,
                               jars=core_jar_path)
