@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientRespo
 import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientWarmUpRequest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBefor
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -87,6 +89,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE_STATE_BEFORE_START;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.WARM_UP;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET;
@@ -422,11 +425,18 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         else if (msg instanceof GridClientNodeStateBeforeStartRequest) {
             GridClientNodeStateBeforeStartRequest reqClient = (GridClientNodeStateBeforeStartRequest)msg;
 
-            GridRestNodeStateBeforeStartRequest req = new GridRestNodeStateBeforeStartRequest();
+            if (reqClient instanceof GridClientWarmUpRequest) {
+                GridClientWarmUpRequest warmUpReqClient = (GridClientWarmUpRequest)reqClient;
 
-            req.stopWarmUp(reqClient.stopWarmUp()).command(NODE_STATE_BEFORE_START);
+                restReq = new GridRestWarmUpRequest().stopWarmUp(warmUpReqClient.stopWarmUp());
 
-            restReq = req;
+                restReq.command(WARM_UP);
+            }
+            else {
+                restReq = new GridRestNodeStateBeforeStartRequest();
+
+                restReq.command(NODE_STATE_BEFORE_START);
+            }
         }
 
         if (restReq != null) {

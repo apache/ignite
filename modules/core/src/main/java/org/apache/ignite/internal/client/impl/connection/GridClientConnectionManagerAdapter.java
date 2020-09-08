@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.client.impl.connection.GridClientConnec
 /**
  * Cached connections manager.
  */
-public abstract class GridClientConnectionManagerAdapter implements GridClientImpl {
+public abstract class GridClientConnectionManagerAdapter implements GridClientConnectionManager {
     /** Count of reconnect retries before init considered failed. */
     private static final int INIT_RETRY_CNT = 3;
 
@@ -231,7 +231,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientIm
 
         connect(srvs, conn -> {
             if (beforeNodeStart) {
-                conn.nodeStateBeforeStart(new GridClientNodeStateBeforeStartRequest())
+                conn.messageBeforeStart(new GridClientNodeStateBeforeStartRequest())
                     .get(cfg.getConnectTimeout(), MILLISECONDS);
             }
             else {
@@ -513,9 +513,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientIm
             conn.close(CLIENT_CLOSED, waitCompletion);
 
         if (pingExecutor != null)
-            GridClientUtils.shutdownNow(GridClientImpl.class, pingExecutor, log);
+            GridClientUtils.shutdownNow(GridClientConnectionManager.class, pingExecutor, log);
 
-        GridClientUtils.shutdownNow(GridClientImpl.class, executor, log);
+        GridClientUtils.shutdownNow(GridClientConnectionManager.class, executor, log);
 
         if (srv != null)
             srv.stop();

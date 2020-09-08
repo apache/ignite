@@ -20,11 +20,35 @@ package org.apache.ignite.internal.processors.rest.request;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Request to manage and obtain information about node before its start.
+ * Grid warm-up request.
  */
-public class GridRestNodeStateBeforeStartRequest extends GridRestRequest {
+public class GridRestWarmUpRequest extends GridRestNodeStateBeforeStartRequest {
+    /** Stop warm-up. */
+    private boolean stopWarmUp;
+
+    /**
+     * Return {@code true} to stop warm-up.
+     *
+     * @return {@code true} to stop warm-up.
+     */
+    public boolean stopWarmUp() {
+        return stopWarmUp;
+    }
+
+    /**
+     * Set need to stop warm-up.
+     *
+     * @param stopWarmUp {@code true} to stop warm-up.
+     * @return {@code this} instance.
+     */
+    public GridRestWarmUpRequest stopWarmUp(boolean stopWarmUp) {
+        this.stopWarmUp = stopWarmUp;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRestNodeStateBeforeStartRequest.class, this, super.toString());
+        return S.toString(GridRestWarmUpRequest.class, this, super.toString());
     }
 }

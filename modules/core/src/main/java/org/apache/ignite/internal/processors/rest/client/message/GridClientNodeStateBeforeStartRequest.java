@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -29,62 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridClientNodeStateBeforeStartRequest extends GridClientAbstractMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Stop warm-up. */
-    private boolean stopWarmUp;
-
-    /**
-     * Return {@code true} to stop warm-up.
-     *
-     * @return {@code true} to stop warm-up.
-     */
-    public boolean stopWarmUp() {
-        return stopWarmUp;
-    }
-
-    /**
-     * Set need to stop warm-up.
-     *
-     * @param stopWarmUp {@code true} to stop warm-up.
-     * @return {@code this} instance.
-     */
-    public GridClientNodeStateBeforeStartRequest stopWarmUp(boolean stopWarmUp) {
-        this.stopWarmUp = stopWarmUp;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeBoolean(stopWarmUp);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        stopWarmUp = in.readBoolean();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GridClientNodeStateBeforeStartRequest req = (GridClientNodeStateBeforeStartRequest)o;
-
-        return stopWarmUp == req.stopWarmUp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(stopWarmUp);
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -411,7 +411,7 @@ public abstract class GridClientConnection {
      * @return Future holding server's response.
      * @throws GridClientException In case of error.
      */
-    public abstract GridClientFutureAdapter<?> nodeStateBeforeStart(Object msg) throws GridClientException;
+    public abstract GridClientFutureAdapter<?> messageBeforeStart(Object msg) throws GridClientException;
 
     /**
      * @return {@code True} if connection is closed.

@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Common interface for client connection managers.
  */
-public interface GridClientImpl {
+public interface GridClientConnectionManager {
     /**
      * Tries to open initial connection and fetch topology using given server addresses.
      *
@@ -81,5 +81,6 @@ public interface GridClientImpl {
      * @throws InterruptedException If was interrupted while waiting for connection to be established.
      */
     public GridClientConnection connection(
-        Collection<InetSocketAddress> srvs) throws GridClientException, InterruptedException;
+        Collection<InetSocketAddress> srvs
+    ) throws GridClientException, InterruptedException;
 }

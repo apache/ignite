@@ -37,8 +37,8 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
-import org.apache.ignite.internal.client.impl.connection.GridClientImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -57,7 +57,7 @@ public class GridRouterClientImpl implements GridClient {
     private final GridClientConfiguration cliCfg;
 
     /** TCP connection managers. */
-    private final ConcurrentMap<Byte, GridClientImpl> connMgrMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a new TCP client based on the given configuration.
@@ -112,7 +112,7 @@ public class GridRouterClientImpl implements GridClient {
         if (dest == null)
             throw new GridServerUnreachableException("Failed to resolve node for specified destination ID: " + destId);
 
-        GridClientImpl connMgr = connectionManager(marshId);
+        GridClientConnectionManager connMgr = connectionManager(marshId);
 
         GridClientConnection conn = null;
 
@@ -148,11 +148,11 @@ public class GridRouterClientImpl implements GridClient {
      * @return Connection manager.
      * @throws GridClientException In case of error.
      */
-    private GridClientImpl connectionManager(byte marshId) throws GridClientException {
-        GridClientImpl mgr = connMgrMap.get(marshId);
+    private GridClientConnectionManager connectionManager(byte marshId) throws GridClientException {
+        GridClientConnectionManager mgr = connMgrMap.get(marshId);
 
         if (mgr == null) {
-            GridClientImpl old = connMgrMap.putIfAbsent(marshId, mgr =
+            GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
                 clientImpl.newConnectionManager(marshId, true, beforeStartState() != null));
 
             if (old != null)

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.beforeStart;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBeforeStartRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -45,7 +46,7 @@ public class NodeStateBeforeStartCommandHandler extends GridRestCommandHandlerAd
 
     /** {@inheritDoc} */
     @Override public Collection<GridRestCommand> supportedCommands() {
-        return Collections.singleton(GridRestCommand.NODE_STATE_BEFORE_START);
+        return Arrays.asList(GridRestCommand.NODE_STATE_BEFORE_START, GridRestCommand.WARM_UP);
     }
 
     /** {@inheritDoc} */
@@ -56,8 +57,12 @@ public class NodeStateBeforeStartCommandHandler extends GridRestCommandHandlerAd
             log.debug("Handling REST request: " + req);
 
         try {
-            if (restReq.stopWarmUp())
-                ctx.cache().stopWarmUp();
+            if (restReq instanceof GridRestWarmUpRequest) {
+                GridRestWarmUpRequest warmUpReq = (GridRestWarmUpRequest)restReq;
+
+                if (warmUpReq.stopWarmUp())
+                    ctx.cache().stopWarmUp();
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute cache command: " + req, e);

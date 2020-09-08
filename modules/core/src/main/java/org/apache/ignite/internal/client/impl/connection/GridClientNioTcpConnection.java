@@ -1084,7 +1084,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFutureAdapter<?> nodeStateBeforeStart(Object msg) throws GridClientException {
+    @Override public GridClientFutureAdapter<?> messageBeforeStart(Object msg) throws GridClientException {
         assert msg instanceof GridClientNodeStateBeforeStartRequest;
 
         return makeRequest((GridClientMessage)msg, new TcpClientFuture<>());

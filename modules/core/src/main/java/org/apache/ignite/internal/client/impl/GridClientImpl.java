@@ -56,6 +56,7 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerOsImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
@@ -121,7 +122,7 @@ public class GridClientImpl implements GridClient {
     private AtomicBoolean closed = new AtomicBoolean();
 
     /** Connection manager. */
-    protected org.apache.ignite.internal.client.impl.connection.GridClientImpl connMgr;
+    protected GridClientConnectionManager connMgr;
 
     /** Routers. */
     private final Collection<InetSocketAddress> routers;
@@ -378,7 +379,7 @@ public class GridClientImpl implements GridClient {
     /**
      * @return Connection manager.
      */
-    public org.apache.ignite.internal.client.impl.connection.GridClientImpl connectionManager() {
+    public GridClientConnectionManager connectionManager() {
         return connMgr;
     }
 
@@ -449,7 +450,7 @@ public class GridClientImpl implements GridClient {
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public org.apache.ignite.internal.client.impl.connection.GridClientImpl newConnectionManager(
+    public GridClientConnectionManager newConnectionManager(
         @Nullable Byte marshId,
         boolean routerClient,
         boolean beforeNodeStart
@@ -466,7 +467,7 @@ public class GridClientImpl implements GridClient {
      * @param beforeNodeStart Connecting to a node before starting it without getting/updating topology.
      * @throws GridClientException In case of error.
      */
-    private org.apache.ignite.internal.client.impl.connection.GridClientImpl createConnectionManager(UUID clientId, SSLContext sslCtx,
+    private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
         GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
         @Nullable Byte marshId, boolean routerClient, boolean beforeNodeStart) throws GridClientException {
         return new GridClientConnectionManagerOsImpl(

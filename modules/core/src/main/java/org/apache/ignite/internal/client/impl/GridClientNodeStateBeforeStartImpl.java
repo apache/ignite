@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.impl;
 
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeStateBeforeStartRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientWarmUpRequest;
 
 /**
  * Implementation {@link GridClientNodeStateBeforeStart}.
@@ -40,8 +40,7 @@ public class GridClientNodeStateBeforeStartImpl implements GridClientNodeStateBe
     /** {@inheritDoc} */
     @Override public void stopWarmUp() throws GridClientException {
         try {
-            client.connection()
-                .nodeStateBeforeStart(new GridClientNodeStateBeforeStartRequest().stopWarmUp(true)).get();
+            client.connection().messageBeforeStart(new GridClientWarmUpRequest().stopWarmUp(true)).get();
         }
         catch (InterruptedException e) {
             throw new GridClientException("Interrupted when (re)trying to perform request.", e);
