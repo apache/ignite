@@ -25,7 +25,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, V_2_8_0, V_2_7_6, IgniteVersion
 
 
-# pylint: disable=W0223
+# pylint: disable=W0223,W0511
 class SqlJdbcTest(IgniteTest):
     """
     SQL tests using the JDBC driver.
@@ -34,9 +34,42 @@ class SqlJdbcTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
-    def sql_test(self, ignite_version):
+    def sql_self_jar_test(self, ignite_version):
         """
-        Test SQL.
+        Test SQL with jdbc driver self version.
+        """
+        self.check_connection(ignite_version=ignite_version)
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    # TODO: added str(V_2_8_1), str(V_2_8_0), str(V_2_7_6) after IGNITE-13414
+    def sql_dev_jar_test(self, ignite_version):
+        """
+        Test SQL with jdbc driver dev version.
+        """
+        self.check_connection(ignite_version=ignite_version, jar_ver=DEV_BRANCH)
+    #
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
+    def sql_2_8_1_jar_test(self, ignite_version):
+        """
+        Test SQL with jdbc driver 2.8.1 version.
+        """
+        self.check_connection(ignite_version=ignite_version, jar_ver=V_2_8_1)
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(V_2_8_0), str(V_2_7_6))
+    def sql_2_8_0_jar_test(self, ignite_version):
+        """
+        Test SQL with jdbc driver 2.8.0 version.
+        """
+        self.check_connection(ignite_version=ignite_version, jar_ver=V_2_8_0)
+
+    def check_connection(self, ignite_version, jar_ver=None):
+        """
+        Check SQL commands.
+        :param ignite_version: IgniteVersion.
+        :param jar_ver: Version JDBC driver.
         """
         self.stage("Starting nodes")
 
@@ -45,7 +78,7 @@ class SqlJdbcTest(IgniteTest):
         service = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
         service.start()
 
-        with connection(service) as conn:
+        with connection(ignite_service=service, ver=jar_ver) as conn:
             with conn.cursor() as curs:
                 curs.execute('CREATE TABLE users (id int, name varchar, PRIMARY KEY (id))')
                 self.logger.info("Created a table of users")

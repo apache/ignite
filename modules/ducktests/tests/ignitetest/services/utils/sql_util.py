@@ -20,19 +20,24 @@ This module contains JDBC driver wrapper.
 import random
 import jaydebeapi
 from ignitetest.services.ignite import IgniteService
-from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-def connection(ignite_service: IgniteService):
+def connection(ignite_service: IgniteService, ver: IgniteVersion = None):
     """
     :param ignite_service: IgniteService.
+    :param ver: IgniteVersion jdbc driver for connection.
     :return Connection.
     """
-    if ignite_service.config.version == DEV_BRANCH:
-        core_jar_path = str("modules/core/target/ignite-core-%s-SNAPSHOT.jar" % DEV_BRANCH.vstring)
+    if ver is None:
+        ver = ignite_service.config.version
+
+    vstr = ver.vstring
+
+    if ver == DEV_BRANCH:
+        core_jar_path = str("modules/core/target/ignite-core-%s-SNAPSHOT.jar" % vstr)
     else:
-        core_jar_path = str("%s/libs/ignite-core-%s.jar" %
-                            (ignite_service.spec.path.home, ignite_service.config.version))
+        core_jar_path = str("/opt/ignite-%s/libs/ignite-core-%s.jar" % (vstr, vstr))
 
     node = random.choice(ignite_service.nodes)
 
