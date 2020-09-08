@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -54,9 +53,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
  * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
 public class CacheGroupPageScanner implements DbCheckpointListener {
-    /** Encryption configuration. */
-    private final EncryptionConfiguration encrCfg;
-
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -75,6 +71,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     /** Page scanning speed limiter. */
     private final BasicRateLimiter limiter;
 
+    /** Number of pages that is scanned during reencryption under checkpoint lock. */
+    private final int batchSize;
+
     /** Stop flag. */
     private boolean stopped;
 
@@ -88,10 +87,19 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        encrCfg = dsCfg != null ? ctx.config().getDataStorageConfiguration().getEncryptionConfiguration() : null;
+        if (!CU.isPersistenceEnabled(dsCfg)) {
+            batchSize = -1;
+            limiter = null;
 
-        limiter = CU.isPersistenceEnabled(dsCfg) && encrCfg.getReencryptionRateLimit() > 0 ?
-            new BasicRateLimiter(encrCfg.getReencryptionRateLimit() * MB / dsCfg.getPageSize()) : null;
+            return;
+        }
+
+        batchSize = dsCfg.getEncryptionConfiguration().getReencryptionBatchSize();
+
+        double rateLimit = dsCfg.getEncryptionConfiguration().getReencryptionRateLimit();
+
+        limiter = rateLimit > 0 ? new BasicRateLimiter(rateLimit * MB /
+            (dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize())) : null;
     }
 
     /** {@inheritDoc} */
@@ -170,7 +178,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
             GroupScanTask prevState = grps.get(grpId);
 
-            if (prevState != null) {
+            if (prevState != null && !prevState.isDone()) {
                 if (log.isDebugEnabled())
                     log.debug("Reencryption already scheduled [grpId=" + grpId + "]");
 
@@ -382,7 +390,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
             }
 
             while (off < cnt) {
-                int pagesCnt = Math.min(encrCfg.getReencryptionBatchSize(), cnt - off);
+                int pagesCnt = Math.min(batchSize, cnt - off);
 
                 if (limiter != null)
                     limiter.acquire(pagesCnt);

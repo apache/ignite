@@ -782,9 +782,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @param grpId Cache group ID.
      * @return Future that will be completed when reencryption of the specified group is finished.
-     * @throws IgniteCheckedException If reencryption is disabled.
      */
-    public IgniteInternalFuture<Void> reencryptionFuture(int grpId) throws IgniteCheckedException {
+    public IgniteInternalFuture<Void> reencryptionFuture(int grpId) {
         return pageScanner.statusFuture(grpId);
     }
 
