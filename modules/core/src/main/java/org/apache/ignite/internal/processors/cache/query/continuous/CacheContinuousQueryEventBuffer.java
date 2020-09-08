@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -101,33 +102,29 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /**
-     * @return Backup entries.
+     * @param filteredFactory Factory which will produce entries.
+     * @return Collection of backup entries.
      */
     @Nullable Collection<CacheContinuousQueryEntry> flushOnExchange(
-        BiFunction<Long, Long, CacheContinuousQueryEntry> filteredEntryFactory
+        BiFunction<Long, Long, CacheContinuousQueryEntry> filteredFactory
     ) {
         Map<Long, CacheContinuousQueryEntry> ret = new TreeMap<>();
 
         int size = backupQ.size();
 
-        if (size > 0) {
-            for (int i = 0; i < size; i++) {
-                CacheContinuousQueryEntry e = backupQ.pollFirst();
+        for (int i = 0; i < size; i++) {
+            CacheContinuousQueryEntry e = backupQ.pollFirst();
 
-                if (e == null)
-                    break;
+            if (e == null)
+                break;
 
-                ret.put(e.updateCounter(), e);
-            }
+            ret.put(e.updateCounter(), e);
         }
-
-        if (filteredEntryFactory == null)
-            return null;
 
         Batch batch = curBatch.get();
 
         if (batch != null)
-            batch.flushCurrentEntries(ret, filteredEntryFactory);
+            ret.putAll(batch.flushCurrentEntries(filteredFactory));
 
         for (CacheContinuousQueryEntry e : pending.values())
             ret.put(e.updateCounter(), e);
@@ -172,13 +169,10 @@ public class CacheContinuousQueryEventBuffer {
             batch = initBatch(backup);
 
             if (batch == null || cntr < batch.startCntr) {
-                if (backup) {
+                if (backup && cntr > ackedUpdCntr.get())
                     backupQ.add(entry);
 
-                    return null;
-                }
-
-                return entry;
+                return backup ? null : entry;
             }
 
             if (cntr <= batch.endCntr) {
@@ -245,24 +239,16 @@ public class CacheContinuousQueryEventBuffer {
      * @return Current batch.
      */
     private Batch initBatch(boolean backup) {
-        Batch batch;
-
-        for (;;) {
-            batch = curBatch.get();
-
-            if (batch != null)
-                return batch;
-
+        while (curBatch.get() == null) {
             long curCntr = currPartCntr.applyAsLong(backup ? 1 : 0);
 
             if (curCntr == -1)
                 return null;
 
-            batch = new Batch(curCntr + 1, 0L, new CacheContinuousQueryEntry[BUF_SIZE]);
-
-            if (curBatch.compareAndSet(null, batch))
-                return batch;
+            curBatch.compareAndSet(null, new Batch(curCntr + 1, 0L, new CacheContinuousQueryEntry[BUF_SIZE]));
         }
+
+        return curBatch.get();
     }
 
     /**
@@ -369,15 +355,16 @@ public class CacheContinuousQueryEventBuffer {
         }
 
         /**
-         * @param res Current entries.
-         * @param filteredEntryFactory Factory which produces filtered entries.
+         * @param filteredFactory Factory which produces filtered entries.
+         * @return Map of collected entries.
          */
-        synchronized void flushCurrentEntries(
-            Map<Long, CacheContinuousQueryEntry> res,
-            BiFunction<Long, Long, CacheContinuousQueryEntry> filteredEntryFactory
+        synchronized Map<Long, CacheContinuousQueryEntry> flushCurrentEntries(
+            BiFunction<Long, Long, CacheContinuousQueryEntry> filteredFactory
         ) {
-            if (entries == null)
-                return;
+            Map<Long, CacheContinuousQueryEntry> res = new HashMap<>();
+
+            if (entries == null || filteredFactory == null)
+                return res;
 
             long filtered = this.filtered;
             long cntr = startCntr;
@@ -389,7 +376,7 @@ public class CacheContinuousQueryEventBuffer {
 
                 if (e == null) {
                     if (filtered != 0) {
-                        flushEntry = filteredEntryFactory.apply(cntr - 1, filtered - 1);
+                        flushEntry = filteredFactory.apply(cntr - 1, filtered - 1);
 
                         filtered = 0;
                     }
@@ -422,10 +409,12 @@ public class CacheContinuousQueryEventBuffer {
             }
 
             if (filtered != 0L) {
-                CacheContinuousQueryEntry flushEntry = filteredEntryFactory.apply(cntr - 1, filtered - 1);
+                CacheContinuousQueryEntry flushEntry = filteredFactory.apply(cntr - 1, filtered - 1);
 
                 res.put(flushEntry.updateCounter(), flushEntry);
             }
+
+            return res;
         }
 
         /**

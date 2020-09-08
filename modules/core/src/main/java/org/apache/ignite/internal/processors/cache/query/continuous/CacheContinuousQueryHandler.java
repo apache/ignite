@@ -83,7 +83,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
-import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.createContinuousQueryEntry;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.createFilteredEntry;
 
 /**
  * Continuous query handler.
@@ -501,13 +501,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
                         Collection<CacheContinuousQueryEntry> entries = buf.flushOnExchange((cntr, filtered) ->
-                            createContinuousQueryEntry(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
+                            createFilteredEntry(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
 
                         if (entries == null || node == null)
                             continue;
 
                         for (CacheContinuousQueryEntry e : entries) {
-                            // todo why backup is matters?
                             e.markBackup();
 
                             if (!e.isFiltered())
