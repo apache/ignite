@@ -17,52 +17,10 @@
 This module contains JDBC driver wrapper.
 """
 
-from random import randint
+import random
 import jaydebeapi
 from ignitetest.services.ignite import IgniteService
 from ignitetest.utils.version import DEV_BRANCH
-
-
-class SqlClient:
-    """
-    SQL Client using the JDBC driver.
-    """
-
-    # pylint: disable=R0913
-    def __init__(self, ignite_service: IgniteService):
-        """
-        :param ignite_service: IgniteService.
-        """
-        self.ignite_service = ignite_service
-        self.conn = connection(ignite_service)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def close(self):
-        """
-        Close self connection.
-        """
-        self.conn.close()
-
-    def execute(self, operation, parameters=None):
-        """
-        Execute.
-        """
-        with self.conn.cursor() as curs:
-            curs.execute(operation, parameters)
-            return curs.fetchall()
-
-    def executemany(self, operation, seq_of_parameters):
-        """
-        Executemany.
-        """
-        with self.conn.cursor() as curs:
-            curs.executemany(operation, seq_of_parameters)
-            return curs.rowcount
 
 
 def connection(ignite_service: IgniteService):
@@ -76,7 +34,7 @@ def connection(ignite_service: IgniteService):
         core_jar_path = str("%s/libs/ignite-core-%s.jar" %
                             (ignite_service.spec.path.home, ignite_service.config.version))
 
-    node = ignite_service.nodes[randint(0, ignite_service.num_nodes - 1)]
+    node = random.choice(ignite_service.nodes)
 
     url = "jdbc:ignite:thin://" + node.account.externally_routable_ip
 
