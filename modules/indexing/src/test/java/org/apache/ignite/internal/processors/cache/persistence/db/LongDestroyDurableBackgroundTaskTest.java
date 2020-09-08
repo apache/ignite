@@ -585,6 +585,47 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     }
 
     /**
+     * Tests that index is correctly deleted when corresponding SQL table is deleted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRemoveIndexesOnTableDrop() throws Exception {
+        IgniteEx ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        query(cache, "create table t1 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+
+        query(cache, "create table t2 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+
+        query(cache, "create index t2_idx on t2 (p)");
+
+        for (int i = 0; i < 5_000; i++)
+            query(cache, "insert into t2 (id, p, f) values (?, ?, ?)", i, i, i);
+
+        forceCheckpoint();
+
+        CountDownLatch inxDeleteInAsyncTaskLatch = new CountDownLatch(1);
+
+        LogListener lsnr = new CallbackExecutorLogListener(
+            ".*?Execution of durable background task completed: DROP_SQL_INDEX-PUBLIC.T2_IDX-.*",
+            () -> inxDeleteInAsyncTaskLatch.countDown()
+        );
+
+        testLog.registerListener(lsnr);
+
+        ignite.destroyCache("SQL_PUBLIC_T2");
+
+        awaitLatch(
+            inxDeleteInAsyncTaskLatch,
+            "Failed to await for index deletion in async task (either index failed to delete in 1 minute or async task not started)"
+        );
+    }
+
+    /**
      * Tests that task removed from metastorage in beginning of next checkpoint.
      *
      * @throws Exception If failed.
