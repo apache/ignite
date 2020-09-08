@@ -368,7 +368,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         List<GridDhtLocalPartition> parts = crd.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitions();
         for (GridDhtLocalPartition part : parts)
             if (part.state() != GridDhtPartitionState.EVICTED) {
-                part.rent(false).get();
+                part.rent().get();
 
                 break;
             }
