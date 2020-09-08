@@ -161,14 +161,20 @@ class DiscoveryTest(IgniteTest):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("mkdir -p $(dirname " + self.NETFILTER_SAVED_SETTINGS + ')')
 
-            err = str(node.account.ssh_client.exec_command(
-                "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
+            err = str(node.account.ssh_client.exec_command("sudo iptables -F")[2].read(), "utf-8")
+            assert len(err) == 0, "Failed to clean iptables rules on '" + node.name + "': " + err
 
-            if "Warning: iptables-legacy tables present" in err:
-                err = str(node.account.ssh_client.exec_command(
-                    "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
+            # out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
+            # self.logger.info("Iptables rules on '" + node.name + "' before storing: " + out)
 
-            assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + err
+            # err = str(node.account.ssh_client.exec_command(
+            #     "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
+            #
+            # if "Warning: iptables-legacy tables present" in err:
+            #     err = str(node.account.ssh_client.exec_command(
+            #         "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
+            #
+            # assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + err
 
     def teardown(self):
         self.logger.info("Restoring iptables settings from " + self.NETFILTER_SAVED_SETTINGS)
@@ -176,11 +182,18 @@ class DiscoveryTest(IgniteTest):
         errors = []
 
         for node in self.test_context.cluster.nodes:
-            err = node.account.ssh_client.exec_command(
-                "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS)[2].read()
+            # out = str(node.accounnt.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
+            # self.logger.info("Iptables rules on '" + node.name + "' before restoring: " + out)
+
+            # err = node.account.ssh_client.exec_command(
+            #     "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS)[2].read()
+            err = str(node.account.ssh_client.exec_command("sudo iptables -F")[2].read(), "utf-8")
 
             if len(err) > 0:
-                errors.append("Failed to restore iptables rules on '" + node.name + "': " + str(err))
+                errors.append("Failed to restore iptables rules on '" + node.name + "': " + err)
+
+            # out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
+            # self.logger.info("Iptables rules on '" + node.name + "' before after: " + out)
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
