@@ -397,8 +397,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return storeMgr;
     }
 
-    /** */
-    private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
+    /** Registers system view. */
+    private void registerSystemView() {
         cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
             new MetastorageViewWalker(), () -> {
                 try {
@@ -415,7 +415,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return Collections.emptyList();
                 }
             }, identity());
+    }
 
+    /** */
+    private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForRead(metaStorage);
     }
@@ -782,6 +785,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fillWalDisabledGroups();
 
                 cpHist.initialize(retreiveHistory());
+
+                registerSystemView();
 
                 notifyMetastorageReadyForRead();
             }
