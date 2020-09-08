@@ -29,7 +29,7 @@ def connection(ignite_service: IgniteService):
     :return Connection.
     """
     if ignite_service.config.version == DEV_BRANCH:
-        core_jar_path = 'modules/core/target/ignite-core-2.10.0-SNAPSHOT.jar'
+        core_jar_path = str("modules/core/target/ignite-core-%s-SNAPSHOT.jar" % DEV_BRANCH.vstring)
     else:
         core_jar_path = str("%s/libs/ignite-core-%s.jar" %
                             (ignite_service.spec.path.home, ignite_service.config.version))
