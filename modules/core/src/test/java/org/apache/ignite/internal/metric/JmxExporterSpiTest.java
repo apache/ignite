@@ -1030,7 +1030,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testBinaryMeta() throws Exception {
+    public void testBinaryMeta() {
         IgniteCache<Integer, TestObjectAllTypes> c1 = ignite.createCache("test-all-types-cache");
         IgniteCache<Integer, TestObjectEnum> c2 = ignite.createCache("test-enum-cache");
 
