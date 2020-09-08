@@ -26,6 +26,8 @@ class IgniteTest(Test):
     """
     Basic ignite test.
     """
+    TEMP_PATH_ROOT = "/mnt/ducktests"
+
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
 
@@ -35,6 +37,12 @@ class IgniteTest(Test):
         :param msg: Stage mark message.
         """
         self.logger.info("[TEST_STAGE] " + msg)
+
+    def teardown(self):
+        for node in self.test_context.cluster.nodes:
+            node.account.ssh_client.exec_command("rm -drf " + self.TEMP_PATH_ROOT)
+
+        Test.teardown(self)
 
     @staticmethod
     def monotonic():

@@ -35,7 +35,6 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
-from ignitetest.services.utils.ignite_persistence import PersistenceAware
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils import ignite_versions, version_if
@@ -79,7 +78,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    NET_CFG_PATH = os.path.join(PersistenceAware.PERSISTENT_ROOT, "discovery_test", "netfilter.cfg")
+    NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
@@ -89,7 +88,6 @@ class DiscoveryTest(IgniteTest):
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
-        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
@@ -105,7 +103,6 @@ class DiscoveryTest(IgniteTest):
     def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi.
-        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=True)
@@ -159,22 +156,32 @@ class DiscoveryTest(IgniteTest):
     def setup(self):
         IgniteTest.setup(self)
 
-        self.logger.info("Storing iptables settings to " + self.NET_CFG_PATH)
+        self.logger.info("Storing iptables rules to '" + self.NETFILTER_SAVED_SETTINGS + "' on each node.")
 
         for node in self.test_context.cluster.nodes:
-            res, _, serr = node.account.ssh_client.exec_command("sudo iptables-save > " + self.NET_CFG_PATH)
+            node.account.ssh_client.exec_command("mkdir -p $(dirname " + self.NETFILTER_SAVED_SETTINGS + ')')
 
-            assert res == 0, "Wrong result of iptables-store: " + str(serr.read())
+            err = node.account.ssh_client.exec_command(
+                "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read()
+
+            assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + str(err)
 
     def teardown(self):
-        IgniteTest.teardown(self)
+        self.logger.info("Restoring iptables settings from " + self.NETFILTER_SAVED_SETTINGS)
 
-        self.logger.info("Restoring iptables settings from " + self.NET_CFG_PATH)
+        errors = []
 
         for node in self.test_context.cluster.nodes:
-            res, _, serr = node.account.ssh_client.exec_command("sudo iptables-legacy-restore < " + self.NET_CFG_PATH)
+            err = node.account.ssh_client.exec_command(
+                "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS)[2].read()
 
-            assert res == 0, "Wrong result of iptables-restore: " + str(serr.read())
+            if len(err) > 0:
+                errors.append("Failed to restore iptables rules on '" + node.name + "': " + str(err))
+
+        if len(errors) > 0:
+            self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
+
+        IgniteTest.teardown(self)
 
 
 def start_zookeeper(test_context, num_nodes):
