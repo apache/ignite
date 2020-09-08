@@ -17,15 +17,16 @@
 This module contains SQL tests using the JDBC driver.
 """
 from ducktape.mark.resource import cluster
-from ignitetest.utils import ignite_versions
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.sql_util import connection
+from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, V_2_8_0, V_2_7_6, IgniteVersion
 
 
-# pylint: disable=W0223,W0511
+# pylint: disable=W0223
 class SqlJdbcTest(IgniteTest):
     """
     SQL tests using the JDBC driver.
@@ -33,39 +34,19 @@ class SqlJdbcTest(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
-    def sql_self_jar_test(self, ignite_version):
+    @ignite_versions(
+        (str(DEV_BRANCH), str(DEV_BRANCH)),
+        (str(V_2_8_1), str(V_2_8_1)), (str(V_2_8_0), str(V_2_8_1)),
+        (str(V_2_8_1), str(V_2_8_0)), (str(V_2_8_0), str(V_2_8_0)),
+        (str(V_2_8_1), str(V_2_7_6)), (str(V_2_8_0), str(V_2_7_6)), (str(V_2_7_6), str(V_2_7_6))
+    )
+    def sql_test(self, ignite_version_1, ignite_version_2):
         """
-        Test SQL with jdbc driver self version.
+        SQL test with different versions jdbc driver.
         """
-        self.check_connection(ignite_version=ignite_version)
+        self.check_connection(ignite_version=IgniteVersion(ignite_version_1), jar_ver=IgniteVersion(ignite_version_2))
 
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH))
-    # TODO: added str(V_2_8_1), str(V_2_8_0), str(V_2_7_6) after IGNITE-13414
-    def sql_dev_jar_test(self, ignite_version):
-        """
-        Test SQL with jdbc driver dev version.
-        """
-        self.check_connection(ignite_version=ignite_version, jar_ver=DEV_BRANCH)
-    #
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
-    def sql_2_8_1_jar_test(self, ignite_version):
-        """
-        Test SQL with jdbc driver 2.8.1 version.
-        """
-        self.check_connection(ignite_version=ignite_version, jar_ver=V_2_8_1)
-
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(V_2_8_0), str(V_2_7_6))
-    def sql_2_8_0_jar_test(self, ignite_version):
-        """
-        Test SQL with jdbc driver 2.8.0 version.
-        """
-        self.check_connection(ignite_version=ignite_version, jar_ver=V_2_8_0)
-
-    def check_connection(self, ignite_version, jar_ver=None):
+    def check_connection(self, ignite_version: IgniteVersion, jar_ver: IgniteVersion = None):
         """
         Check SQL commands.
         :param ignite_version: IgniteVersion.
@@ -73,7 +54,7 @@ class SqlJdbcTest(IgniteTest):
         """
         self.stage("Starting nodes")
 
-        config = IgniteConfiguration(version=IgniteVersion(ignite_version))
+        config = IgniteConfiguration(version=ignite_version)
 
         service = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
         service.start()
