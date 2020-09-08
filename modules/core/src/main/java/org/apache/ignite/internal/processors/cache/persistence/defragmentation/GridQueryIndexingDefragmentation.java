@@ -21,8 +21,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 
 /**
  *
@@ -32,12 +30,13 @@ public interface GridQueryIndexingDefragmentation {
      * Defragmentate index partition.
      *
      * @param grpCtx
+     * @param newCtx
      * @param defrgCtx
      * @param mappingByPartition
      * @param log
      *
      * @throws IgniteCheckedException If failed.
      */
-    void defragmentate(CacheGroupContext grpCtx, CacheDefragmentationContext defrgCtx,
+    void defragmentate(CacheGroupContext grpCtx, CacheGroupContext newCtx, CacheDefragmentationContext defrgCtx,
                        Map<Integer, LinkMap> mappingByPartition, IgniteLogger log) throws IgniteCheckedException;
 }

@@ -23,19 +23,16 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.GridQueryIndexingDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.GridQueryIndexingDefragmentation;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -59,25 +56,20 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
 
     /** {@inheritDoc} */
     @Override public void defragmentate(
-            CacheGroupContext grpCtx,
-            CacheDefragmentationContext defrgCtx,
-            Map<Integer, LinkMap> mappingByPartition,
-            IgniteLogger log) throws IgniteCheckedException {
+        CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
+        CacheDefragmentationContext defrgCtx,
+        Map<Integer, LinkMap> mappingByPartition,
+        IgniteLogger log) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
 
         TreeIterator treeIterator = new TreeIterator(pageSize);
 
-        PageMemoryEx cachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
+        PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
-        PageMemory memory = defrgCtx.partitionsDataRegion().pageMemory();
+        PageMemory newCachePageMemory = defrgCtx.partitionsDataRegion().pageMemory();
 
         Collection<GridH2Table> tables = indexing.schemaManager().dataTables();
-
-        int grpId = grpCtx.groupId();
-
-        long pageId = memory.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
-
-        RootPage page = new RootPage(new FullPageId(pageId, grpId), true);
 
         for (GridH2Table table : tables) {
             GridH2RowDescriptor rowDescriptor = table.rowDescriptor();
@@ -102,15 +94,15 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
                 Arrays.asList(firstTree.cols()),
                 index.inlineSize(),
                 segments,
-                memory,
-                (i, s) -> page,
+                newCachePageMemory,
+                (segIdx, treeName) -> newCtx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx),
                 log
             );
 
             for (int i = 0; i < segments; i++) {
                 H2Tree tree = index.treeForRead(i);
 
-                treeIterator.iterate(tree, cachePageMem, (theTree, io, pageAddr, idx) -> {
+                treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                     H2Row row = theTree.getRow(io, pageAddr, idx);
 
                     if (row instanceof H2CacheRow) {

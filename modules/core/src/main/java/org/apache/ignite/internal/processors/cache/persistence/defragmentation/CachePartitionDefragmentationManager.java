@@ -287,7 +287,7 @@ public class CachePartitionDefragmentationManager {
                         sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
 
                         try {
-                            defragmentIndexPartition(grpCtx, mappingByPartition);
+                            defragmentIndexPartition(grpCtx, newCtx, mappingByPartition);
                         }
                         finally {
                             sharedCtx.database().checkpointReadUnlock();
@@ -563,6 +563,7 @@ public class CachePartitionDefragmentationManager {
      */
     private void defragmentIndexPartition(
         CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
         Map<Integer, LinkMap> mappingByPartition
     ) throws IgniteCheckedException {
         GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
@@ -572,7 +573,7 @@ public class CachePartitionDefragmentationManager {
 
         final GridQueryIndexing idx = query.getIndexing();
 
-        idx.defragmentator().defragmentate(grpCtx, defrgCtx, mappingByPartition, log);
+        idx.defragmentator().defragmentate(grpCtx, newCtx, defrgCtx, mappingByPartition, log);
     }
 
 }

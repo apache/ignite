@@ -126,7 +126,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         IgniteEx node = startGrid(0);
 
-        IgniteCache<Object, Object> cache = node .cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(completionMarkerFile.exists());
 
