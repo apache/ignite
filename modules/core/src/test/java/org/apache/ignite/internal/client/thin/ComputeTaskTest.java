@@ -24,15 +24,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -437,14 +429,17 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             ClientCompute compute1 = client.compute(client.cluster().forNodeId(nodeId(1)));
             ClientCompute compute2 = client.compute(client.cluster().forNodeId(nodeId(2)));
 
-            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(2);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
-            // TODO: Wait for first task to block on the latch - this now happens asynchronously.
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
@@ -636,19 +631,29 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         /** Global latch. */
         private static volatile CountDownLatch latch;
 
+        /** Global start latch. */
+        private static volatile CountDownLatch startLatch;
+
         /** Local latch. */
         private final CountDownLatch locLatch;
+
+        /** Local start latch. */
+        private final CountDownLatch locStartLatch;
 
         /**
          * Default constructor.
          */
         public TestLatchTask() {
             locLatch = latch;
+            locStartLatch = startLatch;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
             try {
+                if (locStartLatch != null)
+                    locStartLatch.countDown();
+
                 if (locLatch != null)
                     locLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
