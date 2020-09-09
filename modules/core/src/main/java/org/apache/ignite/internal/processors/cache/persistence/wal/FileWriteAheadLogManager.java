@@ -230,6 +230,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
+
     /**
      * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
      * Checkpoint should be triggered when max size of WAL after last checkpoint more than maxWallArchiveSize * thisValue

@@ -88,6 +88,7 @@ public abstract class PagesList extends DataStructure {
     /** */
     private static final int TRY_LOCK_ATTEMPTS =
             IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS, DFLT_PAGES_LIST_TRY_LOCK_ATTEMPTS);
+
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
         IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_STRIPES_PER_BUCKET,

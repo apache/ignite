@@ -102,7 +102,6 @@ public class GridToStringBuilder {
     /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
     public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
 
-
     /** Supplier for {@link #includeSensitive} with default behavior. */
     private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
         new AtomicReference<>(new Supplier<Boolean>() {
