@@ -19,6 +19,8 @@ This module contains the base class to build Ignite aware application written on
 
 import re
 
+from ducktape.errors import TimeoutError
+
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
@@ -39,6 +41,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.java_class_name = java_class_name
         self.timeout_sec = timeout_sec
         self.stop_timeout_sec = 10
+        self.params = params
 
     def start(self):
         super().start()
@@ -46,13 +49,8 @@ class IgniteApplicationService(IgniteAwareService):
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
         self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)
-        self.await_event("IGNITE_APPLICATION_INITIALIZED\\|IGNITE_APPLICATION_BROKEN", self.timeout_sec,
-                         from_the_beginning=True)
 
-        try:
-            self.await_event("IGNITE_APPLICATION_INITIALIZED", 1, from_the_beginning=True)
-        except Exception:
-            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR")) from None
+        self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=20):
@@ -63,8 +61,21 @@ class IgniteApplicationService(IgniteAwareService):
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
                         (str(node.account), str(self.stop_timeout_sec))
 
-        self.await_event("IGNITE_APPLICATION_FINISHED\\|IGNITE_APPLICATION_BROKEN", from_the_beginning=True,
-                         timeout_sec=timeout_sec)
+        self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=self.stop_timeout_sec)
+
+    def __check_status(self, desired, timeout=1):
+        self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
+
+        try:
+            self.await_event("IGNITE_APPLICATION_BROKEN", 1, from_the_beginning=True)
+            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR"))
+        except TimeoutError:
+            pass
+
+        try:
+            self.await_event(desired, 1, from_the_beginning=True)
+        except Exception:
+            raise Exception("Java application execution falied.") from None
 
     def clean_node(self, node):
         if self.alive(node):

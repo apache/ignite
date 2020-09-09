@@ -21,7 +21,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # DuckerUp parameters are specified with env variables
 
 # Num of cotainers that ducktape will prepare for tests
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-11}
+IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
 default_image_name="ducker-ignite-openjdk-8"
@@ -55,7 +55,7 @@ The options are as follows:
     Display this help message.
 
 -n|--num-nodes
-    Specify how many nodes to start. Default number of nodes to start: 11.
+    Specify how many nodes to start. Default number of nodes to start: 13 (12 + 1 used by ducktape).
 
 -j|--max-parallel
     Specify max number of tests that can be run in parallel.
