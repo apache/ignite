@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
@@ -206,6 +207,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
             if (task == null) {
                 // TODO: Channel closed - try again recursively (add a test for this?)
+                throw new IgniteException("TODO");
             }
 
             CompletableFuture<R> fut = new CompletableFuture<>();

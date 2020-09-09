@@ -441,6 +441,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
 
+            // TODO: Wait for first task to block on the latch - this now happens asynchronously.
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
