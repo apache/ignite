@@ -164,8 +164,8 @@ class DiscoveryTest(IgniteTest):
             err = str(node.account.ssh_client.exec_command("sudo iptables -F")[2].read(), "utf-8")
             assert len(err) == 0, "Failed to clean iptables rules on '" + node.name + "': " + err
 
-            # out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
-            # self.logger.info("Iptables rules on '" + node.name + "' before storing: " + out)
+            out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
+            self.logger.info("Iptables rules on '" + node.name + "' before storing: " + out)
 
             # err = str(node.account.ssh_client.exec_command(
             #     "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
@@ -182,8 +182,8 @@ class DiscoveryTest(IgniteTest):
         errors = []
 
         for node in self.test_context.cluster.nodes:
-            # out = str(node.accounnt.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
-            # self.logger.info("Iptables rules on '" + node.name + "' before restoring: " + out)
+            out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
+            self.logger.info("Iptables rules on '" + node.name + "' before restoring: " + out)
 
             # err = node.account.ssh_client.exec_command(
             #     "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS)[2].read()
