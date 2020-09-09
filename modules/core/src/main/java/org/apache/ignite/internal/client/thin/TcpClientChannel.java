@@ -299,7 +299,7 @@ class TcpClientChannel implements ClientChannel {
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
-            return convertException(e);
+            throw convertException(e);
         }
         finally {
             pendingReqs.remove(reqId);
@@ -339,14 +339,14 @@ class TcpClientChannel implements ClientChannel {
      * @param e Exception to convert.
      * @return Resulting exception.
      */
-    private <T> T convertException(IgniteCheckedException e) {
+    private RuntimeException convertException(IgniteCheckedException e) {
         if (e.getCause() instanceof ClientError)
-            throw (ClientError)e.getCause();
+            return (RuntimeException) e.getCause();
 
         if (e.getCause() instanceof ClientException)
-            throw (ClientException)e.getCause();
+            return (RuntimeException) e.getCause();
 
-        throw new ClientException(e.getMessage(), e);
+        return new ClientException(e.getMessage(), e);
     }
 
     /**
