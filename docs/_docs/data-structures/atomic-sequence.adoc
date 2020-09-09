@@ -20,5 +20,5 @@ The key parameter of `IgniteAtomicSequence` is `atomicSequenceReserveSize` which
 
 The default value for `atomicSequenceReserveSize` is `1000`. This default setting can be changed by modifying the `atomicSequenceReserveSize` property of `AtomicConfiguration`.
 
-Refer to link:atomic-types#atomic-configuration[Atomic Configuration] for more information on various atomic configuration properties.
+Refer to link:data-structures/atomic-types#atomic-configuration[Atomic Configuration] for more information on various atomic configuration properties.
 

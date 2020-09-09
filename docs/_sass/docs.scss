@@ -119,6 +119,11 @@ section.page-docs {
       hyphens: auto;
     }
 
+    table tr td code{
+      hyphens: none;
+    }
+
+
 	table thead,table tfoot {
 		background:#f7f8f7; 
 	  color: #757575;

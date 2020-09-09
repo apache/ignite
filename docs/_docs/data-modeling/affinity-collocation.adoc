@@ -54,7 +54,7 @@ tab:C#/.NET[]
 include::{dotnetSourceFile}[tag=affinityCollocation,indent=0]
 ----
 tab:C++[unsupported]
-----
+
 tab:SQL[]
 [source,sql]
 ----

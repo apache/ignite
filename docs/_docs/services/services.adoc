@@ -31,7 +31,7 @@ Refer to a service example implementation in the Apache Ignite link:{githubUrl}/
 A service implements the javadoc:org.apache.ignite.services.Service[Service] interface.
 The `Service` interface has three methods:
 
-* `init(ServiceContext)`: called by Ignite before the service is deployed (and before calling the `execute()` method)
+* `init(ServiceContext)`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
 * `execute(ServiceContext)`: starts execution of the service
 * `cancel(ServiceContext)`:  cancels service execution
 
@@ -48,7 +48,7 @@ In the latter case, the service is deployed when the cluster starts.
 
 === Deploying Services at Runtime
 
-You can deploy services at runtime via the instance of `IgniteServices`, which can be obtained using the `Ignite.services()` method.
+You can deploy services at runtime via the instance of `IgniteServices`, which can be obtained from an instance of `Ignite` by calling the `Ignite.services()` method.
 
 The `IgniteServices` interface has a number of methods for deploying services:
 
@@ -120,7 +120,7 @@ tab:C++[]
 
 == Deploying to a Subset of Nodes
 
-When you obtain the `IgniteServices` interface by calling `ignite.services()`, the `IgniteService` instance is associated with all server nodes.
+When you obtain the `IgniteServices` interface by calling `ignite.services()`, the `IgniteServices` instance is associated with all server nodes.
 It means that Ignite chooses where to deploy the service from the set of all server nodes.
 You can change the set of nodes considered for service deployment by using various approaches describe below.
 

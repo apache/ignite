@@ -16,9 +16,9 @@ Therefore, you should use swap space as an extension to RAM only to give yoursel
 
 [CAUTION]
 ====
-Since swap space is located on disk, it should not be considered as a replacement to native persistence.
-Data from the swap space is available as long as the node is active. Once the node shuts down, the data lost.
-To ensure that data is available at all times, you should either enable link:persistence/native-persistence/[native persistence] or use an link:persistence/external-storage[external storage].
+Since swap space is located on disk, it should not be considered as a replacement for native persistence.
+Data from the swap space is available as long as the node is active. Once the node shuts down, the data is lost.
+To ensure that data is always available, you should either enable link:persistence/native-persistence/[native persistence] or use an link:persistence/external-storage[external storage].
 ====
 
 == Enabling Swapping

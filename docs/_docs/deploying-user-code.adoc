@@ -1,7 +1,7 @@
 = Deploying User Code
 :javaFile: {javaCodeDir}/UserCodeDeployment.java
 
-The approach is to specify the location of your libraries in the node configuration.
+In addition to link:peer-class-loading[peer class loading], you can deploy user code by configuring `UriDeploymentSpi`. With this approach, you specify the location of your libraries in the node configuration.
 Ignite scans the location periodically and redeploys the classes if they change.
 The location may be a file system directory or an HTTP(S) location.
 When Ignite detects that the libraries are removed from the location, the classes are undeployed from the cluster.
@@ -14,8 +14,9 @@ You can specify multiple locations (of different types) by providing both direct
 == Deploying from a Local Directory
 
 To deploy libraries from a file system directory, add the directory path to the list of URIs in the `UriDeploymentSpi` configuration.
-The directory must exist on all cluster nodes and contain jar files with the classes you want to deploy.
+The directory must exist on the nodes where it is specified and contain jar files with the classes you want to deploy.
 Note that the path must be specified using the "file://" scheme.
+You can specify different directories on different nodes.
 
 [tabs]
 --

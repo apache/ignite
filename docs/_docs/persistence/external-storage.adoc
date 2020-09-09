@@ -15,7 +15,7 @@ The two main use cases where an external storage can be used include:
 
 * You want to persist the data in an external database (instead of using the link:persistence/native-persistence[native persistence]).
 
-image:images/3rd_party_persistence.png[]
+image::images/external_storage.png[]
 
 ////////////////////////////////////////////////////////////////////////////////
 What follows is a java-specific documentation

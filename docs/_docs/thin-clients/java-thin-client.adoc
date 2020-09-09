@@ -263,7 +263,7 @@ include::{sourceCodeFile}[tag=client-services,indent=0]
 *TODO: fix link*
 ////
 
-See link:service-grid/service-grid[Service Grid] for more information about grid-managed services.
+See link:services/services[Services] for more information about Ignite services.
 
 == Handling Exceptions
 
