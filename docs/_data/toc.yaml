@@ -234,7 +234,6 @@
           url: /security/tde
         - title: Master key rotation
           url: /security/master-key-rotation
-
 - title: Thin Clients
   items: 
     - title: Thin Clients Overview 
@@ -251,6 +250,20 @@
       url: /thin-clients/php-thin-client
     - title: Node.js Thin Client
       url: /thin-clients/nodejs-thin-client
+    - title: Binary Client Protocol
+      items: 
+        - title: Binary Client Protocol
+          url: /binary-client-protocol/binary-client-protocol
+        - title: Data Format
+          url: /binary-client-protocol/data-format
+        - title: Key-Value Queries 
+          url: /binary-client-protocol/key-value-queries
+        - title: SQL and Scan Queries 
+          url: /binary-client-protocol/sql-and-scan-queries
+        - title: Binary Types Metadata 
+          url: /binary-client-protocol/binary-type-metadata
+        - title: Cache Configuration 
+          url: /binary-client-protocol/cache-configuration
 - title: ODBC Driver
   items: 
     - title: ODBC Driver
