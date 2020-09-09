@@ -36,6 +36,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -633,6 +635,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             /** */
             private Object cur;
 
+            /** Logical reads. */
+            private long logicalReads;
+
+            /** Physical reads. */
+            private long physicalReads;
+
             @Override protected Object onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
@@ -648,8 +656,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (cur != null)
                     return true;
 
-                if (locIter != null && locIter.hasNextX())
-                    cur = locIter.nextX();
+                if (locIter != null) {
+                    if (performanceStatsEnabled)
+                        IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
+                    if (locIter.hasNextX())
+                        cur = locIter.nextX();
+
+                    if (performanceStatsEnabled) {
+                        IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                        logicalReads += stat.logicalReads();
+                        physicalReads += stat.physicalReads();
+                    }
+                }
 
                 return cur != null || (cur = convert(fut.next())) != null;
             }
@@ -684,6 +704,15 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         startTime,
                         System.nanoTime() - startTimeNanos,
                         true);
+
+                    if (logicalReads > 0 || physicalReads > 0) {
+                        cctx.kernalContext().performanceStatistics().queryReads(
+                            SCAN,
+                            cctx.localNodeId(),
+                            ((GridCacheDistributedQueryFuture)fut).requestId(),
+                            logicalReads,
+                            physicalReads);
+                    }
                 }
             }
         };

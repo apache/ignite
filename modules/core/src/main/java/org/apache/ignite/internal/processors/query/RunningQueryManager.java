@@ -92,8 +92,8 @@ public class RunningQueryManager {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Current reduce query request ID for a registered query. Value is {@code -1} if there is no request sent. */
-    private final ThreadLocal<Long> reduceQryId = ThreadLocal.withInitial(() -> -1L);
+    /** Current running query info. */
+    private final ThreadLocal<GridRunningQueryInfo> currQryInfo = new ThreadLocal<>();
 
     /**
      * Constructor.
@@ -159,6 +159,9 @@ public class RunningQueryManager {
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
 
+        if (ctx.performanceStatistics().enabled())
+            currQryInfo.set(run);
+
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
         return qryId;
@@ -204,20 +207,22 @@ public class RunningQueryManager {
                 ctx.performanceStatistics().query(
                     qry.queryType(),
                     qry.query(),
-                    reduceQryId.get(),
+                    qry.requestId(),
                     qry.startTime(),
                     System.nanoTime() - qry.startTimeNanos(),
                     !failed);
             }
-
-            reduceQryId.remove();
         }
     }
 
-    /** Sets reduce query request ID. */
-    public void reduceQueryId(long reqId) {
-        if (ctx.performanceStatistics().enabled())
-            reduceQryId.set(reqId);
+    /** Tracks query request ID. */
+    public void trackRequestId(long reqId) {
+        if (ctx.performanceStatistics().enabled()) {
+            GridRunningQueryInfo info = currQryInfo.get();
+
+            if (info != null)
+                info.requestId(reqId);
+        }
     }
 
     /**

@@ -54,6 +54,9 @@ public class GridRunningQueryInfo {
     /** */
     private final QueryRunningFuture fut = new QueryRunningFuture();
 
+    /** Request ID. */
+    private long reqId;
+
     /**
      * Constructor.
      *
@@ -181,5 +184,15 @@ public class GridRunningQueryInfo {
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /** @return Request ID. */
+    public long requestId() {
+        return reqId;
+    }
+
+    /** @param reqId Request ID. */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
     }
 }

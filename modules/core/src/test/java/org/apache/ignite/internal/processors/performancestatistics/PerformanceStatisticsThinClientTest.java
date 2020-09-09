@@ -22,65 +22,49 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientTransaction;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_REMOVE;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOCK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 
 /**
- * Tests performance statistics.
+ * Tests thin client performance statistics.
  */
-@SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
-    /** Test entry processor. */
-    private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
-        new EntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStatisticsTest {
+    /** Test task name. */
+    public static final String TEST_TASK_NAME = "TestTask";
 
-    /** Test cache entry processor. */
-    private static final CacheEntryProcessor<Object, Object, Object> CACHE_ENTRY_PROC =
-        new CacheEntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+    /** Active tasks limit. */
+    private static final int ACTIVE_TASKS_LIMIT = 50;
 
-    /** Cache entry count. */
-    private static final int ENTRY_COUNT = 100;
+    /** Grids count. */
+    private static final int GRIDS_CNT = 2;
 
-    /** Ignite. */
-    private static IgniteEx ignite;
-
-    /** Test cache. */
-    private static IgniteCache<Object, Object> cache;
+    /** Thin client. */
+    private static IgniteClient thinClient;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -88,23 +72,34 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 
+        cfg.setClientConnectorConfiguration(
+            new ClientConnectorConfiguration().setThinClientConfiguration(
+                new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(ACTIVE_TASKS_LIMIT)));
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrid(0);
+        super.beforeTestsStarted();
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteEx ignite = startGrids(GRIDS_CNT);
 
-        for (int i = 0; i < ENTRY_COUNT; i++)
-            cache.put(i, i);
+        ignite.compute().localDeployTask(TestTask.class, TestTask.class.getClassLoader());
+
+        thinClient = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        thinClient.close();
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCompute() throws Exception {
-        String testTaskName = "testTask";
         int executions = 5;
 
         startCollectStatistics();
@@ -116,7 +111,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         };
 
         for (int i = 0; i < executions; i++)
-            ignite.compute().withName(testTaskName).run(task);
+            thinClient.compute().execute(TEST_TASK_NAME, null);
 
         HashMap<IgniteUuid, Integer> sessions = new HashMap<>();
         AtomicInteger tasks = new AtomicInteger();
@@ -129,8 +124,8 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
                 tasks.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
-                assertEquals(testTaskName, taskName);
+                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
+                assertEquals(TEST_TASK_NAME, taskName);
                 assertTrue(startTime > 0);
                 assertTrue(duration >= 0);
                 assertEquals(-1, affPartId);
@@ -142,7 +137,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
                 jobs.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertTrue(queuedTime >= 0);
                 assertTrue(startTime > 0);
                 assertTrue(duration >= 0);
@@ -151,75 +146,39 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         });
 
         assertEquals(executions, tasks.get());
-        assertEquals(executions, jobs.get());
+        assertEquals(executions * GRIDS_CNT, jobs.get());
 
         Collection<Integer> vals = sessions.values();
 
         assertEquals(executions, vals.size());
-        assertTrue("Invalid sessions: " + sessions, vals.stream().allMatch(val -> val == 2));
+        assertTrue("Invalid sessions: " + sessions, vals.stream().allMatch(val -> val == GRIDS_CNT + 1));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCacheOperation() throws Exception {
         checkCacheOperation(CACHE_PUT, cache -> cache.put(1, 1));
-        checkCacheOperation(CACHE_PUT, cache -> cache.putAsync(2, 2).get());
 
         checkCacheOperation(CACHE_PUT_ALL, cache -> cache.putAll(Collections.singletonMap(3, 3)));
-        checkCacheOperation(CACHE_PUT_ALL, cache -> cache.putAllAsync(Collections.singletonMap(4, 4)).get());
 
         checkCacheOperation(CACHE_GET, cache -> cache.get(1));
-        checkCacheOperation(CACHE_GET, cache -> cache.getAsync(2).get());
 
         checkCacheOperation(CACHE_GET_AND_PUT, cache -> cache.getAndPut(1, 1));
-        checkCacheOperation(CACHE_GET_AND_PUT, cache -> cache.getAndPutAsync(2, 2).get());
 
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
-        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
 
         checkCacheOperation(CACHE_REMOVE, cache -> cache.remove(1));
-        checkCacheOperation(CACHE_REMOVE, cache -> cache.removeAsync(2).get());
 
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
-        checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
 
         checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
-        checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemoveAsync(6).get());
-
-        checkCacheOperation(CACHE_LOCK, cache -> {
-            Lock lock = cache.lock(7);
-
-            lock.lock();
-            lock.unlock();
-        });
-
-        checkCacheOperation(CACHE_LOCK, cache -> {
-            Lock lock = cache.lockAll(Collections.singleton(8));
-
-            lock.lock();
-            lock.unlock();
-        });
-
-        checkCacheOperation(CACHE_INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
-        checkCacheOperation(CACHE_INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
-
-        checkCacheOperation(CACHE_INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
-        checkCacheOperation(CACHE_INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
-
-        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
-        checkCacheOperation(CACHE_INVOKE_ALL,
-            cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
-
-        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
-        checkCacheOperation(CACHE_INVOKE_ALL,
-            cache -> cache.invokeAllAsync(Collections.singleton(10), CACHE_ENTRY_PROC).get());
     }
 
     /** Checks cache operation. */
-    private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+    private void checkCacheOperation(OperationType op, Consumer<ClientCache<Object, Object>> clo) throws Exception {
         startCollectStatistics();
 
-        clo.accept(cache);
+        clo.accept(thinClient.cache(DEFAULT_CACHE_NAME));
 
         AtomicInteger ops = new AtomicInteger();
 
@@ -228,7 +187,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 long duration) {
                 ops.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(op, type);
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
                 assertTrue(startTime > 0);
@@ -251,9 +210,9 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     private void checkTx(boolean commited) throws Exception {
         startCollectStatistics();
 
-        try (Transaction tx = ignite.transactions().txStart()) {
+        try (ClientTransaction tx = thinClient.transactions().txStart()) {
             for (int i = 0; i < 10; i++)
-                cache.put(i, i * 2);
+                thinClient.cache(DEFAULT_CACHE_NAME).put(i, i * 2);
 
             if (commited)
                 tx.commit();
@@ -268,7 +227,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 boolean txCommited) {
                 txs.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(1, cacheIds.size());
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheIds.get(0));
                 assertTrue(startTime > 0);

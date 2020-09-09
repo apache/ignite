@@ -27,12 +27,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,6 +52,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.junit.Assume.assumeFalse;
 
 /** Tests query performance statistics. */
 @RunWith(Parameterized.class)
@@ -65,14 +70,26 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Parameterized.Parameter
     public int pageSize;
 
+    /** Run query from thin client flag. */
+    @Parameterized.Parameter(1)
+    public boolean thinClientFlag;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}")
+    @Parameterized.Parameters(name = "pageSize={0}, thinClientFlag={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{ENTRY_COUNT}, {ENTRY_COUNT / 10}});
+        return Arrays.asList(
+            new Object[] {ENTRY_COUNT, false},
+            new Object[] {ENTRY_COUNT / 10, false},
+            new Object[] {ENTRY_COUNT, true},
+            new Object[] {ENTRY_COUNT / 10, true}
+        );
     }
 
     /** Client. */
     private static IgniteEx client;
+
+    /** Thin client. */
+    private static IgniteClient thinClient;
 
     /** Cache. */
     private static IgniteCache<Integer, Integer> cache;
@@ -96,6 +113,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         cleanPersistenceDir();
 
         startGrids(2);
+
+        thinClient = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
 
         client = startClientGrid("client");
 
@@ -128,6 +147,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         super.afterTestsStopped();
 
         cleanPersistenceDir();
+
+        thinClient.close();
     }
 
     /** {@inheritDoc} */
@@ -197,7 +218,10 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         throws Exception {
         startCollectStatistics();
 
-        cache.query(qry).getAll();
+        if (thinClientFlag)
+            thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+        else
+            cache.query(qry).getAll();
 
         Set<UUID> readsNodes = new HashSet<>();
 
@@ -214,7 +238,11 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 queryCnt.incrementAndGet();
                 qryIds.add(id);
 
-                assertEquals(client.localNode().id(), nodeId);
+                if (thinClientFlag)
+                    assertTrue(F.nodeIds(client.cluster().forServers().nodes()).contains(nodeId));
+                else
+                    assertEquals(client.localNode().id(), nodeId);
+
                 assertEquals(expType, type);
                 assertEquals(expText, text);
                 assertTrue(startTime > 0);
@@ -228,8 +256,12 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 qryIds.add(id);
                 readsNodes.remove(nodeId);
 
+                if (thinClientFlag)
+                    assertTrue(F.nodeIds(client.cluster().forServers().nodes()).contains(queryNodeId));
+                else
+                    assertEquals(client.localNode().id(), queryNodeId);
+
                 assertEquals(expType, type);
-                assertEquals(client.localNode().id(), queryNodeId);
                 assertTrue(logicalReads > 0);
                 assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
             }
@@ -243,6 +275,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testMultipleStatementsSql() throws Exception {
+        assumeFalse("Multiple statements queries are not supported by thin client.", thinClientFlag);
+
         LinkedList<String> expQrs = new LinkedList<>();
 
         expQrs.add("create table " + SQL_TABLE + " (id int primary key, val varchar)");
@@ -251,8 +285,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         LinkedList<String> qrsWithReads = new LinkedList<>();
 
-        qrsWithReads.add("select * from " + SQL_TABLE);
         qrsWithReads.add("update " + SQL_TABLE + " set val = 'd' where id = 1");
+        qrsWithReads.add("select * from " + SQL_TABLE);
 
         expQrs.addAll(qrsWithReads);
 
@@ -264,7 +298,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         assertEquals("Unexpected cursors count: " + res.size(), expQrs.size(), res.size());
 
-        res.get(3).getAll();
+        res.get(4).getAll();
 
         HashSet<Long> qryIds = new HashSet<>();
 
