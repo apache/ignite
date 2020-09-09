@@ -55,7 +55,7 @@ public class TcpCommunicationConfiguration implements Serializable {
 
     @SystemProperty(value = "Defines how many non-blocking selector.selectNow() should be made before falling into " +
         "selector.select(long) in NIO server. Can be set to Long.MAX_VALUE so " +
-        "selector threads will never block.", type = Long.class, defaults = "" + DFLT_SELECTOR_SPINS)
+        "selector threads will never block", type = Long.class, defaults = "" + DFLT_SELECTOR_SPINS)
     public static final String IGNITE_SELECTOR_SPINS = "IGNITE_SELECTOR_SPINS";
 
     /** Address resolver. */

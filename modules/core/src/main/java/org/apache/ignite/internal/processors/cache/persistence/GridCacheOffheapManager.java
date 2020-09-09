@@ -128,7 +128,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     public static final int DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE = 5;
 
     @SystemProperty(value = "Margin for WAL iterator, that used for historical rebalance on atomic cache.  " +
-        "It is intended for prevent  partition divergence due to reordering in WAL.", type = Long.class,
+        "It is intended for prevent  partition divergence due to reordering in WAL", type = Long.class,
         defaults = "" + DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE)
     public static final String WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE =
         "WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE";

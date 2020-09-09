@@ -45,7 +45,7 @@ public class OffheapReadWriteLock {
 
     /** */
     @SystemProperty(value = "OffheapReadWriteLock flag to switch between signal to writers or signal to writers or " +
-        "reades policy.", defaults = "Default is false that means always signal to writers")
+        "reades policy", defaults = "Default is false that means always signal to writers")
     public static final String IGNITE_OFFHEAP_RANDOM_RW_POLICY = "IGNITE_OFFHEAP_RANDOM_RW_POLICY";
 
     /**
