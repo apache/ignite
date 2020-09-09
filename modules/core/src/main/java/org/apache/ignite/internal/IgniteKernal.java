@@ -355,7 +355,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * <p>
      * Value is {@code 30 sec}.
      */
-    public static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
 
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
@@ -1448,7 +1448,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
 
         if (starveCheck) {
-            final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
+            final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
             starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */

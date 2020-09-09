@@ -49,7 +49,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_USE_
 import static org.apache.ignite.internal.IgniteKernal.DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
-import static org.apache.ignite.internal.IgniteKernal.PERIODIC_STARVATION_CHECK_FREQ;
+import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
@@ -228,7 +228,7 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty(value = "Interval in milliseconds in which Ignite will check thread pool state for starvation. " +
         "Zero value will disable checker", type = Long.class,
-        defaults = PERIODIC_STARVATION_CHECK_FREQ + " milliseconds")
+        defaults = DFLT_PERIODIC_STARVATION_CHECK_FREQ + " milliseconds")
     public static final String IGNITE_STARVATION_CHECK_INTERVAL = "IGNITE_STARVATION_CHECK_INTERVAL";
 
     /**
@@ -1679,7 +1679,7 @@ public final class IgniteSystemProperties {
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
     @SystemProperty("Disables memory optimization: BitSets instead of HashSets to store " +
-        "partitions. When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to " +
+        "partitions. When number of backups per partitions is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to " +
         "improve contains() which leads to extra memory consumption, otherwise we use view on the list of cluster " +
         "nodes to reduce memory consumption on redundant data structures")
     public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
@@ -1817,8 +1817,8 @@ public final class IgniteSystemProperties {
      * neither {@link #IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT} is set.
      */
     @SystemProperty(value = "Threshold timeout for long transactions, if transaction exceeds it, it " +
-        "will be dumped in log with information about how much time did it spent in system time (time while aquiring " +
-        "locks, preparing, commiting, etc) and user time (time when client node runs some code while holding " +
+        "will be dumped in log with information about how much time did it spent in system time (time while acquiring " +
+        "locks, preparing, committing, etc) and user time (time when client node runs some code while holding " +
         "transaction and not waiting it). Equals 0 if not set. No long transactions are dumped in log if nor " +
         "this parameter neither IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT is set", type = Long.class)
     public static final String IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD = "IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD";

@@ -63,7 +63,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** Eviction progress frequency property name. */
     @SystemProperty(value = "Eviction progress frequency in milliseconds", type = Long.class,
         defaults = "" + DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS)
-    private static final String SHOW_EVICTION_PROGRESS_FREQ = "SHOW_EVICTION_PROGRESS_FREQ";
+    public static final String SHOW_EVICTION_PROGRESS_FREQ = "SHOW_EVICTION_PROGRESS_FREQ";
 
     /** Eviction progress frequency in ms. */
     private final long evictionProgressFreqMs =
