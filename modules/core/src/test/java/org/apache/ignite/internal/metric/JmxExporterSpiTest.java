@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.text.DateFormat;
 import java.time.LocalTime;
@@ -60,6 +61,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
@@ -92,6 +95,7 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
@@ -1016,6 +1020,41 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         ));
 
         assertEquals(2, view.size());
+    }
+
+    /** */
+    @Test
+    public void testBinaryMeta() {
+        IgniteCache<Integer, TestObjectAllTypes> c1 = ignite.createCache("test-all-types-cache");
+        IgniteCache<Integer, TestObjectEnum> c2 = ignite.createCache("test-enum-cache");
+
+        c1.put(1, new TestObjectAllTypes());
+        c2.put(1, TestObjectEnum.A);
+
+        TabularDataSupport view = systemView(BINARY_METADATA_VIEW);
+
+        assertNotNull(view);
+        assertEquals(2, view.size());
+
+        for (int i = 0; i < 2; i++) {
+            CompositeData meta = view.get(new Object[] {i});
+
+            if (Objects.equals(TestObjectEnum.class.getName(), meta.get("typeName"))) {
+                assertTrue((Boolean)meta.get("isEnum"));
+
+                assertEquals(0, meta.get("fieldsCount"));
+            }
+            else {
+                assertFalse((Boolean)meta.get("isEnum"));
+
+                Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                assertEquals(fields.length, meta.get("fieldsCount"));
+
+                for (Field field : fields)
+                    assertTrue(meta.get("fields").toString().contains(field.getName()));
+            }
+        }
     }
 
     /** */
