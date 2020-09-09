@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,13 +35,27 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </pre>
  */
 public class OffheapReadWriteLock {
+    /** @see #IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT */
+    public static final int DFLT_OFFHEAP_RWLOCK_SPIN_COUNT = 32;
+
+    /** */
+    @SystemProperty(value = "Count spin lock iterations before fallback to block", type = Long.class,
+        defaults = "" + DFLT_OFFHEAP_RWLOCK_SPIN_COUNT)
+    public static final String IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT = "IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT";
+
+    /** */
+    @SystemProperty(value = "OffheapReadWriteLock flag to switch between signal to writers or signal to writers or " +
+        "reades policy.", defaults = "Default is false that means always signal to writers")
+    public static final String IGNITE_OFFHEAP_RANDOM_RW_POLICY = "IGNITE_OFFHEAP_RANDOM_RW_POLICY";
+
     /**
      * TODO benchmark optimal spin count.
      */
-    public static final int SPIN_CNT = IgniteSystemProperties.getInteger("IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT", 32);
+    public static final int SPIN_CNT = IgniteSystemProperties.getInteger(IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT,
+        DFLT_OFFHEAP_RWLOCK_SPIN_COUNT);
 
     /** */
-    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean("IGNITE_OFFHEAP_RANDOM_RW_POLICY", false);
+    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean(IGNITE_OFFHEAP_RANDOM_RW_POLICY);
 
     /** Always lock tag. */
     public static final int TAG_LOCK_ALWAYS = -1;

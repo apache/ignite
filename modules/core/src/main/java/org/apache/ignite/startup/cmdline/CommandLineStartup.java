@@ -28,6 +28,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -42,14 +44,21 @@ import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.GridConfigurationFinder;
+import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.portscanner.GridJmxPortFinder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfiguration;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,14 +90,37 @@ public final class CommandLineStartup {
     static final String PRINT_PROPS_COMMAND = "-systemProps";
 
     /** Classes with Ignite system properties. */
-    static final Class<?>[] PROPS_CLS = {
+    static final List<Class<?>> PROPS_CLS = new ArrayList<>(Arrays.asList(
         IgniteSystemProperties.class,
         ExchangeContext.class,
         GridCacheMapEntry.class,
         LocalDeploymentSpi.class,
         GridCacheDatabaseSharedManager.class,
-        GridJmxPortFinder.class
-    };
+        GridJmxPortFinder.class,
+        PartitionsEvictManager.class,
+        PagesList.class,
+        GridCacheOffheapManager.class,
+        CacheContinuousQueryEventBuffer.class,
+        CacheContinuousQueryHandler.class,
+        OffheapReadWriteLock.class,
+        TcpCommunicationConfiguration.class
+    ));
+
+    static {
+        String h2TreeCls = "org.apache.ignite.internal.processors.query.h2.database.H2Tree";
+        String zkDiscoImpl = "org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl";
+
+        try {
+            if (U.inClassPath(h2TreeCls))
+                PROPS_CLS.add(Class.forName(h2TreeCls));
+
+            if (U.inClassPath(zkDiscoImpl))
+                PROPS_CLS.add(Class.forName(zkDiscoImpl));
+        }
+        catch (ClassNotFoundException ignored) {
+            // No-op.
+        }
+    }
 
     /** @see IgniteSystemProperties#IGNITE_PROG_NAME */
     public static final String DFLT_PROG_NAME = "ignite.{sh|bat}";
