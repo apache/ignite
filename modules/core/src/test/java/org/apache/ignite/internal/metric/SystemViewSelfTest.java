@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,6 +58,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -73,6 +76,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -105,6 +109,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CAC
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
@@ -1081,13 +1086,48 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testBinaryMeta() throws Exception {
+        try (IgniteEx g = startGrid(0)) {
+            IgniteCache<Integer, TestObjectAllTypes> c1 = g.createCache("test-cache");
+            IgniteCache<Integer, TestObjectEnum> c2 = g.createCache("test-enum-cache");
+
+            c1.put(1, new TestObjectAllTypes());
+            c2.put(1, TestObjectEnum.A);
+
+            SystemView<BinaryMetadataView> view = g.context().systemView().view(BINARY_METADATA_VIEW);
+
+            assertNotNull(view);
+            assertEquals(2, view.size());
+
+            for (BinaryMetadataView meta : view) {
+                if (Objects.equals(TestObjectEnum.class.getName(), meta.typeName())) {
+                    assertTrue(meta.isEnum());
+
+                    assertEquals(0, meta.fieldsCount());
+                }
+                else {
+                    assertFalse(meta.isEnum());
+
+                    Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                    assertEquals(fields.length, meta.fieldsCount());
+
+                    for (Field field : fields)
+                        assertTrue(meta.fields().contains(field.getName()));
+                }
+            }
+        }
+    }
+
+    /** */
+    @Test
     public void testMetastorage() throws Exception {
         cleanPersistenceDir();
 
         try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(
-                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true)
-                )))) {
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )))) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
