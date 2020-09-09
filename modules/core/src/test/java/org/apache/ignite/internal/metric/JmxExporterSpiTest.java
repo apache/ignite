@@ -1059,7 +1059,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testDistributedMetastorage() throws Exception {
-        try(IgniteEx ignite1 = startGrid(1)) {
+        try (IgniteEx ignite1 = startGrid(1)) {
             DistributedMetaStorage dms = ignite.context().distributedMetastorage();
 
             String name = "test-distributed-key";
