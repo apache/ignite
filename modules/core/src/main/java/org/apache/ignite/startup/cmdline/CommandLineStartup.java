@@ -109,13 +109,16 @@ public final class CommandLineStartup {
     static {
         String h2TreeCls = "org.apache.ignite.internal.processors.query.h2.database.H2Tree";
         String zkDiscoImpl = "org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl";
+        String zkTcpDiscoIpFinder = "org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder";
 
         try {
             if (U.inClassPath(h2TreeCls))
                 PROPS_CLS.add(Class.forName(h2TreeCls));
 
-            if (U.inClassPath(zkDiscoImpl))
+            if (U.inClassPath(zkDiscoImpl)) {
                 PROPS_CLS.add(Class.forName(zkDiscoImpl));
+                PROPS_CLS.add(Class.forName(zkTcpDiscoIpFinder));
+            }
         }
         catch (ClassNotFoundException ignored) {
             // No-op.
