@@ -57,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -64,6 +65,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
@@ -229,7 +231,7 @@ public class CommandHandler {
         boolean verbose = false;
 
         try {
-            if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
+            if (isHelp(rawArgs)) {
                 printHelp();
 
                 return EXIT_CODE_OK;
@@ -379,6 +381,32 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /** @return {@code True} if arguments metans "print help" command. */
+    private boolean isHelp(List<String> rawArgs) {
+        if(F.isEmpty(rawArgs))
+            return true;
+
+        if (rawArgs.size() < 3) {
+            boolean help = false;
+            boolean experimental = false;
+
+            for (String arg : rawArgs) {
+                if (CMD_HELP.equalsIgnoreCase(arg))
+                    help = true;
+                else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg)) {
+                    System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+                    experimental = true;
+                }
+            }
+
+            return (help && experimental) ||
+                ((help || experimental) && rawArgs.size() == 1);
+        }
+
+        return false;
     }
 
     /**

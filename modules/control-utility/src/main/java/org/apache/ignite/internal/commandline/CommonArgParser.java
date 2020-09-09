@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -94,6 +95,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -154,6 +158,7 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_ENABLE_EXPERIMENTAL));
 
         return list.toArray(new String[0]);
     }
@@ -319,6 +324,10 @@ public class CommonArgParser {
 
                     case CMD_VERBOSE:
                         verbose = true;
+                        break;
+
+                    case CMD_ENABLE_EXPERIMENTAL:
+                        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
                         break;
 
                     default:
