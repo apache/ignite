@@ -243,9 +243,11 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return fut;
         }).toCompletableFuture();
 
-        return new IgniteClientFutureImpl<>(computeFut, (f, mayInterruptIfRunning) -> {
+        return new IgniteClientFutureImpl<>(computeFut, mayInterruptIfRunning -> {
             // 1. initFut has not completed - store cancellation flag.
             // 2. initFut has completed - cancel compute future.
+            computeFut.cancel(mayInterruptIfRunning);
+
             if (!cancellationToken.compareAndSet(null, mayInterruptIfRunning)) {
                 try {
                     GridFutureAdapter<?> fut = (GridFutureAdapter<?>) cancellationToken.get();
