@@ -68,6 +68,8 @@ import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewW
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -96,8 +98,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CAC
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -1060,6 +1064,75 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 for (Field field : fields)
                     assertTrue(meta.get("fields").toString().contains(field.getName()));
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+        String name = "test-key";
+        String val = "test-value";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        TabularDataSupport view = systemView(METASTORE_VIEW);
+
+        for (int i = 0; i < view.size(); i++) {
+            CompositeData row = view.get(new Object[] {i});
+
+            if (row.get("name").equals(name) && row.get("value").equals(val))
+                return;
+        }
+
+        fail();
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        try (IgniteEx ignite1 = startGrid(1)) {
+            DistributedMetaStorage dms = ignite.context().distributedMetastorage();
+
+            String name = "test-distributed-key";
+            String val = "test-distributed-value";
+
+            dms.write(name, val);
+
+            TabularDataSupport view = systemView(DISTRIBUTED_METASTORE_VIEW);
+
+            boolean found = false;
+
+            for (int i = 0; i < view.size(); i++) {
+                CompositeData row = view.get(new Object[] {i});
+
+                if (row.get("name").equals(name) && row.get("value").equals(val)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            assertTrue(found);
+
+            assertTrue(waitForCondition(() -> {
+                TabularDataSupport view1 = systemView(ignite1, DISTRIBUTED_METASTORE_VIEW);
+
+                for (int i = 0; i < view1.size(); i++) {
+                    CompositeData row = view1.get(new Object[] {i});
+
+                    if (row.get("name").equals(name) && row.get("value").equals(val))
+                        return true;
+                }
+
+                return false;
+            }, getTestTimeout()));
         }
     }
 
