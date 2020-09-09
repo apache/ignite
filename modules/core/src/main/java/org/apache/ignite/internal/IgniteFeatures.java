@@ -122,8 +122,11 @@ public enum IgniteFeatures {
     /** Optimization of recovery protocol for cluster which doesn't contain MVCC caches. */
     MVCC_TX_RECOVERY_PROTOCOL_V2(44),
 
+    /** Pk index keys are applied in correct order. */
+    SPECIFIED_SEQ_PK_KEYS(45),
+
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(45);
+    PERFORMANCE_STATISTICS(46);
 
     /**
      * Unique feature identifier.

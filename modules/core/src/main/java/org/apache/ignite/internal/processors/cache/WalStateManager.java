@@ -402,18 +402,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Change local WAL state before exchange is done. This method will disable WAL for groups without partitions
      * in OWNING state if such feature is enabled.
      *
-     * @param topVer Topology version.
      * @param fut Exchange future.
      */
-    public void disableGroupDurabilityForPreloading(AffinityTopologyVersion topVer, GridDhtPartitionsExchangeFuture fut) {
+    public void disableGroupDurabilityForPreloading(GridDhtPartitionsExchangeFuture fut) {
         if (fut.changedBaseline()
             && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
             || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return;
 
         Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();
-
-        List<String> names = new ArrayList<>(grpContexts.size());
 
         for (CacheGroupContext grp : grpContexts) {
             if (grp.isLocal() || !grp.affinityNode() || !grp.persistenceEnabled() || !grp.localWalEnabled()
@@ -429,11 +426,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     cnt++;
             }
 
-            if (!locParts.isEmpty() && cnt == locParts.size()) {
+            if (!locParts.isEmpty() && cnt == locParts.size())
                 grp.localWalEnabled(false, true);
-
-                names.add(grp.cacheOrGroupName());
-            }
         }
     }
 

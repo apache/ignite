@@ -16,8 +16,6 @@
  */
 
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
-
-#include <ignite/impl/thin/cache/cache_client_proxy.h>
 #include <impl/cache/cache_client_impl.h>
 
 using namespace ignite::impl::thin;
