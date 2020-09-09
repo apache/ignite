@@ -126,6 +126,8 @@ public class KubernetesServiceAddressResolver {
      * Prepare url and ssl context to request Kubernetes API server.
      */
     private void init() {
+        cfg.verify();
+
         if (initGuard.compareAndSet(false, true)) {
             try {
                 // Preparing the URL and SSL context to be used for connection purposes.

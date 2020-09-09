@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -140,6 +141,19 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         affCtx = new ClientCacheAffinityContext(binary);
     }
 
+    /**
+     * Establishing connections to servers. If partition awareness feature is enabled connections are created
+     * for every configured server. Otherwise only default channel is connected.
+     */
+    void initConnection() {
+        channelsInit(false);
+        if (!partitionAwarenessEnabled)
+            applyOnDefaultChannel(channel -> {
+                // do nothing, just trigger channel connection.
+                return null;
+            });
+    }
+
     /** {@inheritDoc} */
     @Override public synchronized void close() {
         closed = true;
@@ -153,8 +167,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             // No-op.
         }
 
-        for (ClientChannelHolder hld: channels.get())
-            hld.close();
+        if (channels.get() != null) {
+            for (ClientChannelHolder hld: channels.get())
+                hld.close();
+        }
     }
 
     /**
@@ -302,7 +318,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * @return host:port_range address lines parsed as {@link InetSocketAddress}.
      */
-    private List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
+    private Set<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
         if (F.isEmpty(addrs))
             throw new ClientException("Empty addresses");
 
@@ -327,7 +343,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 .rangeClosed(r.portFrom(), r.portTo()).boxed()
                 .map(p -> new InetSocketAddress(r.host(), p))
             )
-            .collect(Collectors.toList());
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -415,7 +431,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         if (!force && channels.get() != null)
             return;
 
-        List<InetSocketAddress> resolvedAddrs = parseAddresses(clientCfg.getAddresses());
+        Set<InetSocketAddress> resolvedAddrs = parseAddresses(clientCfg.getAddresses());
 
         List<ClientChannelHolder> holders = Optional.ofNullable(channels.get()).orElse(new ArrayList<>());
 
@@ -529,9 +545,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
      * Apply specified {@code function} on any of available channel.
      */
     private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function) {
-        // lazy init of channels
-        channelsInit(false);
-
         List<ClientChannelHolder> holders = channels.get();
         int attemptsLimit = clientCfg.getRetryLimit() > 0 ?
             Math.min(clientCfg.getRetryLimit(), holders.size()) : holders.size();

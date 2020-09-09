@@ -17,6 +17,8 @@
 
 package org.apache.ignite.kubernetes.configuration;
 
+import org.apache.ignite.spi.IgniteSpiException;
+
 /**
  * Configuration for Kubernetes connection.
  */
@@ -124,5 +126,20 @@ public class KubernetesConnectionConfiguration {
     /** Get flag include not ready addresses */
     public boolean getIncludeNotReadyAddresses() {
         return includeNotReadyAddresses;
+    }
+
+    /** Verify that configuration is valid */
+    public void verify() {
+        if (paramIsNotSet(srvcName) || paramIsNotSet(namespace)
+            || paramIsNotSet(master) || paramIsNotSet(accountToken))
+            throw new IgniteSpiException(
+                "One or more configuration parameters are invalid [setServiceName=" +
+                    srvcName + ", setNamespace=" + namespace + ", setMasterUrl=" +
+                    master + ", setAccountToken=" + accountToken + "]");
+    }
+
+    /** Check that param value is not set */
+    private boolean paramIsNotSet(String param) {
+        return param == null || param.isEmpty();
     }
 }

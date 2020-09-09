@@ -37,17 +37,17 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
  * <p>
  */
 public class ThinClientKubernetesAddressFinder implements Supplier<String[]> {
-    /** Kubernetes connection configuration */
-    private final KubernetesConnectionConfiguration cfg;
+    /** Kubernetes service address resolver. */
+    private final KubernetesServiceAddressResolver resolver;
 
     /** Constructor */
     public ThinClientKubernetesAddressFinder(KubernetesConnectionConfiguration cfg) {
-        this.cfg = cfg;
+        resolver = new KubernetesServiceAddressResolver(cfg);
     }
 
     /** {@inheritDoc} */
     @Override public String[] get() {
-        return new KubernetesServiceAddressResolver(cfg)
+        return resolver
             .getServiceAddresses()
             .stream().map(InetAddress::getHostAddress)
             .toArray(String[]::new);

@@ -123,6 +123,9 @@ public final class ClientConfiguration implements Serializable {
      * @return Host addresses.
      */
     public String[] getAddresses() {
+        if (addrFinder == null)
+            return null;
+
         return addrFinder.get();
     }
 
