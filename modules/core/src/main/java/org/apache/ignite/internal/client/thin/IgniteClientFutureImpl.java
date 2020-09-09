@@ -249,7 +249,7 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<T> toCompletableFuture() {
-        return fut.toCompletableFuture();
+        return fut;
     }
 
     /** {@inheritDoc} */

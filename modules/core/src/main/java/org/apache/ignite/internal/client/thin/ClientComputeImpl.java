@@ -237,7 +237,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             });
         }).toCompletableFuture();
 
-        return new IgniteClientFutureImpl<>(computeFut, () -> computeFut.cancel(true));
+        // TODO: Cancellation is not propagated upstream
+        return new IgniteClientFutureImpl<>(computeFut, null);
     }
 
     /**
