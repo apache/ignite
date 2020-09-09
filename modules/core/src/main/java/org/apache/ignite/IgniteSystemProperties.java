@@ -1036,7 +1036,11 @@ public final class IgniteSystemProperties {
 
     /**
      * Number of concurrent operation for evict partitions.
+     *
+     * @deprecated Since version 2.10. Use {@link IgniteConfiguration#setRebalanceThreadPoolSize(int)} to manage
+     * eviction parallelism.
      */
+    @Deprecated
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**

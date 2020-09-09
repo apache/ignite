@@ -123,6 +123,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
     /**
+     * Margin for WAL iterator, that used for historical rebalance on atomic cache.
+     * It is intended for prevent  partition divergence due to reordering in WAL.
+     * <p>
+     * Default is {@code 5}. Iterator starts from 5 updates earlier than expected.
+     *
+     */
+    private final long walAtomicCacheMargin = IgniteSystemProperties.getLong(
+        "WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE", 5);
+
+    /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
      * if there is nothing to clean yet.
      */
@@ -1013,6 +1023,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.mvccEnabled()) // TODO IGNITE-7384
             return super.historicalIterator(partCntrs, missing);
 
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+        FileWALPointer latestReservedPointer = (FileWALPointer)database.latestWalPointerReservedForPreloading();
+
+        if (latestReservedPointer == null)
+            throw new IgniteHistoricalIteratorException("Historical iterator wasn't created, because WAL isn't reserved.");
+
         Map<Integer, Long> partsCounters = new HashMap<>();
 
         for (int i = 0; i < partCntrs.size(); i++) {
@@ -1022,14 +1039,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             partsCounters.put(p, initCntr);
         }
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+        FileWALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+            partsCounters, latestReservedPointer, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
-        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(), partsCounters);
+        assert latestReservedPointer.compareTo(minPtr) <= 0
+            : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()
+            + ", reservedPointer=" + database.latestWalPointerReservedForPreloading()
+            + ", historicalPointer=" + minPtr + ']';
 
         try {
             WALIterator it = grp.shared().wal().replay(minPtr);
 
-            WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, it);
+            WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, partsCounters, it);
 
             // Add historical partitions which are unabled to reserve to missing set.
             missing.addAll(histIt.missingParts);
@@ -1220,7 +1241,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param grp Cache context.
          * @param walIt WAL iterator.
          */
-        private WALHistoricalIterator(IgniteLogger log, CacheGroupContext grp, CachePartitionPartialCountersMap partMap,
+        private WALHistoricalIterator(
+            IgniteLogger log,
+            CacheGroupContext grp,
+            CachePartitionPartialCountersMap partMap,
+            Map<Integer, Long> updatedPartCntr,
             WALIterator walIt) {
             this.log = log;
             this.grp = grp;
@@ -1231,8 +1256,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             rebalancedCntrs = new long[partMap.size()];
 
-            for (int i = 0; i < rebalancedCntrs.length; i++)
-                rebalancedCntrs[i] = partMap.initialUpdateCounterAt(i);
+            for (int i = 0; i < rebalancedCntrs.length; i++) {
+                int p = partMap.partitionAt(i);
+
+                rebalancedCntrs[i] = updatedPartCntr.get(p);
+
+                partMap.initialUpdateCounterAt(i, rebalancedCntrs[i]);
+            }
 
             reservePartitions();
 

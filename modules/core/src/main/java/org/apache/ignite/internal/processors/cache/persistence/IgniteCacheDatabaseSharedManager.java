@@ -1080,6 +1080,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Returns the latest WAL pointer that reserved for preloading or {@code null}.
+     *
+     * @return WAL pointer or {@code null} if nothing reserved.
+     */
+    public WALPointer latestWalPointerReservedForPreloading() {
+        return null;
+    }
+
+    /**
      * Checks that the given {@code region} has enough space for putting a new entry.
      *
      * This method makes sense then and only then
