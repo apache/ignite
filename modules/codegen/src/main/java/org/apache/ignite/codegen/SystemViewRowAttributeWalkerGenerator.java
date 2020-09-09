@@ -46,6 +46,7 @@ import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
@@ -108,6 +109,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PartitionStateView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(BinaryMetadataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetastorageView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);

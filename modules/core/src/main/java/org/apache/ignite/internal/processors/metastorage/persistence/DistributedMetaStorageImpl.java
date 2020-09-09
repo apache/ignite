@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -54,6 +57,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,11 +68,13 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
+import static java.util.function.Function.identity;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
@@ -79,6 +85,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * <p>Implementation of {@link DistributedMetaStorage} based on {@link MetaStorage} for persistence and discovery SPI
@@ -112,6 +119,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
     public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support" +
         " distributed metastorage feature. Writing cannot be completed.";
+
+    /** Name of the system view for a system {@link MetaStorage}. */
+    public static final String DISTRIBUTED_METASTORE_VIEW = metricName("distributed", "metastorage");
+
+    /** Description of the system view for a {@link MetaStorage}. */
+    public static final String DISTRIBUTED_METASTORE_VIEW_DESC = "Distributed metastorage data";
 
     /**
      * {@code true} if local node is client.
@@ -296,8 +309,31 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Executed roughly at the same time as {@link #onMetaStorageReadyForRead(ReadOnlyMetastorage)}.
      */
     public void inMemoryReadyForRead() {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled) {
+            registerSystemView();
+
             notifyReadyForRead();
+        }
+    }
+
+    /** */
+    private void registerSystemView() {
+        ctx.systemView().registerView(DISTRIBUTED_METASTORE_VIEW, DISTRIBUTED_METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), () -> {
+                try {
+                    List<MetastorageView> data = new ArrayList<>();
+
+                    iterate("", (key, val) -> data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))));
+
+                    return data;
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Metastore iteration error", e);
+
+                    return Collections.emptyList();
+                }
+            }, identity());
+
     }
 
     /** Notify components listeners. */
@@ -379,6 +415,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         finally {
             localMetastorageUnlock();
         }
+
+        registerSystemView();
 
         notifyReadyForRead();
     }
