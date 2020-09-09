@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -59,7 +58,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientServerError;
-import org.apache.ignite.internal.client.thin.IgniteClientFutureImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -94,20 +92,6 @@ public class FunctionalTest {
     /** Per test timeout */
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
-
-    /**
-     * Tests asynchronous task execution with an exception.
-     */
-    @Test
-    public void testFutures() throws Exception {
-        int i = 0;
-
-        CompletableFuture<Integer> fut = CompletableFuture.supplyAsync(() -> 16 / i)
-                .thenCompose(x -> CompletableFuture.supplyAsync(() -> 42));
-
-        IgniteClientFuture clientFut = new IgniteClientFutureImpl(fut, () -> {});
-        clientFut.get();
-    }
 
     /**
      * Tested API:
