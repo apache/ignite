@@ -48,12 +48,12 @@ public class CacheContinuousQueryEventBuffer {
     public static final int DFLT_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE = 1000;
 
     /** */
-    @SystemProperty(value = "Maximum size of buffer for pending events", type = Long.class,
-        defaults = "" + DFLT_CONTINUOUS_QUERY_PENDING_BUFF_SIZE)
+    @SystemProperty(value = "The max size of the buffer with pending continuous queries events",
+        type = Long.class, defaults = "" + DFLT_CONTINUOUS_QUERY_PENDING_BUFF_SIZE)
     public static final String IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE";
 
     /** */
-    @SystemProperty(value = "Batch buffer size", type = Long.class,
+    @SystemProperty(value = "Continuous queries batch buffer size", type = Long.class,
         defaults = "" + DFLT_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE)
     public static final String IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE = "IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE";
 

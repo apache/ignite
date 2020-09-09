@@ -99,13 +99,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     public static final int DFLT_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE = 10_000;
 
     /** */
-    @SystemProperty(value = "Size of the buffer of events to send acknowledge to backup", type = Long.class,
-        defaults = "" + DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD)
+    @SystemProperty(value = "The size of the buffer with acknowledgment events that are sent to backup nodes",
+        type = Long.class, defaults = "" + DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD)
     public static final String IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = "IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD";
 
     /** */
-    @SystemProperty(value = "Maximum size of continuous query listener buffer. " +
-        "If exceeded 10% of events will be dropped", type = Long.class,
+    @SystemProperty(value = "The maximum size of the continuous query listener buffer. " +
+        "10% of events are dropped once the buffer is full", type = Long.class,
         defaults = "" + DFLT_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE)
     public static final String IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE = "IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE";
 

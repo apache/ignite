@@ -99,6 +99,7 @@ public final class CommandLineStartup {
         GridJmxPortFinder.class,
         PartitionsEvictManager.class,
         PagesList.class,
+        PagesList.PagesCache.class,
         GridCacheOffheapManager.class,
         CacheContinuousQueryEventBuffer.class,
         CacheContinuousQueryHandler.class,

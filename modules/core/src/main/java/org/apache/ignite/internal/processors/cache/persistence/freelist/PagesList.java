@@ -1947,8 +1947,8 @@ public abstract class PagesList extends DataStructure {
         public static final String IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT = "IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT";
 
         /** */
-        @SystemProperty(value = "Threshold of flush calls on empty cache to allow GC of stripes " +
-            "(flush invoked twice per checkpoint).", type = Long.class,
+        @SystemProperty(value = "The threshold of flush calls on empty caches to allow GC of stripes " +
+            "(the flush is triggered two times per checkpoint)", type = Long.class,
             defaults = "" + DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD)
         public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD = "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
 

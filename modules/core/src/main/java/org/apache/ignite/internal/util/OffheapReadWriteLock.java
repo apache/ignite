@@ -39,13 +39,13 @@ public class OffheapReadWriteLock {
     public static final int DFLT_OFFHEAP_RWLOCK_SPIN_COUNT = 32;
 
     /** */
-    @SystemProperty(value = "Count spin lock iterations before fallback to block", type = Long.class,
-        defaults = "" + DFLT_OFFHEAP_RWLOCK_SPIN_COUNT)
+    @SystemProperty(value = "A number of spin-lock iterations to take before falling back to the blocking approach",
+        type = Long.class, defaults = "" + DFLT_OFFHEAP_RWLOCK_SPIN_COUNT)
     public static final String IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT = "IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT";
 
     /** */
-    @SystemProperty(value = "OffheapReadWriteLock flag to switch between signal to writers or signal to writers or " +
-        "reades policy", defaults = "Default is false that means always signal to writers")
+    @SystemProperty(value = "The OffheapReadWriteLock flag that switches between signal to writers and signal to " +
+        "random policy", defaults = "Default is false that means always signal to writers")
     public static final String IGNITE_OFFHEAP_RANDOM_RW_POLICY = "IGNITE_OFFHEAP_RANDOM_RW_POLICY";
 
     /**
