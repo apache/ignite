@@ -45,7 +45,7 @@ tab:C#/.NET[]
 using System;
 using Apache.Ignite.Core;
 
-namespace ggqsg
+namespace  IgniteTest
 {
     class Program
     {

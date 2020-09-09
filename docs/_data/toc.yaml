@@ -199,6 +199,89 @@
       url: /data-structures/atomic-sequence
     - title:  Semaphore 
       url: /data-structures/semaphore
+- title: Machine Learning
+  items:
+    - title: Machine Learning
+      url: /machine-learning/machine-learning
+    - title: Partition Based Dataset 
+      url: /machine-learning/partition-based-dataset
+    - title: Updating Trained Models 
+      url: /machine-learning/updating-trained-models
+    - title: Binary Classification
+      items:
+        - title: Introduction
+          url: /machine-learning/binary-classification/introduction
+        - title: Linear SVM (Support Vector Machine) 
+          url: /machine-learning/binary-classification/linear-svm
+        - title: Decision Trees 
+          url: /machine-learning/binary-classification/decision-trees
+        - title: Multilayer Perceptron
+          url: /machine-learning/binary-classification/multilayer-perceptron
+        - title: Logistic Regression 
+          url: /machine-learning/binary-classification/logistic-regression
+        - title: k-NN Classification 
+          url: /machine-learning/binary-classification/knn-classification
+        - title: ANN (Approximate Nearest Neighbor) 
+          url: /machine-learning/binary-classification/ann
+        - title: Naive Bayes 
+          url: /machine-learning/binary-classification/naive-bayes
+    - title: Regression 
+      items:
+        - title: Introduction
+          url: /machine-learning/regression/introduction
+        - title: Linear Regression 
+          url: /machine-learning/regression/linear-regression
+        - title: Decision Trees Regression 
+          url: /machine-learning/regression/decision-trees-regression
+        - title: k-NN Regression 
+          url: /machine-learning/regression/knn-regression
+    - title: Clustering 
+      items:
+        - title: Introduction
+          url: /machine-learning/clustering/introduction
+        - title: K-Means Clustering 
+          url: /machine-learning/clustering/k-means-clustering
+        - title: Gaussian mixture (GMM) 
+          url: /machine-learning/clustering/gaussian-mixture
+    - title: Preprocessing 
+      url: /machine-learning/preprocessing
+    - title: Model Selection 
+      items:
+        - title: Introduction
+          url: /machine-learning/model-selection/introduction
+        - title: Evaluator 
+          url: /machine-learning/model-selection/evaluator
+        - title: Split the dataset on test and train datasets 
+          url: /machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets
+        - title: Hyper-parameter tuning 
+          url: /machine-learning/model-selection/hyper-parameter-tuning
+        - title: Pipeline API 
+          url: /machine-learning/model-selection/pipeline-api
+    - title: Multiclass Classification 
+      url: /machine-learning/multiclass-classification
+    - title: Ensemble Methods 
+      items:
+        - title:
+          url: /machine-learning/ensemble-methods/introduction
+        - title: Stacking 
+          url: /machine-learning/ensemble-methods/stacking
+        - title: Bagging 
+          url: /machine-learning/ensemble-methods/baggin
+        - title: Random Forest 
+          url: /machine-learning/ensemble-methods/random-forest
+        - title: Gradient Boosting 
+          url: /machine-learning/ensemble-methods/gradient-boosting
+    - title: Recommendation Systems 
+      url: /machine-learning/recommendation-systems
+    - title: Importing Model
+      items:
+        - title: Introduction 
+          url: /machine-learning/importing-model/introduction
+        - title: Import Model from XGBoost 
+          url: /machine-learning/importing-model/model-import-from-gxboost
+        - title: Import Model from Apache Spark 
+          url: /machine-learning/importing-model/model-import-from-apache-spark
+ 
 - title: Monitoring
   items:
     - title: Introduction

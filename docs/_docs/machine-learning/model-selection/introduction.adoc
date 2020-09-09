@@ -1,0 +1,18 @@
+= Introduction
+
+This section describes how to use Ignite ML for tuning ML algorithms and [Pipelines](doc:pipeline-api) . Built-in Cross-Validation and other tooling allow users to optimize [hyper-parameters](doc:hyper-parameter-tuning) in algorithms and Pipelines.
+
+Model selection is a set of tools that provides the ability to prepare and [evaluate](doc:evaluator)  models efficiently. Use it to link:machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets[split] data based on training and test data as well as perform cross validation.
+
+
+== Overview
+
+It is not good practice to learn the parameters of a prediction function and validate it on the same data. This leads to overfitting. To avoid this problem, one of the most efficient solutions is to save part of the training data as a validation set. However, by partitioning the available data and excluding one or more parts from the training set, we significantly reduce the number of samples which can be used for learning the model and the results can depend on a particular random choice for the pair of (train, validation) sets.
+
+A solution to this problem is a procedure called link:machine-learning/model-selection/cross-validation[Cross-Validation]. In the basic approach, called k-fold CV, the training set is split into k smaller sets and after that the following procedure works: a model is trained using k-1 of the folds (parts) as a training data, the resulting model is validated on the remaining part of the data (it’s used as a test set to compute metrics such as accuracy).
+
+Apache Ignite provides cross validation functionality that allows it to parameterize the trainer to be validated, metrics to be calculated for the model trained on every step and the number of folds training data should be split on.
+
+
+
+
