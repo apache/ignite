@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -234,7 +233,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
             if (!cancellationToken.compareAndSet(null, task.fut)) {
                 try {
-                    task.fut.cancel();
+                    cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
                 } catch (IgniteCheckedException e) {
                     fut.completeExceptionally(e);
                 }
@@ -243,17 +242,34 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return fut;
         }).toCompletableFuture();
 
-        return new IgniteClientFutureImpl<>(computeFut, () -> {
+        return new IgniteClientFutureImpl<>(computeFut, mayInterruptIfRunning -> {
             // 1. initFut has not completed - store cancellation flag.
             // 2. initFut has completed - cancel compute future.
-            if (!cancellationToken.compareAndSet(null, Boolean.TRUE)) {
+            if (!cancellationToken.compareAndSet(null, mayInterruptIfRunning)) {
                 try {
-                    ((IgniteInternalFuture<?>)cancellationToken.get()).cancel();
+                    GridFutureAdapter<?> fut = (GridFutureAdapter<?>) cancellationToken.get();
+
+                    cancelGridFuture(fut, mayInterruptIfRunning);
                 } catch (IgniteCheckedException e) {
                     throw IgniteUtils.convertException(e);
                 }
             }
         });
+    }
+
+    /**
+     * Cancels grid future.
+     *
+     * @param fut Future.
+     * @param mayInterruptIfRunning true if the thread executing this task should be interrupted;
+     *                             otherwise, in-progress tasks are allowed to complete.
+     */
+    private static void cancelGridFuture(GridFutureAdapter<?> fut, Boolean mayInterruptIfRunning)
+            throws IgniteCheckedException {
+        if (mayInterruptIfRunning)
+            fut.cancel();
+        else
+            fut.onCancelled();
     }
 
     /**
