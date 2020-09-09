@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -202,6 +204,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         IgniteClientFuture<T2<ClientChannel, Long>> initFut = ch.serviceAsync(
                 COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
 
+        AtomicReference<Object> cancellationToken = new AtomicReference<>();
+
         CompletableFuture<R> computeFut = initFut.thenCompose(taskParams -> {
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
@@ -228,13 +232,27 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                 }
             });
 
+            if (!cancellationToken.compareAndSet(null, task.fut)) {
+                try {
+                    task.fut.cancel();
+                } catch (IgniteCheckedException e) {
+                    fut.completeExceptionally(e);
+                }
+            }
+
             return fut;
         }).toCompletableFuture();
 
         return new IgniteClientFutureImpl<>(computeFut, () -> {
-            // TODO:
-            // If initFut completes successfully, issue the cancellation request by calling task.fut.cancel
-            // Cancellation can happen before or after initFut has completed. We need to handle both cases
+            // 1. initFut has not completed - store cancellation flag.
+            // 2. initFut has completed - cancel compute future.
+            if (!cancellationToken.compareAndSet(null, Boolean.TRUE)) {
+                try {
+                    ((IgniteInternalFuture<?>)cancellationToken.get()).cancel();
+                } catch (IgniteCheckedException e) {
+                    throw IgniteUtils.convertException(e);
+                }
+            }
         });
     }
 
