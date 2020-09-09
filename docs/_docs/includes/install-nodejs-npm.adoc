@@ -1,5 +1,0 @@
-[source,shell]
-----
-npm install -g apache-ignite-client
-----
-

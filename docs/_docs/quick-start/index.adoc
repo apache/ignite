@@ -1,4 +1,0 @@
----
-layout: toc
----
-= Quick Start Guides
