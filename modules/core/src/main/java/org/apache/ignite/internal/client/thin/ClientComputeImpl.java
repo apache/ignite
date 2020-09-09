@@ -243,18 +243,20 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return fut;
         }).toCompletableFuture();
 
-        return new IgniteClientFutureImpl<>(computeFut, mayInterruptIfRunning -> {
+        return new IgniteClientFutureImpl<>(computeFut, (f, mayInterruptIfRunning) -> {
             // 1. initFut has not completed - store cancellation flag.
             // 2. initFut has completed - cancel compute future.
             if (!cancellationToken.compareAndSet(null, mayInterruptIfRunning)) {
                 try {
                     GridFutureAdapter<?> fut = (GridFutureAdapter<?>) cancellationToken.get();
 
-                    cancelGridFuture(fut, mayInterruptIfRunning);
+                    return cancelGridFuture(fut, mayInterruptIfRunning);
                 } catch (IgniteCheckedException e) {
                     throw IgniteUtils.convertException(e);
                 }
             }
+
+            return true;
         });
     }
 
@@ -265,12 +267,9 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      * @param mayInterruptIfRunning true if the thread executing this task should be interrupted;
      *                             otherwise, in-progress tasks are allowed to complete.
      */
-    private static void cancelGridFuture(GridFutureAdapter<?> fut, Boolean mayInterruptIfRunning)
+    private static boolean cancelGridFuture(GridFutureAdapter<?> fut, Boolean mayInterruptIfRunning)
             throws IgniteCheckedException {
-        if (mayInterruptIfRunning)
-            fut.cancel();
-        else
-            fut.onCancelled();
+        return mayInterruptIfRunning ? fut.cancel() : fut.onCancelled();
     }
 
     /**

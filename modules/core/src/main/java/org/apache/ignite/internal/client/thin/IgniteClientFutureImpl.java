@@ -39,13 +39,15 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
     private final CompletableFuture<T> fut;
 
     /** Cancel callback. */
-    private final Consumer<Boolean> onCancel;
+    private final BiFunction<IgniteClientFutureImpl<T>, Boolean, Boolean> onCancel;
 
     /**
      * Ctor.
      * @param fut Future to wrap.
      */
-    public IgniteClientFutureImpl(CompletableFuture<T> fut, Consumer<Boolean> onCancel) {
+    public IgniteClientFutureImpl(
+            CompletableFuture<T> fut,
+            BiFunction<IgniteClientFutureImpl<T>, Boolean, Boolean> onCancel) {
         assert fut != null;
 
         this.fut = fut;
@@ -260,7 +262,7 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
     /** {@inheritDoc} */
     @Override public boolean cancel(boolean b) {
         if (onCancel != null)
-            onCancel.accept(b);
+            return onCancel.apply(this, b);
 
         return fut.cancel(b);
     }
