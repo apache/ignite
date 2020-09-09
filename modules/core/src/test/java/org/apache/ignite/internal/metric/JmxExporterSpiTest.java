@@ -1042,7 +1042,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertNotNull(view);
         assertEquals(2, view.size());
 
-        for (int i=0; i<2; i++) {
+        for (int i = 0; i < 2; i++) {
             CompositeData meta = view.get(new Object[] {i});
 
             if (Objects.equals(TestObjectEnum.class.getName(), meta.get("typeName"))) {
