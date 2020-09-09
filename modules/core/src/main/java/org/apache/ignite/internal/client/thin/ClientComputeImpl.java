@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -205,43 +206,47 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         AtomicReference<Object> cancellationToken = new AtomicReference<>();
 
-        CompletableFuture<R> computeFut = initFut.thenCompose(taskParams -> {
-            // TODO: this is not executed when future gets cancelled
-            ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
+        CompletableFuture<R> computeFut = initFut
+                .thenApply(taskParams -> {
+                    ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
+                    System.out.println("TASK ADDED");
 
-            if (task == null) {
-                // TODO: Channel closed - try again recursively (add a test for this?)
-                throw new IgniteException("TODO");
-            }
-
-            CompletableFuture<R> fut = new CompletableFuture<>();
-
-            task.fut.listen(f -> {
-                // Don't remove task if future was canceled by user. This task can be added again later by notification.
-                // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
-                if (!f.isCancelled()) {
-                    removeTask(task.ch, task.taskId);
-
-                    try {
-                        fut.complete(((GridFutureAdapter<R>) f).get());
-                    } catch (IgniteCheckedException e) {
-                        fut.completeExceptionally(e);
+                    if (task == null) {
+                        // TODO: Channel closed - try again recursively (add a test for this?)
+                        throw new IgniteException("TODO");
                     }
-                } else {
-                    fut.cancel(false);
-                }
-            });
 
-            if (!cancellationToken.compareAndSet(null, task.fut)) {
-                try {
-                    cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
-                } catch (IgniteCheckedException e) {
-                    fut.completeExceptionally(e);
-                }
-            }
+                    if (!cancellationToken.compareAndSet(null, task.fut)) {
+                        try {
+                            cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
+                        } catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
+                    }
 
-            return fut;
-        }).toCompletableFuture();
+                    return task;
+                })
+                .thenCompose(task -> {
+                    CompletableFuture<R> fut = new CompletableFuture<>();
+
+                    task.fut.listen(f -> {
+                        // Don't remove task if future was canceled by user. This task can be added again later by notification.
+                        // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
+                        if (!f.isCancelled()) {
+                            removeTask(task.ch, task.taskId);
+
+                            try {
+                                fut.complete(((GridFutureAdapter<R>) f).get());
+                            } catch (IgniteCheckedException e) {
+                                fut.completeExceptionally(e);
+                            }
+                        } else {
+                            fut.cancel(false);
+                        }
+                    });
+
+                    return fut;
+                }).toCompletableFuture();
 
         return new IgniteClientFutureImpl<>(computeFut, mayInterruptIfRunning -> {
             // 1. initFut has not completed - store cancellation flag.
