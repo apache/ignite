@@ -206,6 +206,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         AtomicReference<Object> cancellationToken = new AtomicReference<>();
 
         CompletableFuture<R> computeFut = initFut.thenCompose(taskParams -> {
+            // TODO: this is not executed when future gets cancelled
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
             if (task == null) {
