@@ -592,6 +592,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
                 }, threadsCnt, "run-task-async");
 
+            // TODO: Cancelled tasks are not removed properly.
             assertTrue(GridTestUtils.waitForCondition(
                 () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
         }
