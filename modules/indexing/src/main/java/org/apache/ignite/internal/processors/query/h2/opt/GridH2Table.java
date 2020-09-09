@@ -994,16 +994,8 @@ public class GridH2Table extends TableBase {
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
 
-                    if (idx0 instanceof GridH2IndexBase) {
-                        cache().shared().database().checkpointReadLock();
-
-                        try {
-                            ((GridH2IndexBase)idx0).asyncDestroy(rmIndex);
-                        }
-                        finally {
-                            cache().shared().database().checkpointReadUnlock();
-                        }
-                    }
+                    if (idx0 instanceof GridH2IndexBase)
+                        ((GridH2IndexBase)idx0).destroy(rmIndex);
 
                     continue;
                 }

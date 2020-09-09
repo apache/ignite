@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -90,6 +91,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** Tree name. */
     private final String treeName;
+
+    /** If {code true} then this index is already marked as destroyed. */
+    private final AtomicBoolean destroyed = new AtomicBoolean();
 
     /** Override it for test purposes. */
     public static H2TreeFactory h2TreeFactory = (
@@ -494,55 +498,42 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean rmvIdx) {
-        destroy0(rmvIdx, false);
-    }
+        if (!markDestroyed())
+            return;
 
-    /** {@inheritDoc} */
-    @Override public void asyncDestroy(boolean rmvIdx) {
-        destroy0(rmvIdx, true);
-    }
-
-    /**
-     * Internal method for destroying index with async option.
-     *
-     * @param rmvIdx Flag remove.
-     * @param async Destroy asynchronously.
-     */
-    private void destroy0(boolean rmvIdx, boolean async) {
         try {
             if (cctx.affinityNode() && rmvIdx) {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
                 List<Long> rootPages = new ArrayList<>(segments.length);
                 List<H2Tree> trees = new ArrayList<>(segments.length);
 
-                for (int i = 0; i < segments.length; i++) {
-                    H2Tree tree = segments[i];
+                cctx.shared().database().checkpointReadLock();
 
-                    if (async) {
+                try {
+                    for (int i = 0; i < segments.length; i++) {
+                        H2Tree tree = segments[i];
+
                         tree.markDestroyed();
 
                         rootPages.add(tree.getMetaPageId());
                         trees.add(tree);
+
+                        dropMetaPage(i);
                     }
-                    else
-                        tree.destroy();
-
-                    dropMetaPage(i);
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
                 }
 
-                if (async) {
-                    DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
-                        rootPages,
-                        trees,
-                        cctx.group().name(),
-                        cctx.cache().name(),
-                        table.getSchema().getName(),
-                        getName()
-                    );
+                DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
+                    rootPages,
+                    trees,
+                    cctx.group().name(),
+                    cctx.cache().name(),
+                    table.getSchema().getName(),
+                    getName()
+                );
 
-                    cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
-                }
+                cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
             }
         }
         catch (IgniteCheckedException e) {
@@ -751,6 +742,15 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         return ret;
+    }
+
+    /**
+     * Marks this index as destroyed.
+     *
+     * @return {@code true} if mark was successfull, and {@code false} if index was already marked as destroyed.
+     */
+    private boolean markDestroyed() {
+        return destroyed.compareAndSet(false, true);
     }
 
     /**
