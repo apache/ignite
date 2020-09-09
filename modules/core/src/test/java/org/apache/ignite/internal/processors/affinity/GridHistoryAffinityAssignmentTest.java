@@ -21,12 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -128,5 +130,53 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         GridCacheContext cctx = proc.context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME));
 
         return GridTestUtils.getFieldValue(cctx.affinity(), "aff");
+    }
+
+    /**
+     * test effect change ignite system property for HistoryAffinityAssigment
+     */
+    @Test
+    public void testChangeIgniteSystemPropertiesForHistoryAffinityAssigment() throws Exception {
+        int cnt = 128;
+
+        List<List<ClusterNode>> curr = new ArrayList<>();
+        List<List<ClusterNode>> ideal = new ArrayList<>();
+
+        for(int i = 0; i < cnt; i++) {
+            List<ClusterNode> nodes = Arrays.asList(new GridTestNode(UUID.randomUUID()), new GridTestNode(UUID.randomUUID()));
+            curr.add(nodes);
+            ideal.add(Arrays.asList(nodes.get(1), nodes.get(0)));
+        }
+
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(1, 0);
+        HistoryAffinityAssignment historyAffinityAssignment =
+            new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)) {
+            assertFalse(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.FALSE.toString
+                ());
+            assertFalse(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+
+            historyAffinityAssignment =
+                new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+            assertTrue(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.TRUE.toString
+                ());
+        }
+        else {
+            assertTrue(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.TRUE.toString
+                ());
+            assertTrue(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+
+            historyAffinityAssignment =
+                new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+            assertFalse(historyAffinityAssignment.getIds(0) instanceof TransformCollectionView);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.FALSE.toString
+                ());
+        }
     }
 }
