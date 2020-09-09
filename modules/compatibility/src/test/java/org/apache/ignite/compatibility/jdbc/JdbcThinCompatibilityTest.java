@@ -88,7 +88,7 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     @Test
     public void testOldClientToCurrentServer() throws Exception {
-        try (Ignite ignite = Ignition.start(new IgniteConfiguration())){
+        try (Ignite ignite = Ignition.start(new IgniteConfiguration())) {
             initTable(ignite);
 
             IgniteProcessProxy proxy = new IgniteProcessProxy(new IgniteConfiguration().setIgniteInstanceName("fake"),
@@ -145,7 +145,7 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static void testJdbcQuery(String url) {
-        try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement()){
+        try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement()) {
             ResultSet rs = stmt.executeQuery("SELECT id, name FROM " + TABLE_NAME + " ORDER BY id");
 
             assertNotNull(rs);
