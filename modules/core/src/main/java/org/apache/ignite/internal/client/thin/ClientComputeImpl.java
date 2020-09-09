@@ -208,6 +208,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         CompletableFuture<R> computeFut = initFut
                 .thenApply(taskParams -> {
+                    // TODO: Remove extra future from addTask - use our completableFuture directly,
+                    // this should solve cancellation difficulties.
                     ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
                     System.out.println("TASK ADDED");
 
