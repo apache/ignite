@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.metric;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -55,6 +57,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
@@ -451,7 +455,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DATASTREAM_THREADPOOL_QUEUE",
             "DATA_REGION_PAGE_LISTS",
             "CACHE_GROUP_PAGE_LISTS",
-            "PARTITION_STATES"
+            "PARTITION_STATES",
+            "BINARY_METADATA"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -1068,6 +1073,51 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
         finally {
             ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
+        }
+    }
+
+    /** */
+    @Test
+    public void testBinaryMeta() {
+        IgniteCache<Integer, TestObjectAllTypes> c1 = ignite0.createCache("test-cache");
+        IgniteCache<Integer, TestObjectEnum> c2 = ignite0.createCache("test-enum-cache");
+
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40), ACCOUNT BIGINT)");
+        execute(ignite0, "INSERT INTO T1(ID, NAME, ACCOUNT) VALUES(1, 'test', 1)");
+
+        c1.put(1, new TestObjectAllTypes());
+        c2.put(1, TestObjectEnum.A);
+
+        List<List<?>> view =
+            execute(ignite0, "SELECT TYPE_NAME, FIELDS_COUNT, FIELDS, IS_ENUM FROM SYS.BINARY_METADATA");
+
+        assertNotNull(view);
+        assertEquals(3, view.size());
+
+        for (List<?> meta : view) {
+            if (Objects.equals(TestObjectEnum.class.getName(), meta.get(0))) {
+                assertTrue((Boolean)meta.get(3));
+
+                assertEquals(0, meta.get(1));
+            }
+            else if (Objects.equals(TestObjectAllTypes.class.getName(), meta.get(0))) {
+                assertFalse((Boolean)meta.get(3));
+
+                Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                assertEquals(fields.length, meta.get(1));
+
+                for (Field field : fields)
+                    assertTrue(meta.get(2).toString().contains(field.getName()));
+            }
+            else {
+                assertFalse((Boolean)meta.get(3));
+
+                assertEquals(2, meta.get(1));
+
+                assertTrue(meta.get(2).toString().contains("NAME"));
+                assertTrue(meta.get(2).toString().contains("ACCOUNT"));
+            }
         }
     }
 
