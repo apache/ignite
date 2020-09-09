@@ -51,6 +51,11 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
             if (isPublic(mod) && isStatic(mod) && isFinal(mod) && String.class.equals(field.getType())) {
                 expProps.put(U.staticField(IgniteSystemProperties.class, field.getName()), field);
 
+                SystemProperty ann = field.getAnnotation(SystemProperty.class);
+
+                assertFalse(field.getName() + " value shouldn't ends with dot.", ann.value().endsWith("."));
+                assertFalse(field.getName() + " defaults shouldn't ends with dot.", ann.defaults().endsWith("."));
+
                 assertTrue("Ignite system property must be annotated by @" +
                         SystemProperty.class.getSimpleName() + " [field=" + field + ']',
                     field.isAnnotationPresent(SystemProperty.class));
