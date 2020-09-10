@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
@@ -53,7 +53,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
     /** */
     public InMemoryCachedDistributedMetaStorageBridge(JdkMarshaller marshaller, IgniteLogger log) {
         this.marshaller = marshaller;
-        this.keysToSkip = new HashSet<>(IgniteSystemProperties.getList(IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP));
+        this.keysToSkip = new HashSet<>(IgniteSystemProperties.getList(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP));
     }
 
     /**

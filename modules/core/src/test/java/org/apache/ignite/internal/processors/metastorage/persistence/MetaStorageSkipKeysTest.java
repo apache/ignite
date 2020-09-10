@@ -28,12 +28,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -70,7 +73,7 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testSkipKeys() throws Exception {
+    public void testMetastoreSkipKeys() throws Exception {
         assertFalse(U.inClassPath(VALUE_1_CLASSNAME));
 
         writeKeysToMetastore();
@@ -78,73 +81,129 @@ public class MetaStorageSkipKeysTest extends GridCommonAbstractTest {
         try {
             System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1);
 
-            checkKey1Excluded();
+            checkKey1ExcludedFromLocal();
 
             System.setProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
 
-            checkKey1AndKey2Excluded();
+            checkKey1AndKey2ExcludedFromLocal();
         }
         finally {
             System.clearProperty(IGNITE_METASTORAGE_KEYS_TO_SKIP);
         }
     }
 
-    /** */
-    private void writeKeysToMetastore() throws Exception {
-        IgniteEx ign = startGrid(0);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCacheDatabaseSharedManager db = ign.context().cache().context().database();
-
-        db.checkpointReadLock();
+    /** @throws Exception If failed. */
+    @Test
+    public void testDistributedMetastoreSkipKeys() throws Exception {
+        writeKeysDistributedToMetastore();
 
         try {
-            GridTestExternalClassLoader ldr =
-                new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+            System.setProperty(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP, KEY_1);
 
-            db.metaStorage().write(KEY_1,
-                (Serializable)ldr.loadClass(VALUE_1_CLASSNAME).newInstance());
-            db.metaStorage().write(KEY_2, VALUE_2);
+            checkKey1ExcludedFromDistributed();
+
+            System.setProperty(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP, KEY_1 + "," + KEY_2);
+
+            checkKey1AndKey2ExcludedFromDistributed();
         }
         finally {
-            db.checkpointReadUnlock();
+            System.clearProperty(IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP);
         }
+    }
 
-        assertThrowsWithCause(() -> db.metaStorage().read(KEY_1), ClassNotFoundException.class);
+    /** */
+    private void writeKeysToMetastore() throws Exception {
+        withActiveCluster(ign -> {
+            IgniteCacheDatabaseSharedManager db = ign.context().cache().context().database();
 
-        assertThrowsWithCause(() -> {
+            db.checkpointReadLock();
+
             try {
-                db.metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }, ClassNotFoundException.class);
+                GridTestExternalClassLoader ldr =
+                    new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
-        stopAllGrids();
+                db.metaStorage().write(KEY_1,
+                    (Serializable)ldr.loadClass(VALUE_1_CLASSNAME).newInstance());
+                db.metaStorage().write(KEY_2, VALUE_2);
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+
+            assertThrowsWithCause(() -> db.metaStorage().read(KEY_1), ClassNotFoundException.class);
+
+            assertThrowsWithCause(() -> {
+                try {
+                    db.metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }, ClassNotFoundException.class);
+        });
     }
 
     /** */
-    private void checkKey1Excluded() throws Exception {
+    private void checkKey1ExcludedFromLocal() throws Exception {
+        withActiveCluster(ign -> {
+            ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
+
+            assertEquals(VALUE_2, ign.context().cache().context().database().metaStorage().read(KEY_2));
+        });
+    }
+
+    /** */
+    private void checkKey1AndKey2ExcludedFromLocal() throws Exception {
+        withActiveCluster(ign -> {
+            ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
+            ign.context().cache().context().database().metaStorage().iterate(KEY_2, (key, val) -> fail(), true);
+        });
+    }
+
+    /** */
+    private void writeKeysDistributedToMetastore() throws Exception {
+        withActiveCluster(ign -> {
+            DistributedMetaStorage db = ign.context().distributedMetastorage();
+
+            db.write(KEY_1, VALUE_2);
+            db.write(KEY_2, VALUE_2);
+
+            stopAllGrids();
+        });
+    }
+
+    /** */
+    private void checkKey1ExcludedFromDistributed() throws Exception {
+        withActiveCluster(ign -> {
+            ign.context().distributedMetastorage().iterate(KEY_1, (key, val) -> fail());
+
+            assertEquals(VALUE_2, ign.context().distributedMetastorage().read(KEY_2));
+
+        });
+    }
+
+    /** */
+    private void checkKey1AndKey2ExcludedFromDistributed() throws Exception {
+        withActiveCluster(ign -> {
+            ign.context().distributedMetastorage().iterate(KEY_1, (key, val) -> fail());
+            ign.context().distributedMetastorage().iterate(KEY_2, (key, val) -> fail());
+        });
+    }
+
+    private void withActiveCluster(ThrowableConsumer<IgniteEx> r) throws Exception {
         IgniteEx ign = startGrid(0);
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
-
-        assertEquals(VALUE_2, ign.context().cache().context().database().metaStorage().read(KEY_2));
+        r.accept(ign);
 
         stopAllGrids();
     }
 
+    @FunctionalInterface
     /** */
-    private void checkKey1AndKey2Excluded() throws Exception {
-        IgniteEx ign = startGrid(0);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        ign.context().cache().context().database().metaStorage().iterate(KEY_1, (key, val) -> fail(), true);
-        ign.context().cache().context().database().metaStorage().iterate(KEY_2, (key, val) -> fail(), true);
+    public static interface ThrowableConsumer<T> {
+        /** */
+        void accept(@Nullable T t) throws Exception;
     }
 }
