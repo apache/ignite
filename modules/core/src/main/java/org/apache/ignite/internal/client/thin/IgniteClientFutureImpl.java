@@ -260,11 +260,11 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel(boolean b) {
+    @Override public boolean cancel(boolean mayInterruptIfRunning) {
         if (onCancel != null)
-            return onCancel.apply(b);
+            return onCancel.apply(mayInterruptIfRunning);
 
-        return fut.cancel(b);
+        return fut.cancel(mayInterruptIfRunning);
     }
 
     /** {@inheritDoc} */
