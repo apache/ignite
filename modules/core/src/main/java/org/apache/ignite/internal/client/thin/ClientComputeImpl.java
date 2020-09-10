@@ -166,11 +166,23 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return (R)executeAsync0(taskName, arg, clusterGrp, flags, timeout).get();
         }
         catch (ExecutionException | InterruptedException e) {
-            if (e.getCause() instanceof ClientException)
-                throw (ClientException)e.getCause();
-            else
-                throw new ClientException(e);
+            throw convertException(e);
         }
+    }
+
+    /**
+     * Converts the exception.
+     *
+     * @param t Throwable.
+     * @return Resulting client exception.
+     */
+    private ClientException convertException(Throwable t) {
+        if (t instanceof ClientException) {
+            return (ClientException) t;
+        } else if (t.getCause() instanceof ClientException)
+            return (ClientException)t.getCause();
+        else
+            return new ClientException(t);
     }
 
     /**
@@ -209,7 +221,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         initFut.handle((taskParams, err) -> {
             if (err != null) {
-                resFut.completeExceptionally(err);
+                resFut.completeExceptionally(convertException(err));
             } else {
                 ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
