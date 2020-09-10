@@ -53,11 +53,17 @@ class IgniteApplicationService(IgniteAwareService):
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
     def stop_node_async(self, clean_shutdown=True):
+        """
+        Stops node in async way.
+        """
         self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(self.nodes[0].account)))
         self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
                                                   allow_fail=True)
 
     def await_node_stopped(self, timeout_sec=10):
+        """
+        Awaits node stop finish.
+        """
         stopped = self.wait_node(self.nodes[0], timeout_sec=timeout_sec)
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
                         (str(self.nodes[0].account), str(timeout_sec))
