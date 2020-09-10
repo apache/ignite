@@ -232,17 +232,7 @@ public class CommandHandler {
         boolean verbose = false;
 
         try {
-            for (String arg : rawArgs) {
-                if (arg.equalsIgnoreCase(CMD_ENABLE_EXPERIMENTAL)) {
-                    System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-                    rawArgs = new ArrayList<>(rawArgs);
-
-                    rawArgs.remove(arg);
-
-                    break;
-                }
-            }
+            rawArgs = enableExperimentalIfNeeded(rawArgs);
 
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 printHelp();
@@ -394,6 +384,26 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /**
+     * Enabled experimental commands if specified and removes corresponding argument.
+     * @return Arguments without "--enable-experimental".
+     */
+    private List<String> enableExperimentalIfNeeded(List<String> rawArgs) {
+        for (String arg : rawArgs) {
+            if (arg.equalsIgnoreCase(CMD_ENABLE_EXPERIMENTAL)) {
+                System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+                rawArgs = new ArrayList<>(rawArgs);
+
+                rawArgs.remove(arg);
+
+                break;
+            }
+        }
+
+        return rawArgs;
     }
 
     /**
