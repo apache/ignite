@@ -204,7 +204,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         marshaller = ctx.marshallerContext().jdkMarshaller();
 
-        bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller);
+        bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller, log);
 
         //noinspection IfMayBeConditional
         if (!isPersistenceEnabled)
@@ -910,7 +910,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.writeLock().lock();
 
         try {
-            bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller);
+            bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller, log);
 
             ver = INITIAL_VERSION;
 

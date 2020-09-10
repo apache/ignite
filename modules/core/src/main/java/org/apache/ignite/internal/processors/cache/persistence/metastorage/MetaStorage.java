@@ -175,7 +175,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         if (!keysToSkip.isEmpty()) {
             log.info("System property " + IGNITE_METASTORAGE_KEYS_TO_SKIP + " is set. " +
-                "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
+                "The metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
         }
     }
 

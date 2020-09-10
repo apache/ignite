@@ -1918,6 +1918,10 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Comma separated list of keys that MetaStorage will skip on start", type = String.class)
     public static final String IGNITE_METASTORAGE_KEYS_TO_SKIP = "IGNITE_METASTORAGE_KEYS_TO_SKIP";
 
+    /** Comma separated list of keys that {@link MetaStorage} will skip on start. */
+    @SystemProperty(value = "Comma separated list of keys that Distribute MetaStorage will skip on start", type = String.class)
+    public static final String IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP = "IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP";
+
     /**
      * Enforces singleton.
      */

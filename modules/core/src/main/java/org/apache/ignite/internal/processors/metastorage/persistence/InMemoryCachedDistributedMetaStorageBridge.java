@@ -18,15 +18,22 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
@@ -37,14 +44,18 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 /** */
 class InMemoryCachedDistributedMetaStorageBridge {
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private final JdkMarshaller marshaller;
 
     /** */
     private final SortedMap<String, byte[]> cache = new TreeMap<>();
 
     /** */
-    public InMemoryCachedDistributedMetaStorageBridge(JdkMarshaller marshaller) {
+    public InMemoryCachedDistributedMetaStorageBridge(JdkMarshaller marshaller, IgniteLogger log) {
         this.marshaller = marshaller;
+        this.log = log;
     }
 
     /**
@@ -151,9 +162,22 @@ class InMemoryCachedDistributedMetaStorageBridge {
             else
                 lastHistItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id()));
 
+            Set<String> keysToSkip = new HashSet<>(Arrays.asList(
+                IgniteSystemProperties.getString(IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
+
+            if (!keysToSkip.isEmpty()) {
+                log.info("System property " + IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP + " is set. " +
+                    "The distributed metastorage will skip keys on cluster start [keysToSkip=" + keysToSkip + ']');
+            }
+
             metastorage.iterate(
                 localKeyPrefix(),
-                (key, val) -> cache.put(globalKey(key), (byte[])val),
+                (key, val) -> {
+                    if (keysToSkip.contains(key))
+                        return;
+
+                    cache.put(globalKey(key), (byte[])val);
+                },
                 false
             );
 
