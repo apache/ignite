@@ -24,7 +24,6 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
@@ -35,9 +34,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,24 +88,25 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
         try (Ignite ignite = Ignition.start(new IgniteConfiguration())) {
             initTable(ignite);
 
-            IgniteProcessProxy proxy = new IgniteProcessProxy(new IgniteConfiguration().setIgniteInstanceName("fake"),
-                    log, null) {
-                @Override protected String igniteNodeRunnerClassName() {
-                    return JdbcThinQueryRunner.class.getName();
-                }
-
-                @Override protected Collection<String> filteredJvmArgs() throws Exception {
-                    return getProcessProxyJvmArgs(ver);
-                }
-            };
+            GridJavaProcess proc = GridJavaProcess.exec(
+                JdbcThinQueryRunner.class.getName(),
+                null,
+                log,
+                log::info,
+                null,
+                null,
+                getProcessProxyJvmArgs(ver),
+                null
+            );
 
             try {
-                GridTestUtils.waitForCondition(() -> !proxy.getProcess().getProcess().isAlive(), 10_000L);
+                GridTestUtils.waitForCondition(() -> !proc.getProcess().isAlive(), 5_000L);
 
-                assertEquals(0, proxy.getProcess().getProcess().exitValue());
+                assertEquals(0, proc.getProcess().exitValue());
             }
             finally {
-                proxy.kill();
+                if (proc.getProcess().isAlive())
+                    proc.kill();
             }
         }
     }
@@ -119,9 +117,9 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
     @Test
     public void testCurrentClientToOldServer() throws Exception {
         try {
-            startGrid(1, ver, new ConfigurationClosure(), JdbcThinCompatibilityTest::initTable);
+            startGrid(1, ver, cfg -> { }, JdbcThinCompatibilityTest::initTable);
 
-            testJdbcQuery(URL);
+            testJdbcQuery();
         }
         finally {
             stopAllGrids();
@@ -144,8 +142,8 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    private static void testJdbcQuery(String url) {
-        try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement()) {
+    private static void testJdbcQuery() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL); Statement stmt = conn.createStatement()) {
             ResultSet rs = stmt.executeQuery("SELECT id, name FROM " + TABLE_NAME + " ORDER BY id");
 
             assertNotNull(rs);
@@ -164,17 +162,6 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             assertEquals(ROWS_CNT, cnt);
         }
-        catch (Exception ex) {
-            throw new IgniteException(ex);
-        }
-    }
-
-    /** */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            // No-op.
-        }
     }
 
     /**
@@ -182,11 +169,11 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     public static class JdbcThinQueryRunner {
         /** */
-        public static void main(String[] args) {
+        public static void main(String[] args) throws Exception {
             X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
             X.println("Start JDBC connection with Ignite version: " + IgniteVersionUtils.VER);
 
-            testJdbcQuery(URL);
+            testJdbcQuery();
 
             X.println("Success");
         }
