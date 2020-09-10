@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionC
 import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.GridClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
@@ -63,6 +64,7 @@ public class SecurityTestSuite extends TestSuite {
         suite.addTestSuite(EntryProcessorRemoteSecurityContextCheckTest.class);
         suite.addTestSuite(DataStreamerRemoteSecurityContextCheckTest.class);
         suite.addTestSuite(CacheLoadRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(GridClientPermissionCheckTest.class);
         suite.addTestSuite(ThinClientPermissionCheckTest.class);
         suite.addTestSuite(IgniteSecurityProcessorTest.class);
         suite.addTestSuite(MultipleSSLContextsTest.class);
