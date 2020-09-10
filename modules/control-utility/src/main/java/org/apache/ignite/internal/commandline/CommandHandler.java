@@ -387,7 +387,8 @@ public class CommandHandler {
     }
 
     /**
-     * Enabled experimental commands if specified and removes corresponding argument.
+     * Enables experimental commands if specified and removes corresponding argument.
+     *
      * @return Arguments without "--enable-experimental".
      */
     private List<String> enableExperimentalIfNeeded(List<String> rawArgs) {
