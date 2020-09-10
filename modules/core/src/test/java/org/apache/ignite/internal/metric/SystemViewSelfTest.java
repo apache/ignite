@@ -1137,20 +1137,25 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertNotNull(metaStoreView);
 
             String name = "test-key";
+            String unmarshalledName = "unmarshalled-key";
             String val = "test-value";
 
             db.checkpointReadLock();
 
             try {
                 db.metaStorage().write(name, val);
+                db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
             } finally {
                 db.checkpointReadUnlock();
             }
 
-            MetastorageView testKey = F.find(metaStoreView, null,
-                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+            assertNotNull(F.find(metaStoreView, null,
+                (IgnitePredicate<? super MetastorageView>)view ->
+                    name.equals(view.name()) && val.equals(view.value())));
 
-            assertNotNull(testKey);
+            assertNotNull(F.find(metaStoreView, null,
+                (IgnitePredicate<? super MetastorageView>)view ->
+                    unmarshalledName.equals(view.name()) && view.value() == null));
         }
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -407,21 +408,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Registers system view. */
     private void registerSystemView() {
-        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
-            new MetastorageViewWalker(), () -> {
+        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC, new MetastorageViewWalker(),
+            () -> {
+                List<MetastorageView> data = new ArrayList<>();
+
                 try {
-                    List<MetastorageView> data = new ArrayList<>();
+                    metaStorage.iterate("", (key, valBytes) -> {
+                        try {
+                            Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
 
-                    metaStorage.iterate("", (key, val) ->
-                        data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))), true);
-
-                    return data;
+                            data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
+                        }
+                        catch (IgniteCheckedException ignored) {
+                            data.add(new MetastorageView(key, null));
+                        }
+                    }, false);
                 }
                 catch (IgniteCheckedException e) {
                     log.warning("Metastore iteration error", e);
 
                     return Collections.emptyList();
                 }
+
+                return data;
             }, identity());
     }
 

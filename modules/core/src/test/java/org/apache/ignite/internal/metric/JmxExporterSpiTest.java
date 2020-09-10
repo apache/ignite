@@ -1073,26 +1073,33 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
         String name = "test-key";
+        String unmarshalledName = "unmarshalled-key";
         String val = "test-value";
 
         db.checkpointReadLock();
 
         try {
             db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
         } finally {
             db.checkpointReadUnlock();
         }
 
         TabularDataSupport view = systemView(METASTORE_VIEW);
 
+        boolean found = false;
+        boolean foundUnmarshalled = false;
+
         for (int i = 0; i < view.size(); i++) {
             CompositeData row = view.get(new Object[] {i});
 
-            if (row.get("name").equals(name) && row.get("value").equals(val))
-                return;
+            if (row.get("name").equals(name) && val.equals(row.get("value")))
+                found = true;
+            else if (row.get("name").equals(unmarshalledName) && row.get("value") == null)
+                foundUnmarshalled = true;
         }
 
-        fail();
+        assertTrue(found && foundUnmarshalled);
     }
 
     /** */
