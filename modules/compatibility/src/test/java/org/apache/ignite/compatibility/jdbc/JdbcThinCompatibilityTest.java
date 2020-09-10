@@ -24,17 +24,18 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,7 +86,7 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     @Test
     public void testOldClientToCurrentServer() throws Exception {
-        try (Ignite ignite = Ignition.start(new IgniteConfiguration())) {
+        try (Ignite ignite = startGrid(0)) {
             initTable(ignite);
 
             GridJavaProcess proc = GridJavaProcess.exec(
@@ -116,13 +117,28 @@ public class JdbcThinCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     @Test
     public void testCurrentClientToOldServer() throws Exception {
+        IgniteProcessProxy proxy = null;
+
         try {
-            startGrid(1, ver, cfg -> { }, JdbcThinCompatibilityTest::initTable);
+            Ignite ignite = startGrid(1, ver,
+                cfg -> cfg
+                    .setLocalHost("127.0.0.1")
+                    .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true))),
+                JdbcThinCompatibilityTest::initTable);
+
+            proxy = IgniteProcessProxy.ignite(ignite.name());
 
             testJdbcQuery();
         }
         finally {
             stopAllGrids();
+
+            if (proxy != null) {
+                Process proc = proxy.getProcess().getProcess();
+
+                // We should wait until process exits, or it can affect next tests.
+                GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L);
+            }
         }
     }
 
