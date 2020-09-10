@@ -21,6 +21,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -231,7 +232,19 @@ public class CommandHandler {
         boolean verbose = false;
 
         try {
-            if (isHelp(rawArgs)) {
+            for (String arg : rawArgs) {
+                if (arg.equalsIgnoreCase(CMD_ENABLE_EXPERIMENTAL)) {
+                    System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+                    rawArgs = new ArrayList<>(rawArgs);
+
+                    rawArgs.remove(arg);
+
+                    break;
+                }
+            }
+
+            if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 printHelp();
 
                 return EXIT_CODE_OK;
@@ -381,31 +394,6 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
-    }
-
-    /** @return {@code True} if arguments metans "print help" command. */
-    private boolean isHelp(List<String> rawArgs) {
-        if(F.isEmpty(rawArgs))
-            return true;
-
-        if (rawArgs.size() > 2)
-            return false;
-
-        boolean help = false;
-        boolean experimental = false;
-
-        for (String arg : rawArgs) {
-            if (CMD_HELP.equalsIgnoreCase(arg))
-                help = true;
-            else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg)) {
-                System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-                experimental = true;
-            }
-        }
-
-        return (help && experimental) ||
-            ((help || experimental) && rawArgs.size() == 1);
     }
 
     /**
