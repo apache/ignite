@@ -34,6 +34,7 @@ class SqlJdbcTest(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
+    # Note: DEV version does not support earlier versions before IGNITE-13414 resolution
     @ignite_versions(
         (str(DEV_BRANCH), str(DEV_BRANCH)),
         (str(V_2_8_1), str(V_2_8_1)), (str(V_2_8_0), str(V_2_8_1)),
