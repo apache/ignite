@@ -484,10 +484,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
                 futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
 
+            assertTrue(GridTestUtils.waitForCondition(
+                    () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().size() == ACTIVE_TASKS_LIMIT,
+                    TIMEOUT));
+
             // Check that we can't start more tasks.
             GridTestUtils.assertThrowsAnyCause(
                 null,
-                () -> compute.executeAsync(TestLatchTask.class.getName(), null),
+                () -> compute.executeAsync(TestLatchTask.class.getName(), null).get(),
                 ClientException.class,
                 "limit"
             );
