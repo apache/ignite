@@ -30,12 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientClusterGroup;
-import org.apache.ignite.client.ClientCompute;
-import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.client.*;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -396,22 +391,13 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             Future<Object> fut3 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
-            // TODO: Remove commented asserts - they don't bring value.
-            // assertEquals(1, compute.activeTaskFutures().size());
-
             compute.execute(TestTask.class.getName(), null);
 
-            // assertTrue(GridTestUtils.waitForCondition(() -> compute.activeTaskFutures().size() == 1, TIMEOUT));
+            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientConnectionException.class, "closed");
 
-            // assertTrue(fut1.isDone());
+            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientConnectionException.class, "closed");
 
-            // TODO: Exception conversion logic is broken somewhere? We get ClientConnectionException here.
-            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientException.class, "closed");
-
-            // assertTrue(fut2.isDone());
-
-            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientException.class, "closed");
-
+            // TODO: Reconnect does not work?
             // assertFalse(fut3.isDone());
 
             TestLatchTask.latch.countDown();

@@ -380,6 +380,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
     /**
      * Gets tasks future for active tasks started by client.
+     * Used only for tests.
      *
      * @return Map of active tasks keyed by their unique per client task ID.
      */
