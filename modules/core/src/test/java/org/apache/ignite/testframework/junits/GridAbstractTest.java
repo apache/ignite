@@ -163,6 +163,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -360,6 +361,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected void beforeTestsStarted() throws Exception {
         // Checking that no test wrapper is set before test execution.
         assert BPlusTree.testHndWrapper == null;
+
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
     /**
@@ -2108,6 +2111,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     "Please, see log for details.", err);
             }
         }
+
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
 
         // Remove resources.
         tests.remove(getClass());

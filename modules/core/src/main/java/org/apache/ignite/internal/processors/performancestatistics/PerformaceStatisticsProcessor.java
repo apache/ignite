@@ -91,6 +91,8 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 }
             }
         });
+
+        onMetastorageUpdate(true);
     }
 
     /**
