@@ -203,12 +203,20 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
+     * Send request without payload and handle response.
+     */
+    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
+        throws ClientException, ClientError {
+        return service(op, null, payloadReader);
+    }
+
+    /**
      * Send request and handle response asynchronously.
      */
     public <T> IgniteClientFuture<T> serviceAsync(
-        ClientOperation op,
-        Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         ClientConnectionException failure = null;
 
@@ -232,14 +240,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         }
 
         throw failure;
-    }
-
-    /**
-     * Send request without payload and handle response.
-     */
-    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException, ClientError {
-        return service(op, null, payloadReader);
     }
 
     /**
@@ -286,6 +286,24 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
+     * Send request to affinity node and handle response.
+     */
+    public <T> IgniteClientFuture<T> affinityServiceAsync(
+        int cacheId,
+        Object key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        ClientChannel affCh = getAffinityChannel(cacheId, key);
+
+        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
+        return affCh != null
+                ? affCh.serviceAsync(op, payloadWriter, payloadReader)
+                : serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
      * Add notification listener.
      *
      * @param lsnr Listener.
@@ -318,6 +336,35 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             catch (Exception ignore) {
                 // No-op.
             }
+        }
+    }
+
+    /**
+     * Gets the primary node channel for the given key and cache.
+     *
+     * @param cacheId Cache id.
+     * @param key Cache key.
+     * @return Affinity channel or null when not found or not applicable.
+     */
+    private ClientChannel getAffinityChannel(int cacheId, Object key) {
+        if (!partitionAwarenessEnabled || nodeChannels.isEmpty() || !affinityInfoIsUpToDate(cacheId))
+            return null;
+
+        UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+        if (affinityNodeId == null)
+            return null;
+
+        ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+
+        if (hld == null)
+            return null;
+
+        try {
+            return hld.getOrCreateChannel();
+        }
+        catch (ClientConnectionException ignore) {
+            return null;
         }
     }
 
