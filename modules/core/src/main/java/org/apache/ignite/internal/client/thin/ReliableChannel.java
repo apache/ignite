@@ -260,29 +260,11 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
-            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+        ClientChannel affCh = getAffinityChannel(cacheId, key);
 
-            if (affinityNodeId != null) {
-                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
-
-                if (hld != null) {
-                    ClientChannel ch = null;
-
-                    try {
-                        ch = hld.getOrCreateChannel();
-
-                        return ch.service(op, payloadWriter, payloadReader);
-                    }
-                    catch (ClientConnectionException ignore) {
-                        onChannelFailure(hld, ch);
-                    }
-                }
-            }
-        }
-
-        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
-        return service(op, payloadWriter, payloadReader);
+        return affCh != null
+                ? affCh.service(op, payloadWriter, payloadReader)
+                : service(op, payloadWriter, payloadReader);
     }
 
     /**
@@ -297,7 +279,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     ) throws ClientException, ClientError {
         ClientChannel affCh = getAffinityChannel(cacheId, key);
 
-        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
         return affCh != null
                 ? affCh.serviceAsync(op, payloadWriter, payloadReader)
                 : serviceAsync(op, payloadWriter, payloadReader);
