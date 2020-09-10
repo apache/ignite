@@ -2157,7 +2157,6 @@ public final class IgniteSystemProperties {
         if (str.isEmpty())
             return Collections.emptyList();
 
-
         return Arrays.asList(str.split(",", -1));
     }
 

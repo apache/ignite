@@ -47,7 +47,11 @@ class InMemoryCachedDistributedMetaStorageBridge {
     /** */
     private final SortedMap<String, byte[]> cache = new TreeMap<>();
 
-    /** */
+    /**
+     * Keys that should be skipped on metastorage iteration.
+     *
+     * @see IgniteSystemProperties#IGNITE_DISTRIBUTED_METASTORAGE_KEYS_TO_SKIP
+     */
     private final Set<String> keysToSkip;
 
     /** */
