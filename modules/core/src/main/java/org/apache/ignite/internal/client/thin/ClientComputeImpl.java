@@ -225,7 +225,6 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                         throw U.convertException(e);
                     }
                 }
-
                 task.fut.listen(f -> {
                     // Don't remove task if future was canceled by user. This task can be added again later by notification.
                     // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
@@ -237,8 +236,6 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                         } catch (IgniteCheckedException e) {
                             resFut.completeExceptionally(e);
                         }
-                    } else {
-                        resFut.cancel(false);
                     }
                 });
             }

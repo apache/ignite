@@ -545,7 +545,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     public void testExecuteTaskConcurrentLoad() throws Exception {
         try (IgniteClient client = startClient(0)) {
             int threadsCnt = 20;
-            int iterations = 20;
+            int iterations = 100;
 
             ClientCache<Integer, Integer> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -592,7 +592,6 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
                 }, threadsCnt, "run-task-async");
 
-            // TODO: Cancelled tasks are not removed properly.
             assertTrue(GridTestUtils.waitForCondition(
                 () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
         }
