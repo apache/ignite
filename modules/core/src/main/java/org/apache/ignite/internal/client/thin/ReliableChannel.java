@@ -183,39 +183,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
-     * Send request and handle response.
-     *
-     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
-     * @throws ClientAuthenticationException When user name or password is invalid.
-     * @throws ClientAuthorizationException When user has no permission to perform operation.
-     * @throws ClientProtocolError When failed to handshake with server.
-     * @throws ClientServerError When failed to process request on server.
-     */
-    private <T> T service0(Function<ClientChannel, T> func) throws ClientException, ClientError {
-        ClientConnectionException failure = null;
-
-        for (int i = 0; i < channels.length; i++) {
-            ClientChannel ch = null;
-
-            try {
-                ch = channel();
-
-                return func.apply(ch);
-            }
-            catch (ClientConnectionException e) {
-                if (failure == null)
-                    failure = e;
-                else
-                    failure.addSuppressed(e);
-
-                onChannelFailure(ch);
-            }
-        }
-
-        throw failure;
-    }
-
-    /**
      * Send request without payload and handle response.
      */
     public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
@@ -266,40 +233,8 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
+        // TODO: Handle response errors, add tests.
         return affinityService0(cacheId, key, ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
-    }
-
-    /**
-     * Send request to affinity node and handle response.
-     */
-    private <T> T affinityService0(
-        int cacheId,
-        Object key,
-        Function<ClientChannel, T> func
-    ) throws ClientException, ClientError {
-        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
-            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
-
-            if (affinityNodeId != null) {
-                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
-
-                if (hld != null) {
-                    ClientChannel ch = null;
-
-                    try {
-                        ch = hld.getOrCreateChannel();
-
-                        return func.apply(ch);
-                    }
-                    catch (ClientConnectionException ignore) {
-                        onChannelFailure(hld, ch);
-                    }
-                }
-            }
-        }
-
-        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
-        return service0(func);
     }
 
     /**
@@ -336,6 +271,72 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 // No-op.
             }
         }
+    }
+
+    /**
+     * Send request and handle response.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientProtocolError When failed to handshake with server.
+     * @throws ClientServerError When failed to process request on server.
+     */
+    private <T> T service0(Function<ClientChannel, T> func) throws ClientException, ClientError {
+        ClientConnectionException failure = null;
+
+        for (int i = 0; i < channels.length; i++) {
+            ClientChannel ch = null;
+
+            try {
+                ch = channel();
+
+                return func.apply(ch);
+            }
+            catch (ClientConnectionException e) {
+                if (failure == null)
+                    failure = e;
+                else
+                    failure.addSuppressed(e);
+
+                onChannelFailure(ch);
+            }
+        }
+
+        throw failure;
+    }
+
+    /**
+     * Send request to affinity node and handle response.
+     */
+    private <T> T affinityService0(
+            int cacheId,
+            Object key,
+            Function<ClientChannel, T> func
+    ) throws ClientException, ClientError {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affinityNodeId != null) {
+                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+
+                if (hld != null) {
+                    ClientChannel ch = null;
+
+                    try {
+                        ch = hld.getOrCreateChannel();
+
+                        return func.apply(ch);
+                    }
+                    catch (ClientConnectionException ignore) {
+                        onChannelFailure(hld, ch);
+                    }
+                }
+            }
+        }
+
+        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
+        return service0(func);
     }
 
     /**
