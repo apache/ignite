@@ -138,8 +138,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() {
-        super.onKernalStart();
+    @Override public void onProcessorStart() {
+        super.onProcessorStart();
 
         Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
 
@@ -151,7 +151,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         marshMap.put(GridClientZipOptimizedMarshaller.ID, new GridClientZipOptimizedMarshaller(optMarsh, providers));
 
         try {
-            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(this.getClass().getClassLoader());
+            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
 
             marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller(clsFilter));
         }
