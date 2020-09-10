@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.warmup;
+package org.apache.ignite.internal.processors.rest.request;
 
-import org.apache.ignite.configuration.WarmUpConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Configuration for {@link SimpleObservableWarmUpStrategy}.
+ * Request to manage and obtain information about node before its start.
  */
-class SimpleObservableWarmUpConfiguration implements WarmUpConfiguration {
-    // No-op.
+public class GridRestNodeStateBeforeStartRequest extends GridRestRequest {
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestNodeStateBeforeStartRequest.class, this, super.toString());
+    }
 }
