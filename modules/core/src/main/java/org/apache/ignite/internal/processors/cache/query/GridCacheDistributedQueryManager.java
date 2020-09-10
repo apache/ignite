@@ -660,14 +660,17 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     if (performanceStatsEnabled)
                         IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
-                    if (locIter.hasNextX())
-                        cur = locIter.nextX();
+                    try {
+                        if (locIter.hasNextX())
+                            cur = locIter.nextX();
 
-                    if (performanceStatsEnabled) {
-                        IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+                    } finally {
+                        if (performanceStatsEnabled) {
+                            IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
-                        logicalReads += stat.logicalReads();
-                        physicalReads += stat.physicalReads();
+                            logicalReads += stat.logicalReads();
+                            physicalReads += stat.physicalReads();
+                        }
                     }
                 }
 
