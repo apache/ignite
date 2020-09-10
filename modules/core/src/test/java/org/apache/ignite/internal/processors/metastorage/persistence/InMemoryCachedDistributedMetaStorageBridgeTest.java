@@ -52,7 +52,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
     public void before() {
         marshaller = JdkMarshaller.DEFAULT;
 
-        bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller);
+        bridge = new InMemoryCachedDistributedMetaStorageBridge(marshaller, null);
     }
 
     /** */

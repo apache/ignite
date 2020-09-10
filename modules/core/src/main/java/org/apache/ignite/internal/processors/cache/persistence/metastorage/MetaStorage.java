@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -75,6 +76,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTE_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_METASTORAGE_KEYS_TO_SKIP;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
@@ -170,8 +172,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
-        this.keysToSkip = new HashSet<>(Arrays.asList(
-            IgniteSystemProperties.getString(IGNITE_METASTORAGE_KEYS_TO_SKIP, "").split(",")));
+        this.keysToSkip = new HashSet<>(IgniteSystemProperties.getList(IGNITE_METASTORAGE_KEYS_TO_SKIP));
 
         if (!keysToSkip.isEmpty()) {
             log.info("System property " + IGNITE_METASTORAGE_KEYS_TO_SKIP + " is set. " +

@@ -20,7 +20,9 @@ package org.apache.ignite;
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
@@ -2139,6 +2141,22 @@ public final class IgniteSystemProperties {
         }
 
         return res;
+    }
+
+    /**
+     * Gets list of values. Colon char (',') is the delimeter of the values.
+     *
+     * @param name Name of the system property or environment variable.
+     * @return List from system property or environment variable.
+     */
+    public static List<String> getList(String name) {
+        String str = getString(name, "");
+
+        if (str.isEmpty())
+            return Collections.emptyList();
+
+
+        return Arrays.asList(str.split(",", -1));
     }
 
     /**
