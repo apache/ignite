@@ -317,6 +317,8 @@
           url: /security/tde
         - title: Master key rotation
           url: /security/master-key-rotation
+    - titel: Sandbox
+      url: /security/sandbox
 - title: Thin Clients
   items: 
     - title: Thin Clients Overview 
