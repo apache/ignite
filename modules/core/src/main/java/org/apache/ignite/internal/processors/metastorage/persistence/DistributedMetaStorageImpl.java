@@ -114,7 +114,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private static final int COMPONENT_ID = META_STORAGE.ordinal();
 
     /** Default upper bound of history size in bytes. */
-    private static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
+    public static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
 
     /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
     public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support" +

@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -60,7 +61,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     private static final int DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS = 2 * 60 * 1000;
 
     /** Eviction progress frequency property name. */
-    private static final String SHOW_EVICTION_PROGRESS_FREQ = "SHOW_EVICTION_PROGRESS_FREQ";
+    @SystemProperty(value = "Eviction progress frequency in milliseconds", type = Long.class,
+        defaults = "" + DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS)
+    public static final String SHOW_EVICTION_PROGRESS_FREQ = "SHOW_EVICTION_PROGRESS_FREQ";
 
     /** Eviction progress frequency in ms. */
     private final long evictionProgressFreqMs =
