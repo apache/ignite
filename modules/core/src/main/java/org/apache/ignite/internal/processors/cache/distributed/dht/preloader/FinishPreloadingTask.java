@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 
@@ -47,6 +48,11 @@ public class FinishPreloadingTask implements CachePartitionExchangeWorkerTask {
      */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
     }
 
     /**

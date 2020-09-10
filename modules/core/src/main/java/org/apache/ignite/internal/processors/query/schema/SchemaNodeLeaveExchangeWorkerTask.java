@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -42,6 +43,11 @@ public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchange
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
     }
 
     /**

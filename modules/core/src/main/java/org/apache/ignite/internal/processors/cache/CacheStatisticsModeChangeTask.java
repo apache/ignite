@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,6 +39,11 @@ public class CacheStatisticsModeChangeTask implements CachePartitionExchangeWork
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
     }
 
     /**

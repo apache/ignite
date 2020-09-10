@@ -527,14 +527,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
-                    if (notification.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                        UUID secSubjId = null;
-
-                        if (notification.getCustomMsgData() != null && notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper)
-                            secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
-
-                        if (secSubjId == null)
-                            secSubjId = ctx.localNodeId();
+                    if (notification.getCustomMsgData() != null &&
+                        notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper) {
+                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
 
                         try (OperationSecurityContext s = ctx.security().withContext(secSubjId)) {
                             synchronized (discoEvtMux) {

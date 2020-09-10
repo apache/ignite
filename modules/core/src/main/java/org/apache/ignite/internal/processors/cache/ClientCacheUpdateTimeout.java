@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 /**
@@ -39,6 +40,11 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
     }
 
     /** {@inheritDoc} */

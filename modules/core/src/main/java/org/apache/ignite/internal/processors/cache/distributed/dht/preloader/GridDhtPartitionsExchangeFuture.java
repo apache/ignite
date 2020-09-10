@@ -275,7 +275,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Cache change requests. */
     private ExchangeActions exchActions;
 
-    private UUID secSubjId;
+    /** Security subject id. */
+    private final UUID secSubjId;
 
     /** */
     private final IgniteLogger exchLog;

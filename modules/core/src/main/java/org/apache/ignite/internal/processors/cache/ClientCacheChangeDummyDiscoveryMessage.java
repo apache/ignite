@@ -70,6 +70,11 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
+    }
+
     /**
      * @return Start request ID.
      */

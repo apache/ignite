@@ -31,7 +31,5 @@ public interface CachePartitionExchangeWorkerTask {
     /**
      * @return Security subject id.
      */
-    default UUID securitySubjectId() {
-        return null;
-    }
+    UUID securitySubjectId();
 }

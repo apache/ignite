@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 
 /**
@@ -44,6 +45,11 @@ public class RebalanceReassignExchangeTask implements CachePartitionExchangeWork
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return null;
     }
 
     /**
