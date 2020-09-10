@@ -83,11 +83,11 @@ import org.junit.runners.Suite;
     IgniteClusterSnapshotSelfTest.class,
     IgniteSnapshotMXBeanTest.class,
 
-    IgniteClusterIdTagTest.class,
-
-    PerformanceStatisticsSelfTest.class,
-    PerformanceStatisticsThinClientTest.class,
-    TopologyChangesTest.class
+    IgniteClusterIdTagTest.class
+//
+//    PerformanceStatisticsSelfTest.class,
+//    PerformanceStatisticsThinClientTest.class,
+//    TopologyChangesTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

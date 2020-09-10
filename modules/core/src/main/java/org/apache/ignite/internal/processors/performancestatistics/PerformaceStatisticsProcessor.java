@@ -71,7 +71,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
 
-                    onMetastorageUpdate((boolean)newVal);
+//                    onMetastorageUpdate((boolean)newVal);
+
+                    onMetastorageUpdate(true);
                 });
             }
 
@@ -91,8 +93,6 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 }
             }
         });
-
-        onMetastorageUpdate(true);
     }
 
     /**
