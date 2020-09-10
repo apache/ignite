@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.defragmentation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.h2.index.Index;
 
 /**
@@ -59,7 +59,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
         CacheDefragmentationContext defrgCtx,
-        Map<Integer, LinkMap> mappingByPartition,
+        IntMap<LinkMap> mappingByPartition,
         IgniteLogger log) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
 

@@ -19,18 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.StreamSupport;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -41,13 +41,13 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
@@ -57,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -66,6 +68,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.*;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -115,7 +118,7 @@ public class CachePartitionDefragmentationManager {
     public void executeDefragmentation() throws IgniteCheckedException {
         int pageSize = sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize();
 
-        TreeIterator treeIterator = new TreeIterator(pageSize);
+        TreeIterator treeIter = new TreeIterator(pageSize);
 
         System.setProperty(SKIP_CP_ENTRIES, "true");
 
@@ -133,127 +136,106 @@ public class CachePartitionDefragmentationManager {
                 int[] parts = defrgCtx.partitionsForGroupId(grpId);
 
                 if (workDir != null && parts != null) {
-                    CacheGroupContext grpCtx = defrgCtx.groupContextByGroupId(grpId);
+                    CacheGroupContext oldGrpCtx = defrgCtx.groupContextByGroupId(grpId);
 
                     GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
 
-                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)grpCtx.offheap();
+                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)oldGrpCtx.offheap();
+
+                    IntMap<CacheDataStore> cacheDataStores = new IntHashMap<>();
+
+                    for (CacheDataStore store : offheap.cacheDataStores()) {
+                        // Tree can be null for not yet initialized partitions.
+                        // This would mean that these partitions are empty.
+                        assert store.tree() == null || store.tree().groupId() == grpId;
+
+                        if (store.tree() != null)
+                            cacheDataStores.put(store.partId(), store);
+                    }
 
                     // A cheat so that we won't try to save old metadata into a new partition.
                     dbMgr.removeCheckpointListener(offheap);
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
-                    grpCtx.caches().stream()
+                    oldGrpCtx.caches().stream()
                         .filter(cacheCtx -> cacheCtx.groupId() == grpId)
                         .forEach(cacheCtx -> cacheCtx.ttl().unregister());
 
-                    // Technically wal is already disabled, but PageHandler.isWalDeltaRecordNeeded doesn't care and
+                    // Technically wal is already disabled, but "PageHandler.isWalDeltaRecordNeeded" doesn't care and
                     // WAL records will be allocated anyway just to be ignored later if we don't disable WAL for
                     // cache group explicitly.
-                    grpCtx.localWalEnabled(false, false);
+                    oldGrpCtx.localWalEnabled(false, false);
 
-                    boolean encrypted = grpCtx.config().isEncryptionEnabled();
+                    partRegion.config().setPageEvictionMode(oldGrpCtx.dataRegion().config().getPageEvictionMode());
+
+                    boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
 
                     FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
-                    // Index partition file has to be deleted before we begin, otherwise there's a chance of reading
-                    // corrupted file.
-                    // There is a time period when index is already defragmented but marker file is not created yet.
-                    // If node is failed in that time window then index will be deframented once again. That's fine,
-                    // situation is rare but code to fix that would add unnecessary complications.
-                    U.delete(defragmentedIndexTmpFile(workDir));
-
-                    PageStore idxPageStore = pageStoreFactory.createPageStore(
-                        FLAG_IDX,
-                        () -> defragmentedIndexTmpFile(workDir).toPath(),
-                        val -> {}
-                    );
-
-                    idxPageStore.sync();
-
-                    defrgCtx.addPartPageStore(grpId, PageIdAllocator.INDEX_PARTITION, idxPageStore);
+                    createIndexPageStore(grpId, workDir, pageStoreFactory, val -> {}); //TODO Allocated tracker.
 
                     GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>();
 
-                    PageMemoryEx oldPageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
+                    PageMemoryEx oldPageMem = (PageMemoryEx)oldGrpCtx.dataRegion().pageMemory();
 
-                    Map<Integer, LinkMap> mappingByPartition = new HashMap<>();
-
-                    CacheGroupContext newCtx = new CacheGroupContext(
+                    CacheGroupContext newGrpCtx = new CacheGroupContext(
                         sharedCtx,
                         grpId,
-                        grpCtx.receivedFrom(),
+                        oldGrpCtx.receivedFrom(),
                         CacheType.USER,
-                        grpCtx.config(),
-                        grpCtx.affinityNode(),
+                        oldGrpCtx.config(),
+                        oldGrpCtx.affinityNode(),
                         partRegion,
-                        grpCtx.cacheObjectContext(),
+                        oldGrpCtx.cacheObjectContext(),
                         null,
                         null,
-                        grpCtx.localStartVersion(),
+                        oldGrpCtx.localStartVersion(),
                         true,
                         false,
                         true
                     );
 
                     // This will initialize partition meta in index partition - meta tree and reuse list.
-                    newCtx.start();
+                    newGrpCtx.start();
+
+                    IntMap<LinkMap> linkMapByPart = new IntHashMap<>();
 
                     for (int partId : parts) {
+                        PartitionContext partCtx = new PartitionContext(
+                            workDir,
+                            grpId,
+                            partId,
+                            partRegion,
+                            defrgCtx.mappingDataRegion(),
+                            oldGrpCtx,
+                            newGrpCtx,
+                            cacheDataStores.get(partId),
+                            pageStoreFactory
+                        );
+
+                        partCtx.createMappingPageStore();
+
                         if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
-                            createMappingPageStore(grpId, workDir, pageStoreFactory, partId);
-
-                            DataRegion mappingRegion = defrgCtx.mappingDataRegion();
-
-                            PageMemory memory = mappingRegion.pageMemory();
-
-                            sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
-                            try {
-                                FullPageId linkMapMetaPageId = new FullPageId(PageIdUtils.pageId(partId, FLAG_DATA, 2), grpId);
-
-                                LinkMap existingMapping = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId(), false);
-
-                                mappingByPartition.put(partId, existingMapping);
-                            }
-                            finally {
-                                sharedCtx.database().checkpointReadUnlock();
-                            }
+                            linkMapByPart.put(partId, partCtx.createLinkMapTree(false));
 
                             continue;
                         }
 
-                        AtomicLong partPagesAllocated = new AtomicLong();
+                        linkMapByPart.put(partId, partCtx.createLinkMapTree(true));
 
-                        //TODO I think we should do it inside of checkpoint read lock.
-                        PageStore partPageStore = pageStoreFactory.createPageStore(
-                            FLAG_DATA,
-                            () -> defragmentedPartTmpFile(workDir, partId).toPath(),
-                            partPagesAllocated::addAndGet
-                        );
+                        partCtx.createPartPageStore();
 
-                        partPageStore.sync();
+                        copyPartitionData(partCtx, treeIter);
 
-                        defrgCtx.addPartPageStore(grpId, partId, partPageStore);
-
-                        AtomicLong mappingPagesAllocated = createMappingPageStore(grpId, workDir, pageStoreFactory, partId);
-
-                        sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
-
-                        try {
-                            LinkMap map = defragmentSinglePartition(grpCtx, newCtx, partId, treeIterator, pageSize);
-                            mappingByPartition.put(partId, map);
-                        }
-                        finally {
-                            sharedCtx.database().checkpointReadUnlock();
-                        }
-
-                        //TODO Move inside of defragmentSinglePartition, get rid of that ^ stupid checkpoint read lock.
+                        //TODO Move inside of defragmentSinglePartition.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
                                 // TODO: This dirty hack is needed (for now) for index defragmentation
                                 // oldPageMem.invalidate(grpId, partId);
 
-                                ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, partId);
+                                partCtx.partPageMemory.invalidate(grpId, partId);
+
+                                defrgCtx.removePartPageStore(grpId, partId); // Yes, it'll be invalid in a second.
 
                                 renameTempPartitionFile(workDir, partId);
 
@@ -262,9 +244,9 @@ public class CachePartitionDefragmentationManager {
                                     "grpId", grpId, false,
                                     "partId", partId, false,
                                     "oldPages", defrgCtx.pageStore(grpId, partId).pages(), false,
-                                    "newPages", partPagesAllocated.get(), false,
-                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partPagesAllocated.get()) * pageSize, false,
-                                    "mappingPages", mappingPagesAllocated.get(), false,
+                                    "newPages", partCtx.partPagesAllocated.get(), false,
+                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partCtx.partPagesAllocated.get()) * pageSize, false,
+                                    "mappingPages", partCtx.mappingPagesAllocated.get(), false,
                                     "partFile", defragmentedPartFile(workDir, partId).getName(), false,
                                     "workDir", workDir, false
                                 ));
@@ -272,7 +254,7 @@ public class CachePartitionDefragmentationManager {
                         };
 
                         GridFutureAdapter<?> cpFut = sharedCtx.database()
-                            .forceCheckpoint("part-" + partId) //TODO Provide a good reason.
+                            .forceCheckpoint("partition defragmented")
                             .futureFor(CheckpointState.FINISHED);
 
                         cpFut.listen(cpLsnr);
@@ -287,15 +269,15 @@ public class CachePartitionDefragmentationManager {
                         sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
 
                         try {
-                            defragmentIndexPartition(grpCtx, newCtx, mappingByPartition);
+                            defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
                         }
                         finally {
                             sharedCtx.database().checkpointReadUnlock();
                         }
 
                         sharedCtx.database()
-                                .forceCheckpoint("index") //TODO Provide a good reason.
-                                .futureFor(CheckpointState.FINISHED).get();
+                            .forceCheckpoint("index") //TODO Provide a good reason.
+                            .futureFor(CheckpointState.FINISHED).get();
                     }
 
                     oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
@@ -316,157 +298,167 @@ public class CachePartitionDefragmentationManager {
         }
     }
 
-    /**
-     * Create page store for link mapping.
-     *
-     * @param grpId
-     * @param workDir
-     * @param pageStoreFactory
-     * @param partId
-     *
-     * @throws IgniteCheckedException If failed.
-     * @return
-     */
-    public AtomicLong createMappingPageStore(
+    /** */
+    public void createIndexPageStore(
         int grpId,
         File workDir,
         FilePageStoreFactory pageStoreFactory,
-        int partId
+        LongConsumer allocatedTracker
     ) throws IgniteCheckedException {
-        AtomicLong mappingPagesAllocated = new AtomicLong();
+        // Index partition file has to be deleted before we begin, otherwise there's a chance of reading corrupted file.
+        // There is a time period when index is already defragmented but marker file is not created yet. If node is
+        // failed in that time window then index will be deframented once again. That's fine, situation is rare but code
+        // to fix that would add unnecessary complications.
+        U.delete(defragmentedIndexTmpFile(workDir));
 
-        PageStore mappingPageStore = pageStoreFactory.createPageStore(
-                FLAG_DATA,
-                () -> defragmentedPartMappingFile(workDir, partId).toPath(),
-                mappingPagesAllocated::addAndGet
-        );
+        PageStore idxPageStore;
 
-        mappingPageStore.sync();
+        sharedCtx.database().checkpointReadLock();
+        try {
+            idxPageStore = pageStoreFactory.createPageStore(
+                FLAG_IDX,
+                () -> defragmentedIndexTmpFile(workDir).toPath(),
+                allocatedTracker
+            );
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
 
-        defrgCtx.addMappingPageStore(grpId, partId, mappingPageStore);
+        idxPageStore.sync();
 
-        return mappingPagesAllocated;
+        defrgCtx.addPartPageStore(grpId, PageIdAllocator.INDEX_PARTITION, idxPageStore);
+    }
+
+    /** */
+    public enum PartStages {
+        START,
+        CP_LOCK,
+        ITERATE,
+        READ_ROW,
+        INSERT_ROW,
+        STORE_MAP,
+        STORE_PK,
+        STORE_PENDING,
+        METADATA
     }
 
     /**
-     * Defragmentate partition ang get link mapping (from old link to new link).
+     * Defragmentate partition.
      *
-     * @param grpCtx
-     * @param partId
-     * @param treeIterator
-     * @param pageSize
-     *
-     * @return Link mapping.
+     * @param partCtx
+     * @param treeIter
      * @throws IgniteCheckedException If failed.
      */
-    private LinkMap defragmentSinglePartition(
-        CacheGroupContext grpCtx,
-        CacheGroupContext newCtx,
-        int partId,
-        TreeIterator treeIterator,
-        int pageSize
+    private void copyPartitionData(
+        PartitionContext partCtx,
+        TreeIterator treeIter
     ) throws IgniteCheckedException {
-        DataRegion partRegion = defrgCtx.partitionsDataRegion();
-        PageMemoryEx partPageMem = (PageMemoryEx)partRegion.pageMemory();
+        partCtx.createNewCacheDataStore();
 
-        DataRegion mappingRegion = defrgCtx.mappingDataRegion();
+        CacheDataTree tree = partCtx.oldCacheDataStore.tree();
 
-        PageMemoryEx cachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
+        CacheDataTree newTree = partCtx.newCacheDataStore.tree();
+        PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
+        AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 
-        int grpId = grpCtx.groupId();
+        long cpLockThreshold = 250L;
 
-        GridCacheOffheapManager.GridCacheDataStore newCacheDataStore = new GridCacheOffheapManager.GridCacheDataStore(newCtx, partId, true, defrgCtx.busyLock(), defrgCtx.log);
+        TimeTracker<PartStages> tracker = new TimeTracker<>(PartStages.class);
 
-        newCacheDataStore.init();
+        sharedCtx.database().checkpointReadLock();
+        tracker.complete(CP_LOCK);
 
-        PageMemory memory = mappingRegion.pageMemory();
+        try {
+            AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
+            AtomicInteger entriesProcessed = new AtomicInteger();
 
-        FullPageId linkMapMetaPageId = new FullPageId(memory.allocatePage(grpId, partId, FLAG_DATA), grpId);
+            treeIter.iterate(tree, partCtx.cachePageMemory, (tree0, io, pageAddr, idx) -> {
+                tracker.complete(ITERATE);
 
-        LinkMap m = new LinkMap(grpCtx, memory, linkMapMetaPageId.pageId(), true);
+                if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
+                    sharedCtx.database().checkpointReadUnlock();
 
-        Iterable<CacheDataStore> stores = grpCtx.offheap().cacheDataStores();
+                    sharedCtx.database().checkpointReadLock();
+                    tracker.complete(CP_LOCK);
 
-        CacheDataStore oldCacheDataStore = StreamSupport
-            .stream(stores.spliterator(), false)
-            .filter(s -> grpId == s.tree().groupId())
-            .filter(s -> partId == s.partId())
-            .findFirst()
-            .orElse(null);
+                    lastCpLockTs.set(System.currentTimeMillis());
+                }
 
-        CacheDataTree tree = oldCacheDataStore.tree();
+                AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
+                CacheDataRow row = tree.getRow(io, pageAddr, idx);
 
-        CacheDataTree newTree = newCacheDataStore.tree();
-        PendingEntriesTree newPendingTree = newCacheDataStore.pendingTree();
-        AbstractFreeList<CacheDataRow> freeList = newCacheDataStore.getCacheStoreFreeList();
+                tracker.complete(READ_ROW);
 
-        treeIterator.iterate(tree, cachePageMem, (tree0, io, pageAddr, idx) -> {
-            AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
-            CacheDataRow row = tree.getRow(io, pageAddr, idx);
+                int cacheId = row.cacheId();
 
-            int cacheId = row.cacheId();
+                // Reuse row that we just read.
+                row.link(0);
 
-            // Reuse row that we just read.
-            row.link(0);
+                // "insertDataRow" will corrupt page memory if we don't do this.
+                if (row instanceof DataRow && !partCtx.oldGrpCtx.storeCacheIdInDataPage())
+                    ((DataRow)row).cacheId(CU.UNDEFINED_CACHE_ID);
 
-            // "insertDataRow" will corrupt page memory if we don't do this.
-            if (row instanceof DataRow && !grpCtx.storeCacheIdInDataPage())
-                ((DataRow)row).cacheId(CU.UNDEFINED_CACHE_ID);
+                freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+                // Put it back.
+                if (row instanceof DataRow)
+                    ((DataRow)row).cacheId(cacheId);
 
-            // Put it back.
-            if (row instanceof DataRow)
-                ((DataRow)row).cacheId(cacheId);
+                tracker.complete(INSERT_ROW);
 
-            newTree.putx(row);
+                newTree.putx(row);
 
-            long newLink = row.link();
+                long newLink = row.link();
 
-            m.put(leafIo.getLink(pageAddr, idx), newLink);
+                tracker.complete(STORE_MAP);
 
-            if (row.expireTime() != 0)
-                newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
+                partCtx.linkMap.put(leafIo.getLink(pageAddr, idx), newLink);
 
-            return true;
-        });
+                tracker.complete(STORE_PK);
 
-        freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                if (row.expireTime() != 0)
+                    newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
 
-        copyCacheMetadata(
-            cachePageMem,
-            oldCacheDataStore,
-            partPageMem,
-            newCacheDataStore,
-            grpId,
-            partId,
-            pageSize
-        );
+                tracker.complete(STORE_PENDING);
 
-        //TODO Invalidate mapping in mapping region?
-        //TODO Invalidate PageStore for this partition.
-        return m;
+                entriesProcessed.incrementAndGet();
+
+                return true;
+            });
+
+            sharedCtx.database().checkpointReadUnlock();
+
+            sharedCtx.database().checkpointReadLock();
+            tracker.complete(CP_LOCK);
+
+            freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+
+            copyCacheMetadata(partCtx);
+
+            tracker.complete(METADATA);
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
+
+        System.out.println(tracker.toString());
     }
 
     /** */
     private void copyCacheMetadata(
-        PageMemoryEx oldPageMemory,
-        CacheDataStore oldCacheDataStore,
-        PageMemoryEx newPageMemory,
-        CacheDataStore newCacheDataStore,
-        int grpId,
-        int partId,
-        int pageSize
+        PartitionContext partCtx
     ) throws IgniteCheckedException {
-        long partMetaPageId = oldPageMemory.partitionMetaPageId(grpId, partId); // Same for all page memories.
+        // Same for all page memories. Why does it need to be in PageMemory?
+        long partMetaPageId = partCtx.cachePageMemory.partitionMetaPageId(partCtx.grpId, partCtx.partId);
 
-        access(ACCESS_READ, oldPageMemory, grpId, partMetaPageId, oldPartMetaPageAddr -> {
+        access(ACCESS_READ, partCtx.cachePageMemory, partCtx.grpId, partMetaPageId, oldPartMetaPageAddr -> {
             PagePartitionMetaIO oldPartMetaIo = PageIO.getPageIO(oldPartMetaPageAddr);
 
             // Newer meta versions may contain new data that we don't copy during defragmentation.
             assert Arrays.asList(1, 2).contains(oldPartMetaIo.getVersion()) : oldPartMetaIo.getVersion();
 
-            access(ACCESS_WRITE, newPageMemory, grpId, partMetaPageId, newPartMetaPageAddr -> {
+            access(ACCESS_WRITE, partCtx.partPageMemory, partCtx.grpId, partMetaPageId, newPartMetaPageAddr -> {
                 PagePartitionMetaIOV2 newPartMetaIo = PageIO.getPageIO(newPartMetaPageAddr);
 
                 // Copy partition state.
@@ -488,62 +480,35 @@ public class CachePartitionDefragmentationManager {
                 // Copy cache sizes for shared cache group.
                 long oldCountersPageId = oldPartMetaIo.getCountersPageId(oldPartMetaPageAddr);
                 if (oldCountersPageId != 0L) {
-                    //TODO Extract method or something. This code block is too big.
-                    long newCountersPageId = newPageMemory.allocatePage(grpId, partId, FLAG_DATA);
+                    Map<Integer, Long> sizes = GridCacheOffheapManager.readSharedGroupCacheSizes(
+                        partCtx.cachePageMemory,
+                        partCtx.grpId,
+                        oldCountersPageId
+                    );
+
+                    long newCountersPageId = GridCacheOffheapManager.writeSharedGroupCacheSizes(
+                        partCtx.partPageMemory,
+                        partCtx.grpId,
+                        0L,
+                        partCtx.partId,
+                        sizes
+                    );
 
                     newPartMetaIo.setCountersPageId(newPartMetaPageAddr, newCountersPageId);
-
-                    AtomicLong nextNewCountersPageIdRef = new AtomicLong(newCountersPageId);
-                    AtomicLong nextOldCountersPageIdRef = new AtomicLong(oldCountersPageId);
-
-                    while (nextNewCountersPageIdRef.get() != 0L) {
-                        access(ACCESS_READ, oldPageMemory, grpId, nextOldCountersPageIdRef.get(), oldCountersPageAddr ->
-                            access(ACCESS_WRITE, newPageMemory, grpId, nextNewCountersPageIdRef.get(), newCountersPageAddr -> {
-                                PagePartitionCountersIO newPartCountersIo = PagePartitionCountersIO.VERSIONS.latest();
-
-                                newPartCountersIo.initNewPage(newCountersPageAddr, nextNewCountersPageIdRef.get(), pageSize);
-
-                                PagePartitionCountersIO oldCountersPageIo = PageIO.getPageIO(oldCountersPageAddr);
-
-                                oldCountersPageIo.copyCacheSizes(
-                                    oldCountersPageAddr,
-                                    newCountersPageAddr
-                                );
-
-                                if (oldCountersPageIo.getLastFlag(oldCountersPageAddr)) {
-                                    newPartCountersIo.setLastFlag(newCountersPageAddr, true);
-
-                                    nextOldCountersPageIdRef.set(0L);
-                                    nextNewCountersPageIdRef.set(0L);
-                                }
-                                else {
-                                    nextOldCountersPageIdRef.set(oldCountersPageIo.getNextCountersPageId(oldCountersPageAddr));
-
-                                    long nextNewCountersPageId = newPageMemory.allocatePage(grpId, partId, FLAG_DATA);
-
-                                    newPartCountersIo.setNextCountersPageId(newCountersPageAddr, nextNewCountersPageId);
-
-                                    nextNewCountersPageIdRef.set(nextNewCountersPageId);
-                                }
-
-                                return null;
-                            })
-                        );
-                    }
                 }
 
                 // Copy counter gaps.
                 long oldGapsLink = oldPartMetaIo.getGapsLink(oldPartMetaPageAddr);
                 if (oldGapsLink != 0L) {
-                    byte[] gapsBytes = oldCacheDataStore.partStorage().readRow(oldGapsLink);
+                    byte[] gapsBytes = partCtx.oldCacheDataStore.partStorage().readRow(oldGapsLink);
 
-                    SimpleDataRow gapsDataRow = new SimpleDataRow(partId, gapsBytes);
+                    SimpleDataRow gapsDataRow = new SimpleDataRow(partCtx.partId, gapsBytes);
 
-                    newCacheDataStore.partStorage().insertDataRow(gapsDataRow, IoStatisticsHolderNoOp.INSTANCE);
+                    partCtx.newCacheDataStore.partStorage().insertDataRow(gapsDataRow, IoStatisticsHolderNoOp.INSTANCE);
 
                     newPartMetaIo.setGapsLink(newPartMetaPageAddr, gapsDataRow.link());
 
-                    newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                    partCtx.newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
 
                 return null;
@@ -564,7 +529,7 @@ public class CachePartitionDefragmentationManager {
     private void defragmentIndexPartition(
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
-        Map<Integer, LinkMap> mappingByPartition
+        IntMap<LinkMap> mappingByPartition
     ) throws IgniteCheckedException {
         GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
 
@@ -576,4 +541,201 @@ public class CachePartitionDefragmentationManager {
         idx.defragmentator().defragmentate(grpCtx, newCtx, defrgCtx, mappingByPartition, log);
     }
 
+    /** */
+    @SuppressWarnings("PublicField")
+    private class PartitionContext {
+        /** */
+        public final File workDir;
+
+        /** */
+        public final int grpId;
+
+        /** */
+        public final int partId;
+
+        /** */
+        public final DataRegion cacheDataRegion;
+
+        /** */
+        public final DataRegion partDataRegion;
+
+        /** */
+        public final DataRegion mappingDataRegion;
+
+        /** */
+        public final PageMemoryEx cachePageMemory;
+
+        /** */
+        public final PageMemoryEx partPageMemory;
+
+        /** */
+        public final PageMemoryEx mappingPageMemory;
+
+        /** */
+        public final CacheGroupContext oldGrpCtx;
+
+        /** */
+        public final CacheGroupContext newGrpCtx;
+
+        /** */
+        public final CacheDataStore oldCacheDataStore;
+
+        /** */
+        private GridCacheDataStore newCacheDataStore;
+
+        /** */
+        public final FilePageStoreFactory pageStoreFactory;
+
+        /** */
+        public final AtomicLong partPagesAllocated = new AtomicLong();
+
+        /** */
+        public final AtomicLong mappingPagesAllocated = new AtomicLong();
+
+        /** */
+        private LinkMap linkMap;
+
+        /** */
+        public PartitionContext(
+            File workDir,
+            int grpId,
+            int partId,
+            DataRegion partDataRegion,
+            DataRegion mappingDataRegion,
+            CacheGroupContext oldGrpCtx,
+            CacheGroupContext newGrpCtx,
+            CacheDataStore oldCacheDataStore,
+            FilePageStoreFactory pageStoreFactory
+        ) {
+            this.workDir = workDir;
+            this.grpId = grpId;
+            this.partId = partId;
+            cacheDataRegion = oldGrpCtx.dataRegion();
+            this.partDataRegion = partDataRegion;
+            this.mappingDataRegion = mappingDataRegion;
+
+            cachePageMemory = (PageMemoryEx)cacheDataRegion.pageMemory();
+            partPageMemory = (PageMemoryEx)partDataRegion.pageMemory();
+            mappingPageMemory = (PageMemoryEx)mappingDataRegion.pageMemory();
+
+            this.oldGrpCtx = oldGrpCtx;
+            this.newGrpCtx = newGrpCtx;
+            this.oldCacheDataStore = oldCacheDataStore;
+            this.pageStoreFactory = pageStoreFactory;
+        }
+
+        /** */
+        public PageStore createPartPageStore() throws IgniteCheckedException {
+            PageStore partPageStore;
+
+            sharedCtx.database().checkpointReadLock();
+            try {
+                partPageStore = pageStoreFactory.createPageStore(
+                    FLAG_DATA,
+                    () -> defragmentedPartTmpFile(workDir, partId).toPath(),
+                    partPagesAllocated::addAndGet
+                );
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
+
+            partPageStore.sync();
+
+            defrgCtx.addPartPageStore(grpId, partId, partPageStore);
+
+            return partPageStore;
+        }
+
+        /** */
+        public PageStore createMappingPageStore() throws IgniteCheckedException {
+            PageStore mappingPageStore;
+
+            sharedCtx.database().checkpointReadLock();
+            try {
+                mappingPageStore = pageStoreFactory.createPageStore(
+                    FLAG_DATA,
+                    () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+                    mappingPagesAllocated::addAndGet
+                );
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
+
+            mappingPageStore.sync();
+
+            defrgCtx.addMappingPageStore(grpId, partId, mappingPageStore);
+
+            return mappingPageStore;
+        }
+
+        /** */
+        public LinkMap createLinkMapTree(boolean initNew) throws IgniteCheckedException {
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                long mappingMetaPageId = initNew
+                    ? mappingPageMemory.allocatePage(grpId, partId, FLAG_DATA)
+                    : PageIdUtils.pageId(partId, FLAG_DATA, LinkMap.META_PAGE_IDX);
+
+                assert PageIdUtils.pageIndex(mappingMetaPageId) == LinkMap.META_PAGE_IDX
+                    : PageIdUtils.toDetailString(mappingMetaPageId);
+
+                linkMap = new LinkMap(newGrpCtx, mappingPageMemory, mappingMetaPageId, initNew);
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
+
+            return linkMap;
+        }
+
+        /** */
+        public void createNewCacheDataStore() {
+            GridCacheDataStore newCacheDataStore = new GridCacheDataStore(
+                newGrpCtx,
+                partId,
+                true,
+                defrgCtx.busyLock(),
+                defrgCtx.log
+            );
+
+            newCacheDataStore.init();
+
+            this.newCacheDataStore = newCacheDataStore;
+        }
+    }
+
+    /** */
+    public static class DefragmentationStatus {
+        /** */
+        private final List<CacheGroupDefragmentationStatus> cacheGrpsStatus = new CopyOnWriteArrayList<>();
+
+        /** */
+        private final long startNanos = System.nanoTime();
+
+        /** */
+        private final AtomicLong totalDuration = new AtomicLong();
+
+        /** */
+        public void heartbeat() {
+            long newTotalDuration = System.nanoTime() - startNanos;
+
+            totalDuration.set(newTotalDuration);
+        }
+
+        /** */
+        public long getTotalDuration() {
+            heartbeat();
+
+            return U.nanosToMillis(totalDuration.get());
+        }
+    }
+
+    /** */
+    public static class CacheGroupDefragmentationStatus {
+
+
+    }
 }

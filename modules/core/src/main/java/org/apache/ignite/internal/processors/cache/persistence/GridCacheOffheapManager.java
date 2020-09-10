@@ -671,7 +671,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * return null if counter page does not exist.
      * @throws IgniteCheckedException If page memory operation failed.
      */
-    @Nullable static Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
+    @Nullable public static Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
         long cntrsPageId) throws IgniteCheckedException {
 
         if (cntrsPageId == 0L)
@@ -722,7 +722,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @return new counter page Id. Same as {@code cntrsPageId} or new value if cache size pages were initialized.
      * @throws IgniteCheckedException if page memory operation failed.
      */
-    private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
+    public static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
         long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
         byte[] data = PagePartitionCountersIO.VERSIONS.latest().serializeCacheSizes(sizes);
 
@@ -2890,10 +2890,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        @Override public PartitionMetaStorage partStorage() {
+        /** */
+        @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return partStorage;
         }
-
     }
 
     /**

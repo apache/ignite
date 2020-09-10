@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.collection.IntSet;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
@@ -54,13 +55,13 @@ public class CacheDefragmentationContext {
     private final PageStoreMap oldPageStoresMap = new PageStoreMap();
 
     /** GroupId -> { PartId } */
-    private IntMap<IntSet> partitionsByGroupId = new IntHashMap<>();
+    private final IntMap<IntSet> partitionsByGroupId = new IntRWHashMap<>();
 
     /** GroupId -> WorkDir */
-    private IntMap<File> cacheWorkDirsByGroupId = new IntHashMap<>();
+    private final IntMap<File> cacheWorkDirsByGroupId = new IntHashMap<>();
 
     /** GroupId -> CacheGroupContext */
-    private IntMap<CacheGroupContext> groupContextsByGroupId = new IntHashMap<>();
+    private final IntMap<CacheGroupContext> groupContextsByGroupId = new IntHashMap<>();
 
     public final IgniteLogger log;
 
@@ -84,6 +85,14 @@ public class CacheDefragmentationContext {
         PageStore pageStore
     ) {
         partPageStoresMap.addPageStore(grpId, partId, pageStore);
+    }
+
+    /** */
+    public void removePartPageStore(
+        int grpId,
+        int partId
+    ) {
+        partPageStoresMap.removePageStore(grpId, partId);
     }
 
     /** */

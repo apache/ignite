@@ -166,22 +166,10 @@ public class PagePartitionCountersIO extends PageIO {
         return getLastFlag(pageAddr);
     }
 
-    /** */
-    public void copyCacheSizes(long srcPageAddr, long dstPageAddr) {
-        // Assume that dstPageAddr always has the latest version.
-        assert getVersion(srcPageAddr) == getVersion(dstPageAddr) : getVersion(srcPageAddr);
-
-        int cnt = getCount(srcPageAddr);
-
-        setCount(dstPageAddr, cnt);
-
-        GridUnsafe.copyMemory(srcPageAddr + ITEMS_OFF, dstPageAddr + ITEMS_OFF, cnt * ITEM_SIZE);
-    }
-
     /**
      * @param pageAddr Page address.
      */
-    public boolean getLastFlag(long pageAddr) {
+    private boolean getLastFlag(long pageAddr) {
         return PageUtils.getByte(pageAddr, LAST_FLAG_OFF) == LAST_FLAG;
     }
 
@@ -189,7 +177,7 @@ public class PagePartitionCountersIO extends PageIO {
      * @param pageAddr Page address.
      * @param last Last.
      */
-    public void setLastFlag(long pageAddr, boolean last) {
+    private void setLastFlag(long pageAddr, boolean last) {
         PageUtils.putByte(pageAddr, LAST_FLAG_OFF, last ? LAST_FLAG : ~LAST_FLAG);
     }
 

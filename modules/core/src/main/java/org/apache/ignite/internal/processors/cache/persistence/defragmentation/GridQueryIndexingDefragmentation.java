@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
  *
@@ -37,6 +37,11 @@ public interface GridQueryIndexingDefragmentation {
      *
      * @throws IgniteCheckedException If failed.
      */
-    void defragmentate(CacheGroupContext grpCtx, CacheGroupContext newCtx, CacheDefragmentationContext defrgCtx,
-                       Map<Integer, LinkMap> mappingByPartition, IgniteLogger log) throws IgniteCheckedException;
+    void defragmentate(
+        CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
+        CacheDefragmentationContext defrgCtx,
+        IntMap<LinkMap> mappingByPartition,
+        IgniteLogger log
+    ) throws IgniteCheckedException;
 }

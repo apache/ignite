@@ -41,6 +41,9 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
  * Class that holds mappings of old links to new links.
  */
 public class LinkMap {
+    /** Tree meta page index. */
+    public static final int META_PAGE_IDX = 2;
+
     /** Mapping tree. */
     private LinkTree tree;
 
