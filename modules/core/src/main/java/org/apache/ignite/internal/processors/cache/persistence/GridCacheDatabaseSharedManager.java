@@ -410,9 +410,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void registerSystemView() {
         cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
             new MetastorageViewWalker(), () -> {
-                List<MetastorageView> data = new ArrayList<>();
-
                 try {
+                    List<MetastorageView> data = new ArrayList<>();
+
                     metaStorage.iterate("", (key, valBytes) -> {
                         try {
                             Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
@@ -423,14 +423,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             data.add(new MetastorageView(key, null));
                         }
                     }, false);
+
+                    return data;
                 }
                 catch (IgniteCheckedException e) {
                     log.warning("Metastore iteration error", e);
 
                     return Collections.emptyList();
                 }
-
-                return data;
             }, identity());
     }
 
