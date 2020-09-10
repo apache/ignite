@@ -43,7 +43,7 @@ class PmeFreeSwitchTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
     def test(self, ignite_version):
         """
-        Test PME free scenario (node stop).
+        Tests PME free scenario (node stop).
         """
         data = {}
 

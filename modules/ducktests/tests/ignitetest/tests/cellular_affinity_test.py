@@ -79,7 +79,7 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
         """
-        Test Cellular Affinity scenario (partition distribution).
+        Tests Cellular Affinity scenario (partition distribution).
         """
         cell1 = self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
         self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], joined_cluster=cell1)
@@ -98,17 +98,18 @@ class CellularAffinity(IgniteTest):
 
         checker.run()
 
+    # pylint: disable=R0914
     @cluster(num_nodes=NUM_NODES * (3 + 1))
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test_latency(self, ignite_version):
         """
-        Test Cellular switch tx latency.
+        Tests Cellular switch tx latency.
         """
         data = {}
 
         cell1, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C1")
-        cell2, prepared_tx_loader2 = self.start_cell_with_prepared_txs(ignite_version, "C2", joined_cluster=cell1)
-        cell3, prepared_tx_loader3 = self.start_cell_with_prepared_txs(ignite_version, "C3", joined_cluster=cell1)
+        _, prepared_tx_loader2 = self.start_cell_with_prepared_txs(ignite_version, "C2", joined_cluster=cell1)
+        _, prepared_tx_loader3 = self.start_cell_with_prepared_txs(ignite_version, "C3", joined_cluster=cell1)
 
         loaders = [prepared_tx_loader1, prepared_tx_loader2, prepared_tx_loader3]
 
@@ -132,7 +133,7 @@ class CellularAffinity(IgniteTest):
         for streamer in streamers:
             streamer.await_event("Warmup finished", 180, from_the_beginning=True)
 
-        failed_loader.stop()  # node left with prepared txs.
+        failed_loader.stop_node_async()  # node left with prepared txs.
 
         for streamer in streamers:
             streamer.await_event("Node left topology\\|Node FAILED", 60, from_the_beginning=True)
@@ -144,19 +145,24 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("Application streamed", 60)
 
         for streamer in streamers:  # stops streaming and records results.
-            streamer.stop()
+            streamer.stop_node_async()
 
-            latency = streamer.extract_result("WORST_LATENCY")
-            streamed = streamer.extract_result("STREAMED")
-            duration = streamer.extract_result("MEASURE_DURATION")
+        for streamer in streamers:
+            streamer.await_node_stopped()
+
             cell = streamer.params["cell"]
 
             data["[%s cell %s]" % ("alive" if cell is not failed_loader.params["cell"] else "broken", cell)] = \
-                "worst_latency=" + latency + ", tx_streamed=" + streamed + ", measure_duration=" + duration
+                "worst_latency=%s, tx_streamed=%s, measure_duration=%s" % (
+                streamer.extract_result("WORST_LATENCY"), streamer.extract_result("STREAMED"),
+                streamer.extract_result("MEASURE_DURATION"))
 
         return data
 
     def start_tx_streamer(self, version, cell, joined_cluster):
+        """
+        Starts transaction streamer.
+        """
         return IgniteApplicationService(
             self.test_context,
             IgniteClientConfiguration(version=IgniteVersion(version), properties=self.properties(),
@@ -169,6 +175,9 @@ class CellularAffinity(IgniteTest):
             timeout_sec=180)
 
     def start_cell_with_prepared_txs(self, version, cell_id, joined_cluster=None):
+        """
+        Starts cell with prepared transactions.
+        """
         nodes = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id],
                                 CellularAffinity.NUM_NODES - 1, joined_cluster)
 
@@ -189,6 +198,9 @@ class CellularAffinity(IgniteTest):
         return nodes, prepared_tx_streamer
 
     def start_cell(self, version, jvm_opts, nodes_cnt=NUM_NODES, joined_cluster=None):
+        """
+        Starts cell.
+        """
         config = IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                      cluster_state="INACTIVE")
 

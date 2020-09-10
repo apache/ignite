@@ -19,6 +19,7 @@ This module contains the base class to build Ignite aware application written on
 
 import re
 
+# pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
@@ -40,7 +41,6 @@ class IgniteApplicationService(IgniteAwareService):
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
         self.timeout_sec = timeout_sec
-        self.stop_timeout_sec = 10
         self.params = params
 
     def start(self):
@@ -52,16 +52,23 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=20):
-        self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
-        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown, allow_fail=True)
+    def stop_node_async(self, clean_shutdown=True):
+        self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(self.nodes[0].account)))
+        self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
+                                                  allow_fail=True)
 
-        stopped = self.wait_node(node, timeout_sec=self.stop_timeout_sec)
+    def await_node_stopped(self, timeout_sec=10):
+        stopped = self.wait_node(self.nodes[0], timeout_sec=timeout_sec)
         assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
-                        (str(node.account), str(self.stop_timeout_sec))
+                        (str(self.nodes[0].account), str(timeout_sec))
 
-        self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=self.stop_timeout_sec)
+        self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
+
+    # pylint: disable=W0221
+    def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
+        assert node == self.nodes[0]
+        self.stop_node_async(clean_shutdown)
+        self.await_node_stopped(timeout_sec)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)

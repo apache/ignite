@@ -287,7 +287,7 @@ public abstract class IgniteAwareApplication {
         boolean newApi = ignite.cluster().localNode().version().greaterThanEqual(2, 9, 0);
 
         while (newApi ? ignite.cluster().state() != ClusterState.ACTIVE : !ignite.cluster().active()) {
-            U.sleep(1000);
+            U.sleep(100);
 
             log.info("Waiting for cluster activation");
         }
