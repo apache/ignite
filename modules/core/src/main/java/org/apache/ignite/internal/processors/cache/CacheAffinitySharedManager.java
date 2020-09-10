@@ -97,9 +97,13 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CA
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** @see IgniteSystemProperties#IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT */
+    public static final int DFLT_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT = 10_000;
+
     /** */
     private final long clientCacheMsgTimeout =
-        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, 10_000);
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT,
+            DFLT_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT);
 
     /** */
     private static final IgniteClosure<ClusterNode, UUID> NODE_TO_ID = new IgniteClosure<ClusterNode, UUID>() {

@@ -110,10 +110,10 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     private static final int SES_TIMEOUT_CHECK_DELAY = 1_000;
 
     /** Default session timeout, in seconds. */
-    private static final int DFLT_SES_TIMEOUT = 30;
+    public static final int DFLT_SES_TIMEOUT = 30;
 
     /** The default interval used to invalidate sessions, in seconds. */
-    private static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
+    public static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
 
     /** Index of task name wrapped by VisorGatewayTask */
     private static final int WRAPPED_TASK_IDX = 1;
