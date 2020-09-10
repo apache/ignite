@@ -26,9 +26,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -46,6 +48,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.GridManager;
+import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -875,7 +879,13 @@ public class GridNioServerWrapper {
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
                     !clientMode && cfg.slowClientQueueLimit() > 0 ? this::checkClientQueueSize : null;
 
-                GridNioFilter[] filters;
+                List<GridNioFilter> filters = new ArrayList<>();
+
+                if (tracing instanceof GridTracingManager && ((GridManager)tracing).enabled())
+                    filters.add(new GridNioTracerFilter(log, tracing));
+
+                filters.add(new GridNioCodecFilter(parser, log, true));
+                filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
                     GridNioSslFilter sslFilter =
@@ -887,19 +897,8 @@ public class GridNioServerWrapper {
                     sslFilter.wantClientAuth(true);
                     sslFilter.needClientAuth(true);
 
-                    filters = new GridNioFilter[] {
-                        new GridNioTracerFilter(log, tracing),
-                        new GridNioCodecFilter(parser, log, true),
-                        new GridConnectionBytesVerifyFilter(log),
-                        sslFilter
-                    };
+                    filters.add(sslFilter);
                 }
-                else
-                    filters = new GridNioFilter[] {
-                        new GridNioTracerFilter(log, tracing),
-                        new GridNioCodecFilter(parser, log, true),
-                        new GridConnectionBytesVerifyFilter(log)
-                    };
 
                 GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
                     .address(cfg.localHost())
@@ -918,7 +917,7 @@ public class GridNioServerWrapper {
                     .directMode(true)
                     .writeTimeout(cfg.socketWriteTimeout())
                     .selectorSpins(cfg.selectorSpins())
-                    .filters(filters)
+                    .filters(filters.toArray(new GridNioFilter[filters.size()]))
                     .writerFactory(writerFactory)
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)

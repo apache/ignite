@@ -50,11 +50,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * DHT cache preloader.
@@ -223,29 +221,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
-                // If partition is currently rented prevent destroy and start clearing process.
-                if (part.state() == RENTING) {
-                    if (part.reserve()) {
-                        part.moving();
-
-                        part.clearAsync();
-
-                        part.release();
-                    }
-                }
-
-                // If partition was destroyed recreate it.
-                if (part.state() == EVICTED) {
-                    part.awaitDestroy();
-
-                    part = top.localPartition(p, topVer, true);
-
-                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
-
-                    part.resetUpdateCounter();
-                }
-
-                if (part.state() != MOVING && part.state() != OWNING) {
+                // State should be switched to MOVING during PME.
+                if (part.state() != MOVING) {
                     throw new AssertionError("Partition has invalid state for rebalance "
                         + aff.topologyVersion() + " " + part);
                 }
@@ -435,27 +412,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * Update topology on partition eviction and optionally refresh partition map.
-     *
      * @param part Evicted partition.
-     * @param updateSeq {@code True} to refresh partition maps.
      */
-    public void onPartitionEvicted(GridDhtLocalPartition part, boolean updateSeq) {
+    public void tryFinishEviction(GridDhtLocalPartition part) {
         if (!enterBusy())
             return;
 
         try {
-            top.onEvicted(part, updateSeq);
-
-            if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-                grp.addUnloadEvent(part.id());
-
-            if (updateSeq) {
-                if (log.isDebugEnabled())
-                    log.debug("Partitions have been scheduled to resend [reason=" +
-                        "Eviction [grp" + grp.cacheOrGroupName() + " " + part.id() + "]");
-
-                ctx.exchange().scheduleResendPartitions();
+            if (top.tryFinishEviction(part)) {
+                if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
+                    grp.addUnloadEvent(part.id());
             }
         }
         finally {
