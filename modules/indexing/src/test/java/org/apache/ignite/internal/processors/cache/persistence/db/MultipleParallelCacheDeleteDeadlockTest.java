@@ -129,7 +129,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void test() throws Exception {
+    public void testMultipleCacheDelete() throws Exception {
         IgniteEx ignite = startGrids(1);
 
         ignite.cluster().active(true);
@@ -154,11 +154,12 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 checkpointBlockingLatch.await();
 
                 forceCheckpoint();
-
-                testCompletionBlockingLatch.countDown();
             }
             catch (Exception e) {
                 e.printStackTrace();
+            }
+            finally {
+                testCompletionBlockingLatch.countDown();
             }
         });
 
@@ -167,12 +168,20 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
         });
 
         checkpointer.start();
-
         destroyCaches.start();
 
         testCompletionBlockingLatch.await(60, TimeUnit.SECONDS);
 
-        assertEquals("Test hasn't completed in 1 minute - there is possibly a deadlock.", 0, testCompletionBlockingLatch.getCount());
+        try {
+            assertEquals("Test hasn't completed in 1 minute - there is possibly a deadlock.", 0, testCompletionBlockingLatch.getCount());
+        }
+        finally {
+            checkpointer.interrupt();
+            destroyCaches.interrupt();
+
+            checkpointer.join();
+            destroyCaches.join();
+        }
     }
 
     /**
@@ -304,9 +313,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
             return super.destroyDownPages(bag, pageId, lvl, c, lockHoldStartTime, lockMaxTime, lockedPages);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void temporaryReleaseLock() {
             super.temporaryReleaseLock();
 
