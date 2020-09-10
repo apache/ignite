@@ -1557,7 +1557,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 loc ? null : U.marshal(marsh, null),
                 null,
                 false,
-                null);
+                null,
+                req.getTaskName());
 
             if (req.isSessionFullSupport()) {
                 // Send response to designated job topic.

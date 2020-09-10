@@ -79,6 +79,9 @@ public class GridJobExecuteResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** */
+    private String taskName;
+
     /**
      * No-op constructor to support {@link Externalizable} interface. This
      * constructor is not meant to be used for other purposes.
@@ -99,6 +102,7 @@ public class GridJobExecuteResponse implements Message {
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      * @param retry Topology version for that partitions haven't been reserved on the affinity node.
+     * @param taskName Task name.
      */
     public GridJobExecuteResponse(UUID nodeId,
         IgniteUuid sesId,
@@ -110,7 +114,8 @@ public class GridJobExecuteResponse implements Message {
         byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs,
         boolean isCancelled,
-        AffinityTopologyVersion retry)
+        AffinityTopologyVersion retry,
+        String taskName)
     {
         assert nodeId != null;
         assert sesId != null;
@@ -127,6 +132,7 @@ public class GridJobExecuteResponse implements Message {
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
         this.retry = retry;
+        this.taskName = taskName;
     }
 
     /**
@@ -228,6 +234,13 @@ public class GridJobExecuteResponse implements Message {
         return retry != null ? retry : AffinityTopologyVersion.NONE;
     }
 
+    /**
+     * @return Task name.
+     */
+    public String getTaskName() {
+        return taskName;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -289,6 +302,12 @@ public class GridJobExecuteResponse implements Message {
 
             case 7:
                 if (!writer.writeIgniteUuid("sesId", sesId))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeString("taskName", taskName))
                     return false;
 
                 writer.incrementState();
@@ -370,6 +389,14 @@ public class GridJobExecuteResponse implements Message {
 
                 reader.incrementState();
 
+            case 8:
+                taskName = reader.readString("taskName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridJobExecuteResponse.class);
@@ -382,7 +409,7 @@ public class GridJobExecuteResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
