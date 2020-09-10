@@ -215,7 +215,7 @@ public class RunningQueryManager {
         }
     }
 
-    /** Tracks query request ID. */
+    /** @param reqId Request ID of query to track. */
     public void trackRequestId(long reqId) {
         if (ctx.performanceStatistics().enabled()) {
             GridRunningQueryInfo info = currQryInfo.get();
