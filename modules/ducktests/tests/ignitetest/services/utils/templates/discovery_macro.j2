@@ -16,19 +16,17 @@
 #}
 
 {% macro ip_finder(spi) %}
-    {% if spi.finder %}
+    {% if spi.ip_finder and spi.ip_finder.type == 'VM' %}
         <property name="ipFinder">
-            {% if spi.finder.type == 'VM' %}
-                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                    <property name="addresses">
-                        <list>
-                            {% for address in finder.addresses %}
-                                <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
-                            {% endfor %}
-                        </list>
-                    </property>
-                </bean>
-            {% endif %}
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses">
+                    <list>
+                        {% for address in spi.ip_finder.addresses %}
+                            <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
+                        {% endfor %}
+                    </list>
+                </property>
+            </bean>
         </property>
     {% endif %}
 {% endmacro %}

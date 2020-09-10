@@ -20,6 +20,7 @@ Module contains discovery tests.
 import os
 import random
 import re
+import sys
 from enum import IntEnum
 from datetime import datetime
 from time import monotonic
@@ -123,8 +124,8 @@ class DiscoveryTest(IgniteTest):
             version=test_config.version,
             discovery_spi=discovery_spi,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
-            caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL' if
-            test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
+            caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL'
+                    if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
@@ -156,44 +157,40 @@ class DiscoveryTest(IgniteTest):
     def setup(self):
         IgniteTest.setup(self)
 
-        self.logger.info("Storing iptables rules to '" + self.NETFILTER_SAVED_SETTINGS + "' on each node.")
+        # Store current network filter settings.
 
         for node in self.test_context.cluster.nodes:
-            node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % (self.NETFILTER_SAVED_SETTINGS))
+            node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % self.NETFILTER_SAVED_SETTINGS)
 
-            err = str(node.account.ssh_client.exec_command("sudo iptables -F")[2].read(), "utf-8")
-            assert len(err) == 0, "Failed to clean iptables rules on '%s': %s" % (node, err)
+            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
-            out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
-            self.logger.info("Iptables rules on '" + node.name + "' before storing: " + out)
+            self.logger.info(
+                "Storing iptables settings to '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
 
-            # err = str(node.account.ssh_client.exec_command(
-            #     "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
-            #
-            # if "Warning: iptables-legacy tables present" in err:
-            #     err = str(node.account.ssh_client.exec_command(
-            #         "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS)[2].read(), "utf-8")
-            #
-            # assert len(err) == 0, "Failed to store iptables rules on '" + node.name + "': " + err
+            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+            if "Warning: iptables-legacy tables present" in exec_error:
+                cmd = "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS
+
+                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+            assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
     def teardown(self):
-        self.logger.info("Restoring iptables settings from " + self.NETFILTER_SAVED_SETTINGS)
+        # Restore previous network filter settings.
+
+        cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
 
         errors = []
 
         for node in self.test_context.cluster.nodes:
-            out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
-            self.logger.info("Iptables rules on '%s' before restoring: %s" % (node.name, out))
+            self.logger.info(
+                "Restoring iptables settings from '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
 
-            # err = node.account.ssh_client.exec_command(
-            #     "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS)[2].read()
-            err = str(node.account.ssh_client.exec_command("sudo iptables -F")[2].read(), "utf-8")
+            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
-            if len(err) > 0:
-                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, err))
-
-            # out = str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), "utf-8")
-            # self.logger.info("Iptables rules on '" + node.name + "' before after: " + out)
+            if len(exec_error) > 0:
+                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
@@ -280,8 +277,8 @@ def simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, su
     data = {}
 
     for failed_id in ids_to_wait:
-        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 40,
-                                    from_the_beginning=True, backoff_sec=0.5)
+        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20,
+                                    from_the_beginning=True, backoff_sec=0.1)
 
         _, stdout, _ = survived_node.account.ssh_client.exec_command(
             "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
