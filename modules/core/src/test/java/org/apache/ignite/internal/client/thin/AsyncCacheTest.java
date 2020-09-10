@@ -22,8 +22,10 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -52,9 +54,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests IgniteFuture state transitions with getAsync.
+     * Tests IgniteClientFuture state transitions with getAsync.
      *
-     * - Start and async operation
+     * - Start an async operation
      * - Check that IgniteFuture is not done initially
      * - Wait for operation completion
      * - Verify that listener callback has been called
@@ -83,5 +85,25 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         assertNotNull(completionThreadName.get());
         assertFalse("Async operation should not complete on thin client listener thread",
                 completionThreadName.get().startsWith("thin-client-channel"));
+    }
+
+    /**
+     * Tests that async operation can be cancelled.
+     *
+     * - Start an async operation
+     * - Check that cancel returns true and future becomes cancelled
+     */
+    @Test
+    public void testGetAsyncCanBeCancelled() {
+        ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("testGetAsyncCanNotBeCancelled");
+
+        ClientCache<Integer, Integer> cache = client.getOrCreateCache(cacheCfg);
+        cache.put(1, 2);
+
+        IgniteClientFuture<Integer> fut = cache.getAsync(1);
+
+        assertTrue(fut.cancel(true));
+        assertTrue(fut.isCancelled());
+        GridTestUtils.assertThrowsAnyCause(null, fut::get, CancellationException.class, null);
     }
 }
