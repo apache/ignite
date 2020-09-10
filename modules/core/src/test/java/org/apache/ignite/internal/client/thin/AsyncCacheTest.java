@@ -61,8 +61,6 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      * - Wait for operation completion
      * - Verify that listener callback has been called
      * - Verify that operation result is correct
-     *
-     * @throws Exception
      */
     @Test
     public void testGetAsyncReportsCorrectIgniteFutureStates() throws Exception {
