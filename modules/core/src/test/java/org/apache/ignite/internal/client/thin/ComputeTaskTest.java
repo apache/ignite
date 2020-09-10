@@ -397,8 +397,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientConnectionException.class, "closed");
 
-            // TODO: Reconnect does not work?
-            // assertFalse(fut3.isDone());
+            assertFalse(fut3.isDone());
 
             TestLatchTask.latch.countDown();
 
