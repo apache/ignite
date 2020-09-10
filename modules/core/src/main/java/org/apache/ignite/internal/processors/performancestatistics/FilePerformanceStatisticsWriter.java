@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-class FilePerformanceStatisticsWriter {
+public class FilePerformanceStatisticsWriter {
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
     public static final String PERF_STAT_DIR = "perf_stat";
 

@@ -82,7 +82,7 @@ public class FilePerformanceStatisticsReader {
     private final PerformanceStatisticsHandler[] handlers;
 
     /** @param handlers Handlers to process deserialized operations. */
-    FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
+    public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
         A.notEmpty(handlers, "At least one handler expected.");
 
         this.handlers = handlers;
