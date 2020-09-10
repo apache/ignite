@@ -625,14 +625,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                 additionalPayloadWriter.accept(req);
         };
 
-        // TODO: Affinity.
-        return ch.serviceAsync(op, payloadWriter, payloadReader);
-        /**
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
-        return transactions.tx() == null ? ch.affinityService(cacheId, key, op, payloadWriter, payloadReader) :
-            ch.service(op, payloadWriter, payloadReader);
-         */
+        return transactions.tx() == null
+                ? ch.affinityServiceAsync(cacheId, key, op, payloadWriter, payloadReader)
+                : ch.serviceAsync(op, payloadWriter, payloadReader);
     }
 
     /** Write cache ID and flags. */
