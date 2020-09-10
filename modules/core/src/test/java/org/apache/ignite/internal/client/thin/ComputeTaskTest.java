@@ -450,12 +450,16 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             ClientCompute compute2 = client2.compute(client2.cluster().forNodeId(nodeId(2)));
 
             CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
