@@ -141,6 +141,9 @@ public class GridNioServer<T> {
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
+    /** @see IgniteSystemProperties#IGNITE_IO_BALANCE_PERIOD */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
@@ -416,7 +419,8 @@ public class GridNioServer<T> {
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
-        long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
+        long balancePeriod = IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, DFLT_IO_BALANCE_PERIOD);
 
         IgniteRunnable balancer0 = null;
 
@@ -1572,7 +1576,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 assert msg != null;
 
@@ -1753,7 +1757,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());

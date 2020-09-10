@@ -53,6 +53,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
  * This directory holds files for checkpoint start and end.
  */
 public class CheckpointHistory {
+    /** @see IgniteSystemProperties#IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE */
+    public static final int DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = 100;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -86,7 +89,8 @@ public class CheckpointHistory {
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
         maxCpHistMemSize = Math.min(dsCfg.getWalHistorySize(),
-            IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
+            IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE,
+                DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE));
 
         isWalHistorySizeParameterEnabled = dsCfg.isWalHistorySizeParameterUsed();
     }

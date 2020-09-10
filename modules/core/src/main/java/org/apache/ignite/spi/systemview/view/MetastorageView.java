@@ -15,20 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.startup.cmdline.CommandLinePrintPropertiesTest;
-import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
- * Loaders self-test suite.
+ * Metastorage key representation for a {@link SystemView}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GridCommandLineTransformerSelfTest.class,
-    CommandLinePrintPropertiesTest.class
-})
-public class IgniteStartUpTestSuite {
+public class MetastorageView {
+    /** */
+    private final String name;
+
+    /** */
+    private final String value;
+
+    /**
+     * @param name Name.
+     * @param value Value
+     */
+    public MetastorageView(String name, String value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    /** */
+    @Order
+    public String name() {
+        return name;
+    }
+
+    /** */
+    @Order(1)
+    public String value() {
+        return value;
+    }
 }
