@@ -17,6 +17,7 @@
 """
 This module contains transactions manipulation test through control utility.
 """
+import random
 
 from ducktape.mark.resource import cluster
 from ducktape.utils.util import wait_until
@@ -46,7 +47,7 @@ class TransactionsTests(IgniteTest):
                                                 discovery_spi=from_ignite_cluster(servers)),
 
             'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
-            'params': {'cacheName': self.CACHE_NAME, 'numTx': 2, 'keyPrefix': "TX_1_KEY"}
+            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 2, 'tx_size': 2, 'key_prefix': "TX_1_KEY_"}
         }
 
         long_tx_1 = IgniteApplicationService(self.test_context, **long_tx_params)
@@ -58,7 +59,37 @@ class TransactionsTests(IgniteTest):
 
         control_utility = ControlUtility(servers, self.test_context)
 
-        return control_utility.tx_info()
+        transactions = control_utility.tx_list()
+        res = control_utility.tx_info(random.choice(transactions).xid)
+
+        return {'tx_info': res, 'tx_list': list(map(lambda x: x._asdict(), transactions))}
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_kill_tx(self, ignite_version):
+        servers = self.__start_ignite_nodes(ignite_version, self.NUM_NODES - 2)
+
+        long_tx_params = {
+            'config': IgniteClientConfiguration(version=IgniteVersion(ignite_version),
+                                                discovery_spi=from_ignite_cluster(servers)),
+
+            'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
+            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 1, 'tx_size': 2, 'key_prefix': "TX_1_KEY_"}
+        }
+
+        long_tx_1 = IgniteApplicationService(self.test_context, **long_tx_params)
+        long_tx_1.start()
+
+        # long_tx_params.update({'params': {'cacheName': self.CACHE_NAME, 'numTx': 10, 'keyPrefix': "TX_2_KEY"}})
+        # long_tx_2 = IgniteApplicationService(self.test_context, **long_tx_params)
+        # long_tx_2.start()
+
+        control_utility = ControlUtility(servers, self.test_context)
+
+        transactions = control_utility.tx_list()
+        res = control_utility.tx_kill(random.choice(transactions).xid)
+
+        return {'tx_kill': res, 'tx_list': list(map(lambda x: x._asdict(), transactions))}
 
     def __start_ignite_nodes(self, version, num_nodes, timeout_sec=60):
         config = IgniteConfiguration(

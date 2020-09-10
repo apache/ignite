@@ -104,10 +104,56 @@ class ControlUtility:
         """
         return self.__run("--deactivate --yes")
 
-    def tx_info(self):
+    def tx_list(self):
         output = self.__run("--tx")
         res = self.__parse_tx_list(output)
         return res if res else output
+
+    def tx_info(self, xid):
+        return self.__parse_tx_info(self.__run("--tx --info %s" % xid))
+
+    def tx_kill(self, xid):
+        output = self.__run("--tx --kill --xid %s --yes" % xid)
+        return output
+
+    @staticmethod
+    def __parse_tx_info(output):
+        def parse_dict(raw):
+            res = {}
+            for token in raw.split(','):
+                key, value = tuple(token.strip().split('='))
+                res[key] = value
+
+            return res
+
+        def parse_list(raw):
+            return [token.strip() for token in raw.split(',')]
+
+        tx_info_pattern = re.compile(
+            "Near XID version: (?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+\\])\\n\\s+"
+            "Near XID version \\(UUID\\): (?P<xid>[^\\s]+)\\n\\s+"
+            "Isolation: (?P<isolation>[^\\s]+)\\n\\s+"
+            "Concurrency: (?P<concurrency>[^\\s]+)\\n\\s+"
+            "Timeout: (?P<timeout>\\d+)\\n\\s+"
+            "Initiator node: (?P<initiator_id>[^\\s]+)\\n\\s+"
+            "Initiator node \\(consistent ID\\): (?P<initiator_consistent_id>[^\\s+]+)\\n\\s+"
+            "Label: (?P<label>[^\\s]+)\\n\\s+Topology version: AffinityTopologyVersion "
+            "\\[topVer=(?P<top_ver>\\d+), minorTopVer=(?P<minor_top_ver>\\d+)\\]\\n\\s+"
+            "Used caches \\(ID to name\\): {(?P<caches>.*)}\\n\\s+"
+            "Used cache groups \\(ID to name\\): {(?P<cache_groups>.*)}\\n\\s+"
+            "States across the cluster: \\[(?P<states>.*)\\]"
+        )
+
+        match = tx_info_pattern.search(output)
+
+        if match:
+            return match.group('xid'), match.group('xid_full'), match.group('isolation'), match.group('concurrency'), \
+                   match.group('timeout'), match.group('initiator_id'), match.group('initiator_consistent_id'), \
+                   match.group('label'), (match.group('top_ver'), match.group('minor_top_ver')), \
+                   parse_dict(match.group('caches')), parse_dict(match.group('cache_groups')), \
+                   parse_list(match.group('states'))
+
+        return None
 
     @staticmethod
     def __parse_tx_list(output):
