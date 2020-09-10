@@ -148,6 +148,11 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
+        for node in failed_nodes:
+            di = node.discovery_info()
+
+            self.logger.info("Simulating failure of node '%s' (order %d on '%s'" % (di.node_id, di.order, node.name))
+
         data = simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, survived_node)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
@@ -162,7 +167,8 @@ class DiscoveryTest(IgniteTest):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % self.NETFILTER_SAVED_SETTINGS)
 
-            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
+            # cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
+            cmd = "sudo iptables -F"
 
             self.logger.info(
                 "Storing iptables settings to '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
@@ -179,7 +185,8 @@ class DiscoveryTest(IgniteTest):
     def teardown(self):
         # Restore previous network filter settings.
 
-        cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
+        # cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
+        cmd = "sudo iptables -F"
 
         errors = []
 
