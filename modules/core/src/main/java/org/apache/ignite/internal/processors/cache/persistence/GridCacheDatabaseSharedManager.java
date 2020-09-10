@@ -408,8 +408,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Registers system view. */
     private void registerSystemView() {
-        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC, new MetastorageViewWalker(),
-            () -> {
+        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), () -> {
                 List<MetastorageView> data = new ArrayList<>();
 
                 try {
