@@ -388,25 +388,24 @@ public class CommandHandler {
         if(F.isEmpty(rawArgs))
             return true;
 
-        if (rawArgs.size() < 3) {
-            boolean help = false;
-            boolean experimental = false;
+        if (rawArgs.size() > 2)
+            return false;
 
-            for (String arg : rawArgs) {
-                if (CMD_HELP.equalsIgnoreCase(arg))
-                    help = true;
-                else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg)) {
-                    System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+        boolean help = false;
+        boolean experimental = false;
 
-                    experimental = true;
-                }
+        for (String arg : rawArgs) {
+            if (CMD_HELP.equalsIgnoreCase(arg))
+                help = true;
+            else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg)) {
+                System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+                experimental = true;
             }
-
-            return (help && experimental) ||
-                ((help || experimental) && rawArgs.size() == 1);
         }
 
-        return false;
+        return (help && experimental) ||
+            ((help || experimental) && rawArgs.size() == 1);
     }
 
     /**
