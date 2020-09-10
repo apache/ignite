@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite;
 
-import org.apache.ignite.startup.cmdline.CommandLinePrintPropertiesTest;
-import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Loaders self-test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GridCommandLineTransformerSelfTest.class,
-    CommandLinePrintPropertiesTest.class
-})
-public class IgniteStartUpTestSuite {
+/** Ignite system property info. */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface SystemProperty {
+    /** Description. */
+    String value();
+
+    /** Type. */
+    Class<?> type() default Boolean.class;
+
+    /** Default value. */
+    String defaults() default "";
 }
