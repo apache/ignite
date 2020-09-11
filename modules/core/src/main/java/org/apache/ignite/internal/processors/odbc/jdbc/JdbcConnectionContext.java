@@ -65,11 +65,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.8.0: adds query id in order to implement cancel feature, partition awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
-    /** Version 2.8.1: adds features flags support.*/
-    static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 1);
+    /** Version 2.9.0: adds user attributes, adds features flags support. */
+    static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_9_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -97,7 +97,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
-        SUPPORTED_VERS.add(VER_2_8_1);
+        SUPPORTED_VERS.add(VER_2_9_0);
         SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
@@ -179,11 +179,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
-
-            userAttrs = reader.readMap();
         }
 
-        if (ver.compareTo(VER_2_8_1) >= 0) {
+        if (ver.compareTo(VER_2_9_0) >= 0) {
+            userAttrs = reader.readMap();
+
             byte[] cliFeatures = reader.readByteArray();
 
             features = JdbcThinFeature.enumSet(cliFeatures);
