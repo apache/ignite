@@ -25,7 +25,6 @@ from enum import IntEnum
 from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
-from jinja2 import Template
 
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
@@ -182,6 +181,13 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
+            self.logger.info(
+                "iptables settings on '%s': %s" % (
+                    node.name,
+                    str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
+                )
+            )
+
     def teardown(self):
         # Restore previous network filter settings.
 
@@ -315,14 +321,14 @@ def network_fail_task(ignite_config, test_config):
 
     cm_ports = str(cm_spi.port) + ':' + str(cm_spi.port + cm_spi.port_range)
 
-    tpl = Template("sudo iptables -A {{ chain }} -p tcp -m multiport --dport {{ dsc_ports }},{{ cm_ports }} -j DROP")
-
     if test_config.with_zk:
         dsc_ports = str(ignite_config.discovery_spi.port)
     else:
         dsc_ports = str(dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
     return lambda node: (
-        node.account.ssh_client.exec_command(tpl.render(chain="INPUT", dsc_ports=dsc_ports, cm_ports=cm_ports)),
-        node.account.ssh_client.exec_command(tpl.render(chain="OUTPUT", dsc_ports=dsc_ports, cm_ports=cm_ports))
+        node.account.ssh_client.exec_command(
+            f"sudo iptables -A INPUT -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
+        node.account.ssh_client.exec_command(
+            f"sudo iptables -A OUTPUT -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
     )
