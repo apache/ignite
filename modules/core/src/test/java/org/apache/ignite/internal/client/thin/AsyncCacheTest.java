@@ -22,10 +22,12 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -33,9 +35,17 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class AsyncCacheTest extends AbstractThinClientTest {
     // TODO: Add async tests to all PartitionAwareness tests
+    /** Default timeout value. */
+    private static final long TIMEOUT = 1_000L;
 
     /** Client. */
     private static IgniteClient client;
+
+    /** */
+    private static ClientCache<Integer, Person> personCache;
+
+    /** */
+    private static ClientCache<Integer, Integer> intCache;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -43,6 +53,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
 
         startGrid(0);
         client = startClient(0);
+
+        personCache = client.getOrCreateCache("personCache");
+        intCache = client.getOrCreateCache("intCache");
     }
 
     /** {@inheritDoc} */
@@ -65,10 +78,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     @Test
     public void testGetAsyncReportsCorrectIgniteFutureStates() throws Exception {
         Person val = new Person(1, Integer.toString(1));
-        ClientCache<Integer, Person> cache = client.getOrCreateCache("testGetAsync");
-        cache.put(1, val);
+        personCache.put(1, val);
 
-        IgniteClientFuture<Person> fut = cache.getAsync(1);
+        IgniteClientFuture<Person> fut = personCache.getAsync(1);
         assertFalse(fut.isDone());
 
         AtomicReference<String> completionThreadName = new AtomicReference<>();
@@ -91,10 +103,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      */
     @Test
     public void testGetAsyncCanBeCancelled() {
-        ClientCache<Integer, Integer> cache = client.getOrCreateCache("testGetAsyncCanNotBeCancelled");
-        cache.put(1, 2);
+        intCache.put(1, 2);
 
-        IgniteClientFuture<Integer> fut = cache.getAsync(1);
+        IgniteClientFuture<Integer> fut = intCache.getAsync(1);
 
         assertTrue(fut.cancel(true));
         assertTrue(fut.isCancelled());
@@ -122,7 +133,8 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      * - missing cache causes exception
      */
     @Test
-    public void testPutAsyncFunctional() {
-        // TODO
+    public void testPutAsyncFunctional() throws Exception {
+        intCache.putAsync(1, 2);
+        assertTrue(GridTestUtils.waitForCondition(() -> intCache.get(1) == 2, TIMEOUT));
     }
 }
