@@ -1074,25 +1074,33 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         String name = "test-key";
         String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
 
         db.checkpointReadLock();
 
         try {
             db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
         } finally {
             db.checkpointReadUnlock();
         }
 
         TabularDataSupport view = systemView(METASTORE_VIEW);
 
+        boolean found = false;
+        boolean foundUnmarshalled = false;
+
         for (int i = 0; i < view.size(); i++) {
             CompositeData row = view.get(new Object[] {i});
 
-            if (row.get("name").equals(name) && row.get("value").equals(val))
-                return;
+            if (row.get("name").equals(name) && val.equals(row.get("value")))
+                found = true;
+            else if (row.get("name").equals(unmarshalledName) && row.get("value").equals(unmarshalledVal))
+                foundUnmarshalled = true;
         }
 
-        fail();
+        assertTrue(found && foundUnmarshalled);
     }
 
     /** */
