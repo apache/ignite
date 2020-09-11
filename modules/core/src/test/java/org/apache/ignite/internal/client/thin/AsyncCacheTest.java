@@ -96,7 +96,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         assertEquals("1", res.getName());
         assertTrue(fut.isDone());
 
-        assertNotNull(completionThreadName.get());
+        assertTrue(GridTestUtils.waitForCondition(() -> completionThreadName.get() != null, TIMEOUT));
         assertFalse("Async operation should not complete on thin client listener thread",
                 completionThreadName.get().startsWith("thin-client-channel"));
     }
