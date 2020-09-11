@@ -328,8 +328,14 @@ class TcpClientChannel implements ClientChannel {
 
         pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
             try {
-                T res = payloadReader.apply(new PayloadInputChannel(this, payloadFut.get()));
-                fut.complete(res);
+                byte[] payload = payloadFut.get();
+
+                if (payload == null || payloadReader == null) {
+                    fut.complete(null);
+                } else {
+                    T res = payloadReader.apply(new PayloadInputChannel(this, payload));
+                    fut.complete(res);
+                }
             } catch (IgniteCheckedException e) {
                 fut.completeExceptionally(convertException(e));
             } finally {
