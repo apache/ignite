@@ -102,11 +102,12 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         Throwable t = client.createCacheAsync(TMP_CACHE_NAME)
                 .handle((res, err) -> err)
                 .toCompletableFuture()
-                .get();
+                .get()
+                .getCause();
 
-        // TODO: CompletableFuture wraps exceptions in CompletionException
         assertEquals(ClientException.class, t.getClass());
-        assertEquals("1", t.getMessage());
+        assertTrue(t.getMessage(), t.getMessage().contains(
+                "Failed to start cache (a cache with the same name is already started): tmp_cache"));
     }
 
     /**
