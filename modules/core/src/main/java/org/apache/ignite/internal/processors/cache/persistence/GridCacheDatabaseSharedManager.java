@@ -420,8 +420,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
                         }
                         catch (IgniteCheckedException ignored) {
-                            data.add(new MetastorageView(key, "[Raw data. " +
-                                (valBytes != null ? ((byte[])valBytes).length : 0) + " bytes]"));
+                            data.add(new MetastorageView(key, "[Raw data. " + (((byte[])valBytes).length + " bytes]")));
                         }
                     }, false);
 
