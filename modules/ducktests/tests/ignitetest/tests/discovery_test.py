@@ -62,7 +62,6 @@ class DiscoveryTestConfig(NamedTuple):
     with_zk: bool = False
 
 
-# pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
     """
     Test various node failure scenarios (TCP and ZooKeeper).
@@ -149,20 +148,15 @@ class DiscoveryTest(IgniteTest):
 
         for node in failed_nodes:
             di = node.discovery_info()
-
             self.logger.info("Simulating failure of node '%s' (order %d on '%s'" % (di.node_id, di.order, node.name))
 
-        data = simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, survived_node)
+        data = simulate_nodes_failure(servers, network_fail_task(ignite_config, test_config), failed_nodes,
+                                      survived_node)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         for node in failed_nodes:
-            self.logger.info(
-                "new iptables settings on '%s': %s" % (
-                    node.name,
-                    str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
-                )
-            )
+            self.logger.debug("netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         return data
 
@@ -176,9 +170,6 @@ class DiscoveryTest(IgniteTest):
 
             cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
-            self.logger.info(
-                "Storing iptables settings to '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
-
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
             if "Warning: iptables-legacy tables present" in exec_error:
@@ -188,12 +179,7 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
-            self.logger.info(
-                "iptables settings on '%s': %s" % (
-                    node.name,
-                    str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
-                )
-            )
+            self.logger.debug("netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
     def teardown(self):
         # Restore previous network filter settings.
@@ -203,13 +189,12 @@ class DiscoveryTest(IgniteTest):
         errors = []
 
         for node in self.test_context.cluster.nodes:
-            self.logger.info(
-                "Restoring iptables settings from '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
-
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+
+            self.logger.debug("netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
@@ -283,21 +268,20 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, survived_node):
+def simulate_nodes_failure(servers, kill_node_task, failed_nodes, survived_node):
     """
     Perform node failure scenario
     """
     ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
 
-    _, first_terminated = servers.exec_on_nodes_async(failed_nodes, network_fail_task(ignite_config, test_config))
+    _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
 
     # Keeps dates of logged node failures.
     logged_timestamps = []
     data = {}
 
     for failed_id in ids_to_wait:
-        servers.await_event_on_node(failed_pattern(failed_id), survived_node,
-                                    DiscoveryTest.FAILURE_DETECTION_TIMEOUT * 3, from_the_beginning=True,
+        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 30, from_the_beginning=True,
                                     backoff_sec=1)
 
         _, stdout, _ = survived_node.account.ssh_client.exec_command(
@@ -339,3 +323,10 @@ def network_fail_task(ignite_config, test_config):
         node.account.ssh_client.exec_command(
             f"sudo iptables -A OUTPUT -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
     )
+
+
+def dump_netfilter_settings(node):
+    """
+    Reads current netfilter settings on the node for debugging purposes.
+    """
+    return str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
