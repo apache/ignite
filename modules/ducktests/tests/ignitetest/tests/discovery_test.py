@@ -174,8 +174,7 @@ class DiscoveryTest(IgniteTest):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % self.NETFILTER_SAVED_SETTINGS)
 
-            # cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
-            cmd = "sudo iptables -F"
+            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
             self.logger.info(
                 "Storing iptables settings to '%s' on '%s'" % (self.NETFILTER_SAVED_SETTINGS, node.name))
@@ -199,8 +198,7 @@ class DiscoveryTest(IgniteTest):
     def teardown(self):
         # Restore previous network filter settings.
 
-        # cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
-        cmd = "sudo iptables -F"
+        cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
 
         errors = []
 
