@@ -66,6 +66,14 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        strCache.removeAll();
+        personCache.removeAll();
+    }
+
     /**
      * Tests IgniteClientFuture state transitions with getAsync.
      *
@@ -115,21 +123,30 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     /**
      * Tests getAsync basic functionality.
      *
+     * - existing key returns value
      * - key and val can't be null
      * - missing key returns null
-     * - existing key returns value
      * - missing cache causes exception
      */
     @Test
-    public void testGetAsyncFunctional() {
-        // TODO
+    public void testGetAsyncFunctional() throws Exception {
+        strCache.put(1, "1");
+        assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
+
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
+
+        ClientCache<String, String> badCache = client.getOrCreateCache("bad");
+        badCache.putAsync("1", "2");
     }
 
     /**
      * Tests putAsync basic functionality.
      *
-     * - key and val can't be null
      * - valid key and val result in cache update
+     * - key and val can't be null
      * - missing cache causes exception
      */
     @Test
