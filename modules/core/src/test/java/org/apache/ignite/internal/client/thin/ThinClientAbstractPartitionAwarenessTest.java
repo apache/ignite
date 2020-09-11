@@ -176,9 +176,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             }
         }, clientCfg);
 
-        initDefaultChannel();
-
         awaitChannelsInit(chIdxs);
+
+        initDefaultChannel();
     }
 
     /**
