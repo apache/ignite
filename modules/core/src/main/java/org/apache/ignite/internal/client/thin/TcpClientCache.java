@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
@@ -45,7 +43,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
@@ -249,13 +246,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_ALL,
             req -> writeKeys(keys, req),
             this::readEntries
-        ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+        );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException {
-        // TODO
-        return null;
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(new HashMap<>());
+
+        return ch.serviceAsync(
+                ClientOperation.CACHE_GET_ALL,
+                req -> writeKeys(keys, req),
+                this::readEntries
+        );
     }
 
     /** {@inheritDoc} */
@@ -737,10 +743,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** */
-    private Collection<SimpleEntry<K, V>> readEntries(PayloadInputChannel res) {
-        return ClientUtils.collection(
-                res.in(),
-                in -> new SimpleEntry<>(readObject(in), readObject(in))
-        );
+    private Map<K, V> readEntries(PayloadInputChannel res) {
+        BinaryInputStream in = res.in();
+
+        int cnt = in.readInt();
+        Map<K, V> map = new HashMap<>();
+
+        for (int i = 0; i < cnt; i++)
+            map.put(readObject(in), readObject(in));
+
+        return map;
     }
 }

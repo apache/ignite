@@ -65,6 +65,18 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
         onCancel = null;
     }
 
+    /**
+     * Gets a completed future with the given result.
+     * @param res Result to wrap in a future.
+     * @param <T> Result type.
+     * @return Completed future.
+     */
+    public static <T> IgniteClientFutureImpl<T> completedFuture(T res) {
+        CompletableFuture<T> fut = new CompletableFuture<>();
+        fut.complete(res);
+        return new IgniteClientFutureImpl<>(fut);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isDone() {
         return fut.isDone();
