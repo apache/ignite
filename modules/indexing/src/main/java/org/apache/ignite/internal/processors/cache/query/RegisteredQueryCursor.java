@@ -106,10 +106,12 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        Span span = MTC.span();
+
         try (
             TraceSurroundings ignored = MTC.support(tracing.create(
                 SQL_CURSOR_CLOSE,
-                MTC.span() != NoopSpan.INSTANCE ? MTC.span() : qrySpan))
+                span != NoopSpan.INSTANCE ? span : qrySpan))
         ) {
             super.close();
 

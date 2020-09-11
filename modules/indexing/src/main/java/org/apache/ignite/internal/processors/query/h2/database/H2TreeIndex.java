@@ -76,6 +76,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -739,11 +741,15 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Request message.
      */
     private void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
-        try (MTC.TraceSurroundings ignored = MTC.support(ctx.tracing()
-            .create(SQL_IDX_RANGE_REQ, MTC.span())
-            .addTag(SQL_IDX, () -> idxName)
-            .addTag(SQL_TABLE, () -> tblName))
-        ) {
+        // We don't use try with resources on purpose - the catch block must also be executed in the context of this span.
+        TraceSurroundings trace = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_REQ, MTC.span()));
+
+        Span span = MTC.span();
+
+        try {
+            span.addTag(SQL_IDX, () -> idxName);
+            span.addTag(SQL_TABLE, () -> tblName);
+
             GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
 
             res.originNodeId(msg.originNodeId());
@@ -814,11 +820,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     res.ranges(ranges);
                     res.status(STATUS_OK);
 
-                    MTC.span().addTag(SQL_IDX_RANGE_ROWS, () ->
+                    span.addTag(SQL_IDX_RANGE_ROWS, () ->
                         Integer.toString(ranges.stream().mapToInt(GridH2RowRange::rowsSize).sum()));
                 }
                 catch (Throwable th) {
-                    MTC.span().addTag(ERROR, th::getMessage);
+                    span.addTag(ERROR, th::getMessage);
 
                     U.error(log, "Failed to process request: " + msg, th);
 
@@ -830,9 +836,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
             send(singletonList(node), res);
         }
         catch (Throwable th) {
-            MTC.span().addTag(ERROR, th::getMessage);
+            span.addTag(ERROR, th::getMessage);
 
             throw th;
+        }
+        finally {
+            trace.close();
         }
     }
 
@@ -841,7 +850,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Response message.
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        try (MTC.TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_RESP, MTC.span()))) {
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_RESP, MTC.span()))) {
             QueryContext qctx = qryCtxRegistry.getShared(
                 msg.originNodeId(),
                 msg.queryId(),
