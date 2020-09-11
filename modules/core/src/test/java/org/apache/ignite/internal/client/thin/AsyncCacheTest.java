@@ -139,7 +139,8 @@ public class AsyncCacheTest extends AbstractThinClientTest {
                 null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
 
         ClientCache<String, String> badCache = client.getOrCreateCache("bad");
-        badCache.putAsync("1", "2");
+        Throwable err = badCache.putAsync("1", "2").handle((r, e) -> e).toCompletableFuture().get();
+        assertEquals("todo", err.getMessage());
     }
 
     /**
