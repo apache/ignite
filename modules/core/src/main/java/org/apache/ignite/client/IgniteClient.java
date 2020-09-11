@@ -41,9 +41,24 @@ public interface IgniteClient extends AutoCloseable {
     /**
      * Get existing cache or create the cache if it does not exist.
      *
+     * @param name Cache name.
+     */
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException;
+
+    /**
+     * Get existing cache or create the cache if it does not exist.
+     *
      * @param cfg Cache configuration.
      */
     public <K, V> ClientCache<K, V> getOrCreateCache(ClientCacheConfiguration cfg) throws ClientException;
+
+    /**
+     * Get existing cache or create the cache if it does not exist.
+     *
+     * @param cfg Cache configuration.
+     */
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(ClientCacheConfiguration cfg)
+            throws ClientException;
 
     /**
      * Get existing cache.
@@ -58,9 +73,19 @@ public interface IgniteClient extends AutoCloseable {
     public Collection<String> cacheNames() throws ClientException;
 
     /**
+     * @return Collection of names of currently available caches or an empty collection if no caches are available.
+     */
+    public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException;
+
+    /**
      * Destroy cache.
      */
     public void destroyCache(String name) throws ClientException;
+
+    /**
+     * Destroy cache.
+     */
+    public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException;
 
     /**
      * Create cache.
@@ -72,9 +97,24 @@ public interface IgniteClient extends AutoCloseable {
     /**
      * Create cache.
      *
+     * @param name Cache name.
+     */
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException;
+
+    /**
+     * Create cache.
+     *
      * @param cfg Cache configuration.
      */
     public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException;
+
+    /**
+     * Create cache.
+     *
+     * @param cfg Cache configuration.
+     */
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
+            throws ClientException;
 
     /**
      * @return Instance of {@link IgniteBinary} interface.
