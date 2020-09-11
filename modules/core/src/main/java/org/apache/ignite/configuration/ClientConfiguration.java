@@ -18,7 +18,9 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -34,8 +36,15 @@ public final class ClientConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /**
+     * @serial Server addresses.
+     * @deprecated deprecated in favor of {@link #addrFinder}. Keep it due to Serializable compatibility.
+     */
+    @Deprecated
+    private String[] addrs = null;
+
     /** Server addresses finder. */
-    private Supplier<String[]> addrFinder;
+    private transient Supplier<String[]> addrFinder;
 
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
@@ -123,17 +132,19 @@ public final class ClientConfiguration implements Serializable {
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        if (addrFinder == null)
-            return null;
-
-        return addrFinder.get();
+        return Optional.ofNullable(addrFinder)
+            .map(Supplier::get)
+            .orElse(addrs);
     }
 
     /**
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        addrFinder = () -> addrs;
+        if (addrs != null) {
+            this.addrs = Arrays.copyOf(addrs, addrs.length);
+            addrFinder = () -> this.addrs;
+        }
 
         return this;
     }
