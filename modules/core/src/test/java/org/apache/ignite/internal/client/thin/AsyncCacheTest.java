@@ -24,6 +24,7 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -118,37 +119,45 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests getAsync basic functionality.
-     *
-     * - existing key returns value
-     * - key and val can't be null
-     * - missing key returns null
-     * - missing cache causes exception
+     * Tests getAsync with existing and non-existing keys.
      */
     @Test
-    public void testGetAsyncFunctional() throws Exception {
+    public void testGetAsyncReturnsResult() throws Exception {
         strCache.put(1, "1");
         assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
-
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
-
-        ClientCache<String, String> badCache = client.getOrCreateCache("bad");
-        Throwable err = badCache.putAsync("1", "2").handle((r, e) -> e).toCompletableFuture().get();
-        assertEquals("todo", err.getMessage());
+        assertTrue(strCache.getAsync(2).thenApply(Objects::isNull).toCompletableFuture().get());
     }
 
     /**
-     * Tests putAsync basic functionality.
-     *
-     * - valid key and val result in cache update
-     * - key and val can't be null
-     * - missing cache causes exception
+     * Tests getAsync argument validation.
      */
     @Test
-    public void testPutAsyncFunctional() throws Exception {
+    public void testGetAsyncValidatesArguments() {
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
+
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
+    }
+
+    /**
+     * Tests getAsync with non-existing cache.
+     *
+     * - Get a cache that does not exist
+     * - Perform getAsync, verify exception in future
+     */
+    @Test
+    public void testGetAsyncThrowsExceptionOnBadCacheName() throws Exception {
+        ClientCache<String, String> badCache = client.cache("bad");
+        Throwable err = badCache.putAsync("1", "2").handle((r, e) -> e).toCompletableFuture().get();
+        assertTrue(err.getMessage().contains("Cache does not exist"));
+    }
+
+    /**
+     * Tests putAsync happy path.
+     */
+    @Test
+    public void testPutAsyncUpdatesCache() throws Exception {
         strCache.putAsync(1, "2");
         assertTrue(GridTestUtils.waitForCondition(() -> strCache.get(1) != null, TIMEOUT));
         assertEquals("2", strCache.get(1));
