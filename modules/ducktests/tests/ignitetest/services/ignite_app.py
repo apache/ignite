@@ -52,7 +52,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
-    def stop_node_async(self, clean_shutdown=True):
+    def stop_async(self, clean_shutdown=True):
         """
         Stops node in async way.
         """
@@ -60,7 +60,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
                                                   allow_fail=True)
 
-    def await_node_stopped(self, timeout_sec=10):
+    def await_stopped(self, timeout_sec=10):
         """
         Awaits node stop finish.
         """
@@ -73,8 +73,8 @@ class IgniteApplicationService(IgniteAwareService):
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
         assert node == self.nodes[0]
-        self.stop_node_async(clean_shutdown)
-        self.await_node_stopped(timeout_sec)
+        self.stop_async(clean_shutdown)
+        self.await_stopped(timeout_sec)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)

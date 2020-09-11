@@ -133,7 +133,7 @@ class CellularAffinity(IgniteTest):
         for streamer in streamers:
             streamer.await_event("Warmup finished", 180, from_the_beginning=True)
 
-        failed_loader.stop_node_async()  # node left with prepared txs.
+        failed_loader.stop_async()  # node left with prepared txs.
 
         for streamer in streamers:
             streamer.await_event("Node left topology\\|Node FAILED", 60, from_the_beginning=True)
@@ -145,10 +145,10 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("Application streamed", 60)
 
         for streamer in streamers:  # stops streaming and records results.
-            streamer.stop_node_async()
+            streamer.stop_async()
 
         for streamer in streamers:
-            streamer.await_node_stopped()
+            streamer.await_stopped()
 
             cell = streamer.params["cell"]
 
