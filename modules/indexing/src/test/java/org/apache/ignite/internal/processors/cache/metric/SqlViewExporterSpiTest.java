@@ -1139,17 +1139,23 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         String name = "test-key";
         String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
 
         db.checkpointReadLock();
 
         try {
             db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
         } finally {
             db.checkpointReadUnlock();
         }
 
         assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
             name, val).size());
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            unmarshalledName, unmarshalledVal).size());
     }
 
     /** */
