@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
@@ -83,7 +84,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      * Tests async cache creation.
      */
     @Test
-    public void testCreateCacheAsyncCreatesCacheByNameWhenNotExists() throws Exception {
+    public void testCreateCacheAsyncByNameCreatesCacheWhenNotExists() throws Exception {
         assertTrue(
                 client.createCacheAsync(TMP_CACHE_NAME)
                         .thenApply(x -> client.cacheNames().contains(TMP_CACHE_NAME))
@@ -95,7 +96,23 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      * Tests async cache creation.
      */
     @Test
-    public void testCreateCacheAsyncCreatesCacheByCfgWhenNotExists() throws Exception {
+    public void testCreateCacheAsyncByNameThrowsExceptionWhenCacheExists() throws Exception {
+        client.createCache(TMP_CACHE_NAME);
+
+        Throwable t = client.createCacheAsync(TMP_CACHE_NAME)
+                .handle((res, err) -> err)
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(ClientException.class, t.getClass());
+        assertEquals("1", t.getMessage());
+    }
+
+    /**
+     * Tests async cache creation.
+     */
+    @Test
+    public void testCreateCacheAsyncByCfgCreatesCacheWhenNotExists() throws Exception {
         ClientCacheConfiguration cfg = new ClientCacheConfiguration()
                 .setName(TMP_CACHE_NAME)
                 .setBackups(3)
