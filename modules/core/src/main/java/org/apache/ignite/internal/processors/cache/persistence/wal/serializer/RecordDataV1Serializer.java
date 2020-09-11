@@ -44,7 +44,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -562,8 +562,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 return rec.dataSize();
 
-            case REENCRYPTION_STATUS_RECORD:
-                return ((ReencryptionStatusRecord)record).dataSize();
+            case REENCRYPTION_START_RECORD:
+                return ((ReencryptionStartRecord)record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1252,7 +1252,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case REENCRYPTION_STATUS_RECORD:
+            case REENCRYPTION_START_RECORD:
                 int grpsCnt = in.readInt();
 
                 Map<Integer, Byte> map = U.newHashMap(grpsCnt);
@@ -1264,7 +1264,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     map.put(grpId, keyId);
                 }
 
-                res = new ReencryptionStatusRecord(map);
+                res = new ReencryptionStartRecord(map);
 
                 break;
 
@@ -1885,8 +1885,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case REENCRYPTION_STATUS_RECORD:
-                ReencryptionStatusRecord statusRecord = (ReencryptionStatusRecord)rec;
+            case REENCRYPTION_START_RECORD:
+                ReencryptionStartRecord statusRecord = (ReencryptionStartRecord)rec;
 
                 Map<Integer, Byte> map = statusRecord.groups();
 

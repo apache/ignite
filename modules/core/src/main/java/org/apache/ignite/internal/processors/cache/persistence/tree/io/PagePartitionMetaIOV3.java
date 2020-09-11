@@ -18,14 +18,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * IO for partition metadata pages.
- * Persistent partition contains it's own PendingTree.
  */
 public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     /** Last reencrypted page index offset. */
@@ -96,28 +93,11 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     }
 
     /** {@inheritDoc} */
-    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
-        byte state = getPartitionState(pageAddr);
+    @Override protected void printFields(long pageAddr, GridStringBuilder sb) {
+        super.printFields(pageAddr, sb);
 
-        sb.a("PagePartitionMeta[\n\ttreeRoot=").a(getReuseListRoot(pageAddr));
-        sb.a(",\n\tpendingTreeRoot=").a(getLastSuccessfulFullSnapshotId(pageAddr));
-        sb.a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(pageAddr));
-        sb.a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(pageAddr));
-        sb.a(",\n\tnextSnapshotTag=").a(getNextSnapshotTag(pageAddr));
-        sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
-        sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
-        sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
         sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr));
         sb.a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
-        sb.a(",\n\tsize=").a(getSize(pageAddr));
-        sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
-        sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
-        sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
-        sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
-        sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
-        sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr));
-        sb.a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
-        sb.a("\n]");
     }
 
     /**
@@ -127,7 +107,13 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      */
     @Override public void upgradePage(long pageAddr) {
         assert PageIO.getType(pageAddr) == getType();
-        assert PageIO.getVersion(pageAddr) < 3;
+
+        int ver = PageIO.getVersion(pageAddr);
+
+        assert ver < getVersion();
+
+        if (ver < 2)
+            super.upgradePage(pageAddr);
 
         PageIO.setVersion(pageAddr, getVersion());
 

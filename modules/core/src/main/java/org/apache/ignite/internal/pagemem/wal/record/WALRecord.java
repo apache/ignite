@@ -246,7 +246,7 @@ public abstract class WALRecord {
         MASTER_KEY_CHANGE_RECORD_V2(65, LOGICAL),
 
         /** Logical record to restart reencryption with the latest encryption key. */
-        REENCRYPTION_STATUS_RECORD(66, LOGICAL),
+        REENCRYPTION_START_RECORD(66, LOGICAL),
 
         /** Partition meta page delta record includes encryption status data. */
         PARTITION_META_PAGE_UPDATE_COUNTERS_V3(67, PHYSICAL),

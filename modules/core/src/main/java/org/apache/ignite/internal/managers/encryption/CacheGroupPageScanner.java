@@ -23,13 +23,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -45,6 +49,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.thread.OomExceptionHandler;
 
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
@@ -53,6 +59,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
  * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
 public class CacheGroupPageScanner implements DbCheckpointListener {
+    /** Thread prefix for scanning tasks. */
+    private static final String REENCRYPT_THREAD_PREFIX = "reencrypt";
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -70,6 +79,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
     /** Page scanning speed limiter. */
     private final BasicRateLimiter limiter;
+
+    /** Single-threaded executor to run cache group scan task. */
+    private final ThreadPoolExecutor singleExecSvc;
 
     /** Number of pages that is scanned during reencryption under checkpoint lock. */
     private final int batchSize;
@@ -90,16 +102,28 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
         if (!CU.isPersistenceEnabled(dsCfg)) {
             batchSize = -1;
             limiter = null;
+            singleExecSvc = null;
 
             return;
         }
-
-        batchSize = dsCfg.getEncryptionConfiguration().getReencryptionBatchSize();
 
         double rateLimit = dsCfg.getEncryptionConfiguration().getReencryptionRateLimit();
 
         limiter = rateLimit > 0 ? new BasicRateLimiter(rateLimit * MB /
             (dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize())) : null;
+
+        batchSize = dsCfg.getEncryptionConfiguration().getReencryptionBatchSize();
+
+        singleExecSvc = new IgniteThreadPoolExecutor(REENCRYPT_THREAD_PREFIX,
+            ctx.igniteInstanceName(),
+            1,
+            1,
+            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.SYSTEM_POOL,
+            new OomExceptionHandler(ctx));
+
+        singleExecSvc.allowCoreThreadTimeOut(true);
     }
 
     /** {@inheritDoc} */
@@ -202,7 +226,7 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
             GroupScanTask grpScan = new GroupScanTask(grp, parts);
 
-            ctx.getSystemExecutorService().submit(grpScan);
+            singleExecSvc.submit(grpScan);
 
             if (log.isInfoEnabled())
                 log.info("Scheduled reencryption [grpId=" + grpId + "]");
@@ -237,6 +261,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
 
             for (GroupScanTask grpScanTask : grps.values())
                 grpScanTask.cancel();
+
+            if (singleExecSvc != null)
+                singleExecSvc.shutdownNow();
         } finally {
             lock.unlock();
         }

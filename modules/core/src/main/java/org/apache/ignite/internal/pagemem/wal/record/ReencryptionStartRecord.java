@@ -22,14 +22,14 @@ import java.util.Map;
 /**
  * Logical record to restart reencryption with the latest encryption key.
  */
-public class ReencryptionStatusRecord extends WALRecord {
+public class ReencryptionStartRecord extends WALRecord {
     /** Map of reencrypted cache groups with encryption key identifiers. */
     private final Map<Integer, Byte> grps;
 
     /**
      * @param grps Map of reencrypted cache groups with encryption key identifiers.
      */
-    public ReencryptionStatusRecord(Map<Integer, Byte> grps) {
+    public ReencryptionStartRecord(Map<Integer, Byte> grps) {
         this.grps = grps;
     }
 
@@ -42,7 +42,7 @@ public class ReencryptionStatusRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.REENCRYPTION_STATUS_RECORD;
+        return RecordType.REENCRYPTION_START_RECORD;
     }
 
     /** @return Record data size. */

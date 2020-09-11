@@ -50,7 +50,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -744,7 +744,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (int i = 0; i < grpIds.length; i++)
             encryptionStatus.put(grpIds[i], keyIds[i]);
 
-        WALPointer ptr = ctx.cache().context().wal().log(new ReencryptionStatusRecord(encryptionStatus));
+        WALPointer ptr = ctx.cache().context().wal().log(new ReencryptionStartRecord(encryptionStatus));
 
         if (ptr != null)
             ctx.cache().context().wal().flush(ptr, false);
@@ -1380,11 +1380,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Recover reenryption status for cache groups.
+     * Start reencryption using logical WAL record.
      *
-     * @param rec Reencryption status record.
+     * @param rec Reencryption start logical record.
      */
-    public void applyReencryptionStatus(ReencryptionStatusRecord rec) {
+    public void applyReencryptionStartRecord(ReencryptionStartRecord rec) {
         assert !writeToMetaStoreEnabled;
 
         for (Map.Entry<Integer, Byte> e : rec.groups().entrySet())

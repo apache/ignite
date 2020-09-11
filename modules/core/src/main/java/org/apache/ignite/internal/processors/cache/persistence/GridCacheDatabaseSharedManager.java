@@ -90,7 +90,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStatusRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
@@ -2421,8 +2421,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case REENCRYPTION_STATUS_RECORD:
-                        cctx.kernalContext().encryption().applyReencryptionStatus((ReencryptionStatusRecord)rec);
+                    case REENCRYPTION_START_RECORD:
+                        cctx.kernalContext().encryption().applyReencryptionStartRecord((ReencryptionStartRecord)rec);
 
                         break;
 
