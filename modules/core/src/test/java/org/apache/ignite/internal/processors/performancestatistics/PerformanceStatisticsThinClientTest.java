@@ -37,7 +37,6 @@ import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
@@ -103,12 +102,6 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         int executions = 5;
 
         startCollectStatistics();
-
-        IgniteRunnable task = new IgniteRunnable() {
-            @Override public void run() {
-                // No-op.
-            }
-        };
 
         for (int i = 0; i < executions; i++)
             thinClient.compute().execute(TEST_TASK_NAME, null);
