@@ -45,7 +45,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     private static ClientCache<Integer, Person> personCache;
 
     /** */
-    private static ClientCache<Integer, Integer> intCache;
+    private static ClientCache<Integer, String> strCache;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -55,7 +55,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         client = startClient(0);
 
         personCache = client.getOrCreateCache("personCache");
-        intCache = client.getOrCreateCache("intCache");
+        strCache = client.getOrCreateCache("intCache");
     }
 
     /** {@inheritDoc} */
@@ -103,9 +103,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      */
     @Test
     public void testGetAsyncCanBeCancelled() {
-        intCache.put(1, 2);
+        strCache.put(1, "2");
 
-        IgniteClientFuture<Integer> fut = intCache.getAsync(1);
+        IgniteClientFuture<String> fut = strCache.getAsync(1);
 
         assertTrue(fut.cancel(true));
         assertTrue(fut.isCancelled());
@@ -134,7 +134,8 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      */
     @Test
     public void testPutAsyncFunctional() throws Exception {
-        intCache.putAsync(1, 2);
-        assertTrue(GridTestUtils.waitForCondition(() -> intCache.get(1) == 2, TIMEOUT));
+        strCache.putAsync(1, "2");
+        assertTrue(GridTestUtils.waitForCondition(() -> strCache.get(1) != null, TIMEOUT));
+        assertEquals("2", strCache.get(1));
     }
 }
