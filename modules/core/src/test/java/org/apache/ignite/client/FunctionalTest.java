@@ -667,7 +667,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
 
@@ -676,7 +676,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
             }
@@ -924,11 +924,11 @@ public class FunctionalTest {
                 t.join();
             }
 
-            try (ClientTransaction tx = client.transactions().txStart()) {
+            try (ClientTransaction ignored = client.transactions().txStart()) {
                 fail();
             }
-            catch (ClientServerError e) {
-                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, e.getCode());
+            catch (ClientException e) {
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, ((ClientServerError)e.getCause()).getCode());
             }
 
             for (ClientTransaction tx : txs)
