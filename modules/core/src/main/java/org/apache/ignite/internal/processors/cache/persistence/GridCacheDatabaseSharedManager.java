@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -486,8 +487,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     List<MetastorageView> data = new ArrayList<>();
 
-                    metaStorage.iterate("", (key, val) ->
-                        data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))), true);
+                    metaStorage.iterate("", (key, valBytes) -> {
+                        try {
+                            Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
+
+                            data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
+                        }
+                        catch (IgniteCheckedException ignored) {
+                            data.add(new MetastorageView(key, "[Raw data. " + (((byte[])valBytes).length + " bytes]")));
+                        }
+                    }, false);
 
                     return data;
                 }
