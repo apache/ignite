@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
