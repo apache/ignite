@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -226,8 +227,14 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
-        // TODO
-        return null;
+        return ch.serviceAsync(
+                ClientOperation.CACHE_GET_SIZE,
+                req -> {
+                    writeCacheInfo(req);
+                    ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
+                },
+                res -> (int)res.in().readLong()
+        );
     }
 
     /** {@inheritDoc} */
@@ -240,14 +247,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return ch.service(
             ClientOperation.CACHE_GET_ALL,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(keys, req.out(), serDes::writeObject);
-            },
-            res -> ClientUtils.collection(
-                res.in(),
-                in -> new SimpleEntry<K, V>(readObject(in), readObject(in))
-            )
+            req -> writeKeys(keys, req),
+            this::readEntries
         ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
     }
 
@@ -388,8 +389,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         ch.request(
             ClientOperation.CACHE_REMOVE_KEYS,
             req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(keys, req.out(), serDes::writeObject);
+                writeKeys(keys, req);
             }
         );
     }
@@ -728,5 +728,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         catch (IOException e) {
             return null;
         }
+    }
+
+    /** */
+    private void writeKeys(Set<? extends K> keys, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(keys, req.out(), serDes::writeObject);
+    }
+
+    /** */
+    private Collection<SimpleEntry<K, V>> readEntries(PayloadInputChannel res) {
+        return ClientUtils.collection(
+                res.in(),
+                in -> new SimpleEntry<>(readObject(in), readObject(in))
+        );
     }
 }
