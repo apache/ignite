@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -51,6 +51,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.SERVER;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.THIN_CLIENT;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.junit.Assume.assumeFalse;
 
@@ -70,20 +73,25 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Parameterized.Parameter
     public int pageSize;
 
-    /** Run query from thin client flag. */
+    /** Load node to run queries from. */
     @Parameterized.Parameter(1)
-    public boolean thinClientFlag;
+    public LoadNode loadNode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}, thinClientFlag={1}")
+    @Parameterized.Parameters(name = "pageSize={0}, loadNode={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(
-            new Object[] {ENTRY_COUNT, false},
-            new Object[] {ENTRY_COUNT / 10, false},
-            new Object[] {ENTRY_COUNT, true},
-            new Object[] {ENTRY_COUNT / 10, true}
-        );
+        List<Object[]> res = new ArrayList<>();
+
+        for (Integer pageSize : new Integer[] {ENTRY_COUNT, ENTRY_COUNT / 10}) {
+            for (LoadNode loadNode : new LoadNode[] {SERVER, CLIENT, THIN_CLIENT})
+                res.add(new Object[] {pageSize, loadNode});
+        }
+
+        return res;
     }
+
+    /** Server. */
+    private static IgniteEx srv;
 
     /** Client. */
     private static IgniteEx client;
@@ -112,7 +120,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         cleanPersistenceDir();
 
-        startGrids(2);
+        srv = startGrids(2);
 
         thinClient = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
 
@@ -218,15 +226,28 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         throws Exception {
         startCollectStatistics();
 
-        if (thinClientFlag)
+        Collection<UUID> expNodeIds = new ArrayList<>();
+
+        if (loadNode == SERVER) {
+            srv.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+            expNodeIds.add(srv.localNode().id());
+        }
+        else if (loadNode == CLIENT) {
+            client.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+            expNodeIds.add(client.localNode().id());
+        }
+        else if (loadNode == THIN_CLIENT) {
             thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-        else
-            cache.query(qry).getAll();
+
+            expNodeIds.addAll(F.nodeIds(client.cluster().forServers().nodes()));
+        }
 
         Set<UUID> readsNodes = new HashSet<>();
 
         if (hasLogicalReads)
-            client.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
+            srv.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         AtomicInteger queryCnt = new AtomicInteger();
         AtomicInteger readsCnt = new AtomicInteger();
@@ -238,11 +259,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 queryCnt.incrementAndGet();
                 qryIds.add(id);
 
-                if (thinClientFlag)
-                    assertTrue(F.nodeIds(client.cluster().forServers().nodes()).contains(nodeId));
-                else
-                    assertEquals(client.localNode().id(), nodeId);
-
+                assertTrue(expNodeIds.contains(nodeId));
                 assertEquals(expType, type);
                 assertEquals(expText, text);
                 assertTrue(startTime > 0);
@@ -256,11 +273,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 qryIds.add(id);
                 readsNodes.remove(nodeId);
 
-                if (thinClientFlag)
-                    assertTrue(F.nodeIds(client.cluster().forServers().nodes()).contains(queryNodeId));
-                else
-                    assertEquals(client.localNode().id(), queryNodeId);
-
+                assertTrue(expNodeIds.contains(queryNodeId));
                 assertEquals(expType, type);
                 assertTrue(logicalReads > 0);
                 assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
@@ -275,7 +288,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testMultipleStatementsSql() throws Exception {
-        assumeFalse("Multiple statements queries are not supported by thin client.", thinClientFlag);
+        assumeFalse("Multiple statements queries are not supported by thin client.",
+            loadNode == THIN_CLIENT);
 
         LinkedList<String> expQrs = new LinkedList<>();
 
@@ -294,7 +308,9 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(F.concat(expQrs, ";"));
 
-        List<FieldsQueryCursor<List<?>>> res = client.context().query().querySqlFields(qry, true, false);
+        IgniteEx loadNode = this.loadNode == SERVER ? srv : client;
+
+        List<FieldsQueryCursor<List<?>>> res = loadNode.context().query().querySqlFields(qry, true, false);
 
         assertEquals("Unexpected cursors count: " + res.size(), expQrs.size(), res.size());
 
@@ -308,7 +324,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 if (qrsWithReads.contains(text))
                     qryIds.add(id);
 
-                assertEquals(client.localNode().id(), nodeId);
+                assertEquals(loadNode.localNode().id(), nodeId);
                 assertEquals(SQL_FIELDS, type);
                 assertTrue("Unexpected query: " + text, expQrs.remove(text));
                 assertTrue(startTime > 0);
@@ -321,7 +337,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 qryIds.add(id);
 
                 assertEquals(SQL_FIELDS, type);
-                assertEquals(client.localNode().id(), queryNodeId);
+                assertEquals(loadNode.localNode().id(), queryNodeId);
                 assertTrue(logicalReads > 0);
                 assertEquals(0, physicalReads);
             }

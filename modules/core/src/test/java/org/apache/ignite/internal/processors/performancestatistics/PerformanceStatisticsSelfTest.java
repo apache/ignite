@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,7 +38,11 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.SERVER;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
@@ -53,6 +58,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 /**
  * Tests performance statistics.
  */
+@RunWith(Parameterized.class)
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
     /** Test entry processor. */
@@ -76,8 +82,21 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
+    /** Load node to run operations from. */
+    @Parameterized.Parameter
+    public LoadNode loadNode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "loadNode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{SERVER}, {CLIENT}});
+    }
+
     /** Ignite. */
-    private static IgniteEx ignite;
+    private static IgniteEx srv;
+
+    /** Ignite node to run load from. */
+    private static IgniteEx node;
 
     /** Test cache. */
     private static IgniteCache<Object, Object> cache;
@@ -93,9 +112,13 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrid(0);
+        srv = startGrid(0);
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteEx client = startClientGrid(1);
+
+        node = loadNode == SERVER ? srv : client;
+
+        cache = node.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
@@ -116,7 +139,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         };
 
         for (int i = 0; i < executions; i++)
-            ignite.compute().withName(testTaskName).run(task);
+            node.compute().withName(testTaskName).run(task);
 
         HashMap<IgniteUuid, Integer> sessions = new HashMap<>();
         AtomicInteger tasks = new AtomicInteger();
@@ -129,7 +152,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
                 tasks.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(testTaskName, taskName);
                 assertTrue(startTime > 0);
                 assertTrue(duration >= 0);
@@ -142,7 +165,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
                 jobs.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(srv.context().localNodeId(), nodeId);
                 assertTrue(queuedTime >= 0);
                 assertTrue(startTime > 0);
                 assertTrue(duration >= 0);
@@ -228,7 +251,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 long duration) {
                 ops.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(op, type);
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
                 assertTrue(startTime > 0);
@@ -251,7 +274,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     private void checkTx(boolean commited) throws Exception {
         startCollectStatistics();
 
-        try (Transaction tx = ignite.transactions().txStart()) {
+        try (Transaction tx = node.transactions().txStart()) {
             for (int i = 0; i < 10; i++)
                 cache.put(i, i * 2);
 
@@ -268,7 +291,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 boolean txCommited) {
                 txs.incrementAndGet();
 
-                assertEquals(ignite.context().localNodeId(), nodeId);
+                assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(1, cacheIds.size());
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheIds.get(0));
                 assertTrue(startTime > 0);

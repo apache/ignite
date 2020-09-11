@@ -154,4 +154,16 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             // No-op.
         }
     }
+
+    /** Node to run load from. */
+    enum LoadNode {
+        /** Server node. */
+        SERVER,
+
+        /** Client node. */
+        CLIENT,
+
+        /** Thin client. */
+        THIN_CLIENT;
+    }
 }
