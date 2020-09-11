@@ -64,10 +64,8 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      */
     @Test
     public void testGetAsyncReportsCorrectIgniteFutureStates() throws Exception {
-        ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("testGetAsync");
-
         Person val = new Person(1, Integer.toString(1));
-        ClientCache<Integer, Person> cache = client.getOrCreateCache(cacheCfg);
+        ClientCache<Integer, Person> cache = client.getOrCreateCache("testGetAsync");
         cache.put(1, val);
 
         IgniteClientFuture<Person> fut = cache.getAsync(1);
@@ -93,9 +91,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
      */
     @Test
     public void testGetAsyncCanBeCancelled() {
-        ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("testGetAsyncCanNotBeCancelled");
-
-        ClientCache<Integer, Integer> cache = client.getOrCreateCache(cacheCfg);
+        ClientCache<Integer, Integer> cache = client.getOrCreateCache("testGetAsyncCanNotBeCancelled");
         cache.put(1, 2);
 
         IgniteClientFuture<Integer> fut = cache.getAsync(1);
@@ -103,5 +99,30 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         assertTrue(fut.cancel(true));
         assertTrue(fut.isCancelled());
         GridTestUtils.assertThrowsAnyCause(null, fut::get, CancellationException.class, null);
+    }
+
+    /**
+     * Tests getAsync basic functionality.
+     *
+     * - key and val can't be null
+     * - missing key returns null
+     * - existing key returns value
+     * - missing cache causes exception
+     */
+    @Test
+    public void testGetAsyncFunctional() {
+        // TODO
+    }
+
+    /**
+     * Tests putAsync basic functionality.
+     *
+     * - key and val can't be null
+     * - valid key and val result in cache update
+     * - missing cache causes exception
+     */
+    @Test
+    public void testPutAsyncFunctional() {
+        // TODO
     }
 }
