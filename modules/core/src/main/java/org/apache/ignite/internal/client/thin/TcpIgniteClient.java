@@ -200,8 +200,8 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
     }
 
-    @Override
-    public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
         ensureCacheName(name);
 
         return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
@@ -216,8 +216,8 @@ public class TcpIgniteClient implements IgniteClient {
         return new TcpClientCache<>(name, ch, marsh, transactions);
     }
 
-    @Override
-    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException {
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException {
         return null;
     }
 
@@ -231,8 +231,8 @@ public class TcpIgniteClient implements IgniteClient {
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
     }
 
-    @Override
-    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg) throws ClientException {
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg) throws ClientException {
         return null;
     }
 
