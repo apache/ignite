@@ -156,6 +156,14 @@ class DiscoveryTest(IgniteTest):
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
+        for node in failed_nodes:
+            self.logger.info(
+                "new iptables settings on '%s': %s" % (
+                    node.name,
+                    str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
+                )
+            )
+
         return data
 
     def setup(self):
