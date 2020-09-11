@@ -5,7 +5,7 @@
 Apache Ignite 2.9 comes with an ability to create fully consistent cluster-wide snapshots for deployments with
 the link:persistence/native-persistence[Ignite Native Persistence]. At runtime, you can create multiple snapshots of all
 configured persistent cache groups. The snapshot is a consistent copy of all cache group data files (except
-structures used for crash recovery) for each baseline node in a cluster. Since data of persistent cache groups is stored
+structures used for crash recovery) for each baseline node in a cluster. Since the data of persistent cache groups are stored
 on disk in files for each node (cache group partition files, configuration files, binary metadata) in a cluster,
 the snapshot will contain a copy of the same files with keeping Ignite cluster node data directory structure and node consistent IDs.
 
@@ -28,7 +28,7 @@ changes during copying of cache group partition files might require additional s
 
 The created snapshot has the same
 link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStoreunderthehood-FoldersStructure[Directory Structure]
-as the Ignite native persistence does with keeping nodes `consistentId` in snapshot directory. The `wal` and `checkpoint`
+as the Ignite native persistence does with keeping nodes `consistentId` in the snapshot directory. The `wal` and `checkpoint`
 directories will be excluded from the snapshot since recovery procedures are not necessary for cache group data files.
 
 The created snapshot contains:
@@ -166,7 +166,7 @@ include::{javaCodeDir}/Snapshots.java[tags=create, indent=0]
 NOTE: Removing data from the $IGNITE_HOME/work directory performed at your own risk.
 
 Currently, the data restore procedure is fully manual. Since the snapshot is a consistent copy of all data files for each node,
-in order to recover from the particular snapshot you need to start each node of the same cluster on these files
+in order to recover from the particular snapshot, you need to start each node of the same cluster on these files
 (see link:#snapshot-structure[Snapshot Structure] for details).
 
 To restore a cluster from a snapshot, the following steps should be performed for each baseline node in it:
@@ -175,8 +175,8 @@ To restore a cluster from a snapshot, the following steps should be performed fo
 - Remove all the data from `$IGNITE_HOME/work/{node_id}` where `{node_id}` is a consistent id of a node you work with;
 - Copy all snapshot files from the snapshot related to `{node_id}` to the $IGNITE_HOME/work/{node_id} directory;
 
-Some use cases at production deployments may require creating a snapshot at m-node cluster and applying it to n-node
-cluster. Here are some options:
+Some use cases at production deployments may require creating a snapshot at the m-node cluster and applying it to the
+n-node cluster. Here are some options:
 
 [cols="1,1",opts="header"]
 |===
@@ -186,4 +186,3 @@ cluster. Here are some options:
 will require the cluster to be rebalanced and SQL indexes to be rebuilt. These operations may take a long time.
 |m > n | Currently, it is not supported.
 |===
-
