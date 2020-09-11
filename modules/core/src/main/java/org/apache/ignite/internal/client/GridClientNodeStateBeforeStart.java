@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.warmup;
-
-import org.apache.ignite.configuration.WarmUpConfiguration;
+package org.apache.ignite.internal.client;
 
 /**
- * Configuration for {@link SimpleObservableWarmUpStrategy}.
+ * Interface for managing state of a node before it starts and getting information about it.
+ * An exception will be thrown if node has already started.
  */
-class SimpleObservableWarmUpConfiguration implements WarmUpConfiguration {
-    // No-op.
+public interface GridClientNodeStateBeforeStart {
+    /**
+     * Stop warm-up.
+     *
+     * @throws GridClientException In case of error.
+     */
+    void stopWarmUp() throws GridClientException;
 }

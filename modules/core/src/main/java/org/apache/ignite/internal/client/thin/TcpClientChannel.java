@@ -443,7 +443,7 @@ class TcpClientChannel implements ClientChannel {
         else {
             resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
 
-            String errMsg = new BinaryReaderExImpl(null, resIn, null, true).readString();
+            String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
             err = new ClientServerError(errMsg, status, resId);
         }
@@ -594,7 +594,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
+        try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();
 
             if (success) {

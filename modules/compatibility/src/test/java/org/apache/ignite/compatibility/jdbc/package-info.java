@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.warmup;
-
-import org.apache.ignite.configuration.WarmUpConfiguration;
-
 /**
- * Configuration for {@link SimpleObservableWarmUpStrategy}.
+ * Contains compatibility tests related to JDBC.
  */
-class SimpleObservableWarmUpConfiguration implements WarmUpConfiguration {
-    // No-op.
-}
+
+package org.apache.ignite.compatibility.jdbc;

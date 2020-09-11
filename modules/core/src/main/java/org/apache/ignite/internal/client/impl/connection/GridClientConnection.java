@@ -405,6 +405,15 @@ public abstract class GridClientConnection {
     public abstract GridClientFutureAdapter<?> forwardMessage(Object body) throws GridClientException;
 
     /**
+     * Sending messages before node starts and getting a response to it.
+     *
+     * @param msg A raw message to send.
+     * @return Future holding server's response.
+     * @throws GridClientException In case of error.
+     */
+    public abstract GridClientFutureAdapter<?> messageBeforeStart(Object msg) throws GridClientException;
+
+    /**
      * @return {@code True} if connection is closed.
      */
     public boolean isClosed() {
