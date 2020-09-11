@@ -42,6 +42,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -177,8 +178,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_CONTAINS_KEY,
+                null,
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -191,21 +199,17 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         return ch.service(
             ClientOperation.CACHE_GET_CONFIGURATION,
             this::writeCacheInfo,
-            res -> {
-                try {
-                    return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolCtx());
-                }
-                catch (IOException e) {
-                    return null;
-                }
-            }
+            this::getClientCacheConfiguration
         );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException {
-        // TODO
-        return null;
+        return ch.serviceAsync(
+                ClientOperation.CACHE_GET_CONFIGURATION,
+                this::writeCacheInfo,
+                this::getClientCacheConfiguration
+        );
     }
 
     /** {@inheritDoc} */
@@ -714,5 +718,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void writeObject(PayloadOutputChannel payloadCh, Object obj) {
         serDes.writeObject(payloadCh.out(), obj);
+    }
+
+    /** */
+    @Nullable private ClientCacheConfiguration getClientCacheConfiguration(PayloadInputChannel res) {
+        try {
+            return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolCtx());
+        }
+        catch (IOException e) {
+            return null;
+        }
     }
 }
