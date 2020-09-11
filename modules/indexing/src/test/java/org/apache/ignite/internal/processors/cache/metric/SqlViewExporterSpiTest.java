@@ -1138,8 +1138,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertNotNull(metaStoreView);
 
         String name = "test-key";
-        String unmarshalledName = "unmarshalled-key";
         String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
 
         db.checkpointReadLock();
 
@@ -1153,8 +1154,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
             name, val).size());
 
-        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value IS NULL",
-            unmarshalledName).size());
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            unmarshalledName, unmarshalledVal).size());
     }
 
     /** */

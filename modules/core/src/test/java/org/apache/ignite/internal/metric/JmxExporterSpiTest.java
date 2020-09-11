@@ -1073,8 +1073,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
         String name = "test-key";
-        String unmarshalledName = "unmarshalled-key";
         String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
 
         db.checkpointReadLock();
 
@@ -1095,7 +1096,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             if (row.get("name").equals(name) && val.equals(row.get("value")))
                 found = true;
-            else if (row.get("name").equals(unmarshalledName) && row.get("value") == null)
+            else if (row.get("name").equals(unmarshalledName) && row.get("value").equals(unmarshalledVal))
                 foundUnmarshalled = true;
         }
 
