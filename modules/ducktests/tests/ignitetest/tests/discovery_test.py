@@ -72,7 +72,7 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 10000
+    FAILURE_DETECTION_TIMEOUT = 5000
 
     DATA_AMOUNT = 5_000_000
 
@@ -299,7 +299,7 @@ def simulate_nodes_failure(servers, ignite_config, test_config, failed_nodes, su
 
     for failed_id in ids_to_wait:
         servers.await_event_on_node(failed_pattern(failed_id), survived_node,
-                                    DiscoveryTest.FAILURE_DETECTION_TIMEOUT * 2, from_the_beginning=True,
+                                    DiscoveryTest.FAILURE_DETECTION_TIMEOUT * 3, from_the_beginning=True,
                                     backoff_sec=1)
 
         _, stdout, _ = survived_node.account.ssh_client.exec_command(
