@@ -93,7 +93,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests async cache creation.
+     * Tests async cache creation with existing name.
      */
     @Test
     public void testCreateCacheAsyncByNameThrowsExceptionWhenCacheExists() throws Exception {
@@ -129,6 +129,29 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         ClientCacheConfiguration resCfg = client.cache(TMP_CACHE_NAME).getConfiguration();
         assertEquals(3, resCfg.getBackups());
         assertEquals(CacheAtomicityMode.TRANSACTIONAL, resCfg.getAtomicityMode());
+    }
+
+    /**
+     * Tests async cache creation with existing name.
+     */
+    @Test
+    public void testCreateCacheAsyncByCfgThrowsExceptionWhenCacheExists() throws Exception {
+        client.createCache(TMP_CACHE_NAME);
+
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(3);
+
+
+        Throwable t = client.createCacheAsync(cfg)
+                .handle((res, err) -> err)
+                .toCompletableFuture()
+                .get()
+                .getCause();
+
+        assertEquals(ClientException.class, t.getClass());
+        assertTrue(t.getMessage(), t.getMessage().contains(
+                "Failed to start cache (a cache with the same name is already started): tmp_cache"));
     }
 
     /**
