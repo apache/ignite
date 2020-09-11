@@ -183,12 +183,14 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() throws ClientException {
-        return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
+        return ch.service(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
     }
 
-    @Override
-    public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException {
-        return null;
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException {
+        return ch.serviceAsync(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
     }
 
     /** {@inheritDoc} */
@@ -200,7 +202,9 @@ public class TcpIgniteClient implements IgniteClient {
 
     @Override
     public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
-        return null;
+        ensureCacheName(name);
+
+        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
     }
 
     /** {@inheritDoc} */

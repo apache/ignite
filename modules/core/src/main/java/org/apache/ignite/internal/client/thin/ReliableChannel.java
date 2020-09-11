@@ -192,14 +192,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
-     * Send request without payload and handle response.
-     */
-    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException, ClientError {
-        return service(op, null, payloadReader);
-    }
-
-    /**
      * Send request and handle response asynchronously.
      */
     public <T> IgniteClientFuture<T> serviceAsync(
@@ -209,6 +201,22 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     ) throws ClientException, ClientError {
         // TODO: Handle response errors, add tests.
         return service0(ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
+    }
+
+    /**
+     * Send request without payload and handle response.
+     */
+    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
+            throws ClientException, ClientError {
+        return service(op, null, payloadReader);
+    }
+
+    /**
+     * Send request without payload and handle response asynchronously.
+     */
+    public <T> IgniteClientFuture<T> serviceAsync(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
+            throws ClientException, ClientError {
+        return serviceAsync(op, null, payloadReader);
     }
 
     /**
