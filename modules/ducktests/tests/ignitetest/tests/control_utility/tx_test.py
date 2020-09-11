@@ -59,7 +59,7 @@ class TransactionsTests(IgniteTest):
 
         control_utility = ControlUtility(servers, self.test_context)
 
-        transactions = control_utility.tx_list()
+        transactions = control_utility.tx()
         res = control_utility.tx_info(random.choice(transactions).xid)
 
         return {'tx_info': res, 'tx_list': list(map(lambda x: x._asdict(), transactions))}
@@ -74,7 +74,7 @@ class TransactionsTests(IgniteTest):
                                                 discovery_spi=from_ignite_cluster(servers)),
 
             'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
-            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 1, 'tx_size': 2, 'key_prefix': "TX_1_KEY_"}
+            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 3, 'tx_size': 2, 'key_prefix': "TX_1_KEY_"}
         }
 
         long_tx_1 = IgniteApplicationService(self.test_context, **long_tx_params)
@@ -86,10 +86,53 @@ class TransactionsTests(IgniteTest):
 
         control_utility = ControlUtility(servers, self.test_context)
 
-        transactions = control_utility.tx_list()
-        res = control_utility.tx_kill(random.choice(transactions).xid)
+        transactions = control_utility.tx()
 
-        return {'tx_kill': res, 'tx_list': list(map(lambda x: x._asdict(), transactions))}
+        res = control_utility.tx_kill(xid=random.choice(transactions).xid)
+        assert res and len(res) == 1 and res[0].xid == long_tx_1.extract_result("TX_ID")
+
+        res = control_utility.tx_kill()
+        assert res and len(res) == 2 and set(map(lambda x: x.xid, res))\
+            .issubset(set(long_tx_1.extract_results("TX_ID")))
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_tx_filter(self, ignite_version):
+        servers = self.__start_ignite_nodes(ignite_version, self.NUM_NODES - 2)
+
+        long_tx_servers_params = {
+            'config': IgniteConfiguration(version=IgniteVersion(ignite_version),
+                                          discovery_spi=from_ignite_cluster(servers)),
+            'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
+            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 3, 'tx_size': 2, 'key_prefix': 'TX_1_KEY_',
+                       'label': 'LBL_SERVER'}
+        }
+
+        long_tx_server = IgniteApplicationService(self.test_context, **long_tx_servers_params)
+        long_tx_server.start()
+
+        long_tx_client_params = {
+            'config': IgniteConfiguration(version=IgniteVersion(ignite_version),
+                                          client_mode=True,
+                                          discovery_spi=from_ignite_cluster(servers)),
+            'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
+            'params': {'cache_name': self.CACHE_NAME, 'tx_count': 5, 'tx_size': 2, 'key_prefix': 'TX_2_KEY_',
+                       'label': 'LBL_CLIENT'}
+        }
+
+        long_tx_client = IgniteApplicationService(self.test_context, **long_tx_client_params)
+        long_tx_client.start()
+
+        control_utility = ControlUtility(servers, self.test_context)
+
+        #transactions = control_utility.tx()
+
+        #transaction = control_utility.tx(label_pattern='LBL_SER.*')
+        #transaction = control_utility.tx(clients=True)
+        transaction = control_utility.tx(clients=True)
+        transaction = control_utility.tx(servers=True, label_pattern='LBL_.*')
+
+        return len(transaction)
 
     def __start_ignite_nodes(self, version, num_nodes, timeout_sec=60):
         config = IgniteConfiguration(

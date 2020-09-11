@@ -83,12 +83,21 @@ class IgniteApplicationService(IgniteAwareService):
         :param name: Result parameter's name.
         :return: Extracted result of application run.
         """
-        res = ""
+        results = self.extract_results(name)
+
+        return results[0] if results else ""
+
+    def extract_results(self, name):
+        """
+        :param name: Results parameter's name.
+        :return: Extracted results of application run.
+        """
+        res = []
 
         output = self.nodes[0].account.ssh_capture(
             "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
 
         for line in output:
-            res = re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1)
+            res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res

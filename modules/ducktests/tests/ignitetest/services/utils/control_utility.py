@@ -53,10 +53,10 @@ class ControlUtility:
         :param baseline: Baseline nodes or topology version to set as baseline.
         """
         if isinstance(baseline, int):
-            result = self.__run("--baseline version %d --yes" % baseline)
+            result = self.__run(f"--baseline version {baseline} --yes")
         else:
-            result = self.__run("--baseline set %s --yes" %
-                                ",".join([node.account.externally_routable_ip for node in baseline]))
+            result = self.__run(
+                f"--baseline set {','.join([node.account.externally_routable_ip for node in baseline])} --yes")
 
         return self.__parse_cluster_state(result)
 
@@ -64,8 +64,8 @@ class ControlUtility:
         """
         :param nodes: Nodes that should be added to baseline.
         """
-        result = self.__run("--baseline add %s --yes" %
-                            ",".join([node.account.externally_routable_ip for node in nodes]))
+        result = self.__run(
+            f"--baseline add {','.join([node.account.externally_routable_ip for node in nodes])} --yes")
 
         return self.__parse_cluster_state(result)
 
@@ -73,8 +73,8 @@ class ControlUtility:
         """
         :param nodes: Nodes that should be removed to baseline.
         """
-        result = self.__run("--baseline remove %s --yes" %
-                            ",".join([node.account.externally_routable_ip for node in nodes]))
+        result = self.__run(
+            f"--baseline remove {','.join([node.account.externally_routable_ip for node in nodes])} --yes")
 
         return self.__parse_cluster_state(result)
 
@@ -89,8 +89,8 @@ class ControlUtility:
         Enable baseline auto adjust.
         :param timeout: Auto adjust timeout in millis.
         """
-        timeout_str = "timeout %d" % timeout if timeout else ""
-        return self.__run("--baseline auto_adjust enable %s --yes" % timeout_str)
+        timeout_str = f"timeout {timeout}" if timeout else ""
+        return self.__run(f"--baseline auto_adjust enable {timeout_str} --yes")
 
     def activate(self):
         """
@@ -104,17 +104,54 @@ class ControlUtility:
         """
         return self.__run("--deactivate --yes")
 
-    def tx_list(self):
-        output = self.__run("--tx")
+    def tx(self, **kwargs):
+        output = self.__run(self.__tx_command(**kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
 
     def tx_info(self, xid):
-        return self.__parse_tx_info(self.__run("--tx --info %s" % xid))
+        return self.__parse_tx_info(self.__run(f"--tx --info {xid}"))
 
-    def tx_kill(self, xid):
-        output = self.__run("--tx --kill --xid %s --yes" % xid)
-        return output
+    def tx_kill(self, **kwargs):
+        output = self.__run(self.__tx_command(kill=True, **kwargs))
+        res = self.__parse_tx_list(output)
+        return res if res else output
+
+    @staticmethod
+    def __tx_command(**kwargs):
+        tokens = ["--tx"]
+
+        if 'xid' in kwargs:
+            tokens.append(f"--xid {kwargs['xid']}")
+
+        if kwargs.get('clients'):
+            tokens.append("--clients")
+
+        if kwargs.get('servers'):
+            tokens.append("--servers")
+
+        if 'min_duration' in kwargs:
+            tokens.append(f"--min-duration {kwargs.get('min_duration')}")
+
+        if 'min_size' in kwargs:
+            tokens.append(f"--min-size {kwargs.get('min_size')}")
+
+        if 'label_pattern' in kwargs:
+            tokens.append(f"--label {kwargs['label_pattern']}")
+
+        if kwargs.get("nodes"):
+            tokens.append(f"--nodes {','.join(kwargs.get('nodes'))}")
+
+        if 'limit' in kwargs:
+            tokens.append(f"--limit {kwargs['limit']}")
+
+        if 'order' in kwargs:
+            tokens.append(f"--order {kwargs['order']}")
+
+        if kwargs.get('kill'):
+            tokens.append("--kill --yes")
+
+        return " ".join(tokens)
 
     @staticmethod
     def __parse_tx_info(output):
@@ -204,12 +241,12 @@ class ControlUtility:
     def __run(self, cmd):
         node = random.choice(self.__alives())
 
-        self.logger.debug("Run command %s on node %s", cmd, node.name)
+        self.logger.debug(f"Run command {cmd} on node {node.name}")
 
         raw_output = node.account.ssh_capture(self.__form_cmd(node, cmd), allow_fail=True)
         code, output = self.__parse_output(raw_output)
 
-        self.logger.debug("Output of command %s on node %s, exited with code %d, is %s", cmd, node.name, code, output)
+        self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code}, is {output}")
 
         if code != 0:
             raise ControlUtilityError(node.account, cmd, code, output)
@@ -217,8 +254,7 @@ class ControlUtility:
         return output
 
     def __form_cmd(self, node, cmd):
-        return self._cluster.spec.path.script("%s --host %s %s" %
-                                              (self.BASE_COMMAND, node.account.externally_routable_ip, cmd))
+        return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd}")
 
     @staticmethod
     def __parse_output(raw_output):

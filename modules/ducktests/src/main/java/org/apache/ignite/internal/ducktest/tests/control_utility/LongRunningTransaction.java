@@ -18,17 +18,22 @@
 package org.apache.ignite.internal.ducktest.tests.control_utility;
 
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 /**
  *
@@ -50,6 +55,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
         int txCount = jsonNode.get("tx_count") != null ? jsonNode.get("tx_count").asInt() : 1;
         int txSize = jsonNode.get("tx_size") != null ? jsonNode.get("tx_size").asInt() : 1;
         String keyPrefix = jsonNode.get("key_prefix") != null ? jsonNode.get("key_prefix").asText() : LOCKED_KEY_PREFIX;
+        String label = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
 
         CountDownLatch lockLatch = new CountDownLatch(txCount);
         pool = Executors.newFixedThreadPool(2 * txCount);
@@ -67,6 +73,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
                     lock.lock();
                     try {
                         lockLatch.countDown();
+
                         while (!terminated())
                             Thread.sleep(100L);
                     }
@@ -89,21 +96,44 @@ public class LongRunningTransaction extends IgniteAwareApplication {
             int txIdx = i;
 
             Map<String, String> data = IntStream.range(0, txSize)
-                .mapToObj((idx) -> {
+                .mapToObj(idx -> {
                     String suffix = idx == 0 ? String.valueOf(txIdx) : txIdx + "_" + idx;
 
                     return new IgnitePair<>(keyPrefix + suffix, "VALUE_LOCK_" + suffix);
                 })
-                .collect(Collectors.toMap(IgnitePair::getKey, IgnitePair::getValue));
+                .collect(
+                    Collectors.toMap(
+                        IgnitePair::getKey,
+                        IgnitePair::getValue,
+                        (k0, k1) -> {
+                            throw new IllegalStateException(String.format("Duplicate key %s", k0));
+                        },
+                        TreeMap::new
+                    )
+                );
+
+            IgniteTransactions igniteTransactions = label != null ? ignite.transactions().withLabel(label) :
+                ignite.transactions();
 
             Runnable txClo = () -> {
-                try (Transaction tx = ignite.transactions().txStart()) {
+                IgniteUuid xid = null;
+
+                try (Transaction tx = igniteTransactions.txStart()) {
+                    xid = tx.xid();
+
                     cache.putAll(data);
 
                     tx.commit();
                 }
                 catch (Exception e) {
-                    log.info("Transaction is rolled back with error:", e);
+                    if (e instanceof CacheException && e.getCause() != null &&
+                        e.getCause() instanceof TransactionRollbackException)
+                        recordResult("TX_ID", xid.toString());
+                    else {
+                        markBroken();
+
+                        log.info("Transaction is rolled back with error:", e);
+                    }
                 }
                 finally {
                     txLatch.countDown();
