@@ -36,6 +36,9 @@ public class AsyncCacheTest extends AbstractThinClientTest {
     /** Default timeout value. */
     private static final long TIMEOUT = 1_000L;
 
+    /** Temp cache name. */
+    private static final String TMP_CACHE_NAME = "tmp_cache";
+
     /** Client. */
     private static IgniteClient client;
 
@@ -70,6 +73,20 @@ public class AsyncCacheTest extends AbstractThinClientTest {
 
         strCache.removeAll();
         personCache.removeAll();
+
+        client.destroyCache(TMP_CACHE_NAME);
+    }
+
+    @Test
+    public void testCreateCacheAsyncCreatesCacheWhenNotExists() throws Exception {
+        final String cacheName = "testCreateCacheAsyncCreatesCacheWhenNotExists";
+        assertFalse(client.cacheNames().contains(cacheName));
+
+        assertTrue(
+                client.createCacheAsync("testCreateCacheAsyncCreatesCacheWhenNotExists")
+                        .thenApply(x -> client.cacheNames().contains(cacheName))
+                        .toCompletableFuture()
+                        .get());
     }
 
     /**
