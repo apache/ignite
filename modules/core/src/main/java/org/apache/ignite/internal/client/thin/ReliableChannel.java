@@ -220,6 +220,14 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
+     * Send request and handle response without payload.
+     */
+    public IgniteClientFuture<Void> requestAsync(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
+        throws ClientException, ClientError {
+        return serviceAsync(op, payloadWriter, null);
+    }
+
+    /**
      * Send request to affinity node and handle response.
      */
     public <T> T affinityService(

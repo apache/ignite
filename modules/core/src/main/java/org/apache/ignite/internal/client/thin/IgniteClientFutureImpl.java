@@ -54,6 +54,17 @@ public class IgniteClientFutureImpl<T> implements IgniteClientFuture<T> {
         this.onCancel = onCancel;
     }
 
+    /**
+     * Ctor.
+     * @param fut Future to wrap.
+     */
+    public IgniteClientFutureImpl(CompletionStage<T> fut) {
+        assert fut != null;
+
+        this.fut = fut.toCompletableFuture();
+        onCancel = null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isDone() {
         return fut.isDone();

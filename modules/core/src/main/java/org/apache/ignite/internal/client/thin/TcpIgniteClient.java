@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,6 +42,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
@@ -142,6 +144,15 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()))
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions)));
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> getOrCreateCache(
         ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
@@ -150,6 +161,17 @@ public class TcpIgniteClient implements IgniteClient {
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
+            ClientCacheConfiguration cfg) throws ClientException {
+        ensureCacheConfiguration(cfg);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
+                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions)));
     }
 
     /** {@inheritDoc} */
@@ -164,11 +186,21 @@ public class TcpIgniteClient implements IgniteClient {
         return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
     }
 
+    @Override
+    public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void destroyCache(String name) throws ClientException {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+    }
+
+    @Override
+    public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -180,6 +212,11 @@ public class TcpIgniteClient implements IgniteClient {
         return new TcpClientCache<>(name, ch, marsh, transactions);
     }
 
+    @Override
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
@@ -188,6 +225,11 @@ public class TcpIgniteClient implements IgniteClient {
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+    }
+
+    @Override
+    public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg) throws ClientException {
+        return null;
     }
 
     /** {@inheritDoc} */
