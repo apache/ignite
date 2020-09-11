@@ -148,7 +148,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> putAsync(K key, V val) throws ClientException {
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_PUT,
+                req -> writeObject(req, val),
+                null
+        );
     }
 
     /** {@inheritDoc} */
