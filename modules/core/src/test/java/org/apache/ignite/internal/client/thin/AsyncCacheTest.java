@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class AsyncCacheTest extends AbstractThinClientTest {
     // TODO: Add async tests to all PartitionAwareness tests
+    // TODO: getOrCreateAsync, destroyAsync, cacheNamesAsync
+
     /** Default timeout value. */
     private static final long TIMEOUT = 1_000L;
 
