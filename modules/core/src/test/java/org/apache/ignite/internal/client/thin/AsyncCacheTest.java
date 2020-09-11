@@ -104,6 +104,7 @@ public class AsyncCacheTest extends AbstractThinClientTest {
                 .toCompletableFuture()
                 .get();
 
+        // TODO: CompletableFuture wraps exceptions in CompletionException
         assertEquals(ClientException.class, t.getClass());
         assertEquals("1", t.getMessage());
     }

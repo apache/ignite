@@ -336,8 +336,8 @@ class TcpClientChannel implements ClientChannel {
                     T res = payloadReader.apply(new PayloadInputChannel(this, payload));
                     fut.complete(res);
                 }
-            } catch (IgniteCheckedException e) {
-                fut.completeExceptionally(convertException(e));
+            } catch (Throwable t) {
+                fut.completeExceptionally(convertException(t));
             } finally {
                 pendingReqs.remove(reqId);
             }
@@ -351,7 +351,7 @@ class TcpClientChannel implements ClientChannel {
      * @param e Exception to convert.
      * @return Resulting exception.
      */
-    private RuntimeException convertException(IgniteCheckedException e) {
+    private RuntimeException convertException(Throwable e) {
         if (e.getCause() instanceof ClientError)
             return (RuntimeException) e.getCause();
 
