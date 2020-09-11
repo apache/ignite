@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
@@ -77,16 +79,37 @@ public class AsyncCacheTest extends AbstractThinClientTest {
         client.destroyCache(TMP_CACHE_NAME);
     }
 
+    /**
+     * Tests async cache creation.
+     */
     @Test
-    public void testCreateCacheAsyncCreatesCacheWhenNotExists() throws Exception {
-        final String cacheName = "testCreateCacheAsyncCreatesCacheWhenNotExists";
-        assertFalse(client.cacheNames().contains(cacheName));
-
+    public void testCreateCacheAsyncCreatesCacheByNameWhenNotExists() throws Exception {
         assertTrue(
-                client.createCacheAsync("testCreateCacheAsyncCreatesCacheWhenNotExists")
-                        .thenApply(x -> client.cacheNames().contains(cacheName))
+                client.createCacheAsync(TMP_CACHE_NAME)
+                        .thenApply(x -> client.cacheNames().contains(TMP_CACHE_NAME))
                         .toCompletableFuture()
                         .get());
+    }
+
+    /**
+     * Tests async cache creation.
+     */
+    @Test
+    public void testCreateCacheAsyncCreatesCacheByCfgWhenNotExists() throws Exception {
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(3)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        assertTrue(
+                client.createCacheAsync(cfg)
+                        .thenApply(x -> client.cacheNames().contains(TMP_CACHE_NAME))
+                        .toCompletableFuture()
+                        .get());
+
+        ClientCacheConfiguration resCfg = client.cache(TMP_CACHE_NAME).getConfiguration();
+        assertEquals(3, resCfg.getBackups());
+        assertEquals(CacheAtomicityMode.TRANSACTIONAL, resCfg.getAtomicityMode());
     }
 
     /**
