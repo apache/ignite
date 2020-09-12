@@ -22,7 +22,7 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.sql_util import connection
+from ignitetest.services.utils.sql_util import jdbc_connection
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, V_2_8_0, V_2_7_6, IgniteVersion
@@ -46,23 +46,17 @@ class SqlJdbcTest(IgniteTest):
     def sql_test(self, ignite_version_1, ignite_version_2):
         """
         SQL test with different versions jdbc driver.
-        """
-        self.check_connection(ignite_version=IgniteVersion(ignite_version_1), jar_ver=IgniteVersion(ignite_version_2))
-
-    def check_connection(self, ignite_version: IgniteVersion, jar_ver: IgniteVersion = None):
-        """
-        Check SQL commands.
-        :param ignite_version: IgniteVersion.
-        :param jar_ver: Version JDBC driver.
+        :param ignite_version_1: Version ignite service.
+        :param ignite_version_2: Version JDBC driver.
         """
         self.stage("Starting nodes")
 
-        config = IgniteConfiguration(version=ignite_version)
+        config = IgniteConfiguration(version=IgniteVersion(ignite_version_1))
 
         service = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
         service.start()
 
-        with connection(ignite_service=service, ver=jar_ver) as conn:
+        with jdbc_connection(ignite_service=service, ver=IgniteVersion(ignite_version_2)) as conn:
             with conn.cursor() as curs:
                 create_tables(curs)
                 self.logger.info("Created tables.")
@@ -91,7 +85,7 @@ class SqlJdbcTest(IgniteTest):
 
 def create_tables(curs):
     """
-    Created tables for test.
+    Create tables for test.
     :param curs: Сursor obtained from the connection.
     """
     curs.execute('CREATE TABLE users (id int, name varchar, PRIMARY KEY (id))')

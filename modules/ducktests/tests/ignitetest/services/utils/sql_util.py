@@ -23,7 +23,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-def connection(ignite_service: IgniteService, ver: IgniteVersion = None):
+def jdbc_connection(ignite_service: IgniteService, ver: IgniteVersion = None):
     """
     :param ignite_service: IgniteService.
     :param ver: IgniteVersion jdbc driver for connection.
