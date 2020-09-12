@@ -292,29 +292,40 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var client = Client;
             var cache = GetTransactionalCache(client);
-            cache.Put(1, 1);
-            cache.Put(2, 2);
+            cache[1] = 1;
+            cache[2] = 2;
+
             var anotherClient = GetClient();
-
-            using (var tx = client.GetTransactions().TxStart())
-            using (var anotherTx = anotherClient.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,TransactionIsolation.RepeatableRead, TimeSpan.FromHours(1)))
+            var anotherCache = GetTransactionalCache(anotherClient);
+            var concurrency = TransactionConcurrency.Optimistic;
+            var isolation = TransactionIsolation.ReadCommitted;
+            using (var tx = client.GetTransactions().TxStart(concurrency, isolation))
             {
-                Assert.AreNotSame(tx, anotherTx);
-                Assert.AreNotEqual(((TransactionClient)tx).Id,((TransactionClient)anotherTx).Id);
-                Assert.AreSame(tx, client.GetTransactions().Tx);
-                Assert.AreSame(anotherTx, anotherClient.GetTransactions().Tx);
-
-                var anotherCache = GetTransactionalCache(anotherClient);
                 cache[1] = 10;
-                anotherCache[2] = 20;
-                Assert.AreEqual(10, cache[1]);
-                Assert.AreEqual(10, anotherCache[1]);
-                Assert.AreEqual(20, cache[2]);
-                Assert.AreEqual(20, anotherCache[2]);
+                using (var anotherTx = anotherClient.GetTransactions().TxStart(concurrency, isolation))
+                {
+                    Assert.AreNotSame(tx, anotherTx);
+                    Assert.AreSame(tx, client.GetTransactions().Tx);
+                    Assert.AreSame(anotherTx, anotherClient.GetTransactions().Tx);
+
+                    Assert.AreEqual(10, cache[1]);
+                    Assert.AreEqual(1, anotherCache[1]);
+
+                    anotherCache[2] = 20;
+                    
+                    Assert.AreEqual(2, cache[2]);
+                    Assert.AreEqual(20, anotherCache[2]);
+
+                    anotherTx.Commit();
+                    
+                    Assert.AreEqual(20, cache[2]);
+                }
             }
 
             Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
+            Assert.AreEqual(20, cache[2]);
+            Assert.AreEqual(1, anotherCache[1]);
+            Assert.AreEqual(20, anotherCache[2]);
         }
 
         /// <summary>
@@ -835,9 +846,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
-        protected ICacheClient<int, int> GetTransactionalCache(IIgniteClient client, string cacheName = null)
+        private ICacheClient<int, int> GetTransactionalCache(IIgniteClient client, string cacheName = null)
         {
-            return Client.GetOrCreateCache<int, int>(new CacheClientConfiguration
+            return client.GetOrCreateCache<int, int>(new CacheClientConfiguration
             {
                 Name = cacheName ?? GetCacheName(),
                 AtomicityMode = CacheAtomicityMode.Transactional
