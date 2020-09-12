@@ -41,7 +41,7 @@ def connection(ignite_service: IgniteService, ver: IgniteVersion = None):
 
     node = random.choice(ignite_service.nodes)
 
-    url = "jdbc:ignite:thin://" + node.account.externally_routable_ip
+    url = "jdbc:ignite:thin://" + node.account.externally_routable_ip+"/?distributedJoins=true"
 
     return jaydebeapi.connect(jclassname='org.apache.ignite.IgniteJdbcThinDriver',
                               url=url,

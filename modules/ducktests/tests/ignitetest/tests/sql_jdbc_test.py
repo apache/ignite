@@ -16,6 +16,8 @@
 """
 This module contains SQL tests using the JDBC driver.
 """
+from random import randint
+
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -62,26 +64,43 @@ class SqlJdbcTest(IgniteTest):
 
         with connection(ignite_service=service, ver=jar_ver) as conn:
             with conn.cursor() as curs:
-                curs.execute('CREATE TABLE users (id int, name varchar, PRIMARY KEY (id))')
-                self.logger.info("Created a table of users")
-
-                curs.execute('CREATE INDEX name_idx ON users (name)')
-                self.logger.info("Created a index")
+                create_tables(curs)
+                self.logger.info("Created tables.")
 
                 insert(curs)
+                self.logger.info("Inserted.")
+
                 update(curs)
+                self.logger.info("Updated.")
+
+                alter_table_add(curs)
+                self.logger.info("Alter table add.")
+
+                join(curs)
+                self.logger.info("Distributed join.")
+
+                alter_table_drop(curs)
+                self.logger.info("Alter table drop.")
+
                 delete(curs)
+                self.logger.info("Deleted.")
 
-                curs.execute('DROP INDEX name_idx')
-                self.logger.info("Droped a index")
+                drop_tables(curs)
+                self.logger.info("Deleted tables.")
 
-                curs.execute('DROP TABLE users')
-                self.logger.info("Deleted the users table")
+
+def create_tables(curs):
+    """
+    Created tables for test.
+    :param curs: Сursor obtained from the connection.
+    """
+    curs.execute('CREATE TABLE users (id int, name varchar, PRIMARY KEY (id))')
+    curs.execute('CREATE TABLE organization (id int, name varchar, PRIMARY KEY (id))')
 
 
 def insert(curs, size=100):
     """
-    SQL insert.
+    Insert.
     :param curs: Сursor obtained from the connection.
     """
     users = [(i, 'User' + str(i)) for i in range(size)]
@@ -95,7 +114,7 @@ def insert(curs, size=100):
 
 def update(curs, size=100):
     """
-    SQL update.
+    Update.
     :param curs: Сursor obtained from the connection.
     """
     users = [('newUser' + str(i), i) for i in range(size)]
@@ -112,9 +131,63 @@ def update(curs, size=100):
     assert len(names) == size
 
 
+def alter_table_add(curs):
+    """
+    Added column using alter table.
+    :param curs: Сursor obtained from the connection.
+    """
+    curs.execute('ALTER TABLE users ADD COLUMN organization varchar')
+
+
+def join(curs, size=100):
+    """
+    Distributed join.
+    :param curs: Сursor obtained from the connection.
+    """
+    org1 = 'org1'
+    org2 = 'org2'
+
+    curs.execute("INSERT INTO  organization (_key, name) VALUES(CAST( 1 as BIGINT), '%s')" % org1)
+    curs.execute("INSERT INTO  organization (_key, name) VALUES(CAST( 2 as BIGINT), '%s')" % org2)
+
+    curs.execute('CREATE INDEX us_name_idx ON users (name)')
+    curs.execute('CREATE INDEX org_name_idx ON organization (name)')
+    curs.execute('CREATE INDEX us_org_idx ON users (organization)')
+
+    rnd = randint(1, size)
+
+    curs.execute("UPDATE users SET organization = '%s' where id < %i " % (org1, rnd))
+
+    curs.execute("SELECT us.name, org.name FROM organization as org JOIN users as us ON us.organization = org.name")
+
+    assert len(curs.fetchall()) == rnd
+
+    curs.execute(
+        "SELECT us.name, org.name FROM organization as org LEFT JOIN users as us ON us.organization = org.name")
+
+    assert len(curs.fetchall()) == (rnd + 1)
+
+    curs.execute(
+        "SELECT us.name, org.name FROM organization as org RIGHT JOIN users as us ON us.organization = org.name")
+
+    assert len(curs.fetchall()) == size
+
+    curs.execute('DROP INDEX us_name_idx')
+    curs.execute('DROP INDEX us_org_idx')
+    curs.execute('DROP INDEX org_name_idx')
+
+
+def alter_table_drop(curs):
+    """
+    Dropped column using alter table.
+    :param curs: Сursor obtained from the connection.
+    """
+    curs.execute('ALTER TABLE users DROP organization')
+
+
 def delete(curs, size=100):
     """
-    SQL delete.
+    Delete.
     :param curs: Сursor obtained from the connection.
     """
     ids = [[x] for x in range(size)]
@@ -126,3 +199,12 @@ def delete(curs, size=100):
     names = curs.fetchall()
 
     assert len(names) == 0
+
+
+def drop_tables(curs):
+    """
+    Dropped tables.
+    :param curs: Сursor obtained from the connection.
+    """
+    curs.execute('DROP TABLE users')
+    curs.execute('DROP TABLE organization')
