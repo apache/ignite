@@ -26,6 +26,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.client.PersonBinarylizable;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Thin client async cache tests.
  */
 public class CacheAsyncTest extends AbstractThinClientTest {
-    // TODO: Add async tests to all PartitionAwareness tests
     // TODO: getOrCreateAsync, destroyAsync, cacheNamesAsync
 
     /**
@@ -101,7 +101,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         strCache.removeAll();
         personCache.removeAll();
 
-        client.destroyCache(TMP_CACHE_NAME);
+        if (client.cacheNames().contains(TMP_CACHE_NAME))
+            client.destroyCache(TMP_CACHE_NAME);
     }
 
     /**
@@ -176,6 +177,26 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals(ClientException.class, t.getClass());
         assertTrue(t.getMessage(), t.getMessage().contains(
                 "Failed to start cache (a cache with the same name is already started): tmp_cache"));
+    }
+
+    /**
+     * Tests async cache destroy.
+     */
+    @Test
+    public void testDestroyCacheAsyncSucceedsWhenCacheExists() throws Exception {
+        client.createCache(TMP_CACHE_NAME);
+        client.destroyCacheAsync(TMP_CACHE_NAME).get();
+
+        assertFalse(client.cacheNames().contains(TMP_CACHE_NAME));
+    }
+
+    /**
+     * Tests async cache destroy.
+     */
+    @Test
+    public void testDestroyCacheAsyncThrowsWhenCacheDoesNotExist() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(null, () -> client.destroyCacheAsync(TMP_CACHE_NAME).get(),
+                IgniteClientException.class, "Cache does not exist [cacheId= 911828570]");
     }
 
     /**
