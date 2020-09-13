@@ -196,7 +196,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     @Test
     public void testDestroyCacheAsyncThrowsWhenCacheDoesNotExist() throws Exception {
         GridTestUtils.assertThrowsAnyCause(null, () -> client.destroyCacheAsync(TMP_CACHE_NAME).get(),
-                IgniteClientException.class, "Cache does not exist [cacheId= 911828570]");
+                ClientException.class, "Cache does not exist [cacheId= 911828570]");
     }
 
     /**
