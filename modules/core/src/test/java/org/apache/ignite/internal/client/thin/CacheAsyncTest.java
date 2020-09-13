@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Thin client async cache tests.
  */
-public class AsyncCacheTest extends AbstractThinClientTest {
+public class CacheAsyncTest extends AbstractThinClientTest {
     // TODO: Add async tests to all PartitionAwareness tests
     // TODO: getOrCreateAsync, destroyAsync, cacheNamesAsync
 
