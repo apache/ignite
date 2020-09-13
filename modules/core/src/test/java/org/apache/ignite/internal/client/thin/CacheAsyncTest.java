@@ -39,8 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Thin client async cache tests.
  */
 public class CacheAsyncTest extends AbstractThinClientTest {
-    // TODO: getOrCreateAsync, destroyAsync, cacheNamesAsync
-
     /**
      * Default timeout value.
      */
@@ -177,6 +175,42 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals(ClientException.class, t.getClass());
         assertTrue(t.getMessage(), t.getMessage().contains(
                 "Failed to start cache (a cache with the same name is already started): tmp_cache"));
+    }
+
+    /**
+     * Tests async cache creation.
+     */
+    @Test
+    public void testGetOrCreateCacheAsyncByCfgCreatesCacheWhenNotExists() throws Exception {
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(5);
+
+        assertTrue(
+                client.getOrCreateCacheAsync(cfg)
+                        .thenApply(x -> client.cacheNames().contains(TMP_CACHE_NAME))
+                        .toCompletableFuture()
+                        .get());
+
+        ClientCacheConfiguration resCfg = client.cache(TMP_CACHE_NAME).getConfiguration();
+        assertEquals(5, resCfg.getBackups());;
+    }
+
+    /**
+     * Tests async cache creation with existing name.
+     */
+    @Test
+    public void testGetOrCreateCacheAsyncByCfgThrowsExceptionWhenCacheExists() throws Exception {
+        client.createCache(TMP_CACHE_NAME);
+
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(7);
+
+        ClientCache<Object, Object> cache = client.getOrCreateCacheAsync(cfg).get();
+        ClientCacheConfiguration resCfg = cache.getConfigurationAsync().get();
+
+        assertEquals(0, resCfg.getBackups());
     }
 
     /**
