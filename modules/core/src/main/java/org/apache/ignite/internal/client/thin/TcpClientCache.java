@@ -296,8 +296,24 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (oldVal == null)
+            throw new NullPointerException("oldVal");
+
+        if (newVal == null)
+            throw new NullPointerException("newVal");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REPLACE_IF_EQUALS,
+                req -> {
+                    writeObject(req, oldVal);
+                    writeObject(req, newVal);
+                },
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -318,8 +334,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REPLACE,
+                req -> writeObject(req, val),
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -337,8 +363,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REMOVE_KEY,
+                null,
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -359,8 +392,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (oldVal == null)
+            throw new NullPointerException("oldVal");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REMOVE_IF_EQUALS,
+                req -> writeObject(req, oldVal),
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -381,8 +424,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException {
-        // TODO
-        return null;
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(null);
+
+        return ch.requestAsync(
+                ClientOperation.CACHE_REMOVE_KEYS,
+                req -> {
+                    writeKeys(keys, req);
+                }
+        );
     }
 
     /** {@inheritDoc} */
@@ -392,8 +445,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
-        // TODO
-        return null;
+        return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
