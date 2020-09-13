@@ -242,11 +242,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
-        return ch.service(
-            ClientOperation.CACHE_GET_ALL,
-            req -> writeKeys(keys, req),
-            this::readEntries
-        );
+        return ch.service(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
     }
 
     /** {@inheritDoc} */
@@ -257,11 +253,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(new HashMap<>());
 
-        return ch.serviceAsync(
-                ClientOperation.CACHE_GET_ALL,
-                req -> writeKeys(keys, req),
-                this::readEntries
-        );
+        return ch.serviceAsync(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
     }
 
     /** {@inheritDoc} */
@@ -272,25 +264,12 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return;
 
-        ch.request(
-            ClientOperation.CACHE_PUT_ALL,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(
-                    map.entrySet(),
-                    req.out(),
-                    (out, e) -> {
-                        serDes.writeObject(out, e.getKey());
-                        serDes.writeObject(out, e.getValue());
-                    });
-            }
-        );
+        ch.request(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException {
-        // TODO
-        return null;
+        return ch.requestAsync(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
     }
 
     /** {@inheritDoc} */
@@ -753,5 +732,17 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             map.put(readObject(in), readObject(in));
 
         return map;
+    }
+
+    /** */
+    private void writeEntries(Map<? extends K, ? extends V> map, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(
+                map.entrySet(),
+                req.out(),
+                (out, e) -> {
+                    serDes.writeObject(out, e.getKey());
+                    serDes.writeObject(out, e.getValue());
+                });
     }
 }
