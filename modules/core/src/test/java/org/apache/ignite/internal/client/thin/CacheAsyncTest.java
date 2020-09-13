@@ -38,23 +38,36 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     // TODO: Add async tests to all PartitionAwareness tests
     // TODO: getOrCreateAsync, destroyAsync, cacheNamesAsync
 
-    /** Default timeout value. */
+    /**
+     * Default timeout value.
+     */
     private static final long TIMEOUT = 1_000L;
 
-    /** Temp cache name. */
+    /**
+     * Temp cache name.
+     */
     private static final String TMP_CACHE_NAME = "tmp_cache";
 
-    /** Client. */
+    /**
+     * Client.
+     */
     private static IgniteClient client;
 
-    /** */
+    /**
+     *
+     */
     private static ClientCache<Integer, Person> personCache;
 
-    /** */
+    /**
+     *
+     */
     private static ClientCache<Integer, String> strCache;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrid(0);
@@ -64,16 +77,22 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         strCache = client.getOrCreateCache("intCache");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         client.close();
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTest() throws Exception {
         super.afterTest();
 
         strCache.removeAll();
@@ -158,7 +177,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
     /**
      * Tests IgniteClientFuture state transitions with getAsync.
-     *
+     * <p>
      * - Start an async operation
      * - Check that IgniteFuture is not done initially
      * - Wait for operation completion
@@ -187,7 +206,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
     /**
      * Tests that async operation can be cancelled.
-     *
+     * <p>
      * - Start an async operation
      * - Check that cancel returns true and future becomes cancelled
      */
@@ -226,7 +245,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
     /**
      * Tests getAsync with non-existing cache.
-     *
+     * <p>
      * - Get a cache that does not exist
      * - Perform getAsync, verify exception in future
      */
@@ -235,6 +254,22 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         ClientCache<String, String> badCache = client.cache("bad");
         Throwable err = badCache.putAsync("1", "2").handle((r, e) -> e).toCompletableFuture().get();
         assertTrue(err.getMessage().contains("Cache does not exist"));
+    }
+
+    /**
+     * Tests that response decode errors are handled correctly.
+     */
+    @Test
+    public void testGetAsyncThrowsExceptionOnFailedDeserialization() throws Exception {
+        // TODO:
+    }
+
+    /**
+     * Tests that request encode errors are handled correctly.
+     */
+    @Test
+    public void testPutAsyncThrowsExceptionOnFailedSerialization() throws Exception {
+        // TODO:
     }
 
     /**
