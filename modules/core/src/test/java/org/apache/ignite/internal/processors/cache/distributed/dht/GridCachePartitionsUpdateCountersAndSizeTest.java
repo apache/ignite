@@ -236,9 +236,9 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
                 }
             }
 
-            if (setCnt.size()==2 && setCnt.contains(32L) && setCnt.contains(99L))
+            if (setCnt.size() == 2 && setCnt.contains(32L) && setCnt.contains(99L))
                 cn = true;
-            if (setSize.size()==2 && setSize.contains(0L) && setSize.contains(32L))
+            if (setSize.size() == 2 && setSize.contains(0L) && setSize.contains(32L))
                 sz = true;
         }
     }
