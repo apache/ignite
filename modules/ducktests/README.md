@@ -7,31 +7,19 @@ Development and tests are carried out in the module ignite-ducktests (modules/du
 
 ## The environment will require:
  - Java, recomended version 8 → https://openjdk.java.net/install 
- - IDE, for example IntelliJ IDEA enough version Community → https://www.jetbrains.com/idea/
- - Python, version not lower 3.6 →  https://www.python.org/downloads/
-   - setup virtualenv, for example https://github.com/pyenv/pyenv can be install through `brew install pyenv`
  - Docker → https://www.docker.com/products/docker-desktop
    - in docker settings it is recommended to increase the allocated memory size to 8gb
 
-## Setup IDE
- - Install Plugin Python for IDE:
-  - IntelliJ Idea → Preferences → Plugins → Marketplaces → 'python' → Install
 
-![Python plugin](img/plugin.png)
-
- - Configure in idea python to work
-  - File → Project Structure → Modules → choose `ignite-ducktests` → `+` → Python → Virtualenv Environment → New environment
- 
-![Python venv](img/setup_python_venv.png)
-
-After that, you will see the name of your environment in the terminal and the python version will correspond to the selected
-
-(**venv**) /Users/user/work/ignite$ python --version\
-**Python 3.8.5**\
-Pull up python dependencies: `pip install -r modules/ducktests/tests/docker/requirements.txt`\
-Build project ignite: → `scripts/build.sh`
+## Development
+To develop a ducktest module you will additionally need: 
+- Python, version not lower 3.6 → https://www.python.org/downloads/
+   - setup virtualenv, for example https://github.com/pyenv/pyenv can be install through `brew install pyenv`
 
 ## Running tests
+Before the first launch of the tests, you need to build the Ignite project.\
+You can use the script: → `scripts/build.sh`
+
 Recommended to use the script before running tests IGNITE/modules/ducktests/tests/docker/clean_up.sh
  - stops and removes all ducker-ignite containers
 
