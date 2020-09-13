@@ -28,8 +28,11 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -320,6 +323,19 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> IgniteClientFuture<T> serviceAsync(
+                ClientOperation op,
+                Consumer<PayloadOutputChannel> payloadWriter,
+                Function<PayloadInputChannel, T> payloadReader)
+                throws ClientException {
+            // Store all operations except binary type registration in queue to check later.
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
+                opsQueue.offer(new T2<>(this, op));
+
+            return super.serviceAsync(op, payloadWriter, payloadReader);
         }
 
         /** {@inheritDoc} */
