@@ -24,11 +24,15 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.client.PersonBinarylizable;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -261,7 +265,14 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      */
     @Test
     public void testGetAsyncThrowsExceptionOnFailedDeserialization() throws Exception {
-        // TODO:
+        ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
+        cache.put(1, new PersonBinarylizable("1", false, true));
+
+        Throwable t = cache.getAsync(1).handle((res, err) -> err).toCompletableFuture().get();
+
+        assertTrue(t.getMessage().contains("Failed to deserialize object"));
+        assertTrue(X.hasCause(t, "Failed to deserialize object", ClientException.class));
+        assertTrue(X.hasCause(t, "_read_", ArithmeticException.class));
     }
 
     /**

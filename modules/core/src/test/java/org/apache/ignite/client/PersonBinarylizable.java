@@ -36,6 +36,13 @@ public class PersonBinarylizable implements Binarylizable {
     private boolean readThrows;
 
     /** */
+    public PersonBinarylizable(String name, boolean writeThrows, boolean readThrows) {
+        this.name = name;
+        this.writeThrows = writeThrows;
+        this.readThrows = readThrows;
+    }
+
+    /** */
     public String getName() {
         return name;
     }
@@ -72,7 +79,7 @@ public class PersonBinarylizable implements Binarylizable {
         writer.writeBoolean("readThrows", readThrows);
 
         if (writeThrows)
-            throw new ArithmeticException();
+            throw new ArithmeticException("_write_");
     }
 
     /** {@inheritDoc} */
@@ -82,6 +89,6 @@ public class PersonBinarylizable implements Binarylizable {
         readThrows = reader.readBoolean("readThrows");
 
         if (readThrows)
-            throw new ArithmeticException();
+            throw new ArithmeticException("_read_");
     }
 }
