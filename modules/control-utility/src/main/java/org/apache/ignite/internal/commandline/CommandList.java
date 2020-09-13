@@ -74,7 +74,10 @@ public enum CommandList {
     SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+
+    /** Warm-up command. */
+    WARM_UP("--warm-up", new WarmUpCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

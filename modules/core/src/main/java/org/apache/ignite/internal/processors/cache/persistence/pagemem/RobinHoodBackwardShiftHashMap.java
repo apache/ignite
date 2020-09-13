@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
+import static org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable.DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.internal.util.GridUnsafe.getInt;
 import static org.apache.ignite.internal.util.GridUnsafe.getLong;
 import static org.apache.ignite.internal.util.GridUnsafe.putInt;
@@ -47,7 +48,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.putLong;
  */
 public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Load factor. */
-    private static final float LOAD_FACTOR = getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, 2.5f);
+    private static final float LOAD_FACTOR =
+        getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR);
 
     /** Size of count of entries (value returned by size() method). */
     private static final int MAPSIZE_SIZE = 4;

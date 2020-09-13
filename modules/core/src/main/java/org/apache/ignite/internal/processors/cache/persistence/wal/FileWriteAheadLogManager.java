@@ -213,33 +213,52 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Buffer size. */
     private static final int BUF_SIZE = 1024 * 1024;
 
+    /** @see IgniteSystemProperties#IGNITE_WAL_MMAP */
+    public static final boolean DFLT_WAL_MMAP = true;
+
+    /** @see IgniteSystemProperties#IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT */
+    public static final int DFLT_WAL_COMPRESSOR_WORKER_THREAD_CNT = 4;
+
+    /** @see IgniteSystemProperties#IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE */
+    public static final double DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = 0.25;
+
+    /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE */
+    public static final double DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = 0.5;
+
+    /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT */
+    public static final long DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = 1000L;
+
     /** Use mapped byte buffer. */
-    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
 
     /**
      * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
      * Checkpoint should be triggered when max size of WAL after last checkpoint more than maxWallArchiveSize * thisValue
      */
     private static final double CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE =
-        IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, 0.25);
+        IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE,
+            DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE);
 
     /**
      * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
      */
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
-        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE,
+            DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
     /**
      * Number of WAL compressor worker threads.
      */
     private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
-            IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT, 4);
+            IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT,
+                DFLT_WAL_COMPRESSOR_WORKER_THREAD_CNT);
 
     /**
      * Threshold time to print warning to log if awaiting for next wal segment took too long (exceeded this threshold).
      */
     private static final long THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT =
-        IgniteSystemProperties.getLong(IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT, 1000L);
+        IgniteSystemProperties.getLong(IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT,
+            DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT);
 
     /** */
     private final boolean alwaysWriteFullPages;

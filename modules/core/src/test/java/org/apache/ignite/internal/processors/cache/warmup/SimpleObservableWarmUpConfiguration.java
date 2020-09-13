@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.warmup;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 
 /**
- * Configuration for {@link SimpleObservableWarmUp}.
+ * Configuration for {@link SimpleObservableWarmUpStrategy}.
  */
 class SimpleObservableWarmUpConfiguration implements WarmUpConfiguration {
     // No-op.
