@@ -26,11 +26,11 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.client.PersonBinarylizable;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -197,6 +197,25 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     public void testDestroyCacheAsyncThrowsWhenCacheDoesNotExist() throws Exception {
         GridTestUtils.assertThrowsAnyCause(null, () -> client.destroyCacheAsync(TMP_CACHE_NAME).get(),
                 ClientException.class, "Cache does not exist [cacheId= 911828570]");
+    }
+
+    /**
+     * Tests async cacheNames.
+     */
+    @Test
+    public void testCacheNamesAsync() throws Exception {
+        Collection<String> names = client.cacheNamesAsync().get();
+
+        assertEquals(2, names.size());
+        assertTrue(names.contains(personCache.getName()));
+        assertTrue(names.contains(strCache.getName()));
+
+        client.createCache(TMP_CACHE_NAME);
+
+        names = client.cacheNamesAsync().get();
+
+        assertEquals(3, names.size());
+        assertTrue(names.contains(TMP_CACHE_NAME));
     }
 
     /**
