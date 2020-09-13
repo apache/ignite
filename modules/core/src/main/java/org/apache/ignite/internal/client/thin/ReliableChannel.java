@@ -199,7 +199,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        // TODO: Handle response errors, add tests.
         return service0(ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
     }
 
@@ -258,7 +257,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        // TODO: Handle response errors, add tests.
         return affinityService0(cacheId, key, ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
     }
 

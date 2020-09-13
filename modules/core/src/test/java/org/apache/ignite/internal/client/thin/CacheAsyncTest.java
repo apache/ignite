@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -280,7 +281,13 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      */
     @Test
     public void testPutAsyncThrowsExceptionOnFailedSerialization() throws Exception {
-        // TODO:
+        ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
+
+        GridTestUtils.assertThrowsAnyCause(
+            null,
+            () -> cache.putAsync(1, new PersonBinarylizable("1", true, false)),
+            BinaryObjectException.class,
+            "Failed to serialize object [typeName=org.apache.ignite.client.PersonBinarylizable]");
     }
 
     /**
