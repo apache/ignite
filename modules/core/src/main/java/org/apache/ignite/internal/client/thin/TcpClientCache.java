@@ -466,8 +466,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_PUT,
+                req -> writeObject(req, val),
+                this::readObject
+        );
     }
 
     /** {@inheritDoc} */
@@ -485,8 +495,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_REMOVE,
+                null,
+                this::readObject
+        );
     }
 
     /** {@inheritDoc} */
@@ -507,8 +524,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_REPLACE,
+                req -> writeObject(req, val),
+                this::readObject
+        );
     }
 
     /** {@inheritDoc} */
@@ -529,8 +556,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException {
-        // TODO
-        return null;
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_PUT_IF_ABSENT,
+                req -> writeObject(req, val),
+                res -> res.in().readBoolean()
+        );
     }
 
     /** {@inheritDoc} */
@@ -540,8 +577,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
-        // TODO
-        return null;
+        return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
