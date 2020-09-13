@@ -70,7 +70,7 @@ public interface ClientCompute {
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException; // TODO: Naming?
+    public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException;
 
     /**
      * Sets timeout for tasks executed by returned {@code ClientCompute} instance.
