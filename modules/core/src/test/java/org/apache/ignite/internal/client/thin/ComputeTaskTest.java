@@ -185,7 +185,6 @@ public class ComputeTaskTest extends AbstractThinClientTest {
                 null
             );
 
-            // TODO: More checks for the new Future - can we use chaining and so on.
             assertFalse(fut.isDone());
 
             TestLatchTask.latch.countDown();
