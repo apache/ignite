@@ -32,8 +32,6 @@ import org.junit.Test;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -280,7 +278,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      * Tests that request encode errors are handled correctly.
      */
     @Test
-    public void testPutAsyncThrowsExceptionOnFailedSerialization() throws Exception {
+    public void testPutAsyncThrowsExceptionOnFailedSerialization() {
         ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
 
         GridTestUtils.assertThrowsAnyCause(
