@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -73,14 +72,7 @@ public class PreparedTxStreamer extends IgniteAwareApplication {
 
                 cache.put(i, i);
 
-                try {
-                    ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
-                }
-                catch (IgniteCheckedException e) {
-                    markBroken(e);
-
-                    return;
-                }
+                ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
 
                 if (cnt % 100 == 0)
                     log.info("Long Tx prepared [key=" + i + ",cnt=" + cnt + ", cell=" + stat.keySet() + "]");
