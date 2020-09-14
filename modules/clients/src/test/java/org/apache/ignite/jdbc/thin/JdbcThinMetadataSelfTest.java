@@ -1370,6 +1370,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
+        }
+    }
+
+    /**
      * Person.
      */
     private static class Person implements Serializable {
