@@ -155,8 +155,8 @@ class CacheContinuousQueryPartitionRecovery {
                     if (!entry.isFiltered())
                         entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
 
-                    if (log.isInfoEnabled())
-                        log.info("Partition was lost [lastFiredEvt=" + lastFiredEvt +
+                    if (log.isDebugEnabled())
+                        log.debug("Partition was lost [lastFiredEvt=" + lastFiredEvt +
                             ", curTop=" + curTop +
                             ", entUpdCnt=" + entry.updateCounter() +
                             ", partId=" + entry.partition() +

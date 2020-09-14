@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -98,6 +99,7 @@ public class CacheContinuousQueryEventBuffer {
      */
     void cleanupOnAck(long updateCntr) {
         backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
+
         ackedUpdCntr.setIfGreater(updateCntr);
     }
 
@@ -361,10 +363,10 @@ public class CacheContinuousQueryEventBuffer {
         synchronized Map<Long, CacheContinuousQueryEntry> flushCurrentEntries(
             BiFunction<Long, Long, CacheContinuousQueryEntry> filteredFactory
         ) {
-            Map<Long, CacheContinuousQueryEntry> res = new HashMap<>();
-
             if (entries == null || filteredFactory == null)
-                return res;
+                return Collections.emptyMap();
+
+            Map<Long, CacheContinuousQueryEntry> res = new HashMap<>();
 
             long filtered = this.filtered;
             long cntr = startCntr;
