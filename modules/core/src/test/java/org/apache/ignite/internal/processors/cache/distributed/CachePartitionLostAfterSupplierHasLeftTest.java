@@ -411,7 +411,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
             // Puts done concurrently with clearing after reset should not be lost.
             g1.cache(DEFAULT_CACHE_NAME).putAll(keys.stream().collect(Collectors.toMap(k -> k, v -> -1)));
 
-            g1.context().cache().context().evict().awaitFinishAll();
+            GridTestUtils.waitForCondition(() -> g1.context().cache().context().evict().total() == 0, 30_000);
 
             for (Integer key : keys)
                 assertEquals("key=" + key.toString(), -1, g1.cache(DEFAULT_CACHE_NAME).get(key));

@@ -36,6 +36,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -57,6 +58,9 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
  * Implementation of JSR-107 {@link CacheManager}.
  */
 public class CacheManager implements javax.cache.CacheManager {
+    /** @see IgniteSystemProperties#IGNITE_JCACHE_DEFAULT_ISOLATED */
+    public static final boolean DFLT_JCACHE_DEFAULT_ISOLATED = true;
+
     /** */
     private static final String CACHE_STATISTICS = "CacheStatistics";
 
@@ -100,7 +104,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, true)) {
+                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, DFLT_JCACHE_DEFAULT_ISOLATED)) {
                     TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
                     discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));

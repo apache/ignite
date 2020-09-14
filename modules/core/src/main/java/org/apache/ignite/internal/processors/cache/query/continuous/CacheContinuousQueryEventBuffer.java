@@ -35,6 +35,7 @@ import java.util.function.BiFunction;
 import java.util.function.LongUnaryOperator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.jetbrains.annotations.Nullable;
@@ -43,13 +44,29 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheContinuousQueryEventBuffer {
+    /** @see #IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE */
+    public static final int DFLT_CONTINUOUS_QUERY_PENDING_BUFF_SIZE = 10_000;
+
+    /** @see #IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE */
+    public static final int DFLT_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE = 1000;
+
+    /** */
+    @SystemProperty(value = "The max size of the buffer with pending continuous queries events",
+        type = Long.class, defaults = "" + DFLT_CONTINUOUS_QUERY_PENDING_BUFF_SIZE)
+    public static final String IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE";
+
+    /** */
+    @SystemProperty(value = "Continuous queries batch buffer size", type = Long.class,
+        defaults = "" + DFLT_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE)
+    public static final String IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE = "IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE";
+
     /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
     public static final int MAX_PENDING_BUFF_SIZE =
-        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", 10_000);
+        IgniteSystemProperties.getInteger(IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE, DFLT_CONTINUOUS_QUERY_PENDING_BUFF_SIZE);
 
     /** Batch buffer size. */
     private static final int BUF_SIZE =
-        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
+        IgniteSystemProperties.getInteger(IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE, DFLT_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE);
 
     /** */
     private static final Object RETRY = new Object();
