@@ -157,7 +157,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         throw new UnsupportedOperationException();
     }
 

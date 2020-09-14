@@ -98,7 +98,7 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         curSrc = 0;
         waiting = 0;
     }

@@ -165,7 +165,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
+    @Override protected void onErrorInternal(Throwable e) {
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
@@ -182,8 +182,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
-        super.onClose();
+    @Override public void closeInternal() {
+        super.closeInternal();
 
         registry.unregister(this);
 
@@ -198,7 +198,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         throw new UnsupportedOperationException();
     }
 

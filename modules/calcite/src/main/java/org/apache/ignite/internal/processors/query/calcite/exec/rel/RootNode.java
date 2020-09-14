@@ -104,7 +104,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         }
 
         if (onClose == null)
-            onClose();
+            closeInternal();
         else
             onClose.run();
     }
@@ -115,7 +115,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
+    @Override public void closeInternal() {
         context().execute(() -> {
             buff.clear();
 
@@ -184,7 +184,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
+    @Override protected void onErrorInternal(Throwable e) {
         if (!ex.compareAndSet(null, e))
             ex.get().addSuppressed(e);
 
@@ -226,7 +226,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         throw new UnsupportedOperationException();
     }
 

@@ -40,7 +40,7 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         // No-op.
     }
 

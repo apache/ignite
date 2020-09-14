@@ -137,8 +137,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
-        super.onClose();
+    @Override public void closeInternal() {
+        super.closeInternal();
 
         registry.unregister(this);
     }
@@ -154,7 +154,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         throw new UnsupportedOperationException();
     }
 
@@ -168,8 +168,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      */
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         try {
-            checkState();
-
             Buffer buf = getOrCreateBuffer(src);
 
             boolean waitingBefore = buf.check() == State.WAITING;
@@ -187,8 +185,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private void doPush() {
         try {
-            checkState();
-
             push();
         }
         catch (Exception e) {

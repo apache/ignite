@@ -157,7 +157,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
         groupings.forEach(grouping -> grouping.groups.clear());

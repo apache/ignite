@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 /**
  * Represents a node of execution tree.
  *
- * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#close()} ()},
  * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
 public interface Node<Row> extends AutoCloseable {

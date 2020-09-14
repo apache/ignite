@@ -118,7 +118,7 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
         inBuf.clear();

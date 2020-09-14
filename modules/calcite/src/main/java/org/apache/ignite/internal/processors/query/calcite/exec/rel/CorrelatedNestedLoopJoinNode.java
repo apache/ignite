@@ -113,7 +113,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         leftInBuf = null;
         rightInBuf = null;
 

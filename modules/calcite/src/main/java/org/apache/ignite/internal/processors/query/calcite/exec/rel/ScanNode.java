@@ -80,8 +80,8 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
-        super.onClose();
+    @Override public void closeInternal() {
+        super.closeInternal();
 
         Commons.closeQuiet(it);
         it = null;
@@ -89,7 +89,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         Commons.closeQuiet(it);
         it = null;
     }

@@ -103,7 +103,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
         if (isClosed())
             return;
 
-        onClose();
+        closeInternal();
 
         if (!F.isEmpty(sources()))
             sources().forEach(U::closeQuiet);
@@ -111,7 +111,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
 
     /** {@inheritDoc} */
     @Override public void rewind() {
-        onRewind();
+        rewindInternal();
 
         if (!F.isEmpty(sources()))
             sources().forEach(Node::rewind);
@@ -122,34 +122,38 @@ public abstract class AbstractNode<Row> implements Node<Row> {
         this.downstream = downstream;
     }
 
-    /** */
-    protected abstract void onRewind();
-
     /**
      * Processes given exception.
      *
      * @param e Exception.
      */
     public void onError(Throwable e) {
-        assert downstream() != null;
-
-        if (e instanceof ExecutionCancelledException) {
+        if (e instanceof ExecutionCancelledException)
             U.warn(context().planningContext().logger(), "Execution is cancelled.", e);
+        else
+            onErrorInternal(e);
+    }
 
-            return;
-        }
+    /** */
+    protected void closeInternal() {
+        closed = true;
+    }
+
+    /** */
+    protected abstract void rewindInternal();
+
+    /** */
+    protected void onErrorInternal(Throwable e) {
+        Downstream<Row> downstream = downstream();
+
+        assert downstream != null;
 
         try {
-            downstream().onError(e);
+            downstream.onError(e);
         }
         finally {
             U.closeQuiet(this);
         }
-    }
-
-    /** */
-    protected void onClose() {
-        closed = true;
     }
 
     /**

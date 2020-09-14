@@ -103,7 +103,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onRewind() {
+    @Override protected void rewindInternal() {
         requested = 0;
         waitingLeft = 0;
         waitingRight = 0;
@@ -292,11 +292,11 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             left = null;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** */
@@ -369,12 +369,12 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             matched = false;
             left = null;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -465,13 +465,13 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             left = null;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -593,14 +593,14 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             left = null;
             leftMatched = false;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -718,11 +718,11 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             left = null;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -786,11 +786,11 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** */
-        @Override protected void onRewind() {
+        @Override protected void rewindInternal() {
             left = null;
             rightIdx = 0;
 
-            super.onRewind();
+            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
