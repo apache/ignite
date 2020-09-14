@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -61,6 +62,12 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 @RunWith(Parameterized.class)
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
+    /** Nodes count. */
+    private static final int NODES_CNT = 2;
+    /** Cache entry count. */
+
+    private static final int ENTRY_COUNT = 100;
+
     /** Test entry processor. */
     private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
         new EntryProcessor<Object, Object, Object>() {
@@ -78,9 +85,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             return null;
         }
     };
-
-    /** Cache entry count. */
-    private static final int ENTRY_COUNT = 100;
 
     /** Client type to run operations from. */
     @Parameterized.Parameter
@@ -112,9 +116,9 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        srv = startGrid(0);
+        srv = startGrid(NODES_CNT - 1);
 
-        IgniteEx client = startClientGrid(1);
+        IgniteEx client = startClientGrid(NODES_CNT);
 
         node = clientType == SERVER ? srv : client;
 
@@ -129,6 +133,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     public void testCompute() throws Exception {
         String testTaskName = "testTask";
         int executions = 5;
+        long startTime = U.currentTimeMillis();
 
         startCollectStatistics();
 
@@ -146,20 +151,20 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         AtomicInteger jobs = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
-                int affPartId) {
+            @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long taskStartTime,
+                long duration, int affPartId) {
                 sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
                 tasks.incrementAndGet();
 
                 assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(testTaskName, taskName);
-                assertTrue(startTime > 0);
+                assertTrue(taskStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertEquals(-1, affPartId);
             }
 
-            @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+            @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long jobStartTime, long duration,
                 boolean timedOut) {
                 sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
@@ -167,7 +172,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
                 assertEquals(srv.context().localNodeId(), nodeId);
                 assertTrue(queuedTime >= 0);
-                assertTrue(startTime > 0);
+                assertTrue(jobStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertFalse(timedOut);
             }
@@ -179,7 +184,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         Collection<Integer> vals = sessions.values();
 
         assertEquals(executions, vals.size());
-        assertTrue("Invalid sessions: " + sessions, vals.stream().allMatch(val -> val == 2));
+        assertTrue("Invalid sessions: " + sessions, vals.stream().allMatch(cnt -> cnt == NODES_CNT));
     }
 
     /** @throws Exception If failed. */
@@ -240,6 +245,8 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** Checks cache operation. */
     private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+        long startTime = U.currentTimeMillis();
+
         startCollectStatistics();
 
         clo.accept(cache);
@@ -247,14 +254,14 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         AtomicInteger ops = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
+            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long opStartTime,
                 long duration) {
                 ops.incrementAndGet();
 
                 assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(op, type);
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
-                assertTrue(startTime > 0);
+                assertTrue(opStartTime >= startTime);
                 assertTrue(duration >= 0);
             }
         });
@@ -272,6 +279,8 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** @param commited {@code True} if check transaction commited. */
     private void checkTx(boolean commited) throws Exception {
+        long startTime = U.currentTimeMillis();
+
         startCollectStatistics();
 
         try (Transaction tx = node.transactions().txStart()) {
@@ -287,14 +296,14 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         AtomicInteger txs = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+            @Override public void transaction(UUID nodeId, GridIntList cacheIds, long txStartTime, long duration,
                 boolean txCommited) {
                 txs.incrementAndGet();
 
                 assertEquals(node.context().localNodeId(), nodeId);
                 assertEquals(1, cacheIds.size());
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheIds.get(0));
-                assertTrue(startTime > 0);
+                assertTrue(txStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertEquals(commited, txCommited);
             }

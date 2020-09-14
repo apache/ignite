@@ -37,6 +37,7 @@ import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
@@ -100,6 +101,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     @Test
     public void testCompute() throws Exception {
         int executions = 5;
+        long startTime = U.currentTimeMillis();
 
         startCollectStatistics();
 
@@ -111,20 +113,20 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         AtomicInteger jobs = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
-                int affPartId) {
+            @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long taskStartTime,
+                long duration, int affPartId) {
                 sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
                 tasks.incrementAndGet();
 
                 assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(TEST_TASK_NAME, taskName);
-                assertTrue(startTime > 0);
+                assertTrue(taskStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertEquals(-1, affPartId);
             }
 
-            @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+            @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long jobStartTime, long duration,
                 boolean timedOut) {
                 sessions.compute(sesId, (uuid, cnt) -> cnt == null ? 1 : ++cnt);
 
@@ -132,7 +134,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
                 assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertTrue(queuedTime >= 0);
-                assertTrue(startTime > 0);
+                assertTrue(jobStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertFalse(timedOut);
             }
@@ -169,6 +171,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
     /** Checks cache operation. */
     private void checkCacheOperation(OperationType op, Consumer<ClientCache<Object, Object>> clo) throws Exception {
+        long startTime = U.currentTimeMillis();
+
         startCollectStatistics();
 
         clo.accept(thinClient.cache(DEFAULT_CACHE_NAME));
@@ -176,14 +180,14 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         AtomicInteger ops = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
+            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long opStartTime,
                 long duration) {
                 ops.incrementAndGet();
 
                 assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(op, type);
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
-                assertTrue(startTime > 0);
+                assertTrue(opStartTime >= startTime);
                 assertTrue(duration >= 0);
             }
         });
@@ -201,6 +205,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
     /** @param commited {@code True} if check transaction commited. */
     private void checkTx(boolean commited) throws Exception {
+        long startTime = U.currentTimeMillis();
+
         startCollectStatistics();
 
         try (ClientTransaction tx = thinClient.transactions().txStart()) {
@@ -216,14 +222,14 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         AtomicInteger txs = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+            @Override public void transaction(UUID nodeId, GridIntList cacheIds, long txStartTime, long duration,
                 boolean txCommited) {
                 txs.incrementAndGet();
 
                 assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(1, cacheIds.size());
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheIds.get(0));
-                assertTrue(startTime > 0);
+                assertTrue(txStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertEquals(commited, txCommited);
             }

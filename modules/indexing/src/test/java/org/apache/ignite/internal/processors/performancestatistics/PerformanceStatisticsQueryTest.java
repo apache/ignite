@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -224,6 +225,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     private void runQueryAndCheck(GridCacheQueryType expType, Query<?> qry, String expText, boolean hasLogicalReads,
         boolean hasPhysicalReads)
         throws Exception {
+        long startTime = U.currentTimeMillis();
+
         startCollectStatistics();
 
         Collection<UUID> expNodeIds = new ArrayList<>();
@@ -254,7 +257,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         HashSet<Long> qryIds = new HashSet<>();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
                 long duration, boolean success) {
                 queryCnt.incrementAndGet();
                 qryIds.add(id);
@@ -262,7 +265,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertTrue(expNodeIds.contains(nodeId));
                 assertEquals(expType, type);
                 assertEquals(expText, text);
-                assertTrue(startTime > 0);
+                assertTrue(queryStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertTrue(success);
             }
@@ -290,6 +293,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testMultipleStatementsSql() throws Exception {
         assumeFalse("Multiple statements queries are not supported by thin client.",
             clientType == THIN_CLIENT);
+
+        long startTime = U.currentTimeMillis();
 
         LinkedList<String> expQrs = new LinkedList<>();
 
@@ -319,7 +324,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         HashSet<Long> qryIds = new HashSet<>();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
                 long duration, boolean success) {
                 if (qrsWithReads.contains(text))
                     qryIds.add(id);
@@ -327,7 +332,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertEquals(loadNode.localNode().id(), nodeId);
                 assertEquals(SQL_FIELDS, type);
                 assertTrue("Unexpected query: " + text, expQrs.remove(text));
-                assertTrue(startTime > 0);
+                assertTrue(queryStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertTrue(success);
             }
