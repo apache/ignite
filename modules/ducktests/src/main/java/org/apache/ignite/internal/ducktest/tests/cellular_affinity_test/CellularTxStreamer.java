@@ -31,9 +31,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Streams transactions to specified cell.
  */
 public class CellularTxStreamer extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cacheName").asText();
         int warmup = jsonNode.get("warmup").asInt();
