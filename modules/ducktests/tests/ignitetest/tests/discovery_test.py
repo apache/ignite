@@ -82,7 +82,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1],
+            nodes_to_kill=[2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
@@ -156,7 +156,7 @@ class DiscoveryTest(IgniteTest):
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         for node in failed_nodes:
-            self.logger.info("netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.info("Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         return data
 
@@ -319,9 +319,9 @@ def network_fail_task(ignite_config, test_config):
 
     return lambda node: (
         node.account.ssh_client.exec_command(
-            f"sudo iptables -A INPUT -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
+            f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
         node.account.ssh_client.exec_command(
-            f"sudo iptables -A OUTPUT -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
+            f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"),
     )
 
 
@@ -329,4 +329,4 @@ def dump_netfilter_settings(node):
     """
     Reads current netfilter settings on the node for debugging purposes.
     """
-    return str(node.account.ssh_client.exec_command("sudo iptables -L")[1].read(), sys.getdefaultencoding())
+    return str(node.account.ssh_client.exec_command("sudo iptables -L -v -n")[1].read(), sys.getdefaultencoding())
