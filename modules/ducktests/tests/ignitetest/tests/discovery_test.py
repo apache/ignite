@@ -80,10 +80,10 @@ class DiscoveryTest(IgniteTest):
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC])
+            nodes_to_kill=[1, 2],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -156,7 +156,7 @@ class DiscoveryTest(IgniteTest):
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         for node in failed_nodes:
-            self.logger.info("Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.debug("Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         return data
 
@@ -179,7 +179,7 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
-            self.logger.info("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
     def teardown(self):
         # Restore previous network filter settings.
@@ -194,7 +194,7 @@ class DiscoveryTest(IgniteTest):
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
 
-            self.logger.info("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
