@@ -30,6 +30,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, LATEST_2_7, V_2_8_0
 
 
+# pylint: disable=W0223
 class BaselineTests(IgniteTest):
     """
     Tests baseline command
@@ -37,7 +38,7 @@ class BaselineTests(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test_baseline_set(self, ignite_version):
         """
         Test baseline set.
@@ -73,7 +74,7 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test_baseline_add_remove(self, ignite_version):
         """
         Test add and remove nodes from baseline.
@@ -115,7 +116,7 @@ class BaselineTests(IgniteTest):
         self.__check_nodes_not_in_baseline(new_node.nodes, baseline)
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test_activate_deactivate(self, ignite_version):
         """
         Test activate and deactivate cluster.
@@ -138,7 +139,7 @@ class BaselineTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @version_if(lambda version: version >= V_2_8_0)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8), str(LATEST_2_7))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test_baseline_autoadjust(self, ignite_version):
         """
         Test activate and deactivate cluster.

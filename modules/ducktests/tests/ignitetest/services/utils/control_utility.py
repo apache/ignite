@@ -16,9 +16,10 @@
 """
 This module contains control utility wrapper.
 """
+
 import random
 import re
-from collections import namedtuple
+import time
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -105,14 +106,23 @@ class ControlUtility:
         return self.__run("--deactivate --yes")
 
     def tx(self, **kwargs):
+        """
+        Get list of transactions, various filters can be applied.
+        """
         output = self.__run(self.__tx_command(**kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
 
     def tx_info(self, xid):
+        """
+        Get verbose transaction info by xid.
+        """
         return self.__parse_tx_info(self.__run(f"--tx --info {xid}"))
 
     def tx_kill(self, **kwargs):
+        """
+        Kill transaction by xid or by various filter.
+        """
         output = self.__run(self.__tx_command(kill=True, **kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
@@ -155,17 +165,6 @@ class ControlUtility:
 
     @staticmethod
     def __parse_tx_info(output):
-        def parse_dict(raw):
-            res = {}
-            for token in raw.split(','):
-                key, value = tuple(token.strip().split('='))
-                res[key] = value
-
-            return res
-
-        def parse_list(raw):
-            return [token.strip() for token in raw.split(',')]
-
         tx_info_pattern = re.compile(
             "Near XID version: (?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+\\])\\n\\s+"
             "Near XID version \\(UUID\\): (?P<xid>[^\\s]+)\\n\\s+"
@@ -183,12 +182,18 @@ class ControlUtility:
 
         match = tx_info_pattern.search(output)
 
+        str_fields = ['xid', 'xid_full', 'label', 'timeout', 'isolation', 'concurrency', 'initiator_id',
+                      'initiator_consistent_id']
+        dict_fields = ['caches', 'cache_groups']
+
         if match:
-            return match.group('xid'), match.group('xid_full'), match.group('isolation'), match.group('concurrency'), \
-                   match.group('timeout'), match.group('initiator_id'), match.group('initiator_consistent_id'), \
-                   match.group('label'), (match.group('top_ver'), match.group('minor_top_ver')), \
-                   parse_dict(match.group('caches')), parse_dict(match.group('cache_groups')), \
-                   parse_list(match.group('states'))
+            kwargs = {v: match.group(v) for v in str_fields}
+            kwargs['timeout'] = int(match.group('timeout'))
+            kwargs.update({v: parse_dict(match.group(v)) for v in dict_fields})
+            kwargs['top_ver'] = (int(match.group('top_ver')), int(match.group('minor_top_ver')))
+            kwargs['states'] = parse_list(match.group('states'))
+
+            return TxVerboseInfo(**kwargs)
 
         return None
 
@@ -203,7 +208,7 @@ class ControlUtility:
             "timeout=(?P<timeout>\\d+), size=(?P<size>\\d+), dhtNodes=\\[(?P<dht_nodes>.*)\\], "
             "nearXid=(?P<near_xid>[^\\s]+), parentNodeIds=\\[(?P<parent_nodes>.*)\\]\\]")
 
-        str_fields = ['xid', 'label', 'state', 'start_time', 'isolation', 'concurrency', 'near_xid']
+        str_fields = ['xid', 'label', 'state', 'isolation', 'concurrency', 'near_xid']
         int_fields = ['timeout', 'size', 'duration']
         list_fields = ['parent_nodes', 'dht_nodes']
 
@@ -212,7 +217,8 @@ class ControlUtility:
             kwargs = {v: match.group(v) for v in str_fields}
             kwargs.update({v: int(match.group(v)) for v in int_fields})
             kwargs['top_ver'] = (int(match.group('top_ver')), int(match.group('minor_top_ver')))
-            kwargs.update({v: match.group(v).split(',') for v in list_fields})
+            kwargs.update({v: parse_list(match.group(v)) for v in list_fields})
+            kwargs['start_time'] = time.strptime(match.group('start_time'), "%Y-%m-%d %H:%M:%S.%f")
             tx_list.append(TxInfo(**kwargs))
 
         return tx_list
@@ -273,22 +279,32 @@ class ControlUtility:
 
 
 class BaselineNode(NamedTuple):
+    """
+    Baseline node info.
+    """
     consistent_id: str
     state: str
     order: int
 
 
 class ClusterState(NamedTuple):
+    """
+    Cluster state info.
+    """
     state: str
     topology_version: int
     baseline: list
 
+
 class TxInfo(NamedTuple):
+    """
+    Transaction info.
+    """
     xid: str
     near_xid: str
     label: str
     state: str
-    start_time: str
+    start_time: time.struct_time
     duration: int
     isolation: str
     concurrency: str
@@ -299,9 +315,46 @@ class TxInfo(NamedTuple):
     parent_nodes: list = []
 
 
+class TxVerboseInfo(NamedTuple):
+    """
+    Transaction info returned with --info
+    """
+    xid: str
+    xid_full: str
+    label: str
+    isolation: str
+    concurrency: str
+    timeout: int
+    top_ver: tuple
+    initiator_id: str
+    initiator_consistent_id: str
+    caches: dict
+    cache_groups: dict
+    states: list
+
+
 class ControlUtilityError(RemoteCommandError):
     """
     Error is raised when control utility failed.
     """
     def __init__(self, account, cmd, exit_status, output):
         super().__init__(account, cmd, exit_status, "".join(output))
+
+
+def parse_dict(raw):
+    """
+    Parse java Map.toString() to python dict.
+    """
+    res = {}
+    for token in raw.split(','):
+        key, value = tuple(token.strip().split('='))
+        res[key] = value
+
+    return res
+
+
+def parse_list(raw):
+    """
+    Parse java List.toString() to python list
+    """
+    return [token.strip() for token in raw.split(',')]
