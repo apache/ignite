@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
@@ -71,13 +72,26 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * Striped doubly-linked list of page IDs optionally organized in buckets.
  */
 public abstract class PagesList extends DataStructure {
+    /** @see #IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS  */
+    public static final int DFLT_PAGES_LIST_TRY_LOCK_ATTEMPTS = 10;
+
+    /** */
+    @SystemProperty(value = "Maximum count of the stripes", type = Long.class,
+        defaults = "Maximum of 8 and available processors count")
+    public static final String IGNITE_PAGES_LIST_STRIPES_PER_BUCKET = "IGNITE_PAGES_LIST_STRIPES_PER_BUCKET";
+
+    /** */
+    @SystemProperty(value = "Count of tries to lock stripe before fail back to blocking lock", type = Long.class,
+        defaults = "" + DFLT_PAGES_LIST_TRY_LOCK_ATTEMPTS)
+    public static final String IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS = "IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS";
+
     /** */
     private static final int TRY_LOCK_ATTEMPTS =
-            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
+            IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS, DFLT_PAGES_LIST_TRY_LOCK_ATTEMPTS);
 
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
-        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
+        IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_STRIPES_PER_BUCKET,
             Math.max(8, Runtime.getRuntime().availableProcessors()));
 
     /** */
@@ -1913,17 +1927,44 @@ public abstract class PagesList extends DataStructure {
 
     /** Class to store page-list cache onheap. */
     public static class PagesCache {
+        /** @see #IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE */
+        public static final int DFLT_PAGES_LIST_CACHING_MAX_CACHE_SIZE = 64;
+
+        /** @see #IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT */
+        public static final int DFLT_PAGES_LIST_CACHING_STRIPES_COUNT = 4;
+
+        /** @see #IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD */
+        public static final int DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD = 10;
+
+        /** */
+        @SystemProperty(value = "Pages cache maximum size", type = Long.class,
+            defaults = "" + DFLT_PAGES_LIST_CACHING_MAX_CACHE_SIZE)
+        public static final String IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE = "IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE";
+
+        /** */
+        @SystemProperty(value = "Stripes count. Must be power of 2", type = Long.class,
+            defaults = "" + DFLT_PAGES_LIST_CACHING_STRIPES_COUNT)
+        public static final String IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT = "IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT";
+
+        /** */
+        @SystemProperty(value = "The threshold of flush calls on empty caches to allow GC of stripes " +
+            "(the flush is triggered two times per checkpoint)", type = Long.class,
+            defaults = "" + DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD)
+        public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD = "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
+
         /** Pages cache max size. */
-        private static final int MAX_SIZE =
-            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE", 64);
+        private static final int MAX_SIZE = IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE,
+            DFLT_PAGES_LIST_CACHING_MAX_CACHE_SIZE);
 
         /** Stripes count. Must be power of 2. */
         private static final int STRIPES_COUNT =
-            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT", 4);
+            IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT,
+                DFLT_PAGES_LIST_CACHING_STRIPES_COUNT);
 
         /** Threshold of flush calls on empty cache to allow GC of stripes (flush invoked twice per checkpoint). */
         private static final int EMPTY_FLUSH_GC_THRESHOLD =
-            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD", 10);
+            IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD,
+                DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD);
 
         /** Mutexes for each stripe. */
         private final Object[] stripeLocks = new Object[STRIPES_COUNT];

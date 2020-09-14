@@ -250,7 +250,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = SF.applyLB(10, 3);
+        final int restarts = SF.applyLB(5, 3);
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
@@ -271,7 +271,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         stopGrid(victimName);
                         startGrid(config(victimName, false, false));
 
-                        Thread.sleep(500);
+                        Thread.sleep(200);
                     }
                     catch (Exception e) {
                         throw new RuntimeException();
