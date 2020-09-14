@@ -53,10 +53,7 @@ class CacheLockImpl<K, V> implements Lock {
     private volatile Thread lockedThread;
 
     /** Lock start time in nanoseconds. */
-    private volatile long startTime;
-
-    /** Performance statistics enabled flag. */
-    private final boolean performanceStatsEnabled;
+    private volatile long startTimeNanos;
 
     /**
      * @param gate Gate.
@@ -70,7 +67,6 @@ class CacheLockImpl<K, V> implements Lock {
         this.delegate = delegate;
         this.opCtx = opCtx;
         this.keys = keys;
-        this.performanceStatsEnabled = delegate.context().kernalContext().performanceStatistics().enabled();
     }
 
     /** {@inheritDoc} */
@@ -98,8 +94,8 @@ class CacheLockImpl<K, V> implements Lock {
     private void incrementLockCounter() {
         assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
 
-        if (performanceStatsEnabled && cntr == 0)
-            startTime = System.nanoTime();
+        if (cntr == 0 && delegate.context().kernalContext().performanceStatistics().enabled())
+            startTimeNanos = System.nanoTime();
 
         cntr++;
 
@@ -201,12 +197,12 @@ class CacheLockImpl<K, V> implements Lock {
             if (cntr == 0) {
                 lockedThread = null;
 
-                if (performanceStatsEnabled) {
+                if (startTimeNanos > 0) {
                     delegate.context().kernalContext().performanceStatistics().cacheOperation(
                         OperationType.CACHE_LOCK,
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),
-                        System.nanoTime() - startTime);
+                        System.nanoTime() - startTimeNanos);
                 }
             }
 
