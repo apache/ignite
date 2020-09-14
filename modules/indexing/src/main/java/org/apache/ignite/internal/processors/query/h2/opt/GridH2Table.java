@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -698,7 +699,7 @@ public class GridH2Table extends TableBase {
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy(rmIndex);
+                    ((GridH2IndexBase)index(i)).destroy(rmIndex);
         }
         finally {
             unlock(true);
@@ -720,8 +721,8 @@ public class GridH2Table extends TableBase {
      * @param idx Index in list.
      * @return Index.
      */
-    private GridH2IndexBase index(int idx) {
-        return (GridH2IndexBase)idxs.get(idx);
+    private <T extends Index> T index(int idx) {
+        return (T)idxs.get(idx);
     }
 
     /**

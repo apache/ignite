@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -69,10 +70,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
     /** Version 2.9.0: adds experimental query engine support */
-    static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
+    static final ClientListenerProtocolVersion VER_2_10_0 = ClientListenerProtocolVersion.create(2, 10, 0);
 
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_9_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_10_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -193,7 +194,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             features = JdbcThinFeature.enumSet(cliFeatures);
         }
 
-        if (ver.compareTo(VER_2_9_0) >= 0)
+        if (ver.compareTo(VER_2_10_0) >= 0)
             useExperimentalQueryEngine = reader.readBoolean();
 
         if (ver.compareTo(VER_2_5_0) >= 0) {

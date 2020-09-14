@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -554,7 +556,11 @@ public class SchemaManager {
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
 
-        GridIndex<H2Row> pk = (GridIndex<H2Row>)h2Tbl.getUniqueIndex();
+        Index uniqueIndex = h2Tbl.getUniqueIndex();
+        if (uniqueIndex instanceof GridH2ProxyIndex)
+            uniqueIndex = ((GridH2ProxyIndex) uniqueIndex).underlyingIndex();
+
+        GridIndex<H2Row> pk = (GridIndex<H2Row>)uniqueIndex;
 
         lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo(), pk);
 

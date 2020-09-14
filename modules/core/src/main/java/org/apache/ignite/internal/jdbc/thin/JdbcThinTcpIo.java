@@ -30,7 +30,9 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.cache.configuration.Factory;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -97,11 +99,11 @@ public class JdbcThinTcpIo {
     /** Version 2.9.0. Adds user attributes support. Adds features flags support. */
     private static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
-    /** Version 2.9.0. */
-    private static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
+    /** Version 2.10.0. */
+    private static final ClientListenerProtocolVersion VER_2_10_0 = ClientListenerProtocolVersion.create(2, 10, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_9_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_10_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -313,7 +315,7 @@ public class JdbcThinTcpIo {
             writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(enabledFeatures()));
         }
 
-        if (ver.compareTo(VER_2_9_0) >= 0)
+        if (ver.compareTo(VER_2_10_0) >= 0)
             writer.writeBoolean(connProps.isUseExperimentalQueryEngine());
 
         if (!F.isEmpty(connProps.getUsername())) {
