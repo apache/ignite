@@ -28,9 +28,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- *
+ * Streams transactions to specified cell.
  */
-public class TxStreamer extends IgniteAwareApplication {
+public class CellularTxStreamer extends IgniteAwareApplication {
     /**
      * {@inheritDoc}
      */

@@ -30,9 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 
 /**
- *
+ *  Prepares transactions at specified cell.
  */
-public class PreparedTxStreamer extends IgniteAwareApplication {
+public class CellularPreparedTxStreamer extends IgniteAwareApplication {
     /**
      * {@inheritDoc}
      */

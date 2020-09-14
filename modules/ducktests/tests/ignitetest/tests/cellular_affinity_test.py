@@ -154,8 +154,8 @@ class CellularAffinity(IgniteTest):
 
             data["[%s cell %s]" % ("alive" if cell is not failed_loader.params["cell"] else "broken", cell)] = \
                 "worst_latency=%s, tx_streamed=%s, measure_duration=%s" % (
-                streamer.extract_result("WORST_LATENCY"), streamer.extract_result("STREAMED"),
-                streamer.extract_result("MEASURE_DURATION"))
+                    streamer.extract_result("WORST_LATENCY"), streamer.extract_result("STREAMED"),
+                    streamer.extract_result("MEASURE_DURATION"))
 
         return data
 
@@ -167,7 +167,7 @@ class CellularAffinity(IgniteTest):
             self.test_context,
             IgniteClientConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                       discovery_spi=from_ignite_cluster(joined_cluster)),
-            java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.TxStreamer",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularTxStreamer",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell,
@@ -185,7 +185,8 @@ class CellularAffinity(IgniteTest):
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 discovery_spi=from_ignite_cluster(nodes)),  # Server node.
-            java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.PreparedTxStreamer",
+            java_class_name=
+            "org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularPreparedTxStreamer",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
