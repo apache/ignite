@@ -203,6 +203,8 @@ class CacheLockImpl<K, V> implements Lock {
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),
                         System.nanoTime() - startTimeNanos);
+
+                    startTimeNanos = 0;
                 }
             }
 
