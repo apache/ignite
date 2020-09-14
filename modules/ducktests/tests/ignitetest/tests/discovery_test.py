@@ -179,7 +179,7 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
-            self.logger.debug("netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.info("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
     def teardown(self):
         # Restore previous network filter settings.
@@ -194,7 +194,7 @@ class DiscoveryTest(IgniteTest):
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
 
-            self.logger.debug("netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.info("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
