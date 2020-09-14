@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node leave exchange worker task.
  */
-public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+public class SchemaNodeLeaveExchangeWorkerTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Node. */
     @GridToStringInclude
     private final ClusterNode node;
@@ -36,7 +36,9 @@ public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchange
      *
      * @param node Node.
      */
-    public SchemaNodeLeaveExchangeWorkerTask(ClusterNode node) {
+    public SchemaNodeLeaveExchangeWorkerTask(UUID secSubjId, ClusterNode node) {
+        super(secSubjId);
+
         this.node = node;
     }
 

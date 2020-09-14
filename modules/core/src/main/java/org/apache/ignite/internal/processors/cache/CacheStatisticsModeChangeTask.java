@@ -23,14 +23,16 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cache statistics mode change task for exchange worker.
  */
-public class CacheStatisticsModeChangeTask implements CachePartitionExchangeWorkerTask {
+public class CacheStatisticsModeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final CacheStatisticsModeChangeMessage msg;
 
     /**
      * @param msg Message.
      */
-    public CacheStatisticsModeChangeTask(CacheStatisticsModeChangeMessage msg) {
+    public CacheStatisticsModeChangeTask(UUID secSubjId, CacheStatisticsModeChangeMessage msg) {
+        super(secSubjId);
+
         assert msg != null;
 
         this.msg = msg;

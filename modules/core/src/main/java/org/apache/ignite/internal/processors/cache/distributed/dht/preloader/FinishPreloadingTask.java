@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
 
 /**
  * A task for finishing preloading future in exchange worker thread.
  */
-public class FinishPreloadingTask implements CachePartitionExchangeWorkerTask {
+public class FinishPreloadingTask extends AbstractCachePartitionExchangeWorkerTask {
     /**
      * Topology version.
      */
@@ -38,7 +38,9 @@ public class FinishPreloadingTask implements CachePartitionExchangeWorkerTask {
     /**
      * @param topVer Topology version.
      */
-    public FinishPreloadingTask(AffinityTopologyVersion topVer, int grpId) {
+    public FinishPreloadingTask(UUID secSubjId, AffinityTopologyVersion topVer, int grpId) {
+        super(secSubjId);
+
         this.grpId = grpId;
         this.topVer = topVer;
     }

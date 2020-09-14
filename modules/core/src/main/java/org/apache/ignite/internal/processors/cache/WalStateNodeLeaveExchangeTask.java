@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Exchange task to handle node leave for WAL state manager.
  */
-public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWorkerTask {
+public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Node that has left the grid. */
     private final ClusterNode node;
 
@@ -33,7 +33,9 @@ public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWork
      *
      * @param node Node that has left the grid.
      */
-    public WalStateNodeLeaveExchangeTask(ClusterNode node) {
+    public WalStateNodeLeaveExchangeTask(UUID secSubjId, ClusterNode node) {
+        super(secSubjId);
+
         assert node != null;
 
         this.node = node;

@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache schema change task for exchange worker.
  */
-public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+public class SchemaExchangeWorkerTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Message. */
     private final SchemaAbstractDiscoveryMessage msg;
 
@@ -34,7 +34,9 @@ public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTas
      *
      * @param msg Message.
      */
-    public SchemaExchangeWorkerTask(SchemaAbstractDiscoveryMessage msg) {
+    public SchemaExchangeWorkerTask(UUID secSubjId, SchemaAbstractDiscoveryMessage msg) {
+        super(secSubjId);
+
         assert msg != null;
 
         this.msg = msg;

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * The task for changing transaction timeout on partition map exchange.
  */
-public class TxTimeoutOnPartitionMapExchangeChangeTask implements CachePartitionExchangeWorkerTask {
+public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final TxTimeoutOnPartitionMapExchangeChangeMessage msg;
 
@@ -32,7 +32,9 @@ public class TxTimeoutOnPartitionMapExchangeChangeTask implements CachePartition
      *
      * @param msg Discovery message.
      */
-    public TxTimeoutOnPartitionMapExchangeChangeTask(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+    public TxTimeoutOnPartitionMapExchangeChangeTask(UUID secSubjId, TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+        super(secSubjId);
+
         assert msg != null;
         this.msg = msg;
     }

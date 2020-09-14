@@ -18,43 +18,23 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 /**
  *
  */
-class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements CachePartitionExchangeWorkerTask {
-    /** */
-    private final GridCacheSharedContext cctx;
-
+public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
     /** Security subject id. */
     private final UUID secSubjId;
 
     /**
-     * @param cctx Context.
-     * @param timeout Timeout.
+     * @param secSubjId Security subject id.
      */
-    ClientCacheUpdateTimeout(GridCacheSharedContext cctx, long timeout) {
-        super(timeout);
-
-        this.cctx = cctx;
-        secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean skipForExchangeMerge() {
-        return true;
+    protected AbstractCachePartitionExchangeWorkerTask(UUID secSubjId) {
+        this.secSubjId = secSubjId;
     }
 
     /** {@inheritDoc} */
     @Override public UUID securitySubjectId() {
         return secSubjId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        if (!cctx.kernalContext().isStopping())
-            cctx.exchange().addCustomTask(this);
     }
 }

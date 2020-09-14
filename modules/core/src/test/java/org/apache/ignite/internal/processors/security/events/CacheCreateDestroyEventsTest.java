@@ -61,7 +61,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 @RunWith(Parameterized.class)
 public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /** Counter. */
-    protected static final AtomicInteger COUNTER = new AtomicInteger();
+    private static final AtomicInteger COUNTER = new AtomicInteger();
 
     /** Node that registers event listeners. */
     private static final String LISTENER_NODE = "listener_node";

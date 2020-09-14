@@ -717,8 +717,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
-            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
+            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(securitySubjectId(cctx.kernalContext()), evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(securitySubjectId(cctx.kernalContext()), evt.eventNode()));
         }
     }
 
@@ -2996,7 +2996,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
             if (!hasPendingExchange())
-                futQ.add(new RebalanceReassignExchangeTask(exchId, fut));
+                futQ.add(new RebalanceReassignExchangeTask(securitySubjectId(cctx.kernalContext()), exchId, fut));
         }
 
         /**
@@ -3006,7 +3006,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
             GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-            futQ.add(new ForceRebalanceExchangeTask(exchId, fut));
+            futQ.add(new ForceRebalanceExchangeTask(securitySubjectId(cctx.kernalContext()), exchId, fut));
 
             return fut;
         }
@@ -3015,7 +3015,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param caches Caches to stop.
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
-            StopCachesOnClientReconnectExchangeTask task = new StopCachesOnClientReconnectExchangeTask(caches);
+            StopCachesOnClientReconnectExchangeTask task =
+                new StopCachesOnClientReconnectExchangeTask(securitySubjectId(cctx.kernalContext()), caches);
 
             futQ.add(task);
 
@@ -3027,7 +3028,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param grpId Group id.
          */
         void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
-            futQ.add(new FinishPreloadingTask(topVer, grpId));
+            futQ.add(new FinishPreloadingTask(securitySubjectId(cctx.kernalContext()), topVer, grpId));
         }
 
         /**

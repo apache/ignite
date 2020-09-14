@@ -34,10 +34,14 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
     @GridToStringInclude
     private final Collection<GridCacheAdapter> stoppedCaches;
 
+    /** Security subject id. */
+    private final UUID secSubjId;
+
     /**
      * @param stoppedCaches Collection of stopped caches.
      */
-    public StopCachesOnClientReconnectExchangeTask(Collection<GridCacheAdapter> stoppedCaches) {
+    public StopCachesOnClientReconnectExchangeTask(UUID secSubjId, Collection<GridCacheAdapter> stoppedCaches) {
+        this.secSubjId = secSubjId;
         this.stoppedCaches = stoppedCaches;
     }
 
@@ -48,7 +52,7 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
 
     /** {@inheritDoc} */
     @Override public UUID securitySubjectId() {
-        return null;
+        return secSubjId;
     }
 
     /**
