@@ -30,6 +30,8 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -246,6 +248,29 @@ public class IgniteBinaryTest {
                 enm = binary.buildEnum(Enum.class.getName(), Enum.DEFAULT.name());
 
                 assertBinaryObjectsEqual(refEnm, enm);
+            }
+        }
+    }
+
+    /**
+     * The purpose of this test is to check that message which begins with the same byte as marshaller header can
+     * be correctly unmarshalled.
+     */
+    @Test
+    public void testBinaryTypeWithIdOfMarshallerHeader() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                int typeId = GridBinaryMarshaller.OBJ;
+
+                BinaryObjectImpl binObj = (BinaryObjectImpl)ignite.binary().builder(Character.toString((char)typeId))
+                        .setField("dummy", "dummy")
+                        .build();
+
+                assertEquals(typeId, binObj.typeId());
+
+                BinaryType type = client.binary().type(typeId);
+
+                assertEquals(binObj.type().typeName(), type.typeName());
             }
         }
     }

@@ -94,8 +94,8 @@ public class JdbcThinTcpIo {
     /** Version 2.8.0. */
     private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
-    /** Version 2.8.1. Adds features flags support. */
-    private static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 1);
+    /** Version 2.9.0. Adds user attributes support. Adds features flags support. */
+    private static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
     /** Version 2.9.0. */
     private static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
@@ -288,7 +288,9 @@ public class JdbcThinTcpIo {
             writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
 
             JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
+        }
 
+        if (ver.compareTo(VER_2_9_0) >= 0) {
             String userAttrs = connProps.getUserAttributesFactory();
 
             if (F.isEmpty(userAttrs))
@@ -307,10 +309,9 @@ public class JdbcThinTcpIo {
                         SqlStateCode.CLIENT_CONNECTION_FAILED, e);
                 }
             }
-        }
 
-        if (ver.compareTo(VER_2_8_1) >= 0)
             writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(enabledFeatures()));
+        }
 
         if (ver.compareTo(VER_2_9_0) >= 0)
             writer.writeBoolean(connProps.isUseExperimentalQueryEngine());
@@ -347,7 +348,7 @@ public class JdbcThinTcpIo {
 
                 handshakeRes.igniteVersion(new IgniteProductVersion(maj, min, maintenance, stage, ts, hash));
 
-                if (ver.compareTo(VER_2_8_1) >= 0) {
+                if (ver.compareTo(VER_2_9_0) >= 0) {
                     byte[] srvFeatures = reader.readByteArray();
 
                     EnumSet<JdbcThinFeature> features = JdbcThinFeature.enumSet(srvFeatures);
@@ -379,7 +380,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_7_0.equals(srvProtoVer0)
+            if (VER_2_8_0.equals(srvProtoVer0)
+                || VER_2_7_0.equals(srvProtoVer0)
                 || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
@@ -742,8 +744,9 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * Set of features enabled on clien side. To get features
-     * supported by both sides use {@link #protoCtx}.
+     * Set of features enabled on client side. To get features supported by both sides use {@link #protoCtx}.
+     * Since {@link #protoCtx} only available after handshake, any handshake protocol change should not use features,
+     * but increment protocol version.
      */
     private EnumSet<JdbcThinFeature> enabledFeatures() {
         EnumSet<JdbcThinFeature> features = JdbcThinFeature.allFeaturesAsEnumSet();
