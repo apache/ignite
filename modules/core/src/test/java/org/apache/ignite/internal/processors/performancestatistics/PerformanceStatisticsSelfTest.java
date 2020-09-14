@@ -64,8 +64,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
     private static final int NODES_CNT = 2;
-    /** Cache entry count. */
 
+    /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
     /** Test entry processor. */
