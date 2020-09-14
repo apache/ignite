@@ -1651,6 +1651,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
+                writeStatistics(tx, true);
+
                 tx.txState().onTxEnd(cctx, tx, true);
             }
 
@@ -1720,6 +1722,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
+                writeStatistics(tx, false);
+
                 tx.txState().onTxEnd(cctx, tx, false);
             }
 
@@ -1772,6 +1776,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else
                         cctx.txMetrics().onTxRollback();
                 }
+
+                writeStatistics(tx, commit);
 
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
@@ -3620,6 +3626,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     throw e;
             }
         }
+    }
+
+    /**
+     * Writes transaction performance statistics.
+     *
+     * @param tx Transaction.
+     * @param commited {@code True} if transaction commited.
+     */
+    private void writeStatistics(IgniteInternalTx tx, boolean commited) {
+        if (!cctx.kernalContext().performanceStatistics().enabled() || tx.startTimeNanos() == 0)
+            return;
+
+        cctx.kernalContext().performanceStatistics().transaction(
+            tx.txState().cacheIds(),
+            tx.startTime(),
+            System.nanoTime() - tx.startTimeNanos(),
+            commited);
     }
 
     /**

@@ -108,7 +108,11 @@ public enum IgniteFeatures {
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
     /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39);
+    REMOVE_METADATA(39),
+
+    /** Collecting performance statistics. */
+    PERFORMANCE_STATISTICS(46);
+
     /**
      * Unique feature identifier.
      */
