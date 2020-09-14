@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
+import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
@@ -53,7 +54,8 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
-    ThinClientPartitionAwarenessDiscoveryTest.class
+    ThinClientPartitionAwarenessDiscoveryTest.class,
+    ReliableChannelTest.class
 })
 public class ClientTestSuite {
     // No-op.

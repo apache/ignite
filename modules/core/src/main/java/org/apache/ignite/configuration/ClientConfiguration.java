@@ -20,10 +20,9 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -38,13 +37,11 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @serial Server addresses.
-     * @deprecated deprecated in favor of {@link #addrFinder}. Keep it due to Serializable compatibility.
      */
-    @Deprecated
     private String[] addrs = null;
 
     /** Server addresses finder. */
-    private transient Supplier<String[]> addrFinder;
+    private transient ClientAddressFinder addrFinder;
 
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
@@ -132,27 +129,32 @@ public final class ClientConfiguration implements Serializable {
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        return Optional.ofNullable(addrFinder)
-            .map(Supplier::get)
-            .orElse(addrs);
+        if (addrs != null)
+            return Arrays.copyOf(addrs, addrs.length);
+        return null;
     }
 
     /**
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        if (addrs != null) {
+        if (addrs != null)
             this.addrs = Arrays.copyOf(addrs, addrs.length);
-            addrFinder = () -> this.addrs;
-        }
 
         return this;
     }
 
     /**
-     * @param finder function that finds node addresses
+     * @return Finder that finds server node addresses.
      */
-    public ClientConfiguration setAddressesFinder(Supplier<String[]> finder) {
+    public ClientAddressFinder getAddressesFinder() {
+        return addrFinder;
+    }
+
+    /**
+     * @param finder Finds server node addresses.
+     */
+    public ClientConfiguration setAddressesFinder(ClientAddressFinder finder) {
         addrFinder = finder;
 
         return this;
@@ -528,8 +530,9 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Try use limited number of channels to send a request if default channel is not responding.
-     * 0 means try use all configured channels before fail.
+     * Sets the retry limit. When a request fails due to a connection error, and multiple server connections
+     * are available, Ignite will retry the request on every connection. When this property is greater than zero,
+     * Ignite will limit the number of retries.
      *
      * @return {@code this} for chaining.
      */

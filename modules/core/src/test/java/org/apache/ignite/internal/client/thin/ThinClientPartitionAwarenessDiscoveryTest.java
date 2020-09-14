@@ -19,9 +19,9 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -118,7 +118,7 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
      * Provide ClientConfiguration with addrResolver that find all alive nodes
      */
     private ClientConfiguration getClientConfigurationWithDiscovery() {
-        Supplier<String[]> addrFinder = () ->
+        ClientAddressFinder addrFinder = () ->
             IgnitionEx.allGrids().stream().map(node -> {
                 int port = (Integer) node.cluster().localNode().attributes().get(CLIENT_LISTENER_PORT);
                 return "127.0.0.1:" + port;
