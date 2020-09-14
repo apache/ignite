@@ -88,7 +88,7 @@ class IgniteApplicationService(IgniteAwareService):
         try:
             self.await_event(desired, 1, from_the_beginning=True)
         except Exception:
-            raise Exception("Java application execution falied.") from None
+            raise Exception("Java application execution failed.") from None
 
     def clean_node(self, node):
         if self.alive(node):
