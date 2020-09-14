@@ -28,9 +28,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class DistributionChecker extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
         String cacheName = jsonNode.get("cacheName").asText();
         String attr = jsonNode.get("attr").asText();

@@ -33,9 +33,7 @@ import org.apache.ignite.transactions.Transaction;
  *  Prepares transactions at specified cell.
  */
 public class CellularPreparedTxStreamer extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         final String cacheName = jsonNode.get("cacheName").asText();
         final String attr = jsonNode.get("attr").asText();
