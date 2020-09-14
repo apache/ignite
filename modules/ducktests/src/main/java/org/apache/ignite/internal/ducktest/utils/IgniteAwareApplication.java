@@ -312,10 +312,7 @@ public abstract class IgniteAwareApplication {
 
             log.info("Cluster Rebalanced");
         }
-        else {
-            U.sleep(10000);
-
-            log.info("I wish Cluster could be Rebalanced");
-        }
+        else
+            throw new UnsupportedOperationException("Operation supported since 2.8.0");
     }
 }
