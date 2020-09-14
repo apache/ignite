@@ -213,13 +213,15 @@ public class CachePartitionDefragmentationManager {
                             pageStoreFactory
                         );
 
-                        partCtx.createMappingPageStore();
-
                         if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
+                            partCtx.createMappingPageStore();
+
                             linkMapByPart.put(partId, partCtx.createLinkMapTree(false));
 
                             continue;
                         }
+
+                        partCtx.createMappingPageStore();
 
                         linkMapByPart.put(partId, partCtx.createLinkMapTree(true));
 
@@ -230,8 +232,7 @@ public class CachePartitionDefragmentationManager {
                         //TODO Move inside of defragmentSinglePartition.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
-                                // TODO: This dirty hack is needed (for now) for index defragmentation
-                                // oldPageMem.invalidate(grpId, partId);
+                                oldPageMem.invalidate(grpId, partId);
 
                                 partCtx.partPageMemory.invalidate(grpId, partId);
 

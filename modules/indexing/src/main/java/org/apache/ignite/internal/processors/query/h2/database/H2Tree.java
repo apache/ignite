@@ -301,11 +301,15 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public H2Row createRow(long link) throws IgniteCheckedException {
+        return createRow(link, true);
+    }
+
+    public H2Row createRow(long link, boolean follow) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
-                row = createRow0(link);
+                row = createRow0(link, follow);
 
                 rowCache.put(row);
             }
@@ -313,7 +317,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return createRow0(link);
+            return createRow0(link, follow);
     }
 
     /**
@@ -325,14 +329,16 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    private H2CacheRow createRow0(long link) throws IgniteCheckedException {
+    private H2CacheRow createRow0(long link, boolean follow) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        row.initFromLink(
-            cctx.group(),
-            CacheDataRowAdapter.RowData.FULL,
-            true
-        );
+        if (follow) {
+            row.initFromLink(
+                    cctx.group(),
+                    CacheDataRowAdapter.RowData.FULL,
+                    true
+            );
+        }
 
         return table.rowDescriptor().createRow(row);
     }

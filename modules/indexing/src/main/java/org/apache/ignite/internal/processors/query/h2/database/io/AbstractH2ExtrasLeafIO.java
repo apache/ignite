@@ -64,7 +64,6 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implemen
      * @param mvccEnabled Mvcc flag.
      * @return IOVersions for given payload.
      */
-    @SuppressWarnings("unchecked")
     public static IOVersions<? extends BPlusLeafIO<H2Row>> getVersions(int payload, boolean mvccEnabled) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
@@ -140,7 +139,7 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public final H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx)
+    @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
@@ -159,4 +158,9 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implemen
     @Override public final long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
+
+    public int getPayloadSize() {
+        return payloadSize;
+    }
+
 }

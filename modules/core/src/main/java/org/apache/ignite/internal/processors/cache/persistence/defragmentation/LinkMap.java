@@ -85,7 +85,7 @@ public class LinkMap {
             LinkMappingLeafIO.VERSIONS,
             null,
             null,
-                initNew
+            initNew
         );
     }
 

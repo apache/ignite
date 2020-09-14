@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
@@ -473,17 +474,26 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         assertNotNull(defragCachePartFile.get());
     }
 
-    /** */
+    /**
+     * Fill cache using integer keys.
+     *
+     * @param cache
+     */
     protected void fillCache(IgniteCache<Integer, Object> cache) {
+        fillCache(Function.identity(), cache);
+    }
+
+    /** */
+    protected <T> void fillCache(Function<Integer, T> keyMapper, IgniteCache<T, Object> cache) {
         for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
             byte[] val = new byte[8192];
             new Random().nextBytes(val);
 
-            cache.put(i, val);
+            cache.put(keyMapper.apply(i), val);
         }
 
         for (int i = 0; i < ADDED_KEYS_COUNT / 2; i++)
-            cache.remove(i * 2);
+            cache.remove(keyMapper.apply(i * 2));
     }
 
     /** */

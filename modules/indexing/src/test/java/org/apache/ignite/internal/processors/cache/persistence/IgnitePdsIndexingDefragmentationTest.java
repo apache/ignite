@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -41,8 +43,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
+/**
+ * Defragmentation tests with enabled ignite-indexing.
+ */
 public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentationTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -64,13 +68,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(TRANSACTIONAL)
                 .setGroupName(GRP_NAME)
-                .setIndexedTypes(Integer.class, byte[].class)
+                .setIndexedTypes(ObjKey.class, byte[].class)
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
                 .setAtomicityMode(TRANSACTIONAL)
                 .setGroupName(GRP_NAME)
-                .setIndexedTypes(Integer.class, byte[].class)
+                .setIndexedTypes(ObjKey.class, byte[].class)
                 .setExpiryPolicyFactory(new PolicyFactory())
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
@@ -79,34 +83,35 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         return cfg;
     }
 
-    @Override
-    protected void afterTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         GridQueryProcessor.idxCls = null;
     }
 
-    /** */
-    @Test
-    public void testIndexing() throws Exception {
+    /**
+     * Fill cache, remove half of the entries, defragmentate PDS and check index.
+     *
+     * @param keyMapper Function that provides key based on the index of entry.
+     * @param <T> Type of cache key.
+     *
+     * @throws Exception If failed.
+     */
+    private <T> void test(Function<Integer, T> keyMapper) throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
 
-        fillCache(ig.cache(DEFAULT_CACHE_NAME));
+        fillCache(keyMapper, ig.cache(DEFAULT_CACHE_NAME));
 
-        ig.context().cache().context().database()
-                .forceCheckpoint("test")
-                .futureFor(CheckpointState.FINISHED)
-                .get();
+        forceCheckpoint(ig);
 
         stopGrid(0);
 
         File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
         File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
         File workDir = new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
-
-        long[] oldPartLen = partitionSizes(workDir);
 
         long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
@@ -120,11 +125,6 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         }
 
         awaitPartitionMapExchange();
-
-        long[] newPartLen = partitionSizes(workDir);
-
-        for (int p = 0; p < PARTS; p++)
-            assertTrue(newPartLen[p] < oldPartLen[p]);
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
@@ -149,14 +149,73 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         assertFalse(completionMarkerFile.exists());
 
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(DEFAULT_CACHE_NAME), 0, 0, false, true);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(
+            Collections.singleton(DEFAULT_CACHE_NAME),
+            0,
+            0,
+            false,
+            true
+        );
 
         node.context().resource().injectGeneric(clo);
 
         assertFalse(clo.call().hasIssues());
 
         for (int k = 0; k < ADDED_KEYS_COUNT; k++)
-            cache.get(k);
+            cache.get(keyMapper.apply(k));
+    }
+
+    /**
+     * Test using integer keys.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+//    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, value = "true")
+    public void testIndexingWithIntegerKey() throws Exception {
+        test(Function.identity());
+    }
+
+    /**
+     * Test using complex keys (integer and string).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+//    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, value = "true")
+    public void testIndexingWithCompleyKey() throws Exception {
+        test(integer -> new ObjKey(integer, "test"));
+    }
+
+    /**
+     * Complex key for cache.
+     */
+    public static class ObjKey {
+        /** */
+        private Integer intKey;
+
+        /** */
+        private String strKey;
+
+        /** Constructor. */
+        public ObjKey(Integer intKey, String strKey) {
+            this.intKey = intKey;
+            this.strKey = strKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ObjKey key = (ObjKey) o;
+            return Objects.equals(intKey, key.intKey) &&
+                    Objects.equals(strKey, key.strKey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(intKey, strKey);
+        }
     }
 
     /**
