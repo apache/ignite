@@ -154,7 +154,7 @@ public class FilePerformanceStatisticsWriter {
             fileIo.force();
         }
         catch (IOException e) {
-            log.error("Failed to fsync the performance statistics file.", e);
+            log.warning("Failed to fsync the performance statistics file.", e);
         }
 
         U.closeQuiet(fileIo);
