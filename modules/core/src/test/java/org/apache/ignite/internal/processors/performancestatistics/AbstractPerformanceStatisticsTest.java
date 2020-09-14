@@ -155,8 +155,8 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
     }
 
-    /** Node to run load from. */
-    enum LoadNode {
+    /** Client type to run load from. */
+    enum ClientType {
         /** Server node. */
         SERVER,
 

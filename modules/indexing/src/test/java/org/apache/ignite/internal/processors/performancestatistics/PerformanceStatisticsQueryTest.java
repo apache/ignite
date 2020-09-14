@@ -51,9 +51,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.CLIENT;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.SERVER;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.THIN_CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.THIN_CLIENT;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.junit.Assume.assumeFalse;
 
@@ -73,18 +73,18 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Parameterized.Parameter
     public int pageSize;
 
-    /** Load node to run queries from. */
+    /** Client type to run queries from. */
     @Parameterized.Parameter(1)
-    public LoadNode loadNode;
+    public ClientType clientType;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}, loadNode={1}")
+    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}")
     public static Collection<?> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (Integer pageSize : new Integer[] {ENTRY_COUNT, ENTRY_COUNT / 10}) {
-            for (LoadNode loadNode : new LoadNode[] {SERVER, CLIENT, THIN_CLIENT})
-                res.add(new Object[] {pageSize, loadNode});
+            for (ClientType clientType : new ClientType[] {SERVER, CLIENT, THIN_CLIENT})
+                res.add(new Object[] {pageSize, clientType});
         }
 
         return res;
@@ -228,17 +228,17 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         Collection<UUID> expNodeIds = new ArrayList<>();
 
-        if (loadNode == SERVER) {
+        if (clientType == SERVER) {
             srv.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
             expNodeIds.add(srv.localNode().id());
         }
-        else if (loadNode == CLIENT) {
+        else if (clientType == CLIENT) {
             client.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
             expNodeIds.add(client.localNode().id());
         }
-        else if (loadNode == THIN_CLIENT) {
+        else if (clientType == THIN_CLIENT) {
             thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
             expNodeIds.addAll(F.nodeIds(client.cluster().forServers().nodes()));
@@ -289,7 +289,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Test
     public void testMultipleStatementsSql() throws Exception {
         assumeFalse("Multiple statements queries are not supported by thin client.",
-            loadNode == THIN_CLIENT);
+            clientType == THIN_CLIENT);
 
         LinkedList<String> expQrs = new LinkedList<>();
 
@@ -308,7 +308,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(F.concat(expQrs, ";"));
 
-        IgniteEx loadNode = this.loadNode == SERVER ? srv : client;
+        IgniteEx loadNode = this.clientType == SERVER ? srv : client;
 
         List<FieldsQueryCursor<List<?>>> res = loadNode.context().query().querySqlFields(qry, true, false);
 

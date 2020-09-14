@@ -41,8 +41,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.CLIENT;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.LoadNode.SERVER;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
@@ -82,12 +82,12 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
-    /** Load node to run operations from. */
+    /** Client type to run operations from. */
     @Parameterized.Parameter
-    public LoadNode loadNode;
+    public ClientType clientType;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "loadNode={0}")
+    @Parameterized.Parameters(name = "clientType={0}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {{SERVER}, {CLIENT}});
     }
@@ -116,7 +116,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         IgniteEx client = startClientGrid(1);
 
-        node = loadNode == SERVER ? srv : client;
+        node = clientType == SERVER ? srv : client;
 
         cache = node.cache(DEFAULT_CACHE_NAME);
 
