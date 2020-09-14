@@ -48,7 +48,7 @@ public class CellularTxStreamer extends IgniteAwareApplication {
 
         Arrays.fill(max, -1);
 
-        int key = 10_000_000;
+        int key = 0;
 
         int cnt = 0;
 
