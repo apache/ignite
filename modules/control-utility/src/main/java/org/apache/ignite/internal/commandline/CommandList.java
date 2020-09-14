@@ -77,7 +77,10 @@ public enum CommandList {
     /** */
     TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
 
-    /** */
+    /** Warm-up command. */
+    WARM_UP("--warm-up", new WarmUpCommand()),
+
+    /** Commands to manage distributed properties. */
     PROPERTY("--property", new PropertyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
