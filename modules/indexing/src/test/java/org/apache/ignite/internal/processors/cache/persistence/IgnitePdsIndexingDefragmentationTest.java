@@ -37,15 +37,21 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
+import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
  */
 public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentationTest {
+    /** Use MVCC in tests. */
+    private static final String USE_MVCC = "USE_MVCC";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -67,15 +73,27 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(TRANSACTIONAL)
                 .setGroupName(GRP_NAME)
-                .setIndexedTypes(ObjKey.class, byte[].class)
+                .setIndexedTypes(
+                    ObjKey.class, byte[].class,
+                    Integer.class, byte[].class
+                )
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
                 .setAtomicityMode(TRANSACTIONAL)
                 .setGroupName(GRP_NAME)
-                .setIndexedTypes(ObjKey.class, byte[].class)
-                .setExpiryPolicyFactory(new PolicyFactory())
+                .setIndexedTypes(
+                    ObjKey.class, byte[].class,
+                    Integer.class, byte[].class
+                )
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+
+        if (Boolean.TRUE.toString().equals(System.getProperty(USE_MVCC))) {
+            cache1Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+            cache2Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        } else {
+            cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
+        }
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
@@ -141,6 +159,19 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         assertFalse(completionMarkerFile.exists());
 
+        validateIndexes(node);
+
+        for (int k = 0; k < ADDED_KEYS_COUNT; k++)
+            cache.get(keyMapper.apply(k));
+    }
+
+    /**
+     * Test that indexes are correct.
+     *
+     * @param node Node.
+     * @throws Exception If failed.
+     */
+    private static void validateIndexes(IgniteEx node) throws Exception {
         ValidateIndexesClosure clo = new ValidateIndexesClosure(
             Collections.singleton(DEFAULT_CACHE_NAME),
             0,
@@ -151,10 +182,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         node.context().resource().injectGeneric(clo);
 
-        assertFalse(clo.call().hasIssues());
-
-        for (int k = 0; k < ADDED_KEYS_COUNT; k++)
-            cache.get(keyMapper.apply(k));
+        VisorValidateIndexesJobResult call = clo.call();
+        assertFalse(call.hasIssues());
     }
 
     /**
@@ -163,7 +192,6 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      * @throws Exception If failed.
      */
     @Test
-//    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, value = "true")
     public void testIndexingWithIntegerKey() throws Exception {
         test(Function.identity());
     }
@@ -174,8 +202,29 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      * @throws Exception If failed.
      */
     @Test
-//    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, value = "true")
-    public void testIndexingWithCompleyKey() throws Exception {
+    public void testIndexingWithComplexKey() throws Exception {
+        test(integer -> new ObjKey(integer, "test"));
+    }
+
+    /**
+     * Test using integer keys.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = USE_MVCC, value = "true")
+    public void testIndexingWithIntegerKeyAndMVCC() throws Exception {
+        test(Function.identity());
+    }
+
+    /**
+     * Test using complex keys (integer and string).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = USE_MVCC, value = "true")
+    public void testIndexingWithComplexKeyAndMVCC() throws Exception {
         test(integer -> new ObjKey(integer, "test"));
     }
 

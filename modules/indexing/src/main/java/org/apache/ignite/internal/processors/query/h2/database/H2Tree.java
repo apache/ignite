@@ -358,12 +358,35 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public H2Row createMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public H2Row createMvccRow(
+            long link,
+            long mvccCrdVer,
+            long mvccCntr,
+            int mvccOpCntr
+    ) throws IgniteCheckedException {
+        return createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, null);
+    }
+
+    /**
+     * Create row from link.
+     *
+     * @param link Link.
+     * @param mvccOpCntr MVCC operation counter.
+     * @return Row.
+     * @throws IgniteCheckedException if failed.
+     */
+    public H2Row createMvccRow(
+        long link,
+        long mvccCrdVer,
+        long mvccCntr,
+        int mvccOpCntr,
+        CacheDataRowAdapter.RowData rowData
+    ) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
-                row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+                row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr, rowData);
 
                 rowCache.put(row);
             }
@@ -371,7 +394,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr, rowData);
     }
 
     public boolean getPk() {
@@ -389,20 +412,20 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param mvccOpCntr Mvcc operation counter.
      * @return Row.
      */
-    private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
-        throws IgniteCheckedException {
+    private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr, CacheDataRowAdapter.RowData rowData)
+            throws IgniteCheckedException {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
         MvccDataRow row = new MvccDataRow(
-            cctx.group(),
-            0,
-            link,
-            partId,
-            null,
-            mvccCrdVer,
-            mvccCntr,
-            mvccOpCntr,
-            true
+                cctx.group(),
+                0,
+                link,
+                partId,
+                rowData,
+                mvccCrdVer,
+                mvccCntr,
+                mvccOpCntr,
+                true
         );
 
         return table.rowDescriptor().createRow(row);

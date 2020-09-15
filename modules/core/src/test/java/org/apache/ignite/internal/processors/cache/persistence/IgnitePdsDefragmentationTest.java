@@ -156,7 +156,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
-            .setExpiryPolicyFactory(new PolicyFactory())
+//            .setExpiryPolicyFactory(new PolicyFactory())
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);

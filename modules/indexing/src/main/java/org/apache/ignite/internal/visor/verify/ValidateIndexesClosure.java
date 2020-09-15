@@ -48,6 +48,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -58,11 +61,14 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -76,6 +82,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
 import org.jetbrains.annotations.Nullable;
 
@@ -519,112 +526,125 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
-            GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
-
             partRes = new ValidateIndexesPartitionResult();
 
-            boolean enoughIssues = false;
+            for (GridCacheContext context : grpCtx.caches()) {
+                try (Session session = mvccSession(context)) {
+                    MvccSnapshot mvccSnapshot = null;
 
-            GridQueryProcessor qryProcessor = ignite.context().query();
+                    boolean mvccEnabled = context.mvccEnabled();
 
-            final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
-            final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+                    if (mvccEnabled)
+                        mvccSnapshot = ((QueryContext) session.getVariable(H2Utils.QCTX_VARIABLE_NAME).getObject()).mvccSnapshot();
 
-            long current = 0;
-            long processedNumber = 0;
+                    GridIterator<CacheDataRow> it = grpCtx.offheap().cachePartitionIterator(
+                        context.cacheId(),
+                        part.id(),
+                        mvccSnapshot,
+                        null
+                    );
 
-            while (it.hasNextX()) {
-                if (enoughIssues)
-                    break;
+                    boolean enoughIssues = false;
 
-                CacheDataRow row = it.nextX();
+                    GridQueryProcessor qryProcessor = ignite.context().query();
 
-                if (skipConditions) {
-                    if (bothSkipConditions) {
-                        if (processedNumber > checkFirst)
+                    final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+                    final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+
+                    long current = 0;
+                    long processedNumber = 0;
+
+                    while (it.hasNextX()) {
+                        if (enoughIssues)
                             break;
-                        else if (current++ % checkThrough > 0)
+
+                        CacheDataRow row = it.nextX();
+
+                        if (skipConditions) {
+                            if (bothSkipConditions) {
+                                if (processedNumber > checkFirst)
+                                    break;
+                                else if (current++ % checkThrough > 0)
+                                    continue;
+                                else
+                                    processedNumber++;
+                            } else {
+                                if (checkFirst > 0) {
+                                    if (current++ > checkFirst)
+                                        break;
+                                } else {
+                                    if (current++ % checkThrough > 0)
+                                        continue;
+                                }
+                            }
+                        }
+
+                        int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
+
+                        GridCacheContext cacheCtx = row.cacheId() == 0 ?
+                                grpCtx.singleCacheContext() : grpCtx.shared().cacheContext(row.cacheId());
+
+                        if (cacheCtx == null)
+                            throw new IgniteException("Unknown cacheId of CacheDataRow: " + cacheId);
+
+                        if (row.link() == 0L) {
+                            String errMsg = "Invalid partition row, possibly deleted";
+
+                            log.error(errMsg);
+
+                            IndexValidationIssue is = new IndexValidationIssue(null, cacheCtx.name(), null,
+                                    new IgniteCheckedException(errMsg));
+
+                            enoughIssues |= partRes.reportIssue(is);
+
                             continue;
-                        else
-                            processedNumber++;
-                    }
-                    else {
-                        if (checkFirst > 0) {
-                            if (current++ > checkFirst)
-                                break;
                         }
-                        else {
-                            if (current++ % checkThrough > 0)
+
+                        QueryTypeDescriptorImpl res = qryProcessor.typeByValue(
+                            cacheCtx.name(),
+                            cacheCtx.cacheObjectContext(),
+                            row.key(),
+                            row.value(),
+                            true
+                        );
+
+                        if (res == null)
+                            continue; // Tolerate - (k, v) is just not indexed.
+
+                        IgniteH2Indexing indexing = (IgniteH2Indexing) qryProcessor.getIndexing();
+
+                        GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(cacheCtx.name(), res.tableName());
+
+                        if (gridH2Tbl == null)
+                            continue; // Tolerate - (k, v) is just not indexed.
+
+                        GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
+
+                        H2CacheRow h2Row = gridH2RowDesc.createRow(row);
+
+                        ArrayList<Index> indexes = gridH2Tbl.getIndexes();
+
+                        for (Index idx : indexes) {
+                            if (!(idx instanceof H2TreeIndexBase))
                                 continue;
+
+                            try {
+                                Cursor cursor = idx.find(session, h2Row, h2Row);
+
+                                if (cursor == null || !cursor.next())
+                                    throw new IgniteCheckedException("Key is present in CacheDataTree, but can't be found in SQL index.");
+                            } catch (Throwable t) {
+                                Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
+                                        grpCtx.cacheObjectContext(), row.key(), true, true);
+
+                                IndexValidationIssue is = new IndexValidationIssue(
+                                        o.toString(), cacheCtx.name(), idx.getName(), t);
+
+                                log.error("Failed to lookup key: " + is.toString(), t);
+
+                                enoughIssues |= partRes.reportIssue(is);
+                            }
                         }
-                    }
-                }
-
-                int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
-
-                GridCacheContext cacheCtx = row.cacheId() == 0 ?
-                    grpCtx.singleCacheContext() : grpCtx.shared().cacheContext(row.cacheId());
-
-                if (cacheCtx == null)
-                    throw new IgniteException("Unknown cacheId of CacheDataRow: " + cacheId);
-
-                if (row.link() == 0L) {
-                    String errMsg = "Invalid partition row, possibly deleted";
-
-                    log.error(errMsg);
-
-                    IndexValidationIssue is = new IndexValidationIssue(null, cacheCtx.name(), null,
-                            new IgniteCheckedException(errMsg));
-
-                    enoughIssues |= partRes.reportIssue(is);
-
-                    continue;
-                }
-
-                QueryTypeDescriptorImpl res = qryProcessor.typeByValue(
-                    cacheCtx.name(),
-                    cacheCtx.cacheObjectContext(),
-                    row.key(),
-                    row.value(),
-                    true
-                );
-
-                if (res == null)
-                    continue; // Tolerate - (k, v) is just not indexed.
-
-                IgniteH2Indexing indexing = (IgniteH2Indexing)qryProcessor.getIndexing();
-
-                GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(cacheCtx.name(), res.tableName());
-
-                if (gridH2Tbl == null)
-                    continue; // Tolerate - (k, v) is just not indexed.
-
-                GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
-
-                H2CacheRow h2Row = gridH2RowDesc.createRow(row);
-
-                ArrayList<Index> indexes = gridH2Tbl.getIndexes();
-
-                for (Index idx : indexes) {
-                    if (!(idx instanceof H2TreeIndexBase))
-                        continue;
-
-                    try {
-                        Cursor cursor = idx.find((Session)null, h2Row, h2Row);
-
-                        if (cursor == null || !cursor.next())
-                            throw new IgniteCheckedException("Key is present in CacheDataTree, but can't be found in SQL index.");
-                    }
-                    catch (Throwable t) {
-                        Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
-                            grpCtx.cacheObjectContext(), row.key(), true, true);
-
-                        IndexValidationIssue is = new IndexValidationIssue(
-                            o.toString(), cacheCtx.name(), idx.getName(), t);
-
-                        log.error("Failed to lookup key: " + is.toString(), t);
-
-                        enoughIssues |= partRes.reportIssue(is);
                     }
                 }
             }
@@ -654,6 +674,43 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         processedPartitions.incrementAndGet();
 
         return Collections.singletonMap(partKey, partRes);
+    }
+
+    /**
+     * Get session with MVCC snapshot and QueryContext.
+     *
+     * @param cctx Cache context.
+     * @return Session with QueryContext and MVCC snapshot.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Session mvccSession(GridCacheContext<Object, Object> cctx) throws IgniteCheckedException {
+        Session session = null;
+
+        boolean mvccEnabled = cctx.mvccEnabled();
+
+        if (mvccEnabled) {
+            ConnectionManager connMgr = ((IgniteH2Indexing) ignite.context().query().getIndexing()).connections();
+
+            JdbcConnection connection = (JdbcConnection) connMgr.connection().connection();
+
+            session = (Session) connection.getSession();
+
+            MvccQueryTracker tracker = MvccUtils.mvccTracker(cctx, true);
+
+            MvccSnapshot mvccSnapshot = tracker.snapshot();
+
+            final QueryContext qctx = new QueryContext(
+                0,
+                cacheName -> null,
+                null,
+                mvccSnapshot,
+                null,
+                true
+            );
+
+            session.setVariable(H2Utils.QCTX_VARIABLE_NAME, new H2Utils.ValueRuntimeSimpleObject<>(qctx));
+        }
+        return session;
     }
 
     /**
@@ -713,8 +770,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
         Cursor cursor = null;
 
-        try {
-            cursor = idx.find((Session)null, null, null);
+        try (Session session = mvccSession(cacheCtxWithIdx.get1())) {
+            cursor = idx.find(session, null, null);
 
             if (cursor == null)
                 throw new IgniteCheckedException("Can't iterate through index: " + idx);
