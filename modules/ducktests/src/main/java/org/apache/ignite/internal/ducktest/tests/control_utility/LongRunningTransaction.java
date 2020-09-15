@@ -24,14 +24,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -89,27 +86,22 @@ public class LongRunningTransaction extends IgniteAwareApplication {
 
         for (int i = 0; i < txCount; i++) {
             String key = keyPrefix + i;
-            String value = "VALUE_" + i;
 
-            pool.execute(new Runnable() {
-                @Override public void run() {
-                    cache.put(key, value);
+            pool.execute(() -> {
+                Lock lock = cache.lock(key);
 
-                    Lock lock = cache.lock(key);
+                lock.lock();
+                try {
+                    lockLatch.countDown();
 
-                    lock.lock();
-                    try {
-                        lockLatch.countDown();
-
-                        while (!terminated())
-                            Thread.sleep(100L);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    finally {
-                        lock.unlock();
-                    }
+                    while (!terminated())
+                        Thread.sleep(100L);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                finally {
+                    lock.unlock();
                 }
             });
         }
@@ -120,29 +112,18 @@ public class LongRunningTransaction extends IgniteAwareApplication {
 
         CountDownLatch txLatch = new CountDownLatch(txCount);
         for (int i = 0; i < txCount; i++) {
-            int txIdx = i;
+            Map<String, String> data = new TreeMap<>();
 
-            Map<String, String> data = IntStream.range(0, txSize)
-                .mapToObj(idx -> {
-                    String suffix = idx == 0 ? String.valueOf(txIdx) : txIdx + "_" + idx;
+            for (int j = 0; j < txSize; j++) {
+                String key = keyPrefix + (j == 0 ? String.valueOf(i) : i + "_" + j);
 
-                    return new IgnitePair<>(keyPrefix + suffix, "VALUE_LOCK_" + suffix);
-                })
-                .collect(
-                    Collectors.toMap(
-                        IgnitePair::getKey,
-                        IgnitePair::getValue,
-                        (k0, k1) -> {
-                            throw new IllegalStateException(String.format("Duplicate key %s", k0));
-                        },
-                        TreeMap::new
-                    )
-                );
+                data.put(key, key);
+            }
 
             IgniteTransactions igniteTransactions = label != null ? ignite.transactions().withLabel(label) :
                 ignite.transactions();
 
-            Runnable txClo = () -> {
+            pool.execute(() -> {
                 IgniteUuid xid = null;
 
                 try (Transaction tx = igniteTransactions.txStart()) {
@@ -155,17 +136,14 @@ public class LongRunningTransaction extends IgniteAwareApplication {
                 catch (Exception e) {
                     if (e instanceof CacheException && e.getCause() != null &&
                         e.getCause() instanceof TransactionRollbackException)
-                        recordResult("TX_ID", xid.toString());
-                    else {
+                        recordResult("TX_ID", xid != null ? xid.toString() : "");
+                    else
                         markBroken(new RuntimeException("Transaction is rolled back with unexpected error", e));
-                    }
                 }
                 finally {
                     txLatch.countDown();
                 }
-            };
-
-            pool.execute(txClo);
+            });
         }
 
         txLatch.await();
