@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -55,8 +60,8 @@ public abstract class IgniteAwareApplication {
     /** Terminated. */
     private static volatile boolean terminated;
 
-    /** Shutdown hook. */
-    private static volatile Thread hook;
+    /** State mutex. */
+    private static final Object stateMux = new Object();
 
     /** Ignite. */
     protected Ignite ignite;
@@ -68,7 +73,7 @@ public abstract class IgniteAwareApplication {
      * Default constructor.
      */
     protected IgniteAwareApplication() {
-        Runtime.getRuntime().addShutdownHook(hook = new Thread(() -> {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("SIGTERM recorded.");
 
             if (!finished && !broken)
@@ -79,8 +84,13 @@ public abstract class IgniteAwareApplication {
             if (log.isDebugEnabled())
                 log.debug("Waiting for graceful termination...");
 
+            int iter = 0;
+
             while (!finished && !broken) {
-                log.info("Waiting for graceful termination cycle...");
+                log.info("Waiting for graceful termination cycle... [iter=" + ++iter + "]");
+
+                if (iter == 100)
+                    dumpThreads();
 
                 try {
                     U.sleep(100);
@@ -101,49 +111,72 @@ public abstract class IgniteAwareApplication {
      * Used to marks as started to perform actions. Suitable for async runs.
      */
     protected void markInitialized() {
-        assert !inited;
+        log.info("Marking as initialized.");
 
-        log.info(APP_INITED);
+        synchronized (stateMux) {
+            assert !inited;
+            assert !finished;
+            assert !broken;
 
-        inited = true;
+            log.info(APP_INITED);
+
+            inited = true;
+        }
     }
 
     /**
      *
      */
     protected void markFinished() {
-        assert !finished;
-        assert !broken;
+        log.info("Marking as finished.");
 
-        log.info(APP_FINISHED);
+        synchronized (stateMux) {
+            assert inited;
+            assert !finished;
+            assert !broken;
 
-        if (!terminated())
-            removeShutdownHook();
+            log.info(APP_FINISHED);
 
-        finished = true;
+            finished = true;
+        }
     }
 
     /**
      *
      */
-    private void markBroken() {
-        assert !finished;
-        assert !broken;
+    protected void markBroken(Throwable th) {
+        log.info("Marking as broken.");
 
-        log.info(APP_BROKEN);
+        synchronized (stateMux) {
+            if (broken) {
+                log.info("Already marked as broken.");
 
-        removeShutdownHook();
+                return;
+            }
 
-        broken = true;
+            recordResult("ERROR", th.toString());
+
+            assert !finished;
+
+            log.error(APP_BROKEN);
+
+            broken = true;
+        }
     }
 
     /**
      *
      */
-    private void removeShutdownHook() {
-        Runtime.getRuntime().removeShutdownHook(hook);
+    private void terminate() {
+        log.info("Marking as initialized.");
 
-        log.info("Shutdown hook removed.");
+        synchronized (stateMux) {
+            assert !terminated;
+
+            log.info(APP_TERMINATED);
+
+            terminated = true;
+        }
     }
 
     /**
@@ -152,17 +185,6 @@ public abstract class IgniteAwareApplication {
     protected void markSyncExecutionComplete() {
         markInitialized();
         markFinished();
-    }
-
-    /**
-     *
-     */
-    private void terminate() {
-        assert !terminated;
-
-        log.info(APP_TERMINATED);
-
-        terminated = true;
     }
 
     /**
@@ -226,12 +248,71 @@ public abstract class IgniteAwareApplication {
         catch (Throwable th) {
             log.error("Unexpected Application failure... ", th);
 
-            recordResult("ERROR", th.getMessage());
-
-            markBroken();
+            if (!broken)
+                markBroken(th);
         }
         finally {
             log.info("Application finished.");
         }
+    }
+
+    /**
+     *
+     */
+    private static void dumpThreads() {
+        ThreadInfo[] infos = ManagementFactory.getThreadMXBean().dumpAllThreads(true, true);
+
+        for (ThreadInfo info : infos) {
+            log.info(info.toString());
+
+            if ("main".equals(info.getThreadName())) {
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("main\n");
+
+                for (StackTraceElement element : info.getStackTrace()) {
+                    sb.append("\tat ").append(element.toString());
+                    sb.append('\n');
+                }
+
+                log.info(sb.toString());
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    protected void waitForActivation() throws IgniteInterruptedCheckedException {
+        boolean newApi = ignite.cluster().localNode().version().greaterThanEqual(2, 9, 0);
+
+        while (newApi ? ignite.cluster().state() != ClusterState.ACTIVE : !ignite.cluster().active()) {
+            U.sleep(100);
+
+            log.info("Waiting for cluster activation");
+        }
+
+        log.info("Cluster Activated");
+    }
+
+    /**
+     *
+     */
+    protected void waitForRebalanced() throws IgniteInterruptedCheckedException {
+        boolean possible = ignite.cluster().localNode().version().greaterThanEqual(2, 8, 0);
+
+        if (possible) {
+            GridCachePartitionExchangeManager<?, ?> mgr = ((IgniteEx)ignite).context().cache().context().exchange();
+
+            while (!mgr.lastFinishedFuture().rebalanced()) {
+                U.sleep(1000);
+
+                log.info("Waiting for cluster rebalance finish");
+            }
+
+            log.info("Cluster Rebalanced");
+        }
+        else
+            throw new UnsupportedOperationException("Operation supported since 2.8.0");
     }
 }

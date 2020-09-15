@@ -55,7 +55,7 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
             if (!record && cnt > warmup) {
                 record = true;
 
-                initTime = System.currentTimeMillis();;
+                initTime = System.currentTimeMillis();
 
                 markInitialized();
             }
