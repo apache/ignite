@@ -87,7 +87,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[2],
+            nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
