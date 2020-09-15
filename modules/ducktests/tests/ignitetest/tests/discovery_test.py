@@ -171,9 +171,13 @@ class DiscoveryTest(IgniteTest):
         # Store current network filter settings.
 
         for node in self.test_context.cluster.nodes:
-            node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % self.NETFILTER_SAVED_SETTINGS)
+            self.__netfilter_settings[node.name] = dump_netfilter_settings(node)
 
-            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS + " && sudo iptables -F"
+            path_to_store = self.NETFILTER_SAVED_SETTINGS
+
+            node.account.ssh_client.exec_command(f"rm -drf {path_to_store} && mkdir -p $(dirname {path_to_store})")
+
+            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
@@ -184,7 +188,8 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
-            self.__netfilter_settings[node.name] = dump_netfilter_settings(node)
+            assert len(node.account.ssh_client.exec_command("sudo iptables -F")[2].read()) == 0, \
+                "Failed to clear iptables rules on '" + node.name
 
             self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, self.__netfilter_settings[node.name]))
 
@@ -204,13 +209,15 @@ class DiscoveryTest(IgniteTest):
                 restored_settings = dump_netfilter_settings(node)
 
                 if restored_settings != self.__netfilter_settings[node.name]:
-                    errors.append("Settings not restored for node '%s'. Restored settings: %s%s. Before launch: %s" %
+                    errors.append("Settings not restored for node '%s'. Restored settings: %s%s Before launch: %s" %
                                   (node.name, restored_settings, os.linesep, self.__netfilter_settings[node.name]))
                 else:
                     self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, restored_settings))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
+
+            raise RuntimeError("Unable to restore node states. See the log above.")
 
         IgniteTest.teardown(self)
 
