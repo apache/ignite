@@ -411,17 +411,32 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals("4", strCache.get(4));
         assertEquals("5", strCache.get(5));
 
-        // Replace2.
+        // Replace(k, v).
+        assertTrue(strCache.replaceAsync(4, "6").get());
+        assertEquals("6", strCache.get(4));
 
-        // Replace3.
+        assertFalse(strCache.replaceAsync(-1, "1").get());
 
-        // Remove1.
+        // Replace(k, v1, v2).
+        assertTrue(strCache.replaceAsync(4, "6", "7").get());
+        assertEquals("7", strCache.get(4));
 
-        // Remove2.
+        assertFalse(strCache.replaceAsync(-1, "1", "2").get());
+        assertFalse(strCache.replaceAsync(4, "1", "2").get());
 
-        // RemoveAll(set).
+        // Remove(k).
+        assertFalse(strCache.removeAsync(-1).get());
+        assertTrue(strCache.removeAsync(4).get());
+        assertFalse(strCache.containsKeyAsync(4).get());
 
-        // RemoveAll(void).
+        // Remove(k, v).
+        assertFalse(strCache.remove(2, "0"));
+        assertTrue(strCache.remove(2, "2"));
+        assertFalse(strCache.containsKey(2));
+
+        // RemoveAll.
+
+        // RemoveAll(k).
 
         // GetAndPut.
 
