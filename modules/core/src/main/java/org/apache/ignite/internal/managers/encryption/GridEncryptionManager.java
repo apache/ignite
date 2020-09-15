@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -594,7 +595,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             GroupKey prevKey = grpKeys.changeActiveKey(grpId, rmtKey.id());
 
-            grpKeys.reserveWalKey(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+            if (ctx.config().getDataStorageConfiguration().getWalMode() != WALMode.NONE)
+                grpKeys.reserveWalKey(grpId, prevKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
             reencryptGroupsForced.put(grpId, rmtKey.id());
         }
@@ -765,9 +767,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 writeGroupKeysToMetaStore(grpId);
 
-                grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+                if (ptr != null) {
+                    grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
 
-                writeTrackedWalIdxsToMetaStore();
+                    writeTrackedWalIdxsToMetaStore();
+                }
             }
 
             reencryptGroups.put(grpId, pageScanner.pagesCount(grp));

@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -61,6 +62,7 @@ import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -84,6 +86,9 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     /** Count of cache backups. */
     private int backups;
 
+    /** WAL mode. */
+    private WALMode walMode = LOG_ONLY;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -104,7 +109,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             .setWalSegments(10)
             .setMaxWalArchiveSize(20 * 1024 * 1024)
             .setCheckpointFrequency(30 * 1000L)
-            .setWalMode(LOG_ONLY);
+            .setWalMode(walMode);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -961,5 +966,25 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         public void stopBlock() {
             unlockLatch.countDown();
         }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testChangeCacheGroupKeyWithoutWAL() throws Exception {
+        walMode = NONE;
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
+
+        IgniteEx node0 = grids.get1();
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        int grpId = CU.cacheId(cacheName());
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+
+        assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
+        assertEquals(1, grids.get2().context().encryption().groupKeyIds(grpId).size());
     }
 }
