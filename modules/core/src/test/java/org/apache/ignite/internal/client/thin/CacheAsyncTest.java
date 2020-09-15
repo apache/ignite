@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
@@ -26,11 +28,14 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.client.PersonBinarylizable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -388,5 +393,18 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
         // GetConfiguration.
         assertEquals(strCache.getName(), strCache.getConfigurationAsync().get().getName());
+
+        // Size.
+        strCache.put(2, "2");
+        assertEquals(2, strCache.sizeAsync().get().intValue());
+        assertEquals(0, strCache.sizeAsync(CachePeekMode.BACKUP).get().intValue());
+        assertEquals(2, strCache.sizeAsync(CachePeekMode.PRIMARY).get().intValue());
+
+        // GetAll.
+        strCache.put(3, "3");
+        Map<Integer, String> getAllRes = strCache.getAllAsync(ImmutableSet.of(2, 3, 4, 5)).get();
+        assertEquals(2, getAllRes.size());
+        assertEquals("2", getAllRes.get(2));
+        assertEquals("3", getAllRes.get(3));
     }
 }
