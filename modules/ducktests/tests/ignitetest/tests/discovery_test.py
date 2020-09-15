@@ -71,7 +71,7 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 2000
+    FAILURE_DETECTION_TIMEOUT = 1000
 
     DATA_AMOUNT = 5_000_000
 
@@ -87,7 +87,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
+            nodes_to_kill=[2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
