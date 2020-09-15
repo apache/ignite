@@ -375,16 +375,10 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
         assertTrue(strCache.getAsync(2).thenApply(Objects::isNull).toCompletableFuture().get());
 
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
-
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
-
         // Put.
-        strCache.putAsync(1, "2");
-        assertTrue(GridTestUtils.waitForCondition(() -> strCache.get(1) != null, TIMEOUT));
-        assertEquals("2", strCache.get(1));
+        strCache.putAsync(11, "2");
+        assertTrue(GridTestUtils.waitForCondition(() -> strCache.get(11) != null, TIMEOUT));
+        assertEquals("2", strCache.get(11));
 
         // ContainsKey.
         assertTrue(strCache.containsKeyAsync(1).get());
@@ -395,9 +389,9 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
         // Size.
         strCache.put(2, "2");
-        assertEquals(2, strCache.sizeAsync().get().intValue());
+        assertEquals(3, strCache.sizeAsync().get().intValue());
         assertEquals(0, strCache.sizeAsync(CachePeekMode.BACKUP).get().intValue());
-        assertEquals(2, strCache.sizeAsync(CachePeekMode.PRIMARY).get().intValue());
+        assertEquals(3, strCache.sizeAsync(CachePeekMode.PRIMARY).get().intValue());
 
         // GetAll.
         strCache.put(3, "3");
