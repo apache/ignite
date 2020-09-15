@@ -49,7 +49,7 @@ class TransactionsTests(IgniteTest):
         servers = self.__start_ignite_nodes(ignite_version, self.NUM_NODES - 2)
 
         long_tx = self.__start_tx_app(ignite_version, servers, cache_name=self.CACHE_NAME, tx_count=2, tx_size=2,
-                            key_prefix='TX_1_KEY_')
+                                      key_prefix='TX_1_KEY_')
 
         wait_for_key_locked(long_tx)
 
@@ -108,12 +108,12 @@ class TransactionsTests(IgniteTest):
         server_tx_count, server_tx_size = 3, 2
 
         servers = self.__start_tx_app(ignite_version, servers, client_mode=False, cache_name=self.CACHE_NAME,
-                            tx_count=server_tx_count, tx_size=server_tx_size, key_prefix='TX_1_KEY_',
-                            label='LBL_SERVER', wait_for_topology_version=4)
+                                      tx_count=server_tx_count, tx_size=server_tx_size, key_prefix='TX_1_KEY_',
+                                      label='LBL_SERVER', wait_for_topology_version=4)
 
-        clients = self.__start_tx_app(ignite_version, servers, cache_name=self.CACHE_NAME,
-                            tx_count=client_tx_count, tx_size=client_tx_size, key_prefix='TX_2_KEY_',
-                            label='LBL_CLIENT', wait_for_topology_version=4)
+        clients = self.__start_tx_app(ignite_version, servers, cache_name=self.CACHE_NAME, tx_count=client_tx_count,
+                                      tx_size=client_tx_size, key_prefix='TX_2_KEY_', label='LBL_CLIENT',
+                                      wait_for_topology_version=4)
 
         wait_for_key_locked(clients, servers)
         control_utility = ControlUtility(servers, self.test_context)
@@ -173,10 +173,10 @@ class TransactionsTests(IgniteTest):
 
 def wait_for_key_locked(*clusters):
     """
-    Wait for APPLICATION_KEY_LOCKED on tx_app nodes.
+    Wait for APPLICATION_KEYS_LOCKED on tx_app nodes.
     """
     for cluster_ in clusters:
-        cluster_.await_event("APPLICATION_KEY_LOCKED", timeout_sec=60, from_the_beginning=True)
+        cluster_.await_event("APPLICATION_KEYS_LOCKED", timeout_sec=60, from_the_beginning=True)
 
 
 def is_sorted(lst, key=lambda x: x, reverse=False):

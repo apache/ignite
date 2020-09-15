@@ -41,7 +41,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
     private static final Duration TOPOLOGY_WAIT_TIMEOUT = Duration.ofSeconds(60);
 
     /** */
-    private static final String KEY_LOCKED_MESSAGE = "APPLICATION_KEY_LOCKED";
+    private static final String KEYS_LOCKED_MESSAGE = "APPLICATION_KEYS_LOCKED";
 
     /** */
     private static final String LOCKED_KEY_PREFIX = "KEY_";
@@ -108,7 +108,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
 
         lockLatch.await();
 
-        log.info(KEY_LOCKED_MESSAGE);
+        log.info(KEYS_LOCKED_MESSAGE);
 
         CountDownLatch txLatch = new CountDownLatch(txCount);
         for (int i = 0; i < txCount; i++) {
