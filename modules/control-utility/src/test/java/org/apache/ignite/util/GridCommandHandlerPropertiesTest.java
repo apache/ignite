@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedPublicProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.After;
@@ -57,8 +57,8 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
 
         String out = testOut.toString();
 
-        for (SimpleDistributedPublicProperty<Serializable> pd : crd.context()
-            .distributedConfiguration().publicProperties())
+        for (DistributedChangeableProperty<Serializable> pd : crd.context()
+            .distributedConfiguration().properties())
             assertContains(log, out, pd.getName());
     }
 
@@ -68,11 +68,12 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testGet() {
-        for (SimpleDistributedPublicProperty<Serializable> pd : crd.context().distributedConfiguration().publicProperties()) {
+        for (DistributedChangeableProperty<Serializable> pd : crd.context()
+            .distributedConfiguration().properties()) {
             assertEquals(EXIT_CODE_OK, execute("--property", "get", "--name", pd.getName()));
             String out = testOut.toString();
 
-            assertContains(log, out, pd.getName() + " = " + pd.format(pd.get()));
+            assertContains(log, out, pd.getName() + " = " + pd.get());
         }
     }
 

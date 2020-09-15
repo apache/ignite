@@ -19,15 +19,19 @@ package org.apache.ignite.internal.commandline.property.tasks;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.commandline.property.PropertyArgs;
-import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedPublicProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_WRITE_DISTRIBUTED_PROPERTY;
 
 /**
  * Task for property operations.
@@ -73,20 +77,20 @@ public class PropertyTask extends VisorMultiNodeTask<PropertyArgs, PropertyOpera
 
         /** {@inheritDoc} */
         @Override protected PropertyOperationResult run(@Nullable PropertyArgs arg) {
-            SimpleDistributedPublicProperty<Serializable> prop =
-                ignite.context().distributedConfiguration().publicProperty(arg.name());
+            DistributedChangeableProperty<Serializable> prop =
+                ignite.context().distributedConfiguration().property(arg.name());
 
             if (prop == null)
                 throw new IllegalArgumentException("Property doesn't not exist [name=" + arg.name() + ']');
 
             switch (arg.action()) {
                 case GET:
-                    ignite.context().security().authorize(prop.readPermission());
+                    ignite.context().security().authorize(ADMIN_READ_DISTRIBUTED_PROPERTY);
 
-                    return new PropertyOperationResult(prop.format(prop.get()));
+                    return new PropertyOperationResult(Objects.toString(prop.get()));
 
                 case SET:
-                    ignite.context().security().authorize(prop.writePermission());
+                    ignite.context().security().authorize(ADMIN_WRITE_DISTRIBUTED_PROPERTY);
 
                     try {
                         prop.propagate(prop.parse(arg.value()));

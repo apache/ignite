@@ -158,10 +158,10 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     /**
      * @return Public properties.
      */
-    public List<SimpleDistributedPublicProperty<Serializable>> publicProperties() {
+    public List<DistributedChangeableProperty<Serializable>> properties() {
         return props.values().stream()
-            .filter(p -> p instanceof SimpleDistributedPublicProperty)
-            .map(p -> (SimpleDistributedPublicProperty<Serializable>)p)
+            .filter(p -> p instanceof DistributedChangeableProperty)
+            .map(p -> (DistributedChangeableProperty<Serializable>)p)
             .collect(Collectors.toList());
     }
 
@@ -169,13 +169,13 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @param name Property name.
      * @return Public property.
      */
-    public SimpleDistributedPublicProperty<Serializable> publicProperty(String name) {
+    public DistributedChangeableProperty<Serializable> property(String name) {
         DistributedChangeableProperty<?> p = props.get(name);
 
-        if (!(p instanceof SimpleDistributedPublicProperty))
+        if (!(p instanceof DistributedChangeableProperty))
             return null;
         else
-            return (SimpleDistributedPublicProperty<Serializable>)p;
+            return (DistributedChangeableProperty<Serializable>)p;
     }
 
     /**

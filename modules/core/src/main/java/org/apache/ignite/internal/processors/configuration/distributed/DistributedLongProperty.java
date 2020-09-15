@@ -23,7 +23,7 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 public class DistributedLongProperty extends DistributedComparableProperty<Long> {
     /** {@inheritDoc} */
     DistributedLongProperty(String name) {
-        super(name);
+        super(name, Long::parseLong);
     }
 
     /**

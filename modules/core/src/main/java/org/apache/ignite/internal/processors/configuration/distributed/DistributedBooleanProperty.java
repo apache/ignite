@@ -23,7 +23,7 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 public class DistributedBooleanProperty extends SimpleDistributedProperty<Boolean> {
     /** {@inheritDoc} */
     DistributedBooleanProperty(String name) {
-        super(name);
+        super(name, Boolean::parseBoolean);
     }
 
     /**

@@ -25,18 +25,17 @@ import java.util.Collections;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Represents information about cluster metadata.
+ * List of the distributed properties names.
  */
 @GridInternal
 public class PropertiesListResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Properties name and description. */
-    private Collection<IgniteBiTuple<String, String>> props = Collections.emptyList();
+    /** Properties names. */
+    private Collection<String> props = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.
@@ -46,9 +45,9 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     }
 
     /**
-     * @param props Meta.
+     * @param props Properties.
      */
-    public PropertiesListResult(Collection<IgniteBiTuple<String, String>> props) {
+    public PropertiesListResult(Collection<String> props) {
         this.props = props;
     }
 
@@ -68,7 +67,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /**
      * @return Properties (name, description) collection.
      */
-    public Collection<IgniteBiTuple<String, String>> properties() {
+    public Collection<String> properties() {
         return props;
     }
 }

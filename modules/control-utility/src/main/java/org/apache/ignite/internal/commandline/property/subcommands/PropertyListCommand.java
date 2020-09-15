@@ -23,7 +23,6 @@ import org.apache.ignite.internal.commandline.meta.subcommands.VoidDto;
 import org.apache.ignite.internal.commandline.property.PropertySubCommandsList;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /** */
 public class PropertyListCommand extends PropertyAbstractSubCommand<VoidDto, PropertiesListResult>
@@ -40,8 +39,8 @@ public class PropertyListCommand extends PropertyAbstractSubCommand<VoidDto, Pro
 
     /** {@inheritDoc} */
     @Override protected void printResult(PropertiesListResult res, Logger log) {
-        for (IgniteBiTuple<String, String> prop : res.properties())
-            log.info(prop.get1() + " : " + prop.get2());
+        for (String prop : res.properties())
+            log.info(prop);
     }
 
     /** {@inheritDoc} */

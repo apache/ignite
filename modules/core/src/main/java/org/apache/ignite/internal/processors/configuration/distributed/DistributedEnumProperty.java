@@ -40,36 +40,26 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
     /** Function converts an enumeration value to an integer for stored in meta storage. */
     private final IgniteClosure<T, Integer> toOredinalFunc;
 
-    /**
-     * Property constructor.
-     *
-     * @param name Name of property.
-     * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
-     */
-    public DistributedEnumProperty(
-        String name,
-        IgniteClosure<Integer, T> fromOrdinalFunc
-    ) {
-        this(name, fromOrdinalFunc, (T value) -> {
-            return value == null ? null : value.ordinal();
-        });
-    }
+    /** Property value parser. */
+    private final T[] values;
 
     /**
      * Property constructor.
      *
      * @param name Name of property.
      * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
-     * @param toOredinalFunc Function converts an enumeration value to an integer.
+     * @param toOrdinalFunc Function converts an enumeration value to an integer.
      */
     public DistributedEnumProperty(
         String name,
         IgniteClosure<Integer, T> fromOrdinalFunc,
-        IgniteClosure<T, Integer> toOredinalFunc
+        IgniteClosure<T, Integer> toOrdinalFunc,
+        T[] values
     ) {
-        this.internal = new SimpleDistributedProperty<>(name);
+        this.internal = new SimpleDistributedProperty<>(name, null);
         this.fromOrdinalFunc = fromOrdinalFunc;
-        this.toOredinalFunc = toOredinalFunc;
+        this.toOredinalFunc = toOrdinalFunc;
+        this.values = values;
     }
 
     /** {@inheritDoc} */
@@ -151,6 +141,15 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
      */
     private T fromOrdinalOrNull(Integer ord) {
         return ord != null && ord >= 0 ? fromOrdinalFunc.apply(ord) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public T parse(String str) {
+        for (T t : values)
+            if (t.toString().equalsIgnoreCase(str))
+                return t;
+
+        throw new IllegalArgumentException("Unknown value [value=" + str + ", name=" + internal.getName());
     }
 
     /** {@inheritDoc} */
