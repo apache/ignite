@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -406,5 +407,32 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals(2, getAllRes.size());
         assertEquals("2", getAllRes.get(2));
         assertEquals("3", getAllRes.get(3));
+
+        // PutAll.
+        strCache.putAllAsync(ImmutableMap.of(4, "4", 5, "5")).get();
+        assertEquals("4", strCache.get(4));
+        assertEquals("5", strCache.get(5));
+
+        // Replace2.
+
+        // Replace3.
+
+        // Remove1.
+
+        // Remove2.
+
+        // RemoveAll(set).
+
+        // RemoveAll(void).
+
+        // GetAndPut.
+
+        // GetAndRemove.
+
+        // GetAndReplace.
+
+        // PutIfAbsent.
+
+        // Clear.
     }
 }
