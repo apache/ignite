@@ -40,9 +40,6 @@ public class PropertyCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        if (!experimentalEnabled())
-            return;
-
         usage(log, "Print property command help:",
             PROPERTY,
             HELP.toString()
