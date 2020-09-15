@@ -181,7 +181,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      * Tests async cache creation with existing name.
      */
     @Test
-    public void testGetOrCreateCacheAsyncByCfgThrowsExceptionWhenCacheExists() throws Exception {
+    public void testGetOrCreateCacheAsyncByCfgIgnoresCfgWhenCacheExists() throws Exception {
         client.createCache(TMP_CACHE_NAME);
 
         ClientCacheConfiguration cfg = new ClientCacheConfiguration()
@@ -192,6 +192,42 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         ClientCacheConfiguration resCfg = cache.getConfigurationAsync().get();
 
         assertEquals(0, resCfg.getBackups());
+    }
+
+    /**
+     * Tests async cache creation.
+     */
+    @Test
+    public void testGetOrCreateCacheAsyncByNameCreatesCacheWhenNotExists() throws Exception {
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(5);
+
+        assertTrue(
+                client.getOrCreateCacheAsync(cfg)
+                        .thenApply(x -> client.cacheNames().contains(TMP_CACHE_NAME))
+                        .toCompletableFuture()
+                        .get());
+
+        ClientCacheConfiguration resCfg = client.cache(TMP_CACHE_NAME).getConfiguration();
+        assertEquals(5, resCfg.getBackups());
+    }
+
+    /**
+     * Tests async cache creation with existing name.
+     */
+    @Test
+    public void testGetOrCreateCacheAsyncByNameReturnsExistingWhenCacheExists() throws Exception {
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration()
+                .setName(TMP_CACHE_NAME)
+                .setBackups(7);
+
+        client.createCache(cfg);
+
+        ClientCache<Object, Object> cache = client.getOrCreateCacheAsync(TMP_CACHE_NAME).get();
+        ClientCacheConfiguration resCfg = cache.getConfigurationAsync().get();
+
+        assertEquals(7, resCfg.getBackups());
     }
 
     /**
