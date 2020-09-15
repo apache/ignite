@@ -157,9 +157,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
                         e.getCause() instanceof TransactionRollbackException)
                         recordResult("TX_ID", xid.toString());
                     else {
-                        markBroken();
-
-                        log.info("Transaction is rolled back with error:", e);
+                        markBroken(new RuntimeException("Transaction is rolled back with unexpected error", e));
                     }
                 }
                 finally {
