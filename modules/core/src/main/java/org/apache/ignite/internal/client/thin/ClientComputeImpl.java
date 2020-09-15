@@ -449,8 +449,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 
-        @Override
-        public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
+        /** {@inheritDoc} */
+        @Override public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 

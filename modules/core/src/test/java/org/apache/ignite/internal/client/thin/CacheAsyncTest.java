@@ -39,36 +39,23 @@ import java.util.concurrent.atomic.AtomicReference;
  * Thin client async cache tests.
  */
 public class CacheAsyncTest extends AbstractThinClientTest {
-    /**
-     * Default timeout value.
-     */
+    /** Default timeout value. */
     private static final long TIMEOUT = 1_000L;
 
-    /**
-     * Temp cache name.
-     */
+    /** Temp cache name. */
     private static final String TMP_CACHE_NAME = "tmp_cache";
 
-    /**
-     * Client.
-     */
+    /** Client. */
     private static IgniteClient client;
 
-    /**
-     *
-     */
+    /** */
     private static ClientCache<Integer, Person> personCache;
 
-    /**
-     *
-     */
+    /** */
     private static ClientCache<Integer, String> strCache;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrid(0);
@@ -78,22 +65,16 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         strCache = client.getOrCreateCache("intCache");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         client.close();
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void afterTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         strCache.removeAll();
@@ -193,7 +174,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
                         .get());
 
         ClientCacheConfiguration resCfg = client.cache(TMP_CACHE_NAME).getConfiguration();
-        assertEquals(5, resCfg.getBackups());;
+        assertEquals(5, resCfg.getBackups());
     }
 
     /**
