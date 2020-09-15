@@ -24,8 +24,10 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 
 import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.PROPERTY;
+import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.GET;
 import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.HELP;
 import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.LIST;
+import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.SET;
 
 /**
  *
@@ -53,11 +55,17 @@ public class PropertyCommand implements Command<Object> {
 
         usage(log, "Get the property value",
             PROPERTY,
+            GET.toString(),
+            PropertyArgs.NAME,
             "<property_name>");
 
         usage(log, "Set the property value",
             PROPERTY,
-            "<property_name>=<property_value>");
+            SET.toString(),
+            PropertyArgs.NAME,
+            "<property_name>",
+            PropertyArgs.VAL,
+            "<property_value>");
     }
 
     /** {@inheritDoc} */
