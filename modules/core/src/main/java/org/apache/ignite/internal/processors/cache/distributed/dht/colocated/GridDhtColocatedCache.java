@@ -569,7 +569,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                         null,
                                         txLbl,
                                         row.value(),
-                                        subjId,
                                         taskName,
                                         !deserializeBinary);
                                 }

@@ -1337,7 +1337,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                     newVal != null,
                                                     oldVal,
                                                     hasBytes,
-                                                    CU.subjectId(tx, cctx.shared()),
                                                     null,
                                                     inTx() ? tx.resolveTaskName() : null,
                                                     keepBinary);
@@ -1765,7 +1764,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                     newVal != null,
                                     oldVal,
                                     hasOldVal,
-                                    CU.subjectId(tx, cctx.shared()),
                                     null,
                                     inTx() ? tx.resolveTaskName() : null,
                                     keepBinary);

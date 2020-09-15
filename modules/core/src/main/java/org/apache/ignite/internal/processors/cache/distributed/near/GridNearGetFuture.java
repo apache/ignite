@@ -658,8 +658,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.expireTime(),
                             true,
                             !deserializeBinary,
-                            topVer,
-                            subjId);
+                            topVer);
                     }
 
                     CacheObject val = info.value();

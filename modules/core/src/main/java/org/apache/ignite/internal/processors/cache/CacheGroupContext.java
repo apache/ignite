@@ -597,7 +597,6 @@ public class CacheGroupContext {
                     hasOldVal,
                     null,
                     null,
-                    null,
                     keepBinary);
     }
 

@@ -1569,7 +1569,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         null,
                                         null,
                                         row.value(),
-                                        subjId,
                                         taskName,
                                         !deserializeBinary);
                                 }

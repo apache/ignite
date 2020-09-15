@@ -1922,8 +1922,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         return getAllAsync(keys,
             null,
             opCtx == null || !opCtx.skipStore(),
@@ -2113,7 +2111,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             null,
                                             txLbl,
                                             row.value(),
-                                            subjId,
                                             taskName,
                                             !deserializeBinary);
                                     }

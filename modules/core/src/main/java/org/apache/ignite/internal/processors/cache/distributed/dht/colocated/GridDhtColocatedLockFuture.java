@@ -1780,7 +1780,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         newVal != null,
                         null,
                         false,
-                        CU.subjectId(tx, cctx.shared()),
                         null,
                         tx == null ? null : tx.resolveTaskName(),
                         keepBinary);

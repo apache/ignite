@@ -1978,7 +1978,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                        false, null, null, false);
 
                                 if (retVal && !invoke)
                                     ret.value(cacheCtx, info.value(), false);

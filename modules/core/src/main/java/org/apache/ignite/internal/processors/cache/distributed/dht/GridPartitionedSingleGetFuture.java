@@ -490,7 +490,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     null,
                                     txLbl,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }

@@ -434,7 +434,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     null,
                                     null,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }

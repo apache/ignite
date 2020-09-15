@@ -496,7 +496,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     null,
                                     txLbl,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }
