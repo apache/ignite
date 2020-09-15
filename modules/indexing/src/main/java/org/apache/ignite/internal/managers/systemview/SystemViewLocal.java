@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -52,6 +51,8 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
 /**
  * SQL system view to export {@link SystemView} data.
@@ -119,7 +120,7 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param indexes Indexed fields.
      */
     protected SystemViewLocal(GridKernalContext ctx, SystemView<R> sysView, String[] indexes) {
-        super(sqlName(sysView.name()), sysView.description(), ctx, indexes, columnsList(sysView));
+        super(toSqlName(sysView.name()), sysView.description(), ctx, indexes, columnsList(sysView));
 
         this.sysView = sysView;
     }
@@ -213,7 +214,7 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 int type = CLS_TO_VAL_TYPE.getOrDefault(clazz, Value.STRING);
 
-                cols[idx] = newColumn(sqlName(name), type);
+                cols[idx] = newColumn(toSqlName(name), type);
             }
         });
 
@@ -235,21 +236,5 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
-    }
-
-    /**
-     * Build SQL-like name from Java code style name.
-     * Some examples:
-     *
-     * cacheName -> CACHE_NAME.
-     * affinitiKeyName -> AFFINITY_KEY_NAME.
-     *
-     * @param name Name to convert.
-     * @return SQL compatible name.
-     */
-    protected static String sqlName(String name) {
-        return name
-            .replaceAll("([A-Z])", "_$1")
-            .replaceAll('\\' + MetricUtils.SEPARATOR, "_").toUpperCase();
     }
 }
