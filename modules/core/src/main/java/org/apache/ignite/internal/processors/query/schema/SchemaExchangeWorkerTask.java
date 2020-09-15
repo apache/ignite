@@ -47,11 +47,6 @@ public class SchemaExchangeWorkerTask extends AbstractCachePartitionExchangeWork
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Message.
      */

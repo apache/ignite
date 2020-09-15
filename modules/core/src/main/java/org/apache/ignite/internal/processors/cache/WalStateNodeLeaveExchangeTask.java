@@ -54,11 +54,6 @@ public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchang
     }
 
     /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalStateNodeLeaveExchangeTask.class, this);
     }

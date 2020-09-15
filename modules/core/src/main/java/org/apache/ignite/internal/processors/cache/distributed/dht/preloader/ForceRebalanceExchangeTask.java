@@ -50,11 +50,6 @@ public class ForceRebalanceExchangeTask extends AbstractCachePartitionExchangeWo
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Exchange ID.
      */

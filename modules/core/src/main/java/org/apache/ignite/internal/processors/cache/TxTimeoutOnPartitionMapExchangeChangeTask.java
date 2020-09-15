@@ -54,11 +54,6 @@ public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePart
     }
 
     /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TxTimeoutOnPartitionMapExchangeChangeTask.class, this);
     }

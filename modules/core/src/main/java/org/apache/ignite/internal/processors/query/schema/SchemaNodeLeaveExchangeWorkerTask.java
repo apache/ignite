@@ -47,11 +47,6 @@ public class SchemaNodeLeaveExchangeWorkerTask extends AbstractCachePartitionExc
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Node.
      */

@@ -43,11 +43,6 @@ public class CacheStatisticsModeChangeTask extends AbstractCachePartitionExchang
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Message.
      */

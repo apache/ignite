@@ -52,11 +52,6 @@ public class FinishPreloadingTask extends AbstractCachePartitionExchangeWorkerTa
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Topology version.
      */

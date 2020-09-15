@@ -73,11 +73,6 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return null;
-    }
-
     /**
      * @return Start request ID.
      */
