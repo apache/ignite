@@ -57,12 +57,12 @@ class CellularAffinity(IgniteTest):
                             </bean>
                         </property>
                         <property name="name" value="{{ cacheName }}"/>
-                        <property name="backups" value="{{ nodes }}"/> 
+                        <property name="backups" value="{{ nodes }}"/>
                         <property name="atomicityMode" value="TRANSACTIONAL"/>
                     </bean>
                 </list>
             </property>
-        """
+        """  # noqa: E501
 
     @staticmethod
     def properties():
@@ -185,8 +185,8 @@ class CellularAffinity(IgniteTest):
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 discovery_spi=from_ignite_cluster(nodes)),  # Server node.
-            java_class_name=
-            "org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularPreparedTxStreamer",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test."
+                            "CellularPreparedTxStreamer",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
