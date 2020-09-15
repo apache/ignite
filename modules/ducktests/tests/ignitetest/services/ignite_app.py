@@ -109,6 +109,8 @@ class IgniteApplicationService(IgniteAwareService):
         """
         results = self.extract_results(name)
 
+        assert len(results) <= 1, f"Expected exactly one result occurence, {len(results)} found."
+
         return results[0] if results else ""
 
     def extract_results(self, name):

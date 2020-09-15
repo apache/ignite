@@ -126,6 +126,8 @@ class TransactionsTests(IgniteTest):
         assert len(control_utility.tx(limit=2, label_pattern='LBL_.*')) == 4
 
         assert len(control_utility.tx(label_pattern='LBL_.*')) == client_tx_count + server_tx_count
+
+        # filter transactions with keys size greater or equal to min_size.
         assert len(control_utility.tx(min_size=client_tx_size, label_pattern='LBL_.*')) == client_tx_count
 
         server_nodes = [node.consistent_id for node in servers.nodes]
@@ -138,8 +140,8 @@ class TransactionsTests(IgniteTest):
 
         # test min_duration filtering.
         min_duration = int(self.monotonic() - start_check)
-        transactions = control_utility.tx(min_duration=min_duration)
-        assert len(transactions) >= server_tx_count + client_tx_count
+        transactions = control_utility.tx(min_duration=min_duration, label_pattern='LBL_.*')
+        assert len(transactions) == server_tx_count + client_tx_count
         for tx in transactions:
             assert tx.duration >= min_duration
 
@@ -148,7 +150,8 @@ class TransactionsTests(IgniteTest):
             'config': IgniteConfiguration(version=IgniteVersion(version),
                                           client_mode=client_mode,
                                           discovery_spi=from_ignite_cluster(servers)),
-            'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility.LongRunningTransaction',
+            'java_class_name': 'org.apache.ignite.internal.ducktest.tests.control_utility'
+                               '.LongRunningTransactionsGenerator',
             'params': kwargs
         }
 

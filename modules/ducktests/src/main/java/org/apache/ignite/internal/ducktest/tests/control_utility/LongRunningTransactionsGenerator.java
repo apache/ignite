@@ -36,7 +36,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 /**
  * Run long running transactions on node with specified param.
  */
-public class LongRunningTransaction extends IgniteAwareApplication {
+public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
     /** */
     private static final Duration TOPOLOGY_WAIT_TIMEOUT = Duration.ofSeconds(60);
 
@@ -91,6 +91,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
                 Lock lock = cache.lock(key);
 
                 lock.lock();
+
                 try {
                     lockLatch.countDown();
 
@@ -98,6 +99,8 @@ public class LongRunningTransaction extends IgniteAwareApplication {
                         Thread.sleep(100L);
                 }
                 catch (InterruptedException e) {
+                    markBroken(new RuntimeException("Unexpected thread interruption", e));
+
                     Thread.currentThread().interrupt();
                 }
                 finally {
@@ -111,6 +114,7 @@ public class LongRunningTransaction extends IgniteAwareApplication {
         log.info(KEYS_LOCKED_MESSAGE);
 
         CountDownLatch txLatch = new CountDownLatch(txCount);
+
         for (int i = 0; i < txCount; i++) {
             Map<String, String> data = new TreeMap<>();
 
