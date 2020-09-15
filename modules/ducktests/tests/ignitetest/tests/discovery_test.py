@@ -71,7 +71,7 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 5000
+    FAILURE_DETECTION_TIMEOUT = 2000
 
     DATA_AMOUNT = 5_000_000
 
@@ -79,11 +79,16 @@ class DiscoveryTest(IgniteTest):
 
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
+    def __init__(self, test_context):
+        super().__init__(test_context=test_context)
+
+        self.__netfilter_settings = {}
+
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @ignite_versions(str(LATEST_2_8))
+    @matrix(kill_coordinator=[True],
+            nodes_to_kill=[2],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -168,7 +173,7 @@ class DiscoveryTest(IgniteTest):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("mkdir -p $(dirname %s)" % self.NETFILTER_SAVED_SETTINGS)
 
-            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS
+            cmd = "sudo iptables-save | tee " + self.NETFILTER_SAVED_SETTINGS + " && sudo iptables -F"
 
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
@@ -179,7 +184,9 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
 
-            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.__netfilter_settings[node.name] = dump_netfilter_settings(node)
+
+            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, self.__netfilter_settings[node.name]))
 
     def teardown(self):
         # Restore previous network filter settings.
@@ -193,8 +200,14 @@ class DiscoveryTest(IgniteTest):
 
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+            else:
+                restored_settings = dump_netfilter_settings(node)
 
-            self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+                if restored_settings != self.__netfilter_settings[node.name]:
+                    errors.append("Settings not restored for node '%s'. Restored settings: %s%s. Before launch: %s" %
+                                  (node.name, restored_settings, os.linesep, self.__netfilter_settings[node.name]))
+                else:
+                    self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, restored_settings))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
@@ -329,4 +342,4 @@ def dump_netfilter_settings(node):
     """
     Reads current netfilter settings on the node for debugging purposes.
     """
-    return str(node.account.ssh_client.exec_command("sudo iptables -L -v -n")[1].read(), sys.getdefaultencoding())
+    return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
