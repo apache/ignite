@@ -127,7 +127,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     }
 
     /**
-     * Tests command error output n in case {@link SystemViewCommandArg#NODE_ID} argument value refers to nonexistent
+     * Tests command error output in case {@link SystemViewCommandArg#NODE_ID} argument value refers to nonexistent
      * node.
      */
     @Test

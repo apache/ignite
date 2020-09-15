@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
 
 /**
- * Represents command for {@link SystemView} ocontent printing.
+ * Represents command for {@link SystemView} content printing.
  */
 public class SystemViewCommand implements Command<Object> {
     /** Column separator. */
