@@ -445,10 +445,16 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals("1", strCache.get(1));
 
         // GetAndPut.
+        assertNull(strCache.getAndPutAsync(2, "2").get());
+        assertEquals("2", strCache.getAndPutAsync(2, "3").get());
 
         // GetAndRemove.
+        assertNull(strCache.getAndRemoveAsync(-1).get());
+        assertEquals("3", strCache.getAndRemoveAsync(2).get());
 
         // GetAndReplace.
+        assertNull(strCache.getAndReplaceAsync(-1, "1").get());
+        assertEquals("1", strCache.getAndReplaceAsync(1, "2").get());
 
         // PutIfAbsent.
 
