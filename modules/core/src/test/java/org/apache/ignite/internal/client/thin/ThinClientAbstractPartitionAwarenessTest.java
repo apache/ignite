@@ -28,8 +28,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.client.ClientAuthorizationException;
-import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
@@ -49,6 +47,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 /**
  * Abstract thin client partition awareness test.
  */
+@SuppressWarnings("rawtypes")
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
     private static final long WAIT_TIMEOUT = 5_000L;
