@@ -320,28 +320,6 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests getAsync with existing and non-existing keys.
-     */
-    @Test
-    public void testGetAsyncReturnsResult() throws Exception {
-        strCache.put(1, "1");
-        assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
-        assertTrue(strCache.getAsync(2).thenApply(Objects::isNull).toCompletableFuture().get());
-    }
-
-    /**
-     * Tests getAsync argument validation.
-     */
-    @Test
-    public void testGetAsyncValidatesArguments() {
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
-
-        GridTestUtils.assertThrowsAnyCause(
-                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
-    }
-
-    /**
      * Tests getAsync with non-existing cache.
      * <p>
      * - Get a cache that does not exist
@@ -384,12 +362,31 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests putAsync happy path.
+     * Tests normal operation of all async cache APIs.
      */
     @Test
-    public void testPutAsyncUpdatesCache() throws Exception {
+    public void testAsyncCacheOperations() throws Exception {
+        // Get.
+        strCache.put(1, "1");
+        assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
+        assertTrue(strCache.getAsync(2).thenApply(Objects::isNull).toCompletableFuture().get());
+
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(null, "1"), NullPointerException.class, "key");
+
+        GridTestUtils.assertThrowsAnyCause(
+                null, () -> strCache.putAsync(1, null), NullPointerException.class, "val");
+
+        // Put.
         strCache.putAsync(1, "2");
         assertTrue(GridTestUtils.waitForCondition(() -> strCache.get(1) != null, TIMEOUT));
         assertEquals("2", strCache.get(1));
+
+        // ContainsKey.
+        assertTrue(strCache.containsKeyAsync(1).get());
+        assertFalse(strCache.containsKeyAsync(2).get());
+
+        // GetConfiguration.
+        assertEquals(strCache.getName(), strCache.getConfigurationAsync().get().getName());
     }
 }
