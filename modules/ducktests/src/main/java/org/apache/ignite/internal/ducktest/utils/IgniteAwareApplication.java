@@ -144,17 +144,17 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    protected void markBroken(Throwable th) {
+    public void markBroken(Throwable th) {
         log.info("Marking as broken.");
 
         synchronized (stateMux) {
+            recordResult("ERROR", th.toString());
+
             if (broken) {
                 log.info("Already marked as broken.");
 
                 return;
             }
-
-            recordResult("ERROR", th.toString());
 
             assert !finished;
 
