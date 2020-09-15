@@ -171,7 +171,7 @@ To set a custom expire time, set the system variable: `IGNITE_REST_SESSION_TIMEO
 == Data Types
 The REST API also supports <<Java built-in types>> and <<Custom user defined types>> for put/get operations via `keyType` and `valueType` optional parameters.
 
-Note that unless one of the below mentioned types are explicitly specified, the REST protocol exchanges the key-value data in `String` format.
+Note that unless one of the mentioned below types are explicitly specified, the REST protocol exchanges the key-value data in `String` format.
 This means that the data is stored and retrieved to/from the cluster as a `String`.
 
 === Java built-in types
@@ -246,7 +246,7 @@ http://[host]:[port]/ignite?cmd=get&key=1&cacheName=myCache&keyType=int&valueTyp
 === Custom user defined types
 
 For custom objects, the JSON format is used. For example, we can work with the following object using the REST API:
-
+[source, javascript]
  {
   "uid": "7e51118b-eb15-4373-b57f-4984cb9cd7ac",
   "name": "John Doe",
@@ -259,11 +259,53 @@ The following request puts this object into the cache `testCache` as a value wit
 
  http://[host]:[port]/ignite?cacheName=testCache&cmd=put&keyType=int&key=1&valueType=Person&val=%7B%0A+++++%22uid%22%3A+%227e51118b-eb15-4373-b57f-4984cb9cd7ac%22%2C%0A+++++%22name%22%3A+%22John+Doe%22%2C%0A+++++%22organization%22%3A+5678901%2C%0A+++++%22married%22%3A+false%2C%0A+++++%22salary%22%3A+156.1%0A++%7D&
 
-On the server side, JSON text will be converted to link:/docs/data-modeling/data-modeling#binary-object-format[binary object], field types are resolved in the following order:
+On the server side, the JSON value from this request will be converted to link:/docs/data-modeling/data-modeling#binary-object-format[binary object]. Field types are resolved in the following order:
 
-* If the type name is a Java class that is available on the server, the fields will be stored according to the definition of the Java class.
-* If the type name is a query entity type, the fields will be stored according to the type of field defined in the query entity.
-* Otherwise, the fields will be stored according to regular JSON types.
+* If the type name is a `Java class` available on the server, the type of each field of the object will be resolved according to the type of that field in the `Java class`.
+* If the type name is a `query entity` type, the field types will be resolved according to the field type defined in the `query entity`.
+* Otherwise, the field types will be resolved according to regular JSON types.
+
+For example, if there is no definition of the "Person" type on the server, the fields will be converted in accordance with the standard JSON types:
+[source, javascript]
+"uid": "7e51118b-eb15-4373-b57f-4984cb9cd7ac", // string
+"name": "John Doe",                            // string
+"organization": 5678901,                       // int
+"married": false,                              // boolean
+"salary": 156.1                                // double
+
+In case the `query entity` was set
+[source,xml]
+ <bean class="org.apache.ignite.cache.QueryEntity">
+  <property name="keyType"   value="java.lang.Integer"/>
+  <property name="valueType" value="Person"/>
+  <property name="fields">
+   <map>
+    <entry key="uid"          value="java.util.UUID"/>
+    <entry key="name"         value="java.lang.String"/>
+    <entry key="organization" value="java.lang.Long"/>
+    <entry key="married"      value="java.lang.Boolean"/>
+    <entry key="salary"       value="java.lang.Float"/>
+   </map>
+  </property>
+ </bean>
+
+Or Java class "Person" loaded on the server.
+[source,java]
+class Person {
+ UUID    uid;
+ String  name;
+ long    organization;
+ boolean married;
+ float   salary;
+}
+
+The fields of the object will be of the following types:
+[source,javascript]
+  "uid": "7e51118b-eb15-4373-b57f-4984cb9cd7ac", // UUID
+  "name": "John Doe",                            // string
+  "organization": 5678901,                       // long
+  "married": false,                              // boolean
+  "salary": 156.1                                // float
 
 == Returned Value
 The HTTP REST request returns a JSON object which has a similar structure for each command:
