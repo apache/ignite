@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -32,12 +38,6 @@ import org.apache.ignite.client.PersonBinarylizable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Thin client async cache tests.
@@ -435,8 +435,14 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertFalse(strCache.containsKey(2));
 
         // RemoveAll.
+        strCache.removeAllAsync().get();
+        assertEquals(0, strCache.size());
 
         // RemoveAll(k).
+        strCache.putAll(ImmutableMap.of(1, "1", 2, "2", 3, "3"));
+        strCache.removeAllAsync(ImmutableSet.of(2, 3)).get();
+        assertEquals(1, strCache.size());
+        assertEquals("1", strCache.get(1));
 
         // GetAndPut.
 
