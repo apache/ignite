@@ -2105,7 +2105,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long timeout,
         UUID txSubjectId,
         int txTaskNameHash,
-        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
+        MvccSnapshot snapshot
+    ) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 

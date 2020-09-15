@@ -50,13 +50,17 @@ public class EncryptionCommand implements Command<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
+            String res = executeTaskByNameOnNode(
                 client,
                 taskName,
                 taskArgs,
                 null,
                 clientCfg
             );
+
+            logger.info(res);
+
+            return res;
         }
         catch (Throwable e) {
             logger.severe("Failed to perform operation.");

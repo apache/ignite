@@ -40,6 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -100,7 +101,7 @@ public class QueryUtils {
     public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Schema for system view. */
-    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
+    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
 
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
@@ -117,8 +118,12 @@ public class QueryUtils {
     /** Well-known template name for REPLICATED cache. */
     public static final String TEMPLATE_REPLICATED = "REPLICATED";
 
+    /** @see IgniteSystemProperties#IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE */
+    public static final int DFLT_INDEXING_DISCOVERY_HISTORY_SIZE = 1000;
+
     /** Discovery history size. */
-    private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
+    private static final int DISCO_HIST_SIZE =
+        getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
