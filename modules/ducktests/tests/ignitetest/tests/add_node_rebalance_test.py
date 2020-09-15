@@ -47,14 +47,10 @@ class AddNodeRebalanceTest(IgniteTest):
             * Put data to it via IgniteClientApp.
             * Start one more node and awaits for rebalance to finish.
         """
-        self.stage("Start Ignite nodes")
-
         node_config = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=self.NUM_NODES - 1)
         ignites.start()
-
-        self.stage("Starting DataGenerationApplication")
 
         # This client just put some data to the cache.
         app_config = node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
@@ -65,8 +61,6 @@ class AddNodeRebalanceTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                num_nodes=1)
-
-        self.stage("Starting Ignite node")
 
         ignite.start()
 
