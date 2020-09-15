@@ -261,7 +261,7 @@ The following request puts this object into the cache `testCache` as a value wit
 
 On the server side, the JSON value from this request will be converted to link:/docs/data-modeling/data-modeling#binary-object-format[binary object]. Field types are resolved in the following order:
 
-* If the type name is a `Java class` available on the server, the type of each field of the object will be resolved according to the type of that field in the `Java class`.
+* If the type name is a `Java class` available on the server, the class field types with corresponding names will be used for JSON object field types resolving.
 * If the type name is a `query entity` type, the field types will be resolved according to the field type defined in the `query entity`.
 * Otherwise, the field types will be resolved according to regular JSON types.
 
@@ -289,7 +289,7 @@ In case the `query entity` was set
   </property>
  </bean>
 
-Or Java class "Person" loaded on the server.
+or Java class "Person" loaded on the server.
 [source,java]
 class Person {
  UUID    uid;
