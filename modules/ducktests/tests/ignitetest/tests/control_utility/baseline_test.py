@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains manipulating baseline test throuhg control utility.
+This module contains manipulating baseline test through control utility.
 """
 
 from ducktape.mark.resource import cluster
