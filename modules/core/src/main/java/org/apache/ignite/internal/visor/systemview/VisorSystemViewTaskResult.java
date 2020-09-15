@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Reperesents result of {@link VisorSystemViewTask}.
  */
 public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Attribute values for each row of the system view. */
     private List<? extends List<?>> rows;
 

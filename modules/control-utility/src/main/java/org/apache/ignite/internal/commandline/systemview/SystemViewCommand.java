@@ -147,6 +147,8 @@ public class SystemViewCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
+        nodeId = null;
+
         String sysViewName = null;
 
         while (argIter.hasNextSubArg()) {
