@@ -85,7 +85,7 @@ class DiscoveryTest(IgniteTest):
         self.__netfilter_settings = {}
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -186,7 +186,7 @@ class DiscoveryTest(IgniteTest):
 
                 exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
-            assert len(exec_error) == 0, "Failed to store iptables rules on '" + node.name + "': " + exec_error
+            assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
             assert len(node.account.ssh_client.exec_command("sudo iptables -F")[2].read()) == 0, \
                 "Failed to clear iptables rules on '" + node.name
