@@ -150,7 +150,6 @@ public class CacheAsyncTest extends AbstractThinClientTest {
                 .setName(TMP_CACHE_NAME)
                 .setBackups(3);
 
-
         Throwable t = client.createCacheAsync(cfg)
                 .handle((res, err) -> err)
                 .toCompletableFuture()
