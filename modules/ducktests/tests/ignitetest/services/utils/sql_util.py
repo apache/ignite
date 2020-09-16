@@ -17,10 +17,10 @@
 This module contains JDBC driver wrapper.
 """
 
-import random
 import jaydebeapi
 from ignitetest.services.ignite import IgniteService
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.services.utils.ignite_path import IgnitePath
+from ignitetest.utils.version import IgniteVersion
 
 
 def jdbc_connection(ignite_service: IgniteService, ver: IgniteVersion = None):
@@ -32,14 +32,15 @@ def jdbc_connection(ignite_service: IgniteService, ver: IgniteVersion = None):
     if ver is None:
         ver = ignite_service.config.version
 
+    home = IgnitePath(ver).home
     vstr = ver.vstring
 
-    if ver == DEV_BRANCH:
-        core_jar_path = str("modules/core/target/ignite-core-%s-SNAPSHOT.jar" % vstr)
+    if ver.is_dev:
+        core_jar_path = str("%s/modules/core/target/ignite-core-%s-SNAPSHOT.jar" % (home, vstr))
     else:
-        core_jar_path = str("/opt/ignite-%s/libs/ignite-core-%s.jar" % (vstr, vstr))
+        core_jar_path = str("%s/libs/ignite-core-%s.jar" % (home, vstr))
 
-    node = random.choice(ignite_service.nodes)
+    node = ignite_service.nodes[0]
 
     url = "jdbc:ignite:thin://" + node.account.externally_routable_ip+"/?distributedJoins=true"
 

@@ -14,4 +14,4 @@
 # limitations under the License.
 
 # pylint: disable=C0114
-from ._mark import version_if, ignite_versions
+from ._mark import version_if, ignite_versions, version_with_previous

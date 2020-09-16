@@ -68,3 +68,6 @@ V_2_8_1 = IgniteVersion("2.8.1")
 LATEST_2_8 = V_2_8_1
 
 LATEST = LATEST_2_8
+
+ALL_VERSIONS = (DEV_BRANCH, V_2_8_1, V_2_8_0, V_2_7_6)
+ALL_VERSIONS_STR = [str(v) for v in ALL_VERSIONS]

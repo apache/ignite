@@ -21,7 +21,7 @@ from collections.abc import Iterable
 
 from ducktape.mark._mark import Ignore, Mark, _inject
 
-from ignitetest.utils.version import IgniteVersion
+from ignitetest.utils.version import IgniteVersion, ALL_VERSIONS_STR
 
 
 class VersionIf(Ignore):
@@ -138,3 +138,23 @@ def version_if(condition, variable_name='ignite_version'):
         return func
 
     return ignorer
+
+
+def version_with_previous(*args, version_prefix="ignite_version"):
+    """
+    Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
+    :param args: Can be string, tuple of strings or iterable of them.
+    :param version_prefix: prefix for variable to inject into test function.
+    """
+    res = []
+    for v_arg in args:
+        for v_all in ALL_VERSIONS_STR:
+            if v_all < v_arg:
+                res.append((v_arg, v_all))
+
+    def parametrizer(func):
+        Mark.mark(func, IgniteVersionParametrize(*res, version_prefix=version_prefix))
+
+        return func
+
+    return parametrizer
