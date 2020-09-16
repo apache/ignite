@@ -382,7 +382,7 @@ public class GridJobExecuteResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 8;
     }
 
     /** {@inheritDoc} */
