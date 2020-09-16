@@ -317,6 +317,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 return func.apply(ch);
             }
             catch (ClientConnectionException e) {
+                // TODO: Handle async failures somehow.
                 if (failure == null)
                     failure = e;
                 else

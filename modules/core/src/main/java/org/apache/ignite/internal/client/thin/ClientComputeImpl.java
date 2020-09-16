@@ -263,9 +263,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             T2<ClientChannel, Long> taskParams,
             Throwable err) {
         if (err != null) {
-            // TODO: This loses stack trace somehow?
-            // TODO: Handle connection loss here?
-            resFut.completeExceptionally(convertException(err));
+            resFut.completeExceptionally(new ClientException(err));
         } else {
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
