@@ -18,18 +18,20 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -44,11 +46,13 @@ public class ReliableChannelTest {
     /** Mock factory for creating new channels. */
     private final Function<ClientChannelConfiguration, ClientChannel> chFactory = cfg -> new TestClientChannel();
 
+    /** */
+    private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
+
     /** Checks that channel holders are not reinited for static address configuration. */
     @Test
     public void testChannelsNotReinitForStaticAddressConfiguration() {
-        ClientConfiguration ccfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:8000", "127.0.0.1:8001", "127.0.0.1:8002");
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
 
         checkDoesNotReinit(ccfg);
     }
@@ -56,8 +60,11 @@ public class ReliableChannelTest {
     /** Checks that channel holders are not reinited if address finder return the same list of addresses. */
     @Test
     public void testChannelsNotReinitForStableDynamicAddressConfiguration() {
-        ClientConfiguration ccfg = new ClientConfiguration()
-            .setAddressesFinder(new TestAddressFinder("127.0.0.1:8000", "127.0.0.1:8001", "127.0.0.1:8002"));
+        TestAddressFinder finder = new TestAddressFinder()
+            .nextAddresesResponse(dfltAddrs)
+            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802");
+
+        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
 
         checkDoesNotReinit(ccfg);
     }
@@ -65,7 +72,7 @@ public class ReliableChannelTest {
     /** */
     private void checkDoesNotReinit(ClientConfiguration ccfg) {
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.initConnection();
+        rc.channelsInit(false);
         List<ReliableChannel.ClientChannelHolder> originalChannels = rc.getChannelHolders();
 
         // Imitate topology change.
@@ -73,50 +80,48 @@ public class ReliableChannelTest {
         List<ReliableChannel.ClientChannelHolder> newChannels = rc.getChannelHolders();
 
         assertSame(originalChannels, newChannels);
-        IntStream.range(0, 3).forEach(i -> {
+        for (int i = 0; i < 3; ++i) {
             assertSame(originalChannels.get(i), newChannels.get(i));
             assertFalse(originalChannels.get(i).isClosed());
-        });
+        }
         assertEquals(3, newChannels.size());
     }
 
     /** Checks that node channels are persisted if channels are reinit with static address configuration. */
     @Test
     public void testNodeChannelsAreNotCleaned() {
-        ClientConfiguration ccfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:8000", "127.0.0.1:8001", "127.0.0.1:8002");
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.initConnection();
+        rc.channelsInit(false);
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
 
-        assertEquals(1, rc.nodeChannels.size());
+        assertEquals(1, rc.getNodeChannels().size());
 
         // Imitate topology change.
         rc.initChannelHolders(true);
 
-        assertEquals(1, rc.nodeChannels.size());
+        assertEquals(1, rc.getNodeChannels().size());
     }
 
     /** Checks that channels are changed (add new, remove old) and close channels if reinitialization performed. */
     @Test
     public void testDynamicAddressReinitializedCorrectly() {
-        ClientConfiguration ccfg = new ClientConfiguration()
-            .setAddressesFinder(new TestAddressFinder("127.0.0.1:8000", "127.0.0.1:8003"));
+        TestAddressFinder finder = new TestAddressFinder()
+            .nextAddresesResponse(dfltAddrs)
+            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10803");
+
+        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.initConnection();
+        rc.channelsInit(false);
 
         List<ReliableChannel.ClientChannelHolder> originChannels = Collections.unmodifiableList(rc.getChannelHolders());
         // Imitate topology change.
         rc.initChannelHolders(true);
 
-        List<ReliableChannel.ClientChannelHolder> closedChannels = originChannels.stream()
-            .filter(r -> r.isClosed())
-            .collect(Collectors.toList());
-
-        assertEquals(2, closedChannels.size());
+        assertEquals(2, F.size(originChannels, ReliableChannel.ClientChannelHolder::isClosed));
 
         List<ReliableChannel.ClientChannelHolder> reuseChannel = originChannels.stream()
             .filter(c -> !c.isClosed())
@@ -133,20 +138,34 @@ public class ReliableChannelTest {
     /** Check that node channels are cleaned in case of full reinitialization. */
     @Test
     public void testThatNodeChannelsCleanFullReinitialization() {
-        ClientConfiguration ccfg = new ClientConfiguration()
-            .setAddressesFinder(new TestAddressFinder("127.0.0.1:8003", "127.0.0.1:8004"));
+        TestAddressFinder finder = new TestAddressFinder()
+            .nextAddresesResponse(dfltAddrs)
+            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804");
+
+        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.initConnection();
+        rc.channelsInit(false);
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
 
-        assertEquals(1, rc.nodeChannels.size());
+        assertEquals(1, rc.getNodeChannels().size());
 
         // Imitate topology change.
         rc.initChannelHolders(true);
 
-        assertEquals(0, rc.nodeChannels.size());
+        assertEquals(0, rc.getNodeChannels().size());
+    }
+
+    /** Should fail if default channel is not initialized. */
+    @Test(expected = TestChannelException.class)
+    public void testFailOnInitIfDefaultChannelFailed() {
+        ClientConfiguration ccfg = new ClientConfiguration()
+            .setAddresses(dfltAddrs)
+            .setPartitionAwarenessEnabled(true);
+
+        ReliableChannel rc = new ReliableChannel(cfg -> new TestFailureClientChannel(), ccfg, null);
+        rc.channelsInit(false);
     }
 
     /** Mock for client channel. */
@@ -196,34 +215,43 @@ public class ReliableChannelTest {
         }
     }
 
+    /** Mock client channel that fails on initialization. */
+    private static class TestFailureClientChannel extends TestClientChannel {
+        /** Constructor that fails. */
+        private TestFailureClientChannel() {
+            throw new TestChannelException();
+        }
+    }
+
+    /** TestFailureClientChannel failed with this Exception. */
+    private static class TestChannelException extends RuntimeException {}
+
     /**
-     * Mock for address finder. By first request return fixed list of addresses.
-     * Response on second request set with constructor.
+     * Mock for address finder.
      */
     private static class TestAddressFinder implements ClientAddressFinder {
 
-        /** Number of request to the finder. */
-        private int reqNum = -1;
-
-        /** List of addresses that returns on second request. */
-        private final String[] newAddrs;
+        /** Queue of list addresses. Every new request poll this queue. */
+        private final Queue<String[]> addrResQueue;
 
         /** */
-        public TestAddressFinder(String... newAddrs) {
-            this.newAddrs = newAddrs;
+        private TestAddressFinder() {
+            addrResQueue = new LinkedList<>();
+        }
+
+        /** Configure result for every next {@link #getServerAddresses()} request. */
+        private TestAddressFinder nextAddresesResponse(String... addrs) {
+            addrResQueue.add(addrs);
+
+            return this;
         }
 
         /** {@inheritDoc} */
         @Override public String[] getServerAddresses() {
-            reqNum += 1;
+            if (addrResQueue.isEmpty())
+                throw new IllegalStateException("Server address request is not expected.");
 
-            if (reqNum == 0)
-                return new String[]{"127.0.0.1:8000", "127.0.0.1:8001", "127.0.0.1:8002"};
-
-            if (reqNum == 1)
-                return newAddrs.clone();
-
-            throw new IllegalStateException("Must not be there");
+            return addrResQueue.poll();
         }
     }
 }

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.client.ClientAddressFinder;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /**
@@ -42,7 +45,7 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     }
 
     /**
-     * Test that client use channels to all running nodes while new nodes start
+     * Test that client use channels to all running nodes while new nodes start.
      */
     @Test
     public void testClientDiscoveryNodesJoin() throws Exception {
@@ -64,7 +67,7 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     }
 
     /**
-     * Test that client use channels to all running nodes while nodes stop
+     * Test that client use channels to all running nodes while nodes stop.
      */
     @Test
     public void testClientDiscoveryNodesLeave() throws Exception {
@@ -82,9 +85,26 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
             awaitPartitionMapExchange();
             detectTopologyChange();
 
-            awaitChannelsInit(workChannels);
             testPartitionAwareness(workChannels);
         }
+    }
+
+    /**
+     * Test that client use channels to all running nodes while nodes stop.
+     */
+    @Test
+    public void testClientDiscoveryFilterNodeJoin() throws Exception {
+        startGrids(MAX_CLUSTER_SIZE - 1);
+        awaitPartitionMapExchange();
+
+        initClient(getClientConfigurationWithDiscovery(3), 0, 1, 2);
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
+        detectTopologyChange();
+
+        testPartitionAwareness(0, 1, 2);
     }
 
     /**
@@ -115,14 +135,22 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     }
 
     /**
-     * Provide ClientConfiguration with addrResolver that find all alive nodes
+     * Provide ClientConfiguration with addrResolver that find all alive nodes.
      */
-    private ClientConfiguration getClientConfigurationWithDiscovery() {
+    private ClientConfiguration getClientConfigurationWithDiscovery(int... excludeIdx) {
+        Set<Integer> exclude = Arrays.stream(excludeIdx).boxed().collect(Collectors.toSet());
+
         ClientAddressFinder addrFinder = () ->
             IgnitionEx.allGrids().stream().map(node -> {
                 int port = (Integer) node.cluster().localNode().attributes().get(CLIENT_LISTENER_PORT);
+
+                if (exclude.contains(port - DFLT_PORT))
+                    return null;
+
                 return "127.0.0.1:" + port;
-            }).toArray(String[]::new);
+            })
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
 
         return new ClientConfiguration()
             .setAddressesFinder(addrFinder)
@@ -130,12 +158,14 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     }
 
     /**
-     * Trigger client to detect topology change
+     * Trigger client to detect topology change.
      */
     private void detectTopologyChange() {
         // Send non-affinity request to detect topology change.
         initDefaultChannel();
+
         client.getOrCreateCache(PART_CACHE_NAME);
+
         assertOpOnChannel(dfltCh, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
     }
 }
