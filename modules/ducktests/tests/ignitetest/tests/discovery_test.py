@@ -226,9 +226,6 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
-            assert len(node.account.ssh_client.exec_command("sudo iptables -F")[2].read()) == 0, \
-                "Failed to clear iptables rules on '" + node.name
-
             self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, self.__netfilter_settings[node.name]))
 
     def teardown(self):
