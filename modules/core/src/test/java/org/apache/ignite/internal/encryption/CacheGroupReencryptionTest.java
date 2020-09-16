@@ -77,7 +77,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     private static final long MAX_AWAIT_MILLIS = 15_000;
 
     /** File IO fail flag. */
-    private final AtomicBoolean failing = new AtomicBoolean();
+    private final AtomicBoolean failFileIO = new AtomicBoolean();
 
     /** Count of cache backups. */
     private int backups;
@@ -111,7 +111,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             .setMaxWalArchiveSize(100 * 1024 * 1024L)
             .setCheckpointFrequency(30 * 1000L)
             .setWalMode(LOG_ONLY)
-            .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failing))
+            .setFileIOFactory(new FailingFileIOFactory(new RandomAccessFileIOFactory(), failFileIO))
             .setEncryptionConfiguration(encrCfg);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -160,7 +160,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        failing.set(true);
+        failFileIO.set(true);
 
         nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
@@ -179,7 +179,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids(true);
 
-        failing.set(false);
+        failFileIO.set(false);
 
         nodes = startTestGrids(false);
 
@@ -221,7 +221,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         forceCheckpoint();
 
-        failing.set(true);
+        failFileIO.set(true);
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
@@ -236,7 +236,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         stopAllGrids(true);
 
-        failing.set(false);
+        failFileIO.set(false);
 
         nodes = startTestGrids(false);
 
@@ -409,7 +409,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -463,7 +463,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(nodes.get1(), nodes.get2());
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -497,7 +497,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         startGrid(GRID_1);
 
@@ -505,7 +505,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         assertEquals(2, grid(GRID_0).context().encryption().groupKeyIds(grpId).size());
         assertEquals(2, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
@@ -650,7 +650,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
@@ -660,7 +660,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 2, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 2, MAX_AWAIT_MILLIS);
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
@@ -670,7 +670,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 3, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 3, MAX_AWAIT_MILLIS);
     }
 
     /** @throws Exception If failed. */

@@ -354,7 +354,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         awaitEncryption(G.allGrids(), grpId, timeout);
 
         for (Ignite g : G.allGrids()) {
-            info("Validating key [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
+            info("Validating encryption key [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
 
             IgniteEx grid = (IgniteEx)g;
 
@@ -365,14 +365,25 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertEquals(grid.localNode().id().toString(), (byte)keyId, encryption.groupKey(grpId).id());
 
-            forceCheckpoint(g);
-
             IgniteInternalFuture<Void> fut = encryption.reencryptionFuture(grpId);
 
-            if (!fut.isDone())
-                forceCheckpoint(g);
+            // The future will be completed after the checkpoint, forcecheckpoint does nothing
+            // if the checkpoint has already been scheduled.
+            GridTestUtils.waitForCondition(() -> {
+                if (fut.isDone())
+                    return true;
 
-            fut.get(timeout);
+                try {
+                    forceCheckpoint(g);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return fut.isDone();
+            }, timeout);
+
+            assertTrue(fut.isDone());
 
             CacheGroupContext grp = grid.context().cache().cacheGroup(grpId);
 

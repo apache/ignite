@@ -174,7 +174,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         startGrid(GRID_1);
 
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /** @throws Exception If failed. */
@@ -305,20 +305,18 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      */
     @Test
     public void testKeyIdentifierOverflow() throws Exception {
-        startTestGrids(true);
+        IgniteEx node = startTestGrids(true).get1();
 
-        IgniteEx node0 = grid(GRID_0);
-        IgniteEx node1 = grid(GRID_1);
-
-        createEncryptedCache(node0, node1, cacheName(), null);
+        createEncryptedCache(node, null, cacheName(), null, false);
 
         int grpId = CU.cacheId(cacheName());
 
         byte keyId = INITIAL_KEY_ID;
 
         do {
-            node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+            node.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
+            // Validates reencryption of index partition.
             checkGroupKey(grpId, ++keyId & 0xff, MAX_AWAIT_MILLIS);
         } while (keyId != INITIAL_KEY_ID);
     }
@@ -861,7 +859,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         checkEncryptedCaches(grid(GRID_0), grid(GRID_1));
 
@@ -982,7 +980,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
         assertEquals(1, grids.get2().context().encryption().groupKeyIds(grpId).size());
