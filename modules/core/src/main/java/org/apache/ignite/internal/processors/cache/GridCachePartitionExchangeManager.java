@@ -839,8 +839,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             fut = exchangeFuture(
                 exchId,
-                reconnect ? null : discoEvt,
-                reconnect ? null : discoCache,
+                reconnect ? null : null /*discoEvt*/,
+                reconnect ? null : null /*discoCache*/,
                 null,
                 null);
         }
