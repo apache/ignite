@@ -47,18 +47,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Tests output of {@link CommandList#SYSTEM_VIEW} command.
  */
 public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
-    /**
-     * Line in command output that precedes the system view content.
-     */
-    static final String CMD_OUT_START =
-        "--------------------------------------------------------------------------------";
-
-    /**
-     * Line in command output that indicates end of the system view content.
-     */
-    static final String CMD_OUT_END =
-        "Command [" + SYSTEM_VIEW.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
-    
     /** Command line argument for printing content of a system view. */
     private static final String CMD_SYS_VIEW = SYSTEM_VIEW.text();
 
@@ -75,38 +63,35 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     static {
         try {
             EXP_CMD_OUT = U.readFileToString(resolveIgnitePath(
-                "modules/control-utility/src/test/resources/system-view-command.out").getAbsolutePath(), UTF_8.name());
+                "modules/control-utility/src/test/resources/system-view-command.output").getAbsolutePath(), UTF_8.name());
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        for (int i = 0; i < SERVER_NODE_CNT; i++) {
+            ignite(i).context().systemView().registerView(
+                TEST_VIEW,
+                "test_view_desc",
+                new TestViewWalker(),
+                i == 0 ? () -> Arrays.asList(false, true) : Collections::emptyList,
+                TestView::new
+            );
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         injectTestSystemOut();
 
         autoConfirmation = false;
-
-        ignite(0).context().systemView().registerView(
-            TEST_VIEW,
-            "test_view_desc",
-            new TestViewWalker(),
-            Arrays.asList(false, true),
-            TestView::new
-        );
-
-        ignite(1).context().systemView().registerView(
-            TEST_VIEW,
-            "test_view_desc",
-            new TestViewWalker(),
-            Collections::emptyList,
-            TestView::new
-        );
     }
 
     /**
@@ -114,7 +99,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testSystemViewNameMissedFailure() {
-        assertCommandFailed("The name of the system view for which its content should be printed is expected.",
+        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+            "The name of the system view for which its content should be printed is expected.",
             CMD_SYS_VIEW);
     }
 
@@ -123,7 +109,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testNodeIdMissedFailure() {
-        assertCommandFailed("ID of the node from which system view content should be obtained is expected.",
+        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+            "ID of the node from which system view content should be obtained is expected.",
             CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName());
     }
 
@@ -132,7 +119,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testInvalidNodeIdFailure() {
-        assertCommandFailed("Failed to parse " + NODE_ID.argName() +
+        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+            "Failed to parse " + NODE_ID.argName() +
             " command argument. String representation of \"java.util.UUID\" is exepected." +
             " For example: 123e4567-e89b-42d3-a456-556642440000",
             CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName(), "invalid_node_id");
@@ -143,7 +131,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testMultipleSystemViewNamesFailure() {
-        assertCommandFailed("Multiple system view names are not supported.",
+        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+            "Multiple system view names are not supported.",
             CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW);
     }
 
@@ -155,7 +144,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testNonExistentNodeIdFailure() {
         String incorrectNodeId = UUID.randomUUID().toString();
 
-        assertCommandFailed("Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found",
+        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found",
             CMD_SYS_VIEW, "--node-id", incorrectNodeId, CACHES_VIEW);
     }
 
@@ -164,7 +154,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testNonExistentSystemView() {
-        assertCommandSucceed("No system view with specified name was found [name=non_existent_system_view]",
+        checkCommandExecution(EXIT_CODE_OK,
+            "No system view with specified name was found [name=non_existent_system_view]",
             CMD_SYS_VIEW, "non_existent_system_view");
     }
 
@@ -173,7 +164,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testSystemViewContentOutput() {
-        assertCommandSucceed(EXP_CMD_OUT, CMD_SYS_VIEW, TEST_VIEW);
+        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT, CMD_SYS_VIEW, TEST_VIEW);
     }
 
     /**
@@ -181,9 +172,11 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testNodeIdArgument() {
-        assertCommandSucceed(EXP_CMD_OUT, CMD_SYS_VIEW, "--node-id", nodeId(0).toString(), TEST_VIEW);
+        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT,
+            CMD_SYS_VIEW, "--node-id", nodeId(0).toString(), TEST_VIEW);
 
-        assertCommandSucceed(EXP_NO_ROWS_CMD_OUT, CMD_SYS_VIEW, TEST_VIEW, "--node-id", nodeId(1).toString());
+        checkCommandExecution(EXIT_CODE_OK, EXP_NO_ROWS_CMD_OUT,
+            CMD_SYS_VIEW, TEST_VIEW, "--node-id", nodeId(1).toString());
     }
 
     /**
@@ -191,41 +184,21 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testSqlStyleSystemViewName() {
-        assertCommandSucceed(EXP_CMD_OUT, CMD_SYS_VIEW, toSqlName(TEST_VIEW));
+        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT, CMD_SYS_VIEW, toSqlName(TEST_VIEW));
     }
 
     /**
-     * Asserts that command execution succeed and checks its output.
+     * Check that command execution exits with specified code and output.
      *
+     * @param expOutput Expected command output.
      * @param args Command lines arguments.
      */
-    private void assertCommandSucceed(String expOutput, String... args) {
+    private void checkCommandExecution(int exitCode, String expOutput, String... args) {
         int res = execute(args);
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(exitCode, res);
 
-        String out = testOut.toString();
-
-        String cmdOut = out.substring(
-            out.indexOf(CMD_OUT_START) + CMD_OUT_START.length() + 1,
-            out.indexOf(CMD_OUT_END) - 1
-        );
-
-        assertEquals(expOutput, cmdOut);
-    }
-
-    /**
-     * Asserts that command execution failed and specified message appears in the output.
-     *
-     * @param msg Error message.
-     * @param args Command line arguments.
-     */
-    private void assertCommandFailed(String msg, String... args) {
-        int res = execute(args);
-
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, res);
-
-        assertContains(log, testOut.toString(), msg);
+        assertContains(log, testOut.toString(), expOutput);
     }
 
     /** */

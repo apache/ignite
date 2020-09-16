@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -111,7 +110,7 @@ public class SystemViewCommand implements Command<Object> {
             ListIterator<Integer> colLenIter = colLenghts.listIterator();
 
             rows.add(sysViewRow.stream().map(attr -> {
-                String colVal = Objects.toString(attr);
+                String colVal = String.valueOf(attr);
 
                 colLenIter.set(Math.max(colLenIter.next(), colVal.length()));
 
@@ -119,23 +118,27 @@ public class SystemViewCommand implements Command<Object> {
             }).collect(Collectors.toList()));
         });
 
-        printRow(colTitles, nCopies(colTitles.size(), String.class).iterator(), colLenghts.iterator(), log);
+        printRow(colTitles, nCopies(colTitles.size(), String.class), colLenghts, log);
 
-        rows.forEach(row -> printRow(row, taskRes.systemViewAttributeTypes().iterator(), colLenghts.iterator(), log));
+        rows.forEach(row -> printRow(row, taskRes.systemViewAttributeTypes(), colLenghts, log));
     }
 
     /**
      * Prints row content with respect to column types and lengths.
      *
      * @param row Row which content should be printed.
-     * @param typeIter Iterator that provides column types in sequential order for decent row formatting.
-     * @param lenIter Iterator that provides column lengths in sequential order for decent row formatting.
+     * @param types Column types in sequential order for decent row formatting.
+     * @param lengths Column lengths in sequential order for decent row formatting.
      */
-    private void printRow(List<String> row, Iterator<? extends Class<?>> typeIter, Iterator<Integer> lenIter, Logger log) {
-        log.info(row.stream().map(colVal -> {
-            Class<?> colType = typeIter.next();
+    private void printRow(List<String> row, List<? extends Class<?>> types, List<Integer> lengths, Logger log) {
+        Iterator<? extends Class<?>> typesIter = types.iterator();
 
-            int colLen = lenIter.next();
+        Iterator<Integer> lenghtsIter = lengths.iterator();
+
+        log.info(row.stream().map(colVal -> {
+            Class<?> colType = typesIter.next();
+
+            int colLen = lenghtsIter.next();
 
             String format = Date.class.isAssignableFrom(colType) || Number.class.isAssignableFrom(colType) ?
                 "%" + colLen + "s" :
