@@ -190,6 +190,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
+        // TODO: Revert
         return service0(ch -> ch.service(op, payloadWriter, payloadReader));
     }
 
@@ -259,7 +260,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             }
         }
 
-        fut.completeExceptionally(new ClientException(err));
+        fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
         return null;
     }
 
@@ -305,6 +306,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
+        // TODO: Revert
         return affinityService0(cacheId, key, ch -> ch.service(op, payloadWriter, payloadReader));
     }
 

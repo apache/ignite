@@ -122,7 +122,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                assertEquals(suppressed.length, CLUSTER_SIZE - 1);
+                assertEquals(CLUSTER_SIZE - 1, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
