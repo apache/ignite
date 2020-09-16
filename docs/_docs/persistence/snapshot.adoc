@@ -167,7 +167,7 @@ Removing data from the $IGNITE_HOME/work directory performed at your own risk.
 
 Currently, the data restore procedure is fully manual. Since the snapshot is a consistent copy of all data files for each node,
 in order to recover from the particular snapshot, you need to stop the cluster and start every cluster node swapping its
-current data from the `{IGNITE_WORK_DIR}/work` directory with the data from the snapshot
+current data from the `{IGNITE_WORK_DIR}/db` directory with the data from the snapshot
 (see link:#snapshot-structure[Snapshot Structure] for details). Also, you should take into account if the `storagePath`
 has been overridden by your DataStorageConfiguration object
 (see link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory]).
