@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache query execution event.
+ * Query execution event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design Ignite keeps all events generated on the local node locally and it provides
