@@ -223,6 +223,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           ClientChannel ch,
                                           T res,
                                           Throwable err) {
+        // TODO: This is extremely ugly, can we rewrite it with CompletionStage chaining?
         if (err == null) {
             fut.complete(res);
             return null;
