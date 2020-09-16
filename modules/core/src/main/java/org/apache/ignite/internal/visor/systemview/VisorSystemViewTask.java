@@ -118,12 +118,12 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (clazz.isEnum())
                             attrVals.add(((Enum<?>)val).name());
-                        else if (clazz.isAssignableFrom(Class.class))
+                        else if (Class.class.isAssignableFrom(clazz))
                             attrVals.add(((Class<?>)val).getName());
                         else if (
-                            clazz.isAssignableFrom(Date.class) ||
-                            clazz.isAssignableFrom(UUID.class) ||
-                            clazz.isAssignableFrom(IgniteUuid.class)
+                            Date.class.isAssignableFrom(clazz) ||
+                            UUID.class.isAssignableFrom(clazz) ||
+                            IgniteUuid.class.isAssignableFrom(clazz)
                         )
                             attrVals.add((Serializable)val);
                         else
