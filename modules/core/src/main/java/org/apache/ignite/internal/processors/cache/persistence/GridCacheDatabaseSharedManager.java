@@ -159,6 +159,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -2058,6 +2060,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
         if (kctx.clientNode())
             return;
+
+        MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
+
+        MaintenanceRecord mntcRecord = mntcRegistry.maintenanceRecord(FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+
+        if (mntcRecord != null) {
+            log.warning("Maintenance record found, stop restoring memory");
+
+            mntcRegistry.registerMaintenanceAction(mntcRecord.id(),
+                new CleanCacheStoresMaintenanceAction(((FilePageStoreManager)cctx.pageStore()).workDir(),
+                mntcRecord.actionParameters().split(File.separator)));
+
+            return;
+        }
 
         checkpointReadLock();
 
