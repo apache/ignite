@@ -223,35 +223,42 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           ClientChannel ch,
                                           T res,
                                           Throwable err) {
-        if (err != null) {
-            if (err instanceof ClientConnectionException) {
-                onChannelFailure(ch);
-
-                if (chIdx == null)
-                    chIdx = new AtomicInteger();
-
-                if (chIdx.incrementAndGet() < channels.length) {
-                    if (failure == null)
-                        failure = new ClientConnectionException("Connection failed");
-
-                    failure.addSuppressed(err);
-
-                    ClientChannel newCh = channel();
-                    ClientConnectionException failure0 = failure;
-                    AtomicInteger chIdx0 = chIdx;
-
-                    newCh.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
-                            handleServiceAsync(op, payloadWriter, payloadReader, fut, failure0, chIdx0, newCh, res2, err2));
-                } else {
-                    fut.completeExceptionally(new ClientException(err));
-                }
-            } else {
-                fut.completeExceptionally(new ClientException(err));
-            }
-        } else {
+        if (err == null) {
             fut.complete(res);
+            return null;
         }
 
+        if (err instanceof ClientConnectionException) {
+            onChannelFailure(ch);
+
+            if (chIdx == null)
+                chIdx = new AtomicInteger();
+
+            while (chIdx.incrementAndGet() < channels.length) {
+                if (failure == null)
+                    failure = new ClientConnectionException("Connection failed");
+
+                failure.addSuppressed(err);
+
+                try {
+                    ch = channel();
+
+                    ClientConnectionException failure0 = failure;
+                    AtomicInteger chIdx0 = chIdx;
+                    ClientChannel ch0 = ch;
+
+                    ch.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
+                            handleServiceAsync(op, payloadWriter, payloadReader, fut, failure0, chIdx0, ch0, res2, err2));
+
+                    return null;
+                } catch (ClientConnectionException e) {
+                    onChannelFailure(ch);
+                    err = e;
+                }
+            }
+        }
+
+        fut.completeExceptionally(new ClientException(err));
         return null;
     }
 
