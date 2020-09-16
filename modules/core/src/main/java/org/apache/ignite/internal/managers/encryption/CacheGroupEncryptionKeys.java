@@ -64,7 +64,7 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @return Group encryption key with ID, that was set for writing.
      */
-    GroupKey getActiveKey(int grpId) {
+    @Nullable GroupKey getActiveKey(int grpId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (F.isEmpty(keys))
@@ -80,7 +80,7 @@ class CacheGroupEncryptionKeys {
      * @param keyId Encryption key ID.
      * @return Group encryption key.
      */
-    GroupKey getKey(int grpId, int keyId) {
+    @Nullable GroupKey getKey(int grpId, int keyId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (keys == null)
@@ -100,7 +100,7 @@ class CacheGroupEncryptionKeys {
      * @param grpId Cache group ID.
      * @return List of the key IDs.
      */
-    List<Integer> keyIds(int grpId) {
+    @Nullable List<Integer> keyIds(int grpId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         if (keys == null)
@@ -145,7 +145,7 @@ class CacheGroupEncryptionKeys {
      *
      * @return Local encryption keys used for specified cache group.
      */
-    List<GroupKeyEncrypted> getAll(int grpId) {
+    @Nullable List<GroupKeyEncrypted> getAll(int grpId) {
         List<GroupKey> grpKeys = this.grpKeys.get(grpId);
 
         if (F.isEmpty(grpKeys))

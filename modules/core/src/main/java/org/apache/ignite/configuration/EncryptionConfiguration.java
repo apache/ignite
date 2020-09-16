@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Encryption configuration.
@@ -73,6 +74,9 @@ public class EncryptionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public EncryptionConfiguration setReencryptionRateLimit(double reencryptionRateLimit) {
+        A.ensure(reencryptionRateLimit >= 0,
+            "Reencryption rate limit (" + reencryptionRateLimit + ") must be non-negative.");
+
         this.reencryptionRateLimit = reencryptionRateLimit;
 
         return this;
@@ -94,6 +98,9 @@ public class EncryptionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public EncryptionConfiguration setReencryptionBatchSize(int reencryptionBatchSize) {
+        A.ensure(reencryptionBatchSize > 0,
+            "Reencryption batch size(" + reencryptionBatchSize + ") must be positive.");
+
         this.reencryptionBatchSize = reencryptionBatchSize;
 
         return this;
