@@ -501,8 +501,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (grpHolder == null)
                     grpHolder = getOrCreateGroupHolder(topVer, grpDesc);
 
-                // If current node is not client and current node have no aff holder.
-                if (grpHolder.nonAffNode() && !cctx.localNode().isClient()) {
+                // If current node have no aff holder.
+                if (grpHolder.nonAffNode()) {
                     GridDhtPartitionsExchangeFuture excFut = context().exchange().lastFinishedFuture();
 
                     grp.topology().updateTopologyVersion(excFut, discoCache, -1, false);
@@ -527,6 +527,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             null,
                             null,
                             clientTop.lostPartitions());
+
+                        excFut.validate(grp);
                     }
 
                     assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
