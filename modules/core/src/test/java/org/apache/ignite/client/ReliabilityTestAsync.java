@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client;
 
+import java.util.concurrent.ExecutionException;
+
 /**
  * Reliability test with async cache operation.
  */
@@ -25,8 +27,11 @@ public class ReliabilityTestAsync extends ReliabilityTest {
     @Override protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
         try {
             cache.putAsync(key, val).get();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
+        } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException)
+                throw (RuntimeException) e.getCause();
+
+            throw new RuntimeException(e);
         }
     }
 }
