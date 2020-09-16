@@ -22,13 +22,14 @@ import os.path
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
 from ignitetest.services.utils.ignite_persistence import PersistenceAware
+from ignitetest.services.utils.ignite_path import SOFT_DIR
 
 
 class SparkService(BackgroundThreadService, PersistenceAware):
     """
     Start a spark node.
     """
-    INSTALL_DIR = "/opt/spark-{version}".format(version="2.3.4")
+    INSTALL_DIR = "{dir}/spark-{version}".format(dir=SOFT_DIR, version="2.3.4")
     SPARK_PERSISTENT_ROOT = "/mnt/spark"
 
     logs = {}

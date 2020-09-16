@@ -20,6 +20,7 @@ This module contains SQL tests using the JDBC driver.
 from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.sql_util import jdbc_connection
 from ignitetest.utils import version_with_previous
 from ignitetest.utils.ignite_test import IgniteTest
@@ -42,6 +43,9 @@ class SqlJdbcTest(IgniteTest):
         :param ignite_version_2: Version JDBC driver.
         """
         self.stage("Starting nodes")
+
+        self.logger.info('IgnitePath(ignite_version_1).home')
+        self.logger.info(IgnitePath(ignite_version_1).home)
 
         config = IgniteConfiguration(version=IgniteVersion(ignite_version_1))
 
@@ -98,7 +102,7 @@ def insert(curs, size=100):
     assert len(curs.fetchall()) == size
 
 
-def update(curs, size=100):
+def update(curs, size = 100):
     """
     Update.
     :param curs: Сursor obtained from the connection.

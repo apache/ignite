@@ -21,6 +21,7 @@ and attributes.
 import re
 
 from ignitetest.services.utils.decorators import memoize
+from ignitetest.services.utils.ignite_path import SOFT_DIR
 
 
 def ignite_jmx_mixin(node, pids):
@@ -55,7 +56,7 @@ class JmxMBean:
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
     """
-    jmx_util_cmd = 'java -jar /opt/jmxterm.jar -v silent -n'
+    jmx_util_cmd = 'java -jar {dir}/jmxterm.jar -v silent -n'.format(dir=SOFT_DIR)
 
     def __init__(self, node):
         self.node = node

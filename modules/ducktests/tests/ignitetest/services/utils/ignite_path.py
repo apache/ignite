@@ -19,17 +19,18 @@ This module contains ignite path resolve utilities.
 
 import os
 
+SOFT_DIR = os.environ['SOFT_DIR']
 
 class IgnitePath:
     """Path resolver for Ignite system tests which assumes the following layout:
 
-       /opt/ignite-dev          # Current version of Ignite under test
-       /opt/ignite-2.7.6        # Example of an older version of Ignite installed from tarball
-       /opt/ignite-<version>    # Other previous versions of Ignite
+       $SOFT_DIR/ignite-dev          # Current version of Ignite under test
+       $SOFT_DIR/ignite-2.7.6        # Example of an older version of Ignite installed from tarball
+       $SOFT_DIR/ignite-<version>    # Other previous versions of Ignite
        ...
    """
     SCRATCH_ROOT = "/mnt"
-    IGNITE_INSTALL_ROOT = "/opt"
+    IGNITE_INSTALL_ROOT = SOFT_DIR
 
     def __init__(self, version, project="ignite"):
         self.version = version
