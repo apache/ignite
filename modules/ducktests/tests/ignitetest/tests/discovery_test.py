@@ -33,6 +33,7 @@ from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
+from ignitetest.services.utils.ignite_configuration.communication import TcpCommunicationSpi
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
@@ -71,6 +72,8 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
+    TCP_PORT_RANGE = 0
+
     FAILURE_DETECTION_TIMEOUT = 1000
 
     DATA_AMOUNT = 5_000_000
@@ -85,10 +88,10 @@ class DiscoveryTest(IgniteTest):
         self.__netfilter_settings = {}
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @ignite_versions(str(DEV_BRANCH))
+    @matrix(kill_coordinator=[True],
+            nodes_to_kill=[2],
+            load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -100,7 +103,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -121,11 +124,12 @@ class DiscoveryTest(IgniteTest):
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
-            discovery_spi = TcpDiscoverySpi()
+            discovery_spi = TcpDiscoverySpi(port_range=self.TCP_PORT_RANGE)
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
+            communication_spi=TcpCommunicationSpi(port_range=self.TCP_PORT_RANGE),
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
             caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL'
                     if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
@@ -153,15 +157,49 @@ class DiscoveryTest(IgniteTest):
 
         for node in failed_nodes:
             di = node.discovery_info()
-            self.logger.info("Simulating failure of node '%s' (order %d on '%s'" % (di.node_id, di.order, node.name))
+            self.logger.info("Simulating failure of node '%s' (order %d) on '%s'" % (di.node_id, di.order, node.name))
 
-        data = simulate_nodes_failure(servers, network_fail_task(ignite_config, test_config), failed_nodes,
+        data = self.simulate_nodes_failure(servers, network_fail_task(ignite_config, test_config), failed_nodes,
                                       survived_node)
 
         data['Ignite cluster start time (s)'] = start_servers_sec
 
+        return data
+
+    def simulate_nodes_failure(self, servers, kill_node_task, failed_nodes, survived_node):
+        """
+        Perform node failure scenario
+        """
+        ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+
+        _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
+
         for node in failed_nodes:
             self.logger.debug("Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+
+        # Keeps dates of logged node failures.
+        logged_timestamps = []
+        data = {}
+
+        for failed_id in ids_to_wait:
+            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 30, from_the_beginning=True,
+                                        backoff_sec=1)
+
+            _, stdout, _ = survived_node.account.ssh_client.exec_command(
+                "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+
+            logged_timestamps.append(
+                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                                  "[%Y-%m-%d %H:%M:%S,%f]"))
+
+        logged_timestamps.sort(reverse=True)
+
+        first_kill_time = epoch_mills(first_terminated)
+        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+
+        data['Detection of node(s) failure (ms)'] = detection_delay
+        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
+        data['Nodes failed'] = len(failed_nodes)
 
         return data
 
@@ -237,7 +275,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
                             # mute spam in log.
-                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
+                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false","-Djava.net.preferIPv4Stack=true"])
 
     start = monotonic()
     servers.start()
@@ -288,41 +326,6 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, kill_node_task, failed_nodes, survived_node):
-    """
-    Perform node failure scenario
-    """
-    ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
-
-    _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
-
-    # Keeps dates of logged node failures.
-    logged_timestamps = []
-    data = {}
-
-    for failed_id in ids_to_wait:
-        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 30, from_the_beginning=True,
-                                    backoff_sec=1)
-
-        _, stdout, _ = survived_node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
-
-        logged_timestamps.append(
-            datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                              "[%Y-%m-%d %H:%M:%S,%f]"))
-
-    logged_timestamps.sort(reverse=True)
-
-    first_kill_time = epoch_mills(first_terminated)
-    detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
-
-    data['Detection of node(s) failure (ms)'] = detection_delay
-    data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
-    data['Nodes failed'] = len(failed_nodes)
-
-    return data
-
-
 def network_fail_task(ignite_config, test_config):
     """
     Creates proper command task to simulate network failure depending on the configurations.
@@ -330,12 +333,14 @@ def network_fail_task(ignite_config, test_config):
     cm_spi = ignite_config.communication_spi
     dsc_spi = ignite_config.discovery_spi
 
-    cm_ports = str(cm_spi.port) + ':' + str(cm_spi.port + cm_spi.port_range)
+    cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
+        cm_spi.port + cm_spi.port_range)
 
     if test_config.with_zk:
         dsc_ports = str(ignite_config.discovery_spi.port)
     else:
-        dsc_ports = str(dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
+        dsc_ports = str(dsc_spi.port) if dsc_spi.port_range < 1 else str(dsc_spi.port) + ':' + str(
+            dsc_spi.port + dsc_spi.port_range)
 
     return lambda node: (
         node.account.ssh_client.exec_command(

@@ -22,7 +22,11 @@
                 <property name="addresses">
                     <list>
                         {% for address in spi.ip_finder.addresses %}
-                            <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
+                            {% if spi.port_range > 0 %}
+                                <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
+                            {% else %}
+                                <value>{{ address }}:{{ spi.port }}</value>
+                            {% endif %}
                         {% endfor %}
                     </list>
                 </property>
