@@ -1138,13 +1138,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
+            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+
             if (stopping && !waiting) {
-                U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg);
+                U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg
+                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
 
                 return;
             }
-
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
 
             if (task == null) {
                 if (log.isDebugEnabled())
@@ -1174,13 +1175,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
+            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+
             if (stopping && !waiting) {
-                U.warn(log, "Received task session request while stopping grid (will ignore): " + msg);
+                U.warn(log, "Received task session request while stopping grid (will ignore): " + msg
+                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
 
                 return;
             }
-
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
 
             if (task == null) {
                 if (log.isDebugEnabled())
@@ -1218,13 +1220,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
+            GridTaskWorker<?, ?> task = tasks.get(sesId);
+
             if (stopping && !waiting) {
-                U.warn(log, "Attempt to cancel task while stopping grid (will ignore): " + sesId);
+                U.warn(log, "Attempt to cancel task while stopping grid (will ignore): " + sesId
+                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
 
                 return;
             }
-
-            GridTaskWorker<?, ?> task = tasks.get(sesId);
 
             if (task == null) {
                 if (log.isDebugEnabled())
@@ -1432,15 +1435,18 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             lock.readLock();
 
             try {
-                if (stopping && !waiting) {
-                    U.warn(log, "Received job siblings request while stopping grid (will ignore): " + msg);
-
-                    return;
-                }
-
                 GridJobSiblingsRequest req = (GridJobSiblingsRequest)msg;
 
                 GridTaskWorker<?, ?> worker = tasks.get(req.sessionId());
+
+                if (stopping && !waiting) {
+                    U.warn(log, "Received job siblings request while stopping grid (will ignore): " + msg
+                        + (worker != null && worker.getSession() != null
+                        ? (", " + worker.getSession().getTaskName())
+                        : ""));
+
+                    return;
+                }
 
                 Collection<ComputeJobSibling> siblings;
 
@@ -1508,13 +1514,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             lock.readLock();
 
             try {
+                GridTaskWorker<?, ?> gridTaskWorker = tasks.get(req.sessionId());
+
                 if (stopping && !waiting) {
-                    U.warn(log, "Received task cancel request while stopping grid (will ignore): " + msg);
+                    U.warn(log, "Received task cancel request while stopping grid (will ignore): " + msg
+                        + (gridTaskWorker != null && gridTaskWorker.getSession() != null
+                        ? (", " + gridTaskWorker.getSession().getTaskName())
+                        : ""));
 
                     return;
                 }
-
-                GridTaskWorker<?, ?> gridTaskWorker = tasks.get(req.sessionId());
 
                 if (gridTaskWorker != null) {
                     try {
