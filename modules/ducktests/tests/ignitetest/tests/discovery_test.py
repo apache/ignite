@@ -74,7 +74,7 @@ class DiscoveryTest(IgniteTest):
 
     TCP_PORT_RANGE = 0
 
-    FAILURE_DETECTION_TIMEOUT = 1000
+    FAILURE_DETECTION_TIMEOUT = 2000
 
     DATA_AMOUNT = 5_000_000
 
