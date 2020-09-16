@@ -4,8 +4,8 @@
 
 Apache Ignite 2.9 comes with an ability to create fully consistent cluster-wide snapshots for deployments with
 the link:persistence/native-persistence[Ignite Native Persistence]. At runtime, you can create multiple snapshots of all
-configured persistent cache groups. The snapshot is a consistent copy of all cache group data files (except
-structures used for crash recovery) for each baseline node in a cluster. Since the data of persistent cache groups are stored
+data stored in your cluster. The snapshot is a consistent copy of all cache data files (except
+structures used for crash recovery) for each node in a cluster. Since data of caches are stored
 on disk in files for each node (cache group partition files, configuration files, binary metadata) in a cluster,
 the snapshot will contain a copy of the same files with keeping Ignite cluster node data directory structure and node consistent IDs.
 
@@ -69,11 +69,6 @@ work
         └── marshaller
 ----
 
-=== Requirements
-
-A configured Ignite native persistence directory requires additional disk space (up to the current size of this directory).
-This space will be used for storing intermediate snapshot results and cleaned up after the snapshot operation is completed.
-
 === Limitations
 
 The snapshot procedure has some limitations that you should be aware of before using it within your production environment:
@@ -82,10 +77,14 @@ The snapshot procedure has some limitations that you should be aware of before u
 * in-memory caches will not be included into a snapshot;
 * encrypted caches are not supported and will be ignored;
 * only one snapshot operation at a time can be initiated;
-* snapshot procedure will be interrupted if any baseline node leaves the cluster;
+* snapshot procedure will be interrupted if any node leaves the cluster;
 * snapshot may be restored only at the same baseline topology with the same node consistent IDs;
+* the automatic snapshot restore is not available yet, you must copy files manually;
 
 == Configuration
+
+A configured Ignite native persistence directory requires additional disk space (up to the current size of this directory).
+This space will be used for storing intermediate snapshot results and cleaned up after the snapshot operation is completed.
 
 The destination snapshot directory can be configured via `IgniteConfiguration`.
 
@@ -163,19 +162,24 @@ include::{javaCodeDir}/Snapshots.java[tags=create, indent=0]
 
 == Restoring from a snapshot (manual)
 
-NOTE: Removing data from the $IGNITE_HOME/work directory performed at your own risk.
+[NOTE]
+Removing data from the $IGNITE_HOME/work directory performed at your own risk.
 
 Currently, the data restore procedure is fully manual. Since the snapshot is a consistent copy of all data files for each node,
-in order to recover from the particular snapshot, you need to start each node of the same cluster on these files
-(see link:#snapshot-structure[Snapshot Structure] for details).
+in order to recover from the particular snapshot, you need to stop the cluster and start every cluster node swapping its
+current data from the `{IGNITE_WORK_DIR}/work` directory with the data from the snapshot
+(see link:#snapshot-structure[Snapshot Structure] for details). Also, you should take into account if the `storagePath`
+has been overridden by your DataStorageConfiguration object
+(see link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory]).
 
-To restore a cluster from a snapshot, the following steps should be performed for each baseline node in it:
+To restore a cluster from a snapshot, the following steps should be performed for each node in it:
 
+- Stop the cluster you are intending to restore;
 - Locate the snapshot you've created by name;
 - Remove all the data from `$IGNITE_HOME/work/{node_id}` where `{node_id}` is a consistent id of a node you work with;
 - Copy all snapshot files from the snapshot related to `{node_id}` to the $IGNITE_HOME/work/{node_id} directory;
 
-Some use cases at production deployments may require creating a snapshot at the m-node cluster and applying it to the
+Some use cases at production deployments may require taking a snapshot at the m-node cluster and applying it to the
 n-node cluster. Here are some options:
 
 [cols="1,1",opts="header"]
