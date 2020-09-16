@@ -40,7 +40,7 @@ class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
      * @param ctx Context.
      * @param mreg Metric registry.
      */
-    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricManager mreg) {
+    MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricManager mreg) {
         super(SqlViewMetricExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
             newColumn("NAME", Value.STRING),
