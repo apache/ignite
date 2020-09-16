@@ -54,7 +54,9 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     CacheAsyncTest.class,
-    ReliabilityTestAsync.class
+    ReliabilityTestAsync.class,
+    ReliabilityTestPartitionAware.class,
+    ReliabilityTestPartitionAwareAsync.class
 })
 public class ClientTestSuite {
     // No-op.

@@ -62,7 +62,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         final int CLUSTER_SIZE = 3;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setReconnectThrottlingRetries(0) // Disable throttling.
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
              )
@@ -137,7 +137,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @Test
     public void testSingleServerFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().iterator().next()))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -168,7 +168,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -207,7 +207,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration().setName("cache")
@@ -274,7 +274,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         long throttlingPeriod = 3_000L;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setReconnectThrottlingPeriod(throttlingPeriod)
                  .setReconnectThrottlingRetries(throttlingRetries)
                  .setAddresses(cluster.clientAddresses().toArray(new String[1])))
