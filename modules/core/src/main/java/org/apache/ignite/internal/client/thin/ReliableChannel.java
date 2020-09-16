@@ -225,6 +225,8 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           Throwable err) {
         if (err != null) {
             if (err instanceof ClientConnectionException) {
+                onChannelFailure(ch);
+
                 if (chIdx == null)
                     chIdx = new AtomicInteger();
 
@@ -233,7 +235,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                         failure = new ClientConnectionException("Connection failed");
 
                     failure.addSuppressed(err);
-                    onChannelFailure(ch);
 
                     ClientChannel newCh = channel();
                     ClientConnectionException failure0 = failure;
