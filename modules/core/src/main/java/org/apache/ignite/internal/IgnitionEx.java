@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -225,6 +226,9 @@ public class IgnitionEx {
 
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
+
+    /** Dependency container. */
+    private static ThreadLocal<DependencyResolver> dependencyResolver = new ThreadLocal<>();
 
     /**
      * Enforces singleton.
@@ -1459,6 +1463,24 @@ public class IgnitionEx {
     }
 
     /**
+     * Sets custom dependency resolver which provides overridden dependencies
+     *
+     * @param rslvr Dependency resolver.
+     */
+    public static void dependencyResolver(DependencyResolver rslvr) {
+        dependencyResolver.set(rslvr);
+    }
+
+    /**
+     * Custom dependency resolver.
+     *
+     * @return Returns {@code null} if resolver wasn't added.
+     */
+    public static DependencyResolver dependencyResolver() {
+        return dependencyResolver.get();
+    }
+
+    /**
      * Start context encapsulates all starting parameters.
      */
     private static final class GridStartContext {
@@ -2135,7 +2157,7 @@ public class IgnitionEx {
             // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
-                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
+                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread("shutdown-hook") {
                         @Override public void run() {
                             if (log.isInfoEnabled())
                                 log.info("Invoking shutdown hook...");

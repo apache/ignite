@@ -184,6 +184,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CONNECTED;
@@ -204,7 +206,8 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 @SuppressWarnings({"IfMayBeConditional"})
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
+    private static final int ENSURED_MSG_HIST_SIZE =
+        getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE);
 
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
@@ -302,7 +305,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
      */
-    private static final int JOINED_NODE_IDS_HISTORY_SIZE = getInteger(IGNITE_NODE_IDS_HISTORY_SIZE, 50);
+    private static final int JOINED_NODE_IDS_HISTORY_SIZE =
+        getInteger(IGNITE_NODE_IDS_HISTORY_SIZE, DFLT_NODE_IDS_HISTORY_SIZE);
 
     /** History of all node UUIDs that current node has seen. */
     private final GridBoundedLinkedHashSet<UUID> nodesIdsHist =
@@ -458,14 +462,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             statsPrinter.start();
         }
 
-        spi.stats.onJoinStarted();
-
         joinTopology();
 
         if (locNode.order() == 1)
             U.enhanceThreadName(msgWorkerThread, "crd");
-
-        spi.stats.onJoinFinished();
 
         if (spi.ipFinder.isShared()) {
             ipFinderCleaner = new IpFinderCleaner();
@@ -894,8 +894,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             break;
                         }
-
-                        spi.stats.onClientSocketInitialized(U.millisSinceNanos(tsNanos));
 
                         IgniteBiTuple<UUID, Boolean> t = F.t(res.creatorNodeId(), res.clientExists());
 
@@ -1505,8 +1503,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     break;
                 }
-
-                spi.stats.onClientSocketInitialized(U.millisSinceNanos(tsNanos));
 
                 // Send message.
                 tsNanos = System.nanoTime();
@@ -3566,8 +3562,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     break;
                                 }
 
-                                spi.stats.onClientSocketInitialized(U.millisSinceNanos(tsNanos));
-
                                 UUID nextId = res.creatorNodeId();
 
                                 long nextOrder = res.order();
@@ -4933,8 +4927,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
-                    spi.stats.onRingMessageReceived(msg);
-
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
                         node.id());
 
@@ -5308,8 +5300,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeCoord) {
                 if (msg.verified()) {
-                    spi.stats.onRingMessageReceived(msg);
-
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
 
                     return;
@@ -5545,8 +5535,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeCoord) {
                 if (msg.verified()) {
-                    spi.stats.onRingMessageReceived(msg);
-
                     msg.spanContainer().span()
                         .addLog(() -> "Ring failed")
                         .setStatus(SpanStatus.ABORTED)
@@ -5763,8 +5751,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeCoord) {
                 if (msg.verified()) {
-                    spi.stats.onRingMessageReceived(msg);
-
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
 
                     return;
@@ -6268,8 +6254,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
-                    spi.stats.onRingMessageReceived(msg);
-
                     DiscoverySpiCustomMessage msgObj = null;
 
                     try {
@@ -6665,8 +6649,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     reader.start();
 
-                    spi.stats.onServerSocketInitialized(U.millisSinceNanos(tsNanos));
-
                     onIdle();
                 }
             }
@@ -6738,8 +6720,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
 
             setPriority(spi.threadPri);
-
-            spi.stats.onSocketReaderCreated();
         }
 
         /** {@inheritDoc} */
@@ -7654,8 +7634,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             synchronized (mux) {
                 readers.remove(this);
             }
-
-            spi.stats.onSocketReaderRemoved();
         }
 
         /** {@inheritDoc} */

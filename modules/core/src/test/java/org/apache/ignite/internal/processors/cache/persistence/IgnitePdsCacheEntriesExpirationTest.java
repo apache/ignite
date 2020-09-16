@@ -138,9 +138,9 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
         GridDhtPartitionTopologyImpl top =
             (GridDhtPartitionTopologyImpl)srv0.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        top.partitionFactory((ctx, grp, id) -> {
+        top.partitionFactory((ctx, grp, id, recovery) -> {
             partId.set(id);
-            return new GridDhtLocalPartition(ctx, grp, id, false) {
+            return new GridDhtLocalPartition(ctx, grp, id, recovery) {
                 /**
                  * This method is modified to bring threads in deadlock situation.
                  * Idea is the following: updater thread (see code below) on its way to

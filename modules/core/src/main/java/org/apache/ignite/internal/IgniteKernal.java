@@ -355,7 +355,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * <p>
      * Value is {@code 30 sec}.
      */
-    private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
 
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
@@ -370,6 +370,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Value is {@code 60 sec}.
      */
     public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT = 60_000L;
+
+    /** @see IgniteSystemProperties#IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED */
+    public static final boolean DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = true;
+
+    /** @see IgniteSystemProperties#IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP */
+    public static final boolean DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP = true;
 
     /** Currently used instance of JVM pause detector thread. See {@link LongJVMPauseDetector} for details. */
     private LongJVMPauseDetector longJVMPauseDetector;
@@ -917,7 +923,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackClassPathContent() {
         assert log != null;
 
-        boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, true);
+        boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP,
+            DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP);
 
         if (enabled) {
             String clsPath = System.getProperty("java.class.path", ".");
@@ -1264,6 +1271,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (ctx.config().getPlatformConfiguration() != null)
                     startProcessor(new PlatformPluginProcessor(ctx));
 
+                mBeansMgr.registerMBeansDuringInitPhase();
+
                 ctx.cluster().initDiagnosticListeners();
 
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
@@ -1352,10 +1361,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             registerMetrics();
 
+            ctx.cluster().registerMetrics();
+
             // Register MBeans.
-            mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
-                mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
-                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
+            mBeansMgr.registerMBeansAfterNodeStarted(utilityCachePool, execSvc, svcExecSvc, sysExecSvc,
+                stripedExecSvc, p2pExecSvc, mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
+                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs,
+                ctx.workersRegistry());
 
             ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
 
@@ -1436,7 +1448,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
 
         if (starveCheck) {
-            final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
+            final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
             starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */
@@ -1574,7 +1586,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return The service processor. See {@link IgniteServiceProcessor} for details.
      */
     private GridProcessorAdapter createServiceProcessor() {
-        final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+        final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
+            DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
 
         if (srvcProcMode)
             return new IgniteServiceProcessor(ctx);
@@ -2831,10 +2844,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 U.warn(log, "Setting the rebalance pool size has no effect on the client mode");
         }
         else {
-            if (cfg.getSystemThreadPoolSize() <= cfg.getRebalanceThreadPoolSize())
-                throw new IgniteCheckedException("Rebalance thread pool size exceed or equals System thread pool size. " +
-                    "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
-
             if (cfg.getRebalanceThreadPoolSize() < 1)
                 throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
                     "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");

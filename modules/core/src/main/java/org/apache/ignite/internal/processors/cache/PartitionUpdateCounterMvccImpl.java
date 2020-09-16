@@ -37,4 +37,9 @@ public class PartitionUpdateCounterMvccImpl extends PartitionUpdateCounterTracki
     @Override public long reserved() {
         return get();
     }
+
+    /** {@inheritDoc} */
+    @Override protected PartitionUpdateCounterTrackingImpl createInstance() {
+        return new PartitionUpdateCounterMvccImpl(grp);
+    }
 }

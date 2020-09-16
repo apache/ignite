@@ -149,7 +149,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
         AffinityTopologyVersion failCheckVer = new AffinityTopologyVersion(GRIDS + 2, 1);
 
-        top.partitionFactory((ctx, grp, id) -> new GridDhtLocalPartition(ctx, grp, id, false) {
+        top.partitionFactory((ctx, grp, id, recovery) -> new GridDhtLocalPartition(ctx, grp, id, recovery) {
             @Override public boolean primary(AffinityTopologyVersion topVer) {
                 return !(id == part && topVer.equals(failCheckVer)) && super.primary(topVer);
             }
@@ -157,7 +157,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
         // Re-create mocked part.
         GridDhtLocalPartition p0 = top.localPartition(part);
-        p0.rent(false).get();
+        p0.rent().get();
         assertTrue(p0.state() == EVICTED);
 
         ReadWriteLock lock = U.field(top, "lock");
