@@ -149,7 +149,7 @@ def version_with_previous(*args, version_prefix="ignite_version"):
     res = []
     for v_arg in args:
         for v_all in ALL_VERSIONS_STR:
-            if v_all < v_arg:
+            if v_all <= v_arg:
                 res.append((v_arg, v_all))
 
     def parametrizer(func):

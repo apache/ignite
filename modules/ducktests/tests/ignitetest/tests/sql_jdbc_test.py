@@ -18,13 +18,10 @@ This module contains SQL tests using the JDBC driver.
 """
 
 from ducktape.mark.resource import cluster
-from jaydebeapi import Connection
-from logging import Logger
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.sql_util import jdbc_connection
-from ignitetest.utils import ignite_versions, version_if, version_with_previous
+from ignitetest.utils import version_with_previous
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, V_2_8_0, V_2_7_6, IgniteVersion
 
@@ -37,27 +34,8 @@ class SqlJdbcTest(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
-    def sql_self_test(self, ignite_version):
-        """
-        SQL test using jdbc driver.
-        :param ignite_version: version ignite.
-        """
-        self.stage("Starting nodes")
-
-        config = IgniteConfiguration(version=IgniteVersion(ignite_version))
-
-        service = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
-        service.start()
-
-        with jdbc_connection(ignite_service=service) as conn:
-            check_connection(conn, self.logger)
-
-    @cluster(num_nodes=NUM_NODES)
-    # Note: DEV version does not support earlier versions before IGNITE-13414 resolution
-    @version_if(lambda version: version != DEV_BRANCH, variable_name='ignite_version_1')
-    @version_with_previous(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0))
-    def sql_compatibility_test(self, ignite_version_1, ignite_version_2):
+    @version_with_previous(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
+    def sql_test(self, ignite_version_1, ignite_version_2):
         """
         SQL test with previous versions jdbc driver.
         :param ignite_version_1: Version ignite service.
@@ -71,39 +49,30 @@ class SqlJdbcTest(IgniteTest):
         service.start()
 
         with jdbc_connection(ignite_service=service, ver=IgniteVersion(ignite_version_2)) as conn:
-            check_connection(conn, self.logger)
+            with conn.cursor() as curs:
+                create_tables(curs)
+                self.logger.info("Created tables.")
 
+                insert(curs)
+                self.logger.info("Inserted.")
 
-def check_connection(conn: Connection, logger: Logger):
-    """
-    Check SQL commands.
-    :param conn: Connection to database.
-    :param logger: Logger.
-    """
-    with conn.cursor() as curs:
-        create_tables(curs)
-        logger.info("Created tables.")
+                update(curs)
+                self.logger.info("Updated.")
 
-        insert(curs)
-        logger.info("Inserted.")
+                alter_table_add(curs)
+                self.logger.info("Alter table add.")
 
-        update(curs)
-        logger.info("Updated.")
+                join(curs)
+                self.logger.info("Distributed join.")
 
-        alter_table_add(curs)
-        logger.info("Alter table add.")
+                alter_table_drop(curs)
+                self.logger.info("Alter table drop.")
 
-        join(curs)
-        logger.info("Distributed join.")
+                delete(curs)
+                self.logger.info("Deleted.")
 
-        alter_table_drop(curs)
-        logger.info("Alter table drop.")
-
-        delete(curs)
-        logger.info("Deleted.")
-
-        drop_tables(curs)
-        logger.info("Deleted tables.")
+                drop_tables(curs)
+                self.logger.info("Deleted tables.")
 
 
 def create_tables(curs):
