@@ -309,8 +309,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        CompletableFuture<T> fut = new CompletableFuture<>();
-
         if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
             UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
 
@@ -324,17 +322,20 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                         ch = hld.getOrCreateChannel();
                         ClientChannel ch0 = ch;
 
+                        CompletableFuture<T> fut = new CompletableFuture<>();
+
                         ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> handleServiceAsync(
                                 op, payloadWriter, payloadReader, fut, null, null, ch0, res, err));
-                    }
-                    catch (ClientConnectionException ignore) {
+
+                        return new IgniteClientFutureImpl<>(fut);
+                    } catch (ClientConnectionException ignore) {
                         onChannelFailure(hld, ch);
                     }
                 }
             }
         }
 
-        return new IgniteClientFutureImpl<>(fut);
+        return serviceAsync(op, payloadWriter, payloadReader);
     }
 
     /**
