@@ -78,7 +78,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 Integer key = rnd.nextInt();
                 String val = key.toString();
 
-                cache.put(key, val);
+                cachePut(cache, key, val);
 
                 String cachedVal = cache.get(key);
 
@@ -115,7 +115,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             boolean igniteUnavailable = false;
 
             try {
-                cache.put(1, "1");
+                cachePut(cache, 1, "1");
             }
             catch (ClientConnectionException ex) {
                 igniteUnavailable = true;
@@ -143,20 +143,20 @@ public class ReliabilityTest extends AbstractThinClientTest {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
             // Before fail.
-            cache.put(0, 0);
+            cachePut(cache, 0, 0);
 
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             try {
-                cache.put(0, 0);
+                cachePut(cache, 0, 0);
             }
             catch (Exception expected) {
                 // No-op.
             }
 
             // Recover after fail.
-            cache.put(0, 0);
+            cachePut(cache, 0, 0);
         }
     }
 
@@ -173,8 +173,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
-            cache.put(0, 0);
-            cache.put(1, 1);
+            cachePut(cache, 0, 0);
+            cachePut(cache, 1, 1);
 
             Query<Cache.Entry<Integer, String>> qry = new ScanQuery<Integer, String>().setPageSize(1);
 
@@ -248,7 +248,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             barrier.await(1, TimeUnit.SECONDS);
 
             GridTestUtils.assertThrows(null, () -> {
-                cache.put(0, 0);
+                cachePut(cache, 0, 0);
 
                 return null;
             }, ClientException.class, "Transaction context has been lost due to connection errors");
@@ -283,22 +283,22 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             for (int i = 0; i < throttlingRetries; i++) {
                 // Attempts to reconnect within throttlingRetries should pass.
-                cache.put(0, 0);
+                cachePut(cache, 0, 0);
 
                 dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+                GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
             }
 
             for (int i = 0; i < 10; i++) // Attempts to reconnect after throttlingRetries should fail.
-                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+                GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
             doSleep(throttlingPeriod);
 
             // Attempt to reconnect after throttlingPeriod should pass.
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 try {
-                    cache.put(0, 0);
+                    cachePut(cache, 0, 0);
 
                     return true;
                 }
@@ -323,7 +323,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         ) {
             ClientCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            cache.put(0, 0);
+            cachePut(cache, 0, 0);
 
             String msg = "critical error message";
 
@@ -343,11 +343,24 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Performs cache put.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Val.
+     * @param <K> Key type.
+     * @param <V> Val type.
+     */
+    protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
+        cache.put(key, val);
+    }
+
+    /**
      * Drop all thin client connections on given Ignite instance.
      *
      * @param ignite Ignite.
      */
-    private void dropAllThinClientConnections(Ignite ignite) throws Exception {
+    private void dropAllThinClientConnections(Ignite ignite) {
         ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
             ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
