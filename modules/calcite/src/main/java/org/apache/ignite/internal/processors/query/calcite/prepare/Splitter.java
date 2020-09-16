@@ -197,6 +197,9 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
         /** */
         private IgniteRel root;
 
+        /** Serialized representation. */
+        private String rootSer;
+
         /** */
         private final ImmutableList.Builder<IgniteReceiver> remotes = ImmutableList.builder();
 
@@ -204,6 +207,7 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
         private FragmentProto(long id, IgniteRel root) {
             this.id = id;
             this.root = root;
+            this.rootSer = rootSer;
         }
 
         Fragment build() {

@@ -32,9 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPl
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
 /**
  * Fragment of distributed query
@@ -49,9 +51,24 @@ public class Fragment {
     /** */
     private final IgniteRel root;
 
+    /** Serialized root representation. */
+    private @Nullable String rootSer;
+
     /** */
     private final ImmutableList<IgniteReceiver> remotes;
 
+    /**
+     * @param id Fragment id.
+     * @param root Root node of the fragment.
+     * @param remotes Remote sources of the fragment.
+     * @param rootSer Root serialized representation.
+     */
+    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer) {
+        this.id = id;
+        this.root = root;
+        this.remotes = ImmutableList.copyOf(remotes);
+        this.rootSer = rootSer;
+    }
     /**
      * @param id Fragment id.
      * @param root Root node of the fragment.
@@ -61,7 +78,9 @@ public class Fragment {
         this.id = id;
         this.root = root;
         this.remotes = ImmutableList.copyOf(remotes);
+        this.rootSer = null;
     }
+
 
     /**
      * Mapps the fragment to its data location.
@@ -106,6 +125,15 @@ public class Fragment {
      */
     public IgniteRel root() {
         return root;
+    }
+
+    /**
+     * Lazy serialized root representation.
+     *
+     * @return Serialized form.
+     */
+    public String rootSerialized() {
+        return rootSer != null ? rootSer : (rootSer = toJson(root()));
     }
 
     /**

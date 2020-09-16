@@ -727,6 +727,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             NodesMapping mapping0 = plan.fragmentMapping(fragment0);
 
             boolean error = false;
+
             for (UUID nodeId : mapping0.nodes()) {
                 if (error)
                     info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
@@ -743,7 +744,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         QueryStartRequest req = new QueryStartRequest(
                             qryId,
                             pctx.schemaName(),
-                            toJson(fragment0.root()),
+                            fragment0.rootSerialized(),
                             pctx.topologyVersion(),
                             fragmentDesc0,
                             pctx.parameters());

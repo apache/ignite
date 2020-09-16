@@ -58,11 +58,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(UUID qryId, String schema, String root, AffinityTopologyVersion ver,
         FragmentDescription fragmentDesc, Object[] params) {
-        this.schema = schema;
         this.qryId = qryId;
-        this.fragmentDesc = fragmentDesc;
-        this.ver = ver;
+        this.schema = schema;
         this.root = root;
+        this.ver = ver;
+        this.fragmentDesc = fragmentDesc;
         this.params = params;
     }
 
