@@ -880,6 +880,16 @@ public interface EventType {
     public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
 
     /**
+     * Built-in event type: query execution.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see QueryExecutionEvent
+     */
+    public static final int EVT_QUERY_EXECUTION = 150;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.

@@ -51,6 +51,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.QueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -196,6 +198,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.events.EventType.EVT_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
@@ -1084,6 +1087,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // Check if cluster state is valid.
                 checkClusterState(parseRes);
+
+                if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
+                    ctx.event().record(new QueryExecutionEvent<>(
+                        ctx.discovery().localNode(),
+                        CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                        EVT_QUERY_EXECUTION,
+                        CacheQueryType.SQL_FIELDS.name(),
+                        newQryDesc.sql(),
+                        newQryParams.arguments(),
+                        ctx.localNodeId()));
+                }
 
                 // Execute.
                 if (parseRes.isCommand()) {
