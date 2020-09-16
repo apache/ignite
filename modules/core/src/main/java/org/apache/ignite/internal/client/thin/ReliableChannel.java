@@ -224,7 +224,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           T res,
                                           Throwable err) {
         if (err != null) {
-            if (err.getCause() instanceof ClientConnectionException) {
+            if (err instanceof ClientConnectionException) {
                 if (chIdx == null)
                     chIdx = new AtomicInteger();
 
