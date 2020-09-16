@@ -172,12 +172,18 @@ current data from the `{IGNITE_WORK_DIR}/work` directory with the data from the 
 has been overridden by your DataStorageConfiguration object
 (see link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory]).
 
-To restore a cluster from a snapshot, the following steps should be performed for each node in it:
+To restore a cluster from a snapshot, the steps below should be performed.
 
 - Stop the cluster you are intending to restore;
+- Remove files related to cluster-recovery procedure: `wal` and `cp` directories;
 - Locate the snapshot you've created by name;
+
+After the cluster has been stopped for each node id in the cluster you should do the following:
+
 - Remove all the data from `$IGNITE_HOME/work/{node_id}` where `{node_id}` is a consistent id of a node you work with;
 - Copy all snapshot files from the snapshot related to `{node_id}` to the $IGNITE_HOME/work/{node_id} directory;
+
+*Restore on different baseline*
 
 Some use cases at production deployments may require taking a snapshot at the m-node cluster and applying it to the
 n-node cluster. Here are some options:
