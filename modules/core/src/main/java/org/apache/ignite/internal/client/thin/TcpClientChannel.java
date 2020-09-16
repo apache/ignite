@@ -65,7 +65,6 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -230,14 +229,21 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteClientFuture<T> serviceAsync(
+    @Override public <T> CompletableFuture<T> serviceAsync(
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException {
-        long id = send(op, payloadWriter);
+    ) {
+        try {
+            long id = send(op, payloadWriter);
 
-        return receiveAsync(id, payloadReader);
+            return receiveAsync(id, payloadReader);
+        } catch (Throwable t) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+            fut.completeExceptionally(t);
+
+            return fut;
+        }
     }
 
     /**
@@ -319,7 +325,7 @@ class TcpClientChannel implements ClientChannel {
      * @param payloadReader Payload reader from stream.
      * @return Future for the operation.
      */
-    private <T> IgniteClientFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -343,7 +349,7 @@ class TcpClientChannel implements ClientChannel {
             }
         }));
 
-        return new IgniteClientFutureImpl<>(fut);
+        return fut;
     }
 
     /**

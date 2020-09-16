@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -60,11 +61,11 @@ interface ClientChannel extends AutoCloseable {
      * @throws ClientServerError When failed to process request on server.
      * @throws ClientConnectionException In case of IO errors.
      */
-    public <T> IgniteClientFuture<T> serviceAsync(
+    public <T> CompletableFuture<T> serviceAsync(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException;
+    );
 
     /**
      * @return Protocol context.

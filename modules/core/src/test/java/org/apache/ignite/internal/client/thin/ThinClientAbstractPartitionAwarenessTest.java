@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -325,7 +326,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public <T> IgniteClientFuture<T> serviceAsync(
+        @Override public <T> CompletableFuture<T> serviceAsync(
                 ClientOperation op,
                 Consumer<PayloadOutputChannel> payloadWriter,
                 Function<PayloadInputChannel, T> payloadReader)

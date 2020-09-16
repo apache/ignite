@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -199,7 +201,47 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return service0(ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        ClientConnectionException failure = new ClientConnectionException("Connection failed");
+        AtomicInteger chIdx = new AtomicInteger();
+
+        ClientChannel ch = channel();
+
+        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) ->
+                handleServiceAsync(op, payloadWriter, payloadReader, fut, failure, chIdx, ch, res, err));
+
+        return new IgniteClientFutureImpl<>(fut);
+    }
+
+    /**
+     * Handles serviceAsync results and retries as needed.
+     */
+    private <T> Object handleServiceAsync(ClientOperation op,
+                                          Consumer<PayloadOutputChannel> payloadWriter,
+                                          Function<PayloadInputChannel, T> payloadReader,
+                                          CompletableFuture<T> fut,
+                                          ClientConnectionException failure,
+                                          AtomicInteger chIdx,
+                                          ClientChannel ch,
+                                          T res,
+                                          Throwable err) {
+        if (err != null) {
+            if (err.getCause() instanceof ClientConnectionException && chIdx.incrementAndGet() < channels.length) {
+                failure.addSuppressed(err);
+                onChannelFailure(ch);
+
+                ClientChannel newCh = channel();
+                newCh.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
+                        handleServiceAsync(op, payloadWriter, payloadReader, fut, failure, chIdx, newCh, res2, err2));
+            } else {
+                fut.completeExceptionally(new ClientException(err));
+            }
+        } else {
+            fut.complete(res);
+        }
+
+        return null;
     }
 
     /**
@@ -317,7 +359,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 return func.apply(ch);
             }
             catch (ClientConnectionException e) {
-                // TODO: Handle async failures somehow.
                 if (failure == null)
                     failure = e;
                 else
