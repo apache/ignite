@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
@@ -219,41 +218,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         CompletableFuture<R> resFut = new CompletableFuture<>();
         AtomicReference<Object> cancellationToken = new AtomicReference<>();
 
-        initFut.handle((taskParams, err) -> {
-            if (err != null) {
-                resFut.completeExceptionally(convertException(err));
-            } else {
-                ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
-
-                if (task == null) {
-                    // TODO: Channel closed - try again recursively (add a test for this?)
-                    throw new IgniteException("TODO");
-                }
-
-                if (!cancellationToken.compareAndSet(null, task.fut)) {
-                    try {
-                        cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
-                    } catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
-                }
-                task.fut.listen(f -> {
-                    // Don't remove task if future was canceled by user. This task can be added again later by notification.
-                    // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
-                    if (!f.isCancelled()) {
-                        removeTask(task.ch, task.taskId);
-
-                        try {
-                            resFut.complete(((GridFutureAdapter<R>) f).get());
-                        } catch (IgniteCheckedException e) {
-                            resFut.completeExceptionally(e);
-                        }
-                    }
-                });
-            }
-
-            return null;
-        });
+        initFut.handle((taskParams, err) ->
+                handleExecuteInitFuture(payloadWriter, payloadReader, resFut, cancellationToken, taskParams, err));
 
         return new IgniteClientFutureImpl<>(resFut, mayInterruptIfRunning -> {
             // 1. initFut has not completed - store cancellation flag.
@@ -276,6 +242,61 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             resFut.cancel(mayInterruptIfRunning);
             return true;
         });
+    }
+
+    /**
+     * Handles execute initialization.
+     * @param payloadWriter Writer.
+     * @param payloadReader Reader.
+     * @param resFut Resulting future.
+     * @param cancellationToken Cancellation token holder.
+     * @param taskParams Task parameters.
+     * @param err Error
+     * @param <R> Result type.
+     * @return Null.
+     */
+    private <R> Object handleExecuteInitFuture(
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader,
+            CompletableFuture<R> resFut,
+            AtomicReference<Object> cancellationToken,
+            T2<ClientChannel, Long> taskParams,
+            Throwable err) {
+        if (err != null) {
+            resFut.completeExceptionally(convertException(err));
+        } else {
+            ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
+
+            if (task == null) {
+                // Channel closed - try again recursively.
+                ch.serviceAsync(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader)
+                        .handle((r, e) ->
+                        handleExecuteInitFuture(payloadWriter, payloadReader, resFut, cancellationToken, r, e));
+            }
+
+            if (!cancellationToken.compareAndSet(null, task.fut)) {
+                try {
+                    cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
+                } catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+            }
+            task.fut.listen(f -> {
+                // Don't remove task if future was canceled by user. This task can be added again later by notification.
+                // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
+                if (!f.isCancelled()) {
+                    removeTask(task.ch, task.taskId);
+
+                    try {
+                        resFut.complete(((GridFutureAdapter<R>) f).get());
+                    } catch (IgniteCheckedException e) {
+                        resFut.completeExceptionally(e);
+                    }
+                }
+            });
+        }
+
+        return null;
     }
 
     /**
