@@ -206,6 +206,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         ClientChannel ch = channel();
 
+        // TODO: Use chaining to loop over all channels with .exceptionally()?
         ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) ->
                 handleServiceAsync(op, payloadWriter, payloadReader, fut, null, null, ch, res, err));
 
@@ -320,6 +321,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
+        // TODO: Deduplicate code
         if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
             UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
 
