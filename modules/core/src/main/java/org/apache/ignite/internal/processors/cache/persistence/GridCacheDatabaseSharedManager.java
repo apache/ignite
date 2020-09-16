@@ -291,7 +291,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private File cpDir;
 
     /** Database configuration. */
-    private final DataStorageConfiguration persistenceCfg;
+    private final DataStorageConfiguration dataStorageConfiguration;
 
     /** */
     private boolean stopping;
@@ -368,24 +368,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
         IgniteConfiguration cfg = ctx.config();
 
-        persistenceCfg = cfg.getDataStorageConfiguration();
+        dataStorageConfiguration = cfg.getDataStorageConfiguration();
 
-        assert persistenceCfg != null;
+        assert dataStorageConfiguration != null;
 
-        truncateWalOnCpFinish = persistenceCfg.isWalHistorySizeParameterUsed()
-            ? persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE
-            : persistenceCfg.getMaxWalArchiveSize() != Long.MAX_VALUE;
+        truncateWalOnCpFinish = dataStorageConfiguration.isWalHistorySizeParameterUsed()
+            ? dataStorageConfiguration.getWalHistorySize() != Integer.MAX_VALUE
+            : dataStorageConfiguration.getMaxWalArchiveSize() != Long.MAX_VALUE;
 
-        lockWaitTime = persistenceCfg.getLockWaitTime();
+        lockWaitTime = dataStorageConfiguration.getLockWaitTime();
 
         persStoreMetrics = new DataStorageMetricsImpl(
             ctx.metric(),
-            persistenceCfg.isMetricsEnabled(),
-            persistenceCfg.getMetricsRateTimeInterval(),
-            persistenceCfg.getMetricsSubIntervalCount()
+            dataStorageConfiguration.isMetricsEnabled(),
+            dataStorageConfiguration.getMetricsRateTimeInterval(),
+            dataStorageConfiguration.getMetricsSubIntervalCount()
         );
 
-        ioFactory = persistenceCfg.getFileIOFactory();
+        ioFactory = dataStorageConfiguration.getFileIOFactory();
 
         Long cfgCheckpointReadLockTimeout = ctx.config().getDataStorageConfiguration() != null
             ? ctx.config().getDataStorageConfiguration().getCheckpointReadLockTimeout()
@@ -549,7 +549,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 pageSize(),
                 cctx.kernalContext().longJvmPauseDetector(),
                 kernalCtx.failure(),
-                persistenceCfg,
+                dataStorageConfiguration,
                 initializeCheckpointPool(),
                 snapshotMgr,
                 checkpointLock,
@@ -845,7 +845,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 pageSize(),
                 cctx.kernalContext().longJvmPauseDetector(),
                 cctx.kernalContext().failure(),
-                persistenceCfg,
+                dataStorageConfiguration,
                 initializeCheckpointPool(),
                 snapshotMgr,
                 checkpointLock,
@@ -896,12 +896,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private IgniteThreadPoolExecutor initializeCheckpointPool() {
-        if (persistenceCfg.getCheckpointThreads() > 1)
+        if (dataStorageConfiguration.getCheckpointThreads() > 1)
             return new IgniteThreadPoolExecutor(
                 CHECKPOINT_RUNNER_THREAD_PREFIX,
                 cctx.igniteInstanceName(),
-                persistenceCfg.getCheckpointThreads(),
-                persistenceCfg.getCheckpointThreads(),
+                dataStorageConfiguration.getCheckpointThreads(),
+                dataStorageConfiguration.getCheckpointThreads(),
                 30_000,
                 new LinkedBlockingQueue<Runnable>()
             );
@@ -1304,7 +1304,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Resolves throttling policy according to the settings.
      */
     @NotNull private PageMemoryImpl.ThrottlingPolicy resolveThrottlingPolicy() {
-        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
+        PageMemoryImpl.ThrottlingPolicy plc = dataStorageConfiguration.isWriteThrottlingEnabled()
             ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
             : PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
 
@@ -2248,8 +2248,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (NoSuchElementException e) {
             throw new StorageException("Failed to read checkpoint record from WAL, persistence consistency " +
                 "cannot be guaranteed. Make sure configuration points to correct WAL folders and WAL folder is " +
-                "properly mounted [ptr=" + status.startPtr + ", walPath=" + persistenceCfg.getWalPath() +
-                ", walArchive=" + persistenceCfg.getWalArchivePath() + "]");
+                "properly mounted [ptr=" + status.startPtr + ", walPath=" + dataStorageConfiguration.getWalPath() +
+                ", walArchive=" + dataStorageConfiguration.getWalArchivePath() + "]");
         }
 
         AtomicReference<Throwable> applyError = new AtomicReference<>();

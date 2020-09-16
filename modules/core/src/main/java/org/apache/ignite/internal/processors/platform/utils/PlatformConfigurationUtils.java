@@ -1947,25 +1947,28 @@ public class PlatformConfigurationUtils {
                 .setWalSegments(in.readInt())
                 .setWalSegmentSize(in.readInt())
                 .setWalPath(in.readString())
-                .setWalArchivePath(in.readString())
-                .setWalMode(WALMode.fromOrdinal(in.readInt()))
-                .setWalThreadLocalBufferSize(in.readInt())
-                .setWalFlushFrequency((int) in.readLong())
-                .setWalFsyncDelayNanos(in.readLong())
-                .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean())
-                .setMetricsEnabled(in.readBoolean())
-                .setMetricsSubIntervalCount(in.readInt())
-                .setMetricsRateTimeInterval(in.readLong())
-                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-                .setWriteThrottlingEnabled(in.readBoolean())
-                .setWalCompactionEnabled(in.readBoolean())
-                .setMaxWalArchiveSize(in.readLong())
-                .setSystemRegionInitialSize(in.readLong())
-                .setSystemRegionMaxSize(in.readLong())
-                .setPageSize(in.readInt())
-                .setConcurrencyLevel(in.readInt())
-                .setWalAutoArchiveAfterInactivity(in.readLong());
+                .setWalArchivePath(in.readString());
+
+        int walMode = in.readInt();
+
+        res.setWalMode(walMode == -1 ? null : WALMode.fromOrdinal(walMode))
+            .setWalThreadLocalBufferSize(in.readInt())
+            .setWalFlushFrequency((int) in.readLong())
+            .setWalFsyncDelayNanos(in.readLong())
+            .setWalRecordIteratorBufferSize(in.readInt())
+            .setAlwaysWriteFullPages(in.readBoolean())
+            .setMetricsEnabled(in.readBoolean())
+            .setMetricsSubIntervalCount(in.readInt())
+            .setMetricsRateTimeInterval(in.readLong())
+            .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+            .setWriteThrottlingEnabled(in.readBoolean())
+            .setWalCompactionEnabled(in.readBoolean())
+            .setMaxWalArchiveSize(in.readLong())
+            .setSystemRegionInitialSize(in.readLong())
+            .setSystemRegionMaxSize(in.readLong())
+            .setPageSize(in.readInt())
+            .setConcurrencyLevel(in.readInt())
+            .setWalAutoArchiveAfterInactivity(in.readLong());
 
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
@@ -2083,7 +2086,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getWalSegmentSize());
             w.writeString(cfg.getWalPath());
             w.writeString(cfg.getWalArchivePath());
-            w.writeInt(cfg.getWalMode().ordinal());
+            w.writeInt(cfg.getWalMode() == null ? -1 : cfg.getWalMode().ordinal());
             w.writeInt(cfg.getWalThreadLocalBufferSize());
             w.writeLong(cfg.getWalFlushFrequency());
             w.writeLong(cfg.getWalFsyncDelayNanos());

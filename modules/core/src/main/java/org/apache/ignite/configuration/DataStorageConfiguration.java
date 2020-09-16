@@ -239,7 +239,10 @@ public class DataStorageConfiguration implements Serializable {
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Wal mode. */
-    private WALMode walMode = DFLT_WAL_MODE;
+    private WALMode walMode;
+
+    /** {@code True} if wal mode set explicitly. */
+    private transient boolean explicitWalMode;
 
     /** WAl thread local buffer size. */
     private int walTlbSize = DFLT_TLB_SIZE;
@@ -419,9 +422,48 @@ public class DataStorageConfiguration implements Serializable {
      * @param dataRegionConfigurations Data regions configurations.
      */
     public DataStorageConfiguration setDataRegionConfigurations(DataRegionConfiguration... dataRegionConfigurations) {
+        adjustWalMode(dataRegionConfigurations, dfltDataRegConf);
+
         this.dataRegions = dataRegionConfigurations;
 
         return this;
+    }
+
+    /**
+     * @param dataRegionConfigurations Data region configuration.
+     * @param dfltDataRegConf Default data region configuration.
+     */
+    private void adjustWalMode(@Nullable DataRegionConfiguration[] dataRegionConfigurations, @Nullable DataRegionConfiguration dfltDataRegConf) {
+        if (explicitWalMode)
+            return;
+
+        boolean isPersistedExists = false;
+
+        if (dfltDataRegConf != null) {
+            isPersistedExists = dfltDataRegConf.isPersistenceEnabled();
+
+            if (walMode == null && isPersistedExists) {
+                walMode = DFLT_WAL_MODE;
+
+                return;
+            }
+        }
+
+        if (dataRegionConfigurations != null) {
+            for (DataRegionConfiguration configuration : dataRegionConfigurations) {
+                if (!configuration.isPersistenceEnabled())
+                    continue;
+
+                isPersistedExists = true;
+
+                this.walMode = DFLT_WAL_MODE;
+
+                break;
+            }
+        }
+
+        if (!isPersistedExists && this.walMode != null)
+            this.walMode = null;
     }
 
     /**
@@ -462,6 +504,8 @@ public class DataStorageConfiguration implements Serializable {
      * @param dfltDataRegConf Default data region configuration.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
+        adjustWalMode(dataRegions, dfltDataRegConf);
+
         this.dfltDataRegConf = dfltDataRegConf;
 
         return this;
@@ -802,7 +846,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return WAL mode.
      */
     public WALMode getWalMode() {
-        return walMode == null ? DFLT_WAL_MODE : walMode;
+        return walMode;
     }
 
     /**
@@ -816,6 +860,7 @@ public class DataStorageConfiguration implements Serializable {
             walMode = WALMode.FSYNC;
 
         this.walMode = walMode;
+        this.explicitWalMode = true;
 
         return this;
     }

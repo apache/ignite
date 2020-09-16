@@ -462,9 +462,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+            //TODO: we should use just `GridMetricManager` here and query `walSize` inside DataStorageMetricsImpl.
+            if (cctx.database() instanceof GridCacheDatabaseSharedManager) {
+                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-            metrics = dbMgr.persistentStoreMetricsImpl();
+                metrics = dbMgr.persistentStoreMetricsImpl();
+            }
+            else {
+                DataStorageConfiguration dataStorageConfiguration = cctx.gridConfig().getDataStorageConfiguration();
+
+                metrics = new DataStorageMetricsImpl(cctx.kernalContext().metric(),
+                    dataStorageConfiguration.isMetricsEnabled(),
+                    dataStorageConfiguration.getMetricsRateTimeInterval(),
+                    dataStorageConfiguration.getMetricsSubIntervalCount());
+            }
 
             checkOrPrepareFiles();
 
