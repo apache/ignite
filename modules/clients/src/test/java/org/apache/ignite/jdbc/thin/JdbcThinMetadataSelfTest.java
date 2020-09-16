@@ -49,7 +49,6 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,9 +81,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            )
-            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
     }
 
     /**
@@ -1366,6 +1363,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
             assertEquals("Unexpected ignite driver version.",
                 conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 

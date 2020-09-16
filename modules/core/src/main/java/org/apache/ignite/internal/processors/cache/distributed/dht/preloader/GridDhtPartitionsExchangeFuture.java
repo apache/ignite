@@ -2468,7 +2468,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
                         continue;
 
-                    cacheCtx.continuousQueries().flushBackupQueue(res);
+                    cacheCtx.continuousQueries().flushOnExchangeDone(res);
                 }
             }
 
