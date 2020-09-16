@@ -203,13 +203,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     ) throws ClientException, ClientError {
         CompletableFuture<T> fut = new CompletableFuture<>();
 
-        ClientConnectionException failure = new ClientConnectionException("Connection failed");
-        AtomicInteger chIdx = new AtomicInteger();
-
         ClientChannel ch = channel();
 
         ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) ->
-                handleServiceAsync(op, payloadWriter, payloadReader, fut, failure, chIdx, ch, res, err));
+                handleServiceAsync(op, payloadWriter, payloadReader, fut, null, null, ch, res, err));
 
         return new IgniteClientFutureImpl<>(fut);
     }
@@ -227,13 +224,26 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           T res,
                                           Throwable err) {
         if (err != null) {
-            if (err.getCause() instanceof ClientConnectionException && chIdx.incrementAndGet() < channels.length) {
-                failure.addSuppressed(err);
-                onChannelFailure(ch);
+            if (err.getCause() instanceof ClientConnectionException) {
+                if (chIdx == null)
+                    chIdx = new AtomicInteger();
 
-                ClientChannel newCh = channel();
-                newCh.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
-                        handleServiceAsync(op, payloadWriter, payloadReader, fut, failure, chIdx, newCh, res2, err2));
+                if (chIdx.incrementAndGet() < channels.length) {
+                    if (failure == null)
+                        failure = new ClientConnectionException("Connection failed");
+
+                    failure.addSuppressed(err);
+                    onChannelFailure(ch);
+
+                    ClientChannel newCh = channel();
+                    ClientConnectionException failure0 = failure;
+                    AtomicInteger chIdx0 = chIdx;
+
+                    newCh.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
+                            handleServiceAsync(op, payloadWriter, payloadReader, fut, failure0, chIdx0, newCh, res2, err2));
+                } else {
+                    fut.completeExceptionally(new ClientException(err));
+                }
             } else {
                 fut.completeExceptionally(new ClientException(err));
             }
@@ -299,7 +309,32 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return affinityService0(cacheId, key, ch -> ch.serviceAsync(op, payloadWriter, payloadReader));
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affinityNodeId != null) {
+                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+
+                if (hld != null) {
+                    ClientChannel ch = null;
+
+                    try {
+                        ch = hld.getOrCreateChannel();
+                        ClientChannel ch0 = ch;
+
+                        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> handleServiceAsync(
+                                op, payloadWriter, payloadReader, fut, null, null, ch0, res, err));
+                    }
+                    catch (ClientConnectionException ignore) {
+                        onChannelFailure(hld, ch);
+                    }
+                }
+            }
+        }
+
+        return new IgniteClientFutureImpl<>(fut);
     }
 
     /**
@@ -400,7 +435,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             }
         }
 
-        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
+        // Can't determine affinity node or request to affinity node failed - proceed with standard failover service.
         return service0(func);
     }
 
