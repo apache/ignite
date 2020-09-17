@@ -40,7 +40,6 @@ import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -107,6 +106,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         forceCheckpoint(ig);
 
+        createMaintenanceRecord();
+
         stopGrid(0);
 
         File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
@@ -115,16 +116,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        System.setProperty(DEFRAGMENTATION, "true");
-
-        try {
-            startGrid(0);
-        }
-        finally {
-            System.clearProperty(DEFRAGMENTATION);
-        }
-
-        awaitPartitionMapExchange();
+        startGrid(0);
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 

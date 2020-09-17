@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,19 +42,22 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -177,6 +179,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         forceCheckpoint(ig);
 
+        createMaintenanceRecord();
+
         stopGrid(0);
 
         File workDir = resolveCacheWorkDir(ig);
@@ -185,16 +189,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        System.setProperty(DEFRAGMENTATION, "true");
-
-        try {
-            startGrid(0);
-        }
-        finally {
-            System.clearProperty(DEFRAGMENTATION);
-        }
-
-        awaitPartitionMapExchange();
+        startGrid(0);
 
         long[] newPartLen = partitionSizes(workDir);
 
@@ -243,6 +238,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             .get();
     }
 
+    /** */
+    protected void createMaintenanceRecord() throws IgniteCheckedException {
+        MaintenanceRegistry mntcReg = grid(0).context().maintenanceRegistry();
+
+        ((GridComponent)mntcReg).start(); // Bullshit.
+
+        mntcReg.registerMaintenanceRecord(new MaintenanceRecord(
+            CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_RECORD_ID,
+            "Test description",
+            "Test params"
+        ));
+    }
+
     /**
      * Returns array that contains sizes of partition files in gived working directories. Assumes that partitions
      * {@code 0} to {@code PARTS - 1} exist in that dir.
@@ -250,7 +258,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      * @param workDir Working directory.
      * @return The array.
      */
-    public long[] partitionSizes(File workDir) {
+    protected long[] partitionSizes(File workDir) {
         return IntStream.range(0, PARTS)
             .mapToObj(p -> new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, p)))
             .mapToLong(File::length)
@@ -265,9 +273,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
         testFailover(workDir -> {
-            String oldVal = System.clearProperty(DEFRAGMENTATION);
-
             try {
+                File mntcRecFile = new File(workDir.getParent(), "maintenance_records.mntc");
+
+                assertTrue(mntcRecFile.exists());
+
+                Files.delete(mntcRecFile.toPath());
+
                 startGrid(0);
 
                 validateLeftovers(workDir);
@@ -276,9 +288,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 throw new IgniteCheckedException(e);
             }
             finally {
-                stopGrid(0);
+                createMaintenanceRecord();
 
-                System.setProperty(DEFRAGMENTATION, oldVal);
+                stopGrid(0);
             }
         });
     }
@@ -357,6 +369,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         forceCheckpoint(ig);
 
+        createMaintenanceRecord();
+
         stopGrid(0);
 
         File workDir = resolveCacheWorkDir(ig);
@@ -378,22 +392,15 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             return cfg;
         };
 
-        System.setProperty(DEFRAGMENTATION, "true");
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfgOp), IOException.class, errMsg);
 
-        try {
-            GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfgOp), IOException.class, errMsg);
+        assertEquals(0, G.allGrids().size());
 
-            assertEquals(0, G.allGrids().size());
+        c.accept(workDir);
 
-            c.accept(workDir);
+        startGrid(0);
 
-            startGrid(0);
-
-            stopGrid(0);
-        }
-        finally {
-            System.clearProperty(DEFRAGMENTATION);
-        }
+        stopGrid(0);
 
         // Everything must be completed.
         startGrid(0);
@@ -425,18 +432,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         fillCache(ig.getOrCreateCache(CACHE_2_NAME));
 
+        createMaintenanceRecord();
+
         stopGrid(0);
 
-        System.setProperty(DEFRAGMENTATION, "true");
-
-        try {
-            startGrid(0);
-        }
-        finally {
-            System.clearProperty(DEFRAGMENTATION);
-        }
-
-        awaitPartitionMapExchange();
+        startGrid(0);
 
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 

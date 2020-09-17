@@ -188,6 +188,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer.CHECKPOINT_LOCK_HOLD_COUNT;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer.checkpointFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_RECORD_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -822,8 +823,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 notifyMetastorageReadyForRead();
 
-                if (IgniteSystemProperties.getBoolean(CachePartitionDefragmentationManager.DEFRAGMENTATION, false))
-                    prepareCacheDefragmentation();
+                MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
+
+                if (mntcReg.isMaintenanceMode()) {
+                    MaintenanceRecord mntcRec = mntcReg.maintenanceRecord(DEFRAGMENTATION_MNTC_RECORD_ID);
+
+                    if (mntcRec != null)
+                        prepareCacheDefragmentation();
+                }
             }
             finally {
                 metaStorage = null;
@@ -2133,8 +2140,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cctx.wal().onDeActivate(kctx);
 
-        if (defrgMgr != null)
+        if (defrgMgr != null) {
+            // These pages must be checkpointed with valid marker files.
+            // But current defragmentation implementation sets system property that forbids markers creation.
+            // It happens during checkpoint so updated metapages from THIS start may be restored on NEXT start
+            // on top of defragmented partition. This WILL lead to data corruption.
+            checkpointer.currentProgress().futureFor(FINISHED).get();
+
             defrgMgr.executeDefragmentation();
+        }
     }
 
     /**

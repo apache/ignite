@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,10 +66,18 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.*;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.CP_LOCK;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.INSERT_ROW;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.ITERATE;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.METADATA;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.READ_ROW;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_MAP;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_PENDING;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_PK;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -86,7 +95,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 /** */
 public class CachePartitionDefragmentationManager {
     /** */
-    @Deprecated public static final String DEFRAGMENTATION = "DEFRAGMENTATION";
+    public static final UUID DEFRAGMENTATION_MNTC_RECORD_ID = UUID
+        .fromString("4e23b73b-abd3-44c3-8a4d-f73205ef1a52");
 
     /** */
     @Deprecated public static final String SKIP_CP_ENTRIES = "SKIP_CP_ENTRIES";
@@ -96,6 +106,9 @@ public class CachePartitionDefragmentationManager {
 
     /** Defragmentation context. */
     private final CacheDefragmentationContext defrgCtx;
+
+    /** Maintenance registry. */
+    private final MaintenanceRegistry mntcReg;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -111,6 +124,7 @@ public class CachePartitionDefragmentationManager {
         this.sharedCtx = sharedCtx;
         this.defrgCtx = defrgCtx;
 
+        mntcReg = sharedCtx.kernalContext().maintenanceRegistry();
         log = sharedCtx.logger(getClass());
     }
 
@@ -293,6 +307,8 @@ public class CachePartitionDefragmentationManager {
                     defrgCtx.onCacheGroupDefragmented(grpId);
                 }
             }
+
+            mntcReg.clearMaintenanceRecord(DEFRAGMENTATION_MNTC_RECORD_ID);
         }
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);

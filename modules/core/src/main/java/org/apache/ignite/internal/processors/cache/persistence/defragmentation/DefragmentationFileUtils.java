@@ -75,8 +75,6 @@ public class DefragmentationFileUtils {
      * @throws IgniteCheckedException If {@link IOException} occurred.
      */
     public static void beforeInitPageStores(File workDir, IgniteLogger log) throws IgniteCheckedException {
-        assert System.getProperty(CachePartitionDefragmentationManager.DEFRAGMENTATION) == null;
-
         batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 
         U.delete(defragmentationCompletionMarkerFile(workDir));
