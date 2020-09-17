@@ -142,13 +142,6 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Get page. */
     private Collection<T> queryPage() throws ClientException {
-        return ch.service(pageQryOp, req -> {
-            if (clientCh != req.clientChannel()) {
-                throw new ClientReconnectedException("Client was reconnected in the middle of results fetch, " +
-                    "query results can be inconsistent, please retry the query.");
-            }
-
-            req.out().writeLong(cursorId);
-        }, this::readResult);
+        return clientCh.service(pageQryOp, req -> req.out().writeLong(cursorId), this::readResult);
     }
 }

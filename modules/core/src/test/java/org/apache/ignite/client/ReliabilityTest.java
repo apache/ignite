@@ -190,9 +190,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     }
                 }
 
-                fail("ClientReconnectedException must be thrown");
-            }
-            catch (ClientReconnectedException expected) {
+                fail("ClientReconnectedException or ClientConnectionException must be thrown");
+            } catch (ClientReconnectedException | ClientConnectionException expected) {
                 // No-op.
             }
         }
