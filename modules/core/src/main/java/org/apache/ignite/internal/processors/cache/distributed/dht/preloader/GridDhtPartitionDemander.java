@@ -164,6 +164,9 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");
 
+        mreg.register("RebalancingPartitionsTotal", () -> rebalanceFut.partitionsTotal.get(),
+            "The total number of cache group partitions to be rebalanced.");
+
         mreg.register("RebalancingReceivedKeys", () -> rebalanceFut.receivedKeys.get(),
             "The number of currently rebalanced keys for the whole cache group.");
 
@@ -1139,6 +1142,9 @@ public class GridDhtPartitionDemander {
         /** The number of cache group partitions left to be rebalanced. */
         private final AtomicLong partitionsLeft = new AtomicLong(0);
 
+        /** The total number of cache group partitions to be rebalanced. */
+        private final AtomicLong partitionsTotal = new AtomicLong(0);
+
         /** Rebalancing start time. */
         private volatile long startTime = -1;
 
@@ -1207,7 +1213,9 @@ public class GridDhtPartitionDemander {
 
                 remaining.put(k.id(), v.partitions());
 
-                partitionsLeft.addAndGet(v.partitions().size());
+                int size = v.partitions().size();
+                partitionsLeft.addAndGet(size);
+                partitionsTotal.addAndGet(size);
 
                 rebalancingParts.put(k.id(), new HashSet<Integer>(v.partitions().size()) {{
                     addAll(v.partitions().historicalSet());
