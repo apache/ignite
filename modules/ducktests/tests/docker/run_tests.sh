@@ -72,7 +72,7 @@ The options are as follows:
     Use specified global param to pass to test context. Could be used multiple times.
 
     List of supported global parameters:
-    - project: is used to build path to Ignite binaries within container (${SOFT_DIR}/PROJECT-VERSION)
+    - project: is used to build path to Ignite binaries within container (/opt/PROJECT-VERSION)
     - ignite_client_config_path: abs path within container to Ignite client config template
     - ignite_server_config_path: abs path within container to Ignite server config template
     - jvm_opts: array of JVM options to use when Ignite node started

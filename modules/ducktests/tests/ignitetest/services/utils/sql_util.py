@@ -17,6 +17,7 @@
 This module contains JDBC driver wrapper.
 """
 
+import os
 import jaydebeapi
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_path import IgnitePath
@@ -32,7 +33,8 @@ def jdbc_connection(ignite_service: IgniteService, ver: IgniteVersion = None):
     if ver is None:
         ver = ignite_service.config.version
 
-    home = IgnitePath(ver).home
+    bin_dir = os.environ.get('SOFT_DIR', '/opt')
+    home = os.path.join(bin_dir, IgnitePath(ver).home_dir)
     vstr = ver.vstring
 
     if ver.is_dev:

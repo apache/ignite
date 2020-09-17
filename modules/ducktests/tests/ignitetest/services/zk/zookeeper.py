@@ -21,7 +21,6 @@ import os.path
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
-from ignitetest.services.utils.ignite_path import SOFT_DIR
 
 
 class ZookeeperSettings:
@@ -45,7 +44,7 @@ class ZookeeperService(Service):
     DATA_DIR = os.path.join(PERSISTENT_ROOT, "data")
     CONFIG_FILE = os.path.join(CONFIG_ROOT, "zookeeper.properties")
     LOG_CONFIG_FILE = os.path.join(CONFIG_ROOT, "log4j.properties")
-    ZK_LIB_DIR = "{dir}/zookeeper-3.5.8/lib".format(dir=SOFT_DIR)
+    ZK_LIB_DIR = "/opt/zookeeper-3.5.8/lib"
 
     logs = {
         "zk_log": {

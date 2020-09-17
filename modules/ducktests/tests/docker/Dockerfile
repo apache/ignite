@@ -17,11 +17,7 @@ ARG jdk_version=openjdk:8
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
-
-# Set the dir for soft.
-ENV SOFT_DIR=/opt/soft
-
-VOLUME ["${SOFT_DIR}/ignite-dev"]
+VOLUME ["/opt/ignite-dev"]
 
 # Set the timezone.
 ENV TZ=Europe/Moscow
@@ -54,12 +50,12 @@ ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
 RUN for v in "2.7.6" "2.8.0" "2.8.1"; \
-    do cd $SOFT_DIR; \
+    do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
-    unzip apache-ignite-$v-bin.zip && mv $SOFT_DIR/apache-ignite-$v-bin $SOFT_DIR/ignite-$v;\
+    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
     done
 
-RUN rm $SOFT_DIR/apache-ignite-*-bin.zip
+RUN rm /opt/apache-ignite-*-bin.zip
 
 #Install zookeeper.
 ARG ZOOKEEPER_VERSION="3.5.8"
@@ -67,17 +63,17 @@ ARG ZOOKEEPER_NAME="zookeeper-$ZOOKEEPER_VERSION"
 ARG ZOOKEEPER_RELEASE_NAME="apache-$ZOOKEEPER_NAME-bin"
 ARG ZOOKEEPER_RELEASE_ARTIFACT="$ZOOKEEPER_RELEASE_NAME.tar.gz"
 RUN echo $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT
-RUN cd $SOFT_DIR && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
+RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
  && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
-RUN mv $SOFT_DIR/$ZOOKEEPER_RELEASE_NAME $SOFT_DIR/$ZOOKEEPER_NAME
+RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
 # Install spark
 ARG SPARK_VERSION="2.3.4"
 ARG SPARK_NAME="spark-$SPARK_VERSION"
 ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
 
-RUN cd $SOFT_DIR && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
-RUN mv $SOFT_DIR/$SPARK_RELEASE_NAME $SOFT_DIR/$SPARK_NAME
+RUN cd /opt && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
+RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
@@ -85,13 +81,13 @@ ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
 
 # Install Kibosh
 RUN apt-get install fuse
-RUN cd $SOFT_DIR && git clone -q  https://github.com/confluentinc/kibosh.git && cd "$SOFT_DIR/kibosh" && git reset --hard $KIBOSH_VERSION && mkdir "$SOFT_DIR/kibosh/build" && cd "$SOFT_DIR/kibosh/build" && ../configure && make -j 2
+RUN cd /opt && git clone -q  https://github.com/confluentinc/kibosh.git && cd "/opt/kibosh" && git reset --hard $KIBOSH_VERSION && mkdir "/opt/kibosh/build" && cd "/opt/kibosh/build" && ../configure && make -j 2
 
 #Install jmxterm
 ARG JMXTERM_NAME="jmxterm"
 ARG JMXTERM_VERSION="1.0.1"
 ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
-RUN cd $SOFT_DIR && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
+RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
 # Set up the ducker user.
