@@ -94,6 +94,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             {
                 Close(false);
             }
+            catch
+            {
+                if (!_socket.IsDisposed)
+                {
+                    throw;
+                }
+            }
             finally
             {
                 GC.SuppressFinalize(this);
