@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
