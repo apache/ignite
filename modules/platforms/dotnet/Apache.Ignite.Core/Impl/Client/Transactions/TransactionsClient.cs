@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         private readonly TransactionClientConfiguration _cfg;
 
         /** Transaction for this thread and client. */
-        private readonly ThreadLocal<TransactionClient> _currentTx = new ThreadLocal<TransactionClient>();
+        private readonly ThreadLocal<WeakReference> _currentTx = new ThreadLocal<WeakReference>();
 
         /** Ignite. */
         private readonly IgniteClient _ignite;
@@ -85,7 +85,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             get
             {
-                var tx = _currentTx.Value;
+                if (_currentTx.Value == null)
+                    return null;
+
+                var tx = _currentTx.Value.Target as TransactionClient;
 
                 if (tx == null)
                     return null;
@@ -178,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     label)
             );
 
-            _currentTx.Value = tx;
+            _currentTx.Value = new WeakReference(tx);
             return tx;
         }
 
