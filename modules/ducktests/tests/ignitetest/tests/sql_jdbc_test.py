@@ -34,10 +34,7 @@ class SqlJdbcTest(IgniteTest):
     NUM_NODES = 3
 
     @cluster(num_nodes=NUM_NODES)
-    @version_with_previous(
-        str(DEV_BRANCH),
-        # str(V_2_8_1), str(V_2_8_0), str(V_2_7_6)
-    )
+    @version_with_previous(str(DEV_BRANCH), str(V_2_8_1), str(V_2_8_0), str(V_2_7_6))
     def sql_test(self, ignite_version_1, ignite_version_2):
         """
         SQL test with previous versions jdbc driver.
