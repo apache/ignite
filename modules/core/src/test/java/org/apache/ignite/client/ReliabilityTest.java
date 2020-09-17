@@ -167,8 +167,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testQueryConsistencyOnFailover() throws Exception {
         int CLUSTER_SIZE = 2;
 
-        // TODO: ClientQueryCursor does not preserve original channel and attempts to close the cursor
-        // on a different connection.
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
