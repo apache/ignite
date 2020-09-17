@@ -304,20 +304,21 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
         nodes_to_kill -= 1
 
     if nodes_to_kill > 0:
-        #choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
-        coord_idx = nodes.index(next(n for n in nodes if n.discovery_info().node_id == coordinator))
-
-        idxes = []
-
-        for i in range(coord_idx+1, len(nodes)):
-            idxes.append(i)
-        for i in range(0, coord_idx):
-            idxes.append(i)
-
-        idx = random.randint(0, len(idxes) - nodes_to_kill)
-
-        for i in range(idx, idx + nodes_to_kill):
-            to_kill.append(nodes[i])
+        choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
+        to_kill.extend([choice] if not isinstance(choice, list) else choice)
+        # coord_idx = nodes.index(next(n for n in nodes if n.discovery_info().node_id == coordinator))
+        #
+        # idxes = []
+        #
+        # for i in range(coord_idx+1, len(nodes)):
+        #     idxes.append(i)
+        # for i in range(0, coord_idx):
+        #     idxes.append(i)
+        #
+        # idx = random.randint(0, len(idxes) - nodes_to_kill)
+        #
+        # for i in range(idx, idx + nodes_to_kill):
+        #     to_kill.append(nodes[i])
 
     survive = random.choice([node for node in servers.nodes if node not in to_kill])
 
