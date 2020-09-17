@@ -36,6 +36,7 @@ class IgniteConfiguration(NamedTuple):
     client_mode: bool = False
     consistent_id: str = None
     failure_detection_timeout: int = 10000
+    sys_worker_blocked_timeout: int = 10000
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []

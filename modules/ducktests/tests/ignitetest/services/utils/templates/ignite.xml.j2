@@ -36,8 +36,12 @@
         </property>
 
         <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
+
         <property name="consistentId" value="{{ config.consistent_id }}"/>
+
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
+
+        <property name="sysWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
 
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
 
