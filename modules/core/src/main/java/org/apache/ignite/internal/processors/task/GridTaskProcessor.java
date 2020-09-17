@@ -1545,6 +1545,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @return Task name or empty string.
      */
     @NotNull private static String tryResolveTaskName(@Nullable GridTaskWorker<?, ?> task) {
-        return task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : "";
+        return task != null && task.getSession() != null
+            ? ", task name: " + task.getSession().getTaskName()
+            : "";
     }
 }
