@@ -33,7 +33,7 @@ def jdbc_connection(ignite_service: IgniteService, ver: IgniteVersion = None):
     if ver is None:
         ver = ignite_service.config.version
 
-    bin_dir = os.environ.get('SOFT_DIR', '/opt')
+    bin_dir = os.environ.get('BIN_DIR', '/opt')
     home = os.path.join(bin_dir, IgnitePath(ver).home_dir)
     vstr = ver.vstring
 
