@@ -135,9 +135,12 @@ public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 
+    /** @see IgniteSystemProperties#IGNITE_TTL_EXPIRE_BATCH_SIZE */
+    public static final int DFLT_TTL_EXPIRE_BATCH_SIZE = 5;
+
     /** Each cache operation removes this amount of entries with expired TTL. */
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
+        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, DFLT_TTL_EXPIRE_BATCH_SIZE);
 
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;

@@ -22,11 +22,10 @@ import importlib
 import json
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
-from ignitetest.utils.version import DEV_BRANCH
-
+from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
+from ignitetest.utils.version import DEV_BRANCH
 
 
 def resolve_spec(service, context, config, **kwargs):
@@ -147,6 +146,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
         libs.append("log4j")
         libs = list(map(lambda m: self.path.module(m) + "/*", libs))
 
+        libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")
+
         self.envs = {
             'EXCLUDE_TEST_CLASSES': 'true',
             'IGNITE_LOG_DIR': self.PERSISTENT_ROOT,
@@ -183,7 +184,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         }
 
         self.jvm_opts.extend([
-            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file ",
+            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
             "-Dlog4j.configDebug=true",
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
             "-Xmx1G",

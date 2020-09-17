@@ -25,12 +25,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Warm-up strategy that only waits for {@link #stop} call.
  */
-class BlockedWarmUp implements WarmUpStrategy<BlockedWarmUpConfiguration> {
+public class BlockedWarmUpStrategy implements WarmUpStrategy<BlockedWarmUpConfiguration> {
     /** Stop latch. */
-    final CountDownLatch stopLatch = new CountDownLatch(1);
+    public final CountDownLatch stopLatch = new CountDownLatch(1);
 
     /** Start latch. */
-    final CountDownLatch startLatch = new CountDownLatch(1);
+    public final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override public Class<BlockedWarmUpConfiguration> configClass() {

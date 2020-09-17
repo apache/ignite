@@ -63,6 +63,7 @@ class DiscoveryTestConfig(NamedTuple):
     with_zk: bool = False
 
 
+# pylint: disable=W0223
 class DiscoveryTest(IgniteTest):
     """
     Test various node failure scenarios (TCP and ZooKeeper).
@@ -89,8 +90,8 @@ class DiscoveryTest(IgniteTest):
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
-        Test nodes failure scenario with TcpDiscoverySpi. """
-
+        Test nodes failure scenario with TcpDiscoverySpi.
+        """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
                                           nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
 
@@ -126,8 +127,11 @@ class DiscoveryTest(IgniteTest):
             discovery_spi=discovery_spi,
             communication_spi=TcpCommunicationSpi(port_range=self.TCP_PORT_RANGE),
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
-            caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL'
-                    if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
+            caches=[CacheConfiguration(
+                name='test-cache',
+                backups=1,
+                atomicity_mode='TRANSACTIONAL' if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC'
+            )]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
@@ -255,7 +259,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
                             # mute spam in log.
-                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false","-Djava.net.preferIPv4Stack=true"])
+                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
     servers.start()
@@ -308,7 +312,7 @@ def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
 
 def node_fail_task(ignite_config, test_config):
     """
-    Creates proper command task to simulate network failure depending on the configurations.
+    Creates proper task to simulate network failure depending on the configurations.
     """
     cm_spi = ignite_config.communication_spi
     dsc_spi = ignite_config.discovery_spi

@@ -17,7 +17,7 @@ smoke:
   - ../smoke_test.py
 
 control_utility:
-  - ../control_utility_test.py
+  - ../control_utility
 
 pme_free_switch:
   - ../pme_free_switch_test.py

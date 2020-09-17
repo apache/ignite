@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 /**
  * Warm-up strategy that only records which regions have visited it and how many times.
  */
-class SimpleObservableWarmUp implements WarmUpStrategy<SimpleObservableWarmUpConfiguration> {
+class SimpleObservableWarmUpStrategy implements WarmUpStrategy<SimpleObservableWarmUpConfiguration> {
     /** Visited regions with a counter. */
     final Map<String, AtomicInteger> visitRegions = new ConcurrentHashMap<>();
 
