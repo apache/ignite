@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.systemview;
 
 import java.util.function.Predicate;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;

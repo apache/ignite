@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.systemview.jmx;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,13 +23,12 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.managers.systemview.AbstractSystemViewExporterSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.managers.systemview.jmx.SystemViewMBean.VIEWS;
+import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.VIEWS;
 
 /**
  * This SPI implementation exports system views as JMX beans.
