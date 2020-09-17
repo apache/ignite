@@ -1537,8 +1537,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         }
     }
 
-    /** Tries to get task name in appended form(after ', '). */
-    @NotNull private static String tryResolveTaskName(GridTaskWorker<?, ?> task) {
+    /**
+     * Tries to get task name in appended form(after ', ').
+     * If cannot take task name - returns empty String.
+     *
+     * @param task Task to get name.
+     * @return Task name or empty string.
+     */
+    @NotNull private static String tryResolveTaskName(@Nullable GridTaskWorker<?, ?> task) {
         return task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : "";
     }
 }
