@@ -58,6 +58,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.IsNotNull(igniteToStop);
                     Ignition.Stop(igniteToStop.Name, true);
 
+                    Assert.Catch(() => cache.Put(1, 1));
                     Assert.Throws(constraint, () => cache.Put(1, 1));
                 }
             }
