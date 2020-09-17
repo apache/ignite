@@ -4,7 +4,7 @@
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
            Sets a path to the root directory where snapshot files will be persisted.
-           By default, the relative `snapshots` directory is used in the IGNITE_HOME/db
+           By default, the `snapshots` directory is placed under the `IGNITE_HOME/db`.
         -->
         <property name="snapshotPath" value="/snapshots"/>
 

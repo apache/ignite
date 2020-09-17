@@ -25,7 +25,7 @@
     url: /installation/installing-using-zip
   - title: Installing Using Docker
     url: /installation/installing-using-docker
-  - title:  Installing DEB or RPM package
+  - title: Installing DEB or RPM package
     url: /installation/deb-rpm
   - title: Kubernetes
     items: 
@@ -103,6 +103,8 @@
       url: /persistence/swap 
     - title: Implementing Custom Cache Store
       url: /persistence/custom-cache-store
+    - title: Cluster Snapshots
+      url: /persistence/snapshots
     - title: Disk Compression
       url: /persistence/disk-compression
     - title: Tuning Persistence
