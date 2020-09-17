@@ -27,10 +27,15 @@ public abstract class AbstractService implements LifecycleAware, Service {
     /** */
     protected final IgniteLogger log;
 
+    /** */
+    protected final GridKernalContext ctx;
+
     /**
      * @param ctx Kernal.
      */
     protected AbstractService(GridKernalContext ctx) {
+        this.ctx = ctx;
+
         log = ctx.log(getClass());
     }
 
