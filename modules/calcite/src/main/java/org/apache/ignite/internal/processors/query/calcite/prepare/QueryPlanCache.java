@@ -34,13 +34,4 @@ public interface QueryPlanCache extends Service {
      * @return Query plan.
      */
     List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
-
-    /**
-     * Caches IgniteRel.
-     *
-     * @param fragment {@link IgniteRel} serialized representation.
-     * @param mappingFunction executes if fragment not found.
-     * @return Relational node.
-     */
-    IgniteRel getOrCacheFragment(String fragment, Supplier<IgniteRel> mappingFunction);
 }

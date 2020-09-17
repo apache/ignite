@@ -841,15 +841,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         Outbox<Row> node;
         try {
-            IgniteRel rel = qryPlanCache.getOrCacheFragment(msg.root(), () -> fromJson(ctx, msg.root()));
-
             node = new LogicalRelImplementor<>(
                 execCtx,
                 partitionService(),
                 mailboxRegistry(),
                 exchangeService(),
                 failureProcessor())
-                .go(rel);
+                .go(fromJson(ctx, msg.root()));
         }
         catch (Exception ex) {
             U.error(log, "Failed to build execution tree. ", ex);

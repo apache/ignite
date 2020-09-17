@@ -19,16 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
@@ -42,17 +38,11 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     /** */
     private static final int CACHE_SIZE = 1024;
 
-    /** Query plan fragments cache size. */
-    private static final int FRAGMENTS_CACHE_SIZE = 128;
-
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
     private volatile Map<CacheKey, List<QueryPlan>> cache;
-
-    /** */
-    private volatile Map<String, IgniteRel> queryPlanFragmentCache;
 
     /**
      * @param ctx Kernal context.
@@ -61,7 +51,6 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         super(ctx);
 
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
-        queryPlanFragmentCache = new GridBoundedConcurrentLinkedHashMap<>(FRAGMENTS_CACHE_SIZE);
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
         init();
@@ -107,7 +96,6 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
      */
     public void clear() {
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
-        queryPlanFragmentCache= new GridBoundedConcurrentLinkedHashMap<>(FRAGMENTS_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -140,17 +128,5 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
         GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk) {
         // No-op
-    }
-
-    /**
-     * @return Query plan fragment cache.
-     */
-    private Map<String, IgniteRel> queryPlanFragmentCache() {
-        return queryPlanFragmentCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel getOrCacheFragment(String fragment, Supplier<IgniteRel> mappingFunction) {
-        return queryPlanFragmentCache().computeIfAbsent(fragment, (k) -> mappingFunction.get());
     }
 }
