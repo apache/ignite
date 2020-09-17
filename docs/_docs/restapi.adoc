@@ -171,7 +171,7 @@ To set a custom expire time, set the system variable: `IGNITE_REST_SESSION_TIMEO
 == Data Types
 The REST API also supports <<Java built-in types>> and <<Custom user defined types>> for put/get operations via `keyType` and `valueType` optional parameters.
 
-Note that unless one of the mentioned below types are explicitly specified, the REST protocol exchanges the key-value data in `String` format.
+Note that unless one of the types mentioned below is explicitly specified, the REST protocol will exchange the key-value data in `String` format.
 This means that the data is stored and retrieved to/from the cluster as a `String`.
 
 === Java built-in types
@@ -255,14 +255,14 @@ For custom objects, the JSON format is used. For example, we can work with the f
   "salary": 156.1
  }
 
-The following request puts this object into the cache `testCache` as a value with a type name `Person` and a key `1`.
+The following request puts this object into the cache named 'testCache' as a value with a type name `Person` and a key `1`.
 
  http://[host]:[port]/ignite?cacheName=testCache&cmd=put&keyType=int&key=1&valueType=Person&val=%7B%0A+++++%22uid%22%3A+%227e51118b-eb15-4373-b57f-4984cb9cd7ac%22%2C%0A+++++%22name%22%3A+%22John+Doe%22%2C%0A+++++%22organization%22%3A+5678901%2C%0A+++++%22married%22%3A+false%2C%0A+++++%22salary%22%3A+156.1%0A++%7D&
 
 On the server side, the JSON value from this request will be converted to link:/docs/data-modeling/data-modeling#binary-object-format[binary object]. Field types are resolved in the following order:
 
-* If the type name is a `Java class` available on the server, the class field types with corresponding names will be used for JSON object field types resolving.
-* If the type name is a `query entity` type, the field types will be resolved according to the field type defined in the `query entity`.
+* If the type name is a `Java class` available on the server, the class field types with corresponding names will be used for resolving JSON object field types.
+* If the type name is of a `query entity` type, the field types will be resolved according to the field type defined in the `query entity`.
 * Otherwise, the field types will be resolved according to regular JSON types.
 
 For example, if there is no definition of the "Person" type on the server, the fields will be converted in accordance with the standard JSON types:
@@ -273,7 +273,7 @@ For example, if there is no definition of the "Person" type on the server, the f
 "married": false,                              // boolean
 "salary": 156.1                                // double
 
-In case the `query entity` was set
+If the `query entity` is set
 [source,xml]
  <bean class="org.apache.ignite.cache.QueryEntity">
   <property name="keyType"   value="java.lang.Integer"/>
@@ -289,7 +289,7 @@ In case the `query entity` was set
   </property>
  </bean>
 
-or Java class "Person" loaded on the server.
+or Java class "Person" is loaded on the server.
 [source,java]
 class Person {
  UUID    uid;
