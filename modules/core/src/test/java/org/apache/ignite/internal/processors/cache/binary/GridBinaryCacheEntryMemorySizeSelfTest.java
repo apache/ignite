@@ -32,7 +32,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.internal.managers.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 

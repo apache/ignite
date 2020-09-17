@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
@@ -82,7 +83,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param ctx Kernal context.
      */
     public GridSystemViewManager(GridKernalContext ctx) {
-        super(ctx, addSqlExporter(ctx.config().getSystemViewExporterSpi()));
+        super(ctx, addStandardExporters(ctx.config().getSystemViewExporterSpi()));
     }
 
     /** {@inheritDoc} */
@@ -270,27 +271,30 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param spis Spis from config.
      * @return Spis array with the SQL view exporter in it.
      */
-    private static SystemViewExporterSpi[] addSqlExporter(SystemViewExporterSpi[] spis) {
-        if (!IgniteComponentType.INDEXING.inClassPath())
-            return spis;
+    private static SystemViewExporterSpi[] addStandardExporters(SystemViewExporterSpi[] spis) {
+        int newSz = F.isEmpty(spis) ? 1 : spis.length + 1;
 
-        for (SystemViewExporterSpi impl : spis) {
-            if (impl.getClass().getName().equals(SYSTEM_VIEW_SQL_SPI))
-                return spis;
-        }
+        boolean addSql = IgniteComponentType.INDEXING.inClassPath();
 
-        SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spis != null ? spis.length + 1 : 1];
+        if (addSql)
+            newSz += 1;
+
+        SystemViewExporterSpi[] newSpis = new SystemViewExporterSpi[newSz];
 
         if (!F.isEmpty(spis))
-            System.arraycopy(spis, 0, spiWithSql, 0, spis.length);
+            System.arraycopy(spis, 0, newSpis, 0, spis.length);
 
-        try {
-            spiWithSql[spiWithSql.length - 1] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        if (addSql) {
+            try {
+                newSpis[newSpis.length - 2] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
-        return spiWithSql;
+        newSpis[newSpis.length - 1] = new JmxSystemViewExporterSpi();
+
+        return newSpis;
     }
 }

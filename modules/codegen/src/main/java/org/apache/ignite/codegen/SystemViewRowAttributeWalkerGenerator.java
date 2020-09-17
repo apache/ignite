@@ -35,7 +35,7 @@ import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
+import org.apache.ignite.internal.managers.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;

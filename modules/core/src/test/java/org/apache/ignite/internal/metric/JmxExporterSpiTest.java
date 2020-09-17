@@ -113,9 +113,9 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import static org.apache.ignite.internal.managers.systemview.jmx.SystemViewMBean.FILTER_OPERATION;
+import static org.apache.ignite.internal.managers.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
-import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.FILTER_OPERATION;
-import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;

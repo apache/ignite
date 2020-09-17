@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.jmx;
+package org.apache.ignite.internal.managers.systemview.jmx;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

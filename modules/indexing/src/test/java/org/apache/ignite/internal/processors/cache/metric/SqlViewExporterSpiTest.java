@@ -1150,25 +1150,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             getTestTimeout()));
     }
 
-    /** */
-    @Test
-    public void testSqlExporterInConfiguration() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration()
-            .setIgniteInstanceName("testSqlExporterInConfiguration")
-            .setSystemViewExporterSpi((SystemViewExporterSpi)U.newInstance(SYSTEM_VIEW_SQL_SPI));
-
-        try (IgniteEx ign = startGrid(cfg)) {
-            SystemViewExporterSpi[] spis = GridTestUtils.getFieldValueHierarchy(ign.context().systemView(), "spis");
-
-            assertNotNull(spis);
-
-            assertEquals(1, spis.length);
-
-            assertEquals(1,
-                Arrays.stream(spis).filter(spi -> spi.getClass().getName().equals(SYSTEM_VIEW_SQL_SPI)).count());
-        }
-    }
-
     /**
      * Execute query on given node.
      *

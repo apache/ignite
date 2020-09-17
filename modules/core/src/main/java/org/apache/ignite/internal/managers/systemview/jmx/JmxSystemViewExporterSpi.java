@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.jmx;
+package org.apache.ignite.internal.managers.systemview.jmx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
+import static org.apache.ignite.internal.managers.systemview.jmx.SystemViewMBean.VIEWS;
 
 /**
  * This SPI implementation exports system views as JMX beans.
@@ -51,13 +51,7 @@ public class JmxSystemViewExporterSpi extends AbstractSystemViewExporterSpi {
      * @param sysView System view.
      */
     protected void register(SystemView<?> sysView) {
-        if (filter != null && !filter.test(sysView)) {
-            if (log.isDebugEnabled())
-                log.debug("System view filtered and will not be registered [name=" + sysView.name() + ']');
-
-            return;
-        }
-        else if (log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Found new system view [name=" + sysView.name() + ']');
 
         try {

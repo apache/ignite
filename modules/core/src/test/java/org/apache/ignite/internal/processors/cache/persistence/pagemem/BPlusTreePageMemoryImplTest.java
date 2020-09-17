@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.internal.managers.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.mockito.Mockito;
 
