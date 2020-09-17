@@ -75,7 +75,7 @@ class DiscoveryTest(IgniteTest):
 
     TCP_PORT_RANGE = 0
 
-    FAILURE_DETECTION_TIMEOUT = 1000
+    FAILURE_DETECTION_TIMEOUT = 10000
 
     DATA_AMOUNT = 5_000_000
 
@@ -219,9 +219,6 @@ class DiscoveryTest(IgniteTest):
                 cmd = "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
                 exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-                assert len(node.account.ssh_client.exec_command("sudo iptables -F")[2].read()) == 0, \
-                    "Unable to clear iptables on " + node.name
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
