@@ -84,7 +84,7 @@ class DiscoveryTest(IgniteTest):
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -181,7 +181,7 @@ class DiscoveryTest(IgniteTest):
         data = {}
 
         for failed_id in ids_to_wait:
-            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 30, from_the_beginning=True,
+            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20, from_the_beginning=True,
                                         backoff_sec=1)
 
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
@@ -219,6 +219,9 @@ class DiscoveryTest(IgniteTest):
                 cmd = "sudo iptables-legacy-save | tee " + self.NETFILTER_SAVED_SETTINGS
 
                 exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+                assert len(node.account.ssh_client.exec_command("sudo iptables -F")[2].read()) == 0, \
+                    "Unable to clear iptables on " + node.name
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
