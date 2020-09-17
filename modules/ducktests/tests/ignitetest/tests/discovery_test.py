@@ -84,7 +84,7 @@ class DiscoveryTest(IgniteTest):
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[True],
             nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -222,7 +222,9 @@ class DiscoveryTest(IgniteTest):
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
-    def teardown(self):
+            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+
+def teardown(self):
         # Restore previous network filter settings.
         cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
 
@@ -326,7 +328,7 @@ def node_fail_task(ignite_config, test_config):
         dsc_ports = str(dsc_spi.port) if dsc_spi.port_range < 1 else str(dsc_spi.port) + ':' + str(
             dsc_spi.port + dsc_spi.port_range)
 
-    cmd = f"sudo iptables -A %s -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
+    cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
     return lambda node: (node.account.ssh_client.exec_command(cmd % "INPUT"),
                          node.account.ssh_client.exec_command(cmd % "OUTPUT"))
