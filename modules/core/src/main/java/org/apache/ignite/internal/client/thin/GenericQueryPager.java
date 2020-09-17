@@ -76,10 +76,10 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
-        if (cursorId != null && hasNext) {
+        if (cursorId != null && hasNext && !clientCh.closed()) {
             try {
                 clientCh.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId), null);
-            } catch (ClientConnectionException ignored) {
+            } catch (ClientConnectionException | ClientReconnectedException ignored) {
                 // Original connection was lost and cursor was closed by the server.
             }
         }
