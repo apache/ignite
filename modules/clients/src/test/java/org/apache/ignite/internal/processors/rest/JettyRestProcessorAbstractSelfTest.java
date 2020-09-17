@@ -45,7 +45,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -432,73 +431,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testPutUnregistered() throws Exception {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put("uid", "java.util.UUID");
-        fields.put("name", "java.lang.String");
-        fields.put("organization", "java.lang.Long");
-        fields.put("married", "java.lang.Boolean");
-        fields.put("salary", "java.lang.Double");
+        fields.put("id", Long.class.getName());
+        fields.put("name", String.class.getName());
+        fields.put("timestamp", Timestamp.class.getName());
+        fields.put("longs", long[].class.getName());
+        fields.put("igniteUuid", IgniteUuid.class.getName());
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testCache");
 
-        String valType = "Person";
+        String valType = "SomeNewType";
 
         ccfg.setQueryEntities(
             Collections.singletonList(
                 new QueryEntity()
-                    .setKeyType("INT")
+                    .setKeyType("java.lang.Integer")
                     .setValueType(valType)
                     .setFields(fields)
-                    .setIndexes(Collections.singleton(new QueryIndex("uid"))))
+                    .setIndexes(Collections.singleton(new QueryIndex("id"))))
         );
 
         IgniteCache cache = grid(0).createCache(ccfg);
 
         try {
-            String json = "{\n" +
-                "     \"uid\": \"7e51118b-eb15-4373-b57f-4984cb9cd7ac\",\n" +
-                "     \"name\": \"John Doe\",\n" +
-                "     \"organization\": 5678901,\n" +
-                "     \"married\": false,\n" +
-                "     \"salary\": 156.1\n" +
-                "  }";
-
-            //putObject("Person", 1, json, valType);
-
-//            List<Integer> list = F.asList(1, 2, 3);
-//
-//            OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
-//                Timestamp.valueOf("2004-08-26 16:47:03.141592"), new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE},
-//                UUID.randomUUID(), IgniteUuid.randomUuid(), null);
-//
-//            System.out.println(">>>> " + JSON_MAPPER.writeValueAsString(newType));
-//
-//            if (true)
-//                return;
-
-            info("Put: " + json);
-
-            String ret = content("testCache", GridRestCommand.CACHE_PUT,
-                "keyType", "int",
-                "key", "1",
-                "valueType", valType,
-                "val", json
-            );
-
-            info("Put command result: " + ret);
-
-            assertResponseSucceeded(ret, false);
-
-            BinaryObject obj = (BinaryObject)cache.withKeepBinary().get(1);
-
-            System.out.println(obj.field("uid").getClass().getName());
-            System.out.println(obj.field("name").getClass().getName());
-            System.out.println(obj.field("organization").getClass().getName());
-            System.out.println(obj.field("married").getClass().getName());
-            System.out.println(obj.field("salary").getClass().getName());
-
-            if (true)
-                return;
-
             List<Integer> list = F.asList(1, 2, 3);
 
             OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
