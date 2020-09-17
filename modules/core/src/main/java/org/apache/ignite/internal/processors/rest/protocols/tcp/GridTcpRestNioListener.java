@@ -41,11 +41,13 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientClust
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeStateBeforeStartRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientWarmUpRequest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
@@ -53,9 +55,11 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBeforeStartRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -82,8 +86,10 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE_STATE_BEFORE_START;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.WARM_UP;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET;
@@ -416,6 +422,22 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         }
         else if (msg instanceof GridClientClusterNameRequest)
             restReq = new GridRestClusterNameRequest();
+        else if (msg instanceof GridClientNodeStateBeforeStartRequest) {
+            GridClientNodeStateBeforeStartRequest reqClient = (GridClientNodeStateBeforeStartRequest)msg;
+
+            if (reqClient instanceof GridClientWarmUpRequest) {
+                GridClientWarmUpRequest warmUpReqClient = (GridClientWarmUpRequest)reqClient;
+
+                restReq = new GridRestWarmUpRequest().stopWarmUp(warmUpReqClient.stopWarmUp());
+
+                restReq.command(WARM_UP);
+            }
+            else {
+                restReq = new GridRestNodeStateBeforeStartRequest();
+
+                restReq.command(NODE_STATE_BEFORE_START);
+            }
+        }
 
         if (restReq != null) {
             restReq.destinationId(msg.destinationId());

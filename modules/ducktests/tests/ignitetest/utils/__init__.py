@@ -13,5 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=C0114
+"""
+This module contains convenient utils for test.
+"""
+
 from ._mark import version_if, ignite_versions, version_with_previous
+
+__all__ = ['version_if', 'ignite_versions']

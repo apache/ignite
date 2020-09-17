@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests
 
             grid.Dispose();
 
-            var ex = Assert.Throws<InvalidOperationException>(() => grid.GetCache<int, int>("cache1"));
+            var ex = Assert.Throws<IgniteIllegalStateException>(() => grid.GetCache<int, int>("cache1"));
             Assert.AreEqual("Grid is in invalid state to perform this operation. " +
                             "It either not started yet or has already being or have stopped " +
                             "[igniteInstanceName=null, state=STOPPED]", ex.Message);

@@ -43,11 +43,9 @@ class PmeFreeSwitchTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
     def test(self, ignite_version):
         """
-        Test PME free scenario (node stop).
+        Tests PME free scenario (node stop).
         """
         data = {}
-
-        self.stage("Starting nodes")
 
         config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -57,8 +55,6 @@ class PmeFreeSwitchTest(IgniteTest):
         ignites = IgniteService(self.test_context, config, num_nodes=self.NUM_NODES)
 
         ignites.start()
-
-        self.stage("Starting long_tx_streamer")
 
         client_config = config._replace(client_mode=True,
                                         discovery_spi=from_ignite_cluster(ignites, slice(0, self.NUM_NODES - 1)))
@@ -70,8 +66,6 @@ class PmeFreeSwitchTest(IgniteTest):
             params={"cacheName": "test-cache"})
 
         long_tx_streamer.start()
-
-        self.stage("Starting single_key_tx_streamer")
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
@@ -85,19 +79,13 @@ class PmeFreeSwitchTest(IgniteTest):
         if IgniteVersion(ignite_version) >= V_2_8_0:
             ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
 
-        self.stage("Stopping server node")
-
         ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
         long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 
         time.sleep(30)  # keeping txs alive for 30 seconds.
 
-        self.stage("Stopping long_tx_streamer")
-
         long_tx_streamer.stop()
-
-        self.stage("Stopping single_key_tx_streamer")
 
         single_key_tx_streamer.stop()
 

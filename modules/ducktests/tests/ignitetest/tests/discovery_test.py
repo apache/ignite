@@ -122,8 +122,11 @@ class DiscoveryTest(IgniteTest):
             version=test_config.version,
             discovery_spi=discovery_spi,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
-            caches=[CacheConfiguration(name='test-cache', backups=1, atomicity_mode='TRANSACTIONAL' if
-            test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC')]
+            caches=[CacheConfiguration(
+                name='test-cache',
+                backups=1,
+                atomicity_mode='TRANSACTIONAL' if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC'
+            )]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
