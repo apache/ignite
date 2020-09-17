@@ -16,16 +16,22 @@
 # limitations under the License.
 #
 source "${IGNITE_HOME}"/bin/include/functions.sh
+
+
 #
 # Discover path to Java executable and check it's version.
 #
 checkJava
+
+
 #
 # Set IGNITE_LIBS.
 #
 source "${IGNITE_HOME}"/bin/include/setenv.sh
 CP="${IGNITE_LIBS}"
 DEFAULT_CONFIG=config/default-config.xml
+
+
 #
 # Add optional libs to classpath
 #
@@ -40,6 +46,8 @@ if [ -n "${OPTION_LIBS}" ]; then
     fi
   done
 fi
+
+
 #
 # Add external libs to classpath
 #
@@ -51,6 +59,8 @@ if [ -n "${EXTERNAL_LIBS}" ]; then
   wget --content-disposition -i "${IGNITE_HOME}"/work/external_libs -P "${IGNITE_HOME}"/libs/external
   rm "${IGNITE_HOME}"/work/external_libs
 fi
+
+
 #
 # Define classpath
 #
@@ -59,12 +69,16 @@ if [ "${USER_LIBS:-}" != "" ]; then
 fi
 CP="${IGNITE_LIBS}"
 unset IFS
+
+
 #
 # Define default Java options
 #
 if [ -z "${JVM_OPTS}" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
 fi
+
+
 #
 # Add Java extra option 
 #
@@ -98,6 +112,8 @@ DIGNITE_QUIET=$(printenv JVM_OPTS | grep -o 'IGNITE_QUIET=[^ ,]\+' | cut -d "=" 
 if [ "${IGNITE_QUIET}" == "false" -o "${DIGNITE_QUIET}" == "false" ]; then
     JVM_OPTS="${JVM_OPTS} -DIGNITE_QUIET=false"
 fi
+
+
 #
 # Start Ignite node
 #
