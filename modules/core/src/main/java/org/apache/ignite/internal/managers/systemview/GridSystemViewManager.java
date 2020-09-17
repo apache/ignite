@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
     /** Class name for a SQL view exporter of system views. */
-    static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
+    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
 
     /** Name of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
@@ -267,17 +267,22 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /**
      * Adds SQL view exporter to the spis array.
      *
-     * @param spi Spis from config.
+     * @param spis Spis from config.
      * @return Spis array with the SQL view exporter in it.
      */
-    private static SystemViewExporterSpi[] addSqlExporter(SystemViewExporterSpi[] spi) {
+    private static SystemViewExporterSpi[] addSqlExporter(SystemViewExporterSpi[] spis) {
         if (!IgniteComponentType.INDEXING.inClassPath())
-            return spi;
+            return spis;
 
-        SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spi != null ? spi.length + 1 : 1];
+        for (SystemViewExporterSpi impl : spis) {
+            if (impl.getClass().getName().equals(SYSTEM_VIEW_SQL_SPI))
+                return spis;
+        }
 
-        if (!F.isEmpty(spi))
-            System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
+        SystemViewExporterSpi[] spiWithSql = new SystemViewExporterSpi[spis != null ? spis.length + 1 : 1];
+
+        if (!F.isEmpty(spis))
+            System.arraycopy(spis, 0, spiWithSql, 0, spis.length);
 
         try {
             spiWithSql[spiWithSql.length - 1] = U.newInstance(SYSTEM_VIEW_SQL_SPI);

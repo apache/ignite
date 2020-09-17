@@ -2509,7 +2509,7 @@ public class IgnitionEx {
             if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
-            if (F.isEmpty(cfg.getSystemViewExporterSpi()))
+            if (F.isEmpty(cfg.getSystemViewExporterSpi()) )
                 cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
             if (cfg.getTracingSpi() == null)
