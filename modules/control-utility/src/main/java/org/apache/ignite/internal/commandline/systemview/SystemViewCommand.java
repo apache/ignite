@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.systemview;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
+import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskArg;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskResult;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -43,6 +43,9 @@ import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.DATE;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.NUMBER;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
 
 /**
  * Represents command for {@link SystemView} content printing.
@@ -118,7 +121,7 @@ public class SystemViewCommand implements Command<Object> {
             }).collect(Collectors.toList()));
         });
 
-        printRow(colTitles, nCopies(colTitles.size(), String.class), colLenghts, log);
+        printRow(colTitles, nCopies(colTitles.size(), STRING), colLenghts, log);
 
         rows.forEach(row -> printRow(row, taskRes.systemViewAttributeTypes(), colLenghts, log));
     }
@@ -130,17 +133,17 @@ public class SystemViewCommand implements Command<Object> {
      * @param types Column types in sequential order for decent row formatting.
      * @param lengths Column lengths in sequential order for decent row formatting.
      */
-    private void printRow(List<String> row, List<? extends Class<?>> types, List<Integer> lengths, Logger log) {
-        Iterator<? extends Class<?>> typesIter = types.iterator();
+    private void printRow(List<String> row, List<SimpleAttributeType> types, List<Integer> lengths, Logger log) {
+        Iterator<SimpleAttributeType> typeIter = types.iterator();
 
-        Iterator<Integer> lenghtsIter = lengths.iterator();
+        Iterator<Integer> lenIter = lengths.iterator();
 
         log.info(row.stream().map(colVal -> {
-            Class<?> colType = typesIter.next();
+            SimpleAttributeType colType = typeIter.next();
 
-            int colLen = lenghtsIter.next();
+            int colLen = lenIter.next();
 
-            String format = Date.class.isAssignableFrom(colType) || Number.class.isAssignableFrom(colType) ?
+            String format = colType == DATE || colType == NUMBER ?
                 "%" + colLen + "s" :
                 "%-" + colLen + "s";
 

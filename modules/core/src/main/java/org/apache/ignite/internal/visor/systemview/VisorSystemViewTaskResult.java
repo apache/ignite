@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType;
 
 /**
  * Reperesents result of {@link VisorSystemViewTask}.
@@ -39,7 +40,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     private List<String> attrs;
 
     /** Types of the systen view attributes. */
-    private List<Class<?>> types;
+    List<SimpleAttributeType> types;
 
     /**
      * Default constructor.
@@ -52,7 +53,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
      * @param attrs Names of system view attributes.
      * @param rows Attribute values for each row of the system view.
      */
-    public VisorSystemViewTaskResult(List<String> attrs, List<Class<?>> types, List<? extends List<?>> rows) {
+    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleAttributeType> types, List<? extends List<?>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;
@@ -75,7 +76,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /**
      * @return Types of the system view attributes.
      */
-    public List<Class<?>> systemViewAttributeTypes() {
+    public List<SimpleAttributeType> systemViewAttributeTypes() {
         return types;
     }
 

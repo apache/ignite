@@ -37,6 +37,9 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.DATE;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.NUMBER;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
 
 /**
  * Reperesents visor task for obtaining system view content.
@@ -92,7 +95,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
             List<String> attrNames = new ArrayList<>();
 
-            List<Class<?>> attrTypes = new ArrayList<>();
+            List<SimpleAttributeType> attrTypes = new ArrayList<>();
 
             targetSysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
                 @Override public <T> void accept(int idx, String name, Class<T> clazz) {
@@ -101,11 +104,11 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                     Class<?> wrapperCls = U.box(clazz);
 
                     if (Number.class.isAssignableFrom(wrapperCls))
-                        attrTypes.add(Number.class);
+                        attrTypes.add(NUMBER);
                     else if (Date.class.isAssignableFrom(wrapperCls))
-                        attrTypes.add(Date.class);
+                        attrTypes.add(DATE);
                     else
-                        attrTypes.add(String.class);
+                        attrTypes.add(STRING);
                 }
             });
 
@@ -127,7 +130,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                         )
                             attrVals.add((Serializable)val);
                         else
-                            attrVals.add(Objects.toString(val));
+                            attrVals.add(String.valueOf(val));
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
@@ -168,5 +171,20 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
             return new VisorSystemViewTaskResult(attrNames, attrTypes, rows);
         }
+    }
+
+    /**
+     * Represents simple types of system view attributes. Those types helps task initiator to determine type of each
+     * column for received system view rows.
+     */
+    public enum SimpleAttributeType {
+        /** Date. */
+        DATE,
+
+        /** Number. */
+        NUMBER,
+
+        /** String. */
+        STRING
     }
 }

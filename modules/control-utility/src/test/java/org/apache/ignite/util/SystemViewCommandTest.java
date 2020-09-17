@@ -53,7 +53,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** Name of the test system view. */
     private static final String TEST_VIEW = "test.testView";
 
-    /** Expected command output in case system view comtains no rows. */
+    /** Expected command output in case system view contains no rows. */
     private static final String EXP_NO_ROWS_CMD_OUT = "boolean    char    byte    short    int    long    float" +
         "    double    date    uuid    igniteUUID    class    enum    object";
 
