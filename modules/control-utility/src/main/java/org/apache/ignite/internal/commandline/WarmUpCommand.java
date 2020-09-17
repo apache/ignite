@@ -26,7 +26,6 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 
 /**
@@ -52,14 +51,21 @@ public class WarmUpCommand implements Command<Void> {
     @Override public void parseArguments(CommandArgIterator argIter) {
         boolean stop = false;
 
-        while (nonNull(argIter.peekNextArg())) {
-            WarmUpCommandArg arg = CommandArgUtils.of(argIter.nextArg(""), WarmUpCommandArg.class);
+        while (true) {
+            String nextArg = argIter.peekNextArg();
+
+            if (nextArg == null)
+                break;
+
+            WarmUpCommandArg arg = CommandArgUtils.of(nextArg, WarmUpCommandArg.class);
 
             if (isNull(arg))
                 break;
 
             switch (arg) {
                 case STOP:
+                    argIter.nextArg("");
+
                     stop = true;
                     break;
 
