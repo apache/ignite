@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.systemview;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -132,8 +133,14 @@ public class SystemViewCommand implements Command<Object> {
      * @param row Row which content should be printed.
      * @param types Column types in sequential order for decent row formatting.
      * @param lengths Column lengths in sequential order for decent row formatting.
+     * @param log Logger.
      */
-    private void printRow(List<String> row, List<SimpleAttributeType> types, List<Integer> lengths, Logger log) {
+    private void printRow(
+        Collection<String> row,
+        Collection<SimpleAttributeType> types,
+        Collection<Integer> lengths,
+        Logger log
+    ) {
         Iterator<SimpleAttributeType> typeIter = types.iterator();
 
         Iterator<Integer> lenIter = lengths.iterator();
