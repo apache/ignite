@@ -69,6 +69,7 @@ public class Fragment {
         this.remotes = ImmutableList.copyOf(remotes);
         this.rootSer = rootSer;
     }
+    
     /**
      * @param id Fragment id.
      * @param root Root node of the fragment.
