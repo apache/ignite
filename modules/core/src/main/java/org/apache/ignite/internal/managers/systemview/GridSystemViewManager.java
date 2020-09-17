@@ -266,7 +266,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Adds SQL view exporter to the spis array.
+     * Adds SQL and JMX view exporter to the spis array.
      *
      * @param spis Spis from config.
      * @return Spis array with the SQL view exporter in it.

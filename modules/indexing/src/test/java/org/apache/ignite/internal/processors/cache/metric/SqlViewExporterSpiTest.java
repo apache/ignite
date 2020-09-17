@@ -71,10 +71,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -83,7 +81,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYSTEM_VIEW_SQL_SPI;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
