@@ -162,12 +162,15 @@ public class Checkpointer extends GridWorker {
     /** This number of threads will be created and used for parallel sorting. */
     private static final int PARALLEL_SORT_THREADS = Math.min(Runtime.getRuntime().availableProcessors(), 8);
 
+    /** @see IgniteSystemProperties#CHECKPOINT_PARALLEL_SORT_THRESHOLD */
+    public static final int DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD = 512 * 1024;
+
     /**
      * Starting from this number of dirty pages in checkpoint, array will be sorted with {@link
      * Arrays#parallelSort(Comparable[])} in case of {@link CheckpointWriteOrder#SEQUENTIAL}.
      */
     private final int parallelSortThreshold = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD, 512 * 1024);
+        IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD, DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD);
 
     /** Assertion enabled. */
     private static final boolean ASSERTION_ENABLED = GridCacheDatabaseSharedManager.class.desiredAssertionStatus();
@@ -436,13 +439,13 @@ public class Checkpointer extends GridWorker {
 
         long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-        if (sched.nextCpNanos() - nextNanos <= 0)
+        if (sched.nextCpNanos() <= nextNanos)
             return sched;
 
         synchronized (this) {
             sched = scheduledCp;
 
-            if (sched.nextCpNanos() - nextNanos > 0) {
+            if (sched.nextCpNanos() > nextNanos) {
                 sched.reason(reason);
 
                 sched.nextCpNanos(nextNanos);
@@ -1458,6 +1461,8 @@ public class Checkpointer extends GridWorker {
      */
     private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
         synchronized (this) {
+            chp.progress.clearCounters();
+
             for (DataRegion memPlc : dataRegions.get()) {
                 if (!memPlc.config().isPersistenceEnabled())
                     continue;

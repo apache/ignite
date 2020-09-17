@@ -36,9 +36,11 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -77,6 +80,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
+    /** Class name for a SQL view metrics exporter. */
+    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
+
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -238,7 +244,26 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param ctx Kernal context.
      */
     public GridMetricManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getMetricExporterSpi());
+        super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
+            MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
+
+            if (!IgniteComponentType.INDEXING.inClassPath())
+                return spi;
+
+            MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
+
+            if (!F.isEmpty(spi))
+                System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
+
+            try {
+                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return spiWithSql;
+        }).get());
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
