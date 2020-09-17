@@ -224,7 +224,7 @@ class DiscoveryTest(IgniteTest):
 
             self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
-def teardown(self):
+    def teardown(self):
         # Restore previous network filter settings.
         cmd = "sudo iptables-restore < " + self.NETFILTER_SAVED_SETTINGS
 
