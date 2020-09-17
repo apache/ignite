@@ -34,7 +34,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Attribute values for each row of the system view. */
-    private List<? extends List<?>> rows;
+    private List<List<?>> rows;
 
     /** Names of the system view attributes. */
     private List<String> attrs;
@@ -53,7 +53,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
      * @param attrs Names of system view attributes.
      * @param rows Attribute values for each row of the system view.
      */
-    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleAttributeType> types, List<? extends List<?>> rows) {
+    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleAttributeType> types, List<List<?>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;
@@ -69,7 +69,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /**
      * @return Attribute values for each row of the system view.
      */
-    public List<? extends List<?>> systemViewContent() {
+    public List<List<?>> systemViewContent() {
         return rows;
     }
 
@@ -104,7 +104,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
 
         int rowsCnt = in.readInt();
 
-        List<List<Object>> rows = new ArrayList<>(rowsCnt);
+        List<List<?>> rows = new ArrayList<>(rowsCnt);
 
         for (int i = 0; i < rowsCnt; i++)
             rows.add(U.readList(in));

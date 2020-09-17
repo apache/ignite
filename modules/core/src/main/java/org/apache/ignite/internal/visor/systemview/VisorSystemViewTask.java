@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -74,30 +73,15 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
         /** {@inheritDoc} */
         @Override protected VisorSystemViewTaskResult run(@Nullable VisorSystemViewTaskArg arg) throws IgniteException {
-            GridSystemViewManager sysViewMgr = ignite.context().systemView();
+            SystemView<?> sysView = systemView(arg.systemViewName());
 
-            String targetSysViewName = arg.systemViewName();
-
-            SystemView<?> targetSysView = sysViewMgr.view(targetSysViewName);
-
-            if (targetSysView == null) { // In this case we assume that the requested system view name is in SQL format.
-                for (SystemView<?> sysView : sysViewMgr) {
-                    if (toSqlName(sysView.name()).equals(targetSysViewName)) {
-                        targetSysView = sysView;
-
-                        break;
-                    }
-                }
-            }
-
-            if (targetSysView == null)
+            if (sysView == null)
                 return null;
 
             List<String> attrNames = new ArrayList<>();
-
             List<SimpleAttributeType> attrTypes = new ArrayList<>();
 
-            targetSysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
+            sysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
                 @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                     attrNames.add(name);
 
@@ -114,10 +98,10 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
             List<List<?>> rows = new ArrayList<>();
 
-            for (Object row : targetSysView) {
+            for (Object row : sysView) {
                 List<Serializable> attrVals = new ArrayList<>();
 
-                ((SystemView<Object>)targetSysView).walker().visitAll(row, new AttributeWithValueVisitor() {
+                ((SystemView<Object>)sysView).walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (clazz.isEnum())
                             attrVals.add(((Enum<?>)val).name());
@@ -170,6 +154,27 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
             }
 
             return new VisorSystemViewTaskResult(attrNames, attrTypes, rows);
+        }
+
+        /**
+         * Gets system view with specified name.
+         *
+         * @param name Name of system view. Both "SQL" and "Java" styles of name are suppurted.
+         * @return System view.
+         */
+        private SystemView<?> systemView(String name) {
+            GridSystemViewManager sysViewMgr = ignite.context().systemView();
+
+            SystemView<?> res = sysViewMgr.view(name);
+
+            if (res == null) { // In this case we assume that the requested system view name is in SQL format.
+                for (SystemView<?> sysView : sysViewMgr) {
+                    if (toSqlName(sysView.name()).equals(name))
+                        return sysView;
+                }
+            }
+
+            return res;
         }
     }
 

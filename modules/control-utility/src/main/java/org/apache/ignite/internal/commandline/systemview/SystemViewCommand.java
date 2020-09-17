@@ -103,8 +103,7 @@ public class SystemViewCommand implements Command<Object> {
      */
     private void printSystemViewContent(VisorSystemViewTaskResult taskRes, Logger log) {
         List<String> colTitles = taskRes.systemViewAttributes();
-
-        List<? extends List<?>> sysViewRows = taskRes.systemViewContent();
+        List<List<?>> sysViewRows = taskRes.systemViewContent();
 
         List<Integer> colLenghts = colTitles.stream().map(String::length).collect(Collectors.toList());
 
@@ -142,7 +141,6 @@ public class SystemViewCommand implements Command<Object> {
         Logger log
     ) {
         Iterator<SimpleAttributeType> typeIter = types.iterator();
-
         Iterator<Integer> lenIter = lengths.iterator();
 
         log.info(row.stream().map(colVal -> {
