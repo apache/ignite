@@ -83,6 +83,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -1142,7 +1143,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             if (stopping && !waiting) {
                 U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg
-                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
+                    + tryResolveTaskName(task));
 
                 return;
             }
@@ -1179,7 +1180,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             if (stopping && !waiting) {
                 U.warn(log, "Received task session request while stopping grid (will ignore): " + msg
-                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
+                    + tryResolveTaskName(task));
 
                 return;
             }
@@ -1224,7 +1225,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             if (stopping && !waiting) {
                 U.warn(log, "Attempt to cancel task while stopping grid (will ignore): " + sesId
-                    + (task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : ""));
+                    + tryResolveTaskName(task));
 
                 return;
             }
@@ -1441,9 +1442,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 if (stopping && !waiting) {
                     U.warn(log, "Received job siblings request while stopping grid (will ignore): " + msg
-                        + (worker != null && worker.getSession() != null
-                        ? (", " + worker.getSession().getTaskName())
-                        : ""));
+                        + tryResolveTaskName(worker));
 
                     return;
                 }
@@ -1518,9 +1517,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 if (stopping && !waiting) {
                     U.warn(log, "Received task cancel request while stopping grid (will ignore): " + msg
-                        + (gridTaskWorker != null && gridTaskWorker.getSession() != null
-                        ? (", " + gridTaskWorker.getSession().getTaskName())
-                        : ""));
+                        + tryResolveTaskName(gridTaskWorker));
 
                     return;
                 }
@@ -1538,5 +1535,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 lock.readUnlock();
             }
         }
+    }
+
+    /** Tries to get task name in appended form(after ', '). */
+    @NotNull private static String tryResolveTaskName(GridTaskWorker<?, ?> task) {
+        return task != null && task.getSession() != null ? (", " + task.getSession().getTaskName()) : "";
     }
 }
