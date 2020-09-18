@@ -66,13 +66,14 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -85,11 +86,12 @@ import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFOR
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -116,13 +118,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
-
-        SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
-
-        if (igniteInstanceName.endsWith("1"))
-            sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
-
-        cfg.setMetricExporterSpi(sqlSpi);
 
         return cfg;
     }
@@ -189,29 +184,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String attr : EXPECTED_ATTRIBUTES)
             assertTrue(attr + " should be exported via SQL view", names.contains(attr));
-    }
-
-    /** */
-    @Test
-    public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite1);
-
-        List<List<?>> res = execute(ignite1,
-            "SELECT name, value, description FROM SYS.METRICS " +
-                "WHERE name LIKE 'other.prefix%' OR name LIKE '" + FILTERED_PREFIX + "%'");
-
-        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
-            t("other.prefix.test", "42"),
-            t("other.prefix.test2", "43"),
-            t("other.prefix2.test3", "44")
-        ));
-
-        Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
-
-        for (List<?> row : res)
-            vals.add(t((String)row.get(0), (String)row.get(1)));
-
-        assertEquals(expVals, vals);
     }
 
     /** */
@@ -456,7 +428,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DATA_REGION_PAGE_LISTS",
             "CACHE_GROUP_PAGE_LISTS",
             "PARTITION_STATES",
-            "BINARY_METADATA"
+            "BINARY_METADATA",
+            "METASTORAGE",
+            "DISTRIBUTED_METASTORAGE"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -1119,6 +1093,58 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 assertTrue(meta.get(2).toString().contains("ACCOUNT"));
             }
         }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite0.context().cache().context().database();
+
+        SystemView<MetastorageView> metaStoreView = ignite0.context().systemView().view(METASTORE_VIEW);
+
+        assertNotNull(metaStoreView);
+
+        String name = "test-key";
+        String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            name, val).size());
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            unmarshalledName, unmarshalledVal).size());
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        DistributedMetaStorage dms = ignite0.context().distributedMetastorage();
+
+        SystemView<MetastorageView> distributedMetaStoreView = ignite0.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
+
+        assertNotNull(distributedMetaStoreView);
+
+        String name = "test-distributed-key";
+        String val = "test-distributed-value";
+
+        dms.write(name, val);
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?",
+            name, val).size());
+
+        assertTrue(waitForCondition(() -> execute(ignite1,
+            "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?", name, val).size() == 1,
+            getTestTimeout()));
     }
 
     /**

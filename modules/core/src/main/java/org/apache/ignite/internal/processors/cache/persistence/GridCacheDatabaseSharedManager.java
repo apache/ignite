@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -63,6 +64,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -155,6 +158,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.transactions.TransactionState;
@@ -163,6 +167,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Objects.nonNull;
+import static java.util.function.Function.identity;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
@@ -190,16 +195,25 @@ import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** */
+    @SystemProperty(value = "Sets the flag controlling if the I/O sync needs to be skipped on a checkpoint")
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
-    /** */
+    /** Skip checkpoint on node stop flag. */
+    @SystemProperty(value = "Sets the flag controlling of a checkpoint needs to be skipped during a node termination")
     public static final String IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP = "IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP";
 
     /** Log read lock holders. */
+    @SystemProperty(value = "Enables log checkpoint read lock holders")
     public static final String IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS = "IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS";
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
+
+    /** Name of the system view for a system {@link MetaStorage}. */
+    public static final String METASTORE_VIEW = "metastorage";
+
+    /** Description of the system view for a {@link MetaStorage}. */
+    public static final String METASTORE_VIEW_DESC = "Local metastorage data";
 
     /**
      * Threshold to calculate limit for pages list on-heap caches.
@@ -214,8 +228,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 0.1;
 
+    /** @see IgniteSystemProperties#IGNITE_PDS_WAL_REBALANCE_THRESHOLD */
+    public static final int DFLT_PDS_WAL_REBALANCE_THRESHOLD = 500;
+
     /** */
-    private final int walRebalanceThreshold = getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500);
+    private final int walRebalanceThreshold =
+        getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
     /** Prefer historical rebalance flag. */
     private final boolean preferWalRebalance = getBoolean(IGNITE_PREFER_WAL_REBALANCE);
@@ -386,6 +404,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public FilePageStoreManager getFileStoreManager() {
         return storeMgr;
+    }
+
+    /** Registers system view. */
+    private void registerSystemView() {
+        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), () -> {
+                try {
+                    List<MetastorageView> data = new ArrayList<>();
+
+                    metaStorage.iterate("", (key, valBytes) -> {
+                        try {
+                            Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
+
+                            data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
+                        }
+                        catch (IgniteCheckedException ignored) {
+                            data.add(new MetastorageView(key, "[Raw data. " + (((byte[])valBytes).length + " bytes]")));
+                        }
+                    }, false);
+
+                    return data;
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Metastore iteration error", e);
+
+                    return Collections.emptyList();
+                }
+            }, identity());
     }
 
     /** */
@@ -756,6 +802,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fillWalDisabledGroups();
 
                 cpHist.initialize(retreiveHistory());
+
+                registerSystemView();
 
                 notifyMetastorageReadyForRead();
             }

@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -125,8 +126,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     public static final String JOBS_VIEW_DESC = "Running compute jobs, part of compute task started on remote host.";
 
+    /** @see IgniteSystemProperties#IGNITE_JOBS_HISTORY_SIZE */
+    public static final int DFLT_JOBS_HISTORY_SIZE = 10240;
+
     /** */
-    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
+    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, DFLT_JOBS_HISTORY_SIZE);
 
     /** Metrics prefix. */
     public static final String JOBS_METRICS = metricName("compute", "jobs");

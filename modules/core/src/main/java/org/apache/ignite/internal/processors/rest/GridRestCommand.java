@@ -217,7 +217,13 @@ public enum GridRestCommand {
     DATA_REGION_METRICS("dataregion"),
 
     /** Data storage metrics. */
-    DATA_STORAGE_METRICS("datastorage");
+    DATA_STORAGE_METRICS("datastorage"),
+
+    /** Node state before its start. */
+    NODE_STATE_BEFORE_START("nodestatebeforestart"),
+
+    /** Warm-up. */
+    WARM_UP("warmup");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

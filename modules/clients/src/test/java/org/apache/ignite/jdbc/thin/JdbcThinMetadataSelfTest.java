@@ -49,7 +49,6 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,9 +81,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            )
-            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
     }
 
     /**
@@ -444,7 +441,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUP_PAGE_LISTS",
                 "SYS.DATA_REGION_PAGE_LISTS",
                 "SYS.PARTITION_STATES",
-                "SYS.BINARY_METADATA"
+                "SYS.BINARY_METADATA",
+                "SYS.DISTRIBUTED_METASTORAGE"
             ))
         );
     }
@@ -996,7 +994,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.BINARY_METADATA.TYPE_ID.null.10",
                 "SYS.BINARY_METADATA.IS_ENUM.null.1",
                 "SYS.BINARY_METADATA.FIELDS_COUNT.null.10",
-                "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647"
+                "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
@@ -1363,6 +1363,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
             assertEquals("Unexpected ignite driver version.",
                 conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 

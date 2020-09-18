@@ -164,9 +164,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partition state failed message. */
     public static final String PARTITION_STATE_FAILED_MSG = "Partition states validation has failed for group: %s, msg: %s";
 
+    /** @see IgniteSystemProperties#IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD */
+    public static final int DFLT_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD = 0;
+
     /** */
-    private static final int RELEASE_FUTURE_DUMP_THRESHOLD =
-        IgniteSystemProperties.getInteger(IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, 0);
+    private static final int RELEASE_FUTURE_DUMP_THRESHOLD = IgniteSystemProperties.getInteger(
+        IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, DFLT_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD);
 
     /** */
     private static final IgniteProductVersion FORCE_AFF_REASSIGNMENT_SINCE = IgniteProductVersion.fromString("2.4.3");
@@ -183,6 +186,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     private static final String EXCHANGE_FREE_LATCH_ID = "exchange-free";
+
+    /** @see IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT */
+    public static final int DFLT_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = 30 * 60_000;
 
     /** */
     @GridToStringExclude
@@ -2462,7 +2468,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
                         continue;
 
-                    cacheCtx.continuousQueries().flushBackupQueue(res);
+                    cacheCtx.continuousQueries().flushOnExchangeDone(res);
                 }
             }
 
@@ -5633,10 +5639,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return Time to wait before next debug dump.
      */
     public static long nextDumpTimeout(int step, long timeout) {
-        long limit = getLong(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT, 30 * 60_000);
+        long limit = getLong(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT, DFLT_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT);
 
         if (limit <= 0)
-            limit = 30 * 60_000;
+            limit = DFLT_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
 
         assert step >= 0 : step;
 

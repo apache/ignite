@@ -187,15 +187,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** @see IgniteSystemProperties#IGNITE_CACHE_START_SIZE */
+    public static final int DFLT_CACHE_START_SIZE = 4096;
+
     /** Default cache start size. */
     public static final int DFLT_START_CACHE_SIZE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_CACHE_START_SIZE, 4096);
+        IgniteSystemProperties.IGNITE_CACHE_START_SIZE, DFLT_CACHE_START_SIZE);
 
     /** Size of keys batch to removeAll. */
     private static final int REMOVE_ALL_KEYS_BATCH = 10000;
 
+    /** @see IgniteSystemProperties#IGNITE_CACHE_RETRIES_COUNT */
+    public static final int DFLT_CACHE_RETRIES_COUNT = 100;
+
     /** Maximum number of retries when topology changes. */
-    public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+    public static final int MAX_RETRIES =
+        IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, DFLT_CACHE_RETRIES_COUNT);
 
     /** Minimum version supporting partition preloading. */
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");

@@ -88,8 +88,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** */
     private static final GridCacheMapEntryFactory ENTRY_FACTORY = GridDhtCacheEntry::new;
 
+    /** @see IgniteSystemProperties#IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE */
+    public static final int DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE = 200_000;
+
     /** Maximum size for delete queue. */
-    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
+    public static final int MAX_DELETE_QUEUE_SIZE =
+        Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
+
+    /** @see IgniteSystemProperties#IGNITE_CACHE_REMOVED_ENTRIES_TTL */
+    public static final int DFLT_CACHE_REMOVE_ENTRIES_TTL = 10_000;
 
     /** ONLY FOR TEST PURPOSES: force test checkpoint on partition eviction. */
     private static boolean forceTestCheckpointOnEviction = IgniteSystemProperties.getBoolean("TEST_CHECKPOINT_ON_EVICTION", false);
@@ -202,7 +209,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         rmvQueueMaxSize = U.ceilPow2(delQueueSize);
 
-        rmvdEntryTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000);
+        rmvdEntryTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, DFLT_CACHE_REMOVE_ENTRIES_TTL);
 
         try {
             store = grp.offheap().createCacheDataStore(id);

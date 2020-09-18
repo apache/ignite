@@ -32,11 +32,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
+import org.apache.ignite.internal.managers.systemview.SystemViewMBean;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.systemview.SystemViewLocal;
-import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
@@ -46,6 +45,7 @@ import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
@@ -72,7 +72,6 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
  * Generated code used in {@link SystemView}.
  *
  * @see SystemViewMBean
- * @see SystemViewLocal
  */
 public class SystemViewRowAttributeWalkerGenerator {
     /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */
@@ -108,6 +107,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PartitionStateView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(BinaryMetadataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetastorageView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);

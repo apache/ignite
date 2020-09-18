@@ -62,6 +62,8 @@ import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -78,6 +80,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** History size for to track stale messages. */
     private static final int HIST_SIZE = 1000;
+
+    /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING */
+    public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
 
     /** ID history for discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<T2<UUID, Boolean>> discoMsgIdHist =
@@ -406,8 +411,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void disableGroupDurabilityForPreloading(GridDhtPartitionsExchangeFuture fut) {
         if (fut.changedBaseline()
-            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
-            || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
+            && IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED)
+            || !IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, DFLT_DISABLE_WAL_DURING_REBALANCING))
             return;
 
         Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();

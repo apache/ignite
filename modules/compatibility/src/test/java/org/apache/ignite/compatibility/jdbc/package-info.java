@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. -->
- * Contains SQL view exporter implementation for {@link org.apache.ignite.spi.systemview.view.SystemView}.
+ * Contains compatibility tests related to JDBC.
  */
-package org.apache.ignite.spi.systemview;
+
+package org.apache.ignite.compatibility.jdbc;

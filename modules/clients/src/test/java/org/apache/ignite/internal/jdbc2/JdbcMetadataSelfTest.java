@@ -346,7 +346,9 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "DATASTREAM_THREADPOOL_QUEUE",
             "CACHE_GROUP_PAGE_LISTS",
             "PARTITION_STATES",
-            "BINARY_METADATA"
+            "BINARY_METADATA",
+            "DISTRIBUTED_METASTORAGE",
+            "METRICS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -446,6 +448,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
             assertIsEmpty(meta.getSchemas(invalidCat, null));
             assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 
