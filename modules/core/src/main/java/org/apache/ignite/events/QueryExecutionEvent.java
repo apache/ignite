@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,6 +73,10 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
     @GridToStringInclude
     private final Object[] args;
 
+    /** Scan query filter. */
+    @GridToStringInclude
+    private final IgniteBiPredicate<K, V> scanQryFilter;
+
     /** Security subject ID. */
     private final UUID subjId;
 
@@ -91,6 +96,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
         String qryType,
         @Nullable String clause,
         @Nullable Object[] args,
+        @Nullable IgniteBiPredicate<K, V> scanQryFilter,
         @Nullable UUID subjId
     ) {
         super(node, msg, type);
@@ -100,6 +106,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
         this.qryType = qryType;
         this.clause = clause;
         this.args = args;
+        this.scanQryFilter = scanQryFilter;
         this.subjId = subjId;
     }
 
@@ -122,6 +129,17 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
      */
     @Nullable public String clause() {
         return clause;
+    }
+
+    /**
+     * Gets scan query filter.
+     * <p>
+     * Applicable for {@code scan} queries.
+     *
+     * @return Scan query filter.
+     */
+    @Nullable public IgniteBiPredicate<K, V> scanQueryFilter() {
+        return scanQryFilter;
     }
 
     /**

@@ -1549,7 +1549,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testClientQueryExecutedEvents() throws Exception {
-        CountDownLatch execLatch = new CountDownLatch(9);
+        CountDownLatch execLatch = new CountDownLatch(10);
 
         IgnitePredicate<Event> lsnr = evt -> {
             assert evt instanceof QueryExecutionEvent;
@@ -1558,7 +1558,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             QueryExecutionEvent qe = (QueryExecutionEvent)evt;
 
-            assertNotNull(qe.clause());
+            if (SCAN.name().equals(qe.queryType()))
+                assertNull(qe.clause());
+            else
+                assertNotNull(qe.clause());
 
             execLatch.countDown();
 
@@ -1595,6 +1598,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 .getAll();
 
             client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
+                .getAll();
+
+            client.createCache("CACHE_NAME").query(new ScanQuery<>())
                 .getAll();
 
             assert execLatch.await(3_000, MILLISECONDS);

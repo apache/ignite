@@ -1096,6 +1096,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         CacheQueryType.SQL_FIELDS.name(),
                         newQryDesc.sql(),
                         newQryParams.arguments(),
+                        null,
                         ctx.localNodeId()));
                 }
 
