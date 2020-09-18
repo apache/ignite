@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyComma
 import org.apache.ignite.internal.processors.rest.handlers.user.UserActionCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol;
+import org.apache.ignite.internal.processors.rest.request.GridRestAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBeforeStartRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -235,7 +236,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             if (startLatch.getCount() == 0)
                 return new GridFinishedFuture<>(new IgniteCheckedException("Node has already started."));
         }
-        else if (startLatch.getCount() > 0) {
+        else if (!(req instanceof GridRestAuthenticationRequest) && startLatch.getCount() > 0) {
             try {
                 startLatch.await();
             }
