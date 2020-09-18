@@ -515,17 +515,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         Collection<ClusterNode> nodes;
 
+        GridKernalContext ctx = cctx.kernalContext();
+
         try {
             nodes = nodes();
         }
         catch (IgniteCheckedException e) {
-            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
+            return new GridCacheQueryErrorFuture<>(ctx, e);
         }
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty())
-            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
+            return new GridCacheQueryErrorFuture<>(ctx, new ClusterGroupEmptyCheckedException());
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
@@ -536,14 +538,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 cctx.deploy().registerClasses(args);
             }
             catch (IgniteCheckedException e) {
-                return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
+                return new GridCacheQueryErrorFuture<>(ctx, e);
             }
         }
 
         if (subjId == null)
             subjId = cctx.localNodeId();
 
-        taskHash = cctx.kernalContext().job().currentTaskNameHash();
+        taskHash = ctx.job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
             null, args);
@@ -552,11 +554,24 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == SQL_FIELDS || type == SPI)
-            return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
+        if (type == SQL_FIELDS || type == SPI) {
+            return (CacheQueryFuture<R>) (loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
-        else
-            return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+        } else {
+            if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
+                ctx.event().record(new QueryExecutionEvent<>(
+                    ctx.discovery().localNode(),
+                    bean.query().type().name() + " query execution.",
+                    EVT_QUERY_EXECUTION,
+                    bean.query().type().name(),
+                    bean.query().clause(),
+                    bean.arguments(),
+                    bean.query().scanFilter(),
+                    bean.query().subjectId()));
+            }
+
+            return (CacheQueryFuture<R>) (loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+        }
     }
 
     /** {@inheritDoc} */
