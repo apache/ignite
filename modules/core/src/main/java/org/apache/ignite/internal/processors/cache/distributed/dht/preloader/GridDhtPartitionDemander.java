@@ -1143,9 +1143,6 @@ public class GridDhtPartitionDemander {
         /** The number of cache group partitions left to be rebalanced. */
         private final AtomicLong partitionsLeft = new AtomicLong(0);
 
-        /** The total number of cache group partitions to be rebalanced. */
-        private final AtomicLong partitionsTotal = new AtomicLong(0);
-
         /** Rebalancing start time. */
         private volatile long startTime = -1;
 
