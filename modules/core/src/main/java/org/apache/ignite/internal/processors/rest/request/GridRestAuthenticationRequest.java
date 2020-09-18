@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-/**
- *
- */
+package org.apache.ignite.internal.processors.rest.request;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * <!-- Package description. -->
- * Contains Sql view metric exporter implementation.
+ * Grid authentication request.
  */
-package org.apache.ignite.spi.metric.sql;
+public class GridRestAuthenticationRequest extends GridRestTaskRequest {
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestAuthenticationRequest.class, this, super.toString());
+    }
+}
