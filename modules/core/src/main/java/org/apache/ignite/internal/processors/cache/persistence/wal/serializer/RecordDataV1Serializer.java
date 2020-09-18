@@ -687,7 +687,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 entries = new ArrayList<>(entryCnt);
 
-                // todo
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readEncryptedDataEntry(in, type == ENCRYPTED_DATA_RECORD_V2));
 
