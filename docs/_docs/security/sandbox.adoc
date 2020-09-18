@@ -8,15 +8,15 @@ To restrict user-defined code options you may use the Ignite Sandbox based on th
 
 You can read about the Java Sandbox model link:https://docs.oracle.com/en/java/javase/11/security/java-se-platform-security-architecture.html#GUID-C203D80F-C730-45C3-AB95-D4E61FD6D89C[here,window=_blank].
 
-== The Ignite Sandbox activation
+== Ignite Sandbox activation
 
-There are a few conditions to activate the Ignite Sandbox.
+There are some conditions to activate the Ignite Sandbox.
 
 - The first condition is _the SecurityManager must be installed_.
 
-Due to the Ignite Sandbox is based on the Java Sandbox model, you need to have installed the SecurityManager that is an important part of that model.
-The SecurityManager is responsible for checking the security policy currently in effect and perform access control checks.
-A security manager is not automatically installed when an application is running. If you run Ignite as a separate application,
+Due to the fact, that Ignite Sandbox is based on the Java Sandbox model, and the SecurityManager is an important part of that model, you need to have it installed.
+The SecurityManager is responsible for checking, which security policy is currently in effect. It also performs access control checks.
+The security manager is not automatically installed when an application is running. If you run Ignite as a separate application,
 you must invoke the Java Virtual Machine with the `-Djava.security.manager` command-line argument (which sets the value of the `java.security.manager property`).
 There is also a `-Djava.security.policy` command-line argument whose usage determines what policy files are utilized.
 If you don't include `-Djava.security.policy` on the command line, then the policy files specified in the security properties file will be used.
@@ -33,9 +33,9 @@ but you should remember about the "giving permissions as low as possible" securi
 - The second condition to activate the Ignite Sandbox is _an implementation of the `GridSecurityProcessor` interface must be installed_.
 
 Currently, the Apache Ignite does not provide an implementation of the `GridSecurityProcessor` interface out-of-the-box.
-But, you can implement this interface as part of link:/plugins[a custom plugin].
+But, you can implement this interface as a part of link:/plugins[a custom plugin].
 
-The `GridSecurityProcessor` interface has the `sandboxEnabled` method that manages a user-defined code executing inside the Ignite Sandbox.
+The `GridSecurityProcessor` interface has the `sandboxEnabled` method that manages a user-defined code execution inside the Ignite Sandbox.
 By default, this method returns `false`, which means no-sandbox.
 If you are going to use the Ignite Sandbox, your overridden `sandboxEnabled` method should return `true`.
 
@@ -62,18 +62,18 @@ an AcccessControlException appears.
 IgniteCompute compute = Ignition.ignite().compute();
 
 compute.broadcast(() -> {
-    // If the Ignite Sandbox is turned on, the lambda code executes with restrictions.
+    // If the Ignite Sandbox is turned on, the lambda code is executed with restrictions.
 
     // You can use the public API of Ignite without granting any permissions.
     Ignition.localIgnite().cache("some.cache").get("key");
 
     // If the current security subject doesn't have the java.util.PropertyPermission("secret.property", "read") permission,
-    // an java.security.AccessControlException appears here.
+    // a java.security.AccessControlException appears here.
     System.getProperty("secret.property");
 });
 ----
 
-In the case of accessing to the system property shown in the snippet above, you can see the following trace line with an exception:
+In the case of accessing the system property shown in the snippet above, you can see the following trace line with an exception:
 [source,text]
 ----
 java.security.AccessControlException: access denied ("java.util.PropertyPermission" "secret.property" "read")
