@@ -462,6 +462,8 @@ public class CommandHandlerParsingTest {
                 case WARM_UP: {
                     args = parseArgs(asList(cmdL.text(), "--stop", "--yes"));
 
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
                     break;
                 }
 
