@@ -1091,7 +1091,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
                     ctx.event().record(new QueryExecutionEvent<>(
                         ctx.discovery().localNode(),
-                        CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                        CacheQueryType.SQL_FIELDS.name() + " query execution.",
                         EVT_QUERY_EXECUTION,
                         CacheQueryType.SQL_FIELDS.name(),
                         newQryDesc.sql(),

@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class QueryExecutionEvent<K, V> extends EventAdapter {
     /** */
-    private static final long serialVersionUID = 3738753361235304496L;
+    private static final long serialVersionUID = 0L;
 
     /** Query type. */
     private final String qryType;
