@@ -27,6 +27,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -36,12 +37,15 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
@@ -94,6 +98,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /** */
@@ -377,14 +386,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         String errMsg = "Failed to create defragmentation completion marker.";
 
+        AtomicBoolean errOccurred = new AtomicBoolean();
+
         UnaryOperator<IgniteConfiguration> cfgOp = cfg -> {
             DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
             FileIOFactory delegate = dsCfg.getFileIOFactory();
 
             dsCfg.setFileIOFactory((file, modes) -> {
-                if (file.equals(defragmentationCompletionMarkerFile(workDir)))
+                if (file.equals(defragmentationCompletionMarkerFile(workDir))) {
+                    errOccurred.set(true);
+
                     throw new IOException(errMsg);
+                }
 
                 return delegate.create(file, modes);
             });
@@ -392,9 +406,21 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             return cfg;
         };
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfgOp), IOException.class, errMsg);
+        try {
+            startGrid(0, cfgOp);
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
 
-        assertEquals(0, G.allGrids().size());
+        // Failed node can leave interrupted status of the thread that needs to be cleared,
+        // otherwise following "wait" wouldn't work.
+        // This call can't be moved inside of "catch" block because interruption can actually be silent.
+        Thread.interrupted();
+
+        assertTrue(GridTestUtils.waitForCondition(errOccurred::get, 3_000L));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 3_000L));
 
         c.accept(workDir);
 
@@ -485,15 +511,21 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** */
     protected <T> void fillCache(Function<Integer, T> keyMapper, IgniteCache<T, Object> cache) {
-        for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
-            byte[] val = new byte[8192];
-            new Random().nextBytes(val);
+        try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
+            for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+                byte[] val = new byte[8192];
+                new Random().nextBytes(val);
 
-            cache.put(keyMapper.apply(i), val);
+                ds.addData(keyMapper.apply(i), val);
+            }
         }
 
-        for (int i = 0; i < ADDED_KEYS_COUNT / 2; i++)
-            cache.remove(keyMapper.apply(i * 2));
+        try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
+            ds.allowOverwrite(true);
+
+            for (int i = 0; i < ADDED_KEYS_COUNT / 2; i++)
+                ds.removeData(keyMapper.apply(i * 2));
+        }
     }
 
     /** */

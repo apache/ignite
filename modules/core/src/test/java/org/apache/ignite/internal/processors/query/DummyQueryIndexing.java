@@ -335,9 +335,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         return null;
     }
 
-    @Override
-    public GridQueryIndexingDefragmentation defragmentator() {
+    /** {@inheritDoc} */
+    @Override public GridQueryIndexingDefragmentation defragmentator() {
         return null;
     }
-
 }

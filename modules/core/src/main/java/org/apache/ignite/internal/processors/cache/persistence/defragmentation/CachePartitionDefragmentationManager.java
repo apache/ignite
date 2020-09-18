@@ -23,11 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -61,6 +64,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -129,6 +133,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
+    //TODO How will we handle constant fail and restart scenario?
     public void executeDefragmentation() throws IgniteCheckedException {
         int pageSize = sharedCtx.gridConfig().getDataStorageConfiguration().getPageSize();
 
@@ -141,6 +146,9 @@ public class CachePartitionDefragmentationManager {
 
             DataRegion partRegion = defrgCtx.partitionsDataRegion();
 
+            IgniteInternalFuture<?> idxDfrgFut = null;
+            DataPageEvictionMode prevPageEvictionMode = null;
+
             for (int grpId : defrgCtx.groupIdsForDefragmentation()) {
                 File workDir = defrgCtx.workDirForGroupId(grpId);
 
@@ -151,6 +159,19 @@ public class CachePartitionDefragmentationManager {
 
                 if (workDir != null && parts != null) {
                     CacheGroupContext oldGrpCtx = defrgCtx.groupContextByGroupId(grpId);
+
+                    // We can't start defragmentation of new group on the region that has wrong eviction mode.
+                    // So waiting of the previous cache group defragmentation is inevitable.
+                    DataPageEvictionMode curPageEvictionMode = oldGrpCtx.dataRegion().config().getPageEvictionMode();
+
+                    if (prevPageEvictionMode == null || prevPageEvictionMode != curPageEvictionMode) {
+                        prevPageEvictionMode = curPageEvictionMode;
+
+                        partRegion.config().setPageEvictionMode(curPageEvictionMode);
+
+                        if (idxDfrgFut != null)
+                            idxDfrgFut.get();
+                    }
 
                     GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
 
@@ -179,8 +200,6 @@ public class CachePartitionDefragmentationManager {
                     // WAL records will be allocated anyway just to be ignored later if we don't disable WAL for
                     // cache group explicitly.
                     oldGrpCtx.localWalEnabled(false, false);
-
-                    partRegion.config().setPageEvictionMode(oldGrpCtx.dataRegion().config().getPageEvictionMode());
 
                     boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
 
@@ -280,6 +299,8 @@ public class CachePartitionDefragmentationManager {
                     // A bit too general for now, but I like it more then saving only the last checkpoint future.
                     cmpFut.markInitialized().get();
 
+                    idxDfrgFut = new GridFinishedFuture<>();
+
                     if (sharedCtx.pageStore().hasIndexStore(grpId)) {
                         sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
 
@@ -290,22 +311,33 @@ public class CachePartitionDefragmentationManager {
                             sharedCtx.database().checkpointReadUnlock();
                         }
 
-                        sharedCtx.database()
-                            .forceCheckpoint("index") //TODO Provide a good reason.
-                            .futureFor(CheckpointState.FINISHED).get();
+                        idxDfrgFut = sharedCtx.database()
+                            .forceCheckpoint("index defragmented") //TODO Provide a good reason.
+                            .futureFor(CheckpointState.FINISHED);
                     }
 
-                    oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
-                    ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                    idxDfrgFut.listen(fut -> {
+                        oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                        ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
-                    renameTempIndexFile(workDir);
+                        renameTempIndexFile(workDir);
 
-                    writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+                        try {
+                            writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
 
-                    batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+                            batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
 
-                    defrgCtx.onCacheGroupDefragmented(grpId);
+                        defrgCtx.onCacheGroupDefragmented(grpId);
+                    });
                 }
+
+                // I guess we should wait for it?
+                if (idxDfrgFut != null)
+                    idxDfrgFut.get();
             }
 
             mntcReg.clearMaintenanceRecord(DEFRAGMENTATION_MNTC_RECORD_ID);
@@ -744,7 +776,7 @@ public class CachePartitionDefragmentationManager {
 
         /** */
         public long getTotalDuration() {
-            heartbeat();
+            heartbeat(); //?
 
             return U.nanosToMillis(totalDuration.get());
         }
@@ -754,5 +786,11 @@ public class CachePartitionDefragmentationManager {
     public static class CacheGroupDefragmentationStatus {
 
 
+    }
+
+    /** */
+    private static class DefragmentationCancelledException extends Exception {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
     }
 }
