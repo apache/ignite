@@ -164,7 +164,8 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");
 
-        mreg.register("RebalancingPartitionsTotal", () -> rebalanceFut.partitionsTotal.get(),
+        mreg.register("RebalancingPartitionsTotal",
+            () -> rebalanceFut.rebalancingParts.values().stream().mapToInt(Set::size).sum(),
             "The total number of cache group partitions to be rebalanced.");
 
         mreg.register("RebalancingReceivedKeys", () -> rebalanceFut.receivedKeys.get(),
@@ -1198,7 +1199,8 @@ public class GridDhtPartitionDemander {
         ) {
             assert assignments != null : "Asiignments must not be null.";
 
-            this.rebalancingParts = U.newHashMap(assignments.size());
+            Map<UUID, Set<Integer>> parts = U.newHashMap(assignments.size());
+
             this.assignments = assignments;
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
@@ -1213,11 +1215,9 @@ public class GridDhtPartitionDemander {
 
                 remaining.put(k.id(), v.partitions());
 
-                int size = v.partitions().size();
-                partitionsLeft.addAndGet(size);
-                partitionsTotal.addAndGet(size);
+                partitionsLeft.addAndGet(v.partitions().size());
 
-                rebalancingParts.put(k.id(), new HashSet<Integer>(v.partitions().size()) {{
+                parts.put(k.id(), new HashSet<Integer>(v.partitions().size()) {{
                     addAll(v.partitions().historicalSet());
                     addAll(v.partitions().fullSet());
                 }});
@@ -1242,6 +1242,8 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = rebalanceId;
 
             ctx = grp.shared();
+
+            rebalancingParts = Collections.unmodifiableMap(parts);
 
             cancelLock = new ReentrantReadWriteLock();
         }
