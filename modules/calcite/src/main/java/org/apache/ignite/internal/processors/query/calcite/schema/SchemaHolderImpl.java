@@ -21,24 +21,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
@@ -53,6 +57,67 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private volatile SchemaPlus calciteSchema;
+
+    /** */
+    private static class AffinityIdentity {
+        /** */
+        private final Class<?> affFuncCls;
+
+        /** */
+        private final int backups;
+
+        /** */
+        private final int partsCnt;
+
+        /** */
+        private final Class<?> filterCls;
+
+        /** */
+        private final int hash;
+
+        public AffinityIdentity(AffinityFunction aff, int backups, IgnitePredicate<ClusterNode> nodeFilter) {
+            affFuncCls = aff.getClass();
+
+            this.backups = backups;
+
+            partsCnt = aff.partitions();
+
+            filterCls = nodeFilter == null ? CacheConfiguration.IgniteAllNodesPredicate.class : nodeFilter.getClass();
+
+            int hash = backups;
+            hash = 31 * hash + affFuncCls.hashCode();
+            hash = 31 * hash + filterCls.hashCode();
+            hash = 31 * hash + partsCnt;
+
+            this.hash = hash;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return hash;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (o == this)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            AffinityIdentity identity = (AffinityIdentity)o;
+
+            return backups == identity.backups &&
+                affFuncCls == identity.affFuncCls &&
+                filterCls == identity.filterCls &&
+                partsCnt == identity.partsCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AffinityIdentity.class, this);
+        }
+    }
 
     /**
      * @param ctx Kernal context.
@@ -103,39 +168,27 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     @Override public synchronized void onSqlTypeCreate(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo,
-        GridIndex<?> pk) {
+        GridCacheContextInfo<?, ?> cacheInfo) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         String tblName = typeDesc.tableName();
 
         TableDescriptorImpl desc =
-            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
+            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo.config()));
 
         RelCollation pkCollation = RelCollations.EMPTY;
 
         IgniteTable tbl = new IgniteTableImpl(desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
-        tbl.addIndex(pkIdx);
-
-        if (desc.keyField() != QueryUtils.KEY_COL) {
-            RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
-
-            IgniteIndex pkAliasIdx =
-                new IgniteIndex(pkAliasCollation, IgniteTableImpl.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
-
-            tbl.addIndex(pkAliasIdx);
-        }
-
         rebuild();
     }
 
     /** */
-    private static Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
-        return cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
-            cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
+    private static Object affinityIdentity(CacheConfiguration<?,?> ccfg) {
+        if (ccfg.getCacheMode() == CacheMode.PARTITIONED)
+            return new AffinityIdentity(ccfg.getAffinity(), ccfg.getBackups(), ccfg.getNodeFilter());
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -152,7 +205,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, GridIndex<?> gridIdx) {
+        GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 

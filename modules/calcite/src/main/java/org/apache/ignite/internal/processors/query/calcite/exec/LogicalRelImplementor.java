@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -224,11 +225,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RexNode> upperCond = rel.upperIndexCondition();
         Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
 
-        IgniteTable tbl = rel.igniteTable();
-
-        IgniteIndex idx = tbl.getIndex(rel.indexName());
-
+        IgniteIndex idx = rel.getTable().unwrap(IgniteTable.class).getIndex(rel.indexName());
         Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper);
+
+        return new ScanNode<>(ctx, rowsIter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteTableScan rel) {
+        RexNode condition = rel.condition();
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        Iterable<Row> rowsIter = tbl.scan(ctx, filters);
 
         return new ScanNode<>(ctx, rowsIter);
     }

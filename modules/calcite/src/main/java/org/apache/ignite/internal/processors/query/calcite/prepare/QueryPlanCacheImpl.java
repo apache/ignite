@@ -110,7 +110,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, GridIndex idx) {
+        GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
         clear();
     }
 
@@ -126,7 +126,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk) {
+        GridCacheContextInfo<?, ?> cacheInfo) {
         // No-op
     }
 }

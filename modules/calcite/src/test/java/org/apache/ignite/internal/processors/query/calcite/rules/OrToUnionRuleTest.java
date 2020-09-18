@@ -188,7 +188,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "WHERE cat_id > 1 " +
             "OR subcat_id < 10")
             .matches(not(containsUnion(true)))
-            .matches(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(containsScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -229,7 +229,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "WHERE name = 'Canon' " +
             "OR name = 'Sony'")
             .matches(not(containsUnion(true)))
-            .matches(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(containsScan("PUBLIC", "PRODUCTS"))
             .returns(7, "Video", 1, null, 0, "Canon")
             .check();
     }

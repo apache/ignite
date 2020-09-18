@@ -22,19 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -45,10 +41,13 @@ import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -64,19 +63,10 @@ import static java.util.Collections.singletonList;
  */
 public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** */
-    public static final String PK_INDEX_NAME = "PK";
-
-    /** */
-    public static final String PK_ALIAS_INDEX_NAME = "PK_ALIAS";
-
-    /** */
     private final TableDescriptor desc;
 
     /** */
     private final Statistic statistic;
-
-    /** */
-    private final List<RelCollation> collations;
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
@@ -88,7 +78,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
      */
     public IgniteTableImpl(TableDescriptor desc, RelCollation collation) {
         this.desc = desc;
-        collations = toCollations(collation);
         statistic = new StatisticsImpl();
     }
 
@@ -109,26 +98,27 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(RelOptTable.ToRelContext ctx, RelOptTable relOptTbl) {
-        RelOptCluster cluster = ctx.getCluster();
+    @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
+        RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
+            .replace(distribution())
+            .replace(RewindabilityTrait.REWINDABLE);
 
-        return toRel(cluster, relOptTbl, PK_INDEX_NAME);
+        return new IgniteTableScan(cluster, traitSet, relOptTbl, null);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(distribution())
-            .replace(RewindabilityTrait.REWINDABLE);
-
-        IgniteIndex idx = getIndex(idxName);
-
-        if (idx == null)
-            return null;
-
-        traitSet = traitSet.replace(idx.collation());
+            .replace(RewindabilityTrait.REWINDABLE)
+            .replace(getIndex(idxName).collation());
 
         return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+        return new TableScan<>(execCtx, desc, filter);
     }
 
     /** {@inheritDoc} */
@@ -158,11 +148,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public List<RelCollation> collations() {
-        return collations;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Map<String, IgniteIndex> indexes() {
         return indexes;
@@ -184,21 +169,11 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aCls) {
         if (aCls.isInstance(desc))
             return aCls.cast(desc);
 
         return super.unwrap(aCls);
-    }
-
-    /** */
-    private List<RelCollation> toCollations(RelCollation collation) {
-        return collation == null || collation.getFieldCollations().isEmpty() ? emptyList() : singletonList(collation);
     }
 
     /** */
@@ -280,7 +255,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
-            return 1000d;
+            return 1000d;  // TODO
         }
 
         /** {@inheritDoc} */
@@ -300,7 +275,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
         /** {@inheritDoc} */
         @Override public List<RelCollation> getCollations() {
-            return collations();
+            return ImmutableList.of(); // The method isn't used
         }
 
         /** {@inheritDoc} */

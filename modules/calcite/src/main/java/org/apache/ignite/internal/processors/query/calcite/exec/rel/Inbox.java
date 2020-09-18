@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -345,7 +344,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
             checkState();
 
             if (getOrCreateBuffer(nodeId).check() != State.END)
-                onError(new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']'));
+                onError(new ClusterTopologyCheckedException("Failed to execute query, node left [nodeId=" + nodeId + ']'));
         }
         catch (Exception e) {
             onError(e);
@@ -355,7 +354,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private void checkNode(UUID nodeId) throws ClusterTopologyCheckedException {
         if (!exchange.alive(nodeId))
-            throw new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']');
+            throw new ClusterTopologyCheckedException("Failed to execute query, node left [nodeId=" + nodeId + ']');
     }
 
     /** */

@@ -29,7 +29,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.BuiltInMethod;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.FilterableTableScan;
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -41,7 +41,7 @@ public class IgniteMdPredicates extends RelMdPredicates {
     /**
      * See {@link RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}
      */
-    public RelOptPredicateList getPredicates(IgniteIndexScan rel, RelMetadataQuery mq) {
+    public RelOptPredicateList getPredicates(FilterableTableScan rel, RelMetadataQuery mq) {
         if (rel.condition() == null)
             return RelOptPredicateList.EMPTY;
 

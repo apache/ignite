@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -55,10 +54,8 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
@@ -556,13 +553,7 @@ public class SchemaManager {
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
 
-        Index uniqueIndex = h2Tbl.getUniqueIndex();
-        if (uniqueIndex instanceof GridH2ProxyIndex)
-            uniqueIndex = ((GridH2ProxyIndex) uniqueIndex).underlyingIndex();
-
-        GridIndex<H2Row> pk = (GridIndex<H2Row>)uniqueIndex;
-
-        lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo(), pk);
+        lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo());
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
@@ -883,14 +874,14 @@ public class SchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
-            GridQueryIndexDescriptor idxDesc, GridIndex idx) {}
+            GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {}
 
         /** {@inheritDoc} */
         @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {}
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-            GridCacheContextInfo cacheInfo, GridIndex pk) {}
+            GridCacheContextInfo<?,?> cacheInfo) {}
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
@@ -917,8 +908,8 @@ public class SchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-            GridCacheContextInfo cacheInfo, GridIndex pk) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDescriptor, cacheInfo, pk));
+            GridCacheContextInfo<?,?> cacheInfo) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDescriptor, cacheInfo));
         }
 
         /** {@inheritDoc} */
@@ -927,7 +918,7 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex idx) {
+        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
             lsnrs.forEach(lsnr -> lsnr.onIndexCreate(schemaName, tblName, idxName, idxDesc, idx));
         }
 
