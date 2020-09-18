@@ -43,7 +43,7 @@ public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAwa
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.ENCRYPTED_RECORD;
+        return RecordType.ENCRYPTED_RECORD_V2;
     }
 
     /** {@inheritDoc} */

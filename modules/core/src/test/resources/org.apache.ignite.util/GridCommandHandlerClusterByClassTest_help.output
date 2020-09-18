@@ -68,6 +68,27 @@ This utility can do the following commands:
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
+  Change the encryption key of the cache group:
+    control.(sh|bat) --encryption change_cache_key cacheGroupName
+
+  View encryption key identifiers of the cache group:
+    control.(sh|bat) --encryption cache_key_ids cacheGroupName
+
+  View cache group encryption status:
+    control.(sh|bat) --encryption reencryption_status cacheGroupName
+
+  Stop cache group re-encryption:
+    control.(sh|bat) --encryption stop_reencryption cacheGroupName
+
+  Start cache group re-encryption:
+    control.(sh|bat) --encryption start_reencryption cacheGroupName
+
+  View/change re-encryption rate limit:
+    control.(sh|bat) --encryption reencryption_rate [limit]
+
+    Parameters:
+      limit  - decimal value to change rate limit (MB/s)
+
   Kill compute task by session id:
     control.(sh|bat) --kill COMPUTE session_id
 

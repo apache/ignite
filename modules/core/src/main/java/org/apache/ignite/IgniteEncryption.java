@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
@@ -70,4 +71,12 @@ public interface IgniteEncryption {
      * @return Future for this operation.
      */
     public IgniteFuture<Void> changeMasterKey(String masterKeyName);
+
+    /**
+     * Starts cache group encryption key change process.
+     *
+     * @param cacheOrGrpNames Cache or group names.
+     * @return Future that will be completed when a new key is set for writing on all nodes in the cluster.
+     */
+    public IgniteFuture<Void> changeCacheGroupKey(Collection<String> cacheOrGrpNames);
 }

@@ -18,7 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
-
+import java.util.Collection;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -124,7 +125,10 @@ public enum IgniteFeatures {
     MVCC_TX_RECOVERY_PROTOCOL_V2(44),
 
     /** Pk index keys are applied in correct order. */
-    SPECIFIED_SEQ_PK_KEYS(45);
+    SPECIFIED_SEQ_PK_KEYS(45),
+
+    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
+    CACHE_GROUP_KEY_CHANGE(46);
 
     /**
      * Unique feature identifier.

@@ -258,6 +258,9 @@ public abstract class PageIO {
     /** */
     public static final short T_MARKER_PAGE = 33;
 
+    /** */
+    public static final short T_INDEX_META = 34;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
@@ -663,6 +666,9 @@ public abstract class PageIO {
 
             case T_META:
                 return (Q)PageMetaIO.VERSIONS.forVersion(ver);
+
+            case T_INDEX_META:
+                return (Q)PageIndexMetaIO.VERSIONS.forVersion(ver);
 
             case T_PART_META:
                 return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);

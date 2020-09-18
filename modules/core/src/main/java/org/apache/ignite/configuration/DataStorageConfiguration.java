@@ -314,6 +314,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default warm-up configuration. */
     @Nullable private WarmUpConfiguration dfltWarmUpCfg;
 
+    /** Encryption configuration. */
+    private EncryptionConfiguration encrCfg = new EncryptionConfiguration();
+
     /**
      * Creates valid durable memory configuration with all default values.
      */
@@ -1114,6 +1117,27 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setWalPageCompressionLevel(Integer walPageCompressionLevel) {
         this.walPageCompressionLevel = walPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * Gets encryyption configuration.
+     *
+     * @return Encryption configuration.
+     */
+    public EncryptionConfiguration getEncryptionConfiguration() {
+        return encrCfg;
+    }
+
+    /**
+     * Sets encryption configuration.
+     *
+     * @param encrCfg Encryption configuration.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setEncryptionConfiguration(EncryptionConfiguration encrCfg) {
+        this.encrCfg = encrCfg;
 
         return this;
     }
