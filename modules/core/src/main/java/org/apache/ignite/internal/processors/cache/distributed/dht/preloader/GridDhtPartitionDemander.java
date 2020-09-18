@@ -1249,7 +1249,7 @@ public class GridDhtPartitionDemander {
          * Dummy future. Will be done by real one.
          */
         RebalanceFuture() {
-            this.rebalancingParts = null;
+            this.rebalancingParts = Collections.emptyMap();
             this.assignments = null;
             this.exchId = null;
             this.topVer = null;
