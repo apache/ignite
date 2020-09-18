@@ -18,21 +18,21 @@ Due to the fact, that Ignite Sandbox is based on the Java Sandbox model, and the
 The SecurityManager is responsible for checking, which security policy is currently in effect. It also performs access control checks.
 The security manager is not automatically installed when an application is running. If you run Ignite as a separate application,
 you must invoke the Java Virtual Machine with the `-Djava.security.manager` command-line argument (which sets the value of the `java.security.manager property`).
-There is also a `-Djava.security.policy` command-line argument whose usage determines what policy files are utilized.
-If you don't include `-Djava.security.policy` on the command line, then the policy files specified in the security properties file will be used.
+There is also a -Djava.security.policy command-line argument, defining, which policy files are utilized.
+If you don't include `-Djava.security.policy` into the command line, then the policy files specified in the security properties file will be used.
 
-You can read more about link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/spec/security-spec.doc6.html#a19349[Security Management,window=_blank].
+You can read more about Security Management link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/spec/security-spec.doc6.html#a19349[here,window=_blank].
 
 NOTE: It may be convenient adding the security manager and the policy command-line arguments to `{IGNITE-HOME}/bin/ignite.sh|ignite.bat` script.
 Read more about link:/quick-start/java#starting_a_node[starting a node].
 
-NOTE: The Ignite must have enough permissions to work correctly.
+NOTE: Ignite should have enough permissions to work correctly.
 You may apply the most straightforward way that is granting to Ignite the `java.security.AllPermission` permission,
-but you should remember about the "giving permissions as low as possible" security principle.
+but you should remember the "giving permissions as low as possible" security principle.
 
 - The second condition to activate the Ignite Sandbox is _an implementation of the `GridSecurityProcessor` interface must be installed_.
 
-Currently, the Apache Ignite does not provide an implementation of the `GridSecurityProcessor` interface out-of-the-box.
+Currently, Apache Ignite does not provide an implementation of the `GridSecurityProcessor` interface out-of-the-box.
 But, you can implement this interface as a part of link:/plugins[a custom plugin].
 
 The `GridSecurityProcessor` interface has the `sandboxEnabled` method that manages a user-defined code execution inside the Ignite Sandbox.
