@@ -27,4 +27,9 @@ public class ReliabilityTestPartitionAwareAsync extends ReliabilityTestAsync {
     @Override protected ClientConfiguration getClientConfiguration() {
         return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isPartitionAware() {
+        return true;
+    }
 }
