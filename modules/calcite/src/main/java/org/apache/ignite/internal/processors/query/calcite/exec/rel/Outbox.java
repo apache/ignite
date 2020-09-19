@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -156,8 +155,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
             waiting = -1;
 
-            for (UUID node : dest.targets())
-                getOrCreateBuffer(node).end();
+            flush();
         }
         catch (Exception e) {
             onError(e);
@@ -264,6 +262,10 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
+        else if (waiting == -1) {
+            for (UUID node : dest.targets())
+                getOrCreateBuffer(node).end();
+        }
     }
 
     /** */
