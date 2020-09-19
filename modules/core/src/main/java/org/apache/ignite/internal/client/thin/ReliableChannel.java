@@ -280,12 +280,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             }
         }
 
-        if (failure == null)
-            failure = err instanceof ClientConnectionException
-                ? (ClientConnectionException) err
-                : new ClientConnectionException("Connection failed", err);
-
-        fut.completeExceptionally(failure);
+        if (failure != null)
+            fut.completeExceptionally(failure);
+        else
+            fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
 
         return null;
     }
