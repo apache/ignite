@@ -104,9 +104,9 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                 ((SystemView<Object>)sysView).walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (clazz.isEnum())
-                            attrVals.add(((Enum<?>)val).name());
+                            attrVals.add(val == null ? null : ((Enum<?>)val).name());
                         else if (Class.class.isAssignableFrom(clazz))
-                            attrVals.add(((Class<?>)val).getName());
+                            attrVals.add(val == null ? null : ((Class<?>)val).getName());
                         else if (
                             Date.class.isAssignableFrom(clazz) ||
                             UUID.class.isAssignableFrom(clazz) ||
@@ -169,8 +169,11 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
             if (res == null) { // In this case we assume that the requested system view name is in SQL format.
                 for (SystemView<?> sysView : sysViewMgr) {
-                    if (toSqlName(sysView.name()).equals(name))
-                        return sysView;
+                    if (toSqlName(sysView.name()).toLowerCase().equals(name.toLowerCase())) {
+                        res = sysView;
+
+                        break;
+                    }
                 }
             }
 
@@ -179,7 +182,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
     }
 
     /**
-     * Represents simple types of system view attributes. Those types helps task initiator to determine type of each
+     * Represents simple types of system view attributes. It helps task initiator to determine type of each
      * column for received system view rows.
      */
     public enum SimpleAttributeType {

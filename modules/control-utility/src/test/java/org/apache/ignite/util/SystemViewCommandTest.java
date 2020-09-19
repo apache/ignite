@@ -17,72 +17,148 @@
 
 package org.apache.ignite.util;
 
-import java.io.IOException;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.TestAffinityFunction;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.lang.Integer.MAX_VALUE;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.regex.Pattern.quote;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.PART_STATES_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_TBLS_VIEW;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_TBL_COLS_VIEW;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_VIEWS_VIEW;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_VIEW_COLS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
-import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests output of {@link CommandList#SYSTEM_VIEW} command.
  */
 public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
+    /**
+     * Line in command output that precedes the system view content.
+     */
+    static final String SYS_VIEW_OUTPUT_START =
+        "--------------------------------------------------------------------------------";
+
+    /**
+     * Line in command output that indicates end of the system view content.
+     */
+    static final String SYS_VIEW_OTPUT_END =
+        "Command [" + SYSTEM_VIEW.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
+
     /** Command line argument for printing content of a system view. */
     private static final String CMD_SYS_VIEW = SYSTEM_VIEW.text();
 
-    /** Name of the test system view. */
-    private static final String TEST_VIEW = "test.testView";
+    /** Latch that is used to unblock all compute jobs. */
+    private static final CountDownLatch COMPUTE_JOB_UNBLOCK_LATCH = new CountDownLatch(1);
 
-    /** Expected command output in case system view contains no rows. */
-    private static final String EXP_NO_ROWS_CMD_OUT = "boolean    char    byte    short    int    long    float" +
-        "    double    date    uuid    igniteUUID    class    enum    object";
-
-    /** Expected command output. */
-    private static final String EXP_CMD_OUT;
-
-    static {
-        try {
-            EXP_CMD_OUT = U.readFileToString(resolveIgnitePath(
-                "modules/control-utility/src/test/resources/system-view-command.output").getAbsolutePath(), UTF_8.name());
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    /** Latch that indicates number of compute jobs to be blocked.*/
+    private static final CountDownLatch COMPUTE_JOB_BLOCK_LATCH = new CountDownLatch(5);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        for (int i = 0; i < SERVER_NODE_CNT; i++) {
-            ignite(i).context().systemView().registerView(
-                TEST_VIEW,
-                "test_view_desc",
-                new TestViewWalker(),
-                i == 0 ? () -> Arrays.asList(false, true) : Collections::emptyList,
-                TestView::new
-            );
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName("in-memory")
+                .setMaxSize(100L * 1024 * 1024))
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -99,9 +175,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testSystemViewNameMissedFailure() {
-        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
-            "The name of the system view for which its content should be printed is expected.",
-            CMD_SYS_VIEW);
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW),
+            "The name of the system view for which its content should be printed is expected.");
     }
 
     /**
@@ -109,9 +184,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testNodeIdMissedFailure() {
-        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
-            "ID of the node from which system view content should be obtained is expected.",
-            CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName());
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName()),
+            "ID of the node from which system view content should be obtained is expected.");
     }
 
     /**
@@ -119,11 +193,12 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testInvalidNodeIdFailure() {
-        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
+        assertContains(log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName(), "invalid_node_id"),
             "Failed to parse " + NODE_ID.argName() +
-            " command argument. String representation of \"java.util.UUID\" is exepected." +
-            " For example: 123e4567-e89b-42d3-a456-556642440000",
-            CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName(), "invalid_node_id");
+                " command argument. String representation of \"java.util.UUID\" is exepected." +
+                " For example: 123e4567-e89b-42d3-a456-556642440000"
+        );
     }
 
     /**
@@ -131,9 +206,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testMultipleSystemViewNamesFailure() {
-        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
-            "Multiple system view names are not supported.",
-            CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW);
+        assertContains(log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW),
+            "Multiple system view names are not supported.");
     }
 
     /**
@@ -144,9 +219,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testNonExistentNodeIdFailure() {
         String incorrectNodeId = UUID.randomUUID().toString();
 
-        checkCommandExecution(EXIT_CODE_INVALID_ARGUMENTS,
-            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found",
-            CMD_SYS_VIEW, "--node-id", incorrectNodeId, CACHES_VIEW);
+        assertContains(log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, "--node-id", incorrectNodeId, CACHES_VIEW),
+            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
     }
 
     /**
@@ -154,184 +229,966 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      */
     @Test
     public void testNonExistentSystemView() {
-        checkCommandExecution(EXIT_CODE_OK,
-            "No system view with specified name was found [name=non_existent_system_view]",
-            CMD_SYS_VIEW, "non_existent_system_view");
+        assertContains(log, executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, "non_existent_system_view"),
+            "No system view with specified name was found [name=non_existent_system_view]");
     }
 
-    /**
-     * Tests command output.
-     */
+    /** */
     @Test
-    public void testSystemViewContentOutput() {
-        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT, CMD_SYS_VIEW, TEST_VIEW);
+    public void testCachesView() {
+        Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
+
+        cacheNames.forEach(cacheName -> ignite(0).createCache(cacheName));
+
+        List<List<String>> cachesView = systemView(0, CACHES_VIEW);
+
+        assertEquals(ignite(0).context().cache().cacheDescriptors().size(), cachesView.size());
+
+        cachesView.forEach(row -> cacheNames.remove(row.get(0)));
+
+        assertTrue(cacheNames.isEmpty());
     }
 
-    /**
-     * Tests command output in case correct {@link SystemViewCommandArg#NODE_ID} argument value is specified.
-     */
+    /** */
     @Test
-    public void testNodeIdArgument() {
-        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT,
-            CMD_SYS_VIEW, "--node-id", nodeId(0).toString(), TEST_VIEW);
+    public void testCacheGroupsView() {
+        Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
-        checkCommandExecution(EXIT_CODE_OK, EXP_NO_ROWS_CMD_OUT,
-            CMD_SYS_VIEW, TEST_VIEW, "--node-id", nodeId(1).toString());
+        for (String grpName : grpNames)
+            ignite(0).createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
+
+        List<List<String>> cacheGrpsView = systemView(0, CACHE_GRPS_VIEW);
+
+        assertEquals(ignite(0).context().cache().cacheGroupDescriptors().size(), cacheGrpsView.size());
+
+        cacheGrpsView.forEach(row -> grpNames.remove(row.get(0)));
+
+        assertTrue(grpNames.toString(), grpNames.isEmpty());
     }
 
-    /**
-     * Tests command output in case system view name specified in "SQL" style.
-     */
+    /** */
     @Test
-    public void testSqlStyleSystemViewName() {
-        checkCommandExecution(EXIT_CODE_OK, EXP_CMD_OUT, CMD_SYS_VIEW, toSqlName(TEST_VIEW));
+    public void testComputeBroadcast() throws Exception {
+        long tasksCnt = COMPUTE_JOB_BLOCK_LATCH.getCount();
+
+        try {
+            for (int i = 0; i < tasksCnt; i++) {
+                ignite(0).compute().broadcastAsync(() -> {
+                    try {
+                        COMPUTE_JOB_BLOCK_LATCH.countDown();
+                        COMPUTE_JOB_UNBLOCK_LATCH.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            COMPUTE_JOB_BLOCK_LATCH.await();
+
+            List<List<String>> tasksView = systemView(0, TASKS_VIEW).stream()
+                .filter(row -> !VisorSystemViewTask.class.getName().equals(row.get(3)))
+                .collect(Collectors.toList());
+
+            assertEquals(tasksCnt, tasksView.size());
+
+            tasksView.forEach(row -> {
+                assertEquals("false", row.get(10)); //interanal
+                assertEquals("null", row.get(6)); // affiniteCacheName
+                assertEquals("-1", row.get(5)); // affinityPartitionId
+                assertTrue(row.get(4).startsWith(getClass().getName())); // taskClassName
+                assertTrue(row.get(3).startsWith(getClass().getName())); // taskName
+                assertEquals(ignite(0).localNode().id().toString(), row.get(2)); // taskNodeId
+                assertEquals("0", row.get(12)); // userVersion
+            });
+        }
+        finally {
+            COMPUTE_JOB_UNBLOCK_LATCH.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testServices() {
+        ServiceConfiguration srvcCfg = new ServiceConfiguration();
+
+        srvcCfg.setName("service");
+        srvcCfg.setMaxPerNodeCount(1);
+        srvcCfg.setService(new DummyService());
+
+        ignite(0).services().deploy(srvcCfg);
+
+        List<List<String>> srvsView = systemView(0, SVCS_VIEW);
+
+        assertEquals(1, srvsView.size());
+
+        List<String> sysView = srvsView.get(0);
+
+        assertEquals(srvcCfg.getName(), sysView.get(1)); // name
+        assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
+        assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
+    }
+
+    /** */
+    @Test
+    public void testClientsConnections() throws Exception {
+        String host = ignite(0).configuration().getClientConnectorConfiguration().getHost();
+
+        if (host == null)
+            host = ignite(0).configuration().getLocalHost();
+
+        int port = ignite(0).configuration().getClientConnectorConfiguration().getPort();
+
+        try (
+            IgniteClient ignored1 = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port));
+            Connection ignored2 = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())
+        ) {
+            assertEquals(2, systemView(0, CLI_CONN_VIEW).size());
+        }
+    }
+
+    /** */
+    @Test
+    public void testTransactions() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(
+            new CacheConfiguration<Integer, Integer>("test-cache").setAtomicityMode(TRANSACTIONAL));
+
+        assertTrue(systemView(0, TXS_MON_LIST).isEmpty());
+
+        CountDownLatch txBlockLatch = new CountDownLatch(10);
+        CountDownLatch txUnblockLatch = new CountDownLatch(1);
+
+        try {
+            AtomicInteger cntr = new AtomicInteger();
+
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                try (
+                    Transaction ignored = ignite(0).transactions().withLabel("test")
+                        .txStart(PESSIMISTIC, REPEATABLE_READ)
+                ) {
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                    txBlockLatch.countDown();
+                    txUnblockLatch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 5, "sys-view-cmd-tx-test-1");
+
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                try (Transaction ignored = ignite(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                    txBlockLatch.countDown();
+                    txUnblockLatch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 5, "sys-view-cmd-tx-test-2");
+
+            txBlockLatch.await(getTestTimeout(), MILLISECONDS);
+
+            List<List<String>> txsView = systemView(0, TXS_MON_LIST);
+
+            assertEquals(10, txsView.size());
+        }
+        finally {
+            txUnblockLatch.countDown();
+        }
+
+        assertTrue(waitForCondition(() -> systemView(0, TXS_MON_LIST).isEmpty(), getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSchemas() throws Exception {
+        try (IgniteEx ignored = startGrid(getConfiguration(getTestIgniteInstanceName(3))
+            .setSqlConfiguration(new SqlConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA")))
+        ) {
+            Set<String> schemaNames = new HashSet<>();
+
+            HashSet<String> expSchemas = new HashSet<>(asList("MY_SCHEMA", "ANOTHER_SCHEMA", "SYS", "PUBLIC"));
+
+            List<List<String>> sqlSchemaView = systemView(3, SQL_SCHEMA_VIEW);
+
+            sqlSchemaView.forEach(row -> schemaNames.add(row.get(0))); // name
+
+            assertEquals(schemaNames, expSchemas);
+        }
+    }
+
+    /** */
+    @Test
+    public void testViews() {
+        Set<String> expViewNames = new HashSet<>(asList(
+            "VIEWS",
+            "SERVICES",
+            "CACHE_GROUPS",
+            "CACHES",
+            "TASKS",
+            "JOBS",
+            "SQL_QUERIES_HISTORY",
+            "NODES",
+            "SCHEMAS",
+            "NODE_METRICS",
+            "BASELINE_NODES",
+            "INDEXES",
+            "LOCAL_CACHE_GROUPS_IO",
+            "SQL_QUERIES",
+            "SCAN_QUERIES",
+            "NODE_ATTRIBUTES",
+            "TABLES",
+            "CLIENT_CONNECTIONS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "TRANSACTIONS",
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "DATA_REGION_PAGE_LISTS",
+            "CACHE_GROUP_PAGE_LISTS",
+            "PARTITION_STATES",
+            "BINARY_METADATA",
+            "METASTORAGE",
+            "DISTRIBUTED_METASTORAGE"
+        ));
+
+        Set<String> viewNames = new HashSet<>();
+
+        List<List<String>> sqlViewsView = systemView(0, SQL_VIEWS_VIEW);
+
+        sqlViewsView.forEach(row -> viewNames.add(row.get(0))); // name
+
+        assertEquals(expViewNames, viewNames);
+    }
+
+    /** */
+    @Test
+    public void testTable() {
+        assertTrue(systemView(0, SQL_TBLS_VIEW).isEmpty());
+
+        executeSql(ignite(0), "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        List<List<String>> sqlTablesView = systemView(0, SQL_TBLS_VIEW);
+
+        assertEquals(1, sqlTablesView.size());
+
+        List<String> row = sqlTablesView.get(0);
+
+        String cacheId = Integer.toString(cacheId("SQL_PUBLIC_T1"));
+        String cacheName = "SQL_PUBLIC_T1";
+
+        assertEquals("T1", row.get(0)); // TABLE_NAME
+        assertEquals(DFLT_SCHEMA, row.get(1)); // SCHEMA_NAME
+        assertEquals(cacheName, row.get(2)); // CACHE_NAME
+        assertEquals(cacheId, row.get(3)); // CACHE_ID
+        assertEquals("null", row.get(4)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", row.get(5)); // KEY_ALIAS
+        assertEquals("null", row.get(6)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", row.get(7)); // KEY_TYPE_NAME
+        assertFalse("null".equals(row.get(8))); // VALUE_TYPE_NAME
+
+        executeSql(ignite(0), "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        assertEquals(2, systemView(0, SQL_TBLS_VIEW).size());
+
+        executeSql(ignite(0), "DROP TABLE T1");
+        executeSql(ignite(0), "DROP TABLE T2");
+
+        assertTrue(systemView(0, SQL_TBLS_VIEW).isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testTableColumns() {
+        assertTrue(systemView(0, SQL_TBL_COLS_VIEW).isEmpty());
+
+        executeSql(ignite(0), "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
+
+        Set<?> actCols = systemView(0, SQL_TBL_COLS_VIEW).stream()
+            .map(row -> row.get(0)) // columnName
+            .collect(Collectors.toSet());
+
+        assertEquals(new HashSet<>(asList("ID", "NAME", "_KEY", "_VAL")), actCols);
+
+        executeSql(ignite(0), "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
+
+        Set<List<String>> expSqlTableColumnsView = new HashSet<>(asList(
+            asList("ID", "T1", "PUBLIC", "false", "false", "null", "true", "true", "-1", "-1", Long.class.getName()),
+            asList("NAME", "T1", "PUBLIC", "false", "false", "null", "true", "false", "40", "-1", String.class.getName()),
+            asList("_KEY", "T1", "PUBLIC", "true", "false", "null", "false", "true", "-1", "-1", "null"),
+            asList("_VAL", "T1", "PUBLIC", "false", "false", "null", "true", "false", "-1", "-1", "null"),
+            asList("ID", "T2", "PUBLIC", "false", "false", "null", "true", "true", "-1", "-1", Long.class.getName()),
+            asList("NAME", "T2", "PUBLIC", "false", "false", "null", "true", "false", "50", "-1", String.class.getName()),
+            asList("_KEY", "T2", "PUBLIC", "true", "false", "null", "false", "true", "-1", "-1", "null"),
+            asList("_VAL", "T2", "PUBLIC", "false", "false", "null", "true", "false", "-1", "-1", "null")
+        ));
+
+        Set<List<String>> sqlTableColumnsView = new HashSet<>(systemView(0, SQL_TBL_COLS_VIEW));
+
+        assertEquals(expSqlTableColumnsView, sqlTableColumnsView);
+
+        executeSql(ignite(0), "DROP TABLE T1");
+        executeSql(ignite(0), "DROP TABLE T2");
+
+        assertTrue(systemView(0, SQL_TBL_COLS_VIEW).isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testViewColumns() {
+        Set<List<String>> expsqlViewColumnsView = new HashSet<>(asList(
+            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "19", "0", Long.class.getName()),
+            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", Integer.toString(MAX_VALUE), "0",
+                String.class.getName()),
+            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", Integer.toString(MAX_VALUE), "0",
+                String.class.getName()),
+            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", Integer.toString(MAX_VALUE), "0",
+                String.class.getName()),
+            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", Integer.toString(MAX_VALUE), "0",
+                String.class.getName()),
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", Integer.toString(MAX_VALUE), "0",
+                String.class.getName())
+        ));
+
+        Set<List<String>> sqlViewColumnsView = systemView(0, SQL_VIEW_COLS_VIEW).stream()
+            .filter(row -> "CLIENT_CONNECTIONS".equals(row.get(1))) // viewName
+            .collect(Collectors.toSet());
+
+        assertEquals(expsqlViewColumnsView, sqlViewColumnsView);
+    }
+
+    /** */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache("test-cache");
+
+        assertTrue(systemView(0, CQ_SYS_VIEW).isEmpty());
+        assertTrue(systemView(1, CQ_SYS_VIEW).isEmpty());
+
+        try (QueryCursor<?> ignored = cache.query(new ContinuousQuery<>()
+            .setInitialQuery(new ScanQuery<>())
+            .setPageSize(100)
+            .setTimeInterval(1000)
+            .setLocalListener(evts -> {
+                // No-op.
+            })
+            .setRemoteFilterFactory(() -> evt -> true)
+        )) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+
+            checkContinuouQueryView(0, true);
+            checkContinuouQueryView(1, false);
+        }
+
+        assertTrue(systemView(0, CQ_SYS_VIEW).isEmpty());
+        assertTrue(waitForCondition(() ->
+            systemView(1, CQ_SYS_VIEW).isEmpty(), getTestTimeout()));
+    }
+
+    /** */
+    private void checkContinuouQueryView(int nodeIdx, boolean loc) {
+        List<List<String>> cqSysView = systemView(nodeIdx, CQ_SYS_VIEW);
+
+        assertEquals(1, cqSysView.size());
+
+        List<String> row = cqSysView.get(0);
+
+        assertEquals("test-cache", row.get(0)); //cacheName
+        assertEquals(100, Long.parseLong(row.get(7))); // bufferSize
+        assertEquals(1000L, Long.parseLong(row.get(9))); // interval
+        assertEquals(ignite(0).localNode().id().toString(), row.get(14)); // nodeId
+
+        if (loc)
+            assertTrue(row.get(1).startsWith(getClass().getName())); // localListener
+        else
+            assertEquals("null", row.get(1)); // localListener
+
+        assertTrue(row.get(2).startsWith(getClass().getName())); // remoteFilter
+        assertEquals("null", row.get(4)); // localTransformedListener
+        assertEquals("null", row.get(3)); // remoteTransformer
+    }
+
+    /** */
+    @Test
+    public void testLocalScanQuery() throws Exception {
+        IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(
+            new CacheConfiguration<Integer, Integer>("cache1").setGroupName("group1"));
+
+        int part = ignite(0).affinity("cache1").primaryPartitions(ignite(0).localNode())[0];
+
+        List<Integer> partKeys = partitionKeys(cache1, part, 11, 0);
+
+        partKeys.forEach(key -> cache1.put(key, key));
+
+        assertTrue(systemView(0, SCAN_QRY_SYS_VIEW).isEmpty());
+
+        try (
+            QueryCursor<Integer> qryRes1 = cache1.query(
+                new ScanQuery<Integer, Integer>()
+                    .setFilter(new TestPredicate())
+                    .setLocal(true)
+                    .setPartition(part)
+                    .setPageSize(10),
+                new TestTransformer())
+        ) {
+            assertTrue(qryRes1.iterator().hasNext());
+
+            assertTrue(waitForCondition(() -> !systemView(0, SCAN_QRY_SYS_VIEW).isEmpty(), getTestTimeout()));
+
+            List<String> view = systemView(0, SCAN_QRY_SYS_VIEW).get(0);
+
+            assertEquals(ignite(0).localNode().id().toString(), view.get(0)); // originNodeId
+            assertEquals("0", view.get(1)); // queryId
+            assertEquals("cache1", view.get(2)); // cacheName
+            assertEquals(Integer.toString(cacheId("cache1")), view.get(3)); // cacheId
+            assertEquals(Integer.toString(cacheGroupId("cache1", "group1")), view.get(4)); // cacheGroupId
+            assertEquals("group1", view.get(5)); // cacheGroupName
+            assertTrue(Long.parseLong(view.get(6)) <= System.currentTimeMillis()); // startTime
+            assertTrue(Long.parseLong(view.get(7)) >= 0); // duration
+            assertFalse(Boolean.parseBoolean(view.get(8))); // canceled
+            assertEquals(TEST_PREDICATE, view.get(9)); // filter
+            assertTrue(Boolean.parseBoolean(view.get(11))); // local
+            assertEquals(part, Integer.parseInt(view.get(13))); // partition
+            assertEquals(toStringSafe(ignite(0).context().discovery().topologyVersionEx()), view.get(16)); // topology
+            assertEquals(TEST_TRANSFORMER, view.get(17)); // transformer
+            assertFalse(Boolean.parseBoolean(view.get(10))); // keepBinary
+            assertEquals("null", view.get(14)); // subjectId
+            assertEquals("null", view.get(15)); // taskName
+        }
+
+        assertTrue(waitForCondition(() -> systemView(0, SCAN_QRY_SYS_VIEW).isEmpty(), getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testScanQuery() throws Exception {
+        try (
+            IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")
+        ) {
+            IgniteCache<Integer, Integer> cache1 = client1.createCache(
+                new CacheConfiguration<Integer, Integer>("cache1").setGroupName("group1"));
+
+            IgniteCache<Integer, Integer> cache2 = client2.createCache("cache2");
+
+            for (int i = 0; i < 100; i++) {
+                cache1.put(i, i);
+                cache2.put(i, i);
+            }
+
+            assertTrue(systemView(0, SCAN_QRY_SYS_VIEW).isEmpty());
+            assertTrue(systemView(1, SCAN_QRY_SYS_VIEW).isEmpty());
+
+            try (
+                QueryCursor<Integer> qryRes1 = cache1.query(
+                    new ScanQuery<Integer, Integer>()
+                        .setFilter(new TestPredicate())
+                        .setPageSize(10),
+                    new TestTransformer());
+
+                QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>().setPageSize(20))
+            ) {
+                assertTrue(qryRes1.iterator().hasNext());
+                assertTrue(qryRes2.iterator().hasNext());
+
+                checkScanQueryView(client1, client2, 0);
+                checkScanQueryView(client1, client2, 1);
+            }
+
+            assertTrue(waitForCondition(() ->
+                systemView(0, SCAN_QRY_SYS_VIEW).isEmpty() && systemView(1, SCAN_QRY_SYS_VIEW).isEmpty(),
+                getTestTimeout()));
+
+        }
+    }
+
+    /** */
+    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, int nodeIdx) throws Exception {
+        assertTrue(waitForCondition(() -> systemView(0, SCAN_QRY_SYS_VIEW).size() > 1, getTestTimeout()));
+
+        Consumer<List<String>> cache1checker = view -> {
+            assertEquals(client1.localNode().id().toString(), view.get(0));
+            assertTrue(Long.parseLong(view.get(1)) != 0);
+            assertEquals("cache1", view.get(2));
+            assertEquals(Integer.toString(cacheId("cache1")), view.get(3));
+            assertEquals(Integer.toString(cacheGroupId("cache1", "group1")), view.get(4));
+            assertEquals("group1", view.get(5));
+            assertTrue(Long.parseLong(view.get(6)) <= System.currentTimeMillis());
+            assertTrue(Long.parseLong(view.get(7)) >= 0);
+            assertFalse(Boolean.parseBoolean(view.get(8)));
+            assertEquals(TEST_PREDICATE, view.get(9));
+            assertFalse(Boolean.parseBoolean(view.get(11)));
+            assertEquals("-1", view.get(13));
+            assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.get(16));
+            assertEquals(TEST_TRANSFORMER, view.get(17));
+            assertFalse(Boolean.parseBoolean(view.get(10)));
+            assertEquals("null", view.get(14));
+            assertEquals("null", view.get(15));
+            assertEquals("10", view.get(12));
+        };
+
+        Consumer<List<String>> cache2checker = view -> {
+            assertEquals(client2.localNode().id().toString(), view.get(0));
+            assertTrue(Long.parseLong(view.get(1)) != 0);
+            assertEquals("cache2", view.get(2));
+            assertEquals(Integer.toString(cacheId("cache2")), view.get(3));
+            assertEquals(Integer.toString(cacheGroupId("cache2", null)), view.get(4));
+            assertEquals("cache2", view.get(5));
+            assertTrue(Long.parseLong(view.get(6)) <= System.currentTimeMillis());
+            assertTrue(Long.parseLong(view.get(7)) >= 0);
+            assertFalse(Boolean.parseBoolean(view.get(8)));
+            assertEquals("null", view.get(9));
+            assertFalse(Boolean.parseBoolean(view.get(11)));
+            assertEquals("-1", view.get(13));
+            assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.get(16));
+            assertEquals("null", view.get(17));
+            assertTrue(Boolean.parseBoolean(view.get(10)));
+            assertEquals("null", view.get(14));
+            assertEquals("null", view.get(15));
+            assertEquals("20", view.get(12));
+        };
+
+        boolean found1 = false;
+        boolean found2 = false;
+
+        for (List<String> row : systemView(nodeIdx, SCAN_QRY_SYS_VIEW)){
+            if ("cache2".equals(row.get(2))) {
+                cache2checker.accept(row);
+                found1 = true;
+            }
+            else {
+                cache1checker.accept(row);
+                found2 = true;
+            }
+        }
+
+        assertTrue(found1 && found2);
+    }
+
+    /** */
+    @Test
+    public void testStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite(0).context().getStripedExecutorService(),
+            SYS_POOL_QUEUE_VIEW,
+            "sys");
+    }
+
+    /** */
+    @Test
+    public void testStreamerExecutor() throws Exception {
+        checkStripeExecutorView(ignite(0).context().getDataStreamerExecutorService(),
+            STREAM_POOL_QUEUE_VIEW,
+            "data-streamer");
     }
 
     /**
-     * Check that command execution exits with specified code and output.
+     * Checks striped executor system view.
      *
-     * @param expOutput Expected command output.
-     * @param args Command lines arguments.
+     * @param execSvc Striped executor.
+     * @param view System view name.
+     * @param poolName Executor name.
      */
-    private void checkCommandExecution(int exitCode, String expOutput, String... args) {
+    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            assertTrue(waitForCondition(() -> systemView(0, view).size() == 2, getTestTimeout()));
+
+            List<List<String>> stripedQueue = systemView(0, view);
+
+            List<String> row0 = stripedQueue.get(0);
+
+            assertEquals(0, Integer.parseInt(row0.get(0)));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get(1));
+            assertEquals(poolName + "-stripe-0", row0.get(2));
+            assertEquals(TestRunnable.class.getName(), row0.get(3));
+
+            List<String> row1 = stripedQueue.get(1);
+
+            assertEquals(1, Integer.parseInt(row1.get(0)));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get(1));
+            assertEquals(poolName + "-stripe-1", row1.get(2));
+            assertEquals(TestRunnable.class.getName(), row1.get(3));
+        }
+        finally {
+            latch.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        String cacheName = "cacheFL";
+
+        IgniteCache<Integer, byte[]> cache = ignite(0).getOrCreateCache(new CacheConfiguration<Integer, byte[]>()
+            .setName(cacheName)
+            .setAffinity(new RendezvousAffinityFunction()
+                .setPartitions(1)));
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite(0).context().cache().context()
+            .database();
+
+        int pageSize = dbMgr.pageSize();
+
+        try {
+            dbMgr.enableCheckpoints(false).get();
+
+            int key = 0;
+
+            // Fill up different free-list buckets.
+            for (int j = 0; j < pageSize / 2; j++)
+                cache.put(key++, new byte[j + 1]);
+
+            // Put some pages to one bucket to overflow pages cache.
+            for (int j = 0; j < 1000; j++)
+                cache.put(key++, new byte[pageSize / 2]);
+
+            List<List<String>> cacheGrpView = systemView(0, CACHE_GRP_PAGE_LIST_VIEW);
+
+            List<List<String>> dataRegionView = systemView(0, DATA_REGION_PAGE_LIST_VIEW);
+
+            String cacheId = Integer.toString(cacheId(cacheName));
+
+            // Test filtering by 3 columns.
+            assertFalse(cacheGrpView.stream().noneMatch(row ->
+                cacheId.equals(row.get(0)) &&
+                "0".equals(row.get(1)) &&
+                "0".equals(row.get(3))));
+
+
+            // Test filtering with invalid cache group id.
+            assertTrue(cacheGrpView.stream().noneMatch(row -> "-1".equals(row.get(0))));
+
+            // Test filtering with invalid partition id.
+            assertTrue(cacheGrpView.stream().noneMatch(row -> "-1".equals(row.get(1))));
+
+            // Test filtering with invalid bucket number.
+            assertTrue(cacheGrpView.stream().noneMatch(row -> "-1".equals(row.get(3))));
+
+            assertFalse(cacheGrpView.stream().noneMatch(row ->
+                Integer.parseInt(row.get(4)) > 0 && cacheId.equals(row.get(0))));
+
+            assertFalse(cacheGrpView.stream().noneMatch(row ->
+                Integer.parseInt(row.get(5)) > 0 && cacheId.equals(row.get(0))));
+
+            assertFalse(cacheGrpView.stream().noneMatch(row ->
+                Integer.parseInt(row.get(6)) > 0 && cacheId.equals(row.get(0))));
+
+            assertFalse(dataRegionView.stream().noneMatch(row -> row.get(0).startsWith("in-memory")));
+
+            assertTrue(dataRegionView.stream().noneMatch(row ->
+                row.get(0).startsWith("in-memory") && Integer.parseInt(row.get(4)) > 0));
+        }
+        finally {
+            dbMgr.enableCheckpoints(true).get();
+        }
+
+        ignite(0).cluster().state(INACTIVE);
+
+        ignite(0).cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> cacheInMemory = ignite(0).getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>()
+                .setName("cacheFLInMemory")
+                .setDataRegionName("in-memory"));
+
+        cacheInMemory.put(0, 0);
+
+        // After activation/deactivation new view for data region pages lists should be created, check that new view
+        // correctly reflects changes in free-lists.
+        assertTrue(systemView(0, DATA_REGION_PAGE_LIST_VIEW).stream().noneMatch(row ->
+            row.get(0).startsWith("in-memory") && Integer.parseInt(row.get(4)) > 0));
+    }
+
+    /** */
+    @Test
+    public void testPartitionStates() throws Exception {
+        String nodeName0 = getTestIgniteInstanceName(0);
+        String nodeName1 = getTestIgniteInstanceName(1);
+        String nodeName2 = getTestIgniteInstanceName(2);
+
+        IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache1")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAffinity(new TestAffinityFunction(new String[][] {{nodeName0, nodeName1}, {nodeName1, nodeName2},
+                {nodeName2, nodeName0}})));
+
+        IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache2")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAffinity(new TestAffinityFunction(new String[][] {{nodeName0, nodeName1, nodeName2}, {nodeName1}})));
+
+        for (int i = 0; i < 100; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        try (IgniteEx ignite2 = startGrid(nodeName2)) {
+            ignite2.rebalanceEnabled(false);
+
+            ignite(0).cluster().setBaselineTopology(ignite(0).cluster().topologyVersion());
+
+            String nodeId0 = ignite(0).cluster().localNode().id().toString();
+            String nodeId1 = ignite(1).cluster().localNode().id().toString();
+            String nodeId2 = ignite2.cluster().localNode().id().toString();
+
+            String cacheGrpId1 = Integer.toString(ignite(0).cachex("cache1").context().groupId());
+            String cacheGrpId2 = Integer.toString(ignite(0).cachex("cache2").context().groupId());
+
+            String owningState = GridDhtPartitionState.OWNING.name();
+            String movingState = GridDhtPartitionState.MOVING.name();
+
+            for (int i = 0; i < 3; i++) {
+                List<List<String>> partStatesView = systemView(i, PART_STATES_VIEW);
+
+                // Check partitions for cache1.
+                checkPartitionStates(partStatesView, owningState, true, cacheGrpId1, nodeId0, 0);
+                checkPartitionStates(partStatesView, owningState, false, cacheGrpId1, nodeId1, 0);
+                checkPartitionStates(partStatesView, owningState, true, cacheGrpId1, nodeId1, 1);
+                checkPartitionStates(partStatesView, movingState, false, cacheGrpId1, nodeId2, 1);
+                checkPartitionStates(partStatesView, owningState, true, cacheGrpId1, nodeId0, 2);
+                checkPartitionStates(partStatesView, movingState, false, cacheGrpId1, nodeId2, 2);
+
+                checkPartitionStates(partStatesView, owningState, true, cacheGrpId2, nodeId0, 0);
+                checkPartitionStates(partStatesView, owningState, false, cacheGrpId2, nodeId1, 0);
+                checkPartitionStates(partStatesView, movingState, false, cacheGrpId2, nodeId2, 0);
+                checkPartitionStates(partStatesView, owningState, true, cacheGrpId2, nodeId1, 1);
+            }
+
+            AffinityTopologyVersion topVer = ignite(0).context().discovery().topologyVersionEx();
+
+            ignite2.rebalanceEnabled(true);
+
+            // Wait until rebalance complete.
+            assertTrue(waitForCondition(() ->
+                ignite(0).context().discovery().topologyVersionEx().compareTo(topVer) > 0, getTestTimeout()));
+
+            for (int i = 0; i < 3; i++) {
+                List<List<String>> rows = systemView(i, PART_STATES_VIEW);
+
+                assertEquals(10, rows.stream().filter(row ->
+                    (cacheGrpId1.equals(row.get(0)) || cacheGrpId2.equals(row.get(0))) && owningState.equals(row.get(3))).count());
+
+                assertTrue(rows.stream().noneMatch(row ->
+                    (cacheGrpId1.equals(row.get(0)) || cacheGrpId2.equals(row.get(0))) && movingState.equals(row.get(3))));
+            }
+
+            // Check that assignment is now changed to ideal.
+            for (int i = 0; i < 3; i++) {
+                List<List<String>> rows = systemView(i, PART_STATES_VIEW);
+
+                checkPartitionStates(rows, owningState, false,  cacheGrpId1, nodeId0, 2);
+                checkPartitionStates(rows, owningState, true,  cacheGrpId1, nodeId2, 2);
+            }
+        }
+        finally {
+            ignite(0).cluster().setBaselineTopology(ignite(0).cluster().topologyVersion());
+        }
+    }
+
+    /** */
+    private void checkPartitionStates(
+        List<List<String>> partStatesView,
+        String state,
+        boolean isPrimary,
+        String cacheGrpId,
+        String nodeId,
+        int partitionId
+    ) {
+        List<List<String>> partRows = partStatesView.stream().filter(row ->
+            cacheGrpId.equals(row.get(0)) &&
+                nodeId.equals(row.get(1)) &&
+                Integer.toString(partitionId).equals(row.get(2))).collect(Collectors.toList());
+
+        assertEquals(1, partRows.size());
+
+        List<String> row = partRows.get(0);
+
+        assertEquals(state, row.get(3));
+        assertEquals(Boolean.toString(isPrimary), row.get(4));
+    }
+
+    /** */
+    @Test
+    public void testBinaryMeta() {
+        IgniteCache<Integer, TestObjectAllTypes> c1 = ignite(0).createCache("test-cache");
+        IgniteCache<Integer, TestObjectEnum> c2 = ignite(0).createCache("test-enum-cache");
+
+        executeSql(ignite(0), "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40), ACCOUNT BIGINT)");
+        executeSql(ignite(0), "INSERT INTO T1(ID, NAME, ACCOUNT) VALUES(1, 'test', 1)");
+
+        c1.put(1, new TestObjectAllTypes());
+        c2.put(1, TestObjectEnum.A);
+
+        List<List<String>> binaryMetaView = systemView(0, BINARY_METADATA_VIEW);
+
+        assertEquals(3, binaryMetaView.size());
+
+        for (List<String> row : binaryMetaView) {
+            if (Objects.equals(TestObjectEnum.class.getName(), row.get(1))) {
+                assertTrue(Boolean.parseBoolean(row.get(6)));
+
+                assertEquals("0", row.get(3));
+            }
+            else if (Objects.equals(TestObjectAllTypes.class.getName(), row.get(1))) {
+                assertFalse(Boolean.parseBoolean(row.get(6)));
+
+                Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                assertEquals(Integer.toString(fields.length), row.get(3));
+
+                for (Field field : fields)
+                    assertTrue(row.get(4).contains(field.getName()));
+            }
+            else {
+                assertFalse(Boolean.parseBoolean(row.get(6)));
+
+                assertEquals("2", row.get(3));
+
+                assertTrue(row.get(4).contains("NAME"));
+                assertTrue(row.get(4).contains("ACCOUNT"));
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite(0).context().cache().context().database();
+
+        String name = "test-key";
+        String val = "test-value";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        assertEquals(1, systemView(0, METASTORE_VIEW).stream()
+            .filter(row -> name.equals(row.get(0)) && val.equals(row.get(1)))
+            .count());
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        DistributedMetaStorage dms = ignite(0).context().distributedMetastorage();
+
+        String name = "test-distributed-key";
+        String val = "test-distributed-value";
+
+        dms.write(name, val);
+
+        assertEquals(1, systemView(0, DISTRIBUTED_METASTORE_VIEW).stream()
+            .filter(row -> name.equals(row.get(0)) && val.equals(row.get(1)))
+            .count());
+
+        assertTrue(waitForCondition(() -> systemView(1, DISTRIBUTED_METASTORE_VIEW).stream()
+                .filter(row -> name.equals(row.get(0)) && val.equals(row.get(1)))
+                .count() == 1,
+            getTestTimeout()));
+    }
+
+    /**
+     * Execute query on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    private List<List<?>> executeSql(Ignite node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+            .setArgs(args)
+            .setSchema("PUBLIC");
+
+        return queryProcessor(node).querySqlFields(qry, true).getAll();
+    }
+
+    /**
+     * Gets system view content via control utility from specified node. Here we also check if attributes names
+     * returned by the command match the real ones. And that both "SQL" and "Java" command names styles are supported.
+     *
+     * @param nodeIdx Index of the node to obtain system view from.
+     * @param sysViewName Name of the system view which content is required.
+     * @return Comtent of the requested system view.
+     */
+    private List<List<String>> systemView(int nodeIdx, String sysViewName) {
+        IgniteEx node = ignite(nodeIdx);
+
+        List<String> attrNames = new ArrayList<>();
+
+        SystemView<?> sysView = node.context().systemView().view(sysViewName);
+
+        sysView.walker().visitAll(new AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                attrNames.add(name);
+            }
+        });
+
+        String nodeId = node.context().discovery().localNode().id().toString();
+
+        List<List<String>> rows = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName), NODE_ID.argName(), nodeId));
+
+        assertEquals(attrNames, rows.get(0));
+
+        rows = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName).toLowerCase(), NODE_ID.argName(), nodeId));
+
+        assertEquals(attrNames, rows.get(0));
+
+        rows = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, sysViewName, NODE_ID.argName(), nodeId));
+
+        assertEquals(attrNames, rows.remove(0));
+
+        int attrsCnt = sysView.walker().count();
+
+        rows.forEach(row -> assertEquals(attrsCnt, row.size()));
+
+        return rows;
+    }
+
+    /** */
+    private List<List<String>> parseSystemViewCommandOutput(String out) {
+        List<String> rows =  Arrays.asList(out.substring(
+            out.indexOf(SYS_VIEW_OUTPUT_START) + SYS_VIEW_OUTPUT_START.length() + 1,
+            out.indexOf(SYS_VIEW_OTPUT_END) - 1
+        ).split(U.nl()));
+
+        return rows.stream().map(row ->
+            Arrays.stream(row.split(quote(COLUMN_SEPARATOR)))
+                .map(String::trim)
+                .filter(str -> !str.isEmpty())
+                .collect(Collectors.toList()))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Executes command and checks its exits code.
+     *
+     * @param expExitCode Expected exit code.
+     * @param args Command lines arguments.
+     * @return Result of command execution.
+     */
+    private String executeCommand(int expExitCode, String... args) {
         int res = execute(args);
 
-        assertEquals(exitCode, res);
+        assertEquals(expExitCode, res);
 
-        assertContains(log, testOut.toString(), expOutput);
-    }
-
-    /** */
-    private static class TestView {
-        static {
-            TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
-        }
-
-        /** */
-        private final boolean isLongOut;
-
-        /** */
-        public TestView(boolean isLongOut) {
-            this.isLongOut = isLongOut;
-        }
-
-        /** */
-        public boolean booleanValue() {
-            return false;
-        }
-
-        /** */
-        public char charValue() {
-            return 'c';
-        }
-
-        /** */
-        public byte byteValue() {
-            return isLongOut ? Byte.MAX_VALUE : (byte)0;
-        }
-
-        /** */
-        public short shortValue() {
-            return isLongOut ? Short.MAX_VALUE : (short)0;
-        }
-
-        /** */
-        public int intValue() {
-            return isLongOut ? Integer.MAX_VALUE : 0;
-        }
-
-        /** */
-        public long longValue() {
-            return isLongOut ? Long.MAX_VALUE : 0L;
-        }
-
-        /** */
-        public float floatValue() {
-            return isLongOut ? Float.MAX_VALUE : 0F;
-        }
-
-        /** */
-        public double doubleValue() {
-            return isLongOut ? Double.MAX_VALUE : 0D;
-        }
-
-        /** */
-        public Date dateValue() {
-            return new Date(0);
-        }
-
-        /** */
-        public UUID uuidValue() {
-            return UUID.fromString("364eef57-54e7-4a0f-a48b-3becbc25517e");
-        }
-
-        /** */
-        public IgniteUuid igniteUuidValue() {
-            return IgniteUuid.fromString("0c891f79471-2d5ec79e-b712-4c73-9111-3f80ab5e2893");
-        }
-
-        /** */
-        public Class<?> classValue() {
-            return Object.class;
-        }
-
-        /** */
-        public CacheMode enumValue() {
-            return CacheMode.PARTITIONED;
-        }
-
-        /** */
-        public Object objectValue() {
-            return isLongOut ?
-                new Object() {
-                    @Override public String toString() {
-                        return "custom object";
-                    }
-                } : null;
-        }
-    }
-
-    /** */
-    private static class TestViewWalker implements SystemViewRowAttributeWalker<TestView> {
-        /** {@inheritDoc} */
-        @Override public void visitAll(AttributeVisitor v) {
-            v.accept(0, "boolean", boolean.class);
-            v.accept(1, "char", char.class);
-            v.accept(2, "byte", byte.class);
-            v.accept(3, "short", short.class);
-            v.accept(4, "int", int.class);
-            v.accept(5, "long", long.class);
-            v.accept(6, "float", float.class);
-            v.accept(7, "double", double.class);
-            v.accept(8, "date", Date.class);
-            v.accept(9, "uuid", UUID.class);
-            v.accept(10, "igniteUUID", IgniteUuid.class);
-            v.accept(11, "class", Class.class);
-            v.accept(12, "enum", CacheMode.class);
-            v.accept(13, "object", Object.class);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void visitAll(TestView row, AttributeWithValueVisitor v) {
-            v.acceptBoolean(0, "boolean", row.booleanValue());
-            v.acceptChar(1, "char", row.charValue());
-            v.acceptByte(2, "byte", row.byteValue());
-            v.acceptShort(3, "short", row.shortValue());
-            v.acceptInt(4, "int", row.intValue());
-            v.acceptLong(5, "long", row.longValue());
-            v.acceptFloat(6, "float", row.floatValue());
-            v.acceptDouble(7, "double", row.doubleValue());
-            v.accept(8, "date", Date.class, row.dateValue());
-            v.accept(9, "uuid", UUID.class, row.uuidValue());
-            v.accept(10, "igniteUUID", IgniteUuid.class, row.igniteUuidValue());
-            v.accept(11, "class", Class.class, row.classValue());
-            v.accept(12, "enum", CacheMode.class, row.enumValue());
-            v.accept(13, "object", Object.class, row.objectValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override public int count() {
-            return 14;
-        }
+        return testOut.toString();
     }
 }
