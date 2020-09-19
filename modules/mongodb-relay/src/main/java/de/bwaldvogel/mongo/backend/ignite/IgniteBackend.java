@@ -2,20 +2,18 @@ package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 
-import org.apache.ignite.transactions.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 
 import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoBackend;
 import de.bwaldvogel.mongo.backend.Utils;
-import de.bwaldvogel.mongo.exception.MongoServerException;
+
 
 public class IgniteBackend extends AbstractMongoBackend {
 
@@ -41,11 +39,6 @@ public class IgniteBackend extends AbstractMongoBackend {
 
     public IgniteBackend(Ignite mvStore) {
         this.mvStore = mvStore;
-        String databaseName = mvStore.name();
-        if(databaseName==null || databaseName.isEmpty()) {
-        	databaseName = IgniteDatabase.DEFAULT_DB_NAME;
-        }
-        log.info("opening database '{}'", databaseName);
     }
 
     public IgniteBackend(String fileName) {
@@ -75,6 +68,11 @@ public class IgniteBackend extends AbstractMongoBackend {
     	}    	
     	Ignite mvStore = Ignition.ignite(gridName);
         return new IgniteDatabase(databaseName, this, mvStore);
+    }
+    
+    
+    protected Set<String> listDatabaseNames() {
+        return Ignition.allGrids().stream().map(Ignite::name).collect(Collectors.toSet());
     }
 
     @Override
