@@ -311,7 +311,13 @@ class TcpClientChannel implements ClientChannel {
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
-            throw convertException(e);
+            if (e.getCause() instanceof ClientError)
+                throw (ClientError)e.getCause();
+
+            if (e.getCause() instanceof ClientException)
+                throw (ClientException)e.getCause();
+
+            throw new ClientException(e.getMessage(), e);
         }
         finally {
             pendingReqs.remove(reqId);
