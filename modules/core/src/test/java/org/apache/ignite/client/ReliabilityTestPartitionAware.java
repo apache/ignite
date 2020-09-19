@@ -31,9 +31,7 @@ public class ReliabilityTestPartitionAware extends ReliabilityTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testTxWithIdIntersection() throws Exception {
-        // No-op: partition-aware client connects to all known servers at the start,
-        // and dropAllThinClientConnections causes failure on all channels,
-        // so the logic in this test is not applicable.
+    @Override protected boolean isPartitionAware() {
+        return true;
     }
 }

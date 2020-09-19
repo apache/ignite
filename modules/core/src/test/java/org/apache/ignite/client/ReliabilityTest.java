@@ -203,6 +203,11 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
+        // Partition-aware client connects to all known servers at the start, and dropAllThinClientConnections
+        // causes failure on all channels, so the logic in this test is not applicable.
+        if (isPartitionAware())
+            return;
+
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
@@ -402,5 +407,12 @@ public class ReliabilityTest extends AbstractThinClientTest {
         finally {
             stopFlag.set(true);
         }
+    }
+
+    /**
+     * Returns a value indicating whether partition awareness is enabled.
+     */
+    protected boolean isPartitionAware() {
+        return false;
     }
 }
