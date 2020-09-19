@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -32,9 +31,11 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPl
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
 /**
  * Fragment of distributed query
@@ -49,6 +50,9 @@ public class Fragment {
     /** */
     private final IgniteRel root;
 
+    /** Serialized root representation. */
+    private String rootSer;
+
     /** */
     private final ImmutableList<IgniteReceiver> remotes;
 
@@ -58,9 +62,20 @@ public class Fragment {
      * @param remotes Remote sources of the fragment.
      */
     public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes) {
+        this(id, root, remotes, null);
+    }
+
+    /**
+     * @param id Fragment id.
+     * @param root Root node of the fragment.
+     * @param remotes Remote sources of the fragment.
+     * @param rootSer Root serialized representation.
+     */
+    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer) {
         this.id = id;
         this.root = root;
         this.remotes = ImmutableList.copyOf(remotes);
+        this.rootSer = rootSer;
     }
 
     /**
@@ -106,6 +121,15 @@ public class Fragment {
      */
     public IgniteRel root() {
         return root;
+    }
+
+    /**
+     * Lazy serialized root representation.
+     *
+     * @return Serialized form.
+     */
+    public String rootSerialized() {
+        return rootSer != null ? rootSer : (rootSer = toJson(root()));
     }
 
     /**

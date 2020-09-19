@@ -68,7 +68,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         List<Fragment> fragments = new ArrayList<>(src.size());
 
         for (Fragment fragment : src) {
-            curr = new FragmentProto(fragment.fragmentId(), fragment.root());
+            curr = new FragmentProto(fragment.fragmentId(), fragment.root(), fragment.rootSerialized());
             curr.root = visit(curr.root);
             fragments.add(curr.build());
             curr = null;
@@ -212,18 +212,22 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         /** */
         private IgniteRel root;
 
+        /** Serialized representation. */
+        private String rootSer;
+
         /** */
         private final ImmutableList.Builder<IgniteReceiver> remotes = ImmutableList.builder();
 
         /** */
-        private FragmentProto(long id, IgniteRel root) {
+        private FragmentProto(long id, IgniteRel root, String rootSer) {
             this.id = id;
             this.root = root;
+            this.rootSer = rootSer;
         }
 
         /** */
         Fragment build() {
-            return new Fragment(id, root, remotes.build());
+            return new Fragment(id, root, remotes.build(), rootSer);
         }
     }
 }
