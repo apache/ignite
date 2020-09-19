@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -32,7 +31,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.ignite.internal.processors.query.calcite.rel.FilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
@@ -41,10 +42,24 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
-public class PushFilterIntoScanRule extends RelOptRule {
+public abstract class PushFilterIntoScanRule<T extends FilterableTableScan> extends RelOptRule {
     /** Instance. */
-    public static final PushFilterIntoScanRule FILTER_INTO_SCAN =
-        new PushFilterIntoScanRule(LogicalFilter.class, "IgniteFilterIntoScanRule");
+    public static final PushFilterIntoScanRule<IgniteIndexScan> FILTER_INTO_INDEX_SCAN =
+        new PushFilterIntoScanRule<IgniteIndexScan>(LogicalFilter.class, IgniteIndexScan.class, "PushFilterIntoIndexScanRule") {
+            /** {@inheritDoc} */
+            @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan, RexNode cond) {
+                return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond);
+            }
+        };
+
+    /** Instance. */
+    public static final PushFilterIntoScanRule<IgniteTableScan> FILTER_INTO_TABLE_SCAN =
+        new PushFilterIntoScanRule<IgniteTableScan>(LogicalFilter.class, IgniteTableScan.class, "PushFilterIntoTableScanRule") {
+            /** {@inheritDoc} */
+            @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan, RexNode cond) {
+                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), cond);
+            }
+        };
 
     /**
      * Constructor.
@@ -52,9 +67,9 @@ public class PushFilterIntoScanRule extends RelOptRule {
      * @param clazz Class of relational expression to match.
      * @param desc Description, or null to guess description
      */
-    private PushFilterIntoScanRule(Class<? extends RelNode> clazz, String desc) {
+    private PushFilterIntoScanRule(Class<? extends RelNode> clazz, Class<T> tableClass, String desc) {
         super(operand(clazz,
-            operand(IgniteIndexScan.class, none())),
+            operand(tableClass, none())),
             RelFactories.LOGICAL_BUILDER,
             desc);
     }
@@ -62,7 +77,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
-        IgniteIndexScan scan = call.rel(1);
+        T scan = call.rel(1);
 
         RelOptCluster cluster = scan.getCluster();
         RelMetadataQuery mq = call.getMetadataQuery();
@@ -90,9 +105,11 @@ public class PushFilterIntoScanRule extends RelOptRule {
         while (nodes.add(cond) && nodes.size() < 3)
             cond = simplifier.simplifyUnknownAsFalse(cond);
 
-        call.transformTo(
-            new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
+        call.transformTo(createNode(cluster, scan, cond));
     }
+
+    /** */
+    protected abstract T createNode(RelOptCluster cluster, T scan, RexNode cond);
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
     private static class InputRefReplacer extends RexShuttle {

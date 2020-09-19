@@ -24,7 +24,6 @@ import org.apache.calcite.rel.metadata.Metadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMdAllPredicates;
-import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdColumnOrigins;
 import org.apache.calcite.rel.metadata.RelMdColumnUniqueness;
 import org.apache.calcite.rel.metadata.RelMdDistinctRowCount;
@@ -61,6 +60,7 @@ public class IgniteMetadata {
                 IgniteMdNonCumulativeCost.SOURCE,
                 IgniteMdRowCount.SOURCE,
                 IgniteMdPredicates.SOURCE,
+                IgniteMdCollation.SOURCE,
 
                 // Basic providers
                 RelMdColumnOrigins.SOURCE,
@@ -78,8 +78,7 @@ public class IgniteMetadata {
                 RelMdDistinctRowCount.SOURCE,
                 RelMdSelectivity.SOURCE,
                 RelMdExplainVisibility.SOURCE,
-                RelMdAllPredicates.SOURCE,
-                RelMdCollation.SOURCE));
+                RelMdAllPredicates.SOURCE));
 
     /** */
     public interface NodesMappingMetadata extends Metadata {

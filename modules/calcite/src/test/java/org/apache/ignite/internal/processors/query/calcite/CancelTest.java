@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -141,7 +140,7 @@ public class CancelTest extends GridCommonAbstractTest {
 
                 return null;
             },
-            ClusterTopologyCheckedException.class, "Node left"
+            ClusterTopologyCheckedException.class, "node left"
         );
 
         awaitReservationsRelease(grid(0), "TEST");

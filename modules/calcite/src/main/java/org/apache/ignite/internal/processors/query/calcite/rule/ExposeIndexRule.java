@@ -17,22 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 
 /**
  *
@@ -43,37 +40,28 @@ public class ExposeIndexRule extends RelOptRule {
 
     /** */
     public ExposeIndexRule() {
-        super(operandJ(IgniteIndexScan.class, null, ExposeIndexRule::preMatch, any()));
+        super(operandJ(IgniteTableScan.class, null, ExposeIndexRule::preMatch, any()));
     }
 
     /** */
-    private static boolean preMatch(IgniteIndexScan scan) {
-        return scan.igniteTable().indexes().size() > 1     // has indexes to expose
-            && PK_INDEX_NAME.equals(scan.indexName())      // is PK index scan
-            && scan.condition() == null;                   // was not modified by PushFilterIntoScanRule
+    private static boolean preMatch(IgniteTableScan scan) {
+        return scan.getTable().unwrap(IgniteTable.class).indexes().size() > 1     // has indexes to expose
+            && scan.condition() == null;                                          // was not modified by PushFilterIntoScanRule
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        IgniteIndexScan scan = call.rel(0);
+        IgniteTableScan scan = call.rel(0);
         RelOptCluster cluster = scan.getCluster();
 
         RelOptTable optTable = scan.getTable();
-        IgniteTable igniteTable = scan.igniteTable();
+        IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
 
-        assert PK_INDEX_NAME.equals(scan.indexName());
+        List<IgniteIndexScan> indexes = igniteTable.indexes().keySet().stream()
+            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName))
+            .collect(Collectors.toList());
 
-        Set<String> indexNames = igniteTable.indexes().keySet();
-
-        assert indexNames.size() > 1;
-
-        List<IgniteIndexScan> indexes = new ArrayList<>();
-        for (String idxName : indexNames) {
-            if (PK_INDEX_NAME.equals(idxName))
-                continue;
-
-            indexes.add(igniteTable.toRel(cluster, optTable, idxName));
-        }
+        assert indexes.size() > 1;
 
         Map<RelNode, RelNode> equivMap = new HashMap<>();
         for (int i = 1; i < indexes.size(); i++)

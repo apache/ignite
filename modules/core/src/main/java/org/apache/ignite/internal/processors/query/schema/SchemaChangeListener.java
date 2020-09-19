@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -45,10 +46,9 @@ public interface SchemaChangeListener {
      * @param schemaName Schema name.
      * @param typeDesc type descriptor.
      * @param cacheInfo Cache info.
-     * @param pk Primary key index
      */
     void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk);
+        GridCacheContextInfo<?, ?> cacheInfo);
 
     /**
      * Callback method.
@@ -67,8 +67,7 @@ public interface SchemaChangeListener {
      * @param idxDesc Index descriptor.
      * @param idx Index.
      */
-    void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc,
-        GridIndex<?> idx);
+    void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> idx);
 
     /**
      * Callback on index drop.

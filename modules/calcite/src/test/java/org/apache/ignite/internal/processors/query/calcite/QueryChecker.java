@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,7 +48,7 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsScan(String schema, String tblName) {
-        return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]]");
+        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]]");
     }
 
     /**
@@ -84,9 +83,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsAnyScan(final String schema, final String tblName, String... idxNames) {
         return CoreMatchers.anyOf(
-            Arrays.stream(idxNames).map(idx -> CoreMatchers.containsString(
-                "IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idx + ']'
-            )).collect(Collectors.toList()));
+            Arrays.stream(idxNames).map(idx -> containsScan(schema, tblName, idx)).collect(Collectors.toList()));
     }
 
     /** */

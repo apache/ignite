@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -75,6 +74,6 @@ public class IgniteIndex {
         Predicate<Row> filters,
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions) {
-        return new IndexScan<>(execCtx, this, filters, lowerIdxConditions, upperIdxConditions);
+        return new IndexScan<>(execCtx, table().descriptor(), idx, filters, lowerIdxConditions, upperIdxConditions);
     }
 }

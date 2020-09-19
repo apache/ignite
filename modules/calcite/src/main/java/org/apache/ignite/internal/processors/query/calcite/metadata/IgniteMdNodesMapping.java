@@ -24,6 +24,7 @@ import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.SetOp;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -31,7 +32,6 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.NodesMappingMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -163,7 +163,7 @@ public class IgniteMdNodesMapping implements MetadataHandler<NodesMappingMetadat
     /**
      * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public NodesMapping nodesMapping(IgniteIndexScan rel, RelMetadataQuery mq) {
+    public NodesMapping nodesMapping(TableScan rel, RelMetadataQuery mq) {
         return rel.getTable().unwrap(IgniteTable.class).mapping(Commons.context(rel));
     }
 

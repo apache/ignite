@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Arrays;
 import java.util.List;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -49,7 +48,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     @Before
     public void setup() throws Exception {
-        ignite = startGrids(5);
+        startGrids(5);
+
+        ignite = startClientGrid();
     }
 
     @After

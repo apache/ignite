@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -35,9 +34,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -64,14 +61,13 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.OR;
-import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.makeCast;
 
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteIndexScan extends TableScan implements IgniteRel {
+public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
@@ -81,12 +77,6 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
 
     /** */
     private final String idxName;
-
-    /** */
-    private final RexNode cond;
-
-    /** */
-    private final IgniteTable igniteTbl;
 
     /** */
     private final RelCollation collation;
@@ -107,12 +97,10 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
      */
     public IgniteIndexScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-        igniteTbl = getTable().unwrap(IgniteTable.class);
         idxName = input.getString("index");
-        cond = input.getExpression("filters");
         lowerIdxCond = input.get("lower") == null ? ImmutableList.of() : input.getExpressionList("lower");
         upperIdxCond = input.get("upper") == null ? ImmutableList.of() : input.getExpressionList("upper");
-        collation = igniteTbl.getIndex(idxName).collation();
+        collation = getTable().unwrap(IgniteTable.class).getIndex(idxName).collation();
     }
 
     /**
@@ -130,11 +118,9 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
         String idxName,
         @Nullable RexNode cond
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl);
+        super(cluster, traits, ImmutableList.of(), tbl, cond);
 
         this.idxName = idxName;
-        this.cond = cond;
-        igniteTbl = tbl.unwrap(IgniteTable.class);
         RelCollation coll = TraitUtils.collation(traits);
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
@@ -367,8 +353,7 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        super.explainTerms(pw);
+    @Override protected RelWriter explainTerms0(RelWriter pw) {
         return pw.item("index", idxName )
             .item("collation", collation)
             .itemIf("filters", cond, cond != null)
@@ -377,25 +362,8 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        assert inputs.isEmpty();
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** */
-    public RexNode condition() {
-        return cond;
-    }
-
-    /** */
-    public IgniteTable igniteTable() {
-        return igniteTbl;
     }
 
     /** */
@@ -409,8 +377,7 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount() * idxSelectivity;
 
-        if (!PK_INDEX_NAME.equals(indexName()))
-            tableRows = RelMdUtil.addEpsilon(tableRows);
+        tableRows = RelMdUtil.addEpsilon(tableRows);
 
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }
