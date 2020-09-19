@@ -25,6 +25,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 public class ReliabilityTestPartitionAware extends ReliabilityTest {
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
+        // In partition-aware mode we connect all channels right away.
+        // Otherwise, we connect one channel at a time.
         return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
     }
 }
