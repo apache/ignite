@@ -398,6 +398,68 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that unfinished transaction does not prevent <see cref="IIgniteClient"/>>
+        /// from being garbage collected.
+        /// </summary>
+        [Test]
+        public void TestFinalizesAfterClientIsDisposed()
+        {
+            WeakReference weakRef = null;
+            Action<Action<IIgniteClient>> act = startTx =>
+            {
+                var client = GetClient();
+                weakRef = new WeakReference(client);
+                var cache = GetTransactionalCache(client);
+                startTx(client);
+                cache[42] = 42;
+
+                client.Dispose();
+            };
+
+            Action<IIgniteClient>[] txStarts =
+            {
+                client => client.GetTransactions().TxStart(),
+                client => new TransactionScope()
+            };
+
+            foreach (var txStart in txStarts)
+            {
+                act(txStart);
+            
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                GC.WaitForPendingFinalizers();
+            
+                Assert.IsFalse(weakRef.IsAlive);
+            }
+        }
+
+        /// <summary>
+        /// Test that GC does not close <see cref="TransactionScope"/>'s underlying transaction.
+        /// </summary>
+        [Test]
+        public void TestGcDoesNotCloseAmbientTx()
+        {
+            WeakReference weakRef = null;
+            Func<TransactionScope> act = () =>
+            {
+                var innerScope = new TransactionScope();
+                GetTransactionalCache()[42] = 42;
+                weakRef = new WeakReference(Client.GetTransactions().Tx);
+                return innerScope;
+            };
+
+            using (act())
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                GC.WaitForPendingFinalizers();
+                Assert.IsTrue(weakRef.IsAlive);
+                var tx = (ITransactionClient) weakRef.Target;
+                Assert.IsNotNull(Client.GetTransactions().Tx);
+                Assert.AreSame(tx, Client.GetTransactions().Tx);
+            }
+        }
+
+        /// <summary>
         /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
@@ -492,7 +554,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(2, cache[1]);
         }
-
+ 
         /// <summary>
         /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
         /// </summary>
