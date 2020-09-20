@@ -34,6 +34,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
@@ -94,7 +95,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
                 if (!F.isEmpty(chTasks)) {
                     for (ClientComputeTask<?> task : chTasks.values())
-                        task.fut.onDone(new ClientException("Channel to server is closed"));
+                        task.fut.onDone(new ClientConnectionException("Channel to server is closed"));
                 }
             }
             finally {
@@ -291,7 +292,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                     try {
                         resFut.complete(((GridFutureAdapter<R>) f).get());
                     } catch (IgniteCheckedException e) {
-                        resFut.completeExceptionally(e);
+                        resFut.completeExceptionally(e.getCause());
                     }
                 }
             });
