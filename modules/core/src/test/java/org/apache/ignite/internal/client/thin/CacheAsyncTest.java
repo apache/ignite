@@ -359,7 +359,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
         GridTestUtils.assertThrowsAnyCause(
             null,
-            () -> cache.putAsync(1, new PersonBinarylizable("1", true, false)),
+            () -> cache.putAsync(1, new PersonBinarylizable("1", true, false)).get(),
             BinaryObjectException.class,
             "Failed to serialize object [typeName=org.apache.ignite.client.PersonBinarylizable]");
     }
