@@ -24,7 +24,6 @@ import java.util.function.Function;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**

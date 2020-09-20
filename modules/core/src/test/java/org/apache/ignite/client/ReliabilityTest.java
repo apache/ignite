@@ -37,7 +37,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientServerError;
