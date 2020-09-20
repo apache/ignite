@@ -98,6 +98,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        TestLatchTask.latch = null;
+        TestLatchTask.startLatch = null;
+
+        super.afterTest();
+    }
+
     /**
      *
      */
@@ -406,7 +414,11 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             compute.execute(TestTask.class.getName(), null);
 
-            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientConnectionException.class, "closed");
+            GridTestUtils.assertThrowsAnyCause(null, () -> {
+                Object res = fut1.get();
+                System.out.println(">>>>>>>> " + res);
+                return res;
+            }, ClientConnectionException.class, "closed");
 
             GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientConnectionException.class, "closed");
 
