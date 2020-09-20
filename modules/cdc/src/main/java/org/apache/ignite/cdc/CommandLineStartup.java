@@ -18,9 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,6 +31,7 @@ import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
@@ -92,25 +91,11 @@ public class CommandLineStartup {
 
             IgniteConfiguration igniteCfg =  cfgTuple.get1().iterator().next();
 
-            Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
-
-            if (consumersMap.isEmpty())
-                exit("No CDC consumers defined", false, 1);
-
-            List<CDCConsumer> consumers = new ArrayList<>();
-
-            for (Object c : consumersMap.values()) {
-                if (c instanceof CDCConsumer)
-                    consumers.add((CDCConsumer)c);
-                else if (c instanceof Collection)
-                    consumers.addAll((Collection<CDCConsumer>)c);
-                else
-                    throw new IllegalArgumentException("Unexpected bean type " + c.getClass());
-            }
+            CDCConsumer consumer = consumer(cfgUrl, spring);
 
             initEnvironment(igniteCfg);
 
-            IgniteCDC app = new IgniteCDC(igniteCfg, consumers);
+            IgniteCDC app = new IgniteCDC(igniteCfg, consumer);
 
             app.run();
         }
@@ -124,6 +109,21 @@ public class CommandLineStartup {
 
             exit("Failed to run CDC: " + e.getMessage() + note, false, -1);
         }
+    }
+
+    @NotNull
+    private static CDCConsumer consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
+        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
+
+        if (consumersMap.size() != 1)
+            exit("Exact 1 CDC consumer should be defined", false, 1);
+
+        Object cdcConsumer = consumersMap.values().iterator().next();
+
+        if (cdcConsumer instanceof CDCConsumer)
+            return (CDCConsumer)cdcConsumer;
+
+        throw new IllegalArgumentException("Expected CDCConsumer but found " + cdcConsumer.getClass());
     }
 
     /**

@@ -9586,7 +9586,21 @@ public abstract class IgniteUtils {
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist) throws IgniteCheckedException {
+        return resolveWorkDirectory(workDir, path, delIfExist, true);
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param workDir Work directory.
+     * @param path Path to resolve.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @param create Flag indicating whether to create the specified directory or not.
+     * @return Resolved work directory.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist, boolean create)
         throws IgniteCheckedException {
         File dir = new File(path);
 
@@ -9602,7 +9616,7 @@ public abstract class IgniteUtils {
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
 
-        if (!mkdirs(dir))
+        if (create && !mkdirs(dir))
             throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);
 
         if (!dir.canRead())

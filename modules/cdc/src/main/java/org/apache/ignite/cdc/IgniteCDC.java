@@ -17,9 +17,14 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Collection;
+import java.io.File;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * CDC(Capture Data Change) application.
@@ -29,29 +34,79 @@ public class IgniteCDC implements Runnable {
     private final IgniteConfiguration cfg;
 
     /** Events consumers. */
-    private final Collection<CDCConsumer> consumers;
+    private final CDCConsumer consumer;
 
     /** Logger. */
     private final IgniteLogger log;
 
     /**
-     * @param cfg Ignite configuration
-     * @param consumers Consumers
+     * @param cfg Ignite configuration.
+     * @param consumer Event consumer.
      */
-    public IgniteCDC(IgniteConfiguration cfg, Collection<CDCConsumer> consumers) {
+    public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
         this.cfg = cfg;
-        this.consumers = consumers;
+        this.consumer = consumer;
         this.log = cfg.getGridLogger().getLogger(IgniteCDC.class);
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        log.info("Starting Ignite CDC Application.");
-        log.info("---- Configured consumers:");
-
-        for (CDCConsumer consumer : consumers)
+        if (log.isInfoEnabled()) {
+            log.info("Starting Ignite CDC Application.");
             log.info(consumer.toString());
+            log.info("--------------------------------");
+        }
 
-        log.info("--------------------------");
+        File wal = findWal();
+
+        if (log.isInfoEnabled())
+            log.info("Found wal dir[dir=" + wal + ']');
+
+        consumer.start(cfg);
+    }
+
+    private File findWal() {
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Searching wal directory");
+
+            File workDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH,
+                false, false);
+
+            if (!workDir.exists())
+                log.error("Work dir not found![dir=" + workDir + "]");
+
+            File[] nodeWalDirs = workDir.listFiles(f ->
+                !f.getAbsolutePath().contains(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH));
+
+            if (F.isEmpty(nodeWalDirs))
+                throw new IllegalStateException("Can't find wal directories[workDir=" + workDir.getAbsolutePath() + ']');
+
+            if (log.isDebugEnabled()) {
+                for (File walDir : nodeWalDirs)
+                    log.debug("Found wal dir[dir=" + walDir + ']');
+            }
+
+            if (nodeWalDirs.length == 1)
+                return nodeWalDirs[0];
+            else if (cfg.getConsistentId() == null)
+                throw new IllegalStateException("Found several WAL dirs but no consistentId provided in config");
+
+            String consistentId = U.maskForFileName(cfg.getConsistentId().toString());
+
+            for (File dir : nodeWalDirs) {
+                if (log.isInfoEnabled())
+                    log.info(dir.getName());
+                if (dir.getName().equalsIgnoreCase(consistentId))
+                    return dir;
+            }
+
+            throw new IllegalStateException("WAL dir for consistentId not found[consistenId=" + consistentId + ']');
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Can't find wal directory.", e);
+
+            throw new IgniteException(e);
+        }
     }
 }

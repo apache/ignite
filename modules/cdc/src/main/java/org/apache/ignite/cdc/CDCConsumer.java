@@ -23,6 +23,11 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 /** Consumer of WAL records */
 public interface CDCConsumer {
     /**
+     * @return Consumer ID.
+     */
+    String id();
+
+    /**
      * Initialize this consumer.
      *
      * @param configuration Ignite configuration.

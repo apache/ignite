@@ -17,34 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Objects;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+public class ConsumerState {
 
-/**
- * CDC consumer that log all records.
- */
-public class LogAllCDCConsumer implements CDCConsumer {
-    /** Ignite logger. */
-    private IgniteLogger log;
-
-    @Override public String id() {
-        return "log-all-consumer";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start(IgniteConfiguration configuration) {
-        log = configuration.getGridLogger().getLogger(LogAllCDCConsumer.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T extends WALRecord> void onRecord(T record) {
-        log.info(Objects.toString(record));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() {
-        // No-op.
-    }
 }
