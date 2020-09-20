@@ -927,8 +927,8 @@ public class FunctionalTest {
             try (ClientTransaction ignored = client.transactions().txStart()) {
                 fail();
             }
-            catch (ClientException e) {
-                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, ((ClientServerError)e.getCause()).getCode());
+            catch (ClientServerError e) {
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, e.getCode());
             }
 
             for (ClientTransaction tx : txs)
