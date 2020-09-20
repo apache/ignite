@@ -961,7 +961,42 @@ public class FunctionalTest {
      */
     @Test
     public void testTransactionsAsync() throws Exception {
-        fail("TODO");
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+
+            cache.put(0, "value0");
+            cache.put(1, "value1");
+
+            // Test implicit rollback when transaction closed.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test explicit rollback.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+
+                tx.rollback();
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test commit.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+
+                tx.commit();
+            }
+
+            assertEquals("value2", cache.get(1));
+        }
     }
 
     /**
