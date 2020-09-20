@@ -328,24 +328,17 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
-            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+        ClientChannelHolder hld = getChannelHolder(cacheId, key);
 
-            if (affinityNodeId != null) {
-                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+        if (hld != null) {
+            ClientChannel ch = null;
 
-                if (hld != null) {
-                    ClientChannel ch = null;
+            try {
+                ch = hld.getOrCreateChannel();
 
-                    try {
-                        ch = hld.getOrCreateChannel();
-
-                        return ch.service(op, payloadWriter, payloadReader);
-                    }
-                    catch (ClientConnectionException ignore) {
-                        onChannelFailure(hld, ch);
-                    }
-                }
+                return ch.service(op, payloadWriter, payloadReader);
+            } catch (ClientConnectionException ignore) {
+                onChannelFailure(hld, ch);
             }
         }
 
@@ -363,34 +356,42 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        // TODO: Deduplicate code
-        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
-            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+        ClientChannelHolder hld = getChannelHolder(cacheId, key);
 
-            if (affinityNodeId != null) {
-                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+        if (hld != null) {
+            ClientChannel ch = null;
 
-                if (hld != null) {
-                    ClientChannel ch = null;
+            try {
+                ch = hld.getOrCreateChannel();
+                ClientChannel ch0 = ch;
 
-                    try {
-                        ch = hld.getOrCreateChannel();
-                        ClientChannel ch0 = ch;
+                CompletableFuture<T> fut = new CompletableFuture<>();
 
-                        CompletableFuture<T> fut = new CompletableFuture<>();
+                ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> handleServiceAsync(
+                        op, payloadWriter, payloadReader, fut, null, null, ch0, res, err));
 
-                        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> handleServiceAsync(
-                                op, payloadWriter, payloadReader, fut, null, null, ch0, res, err));
-
-                        return new IgniteClientFutureImpl<>(fut);
-                    } catch (ClientConnectionException ignore) {
-                        onChannelFailure(hld, ch);
-                    }
-                }
+                return new IgniteClientFutureImpl<>(fut);
+            } catch (ClientConnectionException ignore) {
+                onChannelFailure(hld, ch);
             }
         }
 
         return serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Gets the affinity channel holder.
+     */
+    private ClientChannelHolder getChannelHolder(int cacheId, Object key) {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affinityNodeId != null) {
+                return nodeChannels.get(affinityNodeId);
+            }
+        }
+
+        return null;
     }
 
     /**
