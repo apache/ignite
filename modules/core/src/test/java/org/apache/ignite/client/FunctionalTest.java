@@ -957,6 +957,14 @@ public class FunctionalTest {
     }
 
     /**
+     * Test transactions.
+     */
+    @Test
+    public void testTransactionsAsync() throws Exception {
+        fail("TODO");
+    }
+
+    /**
      * Test transactions with label.
      */
     @Test
