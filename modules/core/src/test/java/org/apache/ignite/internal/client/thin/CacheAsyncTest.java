@@ -357,10 +357,9 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     public void testPutAsyncThrowsExceptionOnFailedSerialization() {
         ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
 
-        GridTestUtils.assertThrowsAnyCause(
-            null,
-            () -> cache.putAsync(1, new PersonBinarylizable("1", true, false)).get(),
-            BinaryObjectException.class,
+        IgniteClientFuture<Void> fut = cache.putAsync(1, new PersonBinarylizable("1", true, false));
+
+        GridTestUtils.assertThrowsAnyCause(null, fut::get, BinaryObjectException.class,
             "Failed to serialize object [typeName=org.apache.ignite.client.PersonBinarylizable]");
     }
 
