@@ -273,7 +273,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                     return null;
                 } catch (ClientConnectionException e) {
                     onChannelFailure(ch);
-                    failure.addSuppressed(err);
+                    failure.addSuppressed(e);
                 }
             }
         }
