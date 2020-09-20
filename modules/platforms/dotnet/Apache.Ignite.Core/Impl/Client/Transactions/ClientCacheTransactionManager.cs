@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     internal class ClientCacheTransactionManager : ISinglePhaseNotification, IDisposable
     {
         /** */
-        private readonly ITransactionsClient _transactions;
+        private ITransactionsClient _transactions;
 
         /** */
-        private readonly ThreadLocal<Enlistment> _enlistment = new ThreadLocal<Enlistment>();
+        private ThreadLocal<Enlistment> _enlistment = new ThreadLocal<Enlistment>();
 
         /// <summary>
         /// Initializes a new instance of <see cref="ClientCacheTransactionManager"/> class.
@@ -66,7 +66,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 _transactions.TxStart(_transactions.DefaultTransactionConcurrency,
                     CacheTransactionManager.ConvertTransactionIsolation(ambientTx.IsolationLevel),
                     _transactions.DefaultTimeout);
-
                 _enlistment.Value = ambientTx.EnlistVolatile(this, EnlistmentOptions.None);
             }
         }
@@ -144,7 +143,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            if (_enlistment != null) _enlistment.Dispose();
+            _transactions = null;
+            var localEnlistment = _enlistment;
+            if (localEnlistment != null)
+            {
+                localEnlistment.Dispose();
+                _enlistment = null;
+            }
         }
     }
 }

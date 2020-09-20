@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -404,11 +405,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestFinalizesAfterClientIsDisposed()
         {
-            WeakReference weakRef = null;
+            ConcurrentBag<WeakReference> weakRef = new ConcurrentBag<WeakReference>();
             Action<Action<IIgniteClient>> act = startTx =>
             {
                 var client = GetClient();
-                weakRef = new WeakReference(client);
+                weakRef.Add(new WeakReference(client));
                 var cache = GetTransactionalCache(client);
                 startTx(client);
                 cache[42] = 42;
@@ -424,12 +425,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             foreach (var txStart in txStarts)
             {
-                act(txStart);
+                var tasks = Enumerable.Range(0, 3)
+                    .Select(i => Task.Factory.StartNew(() => act(txStart),TaskCreationOptions.LongRunning))
+                    .ToArray();
+
+                Task.WaitAll(tasks);
             
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 GC.WaitForPendingFinalizers();
             
-                Assert.IsFalse(weakRef.IsAlive);
+                Assert.IsFalse(weakRef.All(wr => wr.IsAlive));
             }
         }
 
