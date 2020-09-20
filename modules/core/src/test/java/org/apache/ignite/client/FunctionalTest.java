@@ -667,7 +667,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientException expected) {
+                catch (ClientServerError expected) {
                     // No-op.
                 }
 
@@ -676,7 +676,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientException expected) {
+                catch (ClientServerError expected) {
                     // No-op.
                 }
             }
