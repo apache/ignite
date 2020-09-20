@@ -225,7 +225,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         ClientChannel ch = channel();
 
-        // TODO: Use chaining to loop over all channels with .exceptionally()?
         ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) ->
                 handleServiceAsync(op, payloadWriter, payloadReader, fut, null, null, ch, res, err));
 
@@ -244,7 +243,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                           ClientChannel ch,
                                           T res,
                                           Throwable err) {
-        // TODO: This is extremely ugly, can we rewrite it with CompletionStage chaining?
         if (err == null) {
             fut.complete(res);
             return null;
