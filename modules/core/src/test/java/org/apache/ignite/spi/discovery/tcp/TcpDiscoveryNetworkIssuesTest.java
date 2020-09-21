@@ -22,19 +22,30 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 
 /**
  *
@@ -88,6 +99,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     private int connectionRecoveryTimeout = -1;
 
+    /** */
+    private int failureDetectionTimeout = 2000;
+
+    /** */
+    private final GridConcurrentHashSet<Integer> segmentedNodes = new GridConcurrentHashSet<>();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
@@ -107,9 +124,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         if (connectionRecoveryTimeout >= 0)
             spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
 
-        cfg.setFailureDetectionTimeout(2_000);
+        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 
         cfg.setDiscoverySpi(spi);
+
+        cfg.setIncludeEventTypes(EVT_NODE_SEGMENTED);
 
         return cfg;
     }
@@ -162,7 +181,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             illNodeSegmented.set(true);
 
             return false;
-            }, EventType.EVT_NODE_SEGMENTED);
+            }, EVT_NODE_SEGMENTED);
 
         specialSpi = null;
 
@@ -184,6 +203,50 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(String.format("Failed nodes is expected to be empty, but contains %s nodes.", failedNodes.size()),
             failedNodes.isEmpty());
+    }
+
+    /**
+     * Ensures sequential failure of two nodes has no additional issues.
+     */
+    @Test
+    public void testFailTwoNodes() throws Exception {
+        failureDetectionTimeout = 1000;
+
+        startGrids(4);
+
+        awaitPartitionMapExchange();
+
+        final CountDownLatch failLatch = new CountDownLatch(2);
+
+        for (int i = 0; i < 4; i++) {
+            ignite(i).events().localListen(evt -> {
+                failLatch.countDown();
+
+                return true;
+            }, EVT_NODE_FAILED);
+
+            int nodeIdx = i;
+
+            ignite(i).events().localListen(evt -> {
+                segmentedNodes.add(nodeIdx);
+
+                return true;
+            }, EVT_NODE_SEGMENTED);
+        }
+
+        processNetworkThreads(ignite(1), t -> t.suspend());
+        processNetworkThreads(ignite(2), t -> t.suspend());
+
+        try {
+            failLatch.await(20, TimeUnit.SECONDS);
+        }
+        finally {
+            processNetworkThreads(ignite(1), t -> t.resume());
+            processNetworkThreads(ignite(2), t -> t.resume());
+        }
+
+        assertFalse(segmentedNodes.contains(0));
+        assertFalse(segmentedNodes.contains(3));
     }
 
     /**
@@ -210,5 +273,24 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         OutputStream out = GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "msgWorker", "out");
 
         out.close();
+    }
+
+    /**
+     * Simulates network failure.
+     */
+    private void processNetworkThreads(Ignite ignite, Consumer<Thread> proc) {
+        DiscoverySpi disco = ignite.configuration().getDiscoverySpi();
+
+        ServerImpl serverImpl = U.field(disco, "impl");
+
+        for (Thread thread : serverImpl.threads())
+            proc.accept(thread);
+
+        CommunicationSpi<?> comm = ignite.configuration().getCommunicationSpi();
+
+        GridNioServerWrapper nioServerWrapper = U.field(comm, "nioSrvWrapper");
+
+        for (GridWorker worker : nioServerWrapper.nio().workers())
+            proc.accept(worker.runner());
     }
 }
