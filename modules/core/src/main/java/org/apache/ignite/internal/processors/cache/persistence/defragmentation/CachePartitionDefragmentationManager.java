@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
@@ -96,7 +95,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator.PageAccessType.ACCESS_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator.access;
 
-/** */
+/**
+ * Defragmentation manager is the core class that contains main defragmentation procedure.
+ */
 public class CachePartitionDefragmentationManager {
     /** */
     public static final UUID DEFRAGMENTATION_MNTC_RECORD_ID = UUID
@@ -265,14 +266,6 @@ public class CachePartitionDefragmentationManager {
                         //TODO Move inside of defragmentSinglePartition.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
-                                oldPageMem.invalidate(grpId, partId);
-
-                                partCtx.partPageMemory.invalidate(grpId, partId);
-
-                                defrgCtx.removePartPageStore(grpId, partId); // Yes, it'll be invalid in a second.
-
-                                renameTempPartitionFile(workDir, partId);
-
                                 log.info(S.toString(
                                     "Partition defragmented",
                                     "grpId", grpId, false,
@@ -284,6 +277,19 @@ public class CachePartitionDefragmentationManager {
                                     "partFile", defragmentedPartFile(workDir, partId).getName(), false,
                                     "workDir", workDir, false
                                 ));
+
+                                oldPageMem.invalidate(grpId, partId);
+
+                                partCtx.partPageMemory.invalidate(grpId, partId);
+
+                                defrgCtx.removePartPageStore(grpId, partId); // Yes, it'll be invalid in a second.
+
+                                try {
+                                    renameTempPartitionFile(workDir, partId);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
                             }
                         };
 
@@ -312,7 +318,7 @@ public class CachePartitionDefragmentationManager {
                         }
 
                         idxDfrgFut = sharedCtx.database()
-                            .forceCheckpoint("index defragmented") //TODO Provide a good reason.
+                            .forceCheckpoint("index defragmented")
                             .futureFor(CheckpointState.FINISHED);
                     }
 
@@ -320,9 +326,9 @@ public class CachePartitionDefragmentationManager {
                         oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
                         ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
-                        renameTempIndexFile(workDir);
-
                         try {
+                            renameTempIndexFile(workDir);
+
                             writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
 
                             batchRenameDefragmentedCacheGroupPartitions(workDir, log);

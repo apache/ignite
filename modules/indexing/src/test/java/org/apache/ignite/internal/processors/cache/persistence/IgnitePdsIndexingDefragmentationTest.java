@@ -234,7 +234,5 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         public boolean didRebuildIndexes() {
             return rebuiltIndexes;
         }
-
     }
-
 }

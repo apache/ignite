@@ -270,19 +270,20 @@ public class DefragmentationFileUtils {
      * Rename temporary index defragmenation file to a finalized one.
      *
      * @param workDir Cache group working directory.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#defragmentedIndexTmpFile(File)
      * @see DefragmentationFileUtils#defragmentedIndexFile(File)
      */
-    public static void renameTempIndexFile(File workDir) {
+    public static void renameTempIndexFile(File workDir) throws IgniteCheckedException {
         File defragmentedIdxTmpFile = defragmentedIndexTmpFile(workDir);
         File defragmentedIdxFile = defragmentedIndexFile(workDir);
 
         try {
             Files.move(defragmentedIdxTmpFile.toPath(), defragmentedIdxFile.toPath(), ATOMIC_MOVE);
         }
-        catch (IOException ignore) {
-            //TODO Handle.
+        catch (IOException e) {
+            handleIoException(e);
         }
     }
 
@@ -319,11 +320,12 @@ public class DefragmentationFileUtils {
      *
      * @param workDir Cache group working directory.
      * @param partId Parition index.
+     * @throws IgniteCheckedException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#defragmentedPartTmpFile(File, int)
      * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
      */
-    public static void renameTempPartitionFile(File workDir, int partId) {
+    public static void renameTempPartitionFile(File workDir, int partId) throws IgniteCheckedException {
         File defragmentedPartTmpFile = defragmentedPartTmpFile(workDir, partId);
         File defragmentedPartFile = defragmentedPartFile(workDir, partId);
 
@@ -332,8 +334,8 @@ public class DefragmentationFileUtils {
         try {
             Files.move(defragmentedPartTmpFile.toPath(), defragmentedPartFile.toPath(), ATOMIC_MOVE);
         }
-        catch (IOException ignore) {
-            //TODO Handle.
+        catch (IOException e) {
+            handleIoException(e);
         }
     }
 

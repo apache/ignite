@@ -27,31 +27,30 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 
+/** */
 public class TreeIterator {
-
     /** Direct memory buffer with a size of one page. */
     private final ByteBuffer pageBuf;
 
     /** Offheap page size. */
     private final int pageSize;
 
-
+    /** */
     public TreeIterator(int size) {
         pageSize = size;
 
         pageBuf = ByteBuffer.allocateDirect(pageSize);
     }
 
-
     // Performance impact of constant closures allocation is not clear. So this method should be avoided in massive
     // operations like tree leaves access.
     /** */
     public static <T> T access(
-            PageAccessType access,
-            PageMemoryEx pageMemory,
-            int grpId,
-            long pageId,
-            PageAccessor<T> accessor
+        PageAccessType access,
+        PageMemoryEx pageMemory,
+        int grpId,
+        long pageId,
+        PageAccessor<T> accessor
     ) throws IgniteCheckedException {
         assert access != null;
         long page = pageMemory.acquirePage(grpId, pageId);
@@ -87,6 +86,7 @@ public class TreeIterator {
     }
 
     /** */
+    @SuppressWarnings("PublicInnerClass")
     @FunctionalInterface
     public interface PageAccessor<T> {
         /** */
@@ -94,11 +94,11 @@ public class TreeIterator {
     }
 
     /** */
-    // TODO Prefetch future pages.
+    // TODO Prefetch future pages?
     public <L, T extends L> void iterate(
-            BPlusTree<L, T> tree,
-            PageMemoryEx pageMemory,
-            BPlusTree.TreeRowClosure<L, T> c
+        BPlusTree<L, T> tree,
+        PageMemoryEx pageMemory,
+        BPlusTree.TreeRowClosure<L, T> c
     ) throws IgniteCheckedException {
         int grpId = tree.groupId();
 
@@ -146,5 +146,4 @@ public class TreeIterator {
             return metaIO.getFirstPageId(metaPageAddr, 0);
         });
     }
-
 }
