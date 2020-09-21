@@ -15,8 +15,16 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.rest.request;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * <!-- Package description. -->
- * Contains SQL view exporter implementation for {@link org.apache.ignite.spi.systemview.view.SystemView}.
+ * Request to manage and obtain information about node before its start.
  */
-package org.apache.ignite.spi.systemview;
+public class GridRestNodeStateBeforeStartRequest extends GridRestRequest {
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestNodeStateBeforeStartRequest.class, this, super.toString());
+    }
+}

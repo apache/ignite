@@ -47,19 +47,26 @@ public class LongJVMPauseDetector {
     /** Ignite JVM pause detector threshold default value. */
     public static final int DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD = 500;
 
+    /** @see IgniteSystemProperties#IGNITE_JVM_PAUSE_DETECTOR_PRECISION */
+    public static final int DFLT_JVM_PAUSE_DETECTOR_PRECISION = 50;
+
+    /** @see IgniteSystemProperties#IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT */
+    public static final int DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = 20;
+
     /** Precision. */
-    private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
+    private static final int PRECISION =
+        getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, DFLT_JVM_PAUSE_DETECTOR_PRECISION);
 
     /** Threshold. */
     private static final int THRESHOLD =
         getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
 
     /** Event count. */
-    private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
+    private static final int EVT_CNT =
+        getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT);
 
     /** Disabled flag. */
-    private static final boolean DISABLED =
-        getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false);
+    private static final boolean DISABLED = getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED);
 
     /** Logger. */
     private final IgniteLogger log;

@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,6 +90,9 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
+import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -2327,6 +2331,61 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
         new IgniteCacheGroupsWithRestartsTest().testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
+    }
+
+    /**
+     * Verification of successful warm-up stop.
+     * <p/>
+     * Steps:
+     * 1)Starting node with warm-up;
+     * 2)Stop warm-up;
+     * 3)Waiting for a successful stop of warm-up and start of node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSuccessStopWarmUp() throws Exception {
+        WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(provider);
+        cfg.getDataStorageConfiguration().setDefaultWarmUpConfiguration(new BlockedWarmUpConfiguration());
+
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
+
+        BlockedWarmUpStrategy blockedWarmUpStgy = (BlockedWarmUpStrategy)provider.strats.get(1);
+
+        try {
+            U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
+
+            // Arguments --user and --password are needed for additional sending of the GridClientAuthenticationRequest.
+            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes", "--user", "user", "--password", "123"));
+
+            assertEquals(0, blockedWarmUpStgy.stopLatch.getCount());
+        }
+        finally {
+            blockedWarmUpStgy.stopLatch.countDown();
+
+            fut.get(60_000);
+        }
+    }
+
+    /**
+     * Check that command will not be executed because node has already started.
+     * <p/>
+     * Steps:
+     * 1)Starting node;
+     * 2)Attempt to stop warm-up;
+     * 3)Waiting for an error because node has already started.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailStopWarmUp() throws Exception {
+        startGrid(0);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop", "--yes"));
     }
 
     /**

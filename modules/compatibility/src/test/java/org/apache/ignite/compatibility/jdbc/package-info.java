@@ -16,11 +16,7 @@
  */
 
 /**
- *
+ * Contains compatibility tests related to JDBC.
  */
 
-/**
- * <!-- Package description. -->
- * Contains Sql view metric exporter implementation.
- */
-package org.apache.ignite.spi.metric.sql;
+package org.apache.ignite.compatibility.jdbc;
