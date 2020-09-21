@@ -256,7 +256,7 @@ you need to send to the cluster:
  {
   "uid": "7e51118b",
   "name": "John Doe",
-  "organization": 5678901,
+  "orgId": 5678901,
   "married": false,
   "salary": 156.1
  }
@@ -268,7 +268,7 @@ the `val` parameter to the value of the JSON object:
 [source,text]
 ----
 http://[host]:[port]/ignite?cacheName=testCache&cmd=put&keyType=int&key=1&valueType=Person
-&val=%7B%0A+++++%22uid%22%3A+%227e51118b%22%2C%0A+++++%22name%22%3A+%22John+Doe%22%2C%0A+++++%22organization%22%3A+5678901%2C%0A+++++%22married%22%3A+false%2C%0A+++++%22salary%22%3A+156.1%0A++%7D&
+&val=%7B%0A+++++%22uid%22%3A+%227e51118b%22%2C%0A+++++%22name%22%3A+%22John+Doe%22%2C%0A+++++%22orgId%22%3A+5678901%2C%0A+++++%22married%22%3A+false%2C%0A+++++%22salary%22%3A+156.1%0A++%7D&
 ----
 
 Once a server receives the request, it converts the object from the JSON into the internal
@@ -286,15 +286,15 @@ a|
 [source,xml]
 ----
 <bean class="org.apache.ignite.cache.QueryEntity">
-<property name="keyType"   value="java.lang.Integer"/>
+<property name="keyType" value="java.lang.Integer"/>
 <property name="valueType" value="Person"/>
 <property name="fields">
 <map>
-<entry key="uid"          value="java.util.UUID"/>
-<entry key="name"         value="java.lang.String"/>
-<entry key="organization" value="java.lang.Long"/>
-<entry key="married"      value="java.lang.Boolean"/>
-<entry key="salary"       value="java.lang.Float"/>
+<entry key="uid"     value="java.util.UUID"/>
+<entry key="name"    value="java.lang.String"/>
+<entry key="orgId"   value="java.lang.Long"/>
+<entry key="married" value="java.lang.Boolean"/>
+<entry key="salary"  value="java.lang.Float"/>
 </map>
 </property>
 </bean>
@@ -302,11 +302,11 @@ a|
 a|
 [source,javascript]
 ----
-  "uid": "7e51118b", // UUID
-  "name": "John Doe", // string
-  "organization": 5678901, // long
-  "married": false, // boolean
-  "salary": 156.1  // float
+"uid": "7e51118b",  // UUID
+"name": "John Doe", // string
+"orgId": 5678901,   // long
+"married": false,   // boolean
+"salary": 156.1     // float
 ----
 |===
 
@@ -314,11 +314,11 @@ a|
 +
 [source,javascript]
 ----
-"uid": "7e51118b",          // string
-"name": "John Doe",         // string
-"organization": 5678901,    // int
-"married": false,           // boolean
-"salary": 156.1             // double
+"uid": "7e51118b",   // string
+"name": "John Doe",  // string
+"orgId": 5678901,    // int
+"married": false,    // boolean
+"salary": 156.1      // double
 ----
 
 The same conversion rules apply when you have a custom key type set via the `keyType` parameter of the Ignite
