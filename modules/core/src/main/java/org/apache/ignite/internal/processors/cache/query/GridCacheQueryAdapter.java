@@ -567,10 +567,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
-            return (CacheQueryFuture<R>) (loc ? qryMgr.queryFieldsLocal(bean) :
+            return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
-            return (CacheQueryFuture<R>) (loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+            return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
     /** {@inheritDoc} */
