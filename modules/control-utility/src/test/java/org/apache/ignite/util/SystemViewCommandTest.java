@@ -293,8 +293,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             assertEquals(tasksCnt, tasksView.size());
 
             tasksView.forEach(row -> {
-                assertEquals("false", row.get(10)); //interanal
-                assertEquals("null", row.get(6)); // affiniteCacheName
+                assertEquals("false", row.get(10)); //internal
+                assertEquals("null", row.get(6)); // affinityCacheName
                 assertEquals("-1", row.get(5)); // affinityPartitionId
                 assertTrue(row.get(4).startsWith(getClass().getName())); // taskClassName
                 assertTrue(row.get(3).startsWith(getClass().getName())); // taskName
@@ -702,7 +702,6 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             assertTrue(waitForCondition(() ->
                 systemView(ignite0, SCAN_QRY_SYS_VIEW).isEmpty() && systemView(ignite1, SCAN_QRY_SYS_VIEW).isEmpty(),
                 getTestTimeout()));
-
         }
     }
 
@@ -807,14 +806,14 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
             List<String> row0 = stripedQueue.get(0);
 
-            assertEquals(0, Integer.parseInt(row0.get(0)));
+            assertEquals("0", row0.get(0));
             assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get(1));
             assertEquals(poolName + "-stripe-0", row0.get(2));
             assertEquals(TestRunnable.class.getName(), row0.get(3));
 
             List<String> row1 = stripedQueue.get(1);
 
-            assertEquals(1, Integer.parseInt(row1.get(0)));
+            assertEquals("1", row1.get(0));
             assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get(1));
             assertEquals(poolName + "-stripe-1", row1.get(2));
             assertEquals(TestRunnable.class.getName(), row1.get(3));
