@@ -368,10 +368,13 @@ class TcpClientChannel implements ClientChannel {
      */
     private RuntimeException convertException(Throwable e) {
         if (e.getCause() instanceof ClientError)
-            return new ClientException(e.getCause().getMessage(), e.getCause());
+            return new ClientException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientConnectionException)
+            return new ClientConnectionException(e.getMessage(), e.getCause());
 
         if (e.getCause() instanceof ClientException)
-            return (RuntimeException) e.getCause();
+            return new ClientException(e.getMessage(), e.getCause());
 
         return new ClientException(e.getMessage(), e);
     }
