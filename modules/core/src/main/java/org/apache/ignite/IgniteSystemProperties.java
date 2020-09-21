@@ -310,7 +310,11 @@ public final class IgniteSystemProperties {
     /** System property to hold SSH host for visor-started nodes. */
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
-    /** System property to enable experimental commands in control.sh script. */
+    /**
+     * System property to enable experimental commands in control.sh script.
+     * @deprecated Use "--enable-experimental" parameter instead.
+     */
+    @Deprecated
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
     /** System property to hold SSH user name for visor-started nodes. */
