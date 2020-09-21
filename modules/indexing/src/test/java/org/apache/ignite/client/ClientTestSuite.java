@@ -39,6 +39,9 @@ import org.junit.runners.Suite;
     IgniteBinaryTest.class,
     LoadTest.class,
     ReliabilityTest.class,
+    ReliabilityTestAsync.class,
+    ReliabilityTestPartitionAware.class,
+    ReliabilityTestPartitionAwareAsync.class,
     SecurityTest.class,
     FunctionalQueryTest.class,
     IgniteBinaryQueryTest.class,
@@ -53,10 +56,7 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
-    CacheAsyncTest.class,
-    ReliabilityTestAsync.class,
-    ReliabilityTestPartitionAware.class,
-    ReliabilityTestPartitionAwareAsync.class
+    CacheAsyncTest.class
 })
 public class ClientTestSuite {
     // No-op.
