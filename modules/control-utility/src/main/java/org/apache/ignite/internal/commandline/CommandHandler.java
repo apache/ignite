@@ -400,10 +400,11 @@ public class CommandHandler {
                 help = true;
             else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg))
                 experimental = true;
+            else
+                return false;
         }
 
-        return (help && experimental) ||
-            ((help || experimental) && rawArgs.size() == 1);
+        return help || experimental;
     }
 
     /**
