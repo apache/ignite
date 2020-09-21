@@ -507,8 +507,8 @@ public final class IgniteSystemProperties {
      * System property to enable experimental commands in control.sh script.
      * @deprecated Use "--enable-experimental" parameter instead.
      */
-    @SystemProperty("Enables experimental commands in control.sh script")
     @Deprecated
+    @SystemProperty("Enables experimental commands in control.sh script")
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
     /** System property to hold SSH user name for visor-started nodes. */
