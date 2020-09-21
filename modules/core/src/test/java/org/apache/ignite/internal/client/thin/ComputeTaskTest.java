@@ -400,12 +400,18 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            Future<Object> fut1 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut1 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            // Wait for the task to start, then drop connections.
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
-            Future<Object> fut2 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut2 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
