@@ -395,9 +395,8 @@ public class CommandHandler {
             for (String arg : rawArgs) {
                 if (CMD_HELP.equalsIgnoreCase(arg))
                     help = true;
-                else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg)) {
+                else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg))
                     experimental = true;
-                }
             }
 
             return (help && experimental) ||

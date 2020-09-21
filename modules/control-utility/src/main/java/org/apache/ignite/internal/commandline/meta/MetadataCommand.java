@@ -34,9 +34,13 @@ import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsLis
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.REMOVE;
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.UPDATE;
 
-/** */
+/**
+ *
+ */
 public class MetadataCommand implements Command<Object> {
-    /** */
+    /**
+     *
+     */
     private Command<?> delegate;
 
     /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
@@ -206,8 +207,7 @@ public class CommonArgParser {
 
         char sslTrustStorePassword[] = null;
 
-        boolean experimentalEnabled =
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+        boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
