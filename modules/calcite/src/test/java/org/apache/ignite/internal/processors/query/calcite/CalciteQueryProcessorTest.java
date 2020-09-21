@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -406,6 +407,55 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         row = F.first(query.get(0).getAll());
 
         assertNull(row);
+    }
+
+    public void testThroughput() {
+        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+            .setCacheMode(CacheMode.REPLICATED)
+            .setName("developer")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Developer.class)
+            .setBackups(2)
+        );
+
+        int numIterations = 1000;
+
+        int prId = -1;
+
+        for (int i = 0; i < 5000; i++) {
+            if (i % 1000 == 0)
+                prId++;
+
+            developer.put(i, new Developer("Name" + i, prId));
+        }
+
+        QueryEngine engine = Commons.lookupComponent(ignite.context(), QueryEngine.class);
+
+        // warmup
+        for (int i = 0; i < numIterations; i++) {
+            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+            query.get(0).getAll();
+        }
+
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < numIterations; i++) {
+            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+            query.get(0).getAll();
+        }
+        System.out.println("Calcite duration = " + (System.currentTimeMillis() - start));
+
+        // warmup
+        for (int i = 0; i < numIterations; i++) {
+            List<FieldsQueryCursor<List<?>>> query = ignite.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            query.get(0).getAll();
+        }
+
+        start = System.currentTimeMillis();
+        for (int i = 0; i < numIterations; i++) {
+            List<FieldsQueryCursor<List<?>>> query = ignite.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            query.get(0).getAll();
+        }
+        System.out.println("H2 duration = " + (System.currentTimeMillis() - start));
     }
 
     /** */
