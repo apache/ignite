@@ -25,9 +25,7 @@ import org.apache.ignite.internal.commandline.meta.subcommands.MetadataRemoveCom
 import org.apache.ignite.internal.commandline.meta.subcommands.MetadataUpdateCommand;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataTypeArgs;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.Command.usage;
-import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.METADATA;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.DETAILS;
@@ -36,20 +34,13 @@ import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsLis
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.REMOVE;
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.UPDATE;
 
-/**
- *
- */
+/** */
 public class MetadataCommand implements Command<Object> {
-    /**
-     *
-     */
+    /** */
     private Command<?> delegate;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        if (!experimentalEnabled())
-            return;
-
         usage(log, "Print metadata command help:",
             METADATA,
             HELP.toString()
@@ -115,14 +106,7 @@ public class MetadataCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        if (experimentalEnabled())
-            return delegate.execute(clientCfg, log);
-        else {
-            log.warning(String.format("For use experimental command add %s=true to JVM_OPTS in %s",
-                IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME));
-
-            return null;
-        }
+        return delegate.execute(clientCfg, log);
     }
 
     /** {@inheritDoc} */

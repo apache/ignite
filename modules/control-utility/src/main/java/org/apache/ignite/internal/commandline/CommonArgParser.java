@@ -24,11 +24,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.ssl.SslContextFactory;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -205,6 +206,9 @@ public class CommonArgParser {
 
         char sslTrustStorePassword[] = null;
 
+        boolean experimentalEnabled =
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
         CommandList command = null;
@@ -327,7 +331,7 @@ public class CommonArgParser {
                         break;
 
                     case CMD_ENABLE_EXPERIMENTAL:
-                        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+                        experimentalEnabled = true;
                         break;
 
                     default:
@@ -338,6 +342,13 @@ public class CommonArgParser {
 
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
+
+        if (!experimentalEnabled && command.command().experimental()) {
+            logger.warning(String.format("For use experimental command add --enable-experimental parameter for %s",
+                UTILITY_NAME));
+
+            throw new IllegalArgumentException("Experimental commands disabled");
+        }
 
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation, verbose,
