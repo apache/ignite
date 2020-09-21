@@ -1599,7 +1599,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList("get_all"));
 
         String warning = String.format(
-            "For use experimental command add --enable-experimental parameter for %s",
+            "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 

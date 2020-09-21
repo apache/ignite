@@ -344,7 +344,7 @@ public class CommonArgParser {
             throw new IllegalArgumentException("No action was specified");
 
         if (!experimentalEnabled && command.command().experimental()) {
-            logger.warning(String.format("For use experimental command add --enable-experimental parameter for %s",
+            logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
                 UTILITY_NAME));
 
             throw new IllegalArgumentException("Experimental commands disabled");
