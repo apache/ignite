@@ -29,6 +29,13 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteExperimental
 public interface TracingConfigurationManager {
+    /** Default SQL tracing configuration. */
+    static final TracingConfigurationParameters DEFAULT_SQL_CONFIGURATION =
+        new TracingConfigurationParameters.Builder().
+            withSamplingRate(0d).
+            withIncludedScopes(Collections.emptySet()).
+            build();
+
     /** Default transaction tracing configuration. */
     static final TracingConfigurationParameters DEFAULT_TX_CONFIGURATION =
         new TracingConfigurationParameters.Builder().
@@ -119,6 +126,9 @@ public interface TracingConfigurationManager {
             case COMMUNICATION: {
                 return DEFAULT_COMMUNICATION_CONFIGURATION;
             }
+
+            case SQL:
+                return DEFAULT_SQL_CONFIGURATION;
 
             default: {
                 return NOOP_CONFIGURATION;
