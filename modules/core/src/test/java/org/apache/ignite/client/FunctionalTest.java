@@ -662,12 +662,13 @@ public class FunctionalTest {
                 while (txStartedTime + TX_TIMEOUT >= U.currentTimeMillis())
                     U.sleep(100L);
 
+                // TODO: Rewrite to assertFails
                 try {
                     cache.put(1, "value4");
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
 
@@ -676,7 +677,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
             }
@@ -927,8 +928,9 @@ public class FunctionalTest {
             try (ClientTransaction ignored = client.transactions().txStart()) {
                 fail();
             }
-            catch (ClientServerError e) {
-                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, e.getCode());
+            catch (ClientException e) {
+                ClientServerError cause = (ClientServerError) e.getCause();
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, cause.getCode());
             }
 
             for (ClientTransaction tx : txs)
