@@ -832,25 +832,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param clsPathEntry Classpath file to process.
-     * @param clsPathContent StringBuilder to attach path to.
-     */
-    private void ackClassPathElementRecursive(File clsPathEntry, SB clsPathContent) {
-        if (clsPathEntry.isDirectory()) {
-            String[] list = clsPathEntry.list();
-
-            for (String listElement : list)
-                ackClassPathElementRecursive(new File(clsPathEntry, listElement), clsPathContent);
-        }
-        else {
-            String path = clsPathEntry.getAbsolutePath();
-
-            if (path.endsWith(".class"))
-                clsPathContent.a(path).a(";");
-        }
-    }
-
-    /**
      * @param clsPathEntry Classpath string to process.
      * @param clsPathContent StringBuilder to attach path to.
      */
@@ -858,7 +839,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         File clsPathElementFile = new File(clsPathEntry);
 
         if (clsPathElementFile.isDirectory())
-            ackClassPathElementRecursive(clsPathElementFile, clsPathContent);
+            clsPathContent.a(clsPathEntry).a(";");
         else {
             String extension = clsPathEntry.length() >= 4
                 ? clsPathEntry.substring(clsPathEntry.length() - 4).toLowerCase()
