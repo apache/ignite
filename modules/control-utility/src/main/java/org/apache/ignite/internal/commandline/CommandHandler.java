@@ -384,7 +384,7 @@ public class CommandHandler {
         }
     }
 
-    /** @return {@code True} if arguments metans "print help" command. */
+    /** @return {@code True} if arguments means "print help" command. */
     private boolean isHelp(List<String> rawArgs) {
         if(F.isEmpty(rawArgs))
             return true;
