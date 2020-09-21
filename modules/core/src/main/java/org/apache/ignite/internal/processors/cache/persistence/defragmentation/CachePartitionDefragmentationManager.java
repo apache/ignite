@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
@@ -118,19 +119,23 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
+    private final LightCheckpointManager partitionsCheckpoint;
+
     /**
      * @param sharedCtx Cache shared context.
      * @param defrgCtx Defragmentation context.
+     * @param manager
      */
     public CachePartitionDefragmentationManager(
         GridCacheSharedContext<?, ?> sharedCtx,
-        CacheDefragmentationContext defrgCtx
-    ) {
+        CacheDefragmentationContext defrgCtx,
+        LightCheckpointManager manager) {
         this.sharedCtx = sharedCtx;
         this.defrgCtx = defrgCtx;
 
         mntcReg = sharedCtx.kernalContext().maintenanceRegistry();
         log = sharedCtx.logger(getClass());
+        partitionsCheckpoint = manager;
     }
 
     /** */
@@ -188,9 +193,6 @@ public class CachePartitionDefragmentationManager {
                         if (store.tree() != null)
                             cacheDataStores.put(store.partId(), store);
                     }
-
-                    // A cheat so that we won't try to save old metadata into a new partition.
-                    dbMgr.removeCheckpointListener(offheap);
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
@@ -293,8 +295,8 @@ public class CachePartitionDefragmentationManager {
                             }
                         };
 
-                        GridFutureAdapter<?> cpFut = sharedCtx.database()
-                            .forceCheckpoint("partition defragmented")
+                        GridFutureAdapter<?> cpFut = partitionsCheckpoint
+                            .forceCheckpoint("partition defragmented", null)
                             .futureFor(CheckpointState.FINISHED);
 
                         cpFut.listen(cpLsnr);
@@ -308,17 +310,17 @@ public class CachePartitionDefragmentationManager {
                     idxDfrgFut = new GridFinishedFuture<>();
 
                     if (sharedCtx.pageStore().hasIndexStore(grpId)) {
-                        sharedCtx.database().checkpointReadLock(); //TODO We should have many small checkpoints.
+                        partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock(); //TODO We should have many small checkpoints.
 
                         try {
                             defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
                         }
                         finally {
-                            sharedCtx.database().checkpointReadUnlock();
+                            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
                         }
 
-                        idxDfrgFut = sharedCtx.database()
-                            .forceCheckpoint("index defragmented")
+                        idxDfrgFut = partitionsCheckpoint
+                            .forceCheckpoint("index defragmented", null)
                             .futureFor(CheckpointState.FINISHED);
                     }
 
@@ -368,7 +370,7 @@ public class CachePartitionDefragmentationManager {
 
         PageStore idxPageStore;
 
-        sharedCtx.database().checkpointReadLock();
+        partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
         try {
             idxPageStore = pageStoreFactory.createPageStore(
                 FLAG_IDX,
@@ -377,7 +379,7 @@ public class CachePartitionDefragmentationManager {
             );
         }
         finally {
-            sharedCtx.database().checkpointReadUnlock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
         }
 
         idxPageStore.sync();
@@ -421,7 +423,7 @@ public class CachePartitionDefragmentationManager {
 
         TimeTracker<PartStages> tracker = new TimeTracker<>(PartStages.class);
 
-        sharedCtx.database().checkpointReadLock();
+        partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
         tracker.complete(CP_LOCK);
 
         try {
@@ -432,9 +434,9 @@ public class CachePartitionDefragmentationManager {
                 tracker.complete(ITERATE);
 
                 if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
-                    sharedCtx.database().checkpointReadUnlock();
+                    partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
 
-                    sharedCtx.database().checkpointReadLock();
+                    partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
                     tracker.complete(CP_LOCK);
 
                     lastCpLockTs.set(System.currentTimeMillis());
@@ -482,9 +484,9 @@ public class CachePartitionDefragmentationManager {
                 return true;
             });
 
-            sharedCtx.database().checkpointReadUnlock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
 
-            sharedCtx.database().checkpointReadLock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
             tracker.complete(CP_LOCK);
 
             freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
@@ -494,7 +496,7 @@ public class CachePartitionDefragmentationManager {
             tracker.complete(METADATA);
         }
         finally {
-            sharedCtx.database().checkpointReadUnlock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
         }
 
         System.out.println(tracker.toString());
@@ -563,7 +565,7 @@ public class CachePartitionDefragmentationManager {
 
                     newPartMetaIo.setGapsLink(newPartMetaPageAddr, gapsDataRow.link());
 
-                    partCtx.newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+//                    partCtx.newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
 
                 return null;
@@ -683,7 +685,7 @@ public class CachePartitionDefragmentationManager {
         public PageStore createPartPageStore() throws IgniteCheckedException {
             PageStore partPageStore;
 
-            sharedCtx.database().checkpointReadLock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
             try {
                 partPageStore = pageStoreFactory.createPageStore(
                     FLAG_DATA,
@@ -692,7 +694,7 @@ public class CachePartitionDefragmentationManager {
                 );
             }
             finally {
-                sharedCtx.database().checkpointReadUnlock();
+                partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
             }
 
             partPageStore.sync();
@@ -706,7 +708,7 @@ public class CachePartitionDefragmentationManager {
         public PageStore createMappingPageStore() throws IgniteCheckedException {
             PageStore mappingPageStore;
 
-            sharedCtx.database().checkpointReadLock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
             try {
                 mappingPageStore = pageStoreFactory.createPageStore(
                     FLAG_DATA,
@@ -715,7 +717,7 @@ public class CachePartitionDefragmentationManager {
                 );
             }
             finally {
-                sharedCtx.database().checkpointReadUnlock();
+                partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
             }
 
             mappingPageStore.sync();
@@ -727,7 +729,7 @@ public class CachePartitionDefragmentationManager {
 
         /** */
         public LinkMap createLinkMapTree(boolean initNew) throws IgniteCheckedException {
-            sharedCtx.database().checkpointReadLock();
+            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
 
             try {
                 long mappingMetaPageId = initNew
@@ -740,7 +742,7 @@ public class CachePartitionDefragmentationManager {
                 linkMap = new LinkMap(newGrpCtx, mappingPageMemory, mappingMetaPageId, initNew);
             }
             finally {
-                sharedCtx.database().checkpointReadUnlock();
+                partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
             }
 
             return linkMap;

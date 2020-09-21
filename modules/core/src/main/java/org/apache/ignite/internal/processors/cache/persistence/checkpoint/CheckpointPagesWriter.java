@@ -27,11 +27,9 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -41,7 +39,6 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -51,32 +48,29 @@ import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 /**
  * Implementation of page writer which able to store pages to disk during checkpoint.
  */
-public class WriteCheckpointPages implements Runnable {
-    /** */
+public class CheckpointPagesWriter implements Runnable {
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Checkpoint specific metrics tracker. */
     private final CheckpointMetricsTracker tracker;
 
-    /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection */
+    /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection. */
     private final GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> writePageIds;
 
-    /** */
+    /** Page store used to write -> Count of written pages. */
     private final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores;
 
-    /** */
+    /** Future which should be finished when all pages would be written. */
     private final CountDownFuture doneFut;
 
-    /** Total pages to write, counter may be greater than {@link #writePageIds} size */
-    private final int totalPagesToWrite;
-
-    /** */
+    /** Some action which will be executed every time before page will be written. */
     private final Runnable beforePageWrite;
 
     /** Snapshot manager. */
     private final IgniteCacheSnapshotManager snapshotMgr;
 
-    /** */
-    private final IgniteLogger log;
-
-    /** */
+    /** Data storage metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
 
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
@@ -91,8 +85,8 @@ public class WriteCheckpointPages implements Runnable {
     /** Current checkpoint. This field is updated only by checkpoint thread. */
     private final CheckpointProgressImpl curCpProgress;
 
-    /** */
-    private final FilePageStoreManager storeMgr;
+    /** Writer which able to write one page. */
+    private final CheckpointPageWriter pageWriter;
 
     /** Shutdown now. */
     private final BooleanSupplier shutdownNow;
@@ -104,7 +98,6 @@ public class WriteCheckpointPages implements Runnable {
      * @param writePageIds Collection of page IDs to write.
      * @param updStores Updating storage.
      * @param doneFut Done future.
-     * @param totalPagesToWrite Total pages to be written under this checkpoint.
      * @param beforePageWrite Action to be performed before every page write.
      * @param snapshotManager Snapshot manager.
      * @param log Logger.
@@ -113,16 +106,15 @@ public class WriteCheckpointPages implements Runnable {
      * @param throttlingPolicy Throttling policy.
      * @param pageMemoryGroupResolver Resolver of page memory by group id.
      * @param progress Checkpoint progress.
-     * @param storeMgr File page store manager.
+     * @param pageWriter File page store manager.
      * @param shutdownNow Shutdown supplier.
      */
-    WriteCheckpointPages(
-        final CheckpointMetricsTracker tracker,
-        final GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> writePageIds,
-        final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
-        final CountDownFuture doneFut,
-        final int totalPagesToWrite,
-        final Runnable beforePageWrite,
+    CheckpointPagesWriter(
+        CheckpointMetricsTracker tracker,
+        GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> writePageIds,
+        ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
+        CountDownFuture doneFut,
+        Runnable beforePageWrite,
         IgniteCacheSnapshotManager snapshotManager,
         IgniteLogger log,
         DataStorageMetricsImpl dsMetrics,
@@ -130,14 +122,13 @@ public class WriteCheckpointPages implements Runnable {
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         CheckpointProgressImpl progress,
-        FilePageStoreManager storeMgr,
+        CheckpointPageWriter pageWriter,
         BooleanSupplier shutdownNow
     ) {
         this.tracker = tracker;
         this.writePageIds = writePageIds;
         this.updStores = updStores;
         this.doneFut = doneFut;
-        this.totalPagesToWrite = totalPagesToWrite;
         this.beforePageWrite = beforePageWrite;
         this.snapshotMgr = snapshotManager;
         this.log = log;
@@ -146,7 +137,7 @@ public class WriteCheckpointPages implements Runnable {
         this.throttlingPolicy = throttlingPolicy;
         this.pageMemoryGroupResolver = pageMemoryGroupResolver;
         this.curCpProgress = progress;
-        this.storeMgr = storeMgr;
+        this.pageWriter = pageWriter;
         this.shutdownNow = shutdownNow;
     }
 
@@ -271,22 +262,25 @@ public class WriteCheckpointPages implements Runnable {
 
                 curCpProgress.updateWrittenPages(1);
 
-                PageStore store = pageMemEx.pageManager().write(groupId, pageId, buf, tag, true);
-
-                // Temporary debug logs.
-                log.info(S.toString(
-                    "Page checkpointed",
-                    "grpId", Integer.toHexString(groupId), false,
-                    "partition", (short)PageIdUtils.partId(pageId), false,
-                    "idx", PageIdUtils.pageIndex(pageId), false,
-                    "io", PageIO.getPageIO(buf).getClass().getSimpleName(), false,
-                    "pageMgr", pageMemEx.pageManager(), false
-                ));
-
-                assert store != null;
+                PageStore store = pageWriter.write(pageMemEx, fullPageId, buf, tag);
 
                 updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
             }
         };
+    }
+
+    /** Interface which allows to write one page to page store. */
+    public interface CheckpointPageWriter {
+        /**
+         *
+         * @param pageMemEx Page memory from which page should be written.
+         * @param fullPageId Full page id.
+         * @param buf Byte buffer.
+         * @param tag Page tag.
+         * @return {@link PageStore} which was used to write.
+         * @throws IgniteCheckedException if fail.
+         */
+        PageStore write(PageMemoryEx pageMemEx, FullPageId fullPageId, ByteBuffer buf, int tag)
+            throws IgniteCheckedException;
     }
 }

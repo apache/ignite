@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.awaitForWorkersStop;
  * and should be continued even after node restart.
  */
 public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener,
-        DbCheckpointListener {
+    CheckpointListener {
     /** Prefix for metastorage keys for durable background tasks. */
     private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
 
@@ -177,7 +177,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
             }
         }
 
-        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
+        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this );
 
         this.metastorage = metastorage;
     }

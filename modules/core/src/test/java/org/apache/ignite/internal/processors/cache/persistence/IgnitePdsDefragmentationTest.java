@@ -242,7 +242,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     private void forceCheckpoint(IgniteEx ig) throws IgniteCheckedException {
         ig.context().cache().context().database()
-            .forceCheckpoint("test")
+            .forceCheckpoint("testDefrag")
             .futureFor(CheckpointState.FINISHED)
             .get();
     }
