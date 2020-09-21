@@ -662,7 +662,6 @@ public class FunctionalTest {
                 while (txStartedTime + TX_TIMEOUT >= U.currentTimeMillis())
                     U.sleep(100L);
 
-                // TODO: Rewrite to assertFails
                 try {
                     cache.put(1, "value4");
 
