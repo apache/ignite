@@ -58,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -388,22 +389,21 @@ public class CommandHandler {
         if(F.isEmpty(rawArgs))
             return true;
 
-        if (rawArgs.size() < 3) {
-            boolean help = false;
-            boolean experimental = false;
+        if (rawArgs.size() > 2)
+            return false;
 
-            for (String arg : rawArgs) {
-                if (CMD_HELP.equalsIgnoreCase(arg))
-                    help = true;
-                else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg))
-                    experimental = true;
-            }
+        boolean help = false;
+        boolean experimental = false;
 
-            return (help && experimental) ||
-                ((help || experimental) && rawArgs.size() == 1);
+        for (String arg : rawArgs) {
+            if (CMD_HELP.equalsIgnoreCase(arg))
+                help = true;
+            else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg))
+                experimental = true;
         }
 
-        return false;
+        return (help && experimental) ||
+            ((help || experimental) && rawArgs.size() == 1);
     }
 
     /**
@@ -699,7 +699,7 @@ public class CommandHandler {
     /** @param rawArgs Arguments. */
     private void printHelp(List<String> rawArgs) {
         boolean experimentalEnabled = rawArgs.stream().anyMatch(CMD_ENABLE_EXPERIMENTAL::equalsIgnoreCase) ||
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
