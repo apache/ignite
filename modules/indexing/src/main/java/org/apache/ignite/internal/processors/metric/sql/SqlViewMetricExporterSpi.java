@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.sql;
+package org.apache.ignite.internal.processors.metric.sql;
 
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
@@ -35,12 +35,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 /**
  * This SPI implementation exports metrics as SQL views.
  */
-public class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
+class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** System view name. */
     public static final String SYS_VIEW_NAME = "METRICS";
-
-    /** Metric filter. */
-    private @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /** Metric Registry. */
     private ReadOnlyMetricManager mreg;
@@ -49,9 +46,12 @@ public class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements Metric
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
+        if (!(ctx.query().getIndexing() instanceof IgniteH2Indexing))
+            return;
+
         SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        mgr.createSystemView(SCHEMA_SYS, new MetricRegistryLocalSystemView(ctx, mreg, filter));
+        mgr.createSystemView(SCHEMA_SYS, new MetricRegistryLocalSystemView(ctx, mreg));
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
@@ -74,7 +74,6 @@ public class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements Metric
 
     /** {@inheritDoc} */
     @Override public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter) {
-        this.filter = filter;
+        // No-op.
     }
-
 }

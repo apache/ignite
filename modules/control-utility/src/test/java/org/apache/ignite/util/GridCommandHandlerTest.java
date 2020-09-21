@@ -2359,14 +2359,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         try {
             U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
-            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes"));
+            // Arguments --user and --password are needed for additional sending of the GridClientAuthenticationRequest.
+            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes", "--user", "user", "--password", "123"));
 
-            fut.get(60_000);
+            assertEquals(0, blockedWarmUpStgy.stopLatch.getCount());
         }
-        catch (Throwable t) {
+        finally {
             blockedWarmUpStgy.stopLatch.countDown();
 
-            throw t;
+            fut.get(60_000);
         }
     }
 
