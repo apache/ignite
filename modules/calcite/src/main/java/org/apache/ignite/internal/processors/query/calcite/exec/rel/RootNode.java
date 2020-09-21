@@ -220,7 +220,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         lock.lock();
         try {
             while (true) {
-                //checkException();
+                checkException();
 
                 assert outBuff.isEmpty();
 

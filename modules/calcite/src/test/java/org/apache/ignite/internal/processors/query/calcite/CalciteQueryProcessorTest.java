@@ -408,7 +408,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNull(row);
     }
-
+    
     public void testThroughput() {
         IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setCacheMode(CacheMode.REPLICATED)
