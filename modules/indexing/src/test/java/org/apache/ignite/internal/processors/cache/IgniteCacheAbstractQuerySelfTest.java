@@ -1560,7 +1560,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testQueryExecutionEvents() throws Exception {
-        CountDownLatch execLatch = new CountDownLatch(12);
+        CountDownLatch execLatch = new CountDownLatch(13);
 
         IgnitePredicate<Event> lsnr = evt -> {
             assert evt instanceof QueryExecutionEvent;
@@ -1596,6 +1596,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         ignite().getOrCreateCache(ccfg).query(new SpiQuery<Integer, Integer>())
             .getAll();
 
+        ignite().getOrCreateCache(ccfg).query(new ScanQuery<>())
+            .getAll();
+
         ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
 
         try (IgniteClient client = Ignition.startClient(cc)) {
@@ -1625,6 +1628,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
                 .getAll();
+
+            // Currently, not supported.
+//            client.getOrCreateCache(cacheName).query(new TextQuery<>(String.class, "text"))
+//                .getAll();
+
+            // Currently, not supported.
+//            client.getOrCreateCache(cacheName).query(new SpiQuery<Integer, Integer>())
+//                .getAll();
 
             client.getOrCreateCache(cacheName).query(new ScanQuery<>())
                 .getAll();
