@@ -45,7 +45,7 @@ public class PropertyGetCommand extends PropertyAbstractSubCommand<PropertyArgs,
 
         if (name == null) {
             throw new IllegalArgumentException("Property name is not specified. " +
-                "Please the option: --name <property_name>");
+                "Please use the option: --name <property_name>");
         }
 
         return new PropertyArgs(name, null, PropertyArgs.Action.GET);

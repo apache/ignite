@@ -57,7 +57,7 @@ public class PropertiesListTask extends VisorMultiNodeTask<VoidDto, PropertiesLi
     }
 
     /**
-     * Job for getting binary metadata.
+     * Job for property operations (get/set).
      */
     private static class PropertiesListJob extends VisorJob<VoidDto, PropertiesListResult> {
         /** */

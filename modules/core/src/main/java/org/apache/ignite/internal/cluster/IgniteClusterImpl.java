@@ -118,7 +118,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         "shutdown.policy",
         (ordinal) -> ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal),
         (policy) -> policy == null ? null : policy.index(),
-        ShutdownPolicy.values()
+        ShutdownPolicy.class
     );
 
     /**

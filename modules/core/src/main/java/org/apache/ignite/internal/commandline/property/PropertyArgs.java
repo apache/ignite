@@ -29,16 +29,16 @@ public class PropertyArgs extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Type name argument. */
+    /** Property name argument name. */
     public static final String NAME = "--name";
 
-    /** Type ID argument. */
+    /** Type value argument name . */
     public static final String VAL = "--val";
 
-    /** Config. */
+    /** Property name . */
     private String name;
 
-    /** Metrics. */
+    /** Property's value. */
     private String val;
 
     /** Action. */

@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 
 import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.PROPERTY;
@@ -30,7 +31,7 @@ import static org.apache.ignite.internal.commandline.property.PropertySubCommand
 import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.SET;
 
 /**
- *
+ * Command to manage distributed properties (see {@link DistributedChangeableProperty})
  */
 public class PropertyCommand implements Command<Object> {
     /**
@@ -75,7 +76,7 @@ public class PropertyCommand implements Command<Object> {
         PropertySubCommandsList subcommand = PropertySubCommandsList.parse(argIter.nextArg("Expected property action."));
 
         if (subcommand == null)
-            throw new IllegalArgumentException("Expected correct metadata action.");
+            throw new IllegalArgumentException("Expected correct property action.");
 
         delegate = subcommand.command();
 
