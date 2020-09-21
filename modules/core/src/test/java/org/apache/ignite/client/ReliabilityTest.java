@@ -99,15 +99,20 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 Query<Cache.Entry<Integer, String>> qry =
                     new ScanQuery<Integer, String>().setPageSize(data.size() / 10);
 
-                try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
-                    List<Cache.Entry<Integer, String>> res = cur.getAll();
+                try {
+                    try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
+                        List<Cache.Entry<Integer, String>> res = cur.getAll();
 
-                    assertEquals("Unexpected number of entries", data.size(), res.size());
+                        assertEquals("Unexpected number of entries", data.size(), res.size());
 
-                    Map<Integer, String> act = res.stream()
-                        .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
+                        Map<Integer, String> act = res.stream()
+                                .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                    assertEquals("Unexpected entries", data, act);
+                        assertEquals("Unexpected entries", data, act);
+                    }
+                } catch (ClientConnectionException ignored) {
+                    // QueryCursor.getAll always executes on the same channel where the cursor is open,
+                    // so failover is not possible, and the call will fail when connection drops.
                 }
             });
 
