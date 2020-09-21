@@ -56,6 +56,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
@@ -87,11 +88,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Collections.EMPTY_MAP;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -103,6 +110,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -151,6 +160,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             c.setDataStorageConfiguration(new DataStorageConfiguration());
 
         c.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        c.setIndexingSpi(new TestIndexingSpi());
 
         return c;
     }
@@ -1548,8 +1559,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testClientQueryExecutedEvents() throws Exception {
-        CountDownLatch execLatch = new CountDownLatch(11);
+    public void testQueryExecutionEvents() throws Exception {
+        CountDownLatch execLatch = new CountDownLatch(12);
 
         IgnitePredicate<Event> lsnr = evt -> {
             assert evt instanceof QueryExecutionEvent;
@@ -1558,10 +1569,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             QueryExecutionEvent qe = (QueryExecutionEvent)evt;
 
-            if (SCAN.name().equals(qe.queryType()))
-                assertNull(qe.clause());
+            if (SQL_FIELDS.name().equals(qe.queryType()) ||
+                TEXT.name().equals(qe.queryType())
+            )
+                assertNotNull(qe.queryType() + " query clause is empty!", qe.clause());
             else
-                assertNotNull(qe.clause());
+                assertNull(qe.queryType() + " query clause is not empty!", qe.clause());
 
             execLatch.countDown();
 
@@ -1578,6 +1591,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         ccfg.setIndexedTypes(String.class, String.class);
 
         ignite().createCache(ccfg).query(new TextQuery<>(String.class, "text"))
+            .getAll();
+
+        ignite().getOrCreateCache(ccfg).query(new SpiQuery<Integer, Integer>())
             .getAll();
 
         ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
@@ -2475,5 +2491,37 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         TYPE_A,
         /** */
         TYPE_B
+    }
+
+    /**
+     * No-op Indexing SPI.
+     */
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+        /** {@inheritDoc} */
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
+            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
+            return (Iterator<Cache.Entry<?, ?>>) EMPTY_MAP.entrySet().iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
+            throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable String cacheName, Object k) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStop() throws IgniteSpiException {
+            // No-op.
+        }
     }
 }
