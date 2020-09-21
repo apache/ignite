@@ -60,6 +60,7 @@ import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -270,7 +271,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
-        LongMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
+        IntMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
         LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
         LongMetric receivedBytes = mreg.findMetric("RebalancingReceivedBytes");
 
@@ -388,7 +389,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
-        LongMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
+        IntMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
             "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
