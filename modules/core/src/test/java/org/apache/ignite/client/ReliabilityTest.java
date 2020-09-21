@@ -75,7 +75,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 new ClientCacheConfiguration().setName("testFailover").setCacheMode(CacheMode.REPLICATED)
             );
 
-            System.out.println(">>>> 0");
             // Simple operation failover: put/get
             assertOnUnstableCluster(cluster, () -> {
                 Integer key = rnd.nextInt();
@@ -93,8 +92,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Composite operation failover: query
             Map<Integer, String> data = IntStream.rangeClosed(1, 1000).boxed()
                 .collect(Collectors.toMap(i -> i, i -> String.format("String %s", i)));
-
-            System.out.println(">>>> 1");
 
             assertOnUnstableCluster(cluster, () -> {
                 cache.putAll(data);
@@ -115,7 +112,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
             });
 
             // Client fails if all nodes go down
-            System.out.println(">>>> 2");
             cluster.close();
 
             boolean igniteUnavailable = false;
