@@ -40,3 +40,7 @@ class IgniteTest(Test):
             so that only the difference between the results of consecutive calls is valid.
         """
         return monotonic()
+
+    @staticmethod
+    def timeout():
+        return 300000

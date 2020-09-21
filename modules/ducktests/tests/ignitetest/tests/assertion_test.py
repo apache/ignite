@@ -17,14 +17,14 @@
 This module contains smoke tests that checks that services work
 """
 
+import datetime
+
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.spark import SparkService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -55,11 +55,18 @@ class SmokeServicesTest(IgniteTest):
 
         ignite.start()
 
+        ts = int(round(datetime.datetime.now().timestamp() * 1000))
+
         try:
             app.start()
             app.stop()
-        except:
-            assert True
+        except Exception as e:
+            assert str(e) == "Java application execution failed. java.lang.AssertionError"
+
+            """
+            Check the test timeout is not exceeded
+            """
+            assert int(round(datetime.datetime.now().timestamp() * 1000)) - ts < IgniteTest.timeout()
         else:
             assert False
         finally:
