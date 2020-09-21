@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -70,6 +71,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -378,6 +380,8 @@ public class CommandHandlerParsingTest {
                 args = parseArgs(asList(cmdL.text(), "ACTIVE"));
             else if (cmdL == CLUSTER_CHANGE_TAG)
                 args = parseArgs(asList(cmdL.text(), "newTagValue"));
+            else if (cmdL == WARM_UP)
+                args = parseArgs(asList(cmdL.text(), "--stop"));
             else
                 args = parseArgs(asList(cmdL.text()));
 
@@ -449,6 +453,14 @@ public class CommandHandlerParsingTest {
 
                 case CLUSTER_CHANGE_TAG: {
                     args = parseArgs(asList(cmdL.text(), "newTagValue", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
+                }
+
+                case WARM_UP: {
+                    args = parseArgs(asList(cmdL.text(), "--stop", "--yes"));
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
@@ -937,6 +949,29 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test verifies correctness of parsing of arguments --warm-up command.
+     */
+    @Test
+    public void testWarmUpArgs() {
+        String[][] args = {
+            {"--warm-up"},
+            {"--warm-up", "1"},
+            {"--warm-up", "stop"}
+        };
+
+        for (String[] arg : args) {
+            GridTestUtils.assertThrows(
+                null,
+                () -> parseArgs(asList(arg)),
+                IllegalArgumentException.class,
+                "--stop argument is missing."
+            );
+        }
+
+        assertNotNull(parseArgs(asList("--warm-up", "--stop")));
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -994,6 +1029,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.KILL ||
             cmd == CommandList.SNAPSHOT ||
             cmd == CommandList.CLUSTER_CHANGE_TAG ||
-            cmd == CommandList.METADATA;
+            cmd == CommandList.METADATA ||
+            cmd == CommandList.WARM_UP;
     }
 }

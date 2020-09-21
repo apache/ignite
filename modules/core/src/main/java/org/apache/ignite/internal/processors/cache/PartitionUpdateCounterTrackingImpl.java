@@ -457,7 +457,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public PartitionUpdateCounter copy() {
-        PartitionUpdateCounterTrackingImpl copy = new PartitionUpdateCounterTrackingImpl(grp);
+        PartitionUpdateCounterTrackingImpl copy = createInstance();
 
         copy.cntr.set(cntr.get());
         copy.first = first;
@@ -466,5 +466,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         copy.reserveCntr.set(reserveCntr.get());
 
         return copy;
+    }
+
+    /** */
+    protected PartitionUpdateCounterTrackingImpl createInstance() {
+        return new PartitionUpdateCounterTrackingImpl(grp);
     }
 }

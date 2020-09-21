@@ -115,7 +115,7 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
     private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
     /** List of caches with registered CQ listeners. */
@@ -824,8 +824,6 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        ctx.evict().onCacheGroupStopped(this);
-
         aff.cancelFutures(err);
 
         preldr.onKernalStop();
@@ -1075,15 +1073,15 @@ public class CacheGroupContext {
             );
 
         if (ccfg.getCacheMode() != LOCAL) {
-            top = new GridDhtPartitionTopologyImpl(ctx, this);
+            top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
 
             metrics.onTopologyInitialized();
         }
 
         try {
-            offheapMgr = persistenceEnabled
+            offheapMgr = ctx.kernalContext().resource().resolve(persistenceEnabled
                 ? new GridCacheOffheapManager()
-                : new IgniteCacheOffheapManagerImpl();
+                : new IgniteCacheOffheapManagerImpl());
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to initialize offheap manager", e);
@@ -1095,6 +1093,8 @@ public class CacheGroupContext {
             initializeIO();
 
             ctx.affinity().onCacheGroupCreated(this);
+
+            ctx.evict().onCacheGroupStarted(this);
         }
     }
 
