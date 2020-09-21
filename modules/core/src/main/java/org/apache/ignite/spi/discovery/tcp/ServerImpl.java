@@ -212,6 +212,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Maximal interval of connection check to next node in the ring. */
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
+    /** Minimal timeout to find connection to some next node in the ring while connection recovering. */
+    private static final long MINIMAL_CHECK_TIMEOUT_ON_RECOVERY = 100;
+
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
 
@@ -6528,14 +6531,35 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Creates proper timeout helper taking in account current send state.
+     * Creates proper timeout helper taking in account current send state and ring state.
      *
      * @param sndState Current connection recovering state. Ignored if {@code null}.
      * @return Timeout helper.
      */
     private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState) {
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime,
-            sndState == null ? -1 : sndState.failTimeNanos);
+        long absoluteThreshold = -1;
+
+        // Active send state means we lost connection to next node and have to find an other node to connect to.
+        // We don't know how many nodes failed (may be failed in a row). But we got only one connectionRecoveryTimeout
+        // to find some new connection to the ring. We can't spend this timeout wholly on one or two next nodes.
+        // We should slice it somehow and traverse and check as much next nodes in the ring as we can.
+        if (sndState != null) {
+            long now = System.nanoTime();
+
+            // Losing more than half of cluster is considered as segmentation. No need to go further.
+            int maximumNodesToTravers = ring.serverNodes(null).size() / 2 + 1 - failedNodes.size();
+
+            assert maximumNodesToTravers > 0;
+
+            // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
+            // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / maximumNodesToTravers,
+                MINIMAL_CHECK_TIMEOUT_ON_RECOVERY);
+
+            absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
+        }
+
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime, absoluteThreshold);
     }
 
     /** Fixates time of last sent message. */
