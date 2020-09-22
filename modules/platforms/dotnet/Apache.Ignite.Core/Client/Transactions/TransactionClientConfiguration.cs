@@ -23,7 +23,8 @@ namespace Apache.Ignite.Core.Client.Transactions
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// Transactions configuration.
+    /// Thin client transactions configuration.
+    /// Default values specified here will be used by <see cref="ITransactionsClient.TxStart()"/>.
     /// </summary>
     public class TransactionClientConfiguration
     {

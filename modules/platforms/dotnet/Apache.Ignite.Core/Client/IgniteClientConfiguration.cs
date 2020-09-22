@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Client
         /// To do so, connection is established to every known server node at all times.
         /// </summary>
         public bool EnablePartitionAwareness { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the logger.
         /// Default is <see cref="ConsoleLogger"/>. Set to <c>null</c> to disable logging.
@@ -232,6 +232,7 @@ namespace Apache.Ignite.Core.Client
 
         /// <summary>
         /// Gets or sets the transaction configuration.
+        /// See <see cref="ITransactionsClient"/>, <see cref="IIgniteClient.GetTransactions"/>.
         /// </summary>
         public TransactionClientConfiguration TransactionConfiguration { get; set; }
 
