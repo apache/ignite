@@ -173,8 +173,7 @@ public interface ClientCache<K, V> {
      * <p>
      * The behavior of this operation is undefined if entries in the cache
      * corresponding to entries in the map are modified or removed while this
-     * operation is in progress. or if map is modified while the operation is in
-     * progress.
+     * operation is in progress, or if map is modified while the operation is in progress.
      * <p>
      *
      * @param map Mappings to be stored in this cache.
