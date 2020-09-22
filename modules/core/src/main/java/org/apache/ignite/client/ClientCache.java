@@ -115,7 +115,7 @@ public interface ClientCache<K, V> {
 
     /**
      * Gets the cache configuration asynchronously.
-     * @return The cache configuration.
+     * @return a Future representing pending completion of the operation, which wraps the cache configuration.
      */
     public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException;
 
