@@ -56,8 +56,8 @@ public interface ClientCompute {
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
-     * @deprecated Use {@link ClientCompute#executeAsync2(String, Object)} instead.
-     * This method calls {@link ClientCompute#executeAsync2(String, Object)} internally, but returns a more limited
+     * @deprecated Use {@link #executeAsync2(String, Object)} instead.
+     * This method calls {@link #executeAsync2(String, Object)} internally, but returns a more limited
      * Future interface.
      */
     @Deprecated

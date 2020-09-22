@@ -383,6 +383,12 @@ public interface ClientCache<K, V> {
      * Removes all of the mappings from this cache.
      * <p>
      * The order that the individual entries are removed is undefined.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
      */
     public void removeAll() throws ClientException;
 
@@ -390,6 +396,12 @@ public interface ClientCache<K, V> {
      * Removes all of the mappings from this cache.
      * <p>
      * The order that the individual entries are removed is undefined.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
      * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> removeAllAsync() throws ClientException;
@@ -560,11 +572,13 @@ public interface ClientCache<K, V> {
 
     /**
      * Clears the contents of the cache.
+     * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      */
     public void clear() throws ClientException;
 
     /**
-     * Clears the contents of the cache.
+     * Clears the contents of the cache asynchronously.
+     * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync() throws ClientException;
