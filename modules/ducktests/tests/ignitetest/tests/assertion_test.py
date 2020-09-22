@@ -29,6 +29,7 @@ class SmokeSelfTest(IgniteTest):
     Tests services implementations
     """
 
+    @cluster(num_nodes=1)
     @ignite_versions(str(DEV_BRANCH))
     def test_assertion_convertion(self, ignite_version):
         """
