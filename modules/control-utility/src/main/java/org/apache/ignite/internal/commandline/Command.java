@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -230,13 +228,6 @@ public interface Command<T> {
      * @return command name.
      */
     String name();
-
-    /**
-     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
-     */
-    default boolean experimentalEnabled() {
-        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
-    }
 
     /**
      * Return {@code true} if the command is experimental or {@code false}

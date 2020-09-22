@@ -15,9 +15,25 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains implementations of the {@link org.apache.ignite.spi.systemview.SystemViewExporterSpi}
- * that exports system vies as a JMX beans.
- */
-package org.apache.ignite.spi.systemview.jmx;
+namespace Apache.Ignite.Core.Tests.Client.Cache
+{
+    /// <summary>
+    /// Tests client transactions for single node.
+    /// </summary>
+    public class CacheClientLocalTxTest : CacheClientAbstractTxTest
+    {
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="CacheClientLocalTxTest"/> class.
+        /// </summary>
+        public CacheClientLocalTxTest() : base(1, false)
+        {
+            // No-op.
+        }
+
+        /** <inhertiDoc /> */
+        protected override string GetCacheName()
+        {
+            return "local_" + base.GetCacheName();
+        }
+    }
+}
