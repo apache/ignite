@@ -34,7 +34,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-# pylint: disable=W0223,C0103,R0801
+# pylint: disable=W0223
 class SnapshotTest(IgniteTest):
     """
     Test Snapshot.

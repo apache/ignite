@@ -54,6 +54,9 @@ class IgniteService(IgniteAwareService):
             self.await_node_started(node, timeout_sec)
 
     def run(self, timeout_sec=180):
+        """
+        Run ignite cluster without cleaning.
+        """
         self._rotate_log()
 
         for node in self.nodes:
@@ -65,6 +68,9 @@ class IgniteService(IgniteAwareService):
             self.await_node_started(node, timeout_sec)
 
     def _rotate_log(self):
+        """
+        Rotate log file.
+        """
         date_string = f'{datetime.now():%Y%m%d_%H%M%S}'
         for node in self.nodes:
             node.account.ssh(f'sudo mv {self.STDOUT_STDERR_CAPTURE} {self.PERSISTENT_ROOT}/console_{date_string}.log')

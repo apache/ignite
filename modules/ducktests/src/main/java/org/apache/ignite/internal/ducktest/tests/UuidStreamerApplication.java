@@ -47,7 +47,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         }
 
         recordResult("STREAMED", counter.get());
-        recordResult("MEASURE_DURATION", System.currentTimeMillis() - start);
+        recordResult("DURATION", System.currentTimeMillis() - start);
 
         markFinished();
     }
