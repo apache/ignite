@@ -1199,8 +1199,7 @@ public class GridDhtPartitionDemander {
         ) {
             assert assignments != null : "Asiignments must not be null.";
 
-            this.rebalancingParts = U.newHashMap(assignments.size());
-
+            rebalancingParts = U.newHashMap(assignments.size());
             this.assignments = assignments;
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
@@ -1238,7 +1237,6 @@ public class GridDhtPartitionDemander {
             this.routines = remaining.size();
 
             partitionsTotal = rebalancingParts.values().stream().mapToInt(Set::size).sum();
-
             this.grp = grp;
             this.log = log;
             this.rebalanceId = rebalanceId;
