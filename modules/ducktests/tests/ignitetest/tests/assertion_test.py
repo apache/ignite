@@ -17,6 +17,8 @@
 This module contains smoke tests that checks that ducktape works as expected
 """
 
+from ducktape.mark.resource import cluster
+
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
