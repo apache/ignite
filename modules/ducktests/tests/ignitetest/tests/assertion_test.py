@@ -40,14 +40,10 @@ class SmokeSelfTest(IgniteTest):
         """
         server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
-        ignite = IgniteService(self.test_context, server_configuration, num_nodes=1)
-
         app = IgniteApplicationService(
             self.test_context,
             server_configuration,
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.AssertionApplication")
-
-        ignite.start()
 
         try:
             app.start()
@@ -55,5 +51,3 @@ class SmokeSelfTest(IgniteTest):
             assert str(e) == "Java application execution failed. java.lang.AssertionError"
         else:
             assert False
-        finally:
-            ignite.stop()
