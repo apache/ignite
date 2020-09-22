@@ -45,6 +45,26 @@ namespace Apache.Ignite.Core.Client.Transactions
     ///     } 
     ///     </code>
     /// </example>
+    ///
+    /// Alternatively, <see cref="TransactionScope"/> can be used to start Ignite transactions.
+    /// <example>
+    ///     You can use cache transactions as follows:
+    ///     <code>
+    ///     using (var ts = new TransactionScope())
+    ///     {
+    ///         int v1 = cache&lt;string, int&gt;.Get("k1");
+    ///
+    ///         // Check if v1 satisfies some condition before doing a put.
+    ///         if (v1 > 0)
+    ///             cache.Put&lt;string, int&gt;("k1", 2);
+    ///
+    ///         cache.Remove("k2");
+    ///
+    ///         // Commit the transaction.
+    ///         ts.Complete();
+    ///     }
+    ///     </code>
+    /// </example>
     /// </summary>
     public interface ITransactionsClient
     {
