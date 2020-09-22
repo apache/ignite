@@ -826,7 +826,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     break;
                 }
 
-                if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
+                if (timeoutHelper.checkFailureTimeoutReached(e))
                     break;
 
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
