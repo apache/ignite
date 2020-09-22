@@ -33,5 +33,7 @@ public class AssertionApplication extends IgniteAwareApplication {
         assert false;
 
         markInitialized();
+
+        markFinished();
     }
 }

@@ -32,7 +32,6 @@ class SmokeSelfTest(IgniteTest):
     Tests services implementations
     """
 
-    @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
     def test_ignite_app_start_stop(self, ignite_version):
         """
@@ -50,4 +49,5 @@ class SmokeSelfTest(IgniteTest):
         except Exception as e:
             assert str(e) == "Java application execution failed. java.lang.AssertionError"
         else:
+            app.stop()
             assert False
