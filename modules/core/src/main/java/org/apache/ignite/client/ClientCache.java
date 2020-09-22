@@ -311,8 +311,7 @@ public interface ClientCache<K, V> {
      * <p>Returns <tt>true</tt> if this cache previously associated the key, or <tt>false</tt> if the cache
      * contained no mapping for the key.
      * <p>
-     * The cache will not contain a mapping for the specified key once the
-     * call returns.
+     * The cache will not contain a mapping for the specified key once the call returns.
      *
      * @param key Key whose mapping is to be removed from the cache.
      * @return a Future representing pending completion of the operation, which wraps a value indicating whether the

@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.util.concurrent.Future;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,7 +56,9 @@ public interface ClientCompute {
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
-     * @deprecated Use {@link ClientCompute#executeAsync2(String, Object)}
+     * @deprecated Use {@link ClientCompute#executeAsync2(String, Object)} instead.
+     * This method calls {@link ClientCompute#executeAsync2(String, Object)} internally, but returns a more limited
+     * Future interface.
      */
     @Deprecated
     public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
