@@ -40,7 +40,7 @@ public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest 
     private static final int THREADS_CNT = 20;
 
     /** */
-    public static final String CACHE_NAME = "test-cache";
+    private static final String CACHE_NAME = "test-cache";
 
     /** */
     private static final int CACHE_SIZE = 1_000;
@@ -50,11 +50,9 @@ public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest 
      */
     @Test
     public void testConcurrentPutAll() throws Exception {
-        String cacheName = "atomic-cache";
-
         Ignite ignite = startGridsMultiThreaded(NODES_CNT);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(cacheName)
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(CACHE_NAME)
                 .setAtomicityMode(ATOMIC).setBackups(1));
 
         CyclicBarrier barrier = new CyclicBarrier(THREADS_CNT);
@@ -64,7 +62,7 @@ public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest 
         GridTestUtils.runMultiThreaded(() -> {
             int threadIdx = threadCnt.incrementAndGet();
 
-            IgniteCache<Object, Object> cache0 = grid(ThreadLocalRandom.current().nextInt(NODES_CNT)).cache(cacheName);
+            IgniteCache<Object, Object> cache0 = grid(ThreadLocalRandom.current().nextInt(NODES_CNT)).cache(CACHE_NAME);
 
             Map<Object, Object> map = new LinkedHashMap<>();
 
