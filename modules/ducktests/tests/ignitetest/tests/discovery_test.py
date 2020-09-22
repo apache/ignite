@@ -40,7 +40,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, V_2_10_0, IgniteVersion
 
 
 class ClusterLoad(IntEnum):
@@ -84,10 +84,10 @@ class DiscoveryTest(IgniteTest):
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @ignite_versions(str(V_2_10_0))
+    @matrix(kill_coordinator=[False],
+            nodes_to_kill=[2],
+            load_type=[ClusterLoad.ATOMIC,ClusterLoad.TRANSACTIONAL])
     def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
@@ -143,7 +143,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [n.discovery_info().node_id for n in failed_nodes] \
+            tran_nodes = [node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -154,9 +154,8 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        for node in failed_nodes:
-            di = node.discovery_info()
-            self.logger.info("Simulating failure of node '%s' (order %d) on '%s'" % (di.node_id, di.order, node.name))
+        for n in failed_nodes:
+            self.logger.info("Simulating failure of node '%s' (order %d) on '%s'" % (node_id(n), order(n), n.name))
 
         data = self.simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
                                            survived_node)
@@ -169,20 +168,21 @@ class DiscoveryTest(IgniteTest):
         """
         Perform node failure scenario
         """
-        ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+        ids_to_wait = [node_id(n) for n in failed_nodes]
 
         _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
 
         for node in failed_nodes:
-            self.logger.debug("Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+            self.logger.debug(
+                "Netfilter activated on '%s' (order %d): %s" % (node.name, order(node), dump_netfilter_settings(node)))
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
         data = {}
 
         for failed_id in ids_to_wait:
-            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20, from_the_beginning=True,
-                                        backoff_sec=1)
+            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 15, from_the_beginning=True,
+                                        backoff_sec=0.5)
 
             _, stdout, _ = survived_node.account.ssh_client.exec_command(
                 "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
@@ -190,6 +190,8 @@ class DiscoveryTest(IgniteTest):
             logged_timestamps.append(
                 datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                                   "[%Y-%m-%d %H:%M:%S,%f]"))
+
+        self.check_results(failed_nodes, survived_node)
 
         logged_timestamps.sort(reverse=True)
 
@@ -201,6 +203,23 @@ class DiscoveryTest(IgniteTest):
         data['Nodes failed'] = len(failed_nodes)
 
         return data
+
+    def check_results(self, failed_nodes, survived_node):
+        """Makes sure the test finishes correctly."""
+        failed_cnt = int(str(survived_node.account.ssh_client.exec_command(
+            "grep '%s' %s | wc -l" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                         sys.getdefaultencoding()))
+
+        if failed_cnt != len(failed_nodes):
+            failed = str(survived_node.account.ssh_client.exec_command(
+                "grep '%s' %s" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                         sys.getdefaultencoding())
+
+            self.logger.error("Node '%s' has detected the following failures:%s%s" % (
+                survived_node.discovery_info().consistent_id, os.linesep, failed))
+
+            raise AssertionError(
+                "Wrong number of failed nodes: %d. Expected: %d. Check the logs." % (failed_cnt, len(failed_nodes)))
 
     def setup(self):
         IgniteTest.setup(self)
@@ -284,45 +303,60 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     loader.start()
 
 
-def failed_pattern(failed_node_id):
+def failed_pattern(failed_node_id=None):
     """
     Failed node pattern in log
     """
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "")
 
 
-def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
+def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill, sequential=True):
     """Choose node to kill during test"""
-    assert nodes_to_kill > 0, "   No nodes to kill passed. Check the parameters."
+    assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
     nodes = servers.nodes
     coordinator = nodes[0].discovery_info().coordinator
     to_kill = []
 
     if kill_coordinator:
-        to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
+        to_kill.append(next(node for node in nodes if node_id(node) == coordinator))
         nodes_to_kill -= 1
 
     if nodes_to_kill > 0:
-        choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
-        to_kill.extend([choice] if not isinstance(choice, list) else choice)
-        # coord_idx = nodes.index(next(n for n in nodes if n.discovery_info().node_id == coordinator))
-        #
-        # idxes = []
-        #
-        # for i in range(coord_idx+1, len(nodes)):
-        #     idxes.append(i)
-        # for i in range(0, coord_idx):
-        #     idxes.append(i)
-        #
-        # idx = random.randint(0, len(idxes) - nodes_to_kill)
-        #
-        # for i in range(idx, idx + nodes_to_kill):
-        #     to_kill.append(nodes[i])
+        if sequential:
+            sorted_nodes = sorted(nodes[:], key=lambda n: order(n))
 
-    survive = random.choice([node for node in servers.nodes if node not in to_kill])
+            idx = random.randint(1, len(sorted_nodes) - nodes_to_kill)
 
-    return to_kill, survive
+            to_kill += [nodes[idx], nodes[idx+1]]
+        else:
+            while nodes_to_kill > 0:
+                proper_nodes = [n for n in nodes if node_id(n) != coordinator and len(
+                    [sel for sel in to_kill if order(sel) in range(order(n) - 1, order(n) + 1)]) == 0]
+
+                assert len(proper_nodes) > 0, "Unable to select nodes to kill. Check the test settings."
+
+                choice = random.choice(proper_nodes)
+
+                to_kill.append(choice)
+
+                nodes_to_kill -= 1
+
+        survive = random.choice([node for node in servers.nodes if node not in to_kill])
+
+        assert survive, "Unable to select survived node to monitor the cluster on it."
+
+        return to_kill, survive
+
+
+def order(node):
+    """Return discovery order of the node."""
+    return node.discovery_info().order
+
+
+def node_id(node):
+    """Return node id."""
+    return node.discovery_info().node_id
 
 
 def node_fail_task(ignite_config, test_config):

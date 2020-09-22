@@ -670,7 +670,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Collection of server nodes.
      */
-    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
+    public Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {

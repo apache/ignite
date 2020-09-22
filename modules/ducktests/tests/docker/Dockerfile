@@ -90,6 +90,11 @@ ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
+# Copy ignite-dev
+COPY ./apache-ignite-2.10.0-SNAPSHOT-bin.zip /opt
+RUN cd /opt && unzip apache-ignite-2.10.0-SNAPSHOT-bin.zip && mv /opt/apache-ignite-2.10.0-SNAPSHOT-bin /opt/ignite-2.10.0
+RUN rm /opt/apache-ignite-2.10.0-SNAPSHOT-bin.zip
+
 # Set up the ducker user.
 RUN useradd -ms /bin/bash ducker && mkdir -p /home/ducker/ && rsync -aiq /root/.ssh/ /home/ducker/.ssh && chown -R ducker /home/ducker/ /mnt/ /var/log/ && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 USER ducker
