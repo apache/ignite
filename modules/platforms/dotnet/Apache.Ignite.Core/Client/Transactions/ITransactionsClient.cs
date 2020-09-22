@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Client.Transactions
 {
     using System;
+    using System.Transactions;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -33,16 +34,16 @@ namespace Apache.Ignite.Core.Client.Transactions
     ///     using (var tx = igniteClient.GetTransactions().TxStart())
     ///     {
     ///         int v1 = cache&lt;string, int&gt;.Get("k1");
-    ///         
+    ///
     ///         // Check if v1 satisfies some condition before doing a put.
     ///         if (v1 > 0)
     ///             cache.Put&lt;string, int&gt;("k1", 2);
-    ///             
+    ///
     ///         cache.Remove("k2");
-    ///         
+    ///
     ///         // Commit the transaction.
     ///         tx.Commit();
-    ///     } 
+    ///     }
     ///     </code>
     /// </example>
     ///

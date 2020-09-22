@@ -313,12 +313,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.AreEqual(1, anotherCache[1]);
 
                     anotherCache[2] = 20;
-                    
+
                     Assert.AreEqual(2, cache[2]);
                     Assert.AreEqual(20, anotherCache[2]);
 
                     anotherTx.Commit();
-                    
+
                     Assert.AreEqual(20, cache[2]);
                 }
             }
@@ -419,8 +419,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Action<IIgniteClient>[] txStarts =
             {
-                client => client.GetTransactions().TxStart(),
-                client => new TransactionScope()
+                // ReSharper disable once ObjectCreationAsStatement
+                client => new TransactionScope(),
+                client => client.GetTransactions().TxStart()
             };
 
             foreach (var txStart in txStarts)
@@ -430,10 +431,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     .ToArray();
 
                 Task.WaitAll(tasks);
-            
+
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 GC.WaitForPendingFinalizers();
-            
+
                 Assert.IsFalse(weakRef.All(wr => wr.IsAlive));
             }
         }
@@ -559,7 +560,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(2, cache[1]);
         }
- 
+
         /// <summary>
         /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
         /// </summary>
@@ -909,7 +910,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             return GetTransactionalCache(Client, cacheName);
         }
-        
+
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
