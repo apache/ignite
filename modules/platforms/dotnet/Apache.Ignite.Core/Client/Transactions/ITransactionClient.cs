@@ -26,24 +26,24 @@ namespace Apache.Ignite.Core.Client.Transactions
     public interface ITransactionClient : IDisposable
     {
         /// <summary>
-        /// Transaction concurrency mode.
+        /// Gets the transaction concurrency mode.
         /// </summary>
         TransactionConcurrency Concurrency { get; }
 
         /// <summary>
-        /// Transaction isolation level.
+        /// Gets the transaction isolation level.
         /// </summary>
         TransactionIsolation Isolation { get; }
 
         /// <summary>
-        /// Timeout for this transaction. If transaction times
+        /// Gets the timeout for this transaction. If transaction times
         /// out prior to it's completion, an exception will be thrown.
         /// <see cref="TimeSpan.Zero" /> for infinite timeout.
         /// </summary>
         TimeSpan Timeout { get; }
 
         /// <summary>
-        /// Label of current transaction.
+        /// Gets the transaction label.
         /// </summary>
         string Label { get; }
 
