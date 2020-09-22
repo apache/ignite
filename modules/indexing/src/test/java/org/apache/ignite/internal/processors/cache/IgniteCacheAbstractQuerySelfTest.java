@@ -1590,18 +1590,18 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         ccfg.setName(cacheName);
         ccfg.setIndexedTypes(String.class, String.class);
 
-        ignite().createCache(ccfg).query(new TextQuery<>(String.class, "text"))
-            .getAll();
-
-        ignite().getOrCreateCache(ccfg).query(new SpiQuery<Integer, Integer>())
-            .getAll();
-
-        ignite().getOrCreateCache(ccfg).query(new ScanQuery<>())
-            .getAll();
-
         ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
 
         try (IgniteClient client = Ignition.startClient(cc)) {
+            ignite().createCache(ccfg).query(new TextQuery<>(String.class, "text"))
+                .getAll();
+
+            ignite().getOrCreateCache(ccfg).query(new SpiQuery<Integer, Integer>())
+                .getAll();
+
+            ignite().getOrCreateCache(ccfg).query(new ScanQuery<>())
+                .getAll();
+
             client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
                 .getAll();
 
