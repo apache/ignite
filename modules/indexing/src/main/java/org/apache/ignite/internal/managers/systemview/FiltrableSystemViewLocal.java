@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,7 +34,7 @@ import org.h2.result.SearchRow;
 /**
  * Filtrable SQL system view to export {@link SystemView} data.
  */
-public class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
+class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
     /** View attribute names. */
     private final String[] attributeNames;
 

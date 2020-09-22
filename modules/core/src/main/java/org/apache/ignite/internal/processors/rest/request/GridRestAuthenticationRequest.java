@@ -15,9 +15,16 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.rest.request;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * <!-- Package description. -->
- * Contains implementations of the {@link org.apache.ignite.spi.systemview.SystemViewExporterSpi}
- * that exports system vies as a JMX beans.
+ * Grid authentication request.
  */
-package org.apache.ignite.spi.systemview.jmx;
+public class GridRestAuthenticationRequest extends GridRestTaskRequest {
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestAuthenticationRequest.class, this, super.toString());
+    }
+}
