@@ -49,7 +49,6 @@ namespace Apache.Ignite.Core.Client.Transactions
     ///
     /// Alternatively, <see cref="TransactionScope"/> can be used to start Ignite transactions.
     /// <example>
-    ///     You can use cache transactions as follows:
     ///     <code>
     ///     using (var ts = new TransactionScope())
     ///     {
