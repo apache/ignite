@@ -37,6 +37,7 @@ class IgniteConfiguration(NamedTuple):
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []
+    snapshot_path: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

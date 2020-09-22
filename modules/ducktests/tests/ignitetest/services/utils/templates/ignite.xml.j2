@@ -28,6 +28,7 @@
                             http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="workDirectory" value="{{ work_dir }}" />
+        <property name="snapshotPath" value="{{ config.snapshot_path }}" />
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
                 <constructor-arg type="java.lang.String" value="{{ config_dir }}/ignite-log4j.xml"/>

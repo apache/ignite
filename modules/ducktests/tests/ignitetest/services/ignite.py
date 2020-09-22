@@ -53,6 +53,23 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             self.await_node_started(node, timeout_sec)
 
+    def run(self, timeout_sec=180):
+        self._rotate_log()
+
+        for node in self.nodes:
+            super().start_node(node)
+
+        self.logger.info("Waiting for Ignite(s) to start...")
+
+        for node in self.nodes:
+            self.await_node_started(node, timeout_sec)
+
+    def _rotate_log(self):
+        date_string = f'{datetime.now():%Y%m%d_%H%M%S}'
+        for node in self.nodes:
+            assert 0 == node.account.ssh(f'sudo mv {self.STDOUT_STDERR_CAPTURE} '
+                                       f'{self.PERSISTENT_ROOT}/console_{date_string}.log')
+
     def await_node_started(self, node, timeout_sec):
         """
         Await topology ready event on node start.
@@ -135,6 +152,35 @@ class IgniteService(IgniteAwareService):
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
+
+    def rename_db(self, new_db_name: str):
+        """
+        Rename db.
+        """
+        for node in self.nodes:
+            self._rename_db(node, new_db_name)
+
+    def _rename_db(self, node, new_db_name: str):
+        """
+        Rename db.
+        """
+        node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
+        node.account.ssh(f"sudo mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}", allow_fail=False)
+
+    def copy_snap_to_db(self, snapshot_name: str):
+        """
+        Copy from snapshot to db.
+        """
+        for node in self.nodes:
+            self._copy_snap_to_db(node, snapshot_name)
+
+    def _copy_snap_to_db(self, node, snapshot_name: str):
+        """
+        Copy from snapshot to db.
+        """
+        node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
+        node.account.ssh(f"sudo cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
+        node.account.ssh(f"sudo chown -R ducker:ducker {self.PERSISTENT_ROOT}", allow_fail=False)
 
     def thread_dump(self, node):
         """

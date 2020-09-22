@@ -127,6 +127,42 @@ class ControlUtility:
         res = self.__parse_tx_list(output)
         return res if res else output
 
+    def validate_indexes(self):
+        """
+        Validate verify.
+        """
+        return self.__run(f"--cache validate_indexes")
+
+    def idle_verify(self):
+        """
+        Idle verify.
+        """
+        return self.__run(f"--cache idle_verify")
+
+    def idle_verify_dump(self, node=None):
+        """
+        Idle verify dump.
+        """
+        return self.__run("--cache idle_verify --dump --skip-zeros", node=node)
+
+    def snapshot_create(self, snapshot_name: str):
+        """
+        Create snapshot.
+        """
+        return self.__run(f"--snapshot create {snapshot_name}")
+
+    def snapshot_cancel(self, snapshot_name: str):
+        """
+        Cancel snapshot.
+        """
+        return self.__run(f"--snapshot cancel {snapshot_name}")
+
+    def snapshot_kill(self, snapshot_name: str):
+        """
+        Kill snapshot.
+        """
+        return self.__run(f"--kill SNAPSHOT {snapshot_name}")
+
     @staticmethod
     def __tx_command(**kwargs):
         tokens = ["--tx"]
@@ -244,8 +280,9 @@ class ControlUtility:
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 
-    def __run(self, cmd):
-        node = random.choice(self.__alives())
+    def __run(self, cmd, node=None):
+        if node is None:
+            node = random.choice(self.__alives())
 
         self.logger.debug(f"Run command {cmd} on node {node.name}")
 
@@ -260,7 +297,8 @@ class ControlUtility:
         return output
 
     def __form_cmd(self, node, cmd):
-        return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd}")
+        # return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd}")
+        return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host `hostname -i` {cmd}")
 
     @staticmethod
     def __parse_output(raw_output):
