@@ -373,7 +373,8 @@ public class GridQueryOptimizer {
         else
             target.child(childInd, subTbl);
 
-        parent.where(parent.where() == null ? subSel.where() : new GridSqlOperation(AND, parent.where(), subSel.where()));
+        if (subSel.where() != null)
+            parent.where(parent.where() == null ? subSel.where() : new GridSqlOperation(AND, parent.where(), subSel.where()));
 
         remapColumns(
             parent,

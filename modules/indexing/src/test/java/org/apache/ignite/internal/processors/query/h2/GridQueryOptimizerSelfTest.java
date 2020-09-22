@@ -221,6 +221,19 @@ public class GridQueryOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case to ensure subqueries correctly pulled out from table list, but inner table has no filters.
+     */
+    @Test
+    public void testTableList5() {
+        String outerSqlTemplate = "select name from dep, (%s) d where dep.id = (MOD(d.id, 7) + 1) order by 1";
+        String subSql = "select id from dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
      * The same as {@link #testTableList2()}, but both tables have no aliases.
      */
     @Test
