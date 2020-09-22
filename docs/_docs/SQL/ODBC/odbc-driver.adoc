@@ -136,7 +136,7 @@ Apache Ignite ODBC Driver was officially tested on:
 |OS
 |- Windows (XP and up, both 32-bit and 64-bit versions)
 - Windows Server (2008 and up, both 32-bit and 64-bit versions)
-- Ubuntu (14.x and 15.x 64-bit)
+- Ubuntu (18.04 64-bit)
 
 |C++ compiler
 
@@ -201,20 +201,37 @@ As a result, `ignite-odbc-amd64.msi` and `ignite-odbc-x86.msi` files should appe
 
 On a Linux-based operating system, you will need to install an ODBC Driver Manager of your choice to be able to build and use the Ignite ODBC Driver. The ODBC Driver has been tested with link:http://www.unixodbc.org[UnixODBC].
 
-Additionally, you will need `GCC`, `G++`, and `make` to build the driver and its dependencies.
+==== Prerequisites
+include::includes/cpp-linux-build-prerequisites.adoc[]
 
-Once all the above mentioned are installed, you can build the Ignite ODBC driver:
+NOTE: JDK is needed currently only for building, odbc driver binary doesn't depend on it.
 
-[source,shell]
+==== Building ODBC driver
+- Create build directory for cmake. We'll refer to this as `{CPP_BUILD_DIR}`
+- Choose installation directory prefix (optional, by default `/usr/local`). We'll refer to this as `{CPP_INSTALL_DIR}`
+- Do the folowing:
+
+[tabs]
+--
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
 ----
-cd $IGNITE_HOME/platforms/cpp
-libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
-./configure --enable-odbc --disable-node --disable-core
+cd ${CPP_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
 make
-
-#The following step will most probably require root privileges:
-make install
+sudo make install
 ----
+
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+make 
+sudo make install
+----
+
+--
 
 After the build process is over, you can find out where your ODBC driver has been placed by running the following command:
 
@@ -284,12 +301,14 @@ Once you have built the driver and performed the `make install` command, the ODB
 +
 If there are unresolved links to other libraries, you may want to add directories with these libraries to the `LD_LIBRARY_PATH`.
 
-- Edit file `$IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini` and ensure that Driver parameter of the Apache Ignite section points to where `libignite-odbc.so` is located.
+- Edit file `${IGNITE_HOME}/platforms/cpp/odbc/install/ignite-odbc-install.ini` and ensure that Driver parameter of the Apache Ignite section points to where `libignite-odbc.so` is located.
 
 - To install the ODBC driver, use the following command:
-+
-`odbcinst -i -d -f $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini`
-+
+
+[source,shell]
+----
+odbcinst -i -d -f ${IGNITE_HOME}/platforms/cpp/odbc/install/ignite-odbc-install.ini
+----
 To perform this command, you may need root privileges.
 
 Now the Apache Ignite ODBC driver is installed and ready for use. You can connect to it and use it just like any other ODBC driver.

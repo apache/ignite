@@ -7,7 +7,7 @@
 
 
 == Installation
-The source code of the C++ thin client comes with the Ignite distribution package under the `{IGNITE_HOME}/platforms/cpp` directory.
+The source code of the C++ thin client comes with the Ignite distribution package under the `${IGNITE_HOME}/platforms/cpp` directory.
 
 
 [tabs]
@@ -15,47 +15,29 @@ The source code of the C++ thin client comes with the Ignite distribution packag
 tab:Windows[]
 [source,bat]
 ----
-cd {IGNITE_HOME}\platforms\cpp\project\vs
+cd %IGNITE_HOME%\platforms\cpp\project\vs
 
 msbuild ignite.sln /p:Configuration=Release /p:Platform=x64
 ----
 
-tab:Linux (system wide)[]
-[source,shell]
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
 ----
-cd {IGNITE_HOME}/platforms/cpp
-libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
-
-# You can call the following command to see all the available
-# configuration options:
-# ./configure --help
-# To use default configuration just type:
-./configure
+cd ${CPP_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
 make
-
-#The following step is optional if you want to install Ignite
-#for your system. It would probably require root:
 sudo make install
 ----
 
-tab:Linux (local directory)[]
-[source,shell]
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
 ----
-cd platforms/cpp
-libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
-
-# You can call the following command to see all the available
-# configuration options:
-# ./configure --help
-#
-# Specify a target subdirectory in your user's home dir:
-./configure --prefix=/home/user/odbc
-make
-
-#The following step is needed if you want to install Ignite
-#under specified prefix directory.
-make install
+cd ${CPP_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
+make 
+sudo make install
 ----
+
 --
 
 
