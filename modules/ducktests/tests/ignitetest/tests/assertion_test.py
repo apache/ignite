@@ -14,12 +14,9 @@
 # limitations under the License.
 
 """
-This module contains smoke tests that checks that services work
+This module contains smoke tests that checks that ducktape works as expected
 """
 
-from ducktape.mark.resource import cluster
-
-from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
@@ -33,7 +30,7 @@ class SmokeSelfTest(IgniteTest):
     """
 
     @ignite_versions(str(DEV_BRANCH))
-    def test_ignite_app_start_stop(self, ignite_version):
+    def test_assertion_convertion(self, ignite_version):
         """
         Test to make sure Java assertions are converted to python exceptions
         """
