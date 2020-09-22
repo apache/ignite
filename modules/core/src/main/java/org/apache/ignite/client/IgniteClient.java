@@ -32,30 +32,32 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
  */
 public interface IgniteClient extends AutoCloseable {
     /**
-     * Get existing cache or create the cache if it does not exist.
+     * Gets the existing cache or creates a new cache with default configuration if it does not exist.
      *
      * @param name Cache name.
      */
     public <K, V> ClientCache<K, V> getOrCreateCache(String name) throws ClientException;
 
     /**
-     * Get existing cache or create the cache if it does not exist.
+     * Gets the existing cache or creates a new cache with default configuration if it does not exist.
      *
      * @param name Cache name.
+     * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException;
 
     /**
-     * Get existing cache or create the cache if it does not exist.
+     * Gets the existing cache or creates a new cache if it does not exist.
      *
-     * @param cfg Cache configuration.
+     * @param cfg Cache configuration. If the cache exists, this configuration is ignored.
      */
     public <K, V> ClientCache<K, V> getOrCreateCache(ClientCacheConfiguration cfg) throws ClientException;
 
     /**
-     * Get existing cache or create the cache if it does not exist.
+     * Gets the existing cache or creates a new cache if it does not exist.
      *
-     * @param cfg Cache configuration.
+     * @param cfg Cache configuration. If the cache exists, this configuration is ignored.
+     * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(ClientCacheConfiguration cfg)
             throws ClientException;
@@ -68,50 +70,60 @@ public interface IgniteClient extends AutoCloseable {
     public <K, V> ClientCache<K, V> cache(String name);
 
     /**
+     * Gets the names of all available caches.
      * @return Collection of names of currently available caches or an empty collection if no caches are available.
      */
     public Collection<String> cacheNames() throws ClientException;
 
     /**
-     * @return Collection of names of currently available caches or an empty collection if no caches are available.
+     * Gets the names of all available caches.
+     * @return a Future representing pending completion of the operation, which wraps the сollection of names
+     * of currently available caches or an empty collection if no caches are available.
      */
     public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException;
 
     /**
-     * Destroy cache.
+     * Destroys the cache with the given name.
+     * Throws {@link ClientException} if the cache does not exist.
      */
     public void destroyCache(String name) throws ClientException;
 
     /**
-     * Destroy cache.
+     * Destroys the cache with the given name.
+     * Throws {@link ClientException} if the cache does not exist.
+     * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException;
 
     /**
-     * Create cache.
+     * Creates a cache with a default configuration.
      *
      * @param name Cache name.
+     * @return Resulting cache.
      */
     public <K, V> ClientCache<K, V> createCache(String name) throws ClientException;
 
     /**
-     * Create cache.
+     * Creates a cache with a default configuration.
      *
      * @param name Cache name.
+     * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException;
 
     /**
-     * Create cache.
+     * Creates a cache with the specified configuration.
      *
      * @param cfg Cache configuration.
+     * @return Resulting cache.
      */
     public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException;
 
     /**
-     * Create cache.
+     * Creates a cache with the specified configuration.
      *
      * @param cfg Cache configuration.
+     * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
             throws ClientException;
