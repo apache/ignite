@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
@@ -29,8 +30,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
  *
  * @see EventType#EVT_NODE_VALIDATION_FAILED
  * @see GridComponent#validateNode
- * @see ServerImpl.RingMessageWorker#processJoinRequestMessage
- * @see ZookeeperDiscoveryImpl#validateJoiningNode
  */
 public class NodeValidationFailedEvent extends EventAdapter {
     /** */
@@ -56,17 +55,18 @@ public class NodeValidationFailedEvent extends EventAdapter {
         this.res = res;
     }
 
-    /**
-     * Gets node which couldn't join the topology due to a validation failure.
-     */
+    /** @return Node that couldn't join the topology due to a validation failure. */
     public ClusterNode eventNode() {
         return evtNode;
     }
 
-    /**
-     * Gets joining node validation result.
-     */
+    /** @return Joining node validation result. */
     public IgniteNodeValidationResult validationResult() {
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NodeValidationFailedEvent.class, this, "parent", super.toString());
     }
 }

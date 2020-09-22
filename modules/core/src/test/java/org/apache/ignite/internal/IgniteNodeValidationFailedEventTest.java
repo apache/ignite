@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,15 +33,13 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/**
- * Tests joining node validation failed event.
- */
+/** Tests joining node validation failed event. */
 public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setIncludeEventTypes(EVT_NODE_VALIDATION_FAILED)
-            .setConsistentId(UUID.randomUUID());
+            .setConsistentId(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -52,11 +49,8 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     public void testNodeValidationFailedEvent() throws Exception {
         startGrid(0);
 
@@ -74,7 +68,9 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
 
         startGrid(1);
 
-        IgniteConfiguration invalidCfg = getConfiguration(getTestIgniteInstanceName(2))
+        String invalidNodeName = getTestIgniteInstanceName(2);
+
+        IgniteConfiguration invalidCfg = getConfiguration(invalidNodeName)
             .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false));
 
         assertThrowsWithCause(() -> startGrid(optimize(invalidCfg)), IgniteSpiException.class);
@@ -85,9 +81,9 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
 
         assertTrue(listenedEvt instanceof NodeValidationFailedEvent);
 
-        NodeValidationFailedEvent validationEvt = (NodeValidationFailedEvent) listenedEvt;
+        NodeValidationFailedEvent validationEvt = (NodeValidationFailedEvent)listenedEvt;
 
-        assertEquals(invalidCfg.getConsistentId(), validationEvt.eventNode().attribute(ATTR_NODE_CONSISTENT_ID));
+        assertEquals(invalidNodeName, validationEvt.eventNode().attribute(ATTR_NODE_CONSISTENT_ID));
 
         IgniteNodeValidationResult validationRes = validationEvt.validationResult();
 
@@ -100,9 +96,7 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
             "Local node's grid security processor class is not equal to remote node's grid security processor class"));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testEventDisabledByDefault() throws Exception {
         IgniteEx ignite = startGrid(super.getConfiguration(getTestIgniteInstanceName(0)));
