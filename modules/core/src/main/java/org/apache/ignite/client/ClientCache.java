@@ -202,7 +202,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically replaces the entry for a key only if currently mapped to a given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
      *  cache.put(key, newValue);
@@ -211,7 +211,6 @@ public interface ClientCache<K, V> {
      *  return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param oldVal Value expected to be associated with the specified key.
@@ -223,7 +222,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically replaces the entry for a key only if currently mapped to a given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
      *  cache.put(key, newValue);
@@ -232,7 +231,6 @@ public interface ClientCache<K, V> {
      *  return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param oldVal Value expected to be associated with the specified key.
@@ -246,7 +244,7 @@ public interface ClientCache<K, V> {
      * Atomically replaces the entry for a key only if currently mapped to some
      * value.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   cache.put(key, value);
@@ -254,7 +252,6 @@ public interface ClientCache<K, V> {
      * } else {
      *   return false;
      * }</code></pre>
-     * except that the action is performed atomically.
      *
      * @param key The key with which the specified value is associated.
      * @param val The value to be associated with the specified key.
@@ -266,7 +263,7 @@ public interface ClientCache<K, V> {
      * Atomically replaces the entry for a key only if currently mapped to some
      * value.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   cache.put(key, value);
@@ -274,7 +271,6 @@ public interface ClientCache<K, V> {
      * } else {
      *   return false;
      * }</code></pre>
-     * except that the action is performed atomically.
      *
      * @param key The key with which the specified value is associated.
      * @param val The value to be associated with the specified key.
@@ -322,7 +318,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically removes the mapping for a key only if currently mapped to the given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue) {
      *   cache.remove(key);
@@ -331,7 +327,6 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key whose mapping is to be removed from the cache.
      * @param oldVal Value expected to be associated with the specified key.
@@ -342,7 +337,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically removes the mapping for a key only if currently mapped to the given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue) {
      *   cache.remove(key);
@@ -351,7 +346,6 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key whose mapping is to be removed from the cache.
      * @param oldVal Value expected to be associated with the specified key.
@@ -447,7 +441,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically removes the entry for a key only if currently mapped to some value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -457,7 +451,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @return The value if one existed or null if no mapping existed for this key.
@@ -467,7 +460,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically removes the entry for a key only if currently mapped to some value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -477,7 +470,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @return a Future representing pending completion of the operation, which wraps the value if one existed or null
@@ -488,7 +480,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -498,7 +490,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param val Value to be associated with the specified key.
@@ -510,7 +501,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -520,7 +511,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param val Value to be associated with the specified key.
@@ -532,7 +522,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically associates the specified key with the given value if it is not already associated with a value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (!cache.containsKey(key)) {}
      *   cache.put(key, value);
@@ -541,7 +531,6 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is to be associated.
      * @param val Value to be associated with the specified key.
@@ -552,7 +541,7 @@ public interface ClientCache<K, V> {
     /**
      * Atomically associates the specified key with the given value if it is not already associated with a value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (!cache.containsKey(key)) {}
      *   cache.put(key, value);
@@ -561,7 +550,6 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is to be associated.
      * @param val Value to be associated with the specified key.
