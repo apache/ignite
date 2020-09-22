@@ -430,8 +430,8 @@ public interface ClientCache<K, V> {
      *
      * @param key Key with which the specified value is to be associated.
      * @param val Value to be associated with the specified key.
-     * @return The value associated with the key at the start of the operation or
-     * null if none was associated.
+     * @return a Future representing pending completion of the operation, which wraps the value associated with the
+     * key at the start of the operation or null if none was associated.
      */
     public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException;
 
@@ -471,7 +471,8 @@ public interface ClientCache<K, V> {
      * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
-     * @return The value if one existed or null if no mapping existed for this key.
+     * @return a Future representing pending completion of the operation, which wraps the value if one existed or null
+     * if no mapping existed for this key.
      */
     public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException;
 
@@ -514,8 +515,8 @@ public interface ClientCache<K, V> {
      *
      * @param key Key with which the specified value is associated.
      * @param val Value to be associated with the specified key.
-     * @return The previous value associated with the specified key, or
-     * <tt>null</tt> if there was no mapping for the key.
+     * @return a Future representing pending completion of the operation, which wraps the previous value associated
+     * with the specified key, or <tt>null</tt> if there was no mapping for the key.
      */
     public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException;
 
@@ -555,7 +556,8 @@ public interface ClientCache<K, V> {
      *
      * @param key Key with which the specified value is to be associated.
      * @param val Value to be associated with the specified key.
-     * @return <tt>true</tt> if a value was set.
+     * @return a Future representing pending completion of the operation, which wraps the value indicating whether
+     * a value was set.
      */
     public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException;
 
@@ -566,6 +568,7 @@ public interface ClientCache<K, V> {
 
     /**
      * Clears the contents of the cache.
+     * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync() throws ClientException;
 
