@@ -31,5 +31,7 @@ public class AssertionApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) {
         assert false;
+
+        markInitialized();
     }
 }
