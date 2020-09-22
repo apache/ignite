@@ -67,8 +67,7 @@ class IgniteService(IgniteAwareService):
     def _rotate_log(self):
         date_string = f'{datetime.now():%Y%m%d_%H%M%S}'
         for node in self.nodes:
-            assert 0 == node.account.ssh(f'sudo mv {self.STDOUT_STDERR_CAPTURE} '
-                                       f'{self.PERSISTENT_ROOT}/console_{date_string}.log')
+            node.account.ssh(f'sudo mv {self.STDOUT_STDERR_CAPTURE} {self.PERSISTENT_ROOT}/console_{date_string}.log')
 
     def await_node_started(self, node, timeout_sec):
         """
