@@ -19,9 +19,7 @@ package org.apache.ignite.internal.commandline.systemview;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
-/**
- * Represents all possible arguments for {@link SystemViewCommand}.
- */
+/** Represents all possible arguments for {@link SystemViewCommand}. */
 public enum SystemViewCommandArg implements CommandArg {
     /** Id of the node to get the system view from. */
     NODE_ID("--node-id");
@@ -29,9 +27,7 @@ public enum SystemViewCommandArg implements CommandArg {
     /** Name of the argument. */
     private final String name;
 
-    /**
-     * @param name Name of the argument.
-     */
+    /** @param name Name of the argument. */
     SystemViewCommandArg(String name) {
         this.name = name;
     }

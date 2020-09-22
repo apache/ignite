@@ -122,9 +122,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
-/**
- * Tests output of {@link CommandList#SYSTEM_VIEW} command.
- */
+/** Tests output of {@link CommandList#SYSTEM_VIEW} command. */
 public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing content of a system view. */
     private static final String CMD_SYS_VIEW = SYSTEM_VIEW.text();
@@ -170,27 +168,21 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         ignite1 = ignite(1);
     }
 
-    /**
-     * Tests command error output in case of mandatory system view name is omitted.
-     */
+    /** Tests command error output in case of mandatory system view name is omitted. */
     @Test
     public void testSystemViewNameMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW),
             "The name of the system view for which its content should be printed is expected.");
     }
 
-    /**
-     * Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is omitted.
-     */
+    /** Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is omitted. */
     @Test
     public void testNodeIdMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName()),
             "ID of the node from which system view content should be obtained is expected.");
     }
 
-    /**
-     * Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is invalid.
-     */
+    /** Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is invalid.*/
     @Test
     public void testInvalidNodeIdFailure() {
         assertContains(log,
@@ -201,9 +193,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         );
     }
 
-    /**
-     * Tests command error output in case multiple system view names are specified.
-     */
+    /** Tests command error output in case multiple system view names are specified. */
     @Test
     public void testMultipleSystemViewNamesFailure() {
         assertContains(log,
@@ -224,9 +214,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
     }
 
-    /**
-     * Tests command output in case nonexistent system view names is specified.
-     */
+    /** Tests command output in case nonexistent system view names is specified. */
     @Test
     public void testNonExistentSystemView() {
         assertContains(log, executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, "non_existent_system_view"),

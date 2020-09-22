@@ -26,9 +26,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType;
 
-/**
- * Reperesents result of {@link VisorSystemViewTask}.
- */
+/** Reperesents result of {@link VisorSystemViewTask}. */
 public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -39,18 +37,17 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /** Names of the system view attributes. */
     private List<String> attrs;
 
-    /** Types of the systen view attributes. */
+    /** Types of the system view attributes. */
     List<SimpleAttributeType> types;
 
-    /**
-     * Default constructor.
-     */
+    /** Default constructor. */
     public VisorSystemViewTaskResult() {
         // No-op.
     }
 
     /**
      * @param attrs Names of system view attributes.
+     * @param types Types of the system view attributes.
      * @param rows Attribute values for each row of the system view.
      */
     public VisorSystemViewTaskResult(List<String> attrs, List<SimpleAttributeType> types, List<List<?>> rows) {
@@ -59,30 +56,22 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
         this.rows = rows;
     }
 
-    /**
-     * @return Names of the system view attributes.
-     */
-    public List<String> systemViewAttributes() {
+    /** @return Names of the system view attributes. */
+    public List<String> attributes() {
         return attrs;
     }
 
-    /**
-     * @return Attribute values for each row of the system view.
-     */
-    public List<List<?>> systemViewContent() {
+    /** @return Attribute values for each row of the system view. */
+    public List<List<?>> rows() {
         return rows;
     }
 
-    /**
-     * @return Types of the system view attributes.
-     */
-    public List<SimpleAttributeType> systemViewAttributeTypes() {
+    /** @return Types of the system view attributes. */
+    public List<SimpleAttributeType> types() {
         return types;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, attrs);
 
@@ -94,9 +83,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
             U.writeCollection(out, row);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         attrs = U.readList(in);
 

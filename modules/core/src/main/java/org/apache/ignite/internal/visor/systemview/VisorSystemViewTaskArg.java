@@ -32,23 +32,17 @@ public class VisorSystemViewTaskArg extends IgniteDataTransferObject {
     /** Name of the system view which attributes are to be printed. */
     private String sysViewName;
 
-    /**
-     * Default constructor
-     */
+    /** Default constructor. */
     public VisorSystemViewTaskArg() {
         // No-op.
     }
 
-    /**
-     * @param sysViewName Name of the system view which attributes are to be printed.
-     */
+    /** @param sysViewName Name of the system view which attributes are to be printed. */
     public VisorSystemViewTaskArg(String sysViewName) {
         this.sysViewName = sysViewName;
     }
 
-    /**
-     * @return Name of the system view which attributes are requested.
-     */
+    /** @return Name of the system view which attributes are requested. */
     public String systemViewName() {
         return sysViewName;
     }

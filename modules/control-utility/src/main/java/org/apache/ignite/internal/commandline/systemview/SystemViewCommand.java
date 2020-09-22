@@ -48,16 +48,13 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
 
-/**
- * Represents command for {@link SystemView} content printing.
- */
+/** Represents command for {@link SystemView} content printing. */
 public class SystemViewCommand implements Command<Object> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";
 
     /**
      * Argument for the system view content obtainig task.
-     *
      * @see VisorSystemViewTask
      */
     private VisorSystemViewTaskArg taskArg;
@@ -102,28 +99,28 @@ public class SystemViewCommand implements Command<Object> {
      * @param log Logger.
      */
     private void printSystemViewContent(VisorSystemViewTaskResult taskRes, Logger log) {
-        List<String> colTitles = taskRes.systemViewAttributes();
-        List<List<?>> sysViewRows = taskRes.systemViewContent();
+        List<String> titles = taskRes.attributes();
+        List<List<?>> viewRows = taskRes.rows();
 
-        List<Integer> colLenghts = colTitles.stream().map(String::length).collect(Collectors.toList());
+        List<Integer> colSzs = titles.stream().map(String::length).collect(Collectors.toList());
 
-        List<List<String>> rows = new ArrayList<>(sysViewRows.size());
+        List<List<String>> rows = new ArrayList<>(viewRows.size());
 
-        sysViewRows.forEach(sysViewRow -> {
-            ListIterator<Integer> colLenIter = colLenghts.listIterator();
+        viewRows.forEach(sysViewRow -> {
+            ListIterator<Integer> colLenIter = colSzs.listIterator();
 
             rows.add(sysViewRow.stream().map(attr -> {
-                String colVal = String.valueOf(attr);
+                String val = String.valueOf(attr);
 
-                colLenIter.set(Math.max(colLenIter.next(), colVal.length()));
+                colLenIter.set(Math.max(colLenIter.next(), val.length()));
 
-                return colVal;
+                return val;
             }).collect(Collectors.toList()));
         });
 
-        printRow(colTitles, nCopies(colTitles.size(), STRING), colLenghts, log);
+        printRow(titles, nCopies(titles.size(), STRING), colSzs, log);
 
-        rows.forEach(row -> printRow(row, taskRes.systemViewAttributeTypes(), colLenghts, log));
+        rows.forEach(row -> printRow(row, taskRes.types(), colSzs, log));
     }
 
     /**

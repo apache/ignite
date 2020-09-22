@@ -40,9 +40,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
 
-/**
- * Reperesents visor task for obtaining system view content.
- */
+/** Reperesents visor task for obtaining system view content. */
 @GridInternal
 @GridVisorManagementTask
 public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg, VisorSystemViewTaskResult> {
@@ -54,9 +52,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
         return new VisorSystemViewJob(arg, false);
     }
 
-    /**
-     *
-     */
+    /** */
     private static class VisorSystemViewJob extends VisorJob<VisorSystemViewTaskArg, VisorSystemViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
