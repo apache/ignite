@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Iterator;
@@ -43,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 
 /**
  * Cancel query test.
@@ -110,7 +112,7 @@ public class CancelTest extends GridCommonAbstractTest {
 
                 return null;
             },
-            IgniteSQLException.class, "The query was cancelled while executing"
+            IgniteSQLException.class, ERR_MSG
         );
 
         awaitReservationsRelease("TEST");

@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -33,39 +32,43 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
+
 /**
  * Client iterator.
  */
 public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, Iterator<Row> {
     /** */
-    private final ReentrantLock lock;
+    private final ReentrantLock lock = new ReentrantLock();
 
     /** */
-    private final Condition cond;
-
-    /** */
-    private final Deque<Row> buff;
+    private final Condition cond = lock.newCondition();
 
     /** */
     private final Runnable onClose;
 
     /** */
-    private volatile State state = State.RUNNING;
-
-    /** */
     private final AtomicReference<Throwable> ex = new AtomicReference<>();
 
     /** */
-    private Row row;
+    private int waiting;
 
     /** */
-    private int waiting;
+    private Deque<Row> inBuff = new ArrayDeque<>(IN_BUFFER_SIZE);
+
+    /** */
+    private Deque<Row> outBuff = new ArrayDeque<>(IN_BUFFER_SIZE);
+
+    /** */
+    private volatile boolean closed;
 
     /**
      * @param ctx Execution context.
      */
     public RootNode(ExecutionContext<Row> ctx) {
-        this(ctx, null);
+        super(ctx);
+
+        onClose = this::closeInternal;
     }
 
     /**
@@ -73,10 +76,6 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
      */
     public RootNode(ExecutionContext<Row> ctx, Runnable onClose) {
         super(ctx);
-
-        buff = new ArrayDeque<>(IN_BUFFER_SIZE);
-        lock = new ReentrantLock();
-        cond = lock.newCondition();
 
         this.onClose = onClose;
     }
@@ -88,14 +87,15 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (closed)
+            return;
+
         lock.lock();
         try {
-            if (state == State.RUNNING)
-                state = State.CANCELLED;
-            else if (state == State.END)
-                state = State.CLOSED;
-            else
-                return;
+            if (waiting != -1)
+                ex.compareAndSet(null, new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED));
+
+            closed = true; // an exception has to be set first to get right check order
 
             cond.signalAll();
         }
@@ -103,83 +103,59 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             lock.unlock();
         }
 
-        if (onClose == null)
-            closeInternal();
-        else
-            onClose.run();
+        onClose.run();
     }
 
     /** {@inheritDoc} */
     @Override protected boolean isClosed() {
-        return state == State.CANCELLED || state == State.CLOSED;
+        return closed;
     }
 
     /** {@inheritDoc} */
     @Override public void closeInternal() {
-        context().execute(() -> {
-            buff.clear();
-
-            U.closeQuiet(super::close);
-        });
+        context().execute(() -> sources().forEach(U::closeQuiet));
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         assert waiting > 0;
 
+        lock.lock();
         try {
             checkState();
 
-            int req = 0;
+            waiting--;
 
-            lock.lock();
-            try {
-                if (state != State.RUNNING)
-                    return;
+            inBuff.offer(row);
 
-                waiting--;
-
-                buff.offer(row);
-
-                if (waiting == 0)
-                    waiting = req = IN_BUFFER_SIZE - buff.size();
-
+            if (inBuff.size() == IN_BUFFER_SIZE)
                 cond.signalAll();
-            }
-            finally {
-                lock.unlock();
-            }
-
-            if (req > 0)
-                source().request(req);
         }
         catch (Exception e) {
             onError(e);
+        }
+        finally {
+            lock.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
+        assert waiting > 0;
+
+        lock.lock();
         try {
             checkState();
 
-            lock.lock();
-            try {
-                assert waiting > 0 : "waiting=" + waiting;
+            waiting = -1;
 
-                waiting = -1;
-
-                if (state != State.RUNNING)
-                    return;
-
-                cond.signalAll();
-            }
-            finally {
-                lock.unlock();
-            }
+            cond.signalAll();
         }
         catch (Exception e) {
             onError(e);
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -193,12 +169,17 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        if (row != null)
+        checkException();
+
+        if (!outBuff.isEmpty())
             return true;
-        else if (state == State.END || state == State.CLOSED)
+
+        if (closed && ex.get() == null)
             return false;
-        else
-            return (row = take()) != null;
+
+        exchangeBuffers();
+
+        return !outBuff.isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -206,10 +187,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (!hasNext())
             throw new NoSuchElementException();
 
-        Row cur0 = row;
-        row = null;
-
-        return cur0;
+        return outBuff.remove();
     }
 
     /** {@inheritDoc} */
@@ -236,61 +214,53 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** */
-    private Row take() {
+    private void exchangeBuffers() {
         assert !F.isEmpty(sources()) && sources().size() == 1;
 
         lock.lock();
         try {
-            while (true) {
-                checkCancelled();
-                assert state == State.RUNNING;
+            while (ex.get() == null) {
+                assert outBuff.isEmpty();
 
-                if (!buff.isEmpty())
-                    return buff.poll();
-                else if (waiting == -1)
-                    break;
-                else if (waiting == 0) {
+                if (inBuff.size() == IN_BUFFER_SIZE || waiting == -1) {
+                    Deque<Row> tmp = inBuff;
+                    inBuff = outBuff;
+                    outBuff = tmp;
+                }
+
+                if (waiting == -1)
+                    close();
+                else if (inBuff.isEmpty() && waiting == 0) {
                     int req = waiting = IN_BUFFER_SIZE;
                     context().execute(() -> source().request(req));
                 }
 
+                if (!outBuff.isEmpty() || waiting == -1)
+                    break;
+
                 cond.await();
             }
-
-            state = State.END;
         }
         catch (InterruptedException e) {
-            throw new IgniteInterruptedException(e);
+            onError(new IgniteInterruptedException(e));
         }
         finally {
             lock.unlock();
         }
 
-        assert state == State.END;
-
-        close();
-        
-        return null;
+        checkException();
     }
 
     /** */
-    private void checkCancelled() {
-        if (state == State.CANCELLED) {
-            ex.compareAndSet(null, new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED));
+    private void checkException() {
+        Throwable e = ex.get();
 
-            throw sqlException(ex.get());
-        }
-    }
+        if (e == null)
+            return;
 
-    /** */
-    private IgniteSQLException sqlException(Throwable e) {
-        return e instanceof IgniteSQLException
-            ? (IgniteSQLException)e
-            : new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
-    }
-
-    /** */
-    private enum State {
-        RUNNING, CANCELLED, END, CLOSED
+        if (e instanceof IgniteSQLException)
+            throw (IgniteSQLException)e;
+        else
+            throw new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
     }
 }
