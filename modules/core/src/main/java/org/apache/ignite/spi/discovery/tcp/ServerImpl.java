@@ -213,7 +213,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Minimal timeout to find connection to some next node in the ring while connection recovering. */
-    private static final long MINIMAL_CHECK_TIMEOUT_ON_RECOVERY = 100;
+    private static final long MIN_RECOVERY_TIMEOUT = 100;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -3677,6 +3677,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     // Resetting timeout control object to let the code below to use a new one
                                     // for the next bunch of operations.
                                     timeoutHelper = null;
+                                    sndState = null;
                                 }
                             }
                         }
@@ -3858,8 +3859,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
                         sndState = new CrossRingMessageSendState();
+
+                        // We hasn't sent a message actually and felt into connection recovery cycle.
+                        // Now we cannot relay on last-message-sent-time. We'll work with connectionRecoverytimeout
+                        // until we find new connection to the ring.
+                        lastRingMsgSentTime = 0;
+                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -6539,22 +6546,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState) {
         long absoluteThreshold = -1;
 
-        // Active send state means we lost connection to next node and have to find an other node to connect to.
-        // We don't know how many nodes failed (may be failed in a row). But we got only one connectionRecoveryTimeout
-        // to find some new connection to the ring. We can't spend this timeout wholly on one or two next nodes.
-        // We should slice it somehow and traverse and check as much next nodes in the ring as we can.
+        // Active send-state means we lost connection to next node and have to find an other one to connect to.
+        // We don't know how many nodes failed. May be several failed in a row. But we got only one
+        // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
+        // or two next nodes. We should slice it and try to travers majority of next nodes in the ring.
         if (sndState != null) {
+            // Let's try to connect to more than half of cluster. If we lose more nodes, this can be considered as
+            // major failure of network and segmentation of current node.
+            int nodesLeft = ring.serverNodes(null).size() / 2 + 1 - sndState.failedNodes;
+
+            assert nodesLeft > 0;
+
             long now = System.nanoTime();
-
-            // Losing more than half of cluster is considered as segmentation. No need to go further.
-            int maximumNodesToTravers = ring.serverNodes(null).size() / 2 + 1 - failedNodes.size();
-
-            assert maximumNodesToTravers > 0;
 
             // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
             // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
-            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / maximumNodesToTravers,
-                MINIMAL_CHECK_TIMEOUT_ON_RECOVERY);
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
 
             absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
         }

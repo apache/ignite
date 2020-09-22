@@ -100,7 +100,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private int connectionRecoveryTimeout = -1;
 
     /** */
-    private int failureDetectionTimeout = 2000;
+    private int failureDetectionTimeout = 2_000;
 
     /** */
     private final GridConcurrentHashSet<Integer> segmentedNodes = new GridConcurrentHashSet<>();
@@ -129,6 +129,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setIncludeEventTypes(EVT_NODE_SEGMENTED);
+
+        cfg.setSystemWorkerBlockedTimeout(10_000);
 
         return cfg;
     }
@@ -212,13 +214,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     public void testFailTwoNodes() throws Exception {
         failureDetectionTimeout = 1000;
 
-        startGrids(4);
+        startGrids(5);
 
         awaitPartitionMapExchange();
 
         final CountDownLatch failLatch = new CountDownLatch(2);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             ignite(i).events().localListen(evt -> {
                 failLatch.countDown();
 
@@ -234,19 +236,20 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             }, EVT_NODE_SEGMENTED);
         }
 
-        processNetworkThreads(ignite(1), t -> t.suspend());
         processNetworkThreads(ignite(2), t -> t.suspend());
+        processNetworkThreads(ignite(3), t -> t.suspend());
 
         try {
-            failLatch.await(20, TimeUnit.SECONDS);
+            failLatch.await(10, TimeUnit.SECONDS);
         }
         finally {
-            processNetworkThreads(ignite(1), t -> t.resume());
             processNetworkThreads(ignite(2), t -> t.resume());
+            processNetworkThreads(ignite(3), t -> t.resume());
         }
 
         assertFalse(segmentedNodes.contains(0));
-        assertFalse(segmentedNodes.contains(3));
+        assertFalse(segmentedNodes.contains(1));
+        assertFalse(segmentedNodes.contains(4));
     }
 
     /**
@@ -276,7 +279,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Simulates network failure.
+     * Simulates network failure on certain node.
      */
     private void processNetworkThreads(Ignite ignite, Consumer<Thread> proc) {
         DiscoverySpi disco = ignite.configuration().getDiscoverySpi();
