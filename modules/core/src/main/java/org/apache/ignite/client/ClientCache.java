@@ -49,6 +49,7 @@ public interface ClientCache<K, V> {
      *
      * @param key Key.
      * @return a Future representing pending completion of the operation.
+     * Future result is the cache entry value or null if it does not exist.
      */
     public IgniteClientFuture<V> getAsync(K key);
 
@@ -97,7 +98,8 @@ public interface ClientCache<K, V> {
      * (There can be at most one such mapping)
      *
      * @param key key whose presence in this cache is to be tested.
-     * @return <tt>true</tt> if this map contains a mapping for the specified key.
+     * @return a Future representing pending completion of the operation.
+     * Future result is <tt>true</tt> if this map contains a mapping for the specified key.
      */
     public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException;
 
@@ -136,6 +138,7 @@ public interface ClientCache<K, V> {
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return a Future representing pending completion of the operation, which wraps the cache size.
      */
     public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException;
 
@@ -154,8 +157,8 @@ public interface ClientCache<K, V> {
      * {@link Map} of the values associated with the set of keys requested.
      *
      * @param keys The keys whose associated values are to be returned.
-     * @return A map of entries that were found for the given keys. Keys not found
-     * in the cache are not in the returned map.
+     * @return a Future representing pending completion of the operation, which wraps a map of entries that
+     * were found for the given keys. Keys not found in the cache are not in the returned map.
      */
     public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException;
 
@@ -194,6 +197,7 @@ public interface ClientCache<K, V> {
      * <p>
      *
      * @param map Mappings to be stored in this cache.
+     * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException;
 
@@ -235,7 +239,8 @@ public interface ClientCache<K, V> {
      * @param key Key with which the specified value is associated.
      * @param oldVal Value expected to be associated with the specified key.
      * @param newVal Value to be associated with the specified key.
-     * @return <tt>true</tt> if the value was replaced
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was replaced.
      */
     public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException;
 
@@ -275,7 +280,8 @@ public interface ClientCache<K, V> {
      *
      * @param key The key with which the specified value is associated.
      * @param val The value to be associated with the specified key.
-     * @return <tt>true</tt> if the value was replaced.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was replaced.
      */
     public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException;
 
@@ -311,7 +317,8 @@ public interface ClientCache<K, V> {
      * call returns.
      *
      * @param key Key whose mapping is to be removed from the cache.
-     * @return <tt>false</tt> if there was no matching key.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was removed.
      */
     public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException;
 
@@ -351,7 +358,8 @@ public interface ClientCache<K, V> {
      *
      * @param key Key whose mapping is to be removed from the cache.
      * @param oldVal Value expected to be associated with the specified key.
-     * @return <tt>false</tt> if there was no matching key.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was removed.
      */
     public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException;
 
@@ -370,6 +378,7 @@ public interface ClientCache<K, V> {
      * The order in which the individual entries are removed is undefined.
      *
      * @param keys The keys to remove.
+     * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException;
 
@@ -384,6 +393,7 @@ public interface ClientCache<K, V> {
      * Removes all of the mappings from this cache.
      * <p>
      * The order that the individual entries are removed is undefined.
+     * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> removeAllAsync() throws ClientException;
 
