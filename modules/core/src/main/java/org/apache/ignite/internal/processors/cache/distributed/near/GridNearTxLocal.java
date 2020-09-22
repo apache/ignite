@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -127,6 +128,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_WRITE;
@@ -1442,7 +1444,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             this,
                                             /*metrics*/retval,
                                             /*events*/retval,
-                                            CU.subjectId(this, cctx),
+                                            securitySubjectId(cctx.kernalContext()),
                                             entryProcessor,
                                             resolveTaskName(),
                                             null,
@@ -1469,7 +1471,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read through*/false,
                                         /*metrics*/retval,
                                         /*events*/retval,
-                                        CU.subjectId(this, cctx),
+                                        securitySubjectId(cctx.kernalContext()),
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
@@ -2303,196 +2305,199 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 final ExpiryPolicy expiryPlc0 = expiryPlc;
 
+                final UUID secSubjId = SecurityUtils.securitySubjectId(cacheCtx.kernalContext());
+
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for read on keys: " + lockKeys);
+                        return SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security(), () -> {
+                            // Load keys only after the locks have been acquired.
+                            for (KeyCacheObject cacheKey : lockKeys) {
+                                K keyVal = (K)
+                                    (keepCacheObjects ? cacheKey :
+                                        cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
+                                            true));
 
-                        // Load keys only after the locks have been acquired.
-                        for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)
-                                (keepCacheObjects ? cacheKey :
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
-                                        true));
+                                if (retMap.containsKey(keyVal))
+                                    // We already have a return value.
+                                    continue;
 
-                            if (retMap.containsKey(keyVal))
-                                // We already have a return value.
-                                continue;
+                                IgniteTxKey txKey = cacheCtx.txKey(cacheKey);
 
-                            IgniteTxKey txKey = cacheCtx.txKey(cacheKey);
+                                IgniteTxEntry txEntry = entry(txKey);
 
-                            IgniteTxEntry txEntry = entry(txKey);
+                                assert txEntry != null;
 
-                            assert txEntry != null;
+                                // Check if there is cached value.
+                                while (true) {
+                                    GridCacheEntryEx cached = txEntry.cached();
 
-                            // Check if there is cached value.
-                            while (true) {
-                                GridCacheEntryEx cached = txEntry.cached();
+                                    CacheObject val = null;
+                                    GridCacheVersion readVer = null;
+                                    EntryGetResult getRes = null;
 
-                                CacheObject val = null;
-                                GridCacheVersion readVer = null;
-                                EntryGetResult getRes = null;
+                                    try {
+                                        Object transformClo =
+                                            (!F.isEmpty(txEntry.entryProcessors()) &&
+                                                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                                F.first(txEntry.entryProcessors()) : null;
 
-                                try {
-                                    Object transformClo =
-                                        (!F.isEmpty(txEntry.entryProcessors()) &&
-                                            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
-                                            F.first(txEntry.entryProcessors()) : null;
+                                        if (needVer) {
+                                            getRes = cached.innerGetVersioned(
+                                                null,
+                                                GridNearTxLocal.this,
+                                                /*update-metrics*/true,
+                                                /*event*/!skipVals,
+                                                securitySubjectId(cctx.kernalContext()),
+                                                transformClo,
+                                                resolveTaskName(),
+                                                null,
+                                                txEntry.keepBinary(),
+                                                null);
 
-                                    if (needVer) {
-                                        getRes = cached.innerGetVersioned(
-                                            null,
-                                            GridNearTxLocal.this,
-                                            /*update-metrics*/true,
-                                            /*event*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
-                                            transformClo,
-                                            resolveTaskName(),
-                                            null,
-                                            txEntry.keepBinary(),
-                                            null);
-
-                                        if (getRes != null) {
-                                            val = getRes.value();
-                                            readVer = getRes.version();
+                                            if (getRes != null) {
+                                                val = getRes.value();
+                                                readVer = getRes.version();
+                                            }
                                         }
+                                        else {
+                                            val = cached.innerGet(
+                                                null,
+                                                GridNearTxLocal.this,
+                                                /*read through*/false,
+                                                /*metrics*/true,
+                                                /*events*/!skipVals,
+                                                securitySubjectId(cctx.kernalContext()),
+                                                transformClo,
+                                                resolveTaskName(),
+                                                null,
+                                                txEntry.keepBinary());
+                                        }
+
+                                        // If value is in cache and passed the filter.
+                                        if (val != null) {
+                                            missed.remove(cacheKey);
+
+                                            txEntry.setAndMarkValid(val);
+
+                                            if (!F.isEmpty(txEntry.entryProcessors()))
+                                                val = txEntry.applyEntryProcessors(val);
+
+                                            cacheCtx.addResult(retMap,
+                                                cacheKey,
+                                                val,
+                                                skipVals,
+                                                keepCacheObjects,
+                                                deserializeBinary,
+                                                false,
+                                                getRes,
+                                                readVer,
+                                                0,
+                                                0,
+                                                needVer);
+
+                                            if (readVer != null)
+                                                txEntry.entryReadVersion(readVer);
+                                        }
+
+                                        // Even though we bring the value back from lock acquisition,
+                                        // we still need to recheck primary node for consistent values
+                                        // in case of concurrent transactional locks.
+
+                                        break; // While.
                                     }
-                                    else {
-                                        val = cached.innerGet(
-                                            null,
-                                            GridNearTxLocal.this,
-                                            /*read through*/false,
-                                            /*metrics*/true,
-                                            /*events*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
-                                            transformClo,
-                                            resolveTaskName(),
-                                            null,
-                                            txEntry.keepBinary());
+                                    catch (GridCacheEntryRemovedException ignore) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got removed exception in get postLock (will retry): " +
+                                                cached);
+
+                                        txEntry.cached(entryEx(cacheCtx, txKey, topologyVersion()));
                                     }
-
-                                    // If value is in cache and passed the filter.
-                                    if (val != null) {
-                                        missed.remove(cacheKey);
-
-                                        txEntry.setAndMarkValid(val);
-
-                                        if (!F.isEmpty(txEntry.entryProcessors()))
-                                            val = txEntry.applyEntryProcessors(val);
-
-                                        cacheCtx.addResult(retMap,
-                                            cacheKey,
-                                            val,
-                                            skipVals,
-                                            keepCacheObjects,
-                                            deserializeBinary,
-                                            false,
-                                            getRes,
-                                            readVer,
-                                            0,
-                                            0,
-                                            needVer);
-
-                                        if (readVer != null)
-                                            txEntry.entryReadVersion(readVer);
-                                    }
-
-                                    // Even though we bring the value back from lock acquisition,
-                                    // we still need to recheck primary node for consistent values
-                                    // in case of concurrent transactional locks.
-
-                                    break; // While.
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got removed exception in get postLock (will retry): " +
-                                            cached);
-
-                                    txEntry.cached(entryEx(cacheCtx, txKey, topologyVersion()));
                                 }
                             }
-                        }
 
-                        if (!missed.isEmpty() && cacheCtx.isLocal()) {
-                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
+                            if (!missed.isEmpty() && cacheCtx.isLocal()) {
+                                AffinityTopologyVersion topVer = topologyVersionSnapshot();
 
-                            if (topVer == null)
-                                topVer = entryTopVer;
+                                if (topVer == null)
+                                    topVer = entryTopVer;
 
-                            return checkMissed(cacheCtx,
-                                topVer != null ? topVer : topologyVersion(),
-                                retMap,
-                                missed,
-                                deserializeBinary,
-                                skipVals,
-                                keepCacheObjects,
-                                skipStore,
-                                recovery,
-                                readRepair,
-                                needVer,
-                                expiryPlc0);
-                        }
+                                return checkMissed(cacheCtx,
+                                    topVer != null ? topVer : topologyVersion(),
+                                    retMap,
+                                    missed,
+                                    deserializeBinary,
+                                    skipVals,
+                                    keepCacheObjects,
+                                    skipStore,
+                                    recovery,
+                                    readRepair,
+                                    needVer,
+                                    expiryPlc0);
+                            }
 
-                        if (readRepair) {
-                            return new GridNearReadRepairFuture(
-                                topVer != null ? topVer : topologyVersion(),
-                                cacheCtx,
-                                keys,
-                                !skipStore,
-                                taskName,
-                                deserializeBinary,
-                                recovery,
-                                cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                GridNearTxLocal.this)
-                                .chain((fut) -> {
-                                        try {
-                                            // For every fixed entry.
-                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                                                EntryGetResult getRes = entry.getValue();
+                            if (readRepair) {
+                                return new GridNearReadRepairFuture(
+                                    topVer != null ? topVer : topologyVersion(),
+                                    cacheCtx,
+                                    keys,
+                                    !skipStore,
+                                    taskName,
+                                    deserializeBinary,
+                                    recovery,
+                                    cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                    GridNearTxLocal.this)
+                                    .chain((fut) -> {
+                                            try {
+                                                // For every fixed entry.
+                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                                    EntryGetResult getRes = entry.getValue();
 
-                                                enlistWrite(
-                                                    cacheCtx,
-                                                    entryTopVer,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    expiryPlc0,
-                                                    null,
-                                                    null,
-                                                    false,
-                                                    false,
-                                                    null,
-                                                    null,
-                                                    skipStore,
-                                                    false,
-                                                    !deserializeBinary,
-                                                    recovery,
-                                                    null);
+                                                    enlistWrite(
+                                                        cacheCtx,
+                                                        entryTopVer,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        expiryPlc0,
+                                                        null,
+                                                        null,
+                                                        false,
+                                                        false,
+                                                        null,
+                                                        null,
+                                                        skipStore,
+                                                        false,
+                                                        !deserializeBinary,
+                                                        recovery,
+                                                        null);
 
-                                                // Rewriting fixed, initially filled by explicit lock operation.
-                                                cacheCtx.addResult(retMap,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    skipVals,
-                                                    keepCacheObjects,
-                                                    deserializeBinary,
-                                                    false,
-                                                    getRes,
-                                                    getRes.version(),
-                                                    0,
-                                                    0,
-                                                    needVer);
+                                                    // Rewriting fixed, initially filled by explicit lock operation.
+                                                    cacheCtx.addResult(retMap,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        getRes,
+                                                        getRes.version(),
+                                                        0,
+                                                        0,
+                                                        needVer);
+                                                }
+
+                                                return Collections.emptyMap();
                                             }
-
-                                            return Collections.emptyMap();
+                                            catch (Exception e) {
+                                                throw new GridClosureException(e);
+                                            }
                                         }
-                                        catch (Exception e) {
-                                            throw new GridClosureException(e);
-                                        }
-                                    }
-                                );
-                        }
+                                    );
+                            }
 
-                        return new GridFinishedFuture<>(Collections.emptyMap());
+                            return new GridFinishedFuture<>(Collections.emptyMap());
+                        });
                     }
                 };
 
@@ -2707,7 +2712,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         this,
                                         /*update-metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
+                                        securitySubjectId(cctx.kernalContext()),
                                         transformClo,
                                         resolveTaskName(),
                                         null,
@@ -2726,7 +2731,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read-through*/false,
                                         /*metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
+                                        securitySubjectId(cctx.kernalContext()),
                                         transformClo,
                                         resolveTaskName(),
                                         null,
@@ -2793,7 +2798,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             this,
                                             /*metrics*/true,
                                             /*event*/true,
-                                            CU.subjectId(this, cctx),
+                                            securitySubjectId(cctx.kernalContext()),
                                             null,
                                             resolveTaskName(),
                                             accessPlc,
@@ -2812,7 +2817,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read-through*/false,
                                         /*metrics*/true,
                                         /*event*/!skipVals,
-                                        CU.subjectId(this, cctx),
+                                        securitySubjectId(cctx.kernalContext()),
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
@@ -3188,7 +3193,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readThrough,
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
-                    CU.subjectId(this, cctx),
+                    securitySubjectId(cctx.kernalContext()),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
                     expiryPlc0,
@@ -3221,7 +3226,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readThrough,
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
-                    CU.subjectId(this, cctx),
+                    securitySubjectId(cctx.kernalContext()),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
                     recovery,
@@ -3322,7 +3327,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             this,
                             /*update-metrics*/!skipVals,
                             /*event*/!skipVals,
-                            CU.subjectId(this, cctx),
+                            securitySubjectId(cctx.kernalContext()),
                             null,
                             resolveTaskName(),
                             expiryPlc0,

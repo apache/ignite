@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -872,6 +873,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /** Mappings to proceed prepare. */
         private Queue<GridDistributedTxMapping> mappings;
 
+        /** Security subject id. */
+        private final UUID secSubjId;
+
         /**
          * @param parent Parent.
          * @param m Mapping.
@@ -886,6 +890,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             this.m = m;
             this.futId = futId;
             this.mappings = mappings;
+            secSubjId = SecurityUtils.securitySubjectId(parent.cctx.kernalContext());
         }
 
         /**
@@ -918,7 +923,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
                 // Fail.
-                onDone(e);
+                SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(),
+                    (SecurityUtils.RunnableX)() -> onDone(e));
             }
             else
                 U.warn(log, "Received error after another result has been processed [fut=" +
@@ -930,22 +936,24 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param discoThread {@code True} if executed from discovery thread.
          */
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
-                    ", node=" + m.primary().id() + ']');
-            }
+            SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(), () -> {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
+                        ", node=" + m.primary().id() + ']');
+                }
 
-            if (isDone())
-                return;
+                if (isDone())
+                    return;
 
-            if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
-                if (log.isDebugEnabled())
-                    log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + this);
+                if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + this);
 
-                // Fail the whole future (make sure not to remap on different primary node
-                // to prevent multiple lock coordinators).
-                parent.onError(e, discoThread);
-            }
+                    // Fail the whole future (make sure not to remap on different primary node
+                    // to prevent multiple lock coordinators).
+                    parent.onError(e, discoThread);
+                }
+            });
         }
 
         /**
@@ -955,44 +963,46 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (isDone())
                 return;
 
-            if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
-                if (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException) {
-                    parent.onTimeout();
+            SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(), () -> {
+                if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
+                    if (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException) {
+                        parent.onTimeout();
 
-                    return;
-                }
+                        return;
+                    }
 
-                if (res.error() != null) {
-                    // Fail the whole compound future.
-                    parent.onError(res.error(), false);
-                }
-                else {
-                    if (res.clientRemapVersion() != null) {
-                        assert parent.cctx.kernalContext().clientNode();
-                        assert m.clientFirst();
-
-                        IgniteInternalFuture<?> affFut =
-                            parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
-
-                        parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
-                            if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
-                                return;
-
-                            remap();
-                        });
+                    if (res.error() != null) {
+                        // Fail the whole compound future.
+                        parent.onError(res.error(), false);
                     }
                     else {
-                        parent.onPrepareResponse(m, res, m.hasNearCacheEntries());
+                        if (res.clientRemapVersion() != null) {
+                            assert parent.cctx.kernalContext().clientNode();
+                            assert m.clientFirst();
 
-                        // Proceed prepare before finishing mini future.
-                        if (mappings != null)
-                            parent.proceedPrepare(mappings);
+                            IgniteInternalFuture<?> affFut =
+                                parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                        // Finish this mini future.
-                        onDone((GridNearTxPrepareResponse)null);
+                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
+                                if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                    return;
+
+                                remap();
+                            });
+                        }
+                        else {
+                            parent.onPrepareResponse(m, res, m.hasNearCacheEntries());
+
+                            // Proceed prepare before finishing mini future.
+                            if (mappings != null)
+                                parent.proceedPrepare(mappings);
+
+                            // Finish this mini future.
+                            onDone((GridNearTxPrepareResponse)null);
+                        }
                     }
                 }
-            }
+            });
         }
 
         /**

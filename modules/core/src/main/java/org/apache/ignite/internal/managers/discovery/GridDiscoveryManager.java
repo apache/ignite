@@ -530,7 +530,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
-                    if (notification.getCustomMsgData() != null &&
+                    if (notification.type() != EVT_NODE_JOINED &&
+                        notification.getCustomMsgData() != null &&
                         notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
 

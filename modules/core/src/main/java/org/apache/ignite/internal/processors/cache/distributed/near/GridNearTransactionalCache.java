@@ -57,6 +57,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -195,13 +196,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipVals,
         boolean needVer) {
         assert tx != null;
-
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
             forcePrimary,
             tx,
-            CU.subjectId(tx, ctx.shared()),
+            securitySubjectId(ctx.kernalContext()),
             tx.resolveTaskName(),
             deserializeBinary,
             expiryPlc,

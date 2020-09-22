@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -266,6 +267,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
+                final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
@@ -285,7 +288,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                     log.debug(msg0.toString());
                                 }
 
-                                handleMessage(nodeId, cacheMsg, plc);
+                                SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security()
+                                    , () -> handleMessage(nodeId, cacheMsg, plc));
                             }
                         };
 
