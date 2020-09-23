@@ -32,7 +32,7 @@ class ConfigTemplate:
         tmpl_dir = os.path.dirname(path)
         tmpl_file = os.path.basename(path)
 
-        tmpl_loader = FileSystemLoader(searchpath=tmpl_dir)
+        tmpl_loader = FileSystemLoader(searchpath=[DEFAULT_CONFIG_PATH, tmpl_dir])
         env = Environment(loader=tmpl_loader)
 
         self.template = env.get_template(tmpl_file)
