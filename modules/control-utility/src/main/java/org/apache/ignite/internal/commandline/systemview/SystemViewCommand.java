@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
 
 /** Represents command for {@link SystemView} content printing. */
-public class SystemViewCommand implements Command<Object> {
+public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";
 
@@ -194,7 +194,7 @@ public class SystemViewCommand implements Command<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object arg() {
+    @Override public VisorSystemViewTaskArg arg() {
         return taskArg;
     }
 
