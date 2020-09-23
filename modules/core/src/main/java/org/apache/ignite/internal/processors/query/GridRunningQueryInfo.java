@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 
 /**
  * Query descriptor.
@@ -53,6 +55,9 @@ public class GridRunningQueryInfo {
 
     /** */
     private final QueryRunningFuture fut = new QueryRunningFuture();
+
+    /** Span of the running query. */
+    private final Span span;
 
     /** Request ID. */
     private long reqId;
@@ -90,6 +95,7 @@ public class GridRunningQueryInfo {
         this.startTimeNanos = startTimeNanos;
         this.cancel = cancel;
         this.loc = loc;
+        this.span = MTC.span();
     }
 
     /**
@@ -184,6 +190,13 @@ public class GridRunningQueryInfo {
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Span of the running query.
+     */
+    public Span span() {
+        return span;
     }
 
     /** @return Request ID. */

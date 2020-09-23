@@ -71,6 +71,9 @@
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\Services\IServicesClient.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
+    <Compile Include="Client\Transactions\ITransactionClient.cs" />
+    <Compile Include="Client\Transactions\ITransactionsClient.cs" />
+    <Compile Include="Client\Transactions\TransactionClientConfiguration.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteIllegalStateException.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
@@ -128,7 +131,10 @@
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\Services\ServicesClient.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
+    <Compile Include="Impl\Client\Transactions\ClientCacheTransactionManager.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />
+    <Compile Include="Impl\Client\Transactions\TransactionClient.cs" />
+    <Compile Include="Impl\Client\Transactions\TransactionsClient.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Compute\ComputeRunner.cs" />
     <Compile Include="Impl\IgniteLock.cs" />
