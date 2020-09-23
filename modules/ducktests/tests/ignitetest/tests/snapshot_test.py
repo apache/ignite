@@ -27,8 +27,6 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -39,7 +37,7 @@ class SnapshotTest(IgniteTest):
     """
     Test Snapshot.
     """
-    NUM_NODES = 3
+    NUM_NODES = 4
 
     SNAPSHOT_NAME = "test_snap"
 
@@ -59,7 +57,7 @@ class SnapshotTest(IgniteTest):
         9. Stop ignite and replace db from snapshot
         10. Run ignite cluster.
         11. Idle verify dump3.
-        12. Checking the equality of dump1 and dump2.
+        12. Checking the equality of dump1 and dump3.
         """
         data_cfg = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
 
@@ -74,8 +72,7 @@ class SnapshotTest(IgniteTest):
         control_utility = ControlUtility(service, self.test_context)
         control_utility.activate()
 
-        client_config = ignite_config._replace(client_mode=True, data_storage=None,
-                                               discovery_spi=from_ignite_cluster(service, slice(0, self.NUM_NODES - 1)))
+        client_config = ignite_config._replace(client_mode=True, data_storage=None)
 
         streamer = IgniteApplicationService(
             self.test_context,
@@ -93,7 +90,7 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_1 = get_dump_path(control_utility, node)
 
-        self.logger.warn("path to dump_1=" + dump_1)
+        self.logger.warn("Path to dump_1=" + dump_1)
 
         data = control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
@@ -103,7 +100,7 @@ class SnapshotTest(IgniteTest):
 
         dump_2 = get_dump_path(control_utility, node)
 
-        self.logger.warn("path to dump_2=" + dump_2)
+        self.logger.warn("Path to dump_2=" + dump_2)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0, diff
@@ -119,7 +116,7 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_3 = get_dump_path(control_utility, node)
 
-        self.logger.warn("path to dump_3=" + dump_2)
+        self.logger.warn("Path to dump_3=" + dump_2)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
@@ -158,7 +155,7 @@ def check_idle_verify(control_utility: ControlUtility):
     assert 'idle_verify check has finished, no conflicts have been found.' in data, data
 
 
-def load(service_load, duration: int = 30):
+def load(service_load, duration: int = 60):
     """
     Load.
     """
