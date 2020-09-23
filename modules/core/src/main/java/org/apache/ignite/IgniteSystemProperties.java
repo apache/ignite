@@ -503,7 +503,11 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "SSH host name for visor-started nodes", type = String.class)
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
-    /** System property to enable experimental commands in control.sh script. */
+    /**
+     * System property to enable experimental commands in control.sh script.
+     * @deprecated Use "--enable-experimental" parameter instead.
+     */
+    @Deprecated
     @SystemProperty("Enables experimental commands in control.sh script")
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 

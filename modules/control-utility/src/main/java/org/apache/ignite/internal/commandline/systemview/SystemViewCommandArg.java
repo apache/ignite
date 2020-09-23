@@ -15,9 +15,30 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains implementations of the {@link org.apache.ignite.spi.systemview.SystemViewExporterSpi}
- * that exports system vies as a JMX beans.
- */
-package org.apache.ignite.spi.systemview.jmx;
+package org.apache.ignite.internal.commandline.systemview;
+
+import org.apache.ignite.internal.commandline.argument.CommandArg;
+
+/** Represents all possible arguments for {@link SystemViewCommand}. */
+public enum SystemViewCommandArg implements CommandArg {
+    /** Id of the node to get the system view from. */
+    NODE_ID("--node-id");
+
+    /** Name of the argument. */
+    private final String name;
+
+    /** @param name Name of the argument. */
+    SystemViewCommandArg(String name) {
+        this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String argName() {
+        return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
+    }
+}

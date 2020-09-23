@@ -15,8 +15,25 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains SQL view exporter implementation for {@link org.apache.ignite.spi.systemview.view.SystemView}.
- */
-package org.apache.ignite.spi.systemview;
+namespace Apache.Ignite.Core.Tests.Client.Cache
+{
+    /// <summary>
+    /// Tests client transactions for single node.
+    /// </summary>
+    public class CacheClientLocalTxTest : CacheClientAbstractTxTest
+    {
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="CacheClientLocalTxTest"/> class.
+        /// </summary>
+        public CacheClientLocalTxTest() : base(1, false)
+        {
+            // No-op.
+        }
+
+        /** <inhertiDoc /> */
+        protected override string GetCacheName()
+        {
+            return "local_" + base.GetCacheName();
+        }
+    }
+}

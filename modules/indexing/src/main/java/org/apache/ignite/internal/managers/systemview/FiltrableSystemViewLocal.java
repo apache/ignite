@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumnCondition;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +35,7 @@ import org.h2.result.SearchRow;
 /**
  * Filtrable SQL system view to export {@link SystemView} data.
  */
-public class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
+class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
     /** View attribute names. */
     private final String[] attributeNames;
 
@@ -92,7 +93,7 @@ public class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
      * @return Indexes array for {@code sysView}.
      */
     private static String[] indexes(SystemView<?> sysView) {
-        return new String[] {sysView.walker().filtrableAttributes().stream().map(SystemViewLocal::sqlName)
+        return new String[] {sysView.walker().filtrableAttributes().stream().map(MetricUtils::toSqlName)
                 .collect(Collectors.joining(","))};
     }
 }
