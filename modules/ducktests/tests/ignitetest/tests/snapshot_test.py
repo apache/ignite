@@ -80,8 +80,6 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={"cacheName": "test-cache"})
 
-        streamer.start()
-
         load(streamer)
 
         node = service.nodes[0]
