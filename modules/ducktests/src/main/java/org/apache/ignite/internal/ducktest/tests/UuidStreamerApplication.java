@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 
 /**
  *
