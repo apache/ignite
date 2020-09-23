@@ -160,7 +160,7 @@ public class GridSubqueryJoinOptimizer {
                     wasPulledOut |= pullOutSubQryFromSelectExpr(select, res.getEl(), res.getIdx());
             }
 
-            if (wasPulledOut) // we have to analize just pulled out element as well
+            if (wasPulledOut) // we have to analyze just pulled out element as well
                 i--;
         }
     }
