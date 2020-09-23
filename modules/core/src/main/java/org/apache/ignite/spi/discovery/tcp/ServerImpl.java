@@ -3385,9 +3385,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
-            if( msg instanceof TcpDiscoveryNodeFailedMessage )
-                log.error("TEST | Node " + locNode.order() +". Sending " + msg);
-
             assert ring.hasRemoteNodes();
 
             for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
@@ -3488,7 +3485,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // state of conenction recovering and have to work with
                             // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
                             if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
 
                             boolean success = false;
 
@@ -3496,8 +3493,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Restore ring.
                             try {
-                                log.error("TEST | Node " + locNode.order() + ". Opening new socket to: " + next.order());
-
                                 sock = spi.openSocket(addr, timeoutHelper);
 
                                 out = spi.socketStream(sock);
@@ -3516,23 +3511,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
 
-                                log.error("TEST | Node " + locNode.order() + ". Sending handshake to: " + next.order());
-
                                 spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                log.error("TEST | Node " + locNode.order() + ". Handshake response from " + next.order() + ": " + res);
-
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
                                 // We should take previousNodeAlive flag into account only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    log.error("TEST | Node " + locNode.order() + ". Previous node is alive.");
-
                                     sndState.checkTimeout();
 
                                     // Remote node checked connection to it's previous and got success.
@@ -3544,8 +3533,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         newNextNode = false;
 
                                         next = ring.nextNode(failedNodes);
-
-                                        log.error("TEST | Node " + locNode.order() + ". Previous is alive from the handshake response. New next: " + next.order());
                                     }
 
                                     U.closeQuiet(sock);
@@ -3553,8 +3540,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     sock = null;
 
                                     if (sndState.isFailed()) {
-                                        log.error("TEST | Node " + locNode.order() + ". Segmented after handshake.");
-
                                         segmentLocalNodeOnSendFail(failedNodes);
 
                                         return; // Nothing to do here.
@@ -3568,8 +3553,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
-                                    log.error("TEST | Node " + locNode.order() + ". Handshake from local node.");
-
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
 
@@ -3585,9 +3568,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long nextOrder = res.order();
 
                                 if (!next.id().equals(nextId)) {
-                                    log.error("TEST | Node " + locNode.order() + ". Failed to restore ring because next node ID received is not as " +
-                                        "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
-
                                     // Node with different ID has bounded to the same port.
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to restore ring because next node ID received is not as " +
@@ -3610,10 +3590,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                             nextNew = hasPendingAddMessage(nextId);
 
                                         if (!nextNew) {
-                                            log.error("TEST | Node " + locNode.order() + "Failed to restore ring because next node order received " +
-                                                "is not as expected [expected=" + next.internalOrder() +
-                                                    ", rcvd=" + nextOrder + ", id=" + next.id() + ']');
-
                                             if (log.isDebugEnabled())
                                                 log.debug("Failed to restore ring because next node order received " +
                                                     "is not as expected [expected=" + next.internalOrder() +
@@ -3644,8 +3620,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             catch (IOException | IgniteCheckedException e) {
-                                log.error("TEST | Node " + locNode.order() + ". Failed to connect to next node " + next.order(), e);
-
                                 if (errs == null)
                                     errs = new ArrayList<>();
 
@@ -3731,7 +3705,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     addFailedNodes(pendingMsg, failedNodes);
 
                                     if (timeoutHelper == null)
-                                        timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3775,7 +3749,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3877,15 +3851,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
-                        log.error("TEST | Node " + locNode.order() + ". !sent " + msg + " to next " + next.order() + ". Created sndState.");
-
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-
-                        lastRingMsgSentTime = 0;
-                    } else if (sndState != null && sndState.checkTimeout()) {
-                        log.error("TEST | Node " + locNode.order() + ". !sent " + msg + " to next " + next.order() + ". Segmented.");
-
+                    else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
@@ -3894,8 +3862,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
                     if (failedNextNode && !failedNodes.contains(next)) {
-                        log.error("TEST | Node " + locNode.order() + ". !sent " + msg + " to next " + next.order() + ". Next failed.");
-
                         failedNodes.add(next);
 
                         if (state == CONNECTED) {
@@ -3913,8 +3879,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else if (!failedNextNode && sndState != null && sndState.isBackward()) {
                         boolean prev = sndState.markLastFailedNodeAlive();
 
-                        log.error("TEST | Node " + locNode.order() + ". !sent " + msg + " to next " + next.order() + ". Next not failed. Prev alive: " + prev);
-
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
                             ", next=" + next + ']');
 
@@ -3924,8 +3888,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             newNextNode = false;
 
                             next = ring.nextNode(failedNodes);
-
-                            log.error("TEST | Node " + locNode.order() + ". !sent " + msg + " to next " + next.order() + ". Next not failed. Next reset to: " + next.order());
                         }
                     }
 
@@ -5723,8 +5685,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeFailedMessage(TcpDiscoveryNodeFailedMessage msg) {
             assert msg != null;
 
-            log.error("TEST | Node " + locNode.order() + ". processNodeFailedMessage: " + msg);
-
             UUID sndId = msg.senderNodeId();
 
             if (sndId != null) {
@@ -6557,36 +6517,32 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Creates proper timeout helper taking in account current send state and ring state.
      *
      * @param sndState Current connection recovering state. Ignored if {@code null}.
+     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
      * @return Timeout helper.
      */
-    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState) {
+    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+        long lastOperationNanos) {
         long absoluteThreshold = -1;
 
-        // Active send state means we lost connection to next node and have to find an other node to connect to.
-        // We don't know how many nodes failed (may be failed in a row). But we got only one connectionRecoveryTimeout
-        // to find some new connection to the ring. We can't spend this timeout wholly on one or two next nodes.
-        // We should slice it somehow and traverse and check as much next nodes in the ring as we can.
+        // Active send-state means we lost connection to next node and have to find an other one to connect to.
+        // We don't know how many nodes failed. May be several failed in a row. But we got only one
+        // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
+        // or two next nodes. We should slice it and try to travers majority of next nodes in the ring.
         if (sndState != null) {
-            // Let's try to connect to more than half of cluster. If we lose more nodes, this can be considered as
-            // major failure of network and segmentation of current node.
-//            int nodesToCheck = ring.serverNodes(null).size() / 2 + 1 - sndState.failedNodes;
-            int nodesToCheck = ring.serverNodes(null).size() - 1 - sndState.failedNodes;
+            int nodesLeft = ring.serverNodes(null).size() - 1 - sndState.failedNodes;
 
-            assert nodesToCheck > 0;
+            assert nodesLeft > 0;
 
             long now = System.nanoTime();
 
             // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
             // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
-            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesToCheck, MIN_RECOVERY_TIMEOUT);
-
-            log.error("TEST | Node " + locNode.order() +". recovTimeout. nodesToCheck = " + nodesToCheck +
-                ". Failed nodes: " + sndState.failedNodes + ". perNodeTimeout = " + (perNodeTimeout/1000000));
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
 
             absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
         }
 
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime, absoluteThreshold);
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
     }
 
     /** Fixates time of last sent message. */
