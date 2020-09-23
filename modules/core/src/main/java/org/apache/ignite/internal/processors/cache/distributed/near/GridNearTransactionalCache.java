@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlock
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -456,6 +457,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+
+        assert tx == null || F.eq(tx.subjectId(), secSubjId) :
+            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
+                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+
         GridNearLockFuture fut = new GridNearLockFuture(ctx,
             keys,
             (GridNearTxLocal)tx,
@@ -467,7 +475,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            secSubjId);
 
         fut.map();
 

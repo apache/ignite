@@ -196,6 +196,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Keep binary. */
     private final boolean keepBinary;
 
+    /** Security subject id. */
+    private final UUID secSubjId;
+
     /**
      * @param cctx Cache context.
      * @param nearNodeId Near node ID.
@@ -226,7 +229,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        UUID secSubjId) {
         super(CU.boolReducer());
 
         assert nearNodeId != null;
@@ -247,6 +251,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.secSubjId = secSubjId;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -343,6 +348,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return secSubjId;
     }
 
     /**
@@ -952,7 +962,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             cnt,
                             0,
                             inTx() ? tx.size() : cnt,
-                            inTx() ? tx.subjectId() : null,
+                            securitySubjectId(),
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,

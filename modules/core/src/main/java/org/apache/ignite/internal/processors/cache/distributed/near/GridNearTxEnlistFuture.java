@@ -139,7 +139,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         boolean sequential,
         @Nullable CacheEntryPredicate filter,
         boolean needRes,
-        boolean keepBinary) {
+        boolean keepBinary,
+        UUID secSubjId) {
         super(cctx, tx, timeout, null);
 
         this.it = it;
@@ -388,8 +389,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    securitySubjectId(),
+                    tx.taskNameHash(),
                     false,
                     null);
 
@@ -450,7 +451,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
+            securitySubjectId(),
             topVer,
             lockVer,
             mvccSnapshot,

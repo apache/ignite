@@ -189,6 +189,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** */
     private boolean trackable = true;
 
+    /** Security subject id. */
+    private final UUID secSubjId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -213,7 +216,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery
+        boolean recovery,
+        UUID secSubjId
     ) {
         super(CU.boolReducer());
 
@@ -231,6 +235,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
+        this.secSubjId = secSubjId;
 
         ignoreInterrupts();
 
@@ -257,6 +262,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return secSubjId;
     }
 
     /** {@inheritDoc} */
@@ -1110,7 +1120,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,
-                                        inTx() ? tx.subjectId() : null,
+                                        securitySubjectId(),
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,

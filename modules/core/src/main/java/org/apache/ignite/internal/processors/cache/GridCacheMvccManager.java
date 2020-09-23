@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -229,8 +230,16 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                         // we can safely invoke any method on the future.
                         // Also note that we don't remove future here if it is done.
                         // The removal is initiated from within future itself.
-                        if (mvccFut.onOwnerChanged(entry, owner))
-                            return;
+                        if (cctx.kernalContext().security().enabled()) {
+                            try(OperationSecurityContext c = cctx.kernalContext().security().withContext(mvccFut.securitySubjectId())){
+                                if (mvccFut.onOwnerChanged(entry, owner))
+                                    return;
+                            }
+                        }
+                        else {
+                            if (mvccFut.onOwnerChanged(entry, owner))
+                                return;
+                        }
                     }
                 }
             }

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,7 +35,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -147,13 +150,20 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
                 ClusterNode node = mapping.getKey();
 
+                final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+
+                assert F.eq(tx.subjectId(), secSubjId) :
+                    "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
+                        "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                        SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+
                 GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
                     new GridPartitionedGetFuture<>(
                         ctx,
                         mapping.getValue(), // Keys.
                         readThrough,
                         false, // Local get required.
-                        tx != null ? tx.subjectId() : null,
+                        secSubjId,
                         taskName,
                         deserializeBinary,
                         recovery,

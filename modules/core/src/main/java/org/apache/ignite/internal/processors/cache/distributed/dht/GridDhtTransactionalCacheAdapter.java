@@ -967,6 +967,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         assert tx != null;
 
+        final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+
+        assert F.eq(tx.subjectId(), secSubjId) :
+            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
+                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+
         GridDhtLockFuture fut = new GridDhtLockFuture(
             ctx,
             tx.nearNodeId(),
@@ -982,7 +989,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             filter,
             skipStore,
-            keepBinary);
+            keepBinary,
+            secSubjId);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -1149,6 +1157,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     }
                 }
                 else {
+                    assert F.eq(req.subjectId(), securitySubjectId(ctx.kernalContext()));
+
                     fut = new GridDhtLockFuture(ctx,
                         nearNode.id(),
                         req.version(),
@@ -1163,7 +1173,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.accessTtl(),
                         filter,
                         req.skipStore(),
-                        req.keepBinary());
+                        req.keepBinary(),
+                        securitySubjectId(cacheCtx.kernalContext()));
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))

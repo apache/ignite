@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -753,6 +754,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (m.explicitLock() || m.queryUpdate())
             syncMode = FULL_SYNC;
 
+        final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+
+        assert F.eq(tx.subjectId(), secSubjId) :
+            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(cctx.kernalContext(), secSubjId) +
+                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                SecurityUtils.login(cctx.kernalContext(), tx.subjectId()) + "]";
+
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
@@ -769,7 +777,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             tx.size(),
-            tx.subjectId(),
+            secSubjId,
             tx.taskNameHash(),
             tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()

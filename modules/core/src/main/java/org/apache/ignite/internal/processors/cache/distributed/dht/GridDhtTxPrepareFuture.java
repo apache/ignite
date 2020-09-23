@@ -297,6 +297,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return tx.subjectId();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
@@ -414,7 +419,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         readThrough,
                         /*metrics*/retVal,
                         /*event*/evt,
-                        tx.subjectId(),
+                        securitySubjectId(),
                         entryProc,
                         tx.resolveTaskName(),
                         null,
@@ -527,7 +532,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*readThrough*/false,
                             /*metrics*/false,
                             /*event*/false,
-                            /*subjectId*/tx.subjectId(),
+                            securitySubjectId(),
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
@@ -1438,7 +1443,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.nearXidVersion(),
                 true,
                 tx.onePhaseCommit(),
-                tx.subjectId(),
+                securitySubjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
@@ -1553,7 +1558,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearXidVersion(),
                     true,
                     tx.onePhaseCommit(),
-                    tx.subjectId(),
+                    securitySubjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),

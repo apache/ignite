@@ -419,6 +419,11 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         return lockVer;
     }
 
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return tx.subjectId();
+    }
+
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         return false;
     }

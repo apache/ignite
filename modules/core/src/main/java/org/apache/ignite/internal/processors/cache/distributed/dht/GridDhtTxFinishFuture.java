@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -365,6 +366,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
+            final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+
+            assert F.eq(tx.subjectId(), secSubjId) :
+                "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(cctx.kernalContext(), secSubjId) +
+                    "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                    SecurityUtils.login(cctx.kernalContext(), tx.subjectId()) + "]";
+
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -385,7 +393,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.subjectId(),
+                secSubjId,
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
@@ -472,6 +480,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
+            final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+
+            assert F.eq(tx.subjectId(), secSubjId) :
+                "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(cctx.kernalContext(), secSubjId) +
+                    "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                    SecurityUtils.login(cctx.kernalContext(), tx.subjectId()) + "]";
+
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -492,7 +507,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.subjectId(),
+                secSubjId,
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 null,
@@ -552,6 +567,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
                 add(fut); // Append new future.
 
+                final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+
+                assert F.eq(tx.subjectId(), secSubjId) :
+                    "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(cctx.kernalContext(), secSubjId) +
+                        "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                        SecurityUtils.login(cctx.kernalContext(), tx.subjectId()) + "]";
+
                 GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                     tx.nearNodeId(),
                     futId,
@@ -572,7 +594,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.rolledbackVersions(),
                     tx.pendingVersions(),
                     tx.size(),
-                    tx.subjectId(),
+                    secSubjId,
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,

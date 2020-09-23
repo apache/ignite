@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -1835,13 +1836,20 @@ public class IgniteTxHandler {
                                                 entry.cached(cached);
                                             }
 
+                                            final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+
+                                            assert tx == null || F.eq(tx.subjectId(), secSubjId) :
+                                                "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
+                                                    "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                                                    SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+
                                             CacheObject val = cached.innerGet(
                                                 /*ver*/null,
                                                 tx,
                                                 /*readThrough*/false,
                                                 /*updateMetrics*/false,
                                                 /*evt*/false,
-                                                tx.subjectId(),
+                                                secSubjId,
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,

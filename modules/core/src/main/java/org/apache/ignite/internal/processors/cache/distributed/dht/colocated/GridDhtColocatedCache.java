@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -81,6 +82,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Colocated cache.
@@ -741,6 +744,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+
+        assert tx == null || F.eq(tx.subjectId(), secSubjId) :
+            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
+                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
+                SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+
         GridDhtColocatedLockFuture fut = new GridDhtColocatedLockFuture(ctx,
             keys,
             txx,
@@ -752,7 +762,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            secSubjId);
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -1118,7 +1129,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 filter,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                securitySubjectId(ctx.kernalContext()));
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))

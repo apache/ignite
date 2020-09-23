@@ -118,6 +118,9 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     /** Trackable flag. */
     private boolean trackable = true;
 
+    /** Security subject id. */
+    private final UUID secSubjId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -132,7 +135,8 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         IgniteTxLocalEx tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        UUID secSubjId) {
         assert keys != null;
         assert cache != null;
         assert (tx != null && timeout >= 0) || tx == null;
@@ -142,6 +146,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
+        this.secSubjId = secSubjId;
 
         ignoreInterrupts();
 
@@ -216,6 +221,11 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return secSubjId;
     }
 
     /** {@inheritDoc} */

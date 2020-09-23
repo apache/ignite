@@ -354,8 +354,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    securitySubjectId(),
+                    tx.taskNameHash(),
                     false,
                     tx.label());
 
@@ -416,7 +416,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
+            securitySubjectId(),
             topVer,
             lockVer,
             mvccSnapshot,

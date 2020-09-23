@@ -519,7 +519,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.needReturnValue() && tx.implicit(),
                     tx.implicitSingle(),
                     m.explicitLock(),
-                    tx.subjectId(),
+                    securitySubjectId(),
                     tx.taskNameHash(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1,
