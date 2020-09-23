@@ -19,7 +19,6 @@ package org.apache.ignite.client;
 
 import java.util.concurrent.Future;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
