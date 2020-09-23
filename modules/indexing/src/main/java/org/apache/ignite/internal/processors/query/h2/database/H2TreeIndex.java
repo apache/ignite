@@ -841,7 +841,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             throw th;
         }
         finally {
-            trace.close();
+            if (trace != null)
+                trace.close();
         }
     }
 
