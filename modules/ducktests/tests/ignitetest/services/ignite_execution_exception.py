@@ -17,6 +17,7 @@
 Ignite execution exception
 """
 
+
 class IgniteExecutionException(Exception):
     """
     Ignite execution exception implementation
