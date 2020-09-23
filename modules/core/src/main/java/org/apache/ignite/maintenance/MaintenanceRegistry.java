@@ -38,6 +38,17 @@ import java.util.UUID;
 @IgniteExperimental
 public interface MaintenanceRegistry {
     /**
+     *
+     * @return {@code True}
+     */
+    public boolean prepareMaintenance();
+
+    /**
+     *
+     */
+    public void proceedWithMaintenance();
+
+    /**
      * @param rec {@link MaintenanceRecord} object with maintenance information that needs
      *                                     to be stored to maintenance registry.
      *

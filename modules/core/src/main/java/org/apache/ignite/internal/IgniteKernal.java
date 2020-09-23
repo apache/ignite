@@ -1305,6 +1305,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 throw e;
             }
 
+            // All components exept Discovery are started, time to check if maintenance is still needed
+            if (!mntcProcessor.prepareMaintenance()) {
+                // Maintenance mode not needed, all maintenance reasons were fixed when node was down.
+                // Clear maintenance records, log and shut down the node.
+            }
+            else
+                mntcProcessor.proceedWithMaintenance();
+
             gw.writeLock();
 
             try {
