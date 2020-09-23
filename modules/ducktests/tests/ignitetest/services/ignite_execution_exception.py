@@ -21,4 +21,3 @@ class IgniteExecutionException(Exception):
     """
     Ignite execution exception implementation
     """
-    pass
