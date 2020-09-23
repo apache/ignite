@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Abstraction over the checkpoint markers folder.
  */
-public class CheckpointStorage {
+public class CheckpointMarkersStorage {
     /** Checkpoint file name pattern. */
     public static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
@@ -79,7 +79,7 @@ public class CheckpointStorage {
      * @param absoluteWorkDir Directory path to checkpoint markers folder.
      * @throws IgniteCheckedException if fail.
      */
-    CheckpointStorage(
+    CheckpointMarkersStorage(
         Function<Class<?>, IgniteLogger> logger,
         CheckpointHistory history,
         FileIOFactory factory,

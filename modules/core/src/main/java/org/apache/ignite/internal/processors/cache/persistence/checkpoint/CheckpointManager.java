@@ -68,10 +68,10 @@ public class CheckpointManager {
     private volatile Checkpointer checkpointer;
 
     /** Main checkpoint steps. */
-    private final CheckpointProcess checkpointProcess;
+    private final CheckpointWorkflow checkpointWorkflow;
 
     /** Checkpoint markers storage which mark the start and end of each checkpoint. */
-    private final CheckpointStorage checkpointStorage;
+    private final CheckpointMarkersStorage checkpointMarkersStorage;
 
     /** Timeout checkpoint lock which should be used while write to memory happened. */
     final CheckpointTimeoutLock checkpointTimeoutLock;
@@ -130,7 +130,7 @@ public class CheckpointManager {
 
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
-        checkpointStorage = new CheckpointStorage(
+        checkpointMarkersStorage = new CheckpointMarkersStorage(
             logger,
             cpHistory,
             ioFactory,
@@ -139,11 +139,11 @@ public class CheckpointManager {
 
         CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
-        checkpointProcess = new CheckpointProcess(
+        checkpointWorkflow = new CheckpointWorkflow(
             logger,
             wal,
             snapshotMgr,
-            checkpointStorage,
+            checkpointMarkersStorage,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
             dataRegions,
@@ -181,7 +181,7 @@ public class CheckpointManager {
             snapshotMgr,
             persStoreMetrics,
             cacheProcessor,
-            checkpointProcess,
+            checkpointWorkflow,
             checkpointPagesWriterFactory,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads()
@@ -228,28 +228,28 @@ public class CheckpointManager {
      * @param lsnr Listener.
      */
     public void addCheckpointListener(CheckpointListener lsnr) {
-        checkpointProcess.addCheckpointListener(lsnr);
+        checkpointWorkflow.addCheckpointListener(lsnr);
     }
 
     /**
      * @param lsnr Listener.
      */
     public void removeCheckpointListener(CheckpointListener lsnr) {
-        checkpointProcess.removeCheckpointListener(lsnr);
+        checkpointWorkflow.removeCheckpointListener(lsnr);
     }
 
     /**
      * @param memoryRecoveryRecordPtr Memory recovery record pointer.
      */
     public void memoryRecoveryRecordPtr(WALPointer memoryRecoveryRecordPtr) {
-        checkpointProcess.memoryRecoveryRecordPtr(memoryRecoveryRecordPtr);
+        checkpointWorkflow.memoryRecoveryRecordPtr(memoryRecoveryRecordPtr);
     }
 
     /**
      * @return Checkpoint directory.
      */
     public File checkpointDirectory() {
-        return checkpointStorage.cpDir;
+        return checkpointMarkersStorage.cpDir;
     }
 
     /**
@@ -257,7 +257,7 @@ public class CheckpointManager {
      * @throws IgniteCheckedException If failed to read checkpoint status page.
      */
     public CheckpointStatus readCheckpointStatus() throws IgniteCheckedException {
-        return checkpointStorage.readCheckpointStatus();
+        return checkpointMarkersStorage.readCheckpointStatus();
     }
 
     /**
@@ -283,14 +283,14 @@ public class CheckpointManager {
      * @return Checkpoint history.
      */
     public CheckpointHistory checkpointHistory() {
-        return checkpointStorage.history();
+        return checkpointMarkersStorage.history();
     }
 
     /**
      * Initialize checkpoint storage.
      */
     public void initializeStorage() throws IgniteCheckedException {
-        checkpointStorage.initialize();
+        checkpointMarkersStorage.initialize();
     }
 
     /**
@@ -299,22 +299,22 @@ public class CheckpointManager {
      * @param highBound WALPointer.
      */
     public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
-        checkpointStorage.removeCheckpointsUntil(highBound);
+        checkpointMarkersStorage.removeCheckpointsUntil(highBound);
     }
 
     /**
      * Cleanup checkpoint directory from all temporary files.
      */
     public void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
-        checkpointStorage.cleanupTempCheckpointDirectory();
+        checkpointMarkersStorage.cleanupTempCheckpointDirectory();
     }
 
     /**
-     * Clean checkpoint directory {@link CheckpointStorage#cpDir}. The operation is necessary when local node joined to
+     * Clean checkpoint directory {@link CheckpointMarkersStorage#cpDir}. The operation is necessary when local node joined to
      * baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
-        checkpointStorage.cleanupCheckpointDirectory();
+        checkpointMarkersStorage.cleanupCheckpointDirectory();
     }
 
     /**
@@ -379,7 +379,7 @@ public class CheckpointManager {
         if (cp != null)
             cp.shutdownCheckpointer(cancel);
 
-        checkpointProcess.stop();
+        checkpointWorkflow.stop();
 
         this.checkpointer = null;
     }
@@ -389,7 +389,7 @@ public class CheckpointManager {
      */
     public void init() {
         if (this.checkpointer == null) {
-            checkpointProcess.start();
+            checkpointWorkflow.start();
 
             this.checkpointer = checkpointerProvider.get();
         }

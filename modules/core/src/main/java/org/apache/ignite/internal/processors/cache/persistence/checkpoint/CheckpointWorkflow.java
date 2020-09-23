@@ -89,14 +89,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 
 /**
  * Representation of main steps of checkpoint:
- * <p>{@link CheckpointProcess#markCheckpointBegin} - Initialization of next checkpoint. It collects all required
+ * <p>{@link CheckpointWorkflow#markCheckpointBegin} - Initialization of next checkpoint. It collects all required
  * info</p>
- * <p>{@link CheckpointProcess#markCheckpointEnd} - Finalization of last checkpoint. </p>
+ * <p>{@link CheckpointWorkflow#markCheckpointEnd} - Finalization of last checkpoint. </p>
  *
  * It contains main dependencies: {@link #dataRegions} and {@link #cacheGroupsContexts} which provide information about
  * source of data for checkpoint.
  */
-public class CheckpointProcess {
+public class CheckpointWorkflow {
     /** @see IgniteSystemProperties#CHECKPOINT_PARALLEL_SORT_THRESHOLD */
     public static final int DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD = 512 * 1024;
 
@@ -132,7 +132,7 @@ public class CheckpointProcess {
     private final Supplier<Collection<CacheGroupContext>> cacheGroupsContexts;
 
     /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end markers. */
-    private final CheckpointStorage checkpointStorage;
+    private final CheckpointMarkersStorage checkpointMarkersStorage;
 
     /** Checkpoint write order configuration. */
     private final CheckpointWriteOrder checkpointWriteOrder;
@@ -156,7 +156,7 @@ public class CheckpointProcess {
      * @param logger Logger.
      * @param wal WAL manager.
      * @param snapshotManager Snapshot manager.
-     * @param checkpointStorage Checkpoint mark storage.
+     * @param checkpointMarkersStorage Checkpoint mark storage.
      * @param checkpointReadWriteLock Checkpoint read write lock.
      * @param checkpointWriteOrder Checkpoint write order.
      * @param dataRegions Regions for checkpointing.
@@ -164,11 +164,11 @@ public class CheckpointProcess {
      * @param checkpointCollectInfoThreads Number of threads which should collect info for checkpoint.
      * @param igniteInstanceName Ignite instance name.
      */
-    CheckpointProcess(
+    CheckpointWorkflow(
         Function<Class<?>, IgniteLogger> logger,
         IgniteWriteAheadLogManager wal,
         IgniteCacheSnapshotManager snapshotManager,
-        CheckpointStorage checkpointStorage,
+        CheckpointMarkersStorage checkpointMarkersStorage,
         CheckpointReadWriteLock checkpointReadWriteLock,
         CheckpointWriteOrder checkpointWriteOrder,
         Supplier<Collection<DataRegion>> dataRegions,
@@ -183,7 +183,7 @@ public class CheckpointProcess {
         this.cacheGroupsContexts = cacheGroupContexts;
         this.checkpointCollectPagesInfoPool = initializeCheckpointPool();
         this.log = logger.apply(getClass());
-        this.checkpointStorage = checkpointStorage;
+        this.checkpointMarkersStorage = checkpointMarkersStorage;
         this.checkpointWriteOrder = checkpointWriteOrder;
         this.igniteInstanceName = igniteInstanceName;
         this.checkpointCollectInfoThreads = checkpointCollectInfoThreads;
@@ -324,7 +324,7 @@ public class CheckpointProcess {
 
             tracker.onWalCpRecordFsyncEnd();
 
-            CheckpointEntry checkpointEntry = checkpointStorage.writeCheckpointEntry(
+            CheckpointEntry checkpointEntry = checkpointMarkersStorage.writeCheckpointEntry(
                 cpTs,
                 cpRec.checkpointId(),
                 cpPtr,
@@ -557,7 +557,7 @@ public class CheckpointProcess {
         }
 
         if (chp.hasDelta()) {
-            checkpointStorage.writeCheckpointEntry(
+            checkpointMarkersStorage.writeCheckpointEntry(
                 chp.cpEntry.timestamp(),
                 chp.cpEntry.checkpointId(),
                 chp.cpEntry.checkpointMark(),
@@ -569,7 +569,7 @@ public class CheckpointProcess {
             wal.notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
         }
 
-        checkpointStorage.onCheckpointFinished(chp);
+        checkpointMarkersStorage.onCheckpointFinished(chp);
 
         CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null, null);
 
@@ -636,7 +636,7 @@ public class CheckpointProcess {
                 ((PageMemoryEx)memPlc.pageMemory()).finishCheckpoint();
         }
 
-        checkpointStorage.writeCheckpointEntry(cpTs, cpId, walPtr, null, CheckpointEntryType.END, skipSync);
+        checkpointMarkersStorage.writeCheckpointEntry(cpTs, cpId, walPtr, null, CheckpointEntryType.END, skipSync);
 
         if (log.isInfoEnabled())
             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +

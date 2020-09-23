@@ -145,7 +145,7 @@ public class Checkpointer extends GridWorker {
     private final GridCacheProcessor cacheProcessor;
 
     /** Strategy of where and how to get the pages. */
-    private final CheckpointProcess checkpointProcess;
+    private final CheckpointWorkflow checkpointWorkflow;
 
     /** Factory for the creation of page-write workers. */
     private final CheckpointPagesWriterFactory checkpointPagesWriterFactory;
@@ -199,7 +199,7 @@ public class Checkpointer extends GridWorker {
         IgniteCacheSnapshotManager snapshotManager,
         DataStorageMetricsImpl dsMetrics,
         GridCacheProcessor cacheProcessor,
-        CheckpointProcess checkpoint,
+        CheckpointWorkflow checkpoint,
         CheckpointPagesWriterFactory factory,
         long checkpointFrequency,
         int checkpointWritePageThreads
@@ -209,7 +209,7 @@ public class Checkpointer extends GridWorker {
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
         this.snapshotMgr = snapshotManager;
-        this.checkpointProcess = checkpoint;
+        this.checkpointWorkflow = checkpoint;
         this.checkpointPagesWriterFactory = factory;
         this.persStoreMetrics = dsMetrics;
         this.cacheProcessor = cacheProcessor;
@@ -384,7 +384,7 @@ public class Checkpointer extends GridWorker {
             startCheckpointProgress();
 
             try {
-                chp = checkpointProcess.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
+                chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
             }
             catch (Exception e) {
                 if (curCpProgress != null)
@@ -449,7 +449,7 @@ public class Checkpointer extends GridWorker {
             int destroyedPartitionsCnt = destroyEvictedPartitions();
 
             // Must mark successful checkpoint only if there are no exceptions or interrupts.
-            checkpointProcess.markCheckpointEnd(chp);
+            checkpointWorkflow.markCheckpointEnd(chp);
 
             tracker.onEnd();
 
@@ -917,7 +917,7 @@ public class Checkpointer extends GridWorker {
         WALPointer walPtr,
         StripedExecutor exec
     ) throws IgniteCheckedException {
-        checkpointProcess.finalizeCheckpointOnRecovery(cpTs, cpId, walPtr, exec, checkpointPagesWriterFactory);
+        checkpointWorkflow.finalizeCheckpointOnRecovery(cpTs, cpId, walPtr, exec, checkpointPagesWriterFactory);
     }
 
     /**
