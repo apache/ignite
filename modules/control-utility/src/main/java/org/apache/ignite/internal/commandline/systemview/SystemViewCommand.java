@@ -107,12 +107,12 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
         List<List<String>> rows = new ArrayList<>(viewRows.size());
 
         viewRows.forEach(sysViewRow -> {
-            ListIterator<Integer> colLenIter = colSzs.listIterator();
+            ListIterator<Integer> colSzIter = colSzs.listIterator();
 
             rows.add(sysViewRow.stream().map(attr -> {
                 String val = String.valueOf(attr);
 
-                colLenIter.set(Math.max(colLenIter.next(), val.length()));
+                colSzIter.set(Math.max(colSzIter.next(), val.length()));
 
                 return val;
             }).collect(Collectors.toList()));
@@ -124,21 +124,21 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
     }
 
     /**
-     * Prints row content with respect to column types and lengths.
+     * Prints row content with respect to column types and colSzs.
      *
      * @param row Row which content should be printed.
      * @param types Column types in sequential order for decent row formatting.
-     * @param lengths Column lengths in sequential order for decent row formatting.
+     * @param colSzs Column colSzs in sequential order for decent row formatting.
      * @param log Logger.
      */
     private void printRow(
         Collection<String> row,
         Collection<SimpleAttributeType> types,
-        Collection<Integer> lengths,
+        Collection<Integer> colSzs,
         Logger log
     ) {
         Iterator<SimpleAttributeType> typeIter = types.iterator();
-        Iterator<Integer> lenIter = lengths.iterator();
+        Iterator<Integer> lenIter = colSzs.iterator();
 
         log.info(row.stream().map(colVal -> {
             SimpleAttributeType colType = typeIter.next();
