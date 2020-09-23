@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Simple application that used in smoke tests
+ * Application to check java assertions to python exception conversion
  */
 public class AssertionApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */

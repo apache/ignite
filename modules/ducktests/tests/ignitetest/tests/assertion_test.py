@@ -25,6 +25,7 @@ from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
+
 # pylint: disable=W0223
 class SmokeSelfTest(IgniteTest):
     """
