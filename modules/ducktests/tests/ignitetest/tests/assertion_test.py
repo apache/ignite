@@ -28,7 +28,7 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 # pylint: disable=W0223
 class SmokeSelfTest(IgniteTest):
     """
-    Tests services implementations
+    Self test implementations
     """
 
     @cluster(num_nodes=1)
@@ -46,8 +46,8 @@ class SmokeSelfTest(IgniteTest):
 
         try:
             app.start()
-        except Exception as e:
-            assert str(e) == "Java application execution failed. java.lang.AssertionError"
+        except Exception as ex:
+            assert str(ex) == "Java application execution failed. java.lang.AssertionError"
         else:
             app.stop()
             assert False
