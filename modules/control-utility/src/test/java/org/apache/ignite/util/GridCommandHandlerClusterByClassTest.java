@@ -128,7 +128,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
-     * Very basic tests for running the command in different enviroment which other command are running in.
+     * Very basic tests for running the command in different environment which other command are running in.
      */
     @Test
     public void testFindAndDeleteGarbage() {
