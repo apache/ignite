@@ -21,12 +21,11 @@ from time import monotonic
 
 from ducktape.utils.local_filesystem_utils import mkdir_p
 from ducktape.tests.test import Test, TestContext
-
-# pylint: disable=C0103,W0223,W0703
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_persistence import PersistenceAware, IgnitePersistenceAware
 
 
+# pylint: disable=C0103,W0223,W0703
 class IgniteTest(Test):
     """
     Basic ignite test.
