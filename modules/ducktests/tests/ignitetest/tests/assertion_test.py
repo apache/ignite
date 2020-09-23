@@ -20,6 +20,7 @@ This module contains smoke tests that checks that ducktape works as expected
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -47,7 +48,7 @@ class SmokeSelfTest(IgniteTest):
 
         try:
             app.start()
-        except Exception as ex:
+        except IgniteExecutionException as ex:
             assert str(ex) == "Java application execution failed. java.lang.AssertionError"
         else:
             app.stop()
