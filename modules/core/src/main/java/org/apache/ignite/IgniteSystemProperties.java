@@ -1892,7 +1892,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
 
     /**
-     *
+     * Enables subquery rewriting optimization.
+     * If enabled, subquery will be rewritten to JOIN where it's possible.
+     * Default is {@code true}.
      */
     @IgniteExperimental
     public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";

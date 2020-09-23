@@ -553,7 +553,7 @@ public class QueryParser {
                 GridCacheTwoStepQuery twoStepQry = null;
 
                 if (splitNeeded) {
-                    GridQueryOptimizer.pullOutSubQueries(selectStmt);
+                    GridSubqueryJoinOptimizer.pullOutSubQueries(selectStmt);
 
                     c.schema(newQry.getSchema());
 

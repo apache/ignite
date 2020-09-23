@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  *
  */
-public class GridQueryOptimizerSelfTest extends GridCommonAbstractTest {
+public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -226,6 +226,75 @@ public class GridQueryOptimizerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTableList5() {
         String outerSqlTemplate = "select name from dep, (%s) d where dep.id = (MOD(d.id, 7) + 1) order by 1";
+        String subSql = "select id from dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure simple hierarchical subqueries properly pulled out from table list.
+     */
+    @Test
+    public void testTableList6() {
+        String outerSqlTemplate = "select name from (%s) d where d.id < 100";
+        String subSql = "select * from (select id, name from dep)";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure explicitly declared inner join with explicit join condition
+     * properly pulled out from table list.
+     */
+    @Test
+    public void testTableList7() {
+        String outerSqlTemplate = "select e.name from emp e inner join (%s) d on e.id = d.id where d.id < 100";
+        String subSql = "select id from dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure explicitly declared inner join with implicit join condition
+     * properly pulled out from table list.
+     */
+    @Test
+    public void testTableList8() {
+        String outerSqlTemplate = "select e.name from emp e inner join (%s) d where e.id = d.id and d.id < 100";
+        String subSql = "select id from dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure explicitly declared left join with explicit join condition
+     * properly pulled out from table list.
+     */
+    @Test
+    public void testTableList9() {
+        String outerSqlTemplate = "select e.name from emp e left join (%s) d on e.id = d.id where d.id < 100";
+        String subSql = "select id from dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure explicitly declared left join without join condition
+     * properly pulled out from table list.
+     */
+    @Test
+    public void testTableList10() {
+        String outerSqlTemplate = "select e.name from emp e left join (%s) d where e.id = d.id and d.id < 100";
         String subSql = "select id from dep";
 
         String resSql = String.format(outerSqlTemplate, subSql);
@@ -517,6 +586,6 @@ public class GridQueryOptimizerSelfTest extends GridCommonAbstractTest {
     private void optimizationEnabled(boolean enabled) {
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION, String.valueOf(enabled));
 
-        GridTestUtils.setFieldValue(GridQueryOptimizer.class, "optimizationEnabled", null);
+        GridTestUtils.setFieldValue(GridSubqueryJoinOptimizer.class, "optimizationEnabled", null);
     }
 }

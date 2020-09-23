@@ -46,7 +46,6 @@ import org.h2.index.Index;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
@@ -55,7 +54,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NEGATE;
 
 /** */
-public class GridQueryOptimizer {
+public class GridSubqueryJoinOptimizer {
     /** Predicat returns {@code true} if current element has subquery in its children. */
     private static final BiPredicate<GridSqlAst, GridSqlAst> ELEMENT_WITH_SUBQUERY
         = (parent, child) -> child instanceof GridSqlSubquery;
@@ -86,9 +85,9 @@ public class GridQueryOptimizer {
     private static final BiPredicate<GridSqlAst, GridSqlAst> ELEMENT_WITH_ALIAS_WITH_SUBQUERY
         = (parent, child) -> child instanceof GridSqlAlias && child.child() instanceof GridSqlSubquery;
 
-    /** Predicat returns {@code true} if current element is an INNER JOIN. */
-    private static final Predicate<GridSqlAst> ELEMENT_IS_INNER_JOIN
-        = elem -> elem instanceof GridSqlJoin && !((GridSqlJoin)elem).isLeftOuter();
+    /** Predicat returns {@code true} if current element is a JOIN. */
+    private static final Predicate<GridSqlAst> ELEMENT_IS_JOIN
+        = elem -> elem instanceof GridSqlJoin;
 
     /** Predicat returns {@code true} if current element is an EQUAL or EQUAL_NULL_SAFE operation. */
     private static final Predicate<GridSqlAst> ELEMENT_IS_EQ
@@ -115,33 +114,41 @@ public class GridQueryOptimizer {
     }
 
     /**
-     * @param parent Parent.
+     * Pulls out subquery from parent query where possible.
+     *
+     * @param parent Parent query where to find and pull out subqueries.
      */
-    public static boolean pullOutSubQueries(GridSqlQuery parent) {
-        boolean wasPulledOut = false;
-
+    public static void pullOutSubQueries(GridSqlQuery parent) {
         if (!optimizationEnabled())
-            return wasPulledOut;
+            return;
 
         if (parent instanceof GridSqlUnion) {
             GridSqlUnion union = (GridSqlUnion)parent;
 
-            wasPulledOut |= pullOutSubQueries(union.left());
-            wasPulledOut |= pullOutSubQueries(union.right());
-
-            return wasPulledOut;
+            pullOutSubQueries(union.left());
+            pullOutSubQueries(union.right());
         }
 
-        // pull out select expressions from SELECT clause
         GridSqlSelect select = (GridSqlSelect)parent;
-        boolean locPulledOut;
 
+        pullOutSubQryFromSelectExpr(select);
+        pullOutSubQryFromInClause(select);
+        pullOutSubQryFromExistsClause(select);
+        pullOutSubQryFromTableList(select);
+    }
+
+    /**
+     * Pulls out subquery from select expression.
+     *
+     * @param select Parent query where to find and pull out subqueries.
+     */
+    private static void pullOutSubQryFromSelectExpr(GridSqlSelect select) {
         for (int i = 0; i < select.allColumns(); i++) {
-            locPulledOut = false;
+            boolean wasPulledOut = false;
             GridSqlAst col = select.columns(false).get(i);
 
             if (col instanceof GridSqlSubquery)
-                locPulledOut = pullOutSubQryFromSelectExpr(select, null, i);
+                wasPulledOut = pullOutSubQryFromSelectExpr(select, null, i);
             else {
                 ASTNodeFinder finder = new ASTNodeFinder(
                     col,
@@ -150,104 +157,104 @@ public class GridQueryOptimizer {
 
                 ASTNodeFinder.Result res;
                 while ((res = finder.findNext()) != null)
-                    locPulledOut |= pullOutSubQryFromSelectExpr(select, res.getEl(), res.getIdx());
+                    wasPulledOut |= pullOutSubQryFromSelectExpr(select, res.getEl(), res.getIdx());
             }
 
-            if (locPulledOut) // we have to analize just pulled out element as well
+            if (wasPulledOut) // we have to analize just pulled out element as well
                 i--;
-
-            wasPulledOut |= locPulledOut;
         }
+    }
 
-        // pull out sub-queries from table list
+    /**
+     * Pulls out subquery from table list.
+     *
+     * @param select Parent query where to find and pull out subqueries.
+     */
+    private static void pullOutSubQryFromTableList(GridSqlSelect select) {
+        boolean wasPulledOut;
         do {
-            locPulledOut = false;
+            wasPulledOut = false;
 
+            // we have to check the root of the FROM clause in the loop
+            // to handle simple hierarchical queries like this:
+            // select * from (select * from (select id, name from emp))
             if (ELEMENT_WITH_ALIAS_WITH_SUBQUERY.test(null, select.from()))
-                locPulledOut = pullOutSubQryFromTableList(select, null, -1);
-            else if (ELEMENT_IS_INNER_JOIN.test(select.from())) {
+                wasPulledOut = pullOutSubQryFromTableList(select, null, -1);
+            else if (ELEMENT_IS_JOIN.test(select.from())) {
                 ASTNodeFinder finder = new ASTNodeFinder(
                     select.from(),
                     ELEMENT_WITH_ALIAS_WITH_SUBQUERY,
-                    ELEMENT_IS_INNER_JOIN
+                    ELEMENT_IS_JOIN
                 );
 
                 ASTNodeFinder.Result res;
                 while ((res = finder.findNext()) != null)
-                    locPulledOut |= pullOutSubQryFromTableList(select, res.getEl(), res.getIdx());
+                    wasPulledOut |= pullOutSubQryFromTableList(select, res.getEl(), res.getIdx());
             }
-
-            wasPulledOut |= locPulledOut;
         }
-        while (locPulledOut);
+        while (wasPulledOut);
+    }
 
-        // pull out sub-queries from table list
+    /**
+     * Pulls out subquery from IN expression.
+     *
+     * @param select Parent query where to find and pull out subqueries.
+     */
+    private static void pullOutSubQryFromInClause(GridSqlSelect select) {
+        // for now it's not possible to have a subquery on top of WHERE clause tree after rewriting,
+        // so we could safely process it only once outside the loop
+        if (ELEMENT_WITH_SUBQUERY_WITHIN_IN_EXPRESSION.test(null, select.where()))
+            pullOutSubQryFromInClause(select, null, -1);
+
+        if (!ELEMENT_IS_AND_OPERATION.test(select.where()))
+            return;
+
+        boolean wasPulledOut;
         do {
-            locPulledOut = false;
+            wasPulledOut = false;
 
-            if (ELEMENT_WITH_ALIAS_WITH_SUBQUERY.test(null, select.from()))
-                locPulledOut = pullOutSubQryFromTableList(select, null, -1);
-            else if (ELEMENT_IS_INNER_JOIN.test(select.from())) {
-                ASTNodeFinder finder = new ASTNodeFinder(
-                    select.from(),
-                    ELEMENT_WITH_ALIAS_WITH_SUBQUERY,
-                    ELEMENT_IS_INNER_JOIN
-                );
+            ASTNodeFinder finder = new ASTNodeFinder(
+                select.where(),
+                ELEMENT_WITH_SUBQUERY_WITHIN_IN_EXPRESSION,
+                ELEMENT_IS_AND_OPERATION
+            );
 
-                ASTNodeFinder.Result res;
-                while ((res = finder.findNext()) != null)
-                    locPulledOut |= pullOutSubQryFromTableList(select, res.getEl(), res.getIdx());
-            }
-
-            wasPulledOut |= locPulledOut;
+            ASTNodeFinder.Result res;
+            while ((res = finder.findNext()) != null)
+                wasPulledOut |= pullOutSubQryFromInClause(select, res.getEl(), res.getIdx());
         }
-        while (locPulledOut);
+        while (wasPulledOut);
+    }
 
-        // pull out sub-queries from IN clause
+    /**
+     * Pulls out subquery from EXISTS expression.
+     *
+     * @param select Parent query where to find and pull out subqueries.
+     */
+    private static void pullOutSubQryFromExistsClause(GridSqlSelect select) {
+        // for now it's not possible to have a subquery on top of WHERE clause tree after rewriting,
+        // so we could safely process it only once outside the loop
+        if (ELEMENT_WITH_SUBQUERY_WITHIN_EXISTS_EXPRESSION.test(null, select.where()))
+            pullOutSubQryFromExistsClause(select, null, -1);
+
+        if (!ELEMENT_IS_AND_OPERATION.test(select.where()))
+            return;
+
+        boolean wasPulledOut;
         do {
-            locPulledOut = false;
+            wasPulledOut = false;
 
-            if (ELEMENT_WITH_SUBQUERY_WITHIN_IN_EXPRESSION.test(null, select.where()))
-                locPulledOut = pullOutSubQryFromInClause(select, null, -1);
-            else if (ELEMENT_IS_AND_OPERATION.test(select.where())) {
-                ASTNodeFinder finder = new ASTNodeFinder(
-                    select.where(),
-                    ELEMENT_WITH_SUBQUERY_WITHIN_IN_EXPRESSION,
-                    ELEMENT_IS_AND_OPERATION
-                );
+            ASTNodeFinder finder = new ASTNodeFinder(
+                select.where(),
+                ELEMENT_WITH_SUBQUERY_WITHIN_EXISTS_EXPRESSION,
+                ELEMENT_IS_AND_OPERATION
+            );
 
-                ASTNodeFinder.Result res;
-                while ((res = finder.findNext()) != null)
-                    locPulledOut |= pullOutSubQryFromInClause(select, res.getEl(), res.getIdx());
-            }
-
-            wasPulledOut |= locPulledOut;
+            ASTNodeFinder.Result res;
+            while ((res = finder.findNext()) != null)
+                wasPulledOut |= pullOutSubQryFromExistsClause(select, res.getEl(), res.getIdx());
         }
-        while (locPulledOut);
-
-        // pull out sub-queries from EXISTS clause
-        do {
-            locPulledOut = false;
-
-            if (ELEMENT_WITH_SUBQUERY_WITHIN_EXISTS_EXPRESSION.test(null, select.where()))
-                locPulledOut = pullOutSubQryFromExistsClause(select, null, -1);
-            else if (ELEMENT_IS_AND_OPERATION.test(select.where())) {
-                ASTNodeFinder finder = new ASTNodeFinder(
-                    select.where(),
-                    ELEMENT_WITH_SUBQUERY_WITHIN_EXISTS_EXPRESSION,
-                    ELEMENT_IS_AND_OPERATION
-                );
-
-                ASTNodeFinder.Result res;
-                while ((res = finder.findNext()) != null)
-                    locPulledOut |= pullOutSubQryFromExistsClause(select, res.getEl(), res.getIdx());
-            }
-
-            wasPulledOut |= locPulledOut;
-        }
-        while (locPulledOut);
-
-        return wasPulledOut;
+        while (wasPulledOut);
     }
 
     /**
@@ -271,7 +278,6 @@ public class GridQueryOptimizer {
             && select.limit() == null
             && !select.isForUpdate()
             && !select.distinct()
-            && GridSqlAlias.unwrap(select.from()) instanceof GridSqlTable
             && select.havingColumn() < 0
             && F.isEmpty(select.groupColumns());
 
@@ -348,7 +354,7 @@ public class GridQueryOptimizer {
         @Nullable GridSqlAst target,
         int childInd
     ) {
-        if (target != null && (!(target instanceof GridSqlJoin) || ((GridSqlJoin)target).isLeftOuter()))
+        if (target != null && !ELEMENT_IS_JOIN.test(target))
             return false;
 
         GridSqlAlias wrappedSubQry = target != null
@@ -432,7 +438,8 @@ public class GridQueryOptimizer {
      *            d.name as dep_name
      *       FROM emp e
      *       LEFT JOIN dep d
-     *      WHERE sal > 2000 AND d.id = e.dep_id
+     *         ON d.id = e.dep_id
+     *      WHERE sal > 2000
      * </pre>
      *
      * @param parent Parent select.
@@ -601,8 +608,7 @@ public class GridQueryOptimizer {
      *     SELECT name
      *       FROM emp e
      *       JOIN dep d
-     *         ON d.id = e.dep_id and d.name = 'dep1
-     *      WHERE sal > 2000
+     *      WHERE sal > 2000 AND d.id = e.dep_id and d.name = 'dep1
      * </pre>
      *
      * @param parent Parent select.
@@ -624,17 +630,15 @@ public class GridQueryOptimizer {
             return false;
 
         if (targetEl != null)
-            // probably it's better to replace entire branch
-            targetEl.child(childInd, TRUE);
+            targetEl.child(childInd, subS.where());
         else
-            parent.where(null);
+            parent.where(subS.where());
 
         GridSqlElement parentFrom = parent.from() instanceof GridSqlElement
             ? (GridSqlElement)parent.from()
             : new GridSqlSubquery((GridSqlQuery)parent.from());
 
-        parent.from(new GridSqlJoin(parentFrom, GridSqlAlias.unwrap(subS.from()),
-            false, (GridSqlElement)subS.where())).child();
+        parent.from(new GridSqlJoin(parentFrom, GridSqlAlias.unwrap(subS.from()), false, null)).child();
 
         return true;
     }
