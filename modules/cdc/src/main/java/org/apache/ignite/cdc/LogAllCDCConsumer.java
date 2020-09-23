@@ -47,4 +47,8 @@ public class LogAllCDCConsumer implements CDCConsumer {
     @Override public void stop() {
         // No-op.
     }
+
+    @Override public String toString() {
+        return "LogAllCDCConsumer{id=" + id() + '}';
+    }
 }
