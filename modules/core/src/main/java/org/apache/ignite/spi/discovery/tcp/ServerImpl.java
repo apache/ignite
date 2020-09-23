@@ -3489,7 +3489,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // state of conenction recovering and have to work with
                             // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
                             if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
 
                             boolean success = false;
 
@@ -3713,7 +3713,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     addFailedNodes(pendingMsg, failedNodes);
 
                                     if (timeoutHelper == null)
-                                        timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3757,7 +3757,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = serverOperationTimeoutHelper(sndState);
+                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3859,14 +3859,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-
-                        // We hasn't sent a message actually and felt into connection recovery cycle.
-                        // Now we cannot relay on last-message-sent-time. We'll work with connectionRecoverytimeout
-                        // until we find new connection to the ring.
-                        lastRingMsgSentTime = 0;
-                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -6541,9 +6535,11 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Creates proper timeout helper taking in account current send state and ring state.
      *
      * @param sndState Current connection recovering state. Ignored if {@code null}.
+     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
      * @return Timeout helper.
      */
-    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState) {
+    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+        long lastOperationNanos) {
         long absoluteThreshold = -1;
 
         // Active send-state means we lost connection to next node and have to find an other one to connect to.
@@ -6564,7 +6560,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
         }
 
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime, absoluteThreshold);
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
     }
 
     /** Fixates time of last sent message. */
