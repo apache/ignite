@@ -66,7 +66,6 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=data_cfg,
-            snapshot_path=IgnitePersistenceAware.SNAPSHOT
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)

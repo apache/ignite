@@ -50,7 +50,7 @@ class IgnitePersistenceAware(PersistenceAware):
     This class contains Ignite persistence artifacts
     """
     WORK_DIR = os.path.join(PersistenceAware.PERSISTENT_ROOT, "work")
-    SNAPSHOT = os.path.join(PersistenceAware.PERSISTENT_ROOT, "snapshot")
+    SNAPSHOT = os.path.join(WORK_DIR, "snapshots")
     CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-config.xml")
     LOG4J_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j.xml")
 
