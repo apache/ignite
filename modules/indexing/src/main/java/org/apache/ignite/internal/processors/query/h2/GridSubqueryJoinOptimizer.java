@@ -303,7 +303,7 @@ public class GridSubqueryJoinOptimizer {
     }
 
     /**
-     * Check whether table have unique index that can be built with provided column set.
+     * Check whether table has unique index that can be built with provided column set.
      *
      * @param gridCols Columns.
      * @param tbl Table.
@@ -368,7 +368,7 @@ public class GridSubqueryJoinOptimizer {
 
         GridSqlSelect subSel = subQry.subquery();
 
-        if (!(subSel.from() instanceof GridSqlAlias) || !(subSel.from() instanceof GridSqlTable))
+        if (!(subSel.from() instanceof GridSqlAlias) && !(subSel.from() instanceof GridSqlTable))
             return false; // we can't deal with joins and others right now
 
         GridSqlAlias subTbl = new GridSqlAlias(wrappedSubQry.alias(), GridSqlAlias.unwrap(subSel.from()));
@@ -455,9 +455,10 @@ public class GridSubqueryJoinOptimizer {
             ? targetEl.child(childInd)
             : (GridSqlSubquery)parent.columns(false).get(childInd);
 
-        GridSqlSelect subS = checkSubQueryCanBePulledOut(subQry);
-        if (subS == null)
+        if (!subQueryCanBePulledOut(subQry))
             return false;
+
+        GridSqlSelect subS = subQry.subquery();
 
         if (subS.allColumns() != 1)
             return false;
@@ -625,9 +626,10 @@ public class GridSubqueryJoinOptimizer {
             ? targetEl.child(childInd).child()
             : parent.where().child();
 
-        GridSqlSelect subS = checkSubQueryCanBePulledOut(subQry);
-        if (subS == null)
+        if (!subQueryCanBePulledOut(subQry))
             return false;
+
+        GridSqlSelect subS = subQry.subquery();
 
         if (targetEl != null)
             targetEl.child(childInd, subS.where());
@@ -649,11 +651,11 @@ public class GridSubqueryJoinOptimizer {
      * @param subQry Sub-query.
      * @return Sub-query if it can be pulled out or {@code null}.
      */
-    private static GridSqlSelect checkSubQueryCanBePulledOut(GridSqlSubquery subQry) {
+    private static boolean subQueryCanBePulledOut(GridSqlSubquery subQry) {
         GridSqlQuery subQ = subQry.subquery();
 
         if (!isSimpleSelect(subQ))
-            return null;
+            return false;
 
         assert subQ instanceof GridSqlSelect;
 
@@ -686,7 +688,7 @@ public class GridSubqueryJoinOptimizer {
         // filter out nothing.
 
         if (subS.where() == null)
-            return null;
+            return false;
 
         ASTNodeFinder opEqFinder = new ASTNodeFinder(
             subS.where(),
@@ -714,7 +716,7 @@ public class GridSubqueryJoinOptimizer {
 
             if (colArr[0] == null || colArr[1] == null
                 // reference equality used on purpose here, because we should to get known
-                // whether the column referes to exactly the same table
+                // whether the column refers to exactly the same table
                 || colArr[0].expressionInFrom() != colArr[1].expressionInFrom()
             ) {
                 if (colArr[0] != null && colArr[0].expressionInFrom() == subS.from())
@@ -725,8 +727,9 @@ public class GridSubqueryJoinOptimizer {
             }
         }
 
-        GridSqlTable subTbl = GridSqlAlias.unwrap(subS.from());
-        return isUniqueIndexExists(sqlCols, subTbl) ? subS : null;
+        GridSqlAst subTbl = GridSqlAlias.unwrap(subS.from());
+
+        return subTbl instanceof GridSqlTable && isUniqueIndexExists(sqlCols, (GridSqlTable)subTbl);
     }
 
     /**

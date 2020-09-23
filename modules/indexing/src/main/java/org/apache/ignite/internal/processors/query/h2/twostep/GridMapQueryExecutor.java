@@ -553,7 +553,8 @@ public class GridMapQueryExecutor {
             if (reserved != null)
                 reserved.release();
 
-            trace.close();
+            if (trace != null)
+                trace.close();
         }
     }
 
