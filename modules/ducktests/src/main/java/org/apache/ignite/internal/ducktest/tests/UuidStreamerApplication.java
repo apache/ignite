@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.UUID;
 
 /**
  *
@@ -31,7 +30,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jsonNode) {
         IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(jsonNode.get("cacheName").asText());
 
-        AtomicInteger counter = new AtomicInteger();
+        long cnt = 0L;
 
         long start = System.currentTimeMillis();
 
@@ -42,10 +41,10 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
             cache.put(uuid, uuid);
 
-            counter.incrementAndGet();
+            cnt++;
         }
 
-        recordResult("STREAMED", counter.get());
+        recordResult("STREAMED", cnt);
         recordResult("DURATION", System.currentTimeMillis() - start);
 
         markFinished();
