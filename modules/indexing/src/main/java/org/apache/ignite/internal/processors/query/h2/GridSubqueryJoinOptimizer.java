@@ -368,8 +368,8 @@ public class GridSubqueryJoinOptimizer {
 
         GridSqlSelect subSel = subQry.subquery();
 
-        // we expect here that #isSimpleSelect() returns true only for one table queries
-        assert subSel.from() instanceof GridSqlAlias || subSel.from() instanceof GridSqlTable;
+        if (!(subSel.from() instanceof GridSqlAlias) || !(subSel.from() instanceof GridSqlTable))
+            return false; // we can't deal with joins and others right now
 
         GridSqlAlias subTbl = new GridSqlAlias(wrappedSubQry.alias(), GridSqlAlias.unwrap(subSel.from()));
         if (target == null)
