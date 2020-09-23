@@ -1031,6 +1031,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.CLUSTER_CHANGE_TAG ||
             cmd == CommandList.METADATA ||
             cmd == CommandList.WARM_UP ||
+            cmd == CommandList.PROPERTY ||
             cmd == CommandList.SYSTEM_VIEW;
     }
 }
