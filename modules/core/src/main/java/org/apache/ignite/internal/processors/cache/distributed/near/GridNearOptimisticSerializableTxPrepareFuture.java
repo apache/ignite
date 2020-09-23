@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapp
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -549,13 +548,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         Collection<IgniteTxEntry> writes) {
         GridDistributedTxMapping m = fut.mapping();
 
-        final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
-
-        assert F.eq(tx.subjectId(), secSubjId) :
-            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(cctx.kernalContext(), secSubjId) +
-                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
-                SecurityUtils.login(cctx.kernalContext(), tx.subjectId()) + "]";
-
         GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
             futId,
             tx.topologyVersion(),
@@ -570,7 +562,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
             m.explicitLock(),
-            secSubjId,
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
