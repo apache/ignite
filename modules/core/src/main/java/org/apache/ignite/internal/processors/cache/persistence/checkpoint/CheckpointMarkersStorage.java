@@ -51,7 +51,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 
 /**
- * Abstraction over the checkpoint markers folder.
+ * Abstraction responsible for managing checkpoint markers storage.
  */
 public class CheckpointMarkersStorage {
     /** Checkpoint file name pattern. */

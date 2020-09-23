@@ -52,7 +52,12 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 
 /**
- * Umbrella service for correct configuration of default checkpoint. This checkpoint ensures that all pages marked as
+ * Main class to abstract checkpoint-related processes and actions and hide them from higher-level components.
+ * Implements default checkpointing algorithm which is sharp checkpoint but can be replaced
+ * by other implementations if needed.
+ * Represents only an intermediate step in refactoring of checkpointing component and may change in the future.
+ *
+ * This checkpoint ensures that all pages marked as
  * dirty under {@link #checkpointTimeoutLock ()} will be consistently saved to disk.
  *
  * Configuration of this checkpoint allows the following:
@@ -60,8 +65,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LO
  * ()}.</p> *
  * <p>Marking the start of checkpoint in WAL and on disk.</p>
  * <p>Notifying the subscribers of different checkpoint states through {@link CheckpointListener}.</p> *
- * <p>Storing collected pages to {@link FilePageStoreManager}.</p>
- * <p>Restoring the checkpoint state if the node fail on middle of checkpoint.</p>
+ * <p>Synchronizing collected pages with disk using {@link FilePageStoreManager}.</p>
+ * <p>Restoring memory in consistent state if the node failed in the middle of checkpoint.</p>
  */
 public class CheckpointManager {
     /** Checkpoint worker. */

@@ -88,13 +88,19 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_RUNNER_THREAD_PREFIX;
 
 /**
- * Representation of main steps of checkpoint:
+ * This class responsibility is to complement {@link Checkpointer} class with side logic of checkpointing like
+ * checkpoint listeners notifications, WAL records management and checkpoint markers management.
+ *
+ * It allows {@link Checkpointer} class is to focus on its main responsibility: synchronizing memory with disk.
+ * Additional actions needed during checkpoint are implemented in this class.
+ *
+ * Two main blocks of logic this class is responsible for:
  * <p>{@link CheckpointWorkflow#markCheckpointBegin} - Initialization of next checkpoint. It collects all required
  * info</p>
  * <p>{@link CheckpointWorkflow#markCheckpointEnd} - Finalization of last checkpoint. </p>
  *
- * It contains main dependencies: {@link #dataRegions} and {@link #cacheGroupsContexts} which provide information about
- * source of data for checkpoint.
+ * If also provides checkpointer with information about {@link #dataRegions} where to collect dirty pages
+ * and {@link #cacheGroupsContexts} needed to perform checkpoint operation.
  */
 public class CheckpointWorkflow {
     /** @see IgniteSystemProperties#CHECKPOINT_PARALLEL_SORT_THRESHOLD */

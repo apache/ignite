@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.worker;
 
 /**
- * Dispatcher of worker work progress which allows us to understand when workers freeze.
+ * Dispatcher of workers' progress which allows us to understand if worker freezes.
  */
 public interface WorkProgressDispatcher {
     /**
