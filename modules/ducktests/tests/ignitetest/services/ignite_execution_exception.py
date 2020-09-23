@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Ignite execution exception
+"""
 
 class IgniteExecutionException(Exception):
+    """
+    Ignite execution exception implementation
+    """
     pass
