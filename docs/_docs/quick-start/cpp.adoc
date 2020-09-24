@@ -49,7 +49,7 @@ include::includes/cpp-linux-build-prerequisites.adoc[]
 === Building C++ Ignite
 
 - Download and unzip the Ignite binary release. We'll refer to a resulting directory as to `${IGNITE_HOME}`.
-- Create build directory for CMake. We'll refer to this as `${CPP_BUILD_DIR}`
+- Create a build directory for CMake. We'll refer to this as `${CPP_BUILD_DIR}`
 - Build and install Ignite.C++ by executing the following commands:
 
 [tabs]
