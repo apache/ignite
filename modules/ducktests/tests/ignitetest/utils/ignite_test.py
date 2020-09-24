@@ -25,7 +25,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
-# pylint: disable=W0223,W0703
+# pylint: disable=W0223
 class IgniteTest(Test):
     """
     Basic ignite test.
@@ -70,7 +70,7 @@ class IgniteTest(Test):
 
                         node.account.ssh(compress_cmd(PersistenceAware.PERSISTENT_ROOT, tgz_root))
                         node.account.copy_from(tgz_root, dest)
-                except Exception as ex:
+                except Exception as ex:  # pylint: disable=W0703
                     self.logger.warn(
                         "Error copying persistence dir from %(source)s to %(dest)s. \
                         service %(service)s: %(message)s" %
