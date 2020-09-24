@@ -6,14 +6,7 @@ This chapter explains system requirements for running Ignite and how to install 
 
 Ignite C++ was officially tested on:
 
-include::includes/prereqs.adoc[]
-
-and:
-
-[cols="1,3"]
-|=======================================================================
-|Visual Studio |2010 and above
-|=======================================================================
+include::includes/cpp-prerequisites.adoc[]
 
 
 == Installing Ignite
@@ -51,30 +44,62 @@ For information about the {cpp} thin client, see link:thin-clients/cpp-thin-clie
 On unix systems, you can use the command line to build and run the examples included in the Ignite distribution.
 
 === Prerequisites
-The following packages should be installed:
-- C++ compiler
-- libssl
-- autotools
-- automake
-- libtool
+include::includes/cpp-linux-build-prerequisites.adoc[]
 
 === Building C++ Ignite
 
-. Download and unzip the Ignite binary release into a directory. We'll refer to this as `{IGNITE_HOME}`.
-. `cd {IGNITE_HOME}/platforms/cpp`
-. `libtoolize && aclocal && autoheader && automake --add-missing && autoreconf`
-. `./configure`
-. `make`
+- Download and unzip the Ignite binary release. We'll refer to a resulting directory as to `${IGNITE_HOME}`.
+- Create build directory for CMake. We'll refer to this as `${CPP_BUILD_DIR}`
+- Build and install Ignite.C++ by executing the following commands:
 
-=== Running the Thick Client Example
+[tabs]
+--
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
+make
+sudo make install
+----
 
-. `cd {IGNITE_HOME}/platforms/cpp/examples`
-. `libtoolize && aclocal && autoheader && automake --add-missing && autoreconf`
-. `./configure`
-. `cd put-get-example`
-. `make`
-. `./ignite-put-get-example`
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
+make 
+sudo make install
+----
 
+--
+
+
+=== Building and running the Thick Client Example
+- Create a build directory for cmake. We'll refer to it as `${CPP_EXAMPLES_BUILD_DIR}`
+- Build the examples by executing the following commands:
+
+[tabs]
+--
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
+----
+cd ${CPP_EXAMPLES_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release ${IGNITE_HOME}/platforms/cpp/examples && make
+cd ./put-get-example
+./ignite-put-get-example
+----
+
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
+----
+cd ${CPP_EXAMPLES_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release ${IGNITE_HOME}/platforms/cpp/examples && make
+cd ./put-get-example
+./ignite-put-get-example
+----
+
+--
 
 == Next Steps
 
