@@ -55,6 +55,7 @@ import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -252,11 +253,15 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
+        IntMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
         LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
         LongMetric receivedBytes = mreg.findMetric("RebalancingReceivedBytes");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
                 "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
+
+        assertEquals("The total number of partitions in the metric should be " +
+                "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsTotal.value());
 
         long rebalancingStartTime = startTime.value();
 
@@ -281,6 +286,9 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertEquals("After completion of rebalancing, there are no partitions of the cache group that are" +
             " left to rebalance.", 0, partitionsLeft.value());
+
+        assertEquals("After completion of rebalancing, the total number of partitions in the metric should be" +
+            " equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsTotal.value());
 
         assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to the start time " +
                 "measured immediately after the rebalancing start.", rebalancingStartTime, startTime.value());
@@ -333,9 +341,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
+        IntMetric partitionsTotal = mreg.findMetric("RebalancingPartitionsTotal");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
             "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
+
+        assertEquals("The total number of partitions in the metric should be " +
+            "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsTotal.value());
 
         long rebalancingStartTime = startTime.value();
 
