@@ -505,7 +505,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
      * Test should verify all cases where subquery should not be rewrited.
      */
     @Test
-    public void testOptimizationShouldNotBeApplied() {
+    public void testOptimizationShouldNotBeApplied1() {
         String sql = "" +
             // follow should not be rewrited beacuse of aggregates
             "select (select max(id) from emp) f1," +
@@ -522,6 +522,74 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
             " from dep";
 
         check(sql, 10);
+    }
+
+    /**
+     * Test should verify that optimization won't be applied when columns of the compound index
+     * connect by OR.
+     */
+    @Test
+    public void testOptimizationShouldNotBeApplied2() {
+        String outerSqlTemplate = "select e.id, e.name from emp e where exists (%s) order by 1";
+        String subSql = "select 1 from dep2 d2 where d2.id = e.id or d2.id2 = e.id";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 2);
+    }
+
+    /**
+     * Case to ensure subquery with join won't be pulled out from table list.
+     */
+    @Test
+    public void testOptimizationShouldNotBeApplied3() {
+        String outerSqlTemplate = "select e.name from emp e, (%s) d order by 1 limit 10";
+        String subSql = "select d1.id, d2.name from dep d1, dep d2";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 2 + 1/* explain reports one additional SELECT in comments */);
+    }
+
+    /**
+     * Case to ensure subquery with join won't be pulled out from EXISTS.
+     */
+    @Test
+    public void testOptimizationShouldNotBeApplied4() {
+        String outerSqlTemplate = "select e.name from emp e where exists (%s) order by 1 limit 10";
+        String subSql = "select 1 from dep d1, dep d2 where d1.id = d2.id and d1.id = e.id";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 2);
+    }
+
+    /**
+     * Test should verify that optimization won't be applied when columns of the compound index
+     * connect by OR (ver 2).
+     */
+    @Test
+    public void testOptimizationShouldNotBeApplied5() {
+        String outerSqlTemplate = "select e.id, e.name from emp e where exists (%s) order by 1";
+        String subSql = "select 1 from dep2 d2 where 1 = 1 and (d2.id = e.id or d2.id2 = e.id)";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 2);
+    }
+
+    /**
+     * Test should verify that optimization won't be applied when columns of the compound index
+     * connect by OR (ver 3).
+     */
+    @Test
+    public void testOptimizationShouldNotBeApplied6() {
+        String outerSqlTemplate = "select e.id, e.name from emp e where exists (%s) order by 1";
+        String subSql = "select 1 from dep2 d2 where 1 = 1 and (d2.id = e.id and (d2.id2 = 1 or d2.id2 = 2))";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 2);
     }
 
     /**

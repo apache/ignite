@@ -649,7 +649,7 @@ public class GridSubqueryJoinOptimizer {
      * Whether sub-query can be pulled out or not.
      *
      * @param subQry Sub-query.
-     * @return Sub-query if it can be pulled out or {@code null}.
+     * @return {@code true} if sub-query cound be pulled out, {@code false} otherwise.
      */
     private static boolean subQueryCanBePulledOut(GridSqlSubquery subQry) {
         GridSqlQuery subQ = subQry.subquery();
@@ -690,10 +690,15 @@ public class GridSubqueryJoinOptimizer {
         if (subS.where() == null)
             return false;
 
+        Predicate<GridSqlAst> andOrEqPre = ELEMENT_IS_AND_OPERATION.or(ELEMENT_IS_EQ);
+
+        if (!andOrEqPre.test(subS.where()))
+            return false;
+
         ASTNodeFinder opEqFinder = new ASTNodeFinder(
             subS.where(),
             (parent, child) -> ELEMENT_IS_EQ.test(parent),
-            ELEMENT_IS_AND_OPERATION.or(ELEMENT_IS_EQ)
+            andOrEqPre
         );
 
         List<GridSqlColumn> sqlCols = new ArrayList<>();
