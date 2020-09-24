@@ -222,6 +222,9 @@ public class RunningQueryManager {
                     !failed);
             }
         }
+        finally {
+            qrySpan.end();
+        }
     }
 
     /** @param reqId Request ID of query to track. */
@@ -231,9 +234,6 @@ public class RunningQueryManager {
 
             if (info != null)
                 info.requestId(reqId);
-        }
-        finally {
-            qrySpan.end();
         }
     }
 
