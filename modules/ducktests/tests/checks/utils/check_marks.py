@@ -162,8 +162,21 @@ class CheckIgniteVersions:
         context_list += expand_function(func=function_ignore, sess_ctx=mock_session_ctx())
 
         assert len(context_list) == 14
-        assert len(list(filter(lambda x: x.function_name == function_parametrize.__name__, context_list))) == 4
-        assert len(list(filter(lambda x: x.function_name == function_matrix.__name__, context_list))) == 8
+
+        parametrized_context = list(filter(lambda x: x.function_name == function_parametrize.__name__, context_list))
+        assert len(parametrized_context) == 4
+        for ctx in parametrized_context:
+            args = ctx.injected_args
+            assert len(args) == 3
+            assert ctx.function() == (args['ver'], args['x'], args['y'])
+
+        matrix_context = list(filter(lambda x: x.function_name == function_matrix.__name__, context_list))
+        assert len(matrix_context) == 8
+        for ctx in matrix_context:
+            args = ctx.injected_args
+            assert len(args) == 4
+            assert ctx.function() == (args['pair_1'], args['pair_2'], args['i'], args['j'])
+
         assert len(list(filter(lambda x: x.function_name == function_ignore.__name__, context_list))) == 2
         assert len(list(filter(lambda x: x.ignore, context_list))) == 1
 
