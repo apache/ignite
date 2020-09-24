@@ -373,6 +373,14 @@
   url: sqlline
 - title: Extensions and Integrations
   items:
+    - title: Spring
+      items:
+        - title: Spring Boot
+          url: extensions-and-integrations/spring/spring-boot
+        - title: Spring Data
+          url: extensions-and-integrations/spring/spring-data
+        - title: Spring Caching
+          url: extensions-and-integrations/spring/spring-caching
     - title: Ignite for Spark
       items:
         - title: Overview
