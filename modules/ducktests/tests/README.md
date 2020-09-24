@@ -7,7 +7,16 @@ the `ducktape` test framework, for information about it check the links:
 
 Structure of the `ignitetest` directory is:
 - `./ignitetest/services` contains basic services functionality;
-- `./ignitetest/tests/utils` contains utils for testing.  
+- `./ignitetest/utils` contains utils for testing;
+- `./ignitetest/tests` contains tests.
 
-## Review Checklist
-1. All tests must be parameterized with `version`.
+Docker is used to emulate distributed environment. Single container represents 
+a running node.
+
+## Requirements
+To just start tests locally the only requirement is preinstalled `docker`. 
+
+For development process requirements are:
+1. `python` >= 3.6;
+2. `tox` (check python codestyle);
+3. `docker`.

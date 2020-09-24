@@ -22,6 +22,7 @@ import re
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
+from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
@@ -81,7 +82,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         try:
             self.await_event("IGNITE_APPLICATION_BROKEN", 1, from_the_beginning=True)
-            raise Exception("Java application execution failed. %s" % self.extract_result("ERROR"))
+            raise IgniteExecutionException("Java application execution failed. %s" % self.extract_result("ERROR"))
         except TimeoutError:
             pass
 
