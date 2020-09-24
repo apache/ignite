@@ -108,7 +108,7 @@ class SnapshotTest(IgniteTest):
         service.rename_db(new_db_name='old_db')
         service.copy_snap_to_db(self.SNAPSHOT_NAME)
 
-        service.run()
+        service.restart()
 
         control_utility.activate()
 

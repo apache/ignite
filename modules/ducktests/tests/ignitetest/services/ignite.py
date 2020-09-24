@@ -55,10 +55,12 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             self.await_node_started(node, timeout_sec)
 
-    def run(self, timeout_sec=180):
+    def restart(self, timeout_sec=180):
         """
-        Run ignite cluster without cleaning.
+        Restart ignite cluster without cleaning.
         """
+        self.stop()
+
         self._rotate_log()
 
         for node in self.nodes:
