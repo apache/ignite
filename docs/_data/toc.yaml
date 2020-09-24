@@ -1,414 +1,418 @@
 - title: Preface 
-  url: /preface
+  url: preface
 - title: Quick Start Guides
   items: 
     - title: Java
-      url: /quick-start/java
+      url: quick-start/java
     - title: .NET/C#
-      url: /quick-start/dotnet
+      url: quick-start/dotnet
     - title: C++
-      url: /quick-start/cpp
+      url: quick-start/cpp
     - title: Python
-      url: /quick-start/python
+      url: quick-start/python
     - title: Node.JS
-      url: /quick-start/nodejs
+      url: quick-start/nodejs
     - title: SQL
-      url: /quick-start/sql
+      url: quick-start/sql
     - title: PHP
-      url: /quick-start/php
+      url: quick-start/php
     - title: REST API
-      url: /quick-start/restapi
+      url: quick-start/restapi
 - title: Installation
-  url: /installation
+  url: installation
   items:
   - title: Installing Using ZIP Archive 
-    url: /installation/installing-using-zip
+    url: installation/installing-using-zip
   - title: Installing Using Docker
-    url: /installation/installing-using-docker
+    url: installation/installing-using-docker
   - title: Installing DEB or RPM package
-    url: /installation/deb-rpm
+    url: installation/deb-rpm
   - title: Kubernetes
     items: 
       - title: Amazon EKS 
-        url: /installation/kubernetes/amazon-eks-deployment
+        url: installation/kubernetes/amazon-eks-deployment
       - title: Azure Kubernetes Service 
-        url: /installation/kubernetes/azure-deployment
+        url: installation/kubernetes/azure-deployment
       - title: Google Kubernetes Engine
-        url: /installation/kubernetes/gke-deployment
+        url: installation/kubernetes/gke-deployment
 - title: Setting Up
   items:
     - title: Setting Up Ignite for Java 
-      url: /setup
+      url: setup
     - title: Setting Up Ignite for .NET/C# 
-      url: /setup-dotnet 
+      url: setup-dotnet 
 - title: Understanding Configuration
-  url: /understanding-configuration
+  url: understanding-configuration
 - title: Configuring Logging
-  url: /logging
+  url: logging
 - title: Starting and Stopping Nodes
-  url: /starting-nodes
+  url: starting-nodes
 - title: Clustering
   items:
     - title: Overview
-      url: /clustering/clustering
+      url: clustering/clustering
     - title: TCP/IP Discovery
-      url: /clustering/tcp-ip-discovery
+      url: clustering/tcp-ip-discovery
     - title: ZooKeeper Discovery
-      url: /clustering/zookeeper-discovery
+      url: clustering/zookeeper-discovery
     - title: Discovery in the Cloud
-      url: /clustering/discovery-in-the-cloud
+      url: clustering/discovery-in-the-cloud
     - title: Network Configuration
-      url: /clustering/network-configuration
+      url: clustering/network-configuration
     - title: Connecting Client Nodes 
-      url: /clustering/connect-client-nodes
+      url: clustering/connect-client-nodes
     - title: Running Client Nodes Behind NAT
-      url: /clustering/running-client-nodes-behind-nat
+      url: clustering/running-client-nodes-behind-nat
 - title: Data Modeling 
   items: 
     - title: Introduction
-      url: /data-modeling/data-modeling
+      url: data-modeling/data-modeling
     - title: Data Partitioning
-      url: /data-modeling/data-partitioning
+      url: data-modeling/data-partitioning
     - title: Affinity Colocation 
-      url: /data-modeling/affinity-collocation
+      url: data-modeling/affinity-collocation
 - title: Configuring Memory 
   items:
     - title: Memory Architecture
-      url: /memory-architecture
+      url: memory-architecture
     - title: Configuring Data Regions
-      url: /memory-configuration/data-regions
+      url: memory-configuration/data-regions
     - title: Eviction Policies
-      url: /memory-configuration/eviction-policies        
+      url: memory-configuration/eviction-policies        
 - title: Configuring Caches
   items:
     - title: Cache Configuration 
-      url: /configuring-caches/configuration-overview 
+      url: configuring-caches/configuration-overview 
     - title: Configuring Partition Backups
-      url: /configuring-caches/configuring-backups
+      url: configuring-caches/configuring-backups
     - title: Atomicity Modes
-      url: /configuring-caches/atomicity-modes
+      url: configuring-caches/atomicity-modes
     - title: Expiry Policy
-      url: /configuring-caches/expiry-policies
+      url: configuring-caches/expiry-policies
     - title: On-Heap Caching
-      url: /configuring-caches/on-heap-caching
+      url: configuring-caches/on-heap-caching
     - title: Cache Groups 
-      url: /configuring-caches/cache-groups
+      url: configuring-caches/cache-groups
 - title: Persistence
   items:
     - title: Ignite Persistence
-      url: /persistence/native-persistence
+      url: persistence/native-persistence
     - title: External Storage
-      url: /persistence/external-storage
+      url: persistence/external-storage
     - title: Swapping
-      url: /persistence/swap 
+      url: persistence/swap 
     - title: Implementing Custom Cache Store
-      url: /persistence/custom-cache-store
+      url: persistence/custom-cache-store
     - title: Cluster Snapshots
-      url: /persistence/snapshots
+      url: persistence/snapshots
     - title: Disk Compression
-      url: /persistence/disk-compression
+      url: persistence/disk-compression
     - title: Tuning Persistence
-      url: /persistence/persistence-tuning
+      url: persistence/persistence-tuning
 - title: Baseline Topology
-  url: /baseline-topology
+  url: baseline-topology
 - title: Cluster States 
-  url: /cluster-states
+  url: cluster-states
 - title: Data Rebalancing
-  url: /data-rebalancing 
+  url: data-rebalancing 
 - title: Partition Loss Policy
-  url: /partition-loss-policy
+  url: partition-loss-policy
 - title: Deploying User Code
-  url: /deploying-user-code
+  url: deploying-user-code
 - title: Peer Class Loading
-  url: /peer-class-loading
+  url: peer-class-loading
 - title: Data Streaming
-  url: /data-streaming
+  url: data-streaming
 - title: Using Key-Value Cache API
   items:
     - title: Basic Cache Operations 
-      url: /key-value-api/basic-cache-operations
+      url: key-value-api/basic-cache-operations
     - title: Working with Binary Objects
-      url: /key-value-api/binary-objects
+      url: key-value-api/binary-objects
     - title: Using Scan Queries
-      url: /key-value-api/using-scan-queries
+      url: key-value-api/using-scan-queries
     - title: Read Repair
-      url: /read-repair
+      url: read-repair
 - title: Using Continuous Queries
-  url: /key-value-api/continuous-queries
+  url: key-value-api/continuous-queries
 - title: Performing Transactions
-  url: /key-value-api/transactions
+  url: key-value-api/transactions
 - title: Working with SQL
   items:
     - title: Introduction
-      url: /SQL/sql-introduction
+      url: SQL/sql-introduction
     - title: Understanding Schemas
-      url: /SQL/schemas
+      url: SQL/schemas
     - title: Defining Indexes
-      url: /SQL/indexes          
+      url: SQL/indexes          
     - title: Using SQL API
-      url: /SQL/sql-api          
+      url: SQL/sql-api          
     - title: Distributed Joins
-      url: /SQL/distributed-joins
+      url: SQL/distributed-joins
     - title: SQL Transactions
-      url: /SQL/sql-transactions
+      url: SQL/sql-transactions
     - title: Custom SQL Functions
-      url: /SQL/custom-sql-func
+      url: SQL/custom-sql-func
     - title: JDBC Driver
-      url: /SQL/JDBC/jdbc-driver
+      url: SQL/JDBC/jdbc-driver
     - title: JDBC Client Driver
-      url: /SQL/JDBC/jdbc-client-driver
+      url: SQL/JDBC/jdbc-client-driver
     - title: Multiversion Concurrency Control
-      url: /transactions/mvcc
+      url: transactions/mvcc
 - title: Distributed Computing 
   items:
     - title: Distributed Computing API 
-      url: /distributed-computing/distributed-computing
+      url: distributed-computing/distributed-computing
     - title: Cluster Groups
-      url: /distributed-computing/cluster-groups
+      url: distributed-computing/cluster-groups
     - title: Executor Service
-      url: /distributed-computing/executor-service
+      url: distributed-computing/executor-service
     - title: MapReduce API
-      url: /distributed-computing/map-reduce
+      url: distributed-computing/map-reduce
     - title: Load Balancing 
-      url: /distributed-computing/load-balancing
+      url: distributed-computing/load-balancing
     - title: Fault Tolerance
-      url: /distributed-computing/fault-tolerance
+      url: distributed-computing/fault-tolerance
     - title: Job Scheduling
-      url: /distributed-computing/job-scheduling
+      url: distributed-computing/job-scheduling
 - title: Colocating Computations with Data
-  url: /collocated-computations
+  url: collocated-computations
 - title: Working with Events
   items:
     - title: Enabling and Listenting to Events 
-      url: /events/listening-to-events
+      url: events/listening-to-events
     - title: Events 
-      url: /events/events
+      url: events/events
 - title: Near Caches
-  url: /near-cache
+  url: near-cache
 - title: .NET Platform Cache
-  url: /platform-cache
+  url: platform-cache
 - title: Services
-  url: /services/services
+  url: services/services
 - title: Distributed Data Structures
   items:
     - title: Queue and Set
-      url: /data-structures/queue-and-set
+      url: data-structures/queue-and-set
     - title: Atomic Types 
-      url: /data-structures/atomic-types
+      url: data-structures/atomic-types
     - title: CountDownLatch 
-      url: /data-structures/countdownlatch
+      url: data-structures/countdownlatch
     - title: Atomic Sequence 
-      url: /data-structures/atomic-sequence
+      url: data-structures/atomic-sequence
     - title:  Semaphore 
-      url: /data-structures/semaphore
+      url: data-structures/semaphore
 - title: Machine Learning
   items:
     - title: Machine Learning
-      url: /machine-learning/machine-learning
+      url: machine-learning/machine-learning
     - title: Partition Based Dataset 
-      url: /machine-learning/partition-based-dataset
+      url: machine-learning/partition-based-dataset
     - title: Updating Trained Models 
-      url: /machine-learning/updating-trained-models
+      url: machine-learning/updating-trained-models
     - title: Binary Classification
       items:
         - title: Introduction
-          url: /machine-learning/binary-classification/introduction
+          url: machine-learning/binary-classification/introduction
         - title: Linear SVM (Support Vector Machine) 
-          url: /machine-learning/binary-classification/linear-svm
+          url: machine-learning/binary-classification/linear-svm
         - title: Decision Trees 
-          url: /machine-learning/binary-classification/decision-trees
+          url: machine-learning/binary-classification/decision-trees
         - title: Multilayer Perceptron
-          url: /machine-learning/binary-classification/multilayer-perceptron
+          url: machine-learning/binary-classification/multilayer-perceptron
         - title: Logistic Regression 
-          url: /machine-learning/binary-classification/logistic-regression
+          url: machine-learning/binary-classification/logistic-regression
         - title: k-NN Classification 
-          url: /machine-learning/binary-classification/knn-classification
+          url: machine-learning/binary-classification/knn-classification
         - title: ANN (Approximate Nearest Neighbor) 
-          url: /machine-learning/binary-classification/ann
+          url: machine-learning/binary-classification/ann
         - title: Naive Bayes 
-          url: /machine-learning/binary-classification/naive-bayes
+          url: machine-learning/binary-classification/naive-bayes
     - title: Regression 
       items:
         - title: Introduction
-          url: /machine-learning/regression/introduction
+          url: machine-learning/regression/introduction
         - title: Linear Regression 
-          url: /machine-learning/regression/linear-regression
+          url: machine-learning/regression/linear-regression
         - title: Decision Trees Regression 
-          url: /machine-learning/regression/decision-trees-regression
+          url: machine-learning/regression/decision-trees-regression
         - title: k-NN Regression 
-          url: /machine-learning/regression/knn-regression
+          url: machine-learning/regression/knn-regression
     - title: Clustering 
       items:
         - title: Introduction
-          url: /machine-learning/clustering/introduction
+          url: machine-learning/clustering/introduction
         - title: K-Means Clustering 
-          url: /machine-learning/clustering/k-means-clustering
+          url: machine-learning/clustering/k-means-clustering
         - title: Gaussian mixture (GMM) 
-          url: /machine-learning/clustering/gaussian-mixture
+          url: machine-learning/clustering/gaussian-mixture
     - title: Preprocessing 
-      url: /machine-learning/preprocessing
-    - title: Model Selection 
+      url: machine-learning/preprocessing
+    - title: Model Selection
       items:
         - title: Introduction
-          url: /machine-learning/model-selection/introduction
+          url: machine-learning/model-selection/introduction
         - title: Evaluator 
-          url: /machine-learning/model-selection/evaluator
+          url: machine-learning/model-selection/evaluator
         - title: Split the dataset on test and train datasets 
-          url: /machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets
+          url: machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets
         - title: Hyper-parameter tuning 
-          url: /machine-learning/model-selection/hyper-parameter-tuning
+          url: machine-learning/model-selection/hyper-parameter-tuning
         - title: Pipeline API 
-          url: /machine-learning/model-selection/pipeline-api
+          url: machine-learning/model-selection/pipeline-api
     - title: Multiclass Classification 
-      url: /machine-learning/multiclass-classification
+      url: machine-learning/multiclass-classification
     - title: Ensemble Methods 
       items:
         - title:
-          url: /machine-learning/ensemble-methods/introduction
+          url: machine-learning/ensemble-methods/introduction
         - title: Stacking 
-          url: /machine-learning/ensemble-methods/stacking
+          url: machine-learning/ensemble-methods/stacking
         - title: Bagging 
-          url: /machine-learning/ensemble-methods/baggin
+          url: machine-learning/ensemble-methods/baggin
         - title: Random Forest 
-          url: /machine-learning/ensemble-methods/random-forest
+          url: machine-learning/ensemble-methods/random-forest
         - title: Gradient Boosting 
-          url: /machine-learning/ensemble-methods/gradient-boosting
+          url: machine-learning/ensemble-methods/gradient-boosting
     - title: Recommendation Systems 
-      url: /machine-learning/recommendation-systems
+      url: machine-learning/recommendation-systems
     - title: Importing Model
       items:
         - title: Introduction 
-          url: /machine-learning/importing-model/introduction
+          url: machine-learning/importing-model/introduction
         - title: Import Model from XGBoost 
-          url: /machine-learning/importing-model/model-import-from-gxboost
+          url: machine-learning/importing-model/model-import-from-gxboost
         - title: Import Model from Apache Spark 
-          url: /machine-learning/importing-model/model-import-from-apache-spark
+          url: machine-learning/importing-model/model-import-from-apache-spark
  
 - title: Monitoring
   items:
     - title: Introduction
-      url: /monitoring-metrics/intro
+      url: monitoring-metrics/intro
     - title: Cluster ID and Tag
-      url: /monitoring-metrics/cluster-id
+      url: monitoring-metrics/cluster-id
     - title: Metrics
       items: 
         - title: Configuring Metrics
-          url: /monitoring-metrics/configuring-metrics
+          url: monitoring-metrics/configuring-metrics
         - title: JMX Metrics
-          url: /monitoring-metrics/metrics
+          url: monitoring-metrics/metrics
     - title: New Metrics System 
       items:
         - title: Introduction 
-          url: /monitoring-metrics/new-metrics-system
+          url: monitoring-metrics/new-metrics-system
         - title: Metrics
-          url: /monitoring-metrics/new-metrics
+          url: monitoring-metrics/new-metrics
     - title: System Views
-      url: /monitoring-metrics/system-views
+      url: monitoring-metrics/system-views
     - title: Tracing
-      url: /monitoring-metrics/tracing
+      url: monitoring-metrics/tracing
 - title: Security
-  url: /security
+  url: security
   items: 
     - title: Authentication
-      url: /security/authentication
+      url: security/authentication
     - title: SSL/TLS 
-      url: /security/ssl-tls
+      url: security/ssl-tls
     - title: Transparent Data Encryption
       items:
         - title: Introduction
-          url: /security/tde
+          url: security/tde
         - title: Master key rotation
-          url: /security/master-key-rotation
+          url: security/master-key-rotation
     - title: Sandbox
-      url: /security/sandbox
+      url: security/sandbox
 - title: Thin Clients
   items: 
     - title: Thin Clients Overview 
-      url: /thin-clients/getting-started-with-thin-clients
+      url: thin-clients/getting-started-with-thin-clients
     - title: Java Thin Client
-      url: /thin-clients/java-thin-client
+      url: thin-clients/java-thin-client
     - title: .NET Thin Client
-      url: /thin-clients/dotnet-thin-client
+      url: thin-clients/dotnet-thin-client
     - title: C++ Thin Client
-      url: /thin-clients/cpp-thin-client
+      url: thin-clients/cpp-thin-client
     - title: Python Thin Client
-      url: /thin-clients/python-thin-client
+      url: thin-clients/python-thin-client
     - title: PHP Thin Client
-      url: /thin-clients/php-thin-client
+      url: thin-clients/php-thin-client
     - title: Node.js Thin Client
-      url: /thin-clients/nodejs-thin-client
+      url: thin-clients/nodejs-thin-client
     - title: Binary Client Protocol
       items: 
         - title: Binary Client Protocol
-          url: /binary-client-protocol/binary-client-protocol
+          url: binary-client-protocol/binary-client-protocol
         - title: Data Format
-          url: /binary-client-protocol/data-format
+          url: binary-client-protocol/data-format
         - title: Key-Value Queries 
-          url: /binary-client-protocol/key-value-queries
+          url: binary-client-protocol/key-value-queries
         - title: SQL and Scan Queries 
-          url: /binary-client-protocol/sql-and-scan-queries
+          url: binary-client-protocol/sql-and-scan-queries
         - title: Binary Types Metadata 
-          url: /binary-client-protocol/binary-type-metadata
+          url: binary-client-protocol/binary-type-metadata
         - title: Cache Configuration 
-          url: /binary-client-protocol/cache-configuration
+          url: binary-client-protocol/cache-configuration
 - title: ODBC Driver
   items: 
     - title: ODBC Driver
-      url: /SQL/ODBC/odbc-driver 
+      url: SQL/ODBC/odbc-driver 
     - title: Connection String and DSN
       url:  /SQL/ODBC/connection-string-dsn 
     - title: Querying and Modifying Data 
-      url: /SQL/ODBC/querying-modifying-data 
+      url: SQL/ODBC/querying-modifying-data 
     - title: Specification
-      url: /SQL/ODBC/specification  
+      url: SQL/ODBC/specification  
     - title: Data Types
-      url: /SQL/ODBC/data-types 
+      url: SQL/ODBC/data-types 
     - title: Error Codes
-      url: /SQL/ODBC/error-codes
+      url: SQL/ODBC/error-codes
 - title: REST API
-  url: /restapi
+  url: restapi
 - title: Control Script
-  url: /control-script
-- title: Plugins 
-  url: /plugins
-- title: SQLLine 
-  url: /sqlline
-- title: Ignite for Spark
-  items: 
-    - title: Overview
-      url: /ignite-for-spark/overview
-    - title: IgniteContext and IgniteRDD 
-      url:  /ignite-for-spark/ignitecontext-and-rdd
-    - title: Ignite DataFrame  
-      url: /ignite-for-spark/ignite-dataframe 
-    - title: Installation 
-      url: /ignite-for-spark/installation 
-    - title: Test Ignite with Spark-shell  
-      url: /ignite-for-spark/spark-shell
-    - title: Troubleshooting 
-      url: /ignite-for-spark/troubleshooting
+  url: control-script
+- title: SQLLine
+  url: sqlline
+- title: Extensions and Integrations
+  items:
+    - title: Ignite for Spark
+      items:
+        - title: Overview
+          url: extensions-and-integrations/ignite-for-spark/overview
+        - title: IgniteContext and IgniteRDD
+          url:  extensions-and-integrations/ignite-for-spark/ignitecontext-and-rdd
+        - title: Ignite DataFrame
+          url: extensions-and-integrations/ignite-for-spark/ignite-dataframe
+        - title: Installation
+          url: extensions-and-integrations/ignite-for-spark/installation
+        - title: Test Ignite with Spark-shell
+          url: extensions-and-integrations/ignite-for-spark/spark-shell
+        - title: Troubleshooting
+          url: extensions-and-integrations/ignite-for-spark/troubleshooting
+    - title: Hibernate L2 Cache
+      url: extensions-and-integrations/hibernate-l2-cache
+- title: Plugins
+  url: plugins
 - title: SQL Reference
-  url: /sql-reference/sql-reference-overview
+  url: sql-reference/sql-reference-overview
   items:
     - title: SQL Conformance
-      url: /sql-reference/sql-conformance
+      url: sql-reference/sql-conformance
     - title: Data Definition Language (DDL)
-      url: /sql-reference/ddl
+      url: sql-reference/ddl
     - title: Data Manipulation Language (DML)
-      url: /sql-reference/dml
+      url: sql-reference/dml
     - title: Transactions
-      url: /sql-reference/transactions
+      url: sql-reference/transactions
     - title: Operational Commands
-      url: /sql-reference/operational-commands
+      url: sql-reference/operational-commands
     - title: Aggregate functions
-      url: /sql-reference/aggregate-functions
+      url: sql-reference/aggregate-functions
     - title: Numeric Functions
-      url: /sql-reference/numeric-functions
+      url: sql-reference/numeric-functions
     - title: String Functions
-      url: /sql-reference/string-functions
+      url: sql-reference/string-functions
     - title: Data and Time Functions
-      url: /sql-reference/date-time-functions
+      url: sql-reference/date-time-functions
     - title: System Functions
-      url: /sql-reference/system-functions
+      url: sql-reference/system-functions
     - title: Data Types
-      url: /sql-reference/data-types
+      url: sql-reference/data-types
