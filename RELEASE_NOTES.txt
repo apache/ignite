@@ -15,8 +15,7 @@ Ignite Core:
 * Added support for one-way thick-client to server connections
 * Added the ability to not open server sockets (for incoming connections) by thick client
 * Added management API to cancel user-provided tasks and queries
-* Added partition states system view
-* Added free-lists system view
+* Added partition states system view and free-lists system view
 * Added txKeyCollisions cache metric
 * Added OffHeapEntriesCount, OffHeapBackupEntriesCount, OffHeapPrimaryEntriesCount, HeapEntriesCount, CacheSize to cache metrics
 * Added query pool starvation monitoring
@@ -27,9 +26,7 @@ Ignite Core:
 * Added warning of deadlock when an unordered collection is passed to putAll-style bulk cache operation
 * Added the ability to set user attributes for thin clients connections
 * Added a new public API for the cluster state change (activation/deactivation and etc.)
-* Added EVT_BASELINE_... events
-* Added EVT_CLUSTER_STATE_CHANGE_STARTED event
-* Added EVT_PAGE_REPLACEMENT_STARTED event
+* Added EVT_BASELINE_..., EVT_CLUSTER_STATE_CHANGE_STARTED, EVT_PAGE_REPLACEMENT_STARTED events
 * Added the ability to hide sensitive data in logs, exceptions, and utilities output (IGNITE_TO_STRING_INCLUDE_SENSITIVE system property)
 * Added the ability to change long-running operation timeout in run-time
 * Added dedicated thread pool for creating and rebuilding indexes
