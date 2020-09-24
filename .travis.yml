@@ -14,8 +14,10 @@
 # limitations under the License.
 
 _ducktape-tox: &ducktape-tox
-  install: pip install tox
+  install: pip install tox-travis
   before_script: cd modules/ducktests/tests
+  script:
+    - tox
 
 matrix:
   include:
@@ -58,17 +60,11 @@ matrix:
     - language: python
       python: 3.6.12
       <<: *ducktape-tox
-      script:
-        - tox -e py36
 
     - language: python
       python: 3.7.9
       <<: *ducktape-tox
-      script:
-        - tox -e py37
 
     - language: python
       python: 3.8.5
       <<: *ducktape-tox
-      script:
-        - tox -e linter,codestyle,py38
