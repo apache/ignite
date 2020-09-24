@@ -37,10 +37,10 @@ class VersionIf(Ignore):
         assert len(context_list) > 0, "ignore_if decorator is not being applied to any test cases"
 
         for ctx in context_list:
-            assert self.variable_name in ctx.injected_args, "'%s' in injected args not present" % (self.variable_name,)
-            version = ctx.injected_args[self.variable_name]
-            assert isinstance(version, str), "'%s'n injected args must be a string" % (self.variable_name,)
-            ctx.ignore = ctx.ignore or not self.condition(IgniteVersion(version))
+            if self.variable_name in ctx.injected_args:
+                version = ctx.injected_args[self.variable_name]
+                assert isinstance(version, str), "'%s'n injected args must be a string" % (self.variable_name,)
+                ctx.ignore = ctx.ignore or not self.condition(IgniteVersion(version))
 
         return context_list
 
@@ -75,7 +75,7 @@ class IgniteVersionParametrize(Mark):
         if context_list:
             for ctx in context_list:
                 for version in self.versions:
-                    if ctx.injected_args and 'ignite_version' in ctx.injected_args:
+                    if self._check_injected(ctx):
                         continue
 
                     new_context_list.insert(0, self._prepare_new_ctx(version, seed_context, ctx))
@@ -100,6 +100,14 @@ class IgniteVersionParametrize(Mark):
         injected_fun = _inject(**injected_args)(seed_context.function)
 
         return seed_context.copy(function=injected_fun, injected_args=injected_args)
+
+    def _check_injected(self, ctx):
+        if ctx.injected_args:
+            for arg_name in ctx.injected_args.keys():
+                if arg_name.startswith(self.version_prefix):
+                    return True
+
+        return False
 
     @property
     def name(self):
@@ -126,7 +134,7 @@ def ignite_versions(*args, version_prefix="ignite_version"):
     return parametrizer
 
 
-def version_if(condition, variable_name='ignite_version'):
+def version_if(condition, *, variable_name='ignite_version'):
     """
     Mark decorated test method as IGNORE if version doesn't corresponds to condition.
 
