@@ -56,19 +56,19 @@ matrix:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
 
     - language: python
-      python: "3.6"
+      python: 3.6.12
       <<: *ducktape-tox
       script:
         - tox -e py36
 
     - language: python
-      python: "3.7"
+      python: 3.7.9
       <<: *ducktape-tox
       script:
         - tox -e py37
 
     - language: python
-      python: "3.8"
+      python: 3.8.5
       <<: *ducktape-tox
       script:
         - tox -e linter,codestyle,py38
