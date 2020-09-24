@@ -30,7 +30,7 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 # pylint: disable=W0223
 class SmokeSelfTest(IgniteTest):
     """
-    Self test implementations
+    Self test
     """
 
     @cluster(num_nodes=1)
