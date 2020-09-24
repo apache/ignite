@@ -95,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -102,6 +103,7 @@ import org.jetbrains.annotations.TestOnly;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.pagemem.FullPageId.NULL_PAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePool.SEGMENT_INDEX_MASK;
@@ -162,6 +164,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Try again tag. */
     public static final int TRY_AGAIN_TAG = -1;
 
+    /** @see IgniteSystemProperties#IGNITE_DELAYED_REPLACED_PAGE_WRITE */
+    public static final boolean DFLT_DELAYED_REPLACED_PAGE_WRITE = true;
+
+    /** @see IgniteSystemProperties#IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP */
+    public static final boolean DFLT_LOADED_PAGES_BACKWARD_SHIFT_MAP = true;
+
     /** Tracking io. */
     private static final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
 
@@ -182,16 +190,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final CheckpointLockStateChecker stateChecker;
 
     /** Use new implementation of loaded pages table:  'Robin Hood hashing: backward shift deletion'. */
-    private final boolean useBackwardShiftMap
-        = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP, true);
+    private final boolean useBackwardShiftMap =
+        IgniteSystemProperties.getBoolean(IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP, DFLT_LOADED_PAGES_BACKWARD_SHIFT_MAP);
 
     /** */
-    private final ExecutorService asyncRunner = new ThreadPoolExecutor(
-        0,
-        Runtime.getRuntime().availableProcessors(),
-        30L,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()));
+    private final ExecutorService asyncRunner;
 
     /** Page store manager. */
     private IgnitePageStoreManager storeMgr;
@@ -304,7 +307,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.sizes = sizes;
         this.flushDirtyPage = flushDirtyPage;
         delayedPageReplacementTracker =
-            getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, true)
+            getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, DFLT_DELAYED_REPLACED_PAGE_WRITE)
                 ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
                 null;
         this.changeTracker = changeTracker;
@@ -328,6 +331,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.memMetrics = memMetrics;
+
+        asyncRunner = new ThreadPoolExecutor(
+            0,
+            Runtime.getRuntime().availableProcessors(),
+            30L,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
     }
 
     /** {@inheritDoc} */

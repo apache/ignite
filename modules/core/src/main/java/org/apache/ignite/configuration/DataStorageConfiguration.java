@@ -28,8 +28,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY;
 
 /**
  * A durable memory configuration for an Apache Ignite node. The durable memory is a manageable off-heap based memory
@@ -177,6 +179,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default compression algorithm for WAL page snapshot records. */
     public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
 
+    /** @see IgniteSystemProperties#IGNITE_USE_ASYNC_FILE_IO_FACTORY */
+    public static final boolean DFLT_USE_ASYNC_FILE_IO_FACTORY = true;
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -256,7 +261,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Factory to provide I/O interface for data storage files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
+        IgniteSystemProperties.getBoolean(IGNITE_USE_ASYNC_FILE_IO_FACTORY, DFLT_USE_ASYNC_FILE_IO_FACTORY) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
@@ -305,6 +310,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Compression level for WAL page snapshot records. */
     private Integer walPageCompressionLevel;
+
+    /** Default warm-up configuration. */
+    @Nullable private WarmUpConfiguration dfltWarmUpCfg;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1108,6 +1116,29 @@ public class DataStorageConfiguration implements Serializable {
         this.walPageCompressionLevel = walPageCompressionLevel;
 
         return this;
+    }
+
+    /**
+     * Sets default warm-up configuration.
+     *
+     * @param dfltWarmUpCfg Default warm-up configuration. To assign a special
+     *      warm-up configuration for a data region, use
+     *      {@link DataRegionConfiguration#setWarmUpConfiguration}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setDefaultWarmUpConfiguration(@Nullable WarmUpConfiguration dfltWarmUpCfg) {
+        this.dfltWarmUpCfg = dfltWarmUpCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets default warm-up configuration.
+     *
+     * @return Default warm-up configuration.
+     */
+    @Nullable public WarmUpConfiguration getDefaultWarmUpConfiguration() {
+        return dfltWarmUpCfg;
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -249,7 +250,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = SF.applyLB(10, 3);
+        final int restarts = SF.applyLB(5, 3);
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
@@ -270,7 +271,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         stopGrid(victimName);
                         startGrid(config(victimName, false, false));
 
-                        Thread.sleep(500);
+                        Thread.sleep(200);
                     }
                     catch (Exception e) {
                         throw new RuntimeException();
@@ -333,7 +334,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Client node disconnected") ||
-                        msg.startsWith("Client node was disconnected") : e.getMessage();
+                        msg.startsWith("Client node was disconnected") ||
+                        msg.contains("client is disconnected") : e.getMessage();
                 }
                 finally {
                     state = !state;

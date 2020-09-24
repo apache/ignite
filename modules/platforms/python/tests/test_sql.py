@@ -152,3 +152,33 @@ def test_sql_fields(client):
     # repeat cleanup
     result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
+
+
+def test_long_multipage_query(client):
+    """
+    The test creates a table with 13 columns (id and 12 enumerated columns)
+    and 20 records with id in range from 1 to 20. Values of enumerated columns
+    are = column number * id.
+
+    The goal is to ensure that all the values are selected in a right order.
+    """
+
+    fields = ["id", "abc", "ghi", "def", "jkl", "prs", "mno", "tuw", "zyz", "abc1", "def1", "jkl1", "prs1"]
+
+    client.sql('DROP TABLE LongMultipageQuery IF EXISTS')
+
+    client.sql("CREATE TABLE LongMultiPageQuery (%s, %s)" % \
+               (fields[0] + " INT(11) PRIMARY KEY", ",".join(map(lambda f: f + " INT(11)", fields[1:]))))
+
+    for id in range(1, 21):
+        client.sql(
+            "INSERT INTO LongMultipageQuery (%s) VALUES (%s)" % (",".join(fields), ",".join("?" * len(fields))),
+            query_args=[id] + list(i * id for i in range(1, len(fields))))
+
+    result = client.sql('SELECT * FROM LongMultipageQuery', page_size=1)
+    for page in result:
+        assert len(page) == len(fields)
+        for field_number, value in enumerate(page[1:], start=1):
+            assert value == field_number * page[0]
+
+    client.sql(drop_query)

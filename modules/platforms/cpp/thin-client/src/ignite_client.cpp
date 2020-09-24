@@ -77,6 +77,11 @@ namespace ignite
             return static_cast<SP_Void>(GetClientImpl(impl).CreateCache(name));
         }
 
+        IgniteClient::SP_Void IgniteClient::InternalTransactions()
+        {
+            return static_cast<SP_Void>(GetClientImpl(impl).ClientTransactions());
+        }
+
         IgniteClient::IgniteClient(SP_Void& impl)
         {
             this->impl.Swap(impl);

@@ -178,6 +178,17 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /**
+     * Update initial counter by given index.
+     * It is used when iterated by WAL with a margin.
+     *
+     * @param idx Index.
+     * @param cntr Counter.
+     */
+    public void initialUpdateCounterAt(int idx, long cntr) {
+        initialUpdCntrs[idx] = cntr;
+    }
+
+    /**
      * Gets update counter saved at the given index.
      *
      * @param idx Index to get value from.

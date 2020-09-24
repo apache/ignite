@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
@@ -25,8 +26,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RE
  * Memory allocator chunk.
  */
 public class BinaryMemoryAllocatorChunk {
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
+    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
+
     /** Buffer size re-check frequency. */
-    private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
+    private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
     /** Data array */
     private byte[] data;

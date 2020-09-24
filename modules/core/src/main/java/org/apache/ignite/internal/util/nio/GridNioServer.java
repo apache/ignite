@@ -141,6 +141,9 @@ public class GridNioServer<T> {
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
+    /** @see IgniteSystemProperties#IGNITE_IO_BALANCE_PERIOD */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
@@ -416,7 +419,8 @@ public class GridNioServer<T> {
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
-        long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
+        long balancePeriod = IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, DFLT_IO_BALANCE_PERIOD);
 
         IgniteRunnable balancer0 = null;
 
@@ -725,6 +729,8 @@ public class GridNioServer<T> {
             }
 
             ses0.resend(futs);
+
+            ses0.procWrite.set(true);
 
             // Wake up worker.
             ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
@@ -1087,11 +1093,15 @@ public class GridNioServer<T> {
      * Stop polling for write availability if write queue is empty.
      */
     private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
-        if (ses.writeQueue().isEmpty()) {
+        if (ses.procWrite.get()) {
             ses.procWrite.set(false);
 
-            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
         }
     }
 
@@ -1566,7 +1576,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 assert msg != null;
 
@@ -1747,7 +1757,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
@@ -2289,7 +2299,7 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
+                if (ses.procWrite.get() && (key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
                 // Update timestamp to protected against false write timeout.
