@@ -1629,14 +1629,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
                 .getAll();
 
-            // Currently, not supported.
-//            client.getOrCreateCache(cacheName).query(new TextQuery<>(String.class, "text"))
-//                .getAll();
-
-            // Currently, not supported.
-//            client.getOrCreateCache(cacheName).query(new SpiQuery<Integer, Integer>())
-//                .getAll();
-
             client.getOrCreateCache(cacheName).query(new ScanQuery<>())
                 .getAll();
 
