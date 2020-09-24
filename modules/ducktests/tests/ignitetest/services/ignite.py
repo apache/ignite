@@ -77,7 +77,7 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ]; '
                              f'then '
-                             f'sudo mv {self.STDOUT_STDERR_CAPTURE} {self.PERSISTENT_ROOT}/console_{date_string}.log; '
+                             f'mv {self.STDOUT_STDERR_CAPTURE} {self.PERSISTENT_ROOT}/console_{date_string}.log; '
                              f'fi')
 
     def await_node_started(self, node, timeout_sec):
@@ -176,7 +176,7 @@ class IgniteService(IgniteAwareService):
         """
         assert len(self.pids(node)) == 0
 
-        node.account.ssh(f"sudo mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}", allow_fail=False)
+        node.account.ssh(f"mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}", allow_fail=False)
 
     def copy_snap_to_db(self, snapshot_name: str):
         """
@@ -191,8 +191,7 @@ class IgniteService(IgniteAwareService):
         """
         assert len(self.pids(node)) == 0
 
-        node.account.ssh(f"sudo cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
-        node.account.ssh(f"sudo chown -R ducker:ducker {self.PERSISTENT_ROOT}", allow_fail=False)
+        node.account.ssh(f"cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
 
     def thread_dump(self, node):
         """

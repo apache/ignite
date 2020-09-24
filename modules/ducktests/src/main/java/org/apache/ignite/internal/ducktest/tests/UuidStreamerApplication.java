@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- *
+ * Loading random uuids in cache.
  */
 public class UuidStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */

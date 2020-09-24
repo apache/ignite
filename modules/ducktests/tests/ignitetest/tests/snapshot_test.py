@@ -53,8 +53,8 @@ class SnapshotTest(IgniteTest):
         5. Snapshot.
         6. Load.
         7. Idle verify dump2.
-        8. Сhecking that dump1 and dump2 are differentю
-        9. Stop ignite and replace db from snapshot
+        8. Сhecking that dump1 and dump2 are different.
+        9. Stop ignite and replace db from snapshot.
         10. Run ignite cluster.
         11. Idle verify dump3.
         12. Checking the equality of dump1 and dump3.
@@ -88,17 +88,17 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_1 = get_dump_path(control_utility, node)
 
-        self.logger.warn("Path to dump_1=" + dump_1)
+        self.logger.warn(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
 
         data = control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        self.logger.warn(data)
+        self.logger.debug(data)
 
         load(streamer)
 
         dump_2 = get_dump_path(control_utility, node)
 
-        self.logger.warn("Path to dump_2=" + dump_2)
+        self.logger.warn(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0
@@ -116,7 +116,7 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_3 = get_dump_path(control_utility, node)
 
-        self.logger.warn("Path to dump_3=" + dump_3)
+        self.logger.warn(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
