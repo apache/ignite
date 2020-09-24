@@ -397,6 +397,8 @@
           url: extensions-and-integrations/ignite-for-spark/troubleshooting
     - title: Hibernate L2 Cache
       url: extensions-and-integrations/hibernate-l2-cache
+    - title: MyBatis L2 Cache
+      url: extensions-and-integrations/mybatis-l2-cache
 - title: Plugins
   url: plugins
 - title: SQL Reference
