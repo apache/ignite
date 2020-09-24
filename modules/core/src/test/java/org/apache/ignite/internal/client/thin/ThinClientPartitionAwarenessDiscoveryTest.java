@@ -163,9 +163,5 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     private void detectTopologyChange() {
         // Send non-affinity request to detect topology change.
         initDefaultChannel();
-
-        client.getOrCreateCache(PART_CACHE_NAME);
-
-        assertOpOnChannel(dfltCh, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
     }
 }
