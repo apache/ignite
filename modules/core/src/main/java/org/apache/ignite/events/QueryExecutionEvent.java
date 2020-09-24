@@ -86,6 +86,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
      * @param type Event type.
      * @param qryType Query type.
      * @param clause Clause.
+     * @param scanQryFilter Scan query filter.
      * @param args Query arguments.
      * @param subjId Security subject ID.
      */
@@ -95,8 +96,8 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
         int type,
         String qryType,
         @Nullable String clause,
-        @Nullable Object[] args,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
+        @Nullable Object[] args,
         @Nullable UUID subjId
     ) {
         super(node, msg, type);

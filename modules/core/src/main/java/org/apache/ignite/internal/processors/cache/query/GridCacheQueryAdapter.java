@@ -557,8 +557,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 EVT_QUERY_EXECUTION,
                 bean.query().type().name(),
                 bean.query().clause(),
-                bean.arguments(),
                 bean.query().scanFilter(),
+                bean.arguments(),
                 bean.query().subjectId()));
         }
 
@@ -619,8 +619,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 EVT_QUERY_EXECUTION,
                 CacheQueryType.SCAN.name(),
                 null,
-                null,
                 scanFilter(),
+                null,
                 ctx.localNodeId()));
         }
 
