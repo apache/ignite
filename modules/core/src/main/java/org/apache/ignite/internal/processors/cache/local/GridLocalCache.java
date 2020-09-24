@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.io.Externalizable;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -37,12 +36,13 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Local cache implementation.
@@ -151,14 +151,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(true);
 
-        final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
+        assert tx == null || !ctx.kernalContext().security().enabled() ||
+            F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
 
-        assert F.eq(tx.subjectId(), secSubjId) :
-            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
-                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
-                SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
-
-        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter, secSubjId);
+        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter,
+            securitySubjectId(ctx.kernalContext()));
 
         try {
             if (!fut.addEntries(keys))

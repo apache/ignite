@@ -967,12 +967,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         assert tx != null;
 
-        final UUID secSubjId = SecurityUtils.securitySubjectId(ctx.kernalContext());
-
-        assert F.eq(tx.subjectId(), secSubjId) :
-            "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
-                "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
-                SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+        assert !ctx.kernalContext().security().enabled() || F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
 
         GridDhtLockFuture fut = new GridDhtLockFuture(
             ctx,
@@ -990,7 +985,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             filter,
             skipStore,
             keepBinary,
-            secSubjId);
+            securitySubjectId(ctx.kernalContext()));
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;

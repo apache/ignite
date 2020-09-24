@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -1837,12 +1836,8 @@ public class IgniteTxHandler {
                                                 entry.cached(cached);
                                             }
 
-                                            final UUID secSubjId = securitySubjectId(ctx.kernalContext());
-
-                                            assert tx == null || F.eq(tx.subjectId(), secSubjId) :
-                                                "curSubj[id=" + secSubjId + ", login=" + SecurityUtils.login(ctx.kernalContext(), secSubjId) +
-                                                    "] is not equal txSubj[id=" + tx.subjectId() + ", login=" +
-                                                    SecurityUtils.login(ctx.kernalContext(), tx.subjectId()) + "]";
+                                            assert tx == null || !ctx.kernalContext().security().enabled() ||
+                                                F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
 
                                             CacheObject val = cached.innerGet(
                                                 /*ver*/null,
@@ -1850,7 +1845,7 @@ public class IgniteTxHandler {
                                                 /*readThrough*/false,
                                                 /*updateMetrics*/false,
                                                 /*evt*/false,
-                                                secSubjId,
+                                                securitySubjectId(ctx.kernalContext()),
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
