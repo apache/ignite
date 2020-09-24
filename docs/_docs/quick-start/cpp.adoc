@@ -48,9 +48,9 @@ include::includes/cpp-linux-build-prerequisites.adoc[]
 
 === Building C++ Ignite
 
-- Download and unzip the Ignite binary release into a directory. We'll refer to this as `{IGNITE_HOME}`.
-- Create build directory for cmake. We'll refer to this as `{CPP_BUILD_DIR}`
-- Do the folowing:
+- Download and unzip the Ignite binary release. We'll refer to a resulting directory as to `${IGNITE_HOME}`.
+- Create build directory for CMake. We'll refer to this as `${CPP_BUILD_DIR}`
+- Build and install Ignite.C++ by executing the following commands:
 
 [tabs]
 --
@@ -76,8 +76,8 @@ sudo make install
 
 
 === Building and running the Thick Client Example
-- Create build directory for cmake. We'll refer to this as `{CPP_EXAMPLES_BUILD_DIR}`
-- Do the folowing:
+- Create a build directory for cmake. We'll refer to it as `${CPP_EXAMPLES_BUILD_DIR}`
+- Build the examples by executing the following commands:
 
 [tabs]
 --

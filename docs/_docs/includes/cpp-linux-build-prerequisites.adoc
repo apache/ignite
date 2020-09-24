@@ -1,4 +1,4 @@
-The following packages should be installed:
+The following packages need to be installed:
 
 - C++ compiler
 - cmake 3.6+

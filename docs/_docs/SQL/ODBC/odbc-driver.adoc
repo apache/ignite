@@ -204,12 +204,12 @@ On a Linux-based operating system, you will need to install an ODBC Driver Manag
 ==== Prerequisites
 include::includes/cpp-linux-build-prerequisites.adoc[]
 
-NOTE: JDK is needed currently only for building, odbc driver binary doesn't depend on it.
+NOTE: The JDK is used only during the build process and not by the ODBC driver itself.
 
 ==== Building ODBC driver
-- Create build directory for cmake. We'll refer to this as `{CPP_BUILD_DIR}`
-- Choose installation directory prefix (optional, by default `/usr/local`). We'll refer to this as `{CPP_INSTALL_DIR}`
-- Do the folowing:
+- Create a build directory for cmake. We'll refer to it as `${CPP_BUILD_DIR}`
+- (Optional) Choose installation directory prefix (optional, by default `/usr/local`). We'll refer to it as `${CPP_INSTALL_DIR}`
+- Build and install the driver by executing the following commands:
 
 [tabs]
 --
