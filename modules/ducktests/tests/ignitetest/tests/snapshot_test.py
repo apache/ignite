@@ -101,7 +101,9 @@ class SnapshotTest(IgniteTest):
         self.logger.warn("Path to dump_2=" + dump_2)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert len(diff) != 0, diff
+        assert len(diff) != 0
+
+        service.stop()
 
         service.rename_db(new_db_name='old_db')
         service.copy_snap_to_db(self.SNAPSHOT_NAME)
@@ -114,16 +116,16 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_3 = get_dump_path(control_utility, node)
 
-        self.logger.warn("Path to dump_3=" + dump_2)
+        self.logger.warn("Path to dump_3=" + dump_3)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
 
     def tearDown(self):
         """
-        Copy work directory to result.
+        Copy root directory to result.
         """
-        self.copy_ignite_workdir()
+        self.copy_ignite_root_dir()
 
 
 def get_dump_path(control_utility: ControlUtility, node):

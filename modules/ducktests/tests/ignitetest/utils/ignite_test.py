@@ -22,10 +22,10 @@ from time import monotonic
 from ducktape.utils.local_filesystem_utils import mkdir_p
 from ducktape.tests.test import Test, TestContext
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.ignite_persistence import PersistenceAware, IgnitePersistenceAware
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
-# pylint: disable=C0103,W0223,W0703
+# pylint: disable=W0223,W0703
 class IgniteTest(Test):
     """
     Basic ignite test.
@@ -45,43 +45,39 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    def copy_ignite_workdir(self):
+    def copy_ignite_root_dir(self):
         """
-        Copy work dir from service nodes to the results directory.
-
-        If the test passed, only the default set will be collected. If the the test failed, all logs will be collected.
+        Copying root directory from service nodes to the results directory.
         """
-        self.logger.info("copy_ignite_workdir")
         for service in self.test_context.services:
             if not isinstance(service, IgniteService):
-                self.test_context.logger.debug("Won't collect service workdir from %s." %
-                                               service.service_id)
+                self.logger.debug("Won't collect service workdir from %s." % service.service_id)
                 continue
 
             if service.config.data_storage and service.config.data_storage.default.persistent:
-                # Try to copy the service logs
-                self.test_context.logger.debug("Copying persistence dir...")
+                # Try to copy the root directory
+                self.logger.debug("Copying persistence dir...")
                 try:
                     for node in service.nodes:
                         dest = os.path.join(
                             TestContext.results_dir(self.test_context, self.test_context.test_index),
                             service.service_id, node.account.hostname)
-                        self.test_context.logger.debug("Dest dir " + dest)
+                        self.logger.debug("Dest dir " + dest)
                         if not os.path.isdir(dest):
                             mkdir_p(dest)
 
-                        tgz_work = '%s.tgz' % PersistenceAware.PERSISTENT_ROOT
+                        tgz_root = '%s.tgz' % PersistenceAware.PERSISTENT_ROOT
 
-                        node.account.ssh(compress_cmd(PersistenceAware.PERSISTENT_ROOT, tgz_work))
-                        node.account.copy_from(tgz_work, dest)
-                except Exception as e:
-                    self.test_context.logger.warn(
+                        node.account.ssh(compress_cmd(PersistenceAware.PERSISTENT_ROOT, tgz_root))
+                        node.account.copy_from(tgz_root, dest)
+                except Exception as ex:
+                    self.logger.warn(
                         "Error copying persistence dir from %(source)s to %(dest)s. \
                         service %(service)s: %(message)s" %
-                        {'source': IgnitePersistenceAware.WORK_DIR,
+                        {'source': PersistenceAware.PERSISTENT_ROOT,
                          'dest': dest,
                          'service': service,
-                         'message': e})
+                         'message': ex})
 
 
 def compress_cmd(src_path, dest_tgz):
