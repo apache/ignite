@@ -208,7 +208,7 @@ NOTE: The JDK is used only during the build process and not by the ODBC driver i
 
 ==== Building ODBC driver
 - Create a build directory for cmake. We'll refer to it as `${CPP_BUILD_DIR}`
-- (Optional) Choose installation directory prefix (optional, by default `/usr/local`). We'll refer to it as `${CPP_INSTALL_DIR}`
+- (Optional) Choose installation directory prefix (by default `/usr/local`). We'll refer to it as `${CPP_INSTALL_DIR}`
 - Build and install the driver by executing the following commands:
 
 [tabs]
