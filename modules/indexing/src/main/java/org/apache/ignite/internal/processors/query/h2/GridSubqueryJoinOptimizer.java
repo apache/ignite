@@ -127,7 +127,11 @@ public class GridSubqueryJoinOptimizer {
 
             pullOutSubQueries(union.left());
             pullOutSubQueries(union.right());
+
+            return;
         }
+
+        assert parent instanceof GridSqlSelect : "\"parent\" should be instance of GridSqlSelect class";
 
         GridSqlSelect select = (GridSqlSelect)parent;
 

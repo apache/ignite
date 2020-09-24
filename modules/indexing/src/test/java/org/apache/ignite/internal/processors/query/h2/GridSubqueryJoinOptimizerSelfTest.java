@@ -502,6 +502,20 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test should verify cases with UNION ALL.
+     */
+    @Test
+    public void testOptimizationAppliedToUnion() {
+        String sql = "" +
+            "select emp.name, d.id from emp, (select * from dep) d " +
+            "union all " +
+            "select (select name from dep2 where id = 1 and id2 = 1) as dep_name, d.id " +
+            "from dep d where exists (select 1 from dep where id = d.id)";
+
+        check(sql, 1);
+    }
+
+    /**
      * Test should verify all cases where subquery should not be rewrited.
      */
     @Test
