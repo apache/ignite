@@ -4580,7 +4580,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache group descriptors.
      */
     public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
-        return cachesInfo.registeredCacheGroups();
+        return Collections.unmodifiableMap(cachesInfo.registeredCacheGroups());
     }
 
     /**
