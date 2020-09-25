@@ -168,6 +168,35 @@ This view exposes information about currently running compute tasks started by a
 |USER_VERSION | string |  Task user version
 |===
 
+== JOBS
+
+This view exposes information about currently running compute job started on a node.
+In the Ignite, Job defines part(step) of the compute task
+
+[{table_opts}]
+|===
+|NAME | TYPE |    DESCRIPTION
+|ID | UUID | Job ID
+|SESSION_ID | UUID | Session ID. Note, `SESSION_ID` equal to `TASKS.SESSION_ID` for the jobs that belongs to the specific task
+|ORIGIN_NODE_ID | UUID | Originating node id
+|TASK_NAME | string | Name of the task
+|TASK_CLASSNAME | string | Class name of the task
+|AFFINITY_CACHE_IDS | string | Affinity cache ids
+|AFFINITY_PARTITION_ID | int | Partition id
+|CREATE_TIME | long | Create time
+|START_TIME | long | Start time
+|FINISH_TIME | long | Finish time
+|EXECUTOR_NAME | string | Name of the executor for task
+|IS_FINISHING | boolean | True if job finishing
+|IS_INTERNAL | boolean | True if job internal
+|IS_STARTED | boolean | True if job started
+|IS_TIMEDOUT | boolean | True if job timed out
+|STATE | string | Possible values: +
+`ACTIVE` - scheduled for execution. +
+`PASSIVE` - passivated before execution. Please, see `CollisionSPI`. +
+`CANCELED` - canceled.
+|===
+
 == SERVICES
 
 [{table_opts}]
@@ -336,23 +365,6 @@ This view exposes information about currently running scan queries.
 |TRANSFORMER | string |  toString representation of transformer
 |===
 
-
-== SQL_QUERIES_HISTORY
-
-This view exposes information about SQL queries history.
-
-[{table_opts}]
-|===
-|NAME | TYPE |    DESCRIPTION
-|SCHEMA_NAME | string |  Schema name
-|SQL | string |  Query text
-|LOCAL | boolean | True if local only
-|EXECUTIONS | long |    Count of executions
-|FAILURES | long |    Count of failures
-|DURATION_MIN | long |    Minimal duration of execution
-|DURATION_MAX | long |    Maximum duration of execution
-|LAST_START_TIME | date |    Last execution date
-|===
 
 == CONTINUOUS_QUERIES
 
