@@ -22,6 +22,7 @@
                 <property name="defaultDataRegionConfiguration">
                     {{ data_region(config.default) }}
                 </property>
+                <property name="checkpointFrequency" value="{{ config.checkpoint_frequency }}"/>
                 {% if config.regions %}
                     <property name="dataRegionConfigurations">
                         <list>

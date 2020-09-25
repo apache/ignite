@@ -33,7 +33,9 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
 
         long max = -1;
 
-        int key = 10_000_000;
+        JsonNode startIdx = jsonNode.get("start_idx");
+
+        int key = startIdx != null ? startIdx.asInt() : 10_000_000;
 
         int cnt = 0;
 

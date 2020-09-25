@@ -29,10 +29,10 @@ class DataRegionConfiguration(NamedTuple):
     init_size: int = 100 * 1024 * 1024
     max_size: int = 512 * 1024 * 1024
 
-
 class DataStorageConfiguration(NamedTuple):
     """
     Ignite DataStorage configuration
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
     regions: list = []
+    checkpoint_frequency: int = 180 * 1000

@@ -40,9 +40,14 @@ class IgniteService(IgniteAwareService):
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
+    tde_cfg = None
+
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, jvm_opts=None, modules=None):
         super().__init__(context, config, num_nodes, modules=modules, jvm_opts=jvm_opts)
+        if config.keystore_encryption is not None:
+            tde_cfg = config.keystore_encryption
+            self.generateKeystore(tde_cfg)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
@@ -71,6 +76,11 @@ class IgniteService(IgniteAwareService):
 
         for pid in pids:
             self.__stop_node(node, pid, sig)
+
+        # cleanup generated keystorage
+        if self.tde_cfg is not None:
+            for node in self.nodes:
+                node.account.ssh("rm " + self.tde_cfg.keyStorePath)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -154,3 +164,30 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+    def generateKeystore(self, cfg):
+        """
+        Generate keystorage
+        :param cfg: KeystoreEncryptionConfiguration
+        """
+        self.encryption_enabled = True
+
+        first = True
+
+        firstNode = {}
+
+        for node in self.nodes:
+            if first:
+                node.account.ssh("rm -f " + cfg.keyStorePath + " && " +
+                                 "keytool -genseckey -noprompt" +
+                                 " -alias master.key.name" +
+                                 " -keyalg AES" +
+                                 " -keysize " + str(cfg.keySize) +
+                                 " -keystore " + cfg.keyStorePath +
+                                 " -storetype JCEKS" +
+                                 " -storepass " + cfg.keyStorePassword +
+                                 " -keypass " + cfg.keyStorePassword)
+                first = False
+                firstNode = node
+            else:
+                firstNode.account.copy_between(cfg.keyStorePath, cfg.keyStorePath, node)

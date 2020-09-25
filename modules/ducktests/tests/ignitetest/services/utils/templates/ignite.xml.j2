@@ -21,6 +21,7 @@
 {% import 'cache_macro.j2' as cache_utils %}
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
+{% import 'keystore_encryption_macro.j2' as encryption_utils %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -49,5 +50,16 @@
         {% if config.properties %}
             {{ config.properties }}
         {% endif %}
+
+        {{ encryption_utils.keystore_encryption(config.keystore_encryption) }}
+
+        <property name="encryptionSpi">
+            <bean class="org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi">
+                <property name="keyStorePath" value="/opt/ignite-dev/modules/spring/src/test/resources/tde.jks" />
+                <property name="keyStorePassword" value="love_sex_god" />
+                <property name="masterKeyName" value="ignite.master.key" />
+                <property name="keySize" value="256" />
+            </bean>
+        </property>
     </bean>
 </beans>

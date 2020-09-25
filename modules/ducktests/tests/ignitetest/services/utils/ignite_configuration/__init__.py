@@ -20,6 +20,7 @@ This module contains IgniteConfiguration classes and utilities.
 from typing import NamedTuple
 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.keystore_encryption import KeystoreEncryptionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
@@ -37,6 +38,7 @@ class IgniteConfiguration(NamedTuple):
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []
+    keystore_encryption: KeystoreEncryptionConfiguration = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

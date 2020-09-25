@@ -99,6 +99,12 @@ class ControlUtility:
         """
         return self.__run("--activate --yes")
 
+    def change_cache_key(self, cache):
+        """
+        Change the current encryption key for specified cache group.
+        """
+        return self.__run(f"--encryption change_cache_key {cache} --yes")
+
     def deactivate(self):
         """
         Deactivate cluster.
