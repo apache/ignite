@@ -76,6 +76,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -669,8 +670,6 @@ public class FunctionalTest {
                 Thread t = new Thread(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         cache.put(0, "value2");
-
-                        // Should block.
                         tx2.commit();
                     }
                     catch (Exception ex) {
@@ -691,14 +690,10 @@ public class FunctionalTest {
 
                 t.join();
 
-                try {
+                assertThrowsAnyCause(null, () -> {
                     tx.commit();
-
-                    fail();
-                }
-                catch (ClientException ignored) {
-                    // No op
-                }
+                    return null;
+                }, ClientException.class, "read/write conflict");
             }
 
             assertEquals("value2", cache.get(0));
