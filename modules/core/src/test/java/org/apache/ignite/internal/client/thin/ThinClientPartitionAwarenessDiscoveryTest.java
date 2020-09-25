@@ -90,7 +90,7 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
     }
 
     /**
-     * Test that client use channels to all running nodes while nodes stop.
+     * Test that client use channels to configured nodes only while more nodes run.
      */
     @Test
     public void testClientDiscoveryFilterNodeJoin() throws Exception {

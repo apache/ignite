@@ -372,9 +372,12 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         if (ch != null && ch == hld.ch)
             hld.closeChannel();
 
-        rollCurrentChannel(hld);
-
         chFailLsnrs.forEach(Runnable::run);
+
+        if (scheduledChannelsReinit.get())
+            channelsInit(true);
+        else
+            rollCurrentChannel(hld);
     }
 
     /**
@@ -405,8 +408,13 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
      * @param ch Channel.
      */
     private void onTopologyChanged(ClientChannel ch) {
-        if (affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(), ch.serverNodeId()))
-            asyncRunner.submit(() -> channelsInit(true));
+        if (affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(), ch.serverNodeId())) {
+            if (scheduledChannelsReinit.compareAndSet(false, true)) {
+                // If partition awareness is disabled then only schedule and wait for the default channel to fail.
+                if (partitionAwarenessEnabled)
+                    asyncRunner.submit(() -> channelsInit(true));
+            }
+        }
     }
 
     /**
@@ -424,12 +432,13 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * Init channel holders to all nodes.
      * @param force enable to replace existing channels with new holders.
+     * @return {@code true} if holders are reinited and {@code false} if the initialization was interrupted.
      */
-    synchronized void initChannelHolders(boolean force) {
+    synchronized boolean initChannelHolders(boolean force) {
         List<ClientChannelHolder> holders = channels;
 
         if (!force && holders != null)
-            return;
+            return true;
 
         startChannelsReInit = System.currentTimeMillis();
 
@@ -453,7 +462,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
-            return;
+            return true;
         }
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = Collections.emptyMap();
@@ -478,7 +487,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         for (InetSocketAddress addr : allAddrs) {
             if (shouldStopChannelsReinit())
-                return;
+                return false;
 
             // Obsolete addr, to be removed.
             if (!newAddrs.contains(addr)) {
@@ -515,6 +524,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         }
 
         finishChannelsReInit = System.currentTimeMillis();
+        return true;
     }
 
     /**
@@ -525,17 +535,15 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         if (!force && channels != null)
             return;
 
-        // Skip if there is already channels reinit scheduled.
-        // Flag is set back when a thread comes in synchronized initChannelHolders.
-        if (scheduledChannelsReinit.compareAndSet(false, true)) {
-            initChannelHolders(force);
+        // Do not establish connections if interrupted.
+        if (!initChannelHolders(force))
+            return;
 
-            // Apply no-op function. Establish default channel connection.
-            applyOnDefaultChannel(channel -> null);
+        // Apply no-op function. Establish default channel connection.
+        applyOnDefaultChannel(channel -> null);
 
-            if (partitionAwarenessEnabled)
-                initAllChannelsAsync();
-        }
+        if (partitionAwarenessEnabled)
+            initAllChannelsAsync();
     }
 
     /**
@@ -710,7 +718,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                         channel.addNotificationListener(ReliableChannel.this);
 
                         UUID prevId = serverNodeId;
-                        if (prevId != null && prevId != channel.serverNodeId())
+                        if (prevId != null && !prevId.equals(channel.serverNodeId()))
                             nodeChannels.remove(prevId, this);
 
                         if (!channel.serverNodeId().equals(prevId)) {
