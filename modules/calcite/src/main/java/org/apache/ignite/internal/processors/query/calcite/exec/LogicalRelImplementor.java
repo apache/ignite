@@ -236,8 +236,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RexNode condition = rel.condition();
         List<RexNode> projects = rel.projections();
 
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
-        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rel.getRowType());
+        RelDataType cols =
+            rel.getTable().unwrap(IgniteTable.class).getRowType(rel.getCluster().getTypeFactory(),
+                rel.requiredColumns());
+
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, rel.requiredColumns());

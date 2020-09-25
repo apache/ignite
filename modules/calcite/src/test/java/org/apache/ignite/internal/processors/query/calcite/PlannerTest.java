@@ -2645,6 +2645,10 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** */
         private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
+        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
+            return null;
+        }
+
         /** */
         private TestTable(RelDataType type) {
             protoType = RelDataTypeImpl.proto(type);

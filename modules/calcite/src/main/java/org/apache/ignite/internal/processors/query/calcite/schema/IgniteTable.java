@@ -22,6 +22,8 @@ import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -39,6 +41,9 @@ public interface IgniteTable extends TranslatableTable {
      * @return Table description.
      */
     TableDescriptor descriptor();
+
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet);
+
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {

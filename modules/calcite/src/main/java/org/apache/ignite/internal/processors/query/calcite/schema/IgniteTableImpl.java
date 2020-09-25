@@ -32,6 +32,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -145,6 +146,27 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         finally {
             cctx.gate().leave();
         }
+    }
+
+    /** */
+    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
+        RelDataTypeFactory.Builder builder = typeFactory.builder();
+        final List<RelDataTypeField> fieldList = getRowType(typeFactory).getFieldList();
+
+        int startIdx = 0;
+
+        for (;;) {
+            int idx = bitSet.nextSetBit(startIdx);
+
+            if (idx == -1)
+                break;
+
+            startIdx = idx + 1;
+
+            builder.add(fieldList.get(idx));
+        }
+
+        return builder.build();
     }
 
 
