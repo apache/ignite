@@ -17,7 +17,6 @@
 Module contains discovery tests.
 """
 
-import time
 import re
 
 from ducktape.mark.resource import cluster
@@ -78,7 +77,7 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
-            params={"cacheName": "test-cache"})
+            params={"cacheName": "test-cache", "size": 1024})
 
         load(streamer)
 
@@ -160,5 +159,7 @@ def load(service_load, duration: int = 60):
     Load.
     """
     service_load.start()
-    time.sleep(duration)
-    service_load.stop()
+    try:
+        service_load.await_stopped(duration)
+    except AssertionError:
+        service_load.stop()

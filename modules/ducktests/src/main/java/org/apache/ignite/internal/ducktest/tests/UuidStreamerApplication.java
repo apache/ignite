@@ -30,13 +30,20 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jsonNode) {
         IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(jsonNode.get("cacheName").asText());
 
+        JsonNode jNodeSize = jsonNode.get("size");
+
+        long size = -1L;
+
         long cnt = 0L;
+
+        if (jNodeSize != null)
+            size = jNodeSize.asLong();
 
         long start = System.currentTimeMillis();
 
         markInitialized();
 
-        while (!terminated()) {
+        while (!terminated() && cnt != size) {
             UUID uuid = UUID.randomUUID();
 
             cache.put(uuid, uuid);
