@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientReconnectedException;
 
@@ -74,8 +76,13 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
-        if (cursorId != null && hasNext)
-            ch.request(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId));
+        if (cursorId != null && hasNext && !clientCh.closed()) {
+            try {
+                clientCh.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId), null);
+            } catch (ClientConnectionException | ClientReconnectedException ignored) {
+                // Original connection was lost and cursor was closed by the server.
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -135,13 +142,6 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Get page. */
     private Collection<T> queryPage() throws ClientException {
-        return ch.service(pageQryOp, req -> {
-            if (clientCh != req.clientChannel()) {
-                throw new ClientReconnectedException("Client was reconnected in the middle of results fetch, " +
-                    "query results can be inconsistent, please retry the query.");
-            }
-
-            req.out().writeLong(cursorId);
-        }, this::readResult);
+        return clientCh.service(pageQryOp, req -> req.out().writeLong(cursorId), this::readResult);
     }
 }
