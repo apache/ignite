@@ -1017,7 +1017,7 @@ public class FunctionalTest {
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 cache.put(0, "value20");
 
-                Thread t = new Thread(() -> {
+                ForkJoinPool.commonPool().submit(() -> {
                     // Implicit transaction started here.
                     cache.put(1, "value21");
 
@@ -1037,11 +1037,7 @@ public class FunctionalTest {
                     tx.close();
 
                     assertEquals("value18", cache.get(0));
-                });
-
-                t.start();
-
-                t.join();
+                }).get();
 
                 assertEquals("value21", cache.get(1));
 
@@ -1060,11 +1056,7 @@ public class FunctionalTest {
                 // Start implicit transaction after explicit transaction has been closed by another thread.
                 cache.put(0, "value22");
 
-                t = new Thread(() -> assertEquals("value22", cache.get(0)));
-
-                t.start();
-
-                t.join();
+                ForkJoinPool.commonPool().submit(() -> assertEquals("value24", cache.get(0))).get();
 
                 // New explicit transaction can be started after current transaction has been closed by another thread.
                 try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -1115,11 +1107,7 @@ public class FunctionalTest {
             // Test that implicit transaction started after commit of previous one without closing.
             cache.put(0, "value24");
 
-            Thread t = new Thread(() -> assertEquals("value24", cache.get(0)));
-
-            t.start();
-
-            t.join();
+            ForkJoinPool.commonPool().submit(() -> assertEquals("value24", cache.get(0))).get();
         }
     }
 
