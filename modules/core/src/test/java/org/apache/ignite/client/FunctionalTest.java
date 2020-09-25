@@ -93,8 +93,10 @@ import static org.junit.Assert.fail;
 /**
  * Thin client functional tests.
  */
+@SuppressWarnings("unused")
 public class FunctionalTest {
     /** Per test timeout */
+    @SuppressWarnings("deprecation")
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
 
@@ -186,7 +188,7 @@ public class FunctionalTest {
                 .setEagerTtl(false)
                 .setGroupName("FunctionalTest")
                 .setDefaultLockTimeout(12345)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_ALL)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
                 .setReadFromBackup(true)
                 .setRebalanceBatchSize(67890)
                 .setRebalanceBatchesPrefetchCount(102938)
@@ -217,7 +219,7 @@ public class FunctionalTest {
                 )
                 .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
 
-            ClientCache cache = client.createCache(cacheCfg);
+            ClientCache<Object, Object> cache = client.createCache(cacheCfg);
 
             assertEquals(CACHE_NAME, cache.getName());
 
@@ -556,6 +558,7 @@ public class FunctionalTest {
     public void testClientFailsOnStart() {
         ClientConnectionException expEx = null;
 
+        //noinspection EmptyTryBlock
         try (IgniteClient ignored = Ignition.startClient(getClientConfiguration())) {
             // No-op.
         }
