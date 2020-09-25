@@ -314,7 +314,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
             while (next == null && cursor.next()) {
                 H2Row h2Row = cursor.get();
 
-                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, null);
+                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory);
 
                 if (filters == null || filters.test(r))
                     next = r;

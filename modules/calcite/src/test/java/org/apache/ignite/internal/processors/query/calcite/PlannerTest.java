@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -1145,8 +1146,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                int[] proj,
-                Predicate<Row> filter
+                Predicate<Row> filter,
+                Function<Row, Row> pointing,
+                ImmutableBitSet requiredColunms
             ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Igor", 0),
@@ -1171,8 +1173,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                int[] proj,
-                Predicate<Row> filter
+                Predicate<Row> filter,
+                Function<Row, Row> pointing,
+                ImmutableBitSet requiredColunms
             ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Calcite", 1),
@@ -1422,8 +1425,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                int[] proj,
-                Predicate<Row> filter) {
+                Predicate<Row> filter,
+                Function<Row, Row> pointing,
+                ImmutableBitSet requiredColunms) {
                 return Arrays.asList(
                     row(execCtx, 0, 1),
                     row(execCtx, 1, 2)
@@ -2706,7 +2710,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, int[] projFields, Predicate<Row> filter) {
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            Predicate<Row> filter,
+            Function<Row, Row> pointing,
+            ImmutableBitSet requiredColunms
+        ) {
             throw new AssertionError();
         }
 

@@ -94,18 +94,16 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
 
         RelOptCluster cluster = scan.getCluster();
 
+        int colsCount = scan.getRowType().getFieldCount();
+
         List<RexNode> projections = proj.getProjects();
 
         final ImmutableBitSet.Builder requiredColumns = ImmutableBitSet.builder();
-
-        final int[] cnt = {0}; // fix it
 
         for (RexNode node : projections) {
             node.accept(new RexShuttle() {
                 @Override public RexNode visitInputRef(RexInputRef ref) {
                     requiredColumns.set(ref.getIndex());
-
-                    cnt[0]++;
 
                     return ref;
                 }
@@ -116,7 +114,7 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
 
         ImmutableBitSet requiredColumns0 = requiredColumns.build();
 
-        Mappings.TargetMapping mapping = mappings0(cnt[0], requiredColumns0);
+        Mappings.TargetMapping mapping = mappings0(colsCount, requiredColumns0);
 
         for (RexNode node : projections) {
             RexNode n = node.accept(new RexShuttle() {
@@ -132,7 +130,7 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
 
     /** */
     private Mappings.TargetMapping mappings0(int columnCnt, ImmutableBitSet requiredColumns) {
-        Mapping m = Mappings.create(MappingType.FUNCTION, columnCnt, requiredColumns.cardinality());
+        Mapping m = Mappings.create(MappingType.INVERSE_SURJECTION, columnCnt, requiredColumns.cardinality());
 
         int realPos = 0;
 
