@@ -34,6 +34,8 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -714,34 +716,20 @@ public class FunctionalTest {
             );
             cache.put(0, "value0");
 
-            final CountDownLatch latch = new CountDownLatch(1);
-
             try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                Thread t = new Thread(() -> {
-                    try {
-                        assertEquals("value0", cache.get(0));
-
-                        cache.put(0, "value2");
-
-                        assertEquals("value2", cache.get(0));
-                    }
-                    catch (Exception ex) {
-                        fail();
-                    }
-                    finally {
-                        latch.countDown();
-                    }
-                });
-
                 assertEquals("value0", cache.get(0));
 
                 cache.put(0, "value1");
 
-                t.start();
+                Future<?> f = ForkJoinPool.commonPool().submit(() -> {
+                    assertEquals("value0", cache.get(0));
 
-                latch.await();
+                    cache.put(0, "value2");
 
-                t.join();
+                    assertEquals("value2", cache.get(0));
+                });
+
+                f.get();
 
                 tx.commit();
             }
