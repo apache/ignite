@@ -59,7 +59,7 @@ class CheckIgniteVersions:
 
     @pytest.mark.parametrize(
         ['versions', 'global_args'],
-        list(map(lambda x: pytest.param(x[0], x[1]), single_params))
+        map(lambda x: pytest.param(x[0], x[1]), single_params)
     )
     def check_injection(self, versions, global_args):
         """
@@ -80,7 +80,7 @@ class CheckIgniteVersions:
 
     @pytest.mark.parametrize(
         ['versions', 'global_args'],
-        list(map(lambda x: pytest.param(x[0], x[1]), pair_params))
+        map(lambda x: pytest.param(x[0], x[1]), pair_params)
     )
     def check_injection_pairs(self, versions, global_args):
         """
@@ -186,20 +186,18 @@ class CheckIgniteVersions:
             global_versions = global_args['ignite_versions']
 
             if isinstance(global_versions, str):
-                assert not pairs
-
                 check_versions = [IgniteVersion(global_versions)]
             elif isinstance(global_args['ignite_versions'], tuple):
-                assert pairs
-
                 check_versions = [tuple(map(IgniteVersion, global_versions))]
             elif pairs:
                 check_versions = list(map(lambda x: (IgniteVersion(x[0]), IgniteVersion(x[1])), global_versions))
             else:
                 check_versions = list(map(IgniteVersion, global_versions))
         else:
-            check_versions = list(map(IgniteVersion, versions)) if not pairs else \
-                list(map(lambda x: (IgniteVersion(x[0]), IgniteVersion(x[1])), versions))
+            if not pairs:
+                check_versions = list(map(IgniteVersion, versions))
+            else:
+                check_versions = list(map(lambda x: (IgniteVersion(x[0]), IgniteVersion(x[1])), versions))
 
         assert len(context_list) == len(check_versions)
 
