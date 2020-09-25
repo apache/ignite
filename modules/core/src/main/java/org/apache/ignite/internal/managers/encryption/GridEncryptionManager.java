@@ -588,7 +588,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             U.quietAndInfo(log, "Store group key received from coordinator [grp=" + grpId +
                 ", keyId=" + rmtKey.id() + "]");
 
-            withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, rmtKey));
+            grpKeys.addKey(grpId, rmtKey);
 
             if (locGrpKey == null)
                 continue;
@@ -640,15 +640,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param key Encryption key.
      */
     void addGroupKey(int grpId, GroupKeyEncrypted key) {
-        try {
-            withMasterKeyChangeReadLock(() -> grpKeys.addKey(grpId, key));
-
+        withMasterKeyChangeReadLock(() -> {
             synchronized (metaStorageMux) {
-                writeGroupKeysToMetaStore(grpId);
+                try {
+                    grpKeys.addKey(grpId, key);
+
+                    writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
+                }
             }
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
-        }
+
+            return null;
+        });
     }
 
     /** {@inheritDoc} */
@@ -765,7 +769,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 // Set new key as key for writing.
                 GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, newKeyId);
 
-                writeGroupKeysToMetaStore(grpId);
+                List<GroupKeyEncrypted> keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
+
+                writeGroupKeysToMetaStore(grpId, keysEncrypted);
 
                 if (ptr != null) {
                     grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
@@ -886,39 +892,43 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
+        withMasterKeyChangeReadLock( () -> {
+            synchronized (metaStorageMux) {
+                Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
 
-        if (F.isEmpty(rmvKeys))
-            return;
+                if (F.isEmpty(rmvKeys))
+                    return null;
 
-        synchronized (metaStorageMux) {
-            try {
-                writeTrackedWalIdxsToMetaStore();
+                try {
+                    writeTrackedWalIdxsToMetaStore();
 
-                for (Map.Entry<Integer, Set<Integer>> entry : rmvKeys.entrySet()) {
-                    Integer grpId = entry.getKey();
+                    for (Map.Entry<Integer, Set<Integer>> entry : rmvKeys.entrySet()) {
+                        Integer grpId = entry.getKey();
 
-                    if (reencryptGroups.containsKey(grpId))
-                        continue;
+                        if (reencryptGroups.containsKey(grpId))
+                            continue;
 
-                    Set<Integer> keyIds = entry.getValue();
+                        Set<Integer> keyIds = entry.getValue();
 
-                    boolean rmv = grpKeys.removeKeysById(grpId, keyIds);
+                        boolean rmv = grpKeys.removeKeysById(grpId, keyIds);
 
-                    assert rmv : keyIds;
+                        assert rmv : keyIds;
 
-                    writeGroupKeysToMetaStore(grpId);
+                        writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
 
-                    if (log.isInfoEnabled()) {
-                        log.info("Previous encryption keys have been removed [grpId=" + grpId +
-                            ", keyIds=" + keyIds + "]");
+                        if (log.isInfoEnabled()) {
+                            log.info("Previous encryption keys have been removed [grpId=" + grpId +
+                                ", keyIds=" + keyIds + "]");
+                        }
                     }
                 }
+                catch (IgniteCheckedException e) {
+                    log.error("Unable to remove encryption keys from metastore.", e);
+                }
             }
-            catch (IgniteCheckedException e) {
-                log.error("Unable to remove encryption keys from metastore.", e);
-            }
-        }
+
+            return null;
+        });
     }
 
     /** {@inheritDoc} */
@@ -993,20 +1003,24 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
-        synchronized (metaStorageMux) {
-            this.metaStorage = metaStorage;
+        withMasterKeyChangeReadLock(() -> {
+            synchronized (metaStorageMux) {
+                this.metaStorage = metaStorage;
 
-            writeToMetaStoreEnabled = true;
+                writeToMetaStoreEnabled = true;
 
-            if (recoveryMasterKeyName)
-                writeKeysToWal();
+                if (recoveryMasterKeyName)
+                    writeKeysToWal();
 
-            writeKeysToMetaStore(restoredFromWAL || recoveryMasterKeyName);
+                writeKeysToMetaStore(restoredFromWAL || recoveryMasterKeyName);
 
-            restoredFromWAL = false;
+                restoredFromWAL = false;
 
-            recoveryMasterKeyName = false;
-        }
+                recoveryMasterKeyName = false;
+            }
+
+            return null;
+        });
 
         for (Map.Entry<Integer, Integer> entry : reencryptGroupsForced.entrySet()) {
             int grpId = entry.getKey();
@@ -1139,11 +1153,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 try {
                     f.get();
 
-                    synchronized (metaStorageMux) {
-                        cleanupKeys(grpId);
+                    withMasterKeyChangeReadLock( () -> {
+                        synchronized (metaStorageMux) {
+                            cleanupKeys(grpId);
 
-                        reencryptGroups.remove(grpId);
-                    }
+                            reencryptGroups.remove(grpId);
+                        }
+
+                        return null;
+                    });
                 }
                 catch (IgniteFutureCancelledCheckedException e) {
                     log.warning("Reencryption cancelled [grp=" + grpId + "]");
@@ -1165,7 +1183,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (rmvKeyIds.isEmpty())
             return;
 
-        writeGroupKeysToMetaStore(grpId);
+        writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
 
         if (log.isInfoEnabled())
             log.info("Previous encryption keys were removed [grpId=" + grpId + ", keyIds=" + rmvKeyIds + "]");
@@ -1189,7 +1207,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 metaStorage.read(ENCRYPTION_KEYS_PREFIX + grpId) != null)
                 continue;
 
-            writeGroupKeysToMetaStore(grpId);
+            writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
         }
     }
 
@@ -1198,18 +1216,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Cache group ID.
      */
-    private void writeGroupKeysToMetaStore(int grpId) throws IgniteCheckedException {
+    private void writeGroupKeysToMetaStore(int grpId, List<GroupKeyEncrypted> keys) throws IgniteCheckedException {
         assert Thread.holdsLock(metaStorageMux);
 
         if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
             return;
 
-        List<GroupKeyEncrypted> keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
-
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keysEncrypted);
+            metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keys);
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
