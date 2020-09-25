@@ -50,7 +50,7 @@ pip install -e .
 - For running linter invoke `pylint --rcfile=tox.ini ignitetests checks` in `${DUCKTESTS_DIR}`.
 
 #### Run checks over multiple python's versions using tox (optional)
-All commits and PR's are checked against multiple python's version, namely 3.6, 3.7 and 3.8
+All commits and PR's are checked against multiple python's version, namely 3.6, 3.7 and 3.8.
 If you want to check your PR as it will be checked on Travis CI, you should do following steps:
 
 - Install `pyenv`, see installation instruction [here](https://github.com/pyenv/pyenv#installation).
