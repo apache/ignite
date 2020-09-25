@@ -399,6 +399,28 @@
       url: extensions-and-integrations/hibernate-l2-cache
     - title: MyBatis L2 Cache
       url: extensions-and-integrations/mybatis-l2-cache
+    - title: Streaming
+      items:
+        - title: Kafka Streamer
+          url: extensions-and-integrations/streaming/kafka-streamer
+        - title: Camel Streamer
+          url: extensions-and-integrations/streaming/camel-streamer
+        - title: Flink Streamer
+          url: extensions-and-integrations/streaming/flink-streamer
+        - title: Flume Sink
+          url: extensions-and-integrations/streaming/flume-sink
+        - title: JMS Streamer
+          url: extensions-and-integrations/streaming/jms-streamer
+        - title: MQTT Streamer
+          url: extensions-and-integrations/streaming/mqtt-streamer
+        - title: RocketMQ Streamer
+          url: extensions-and-integrations/streaming/rocketmq-streamer
+        - title: Storm Streamer
+          url: extensions-and-integrations/streaming/storm-streamer
+        - title: ZeroMQ Streamer
+          url: extensions-and-integrations/streaming/zeromq-streamer
+        - title: Twitter Streamer
+          url: extensions-and-integrations/streaming/twitter-streamer
 - title: Plugins
   url: plugins
 - title: SQL Reference
