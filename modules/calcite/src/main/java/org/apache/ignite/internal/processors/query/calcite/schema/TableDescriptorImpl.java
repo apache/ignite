@@ -35,6 +35,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -188,7 +189,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public <Row> Row toRow(
         ExecutionContext<Row> ectx,
         CacheDataRow row,
-        RowHandler.RowFactory<Row> factory
+        RowHandler.RowFactory<Row> factory,
+        ImmutableBitSet bitset
     ) throws IgniteCheckedException {
         RowHandler<Row> handler = factory.handler();
 
@@ -198,8 +200,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         assert handler.columnCount(res) == descriptors.length;
 
-        for (int i = 0; i < descriptors.length; i++)
-            handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+        for (int i = 0; i < descriptors.length; i++) {
+            if (bitset != null) {
+                if (bitset.get(i))
+                    handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+            }
+            else
+                handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+        }
 
         return res;
     }

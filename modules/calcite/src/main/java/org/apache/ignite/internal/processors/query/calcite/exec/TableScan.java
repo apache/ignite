@@ -263,7 +263,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (!desc.match(row))
                         continue;
 
-                    Row r = desc.toRow(ectx, row, factory);
+                    Row r = desc.toRow(ectx, row, factory, requiredColunms);
                     if (filters != null && !filters.test(r))
                         continue;
 

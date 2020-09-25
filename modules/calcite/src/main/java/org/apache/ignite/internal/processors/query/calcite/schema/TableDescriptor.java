@@ -24,6 +24,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -94,7 +95,8 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
-    <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory) throws IgniteCheckedException;
+    <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
+                    ImmutableBitSet bitSet) throws IgniteCheckedException;
 
     /**
      * Converts a relational node row to cache key-value tuple;
