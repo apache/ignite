@@ -35,7 +35,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -611,26 +611,19 @@ public class FunctionalTest {
             cache.put(0, "value0");
 
             CyclicBarrier barrier = new CyclicBarrier(2);
+            AtomicReference<Exception> errRef = new AtomicReference<>();
 
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
                 Thread t = new Thread(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
                         cache.put(0, "value2");
-
-                        // Should block.
                         tx2.commit();
-
-                        // Should not get here.
-                        fail();
-                    } catch (ClientServerError ex) {
-                        assertTrue(ex.getMessage(), ex.getMessage().contains("time out"));
                     } catch (Exception ex) {
-                        // Should not get here.
-                        fail();
+                        errRef.set(ex);
                     } finally {
                         try {
                             barrier.await(2000, TimeUnit.MILLISECONDS);
-                        } catch (TimeoutException | InterruptedException | BrokenBarrierException ignore) {
+                        } catch (Throwable ignore) {
                             // No-op.
                         }
                     }
@@ -648,6 +641,11 @@ public class FunctionalTest {
             }
 
             assertEquals("value0", cache.get(0));
+
+            Exception err = errRef.get();
+            assertTrue(err.getClass().getName(), err instanceof ClientException);
+            assertTrue(err.getMessage(),
+                    err.getMessage().contains("Failed to acquire lock within provided timeout"));
         }
     }
 
