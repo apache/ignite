@@ -32,8 +32,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -68,6 +70,7 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -77,6 +80,8 @@ import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -570,6 +575,183 @@ public class FunctionalTest {
             String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
             expEx
         );
+    }
+
+
+    /**
+     * Test PESSIMISTIC REPEATABLE_READ tx holds lock and other tx should be timed out.
+     */
+    @Test
+    public void testPessimisticRepeatableReadsTransactionHoldsLock() throws Exception {
+        testPessimisticTxLocking(REPEATABLE_READ);
+    }
+
+    /**
+     * Test PESSIMISTIC SERIALIZABLE tx holds lock and other tx should be timed out.
+     */
+    @Test
+    public void testPessimisticSerializableTransactionHoldsLock() throws Exception {
+        testPessimisticTxLocking(SERIALIZABLE);
+    }
+
+    /**
+     * Test pessimistic tx holds the lock.
+     */
+    private void testPessimisticTxLocking(TransactionIsolation isolation) throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            CyclicBarrier barrier = new CyclicBarrier(2);
+
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
+                Thread t = new Thread(() -> {
+                    try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
+                        cache.put(0, "value2");
+
+                        // Should block.
+                        tx2.commit();
+
+                        // Should not get here.
+                        fail();
+                    } catch (ClientServerError ex) {
+                        assertTrue(ex.getMessage(), ex.getMessage().contains("time out"));
+                    } catch (Exception ex) {
+                        // Should not get here.
+                        fail();
+                    } finally {
+                        try {
+                            barrier.await(2000, TimeUnit.MILLISECONDS);
+                        } catch (TimeoutException | InterruptedException | BrokenBarrierException ignore) {
+                            // No-op.
+                        }
+                    }
+                });
+
+                assertEquals("value0", cache.get(0));
+
+                t.start();
+
+                barrier.await(2000, TimeUnit.MILLISECONDS);
+
+                t.join();
+
+                tx.commit();
+            }
+
+            assertEquals("value0", cache.get(0));
+        }
+    }
+
+    /**
+     * Test OPTIMISTIC SERIALIZABLE tx rolls backs if another TX commits.
+     */
+    @Test
+    public void testOptimitsticSerializableTransactionHoldsLock() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                Thread t = new Thread(() -> {
+                    try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                        cache.put(0, "value2");
+
+                        // Should block.
+                        tx2.commit();
+                    }
+                    catch (Exception ex) {
+                        fail();
+                    }
+                    finally {
+                        latch.countDown();
+                    }
+                });
+
+                assertEquals("value0", cache.get(0));
+
+                t.start();
+
+                latch.await();
+
+                cache.put(0, "value1");
+
+                t.join();
+
+                try {
+                    tx.commit();
+
+                    fail();
+                }
+                catch (ClientException ignored) {
+                    // No op
+                }
+            }
+
+            assertEquals("value2", cache.get(0));
+        }
+    }
+
+    /**
+     * Test OPTIMISTIC REPEATABLE_READ tx doesn't conflict with a regular cache put.
+     */
+    @Test
+    public void testOptimitsticRepeatableReadUpdatesValue() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                Thread t = new Thread(() -> {
+                    try {
+                        assertEquals("value0", cache.get(0));
+
+                        cache.put(0, "value2");
+
+                        assertEquals("value2", cache.get(0));
+                    }
+                    catch (Exception ex) {
+                        fail();
+                    }
+                    finally {
+                        latch.countDown();
+                    }
+                });
+
+                assertEquals("value0", cache.get(0));
+
+                cache.put(0, "value1");
+
+                t.start();
+
+                latch.await();
+
+                t.join();
+
+                tx.commit();
+            }
+
+            assertEquals("value1", cache.get(0));
+        }
     }
 
     /**
