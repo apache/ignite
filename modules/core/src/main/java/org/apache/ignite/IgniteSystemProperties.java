@@ -1896,6 +1896,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
 
     /**
+     * Enables subquery rewriting optimization.
+     * If enabled, subquery will be rewritten to JOIN where possible.
+     * Default is {@code true}.
+     */
+    @IgniteExperimental
+    @SystemProperty("Enables subquery rewriting optimization. " +
+        "If enabled, subquery will be rewritten to JOIN where possible")
+    public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
+
+    /**
      * Enables setting attribute value of {@link
      * TcpCommunicationSpi#ATTR_HOST_NAMES ATTR_HOST_NAMES} when value {@link
      * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
