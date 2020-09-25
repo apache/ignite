@@ -852,9 +852,8 @@ public class Checkpointer extends GridWorker {
      * Restart worker in IgniteThread.
      */
     public void start() {
-        if (runner() != null) {
+        if (runner() != null)
             return;
-        }
 
         assert runner() == null : "Checkpointer is running.";
 

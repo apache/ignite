@@ -1164,14 +1164,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /**
      * Affinity function with fixed partition allocation.
      */
-    private static class TestAffinityFunction implements AffinityFunction {
+    public static class TestAffinityFunction implements AffinityFunction {
         /** Partitions to nodes map. */
         private final String[][] partMap;
 
         /**
          * @param partMap Parition allocation map, contains nodes consistent ids for each partition.
          */
-        private TestAffinityFunction(String[][] partMap) {
+        public TestAffinityFunction(String[][] partMap) {
             this.partMap = partMap;
         }
 

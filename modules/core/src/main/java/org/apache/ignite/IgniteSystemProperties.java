@@ -503,7 +503,11 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "SSH host name for visor-started nodes", type = String.class)
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
-    /** System property to enable experimental commands in control.sh script. */
+    /**
+     * System property to enable experimental commands in control.sh script.
+     * @deprecated Use "--enable-experimental" parameter instead.
+     */
+    @Deprecated
     @SystemProperty("Enables experimental commands in control.sh script")
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
@@ -1890,6 +1894,16 @@ public final class IgniteSystemProperties {
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured")
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
+
+    /**
+     * Enables subquery rewriting optimization.
+     * If enabled, subquery will be rewritten to JOIN where possible.
+     * Default is {@code true}.
+     */
+    @IgniteExperimental
+    @SystemProperty("Enables subquery rewriting optimization. " +
+        "If enabled, subquery will be rewritten to JOIN where possible")
+    public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
 
     /**
      * Enables setting attribute value of {@link

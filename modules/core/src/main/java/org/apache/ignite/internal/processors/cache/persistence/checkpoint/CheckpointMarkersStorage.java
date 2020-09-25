@@ -51,7 +51,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 
 /**
- * Abstraction over the checkpoint markers folder.
+ * Abstraction responsible for managing checkpoint markers storage.
  */
 public class CheckpointMarkersStorage {
     /** Checkpoint file name pattern. */
@@ -372,9 +372,6 @@ public class CheckpointMarkersStorage {
         CheckpointEntryType type,
         boolean skipSync
     ) throws StorageException {
-//        if (System.getProperty(CachePartitionDefragmentationManager.SKIP_CP_ENTRIES) != null)
-//            return;
-
         String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
 

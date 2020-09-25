@@ -415,7 +415,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Returns true if historical rebalance is preferred, false means using heuristic for determine rebalance type.
+     * Returns true if historical rebalance is preferred,
+     * false means using heuristic for determine rebalance type.
      *
      * @return Flag of preferred historical rebalance.
      */
@@ -541,6 +542,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /**
+     *
+     */
     public Collection<DataRegion> checkpointedDataRegions() {
         return checkpointedDataRegions;
     }
@@ -648,6 +652,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         fileLockHolder.close();
     }
 
+    /** */
     /**
      *
      */
