@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.util.GridConfigurationFinder;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.portscanner.GridJmxPortFinder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -96,7 +95,6 @@ public final class CommandLineStartup {
         GridCacheMapEntry.class,
         LocalDeploymentSpi.class,
         GridCacheDatabaseSharedManager.class,
-        GridJmxPortFinder.class,
         PartitionsEvictManager.class,
         PagesList.class,
         PagesList.PagesCache.class,
