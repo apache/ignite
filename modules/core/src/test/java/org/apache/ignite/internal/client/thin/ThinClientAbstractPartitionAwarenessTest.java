@@ -60,6 +60,15 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Partitioned with custom affinity cache name. */
     protected static final String PART_CUSTOM_AFFINITY_CACHE_NAME = "partitioned_custom_affinity_cache";
+    /**
+     * Name of a partitioned cache with 0 backups. */
+    protected static final String PART_CACHE_0_BACKUPS_NAME = "partitioned_0_backup_cache";
+
+    /** Name of a partitioned cache with 1 backups. */
+    protected static final String PART_CACHE_1_BACKUPS_NAME = "partitioned_1_backup_cache";
+
+    /** Name of a partitioned cache with 3 backups. */
+    protected static final String PART_CACHE_3_BACKUPS_NAME = "partitioned_3_backup_cache";
 
     /** Keys count. */
     protected static final int KEY_CNT = 30;
@@ -101,7 +110,22 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 new CacheKeyConfiguration(TestNotAnnotatedAffinityKey.class.getName(), "affinityKey"),
                 new CacheKeyConfiguration(TestAnnotatedAffinityKey.class));
 
-        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2);
+        CacheConfiguration ccfg3 = new CacheConfiguration()
+                .setName(PART_CACHE_0_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(0);
+
+        CacheConfiguration ccfg4 = new CacheConfiguration()
+                .setName(PART_CACHE_1_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(1);
+
+        CacheConfiguration ccfg5 = new CacheConfiguration()
+                .setName(PART_CACHE_3_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(3);
+
+        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5);
     }
 
     /** {@inheritDoc} */
