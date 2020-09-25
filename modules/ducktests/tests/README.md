@@ -5,10 +5,11 @@ the `ducktape` test framework, for information about it check the links:
 - https://github.com/confluentinc/ducktape - source code of the `ducktape`.
 - http://ducktape-docs.readthedocs.io - documentation to the `ducktape`.
 
-Structure of the `ignitetest` directory is:
+Structure of the `tests` directory is:
 - `./ignitetest/services` contains basic services functionality.
 - `./ignitetest/utils` contains utils for testing.
 - `./ignitetest/tests` contains tests.
+- `./checks` contains unit tests of utils, tests' decorators etc. 
 
 Docker is used to emulate distributed environment. Single container represents 
 a running node.
