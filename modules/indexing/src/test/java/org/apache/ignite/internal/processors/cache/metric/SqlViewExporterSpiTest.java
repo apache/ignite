@@ -1069,12 +1069,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(3, view.size());
 
         for (List<?> meta : view) {
-            if (Objects.equals(TestObjectEnum.class.getName(), meta.get(0))) {
+            if (TestObjectEnum.class.getName().contains( meta.get(0).toString())) {
                 assertTrue((Boolean)meta.get(3));
 
                 assertEquals(0, meta.get(1));
             }
-            else if (Objects.equals(TestObjectAllTypes.class.getName(), meta.get(0))) {
+            else if (TestObjectAllTypes.class.getName().contains(meta.get(0).toString())) {
                 assertFalse((Boolean)meta.get(3));
 
                 Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
