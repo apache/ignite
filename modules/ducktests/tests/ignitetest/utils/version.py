@@ -65,7 +65,6 @@ LATEST_2_7 = V_2_7_6
 # 2.8.0 versions
 V_2_8_0 = IgniteVersion("2.8.0")
 V_2_8_1 = IgniteVersion("2.8.1")
-V_2_10_0 = IgniteVersion("2.10.0")
 LATEST_2_8 = V_2_8_1
 
 LATEST = LATEST_2_8

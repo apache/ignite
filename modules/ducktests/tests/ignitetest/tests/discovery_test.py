@@ -33,14 +33,13 @@ from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
-from ignitetest.services.utils.ignite_configuration.communication import TcpCommunicationSpi
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, V_2_10_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
 
 
 class ClusterLoad(IntEnum):
@@ -60,6 +59,7 @@ class DiscoveryTestConfig(NamedTuple):
     nodes_to_kill: int = 1
     kill_coordinator: bool = False
     load_type: ClusterLoad = ClusterLoad.NONE
+    sequential_failure: bool = False
     with_zk: bool = False
 
 
@@ -73,8 +73,6 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    TCP_PORT_RANGE = 0
-
     FAILURE_DETECTION_TIMEOUT = 1000
 
     DATA_AMOUNT = 5_000_000
@@ -84,16 +82,18 @@ class DiscoveryTest(IgniteTest):
     NETFILTER_SAVED_SETTINGS = os.path.join(IgniteTest.TEMP_PATH_ROOT, "discovery_test", "netfilter.bak")
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(V_2_10_0))
-    @matrix(kill_coordinator=[True, False],
-            nodes_to_kill=[2],
-            load_type=[ClusterLoad.ATOMIC,ClusterLoad.TRANSACTIONAL])
-    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(kill_coordinator=[False, True],
+            nodes_to_kill=[1, 2],
+            sequential=[False, True],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type, sequential):
         """
         Test nodes failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type,
+                                          sequential_failure=sequential)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -102,13 +102,15 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(kill_coordinator=[False, True],
             nodes_to_kill=[1, 2],
+            sequential=[False, True],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
+    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load_type, sequential):
         """
         Test node failure scenario with ZooKeeperSpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=True)
+                                          nodes_to_kill=nodes_to_kill, load_type=load_type,
+                                          sequential_failure=sequential, with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -120,12 +122,11 @@ class DiscoveryTest(IgniteTest):
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
-            discovery_spi = TcpDiscoverySpi(port_range=self.TCP_PORT_RANGE)
+            discovery_spi = TcpDiscoverySpi()
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            communication_spi=TcpCommunicationSpi(port_range=self.TCP_PORT_RANGE),
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
             caches=[CacheConfiguration(
                 name='test-cache',
@@ -137,7 +138,7 @@ class DiscoveryTest(IgniteTest):
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
         failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator,
-                                                          test_config.nodes_to_kill)
+                                                          test_config.nodes_to_kill, test_config.sequential_failure)
 
         if test_config.load_type is not ClusterLoad.NONE:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
@@ -310,43 +311,30 @@ def failed_pattern(failed_node_id=None):
     return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "")
 
 
-def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill, sequential=True):
+def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill, sequential):
     """Choose node to kill during test"""
     assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
     nodes = servers.nodes
-    coordinator = nodes[0].discovery_info().coordinator
-    to_kill = []
+
+    coord_idx = nodes.index([n for n in nodes if node_id(n) == nodes[0].discovery_info().coordinator][0])
+
+    to_kill = nodes[coord_idx:] + nodes[:coord_idx]
 
     if kill_coordinator:
-        to_kill.append(next(node for node in nodes if node_id(node) == coordinator))
-        nodes_to_kill -= 1
+        to_kill = to_kill[:nodes_to_kill] if sequential else to_kill[::2][:nodes_to_kill]
+    else:
+        to_kill = to_kill[1:] if sequential else to_kill[1::2]
+        idx = random.randint(0, len(to_kill) - nodes_to_kill)
+        to_kill = to_kill[idx:idx + nodes_to_kill]
 
-    if nodes_to_kill > 0:
-        if sequential:
-            sorted_nodes = sorted(nodes[:], key=lambda n: order(n))
+    survive = random.choice([node for node in servers.nodes if node not in to_kill])
 
-            idx = random.randint(1, len(sorted_nodes) - nodes_to_kill)
+    assert len(to_kill) == nodes_to_kill, "Unable to pick up required number of nodes to kill."
 
-            to_kill += [nodes[idx], nodes[idx+1]]
-        else:
-            while nodes_to_kill > 0:
-                proper_nodes = [n for n in nodes if node_id(n) != coordinator and len(
-                    [sel for sel in to_kill if order(sel) in range(order(n) - 1, order(n) + 1)]) == 0]
+    assert survive, "Unable to select survived node to monitor the cluster on it."
 
-                assert len(proper_nodes) > 0, "Unable to select nodes to kill. Check the test settings."
-
-                choice = random.choice(proper_nodes)
-
-                to_kill.append(choice)
-
-                nodes_to_kill -= 1
-
-        survive = random.choice([node for node in servers.nodes if node not in to_kill])
-
-        assert survive, "Unable to select survived node to monitor the cluster on it."
-
-        return to_kill, survive
+    return to_kill, survive
 
 
 def order(node):
