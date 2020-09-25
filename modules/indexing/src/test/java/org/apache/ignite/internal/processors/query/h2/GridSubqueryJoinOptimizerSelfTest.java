@@ -476,6 +476,45 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case to ensure that array on the left of the IN clause is handled properly.
+     */
+    @Test
+    public void testInClause6() {
+        String outerSqlTemplate = "select id, name from emp e where (id, name) in (%s) order by 1";
+        String subSql = "select (id, name) from emp";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure that expression on the left of the IN clause is handled properly.
+     */
+    @Test
+    public void testInClause7() {
+        String outerSqlTemplate = "select id, name from emp e where (2 + abs(id)) in (%s) order by 1";
+        String subSql = "select id from emp";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case to ensure that const on the left of the IN clause is handled properly.
+     */
+    @Test
+    public void testInClause8() {
+        String outerSqlTemplate = "select id, name from emp e where 42 in (%s) order by 1";
+        String subSql = "select id from emp";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
      * Simple case, but inner table has coumpound PK.
      */
     @Test

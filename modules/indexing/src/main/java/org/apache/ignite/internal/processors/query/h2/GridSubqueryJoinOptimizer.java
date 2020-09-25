@@ -521,29 +521,36 @@ public class GridSubqueryJoinOptimizer {
 
         GridSqlSelect subS = subQry.subquery();
 
-        GridSqlAst targetExpr = targetEl != null
+        GridSqlAst leftExpr = targetEl != null
             ? targetEl.child(childInd).child(0)
             : parent.where().child(0);
 
         // should be allowed only following variation:
         //      1) tbl_col IN (SELECT in_col FROM ...)
-        //      2) (c1, c2, ..., cn) IN (SELECT c1, c2, ..., cn FROM ...)
+        //      2) (c1, c2, ..., cn) IN (SELECT (c1, c2, ..., cn) FROM ...)
         //      3) const IN (SELECT in_col FROM ...)
         //      4) c1 + c2/const IN (SELECT in_col FROM ...)
-        if (targetExpr instanceof GridSqlArray) {
-            if (targetExpr.size() != subS.visibleColumns())
-                return false;
-        }
-        else if (targetEl instanceof GridSqlFunction)
-            return false;
-        else if (subS.visibleColumns() != 1)
+        if (subS.visibleColumns() != 1)
             return false;
 
         List<GridSqlElement> conditions = new ArrayList<>();
-        for (int i = 0; i < subS.visibleColumns(); i++) {
-            GridSqlElement el = targetExpr instanceof GridSqlArray ? targetExpr.child(i) : (GridSqlElement)targetExpr;
-            conditions.add(new GridSqlOperation(EQUAL, el, subS.columns(true).get(i)));
+
+        if (leftExpr instanceof GridSqlArray) {
+            GridSqlAst col = subS.columns(true).get(0);
+
+            if (!(col instanceof GridSqlArray) || leftExpr.size() != col.size())
+                return false;
+
+            for (int i = 0; i < col.size(); i++) {
+                GridSqlElement el = leftExpr.child(i);
+
+                conditions.add(new GridSqlOperation(EQUAL, el, col.child(i)));
+            }
         }
+        else if (targetEl instanceof GridSqlFunction)
+            return false;
+        else
+            conditions.add(new GridSqlOperation(EQUAL, leftExpr, subS.columns(true).get(0)));
 
         // save old condition and IN expression to restore them
         // in case of unsuccessfull pull out
