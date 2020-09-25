@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -53,9 +52,6 @@ public class CacheOperationContext implements Serializable {
     /** Read-repair flag. */
     private final boolean readRepair;
 
-    /** Client ID which operates over this projection. */
-    private final UUID subjId;
-
     /** Keep binary flag. */
     private final boolean keepBinary;
 
@@ -73,7 +69,6 @@ public class CacheOperationContext implements Serializable {
      */
     public CacheOperationContext() {
         skipStore = false;
-        subjId = null;
         keepBinary = false;
         expiryPlc = null;
         noRetries = false;
@@ -85,7 +80,6 @@ public class CacheOperationContext implements Serializable {
 
     /**
      * @param skipStore Skip store flag.
-     * @param subjId Subject ID.
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
@@ -93,7 +87,6 @@ public class CacheOperationContext implements Serializable {
      */
     public CacheOperationContext(
         boolean skipStore,
-        @Nullable UUID subjId,
         boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries,
@@ -103,7 +96,6 @@ public class CacheOperationContext implements Serializable {
         boolean allowAtomicOpsInTx
     ) {
         this.skipStore = skipStore;
-        this.subjId = subjId;
         this.keepBinary = keepBinary;
         this.expiryPlc = expiryPlc;
         this.noRetries = noRetries;
@@ -135,7 +127,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext keepBinary() {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             true,
             expiryPlc,
             noRetries,
@@ -143,15 +134,6 @@ public class CacheOperationContext implements Serializable {
             recovery,
             readRepair,
             allowAtomicOpsInTx);
-    }
-
-    /**
-     * Gets client ID for which this projection was created.
-     *
-     * @return Client ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -179,7 +161,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setSkipStore(boolean skipStore) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,
@@ -205,7 +186,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext withExpiryPolicy(ExpiryPolicy plc) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             plc,
             noRetries,
@@ -222,7 +202,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setNoRetries(boolean noRetries) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,
@@ -239,7 +218,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setDataCenterId(byte dataCenterId) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,
@@ -256,7 +234,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setRecovery(boolean recovery) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,
@@ -273,7 +250,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setReadRepair(boolean readRepair) {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,
@@ -310,7 +286,6 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setAllowAtomicOpsInTx() {
         return new CacheOperationContext(
             skipStore,
-            subjId,
             keepBinary,
             expiryPlc,
             noRetries,

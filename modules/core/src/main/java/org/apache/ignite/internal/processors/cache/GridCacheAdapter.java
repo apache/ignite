@@ -167,6 +167,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -494,7 +495,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
         CacheOperationContext opCtx = new CacheOperationContext(
             true,
-            null,
             false,
             null,
             false,
@@ -510,7 +510,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
-            null,
             true,
             null,
             false,
@@ -533,7 +532,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
-            null,
             false,
             plc,
             false,
@@ -549,7 +547,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
-            null,
             false,
             null,
             true,
@@ -565,7 +562,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final IgniteInternalCache<K, V> withAllowAtomicOpsInTx() {
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
-            null,
             false,
             null,
             false,
@@ -1672,7 +1668,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             keys,
             !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
-            opCtx != null ? opCtx.subjectId() : null,
+            securitySubjectId(ctx.kernalContext()),
             taskName,
             !(opCtx != null && opCtx.isKeepBinary()),
             opCtx != null && opCtx.recovery(),
@@ -1711,7 +1707,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 keys,
                 !ctx.config().isReadFromBackup(),
                 /*skip tx*/false,
-                opCtx != null ? opCtx.subjectId() : null,
+                securitySubjectId(ctx.kernalContext()),
                 taskName,
                 !(opCtx != null && opCtx.isKeepBinary()),
                 opCtx != null && opCtx.recovery(),

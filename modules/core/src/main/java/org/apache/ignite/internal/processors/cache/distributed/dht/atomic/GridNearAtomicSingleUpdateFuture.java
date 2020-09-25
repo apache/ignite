@@ -120,9 +120,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             keepBinary,
             recovery,
             remapCnt);
-
-        assert subjId != null;
-
         this.key = key;
         this.val = val;
     }

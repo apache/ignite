@@ -234,8 +234,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
@@ -285,7 +283,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer,
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
-            subjId,
+            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
@@ -358,8 +356,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
@@ -409,7 +405,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
             topVer,
-            subjId,
+            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             recovery,

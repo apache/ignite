@@ -159,12 +159,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             }, opCtx, /*retry*/false);
         }
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            subjId,
+            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             recovery,

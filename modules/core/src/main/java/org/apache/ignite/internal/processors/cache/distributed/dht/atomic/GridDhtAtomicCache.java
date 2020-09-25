@@ -136,6 +136,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Non-transactional partitioned cache.
@@ -474,9 +475,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(null, opCtx);
-
-        final UUID subjId0 = subjId;
+        final UUID subjId0 = securitySubjectId(ctx.kernalContext());
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
@@ -579,9 +578,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
-        final UUID subjId0 = subjId;
+        final UUID subjId0 = securitySubjectId(ctx.kernalContext());;
 
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
 
@@ -1102,8 +1099,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
-
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         final GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
@@ -1121,7 +1116,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
-            subjId,
+            securitySubjectId(ctx.kernalContext()),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
@@ -1305,7 +1300,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
-                ctx.subjectIdPerCall(null, opCtx),
+                securitySubjectId(ctx.kernalContext()),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
@@ -1328,7 +1323,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
-                ctx.subjectIdPerCall(null, opCtx),
+                securitySubjectId(ctx.kernalContext()),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
@@ -1364,8 +1359,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
-
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         Collection<GridCacheVersion> drVers = null;
@@ -1394,7 +1387,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
-            subjId,
+            securitySubjectId(ctx.kernalContext()),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
