@@ -233,10 +233,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
+        List<RexNode> projects = rel.projections();
+
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rel/*.getInput()*/.getRowType());
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        Iterable<Row> rowsIter = tbl.scan(ctx, filters);
+        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, rel.requiredColumns());
 
         return new ScanNode<>(ctx, rowsIter);
     }

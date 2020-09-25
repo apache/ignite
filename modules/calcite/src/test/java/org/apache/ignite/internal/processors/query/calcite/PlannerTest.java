@@ -1143,7 +1143,11 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                int[] proj,
+                Predicate<Row> filter
+            ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Igor", 0),
                     row(execCtx, 1, "Roman", 0)
@@ -1165,7 +1169,11 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                int[] proj,
+                Predicate<Row> filter
+            ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Calcite", 1),
                     row(execCtx, 1, "Ignite", 1)
@@ -1412,7 +1420,10 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                int[] proj,
+                Predicate<Row> filter) {
                 return Arrays.asList(
                     row(execCtx, 0, 1),
                     row(execCtx, 1, 2)
@@ -2695,7 +2706,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> root, Predicate<Row> filter) {
+        @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, int[] projFields, Predicate<Row> filter) {
             throw new AssertionError();
         }
 

@@ -24,8 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFa
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -72,11 +75,25 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private volatile List<GridDhtLocalPartition> reserved;
 
     /** */
-    public TableScan(ExecutionContext<Row> ectx, TableDescriptor desc, Predicate<Row> filters) {
+    private final Function<Row, Row> pointing;
+
+    /** */
+    private final ImmutableBitSet requiredColunms;
+
+    /** */
+    public TableScan(
+        ExecutionContext<Row> ectx,
+        TableDescriptor desc,
+        Predicate<Row> filters,
+        Function<Row, Row> pointing,
+        ImmutableBitSet requiredColunms
+    ) {
         this.ectx = ectx;
         cctx = desc.cacheContext();
         this.desc = desc;
         this.filters = filters;
+        this.pointing = pointing;
+        this.requiredColunms = requiredColunms;
 
         RelDataType rowType = desc.selectRowType(this.ectx.getTypeFactory());
 
@@ -170,11 +187,10 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
     /** */
     private synchronized void release() {
-        if (reserved == null)
+        if (F.isEmpty(reserved))
             return;
 
-        for (GridDhtLocalPartition part : reserved)
-            part.release();
+        reserved.forEach(GridDhtLocalPartition::release);
 
         reserved = null;
     }
@@ -192,6 +208,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         /** */
         private Row next;
 
+        /** */
         private IteratorImpl() {
             assert reserved != null;
 
@@ -250,11 +267,12 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (filters != null && !filters.test(r))
                         continue;
 
+                    r = pointing.apply(r);
+
                     next = r;
                     break;
-                } else {
+                } else
                     cur = null;
-                }
             }
         }
     }

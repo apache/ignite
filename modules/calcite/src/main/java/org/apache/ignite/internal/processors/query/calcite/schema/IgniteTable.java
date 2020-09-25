@@ -17,11 +17,13 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -69,7 +71,11 @@ public interface IgniteTable extends TranslatableTable {
      * @param filter
      * @return Rows iterator.
      */
-    public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter);
+    public <Row> Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        Predicate<Row> filter,
+        Function<Row, Row> pointing,
+        ImmutableBitSet requiredColunms);
 
     /**
      * Returns nodes mapping.

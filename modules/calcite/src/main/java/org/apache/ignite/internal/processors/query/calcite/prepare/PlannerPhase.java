@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ProjectableScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
@@ -82,8 +83,10 @@ public enum PlannerPhase {
                 LogicalFilterMergeRule.INSTANCE,
                 LogicalFilterProjectTransposeRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
-                PushFilterIntoScanRule.FILTER_INTO_INDEX_SCAN,
-                PushFilterIntoScanRule.FILTER_INTO_TABLE_SCAN,
+                //PushFilterIntoScanRule.FILTER_INTO_INDEX_SCAN,
+                //PushFilterIntoScanRule.FILTER_INTO_TABLE_SCAN,
+                //ProjectableScanRule.FILTER_WITH_PROJECTIONS_INTO_INDEX_SCAN,
+                ProjectableScanRule.FILTER_WITH_PROJECTIONS_INTO_TABLE_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
                 LogicalOrToUnionRule.INSTANCE,
                 UnionMergeRule.INSTANCE,

@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -126,6 +127,32 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
         upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
         buildIndexConditions();
+    }
+
+    /**
+     * Creates a TableScan.
+     * @param cluster Cluster that this relational expression belongs to
+     * @param traits Traits of this relational expression
+     * @param tbl Table definition.
+     * @param idxName Index name.
+     */
+    public IgniteIndexScan(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        String idxName,
+        ArrayList<RexNode> projections,
+        ImmutableBitSet requiredColumns
+    ) {
+        super(cluster, traits, ImmutableList.of(), tbl, null);
+
+        this.idxName = idxName;
+        RelCollation coll = TraitUtils.collation(traits);
+        collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
+        lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
+        upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
+        projections(projections);
+        requiredColumns(requiredColumns);
     }
 
     /**
@@ -378,6 +405,9 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
         double tableRows = table.getRowCount() * idxSelectivity;
 
         tableRows = RelMdUtil.addEpsilon(tableRows);
+
+        if (projections() != null)
+            tableRows += tableRows * projections().size();
 
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }

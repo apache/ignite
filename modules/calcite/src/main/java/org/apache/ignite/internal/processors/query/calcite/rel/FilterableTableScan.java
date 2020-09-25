@@ -12,12 +12,24 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+/** */
 public class FilterableTableScan extends TableScan {
     /** */
     protected final RexNode cond;
+
+    /** */
+    private List<RexNode> projections;
+
+    /** */
+    private ImmutableBitSet requiredColumns;
 
     /** */
     public FilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet,
@@ -68,5 +80,57 @@ public class FilterableTableScan extends TableScan {
             rows *= mq.getSelectivity(this, cond);
 
         return rows;
+    }
+
+    /**
+     * @return Projections.
+     */
+    public List<RexNode> projections() {
+        return projections;
+    }
+
+    /**
+     * @param prjs New projections.
+     */
+    public void projections(List<RexNode> prjs) {
+        projections = prjs;
+    }
+
+    /**
+     * @return Required columns.
+     */
+    public ImmutableBitSet requiredColumns() {
+        return requiredColumns;
+    }
+
+    /**
+     * @param requiredCols New required columns.
+     */
+    public void requiredColumns(ImmutableBitSet requiredCols) {
+        requiredColumns = requiredCols;
+    }
+
+    /** */
+    @Override public RelDataType deriveRowType() {
+        if (F.isEmpty(requiredColumns()))
+            return table.getRowType();
+
+        final List<RelDataTypeField> fieldList = table.getRowType().getFieldList();
+        final RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
+
+        int startIdx = 0;
+
+        ImmutableBitSet columns = requiredColumns();
+
+        for (;;) {
+            int idx = columns.nextSetBit(startIdx);
+
+            if (idx == -1)
+                break;
+
+            builder.add(fieldList.get(idx));
+        }
+
+        return builder.build();
     }
 }

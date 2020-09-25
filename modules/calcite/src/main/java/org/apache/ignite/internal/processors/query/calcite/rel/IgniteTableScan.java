@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -54,8 +59,37 @@ public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
         super(cluster, traits, ImmutableList.of(), tbl, cond);
     }
 
+    /**
+     * Creates a TableScan.
+     * @param cluster Cluster that this relational expression belongs to
+     * @param traits Traits of this relational expression
+     * @param tbl Table definition.
+     */
+    public IgniteTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        @Nullable RexNode cond,
+        @Nullable List<RexNode> projections,
+        @Nullable ImmutableBitSet requiredColumns) {
+        super(cluster, traits, ImmutableList.of(), tbl, null);
+
+        projections(projections);
+        requiredColumns(requiredColumns);
+    }
+
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        RelOptCost res = super.computeSelfCost(planner, mq);
+
+        if (projections() != null)
+            res.plus(planner.getCostFactory().makeCost(estimateRowCount(mq) * projections().size(), 0, 0));
+
+        return res;
     }
 }

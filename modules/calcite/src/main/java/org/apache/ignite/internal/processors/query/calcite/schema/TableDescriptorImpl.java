@@ -185,7 +185,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory) throws IgniteCheckedException {
+    @Override public <Row> Row toRow(
+        ExecutionContext<Row> ectx,
+        CacheDataRow row,
+        RowHandler.RowFactory<Row> factory
+    ) throws IgniteCheckedException {
         RowHandler<Row> handler = factory.handler();
 
         assert handler == ectx.rowHandler();

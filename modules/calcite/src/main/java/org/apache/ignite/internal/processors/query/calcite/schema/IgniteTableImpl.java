@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -117,8 +118,13 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
-        return new TableScan<>(execCtx, desc, filter);
+    @Override public <Row> Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        Predicate<Row> filter,
+        Function<Row, Row> pointing,
+        ImmutableBitSet requiredColunms
+    ) {
+        return new TableScan<>(execCtx, desc, filter, pointing, requiredColunms);
     }
 
     /** {@inheritDoc} */
