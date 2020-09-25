@@ -82,6 +82,12 @@ public interface MaintenanceRegistry {
     public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action);
 
     /**
+     * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
+     *                                              maintenance steps by workflow.
+     */
+    public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb);
+
+    /**
      * Gets {@link MaintenanceAction} object for given maintenance record ID.
      *
      * @param mntcId ID of {@link MaintenanceRecord}.

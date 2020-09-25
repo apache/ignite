@@ -17,13 +17,22 @@
 
 package org.apache.ignite.maintenance;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
+import java.util.UUID;
 
 /** */
-public interface MaintenanceCallback {
+public interface MaintenanceWorkflowCallback {
     /** */
-    public boolean prepareMaintenance();
+    public UUID maintenanceId();
 
     /** */
-    public List<MaintenanceAction> actions();
+    public boolean proceedWithMaintenance();
+
+    /** */
+    public List<MaintenanceAction> allActions();
+
+    /** */
+    @Nullable public MaintenanceAction automaticAction();
 }

@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -182,6 +183,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer.CHECKPOINT_LOCK_HOLD_COUNT;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer.checkpointFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -1968,13 +1970,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
 
-        MaintenanceRecord mntcRecord = mntcRegistry.maintenanceRecord(FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+        MaintenanceRecord mntcRecord = mntcRegistry.maintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
 
         if (mntcRecord != null) {
             log.warning("Maintenance record found, stop restoring memory");
 
+            File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
+
+            mntcRegistry.registerWorkflowCallback(
+                new CorruptedPdsMaintenanceCallback(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
+                    workDir,
+                    Arrays.asList(mntcRecord.actionParameters().split(File.separator)))
+            );
+
             mntcRegistry.registerMaintenanceAction(mntcRecord.id(),
-                new CleanCacheStoresMaintenanceAction(((FilePageStoreManager)cctx.pageStore()).workDir(),
+                new CleanCacheStoresMaintenanceAction(workDir,
                 mntcRecord.actionParameters().split(File.separator)));
 
             return;

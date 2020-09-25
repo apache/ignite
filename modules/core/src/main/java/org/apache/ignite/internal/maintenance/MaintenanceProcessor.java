@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +63,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** */
     private final Map<UUID, MaintenanceAction> registeredActions = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<UUID, MaintenanceWorkflowCallback> workflowCallbacks = new ConcurrentHashMap<>();
 
     /** */
     private volatile File mntcRecordsFile;
@@ -162,6 +166,16 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
+    @Override public boolean prepareMaintenance() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void proceedWithMaintenance() {
+
+    }
+
+    /** {@inheritDoc} */
     @Override public @Nullable MaintenanceRecord maintenanceRecord(UUID maitenanceId) {
         return registeredRecords.get(maitenanceId);
     }
@@ -205,6 +219,20 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 " maintenance action for non-existing record won't be registered: " + mntcId);
 
         registeredActions.put(mntcId, action);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb) {
+        if (inMemoryMode)
+            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
+
+        UUID mntcId = cb.maintenanceId();
+
+        if (!registeredRecords.containsKey(mntcId))
+            throw new IgniteException("Maintenance record for given ID not found," +
+                " maintenance action for non-existing record won't be registered: " + mntcId);
+
+
     }
 
     /** {@inheritDoc} */
