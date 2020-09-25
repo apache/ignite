@@ -486,22 +486,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public final GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            subjId,
-            false,
-            null,
-            false,
-            null,
-            false,
-            false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
-
-        return new GridCacheProxyImpl<>(ctx, this, opCtx);
-    }
-
-    /** {@inheritDoc} */
     @Override public final boolean skipStore() {
         return false;
     }

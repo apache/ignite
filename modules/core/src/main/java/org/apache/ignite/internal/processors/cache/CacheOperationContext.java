@@ -164,25 +164,6 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * See {@link IgniteInternalCache#forSubjectId(UUID)}.
-     *
-     * @param subjId Subject id.
-     * @return New instance of CacheOperationContext with specific subject id.
-     */
-    public CacheOperationContext forSubjectId(UUID subjId) {
-        return new CacheOperationContext(
-            skipStore,
-            subjId,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepair,
-            allowAtomicOpsInTx);
-    }
-
-    /**
      * @return Skip store.
      */
     public boolean skipStore() {

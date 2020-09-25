@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -276,22 +275,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         finally {
             gate.leave(prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        return new GridCacheProxyImpl<>(ctx, delegate,
-            opCtx != null ? opCtx.forSubjectId(subjId) :
-                new CacheOperationContext(
-                    false,
-                    subjId,
-                    false,
-                    null,
-                    false,
-                    null,
-                    false,
-                    false,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
     }
 
     /** {@inheritDoc} */
