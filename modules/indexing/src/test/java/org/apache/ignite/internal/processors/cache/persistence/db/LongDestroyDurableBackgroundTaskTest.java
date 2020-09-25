@@ -48,8 +48,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
@@ -718,7 +718,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     /**
      *
      */
-    private class DurableBackgroundTaskTestListener implements DbCheckpointListener {
+    private class DurableBackgroundTaskTestListener implements CheckpointListener {
         /**
          * Prefix for metastorage keys for durable background tasks.
          */

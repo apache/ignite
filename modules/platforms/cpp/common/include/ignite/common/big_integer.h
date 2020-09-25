@@ -32,7 +32,7 @@ namespace ignite
         /**
          * Big integer number implementation.
          */
-        class BigInteger
+        class IGNITE_IMPORT_EXPORT BigInteger
         {
             friend class Decimal;
         public:
@@ -471,7 +471,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if equal.
          */
-        bool IGNITE_IMPORT_EXPORT operator==(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator==(const BigInteger& val1, const BigInteger& val2);
 
         /**
          * Comparison operator.
@@ -480,7 +480,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if not equal.
          */
-        bool IGNITE_IMPORT_EXPORT operator!=(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator!=(const BigInteger& val1, const BigInteger& val2);
 
         /**
          * Comparison operator.
@@ -489,7 +489,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less.
          */
-        bool IGNITE_IMPORT_EXPORT operator<(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator<(const BigInteger& val1, const BigInteger& val2);
 
         /**
          * Comparison operator.
@@ -498,7 +498,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less or equal.
          */
-        bool IGNITE_IMPORT_EXPORT operator<=(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator<=(const BigInteger& val1, const BigInteger& val2);
 
         /**
          * Comparison operator.
@@ -507,7 +507,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter.
          */
-        bool IGNITE_IMPORT_EXPORT operator>(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator>(const BigInteger& val1, const BigInteger& val2);
 
         /**
          * Comparison operator.
@@ -516,7 +516,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter or equal.
          */
-        bool IGNITE_IMPORT_EXPORT operator>=(const BigInteger& val1, const BigInteger& val2);
+        IGNITE_IMPORT_EXPORT bool operator>=(const BigInteger& val1, const BigInteger& val2);
     }
 }
 
