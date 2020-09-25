@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -46,7 +46,7 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
             @Override protected IgniteIndexScan createNode(
                 RelOptCluster cluster,
                 IgniteIndexScan scan,
-                ArrayList<RexNode> projections,
+                List<RexNode> projections,
                 ImmutableBitSet requiredColumns
             ) {
                 return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(),
@@ -62,7 +62,7 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
             @Override protected IgniteTableScan createNode(
                 RelOptCluster cluster,
                 IgniteTableScan scan,
-                ArrayList<RexNode> projections,
+                List<RexNode> projections,
                 ImmutableBitSet requiredColumns
             ) {
                 return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), null, projections,
@@ -71,7 +71,7 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
         };
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, ArrayList<RexNode> projections, ImmutableBitSet requiredColumns);
+    protected abstract T createNode(RelOptCluster cluster, T scan, List<RexNode> projections, ImmutableBitSet requiredColumns);
 
     /**
      * Constructor.
@@ -89,56 +89,42 @@ public abstract class ProjectableScanRule<T extends FilterableTableScan> extends
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalProject proj = call.rel(0);
+        LogicalProject relProject = call.rel(0);
         T scan = call.rel(1);
 
         RelOptCluster cluster = scan.getCluster();
 
-        int colsCount = scan.getRowType().getFieldCount();
+        int colsCount = relProject.getInput().getRowType().getFieldCount();
 
-        List<RexNode> projections = proj.getProjects();
+        List<RexNode> projects = relProject.getProjects();
 
-        final ImmutableBitSet.Builder requiredColumns = ImmutableBitSet.builder();
+        final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
-        for (RexNode node : projections) {
-            node.accept(new RexShuttle() {
-                @Override public RexNode visitInputRef(RexInputRef ref) {
-                    requiredColumns.set(ref.getIndex());
+        RexShuttle shuttle = new RexShuttle() {
+            @Override public RexNode visitInputRef(RexInputRef ref) {
+                builder.set(ref.getIndex());
+                return ref;
+            }
+        };
 
-                    return ref;
-                }
-            });
-        }
+        shuttle.apply(projects);
 
-        ArrayList<RexNode> proj0 = new ArrayList<>(projections.size());
+        ImmutableBitSet requiredColumns = builder.build();
 
-        ImmutableBitSet requiredColumns0 = requiredColumns.build();
+        Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
+            relProject.getInput().getRowType().getFieldCount(), requiredColumns.cardinality());
 
-        Mappings.TargetMapping mapping = mappings0(colsCount, requiredColumns0);
+        for (Ord<Integer> ord : Ord.zip(requiredColumns))
+            targetMapping.set(ord.e, ord.i);
 
-        for (RexNode node : projections) {
-            RexNode n = node.accept(new RexShuttle() {
-                @Override public RexNode visitInputRef(RexInputRef ref) {
-                    return new RexInputRef(mapping.getTarget(ref.getIndex()), ref.getType());
-                }
-            });
-            proj0.add(n);
-        }
+        shuttle = new RexShuttle() {
+            @Override public RexNode visitInputRef(RexInputRef inputRef) {
+                return new RexInputRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
+            }
+        };
 
-        call.transformTo(createNode(cluster, scan, proj0, requiredColumns0));
-    }
+        projects = shuttle.apply(projects);
 
-    /** */
-    private Mappings.TargetMapping mappings0(int columnCnt, ImmutableBitSet requiredColumns) {
-        Mapping m = Mappings.create(MappingType.INVERSE_SURJECTION, columnCnt, requiredColumns.cardinality());
-
-        int realPos = 0;
-
-        for (int i = 0; i < columnCnt; ++i) {
-            if (requiredColumns.get(i))
-                m.set(i, realPos++);
-        }
-
-        return m;
+        call.transformTo(createNode(cluster, scan, projects, requiredColumns));
     }
 }

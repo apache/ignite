@@ -267,7 +267,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (filters != null && !filters.test(r))
                         continue;
 
-                    r = pointing.apply(r);
+                    if (pointing != null)
+                        r = pointing.apply(r);
 
                     next = r;
                     break;

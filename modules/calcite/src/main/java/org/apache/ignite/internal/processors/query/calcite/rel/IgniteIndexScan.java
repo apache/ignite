@@ -141,7 +141,7 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        ArrayList<RexNode> projections,
+        List<RexNode> projections,
         ImmutableBitSet requiredColumns
     ) {
         super(cluster, traits, ImmutableList.of(), tbl, null);

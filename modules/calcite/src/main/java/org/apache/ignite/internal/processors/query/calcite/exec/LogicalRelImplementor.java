@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -236,7 +237,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RexNode> projects = rel.projections();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
-        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rel/*.getInput()*/.getRowType());
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rel.getRowType());
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, rel.requiredColumns());

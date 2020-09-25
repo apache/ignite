@@ -57,9 +57,6 @@ public interface RowHandler<Row> {
         return factory(types);
     }
 
-    /** */
-    RowFactory<Row> factory(int size);
-
     RowFactory<Row> factory(Type... types);
 
     @SuppressWarnings("PublicInnerClass")

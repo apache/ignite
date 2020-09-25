@@ -128,6 +128,8 @@ public class FilterableTableScan extends TableScan {
             if (idx == -1)
                 break;
 
+            startIdx = idx + 1;
+
             builder.add(fieldList.get(idx));
         }
 

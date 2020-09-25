@@ -74,26 +74,4 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
             }
         };
     }
-
-    /** {@inheritDoc} */
-    @Override public RowFactory<Object[]> factory(int size) {
-        return new RowFactory<Object[]>() {
-            /** {@inheritDoc} */
-            @Override public RowHandler<Object[]> handler() {
-                return ArrayRowHandler.this;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Object[] create() {
-                return new Object[size];
-            }
-
-            /** {@inheritDoc} */
-            @Override public Object[] create(Object... fields) {
-                assert fields.length == size;
-
-                return fields;
-            }
-        };
-    }
 }
