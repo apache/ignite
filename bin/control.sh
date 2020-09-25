@@ -67,17 +67,6 @@ CP="${IGNITE_LIBS}:${IGNITE_HOME}/libs/optional/ignite-zookeeper/*"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
-#
-# Find available port for JMX
-#
-# You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
-#
-# This is executed when -nojmx is not specified
-#
-if [ "${NOJMXI:-}" == "0" ] ; then
-    findAvailableJmxPort
-fi
-
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
@@ -179,12 +168,12 @@ fi
 
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" ${JMX_MON:-} \
+        "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
          -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
     ;;
     *)
-        "$JAVA" ${JVM_OPTS} ${QUIET:-} ${JMX_MON:-} \
+        "$JAVA" ${JVM_OPTS} ${QUIET:-} \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
          -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
     ;;
