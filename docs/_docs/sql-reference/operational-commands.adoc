@@ -113,3 +113,120 @@ After executing the above command and *closing the JDBC connection*, all data wi
 image::images/set-streaming.png[]
 
 
+== KILL QUERY
+
+The `KILL QUERY` command allows you to cancel a running query.
+
+[source,sql]
+----
+KILL QUERY {ASYNC} '<query_id>'
+----
+
+=== Description
+`ASYNC` is an optional parameter which returns control immediately without waiting for the cancellation to finish, and `query_id` can be retrieved via the `SQL_QUERIES` view.
+
+When a query cancelled via the `KILL` command, all parts of the query running on all other nodes are cancelled.
+
+This command available via JMX and CMD, also:
+
+- `QueryMXBean#cancelSQL`
+- `./control.sh --kill SQL query_id`
+
+== KILL TRANSACTION
+
+The `KILL TRANSACTION` command allows you to cancel a running transaction.
+
+[source,sql]
+----
+KILL TRANSACTION 'xid'
+----
+
+=== Description
+`xid` of the transaction can be retrived via the `TRANSACTIONS` view.
+
+This command available via JMX and CMD, also:
+
+- `TransactionMXBean#cancel`
+- `./control.sh --kill TRANSACTION xid`
+
+== KILL SCAN
+
+The `KILL SCAN` command allows you to cancel a running scan query.
+
+[source,sql]
+----
+KILL SCAN 'origin_node_id' 'cache_name' query_id
+----
+
+=== Description
+`origin_node_id`, `cache_name`, `query_id` parameters can be retrived via the `SCAN_QUERIES`.
+
+This command available via JMX and CMD, also:
+
+- `QueryMXBean#cancelScan`
+- `./control.sh --kill SCAN origin_node_id cache_name query_id`
+
+=== Example
+
+[source,sql]
+----
+KILL SCAN '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1
+----
+
+== KILL COMPUTE
+
+The `KILL COMPUTE` command allows you to cancel a running compute.
+
+[source,sql]
+----
+KILL COMPUTE 'session_id'
+----
+
+=== Description
+`session_id` parameter can be retrived via the `TASKS` or `JOBS` view.
+
+This command available via JMX and CMD, also:
+
+- `ComputeMXBean#cancel`
+- `./control.sh --kill COMPUTE session_id`
+
+== KILL CONTINUOUS
+
+The `KILL CONTINUOUS` command allows you to cancel a running continuous query.
+
+[source,sql]
+----
+KILL CONTINUOUS 'origin_node_id', 'routine_id'
+----
+
+=== Description
+`origin_node_id` and `routine_id` can be retrived via `CONTINUOUS_QUERIES` view.
+
+This command available via JMX and CMD, also:
+
+- `QueryMXBean#cancelContinuous`
+- `./control.sh --kill CONTINUOUS origin_node_id routine_id`
+
+=== Example
+
+[source,sql]
+----
+KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635-be10-36a1c75267a7_12345'
+----
+
+== KILL SERVICE
+
+The `KILL SERVICE` command allows you to cance a running service.
+
+[source,sql]
+----
+KILL SERVICE 'name'
+----
+
+=== Description
+`name` of the service user specifies on deployment. It can be retrieved via `SERVICES` view, also.
+
+This command available via JMX and CMD, also:
+
+- `ServiceMXBean#cancel`
+- `./control.sh --kill SERVICE name`
