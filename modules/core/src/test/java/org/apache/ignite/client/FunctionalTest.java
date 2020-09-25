@@ -1056,7 +1056,7 @@ public class FunctionalTest {
                 // Start implicit transaction after explicit transaction has been closed by another thread.
                 cache.put(0, "value22");
 
-                ForkJoinPool.commonPool().submit(() -> assertEquals("value24", cache.get(0))).get();
+                ForkJoinPool.commonPool().submit(() -> assertEquals("value22", cache.get(0))).get();
 
                 // New explicit transaction can be started after current transaction has been closed by another thread.
                 try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
