@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -33,14 +34,20 @@ import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.Test;
@@ -99,23 +106,29 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_PUT},
             new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_PUT},
             new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_PUT},
+            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_PUT},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_PUT},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_PUT},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_PUT},
+            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_PUT},
 
             new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_READ},
             new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_READ},
             new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_READ},
+            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_READ},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_READ},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_READ},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_READ},
+            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_READ},
 
             new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_REMOVED},
             new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_REMOVED},
             new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_REMOVED},
+            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_REMOVED},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_REMOVED},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_REMOVED},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_REMOVED},
+            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_REMOVED},
 
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_LOCKED},
             new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_LOCKED},
@@ -205,7 +218,9 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_CACHE);
+        return super.getConfiguration(igniteInstanceName)
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setIncludeEventTypes(EventType.EVTS_CACHE);
     }
 
     /** */
@@ -218,7 +233,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private Consumer<String> operation() {
+    private ConsumerX<String> operation() {
         if ("thin".equals(expLogin)) {
             final IgniteClient client = startClient();
 
@@ -236,6 +251,43 @@ public class CacheEventsTest extends AbstractSecurityTest {
                     return n -> {
                         client.cache(n).put("key", "VALUE");
                         client.cache(n).remove("key");
+                    };
+            }
+        }
+        else if ("rest".equals(expLogin)) {
+            final GridRestCacheRequest req = new GridRestCacheRequest();
+
+            req.credentials(new SecurityCredentials("rest", ""));
+            req.key("key");
+            req.value("VALUE");
+
+            switch (evtType) {
+                case EVT_CACHE_OBJECT_PUT:
+                    return n -> {
+                        req.command(GridRestCommand.CACHE_PUT);
+                        req.cacheName(n);
+
+                        restProtocolHandler().handle(req);
+                    };
+
+                case EVT_CACHE_OBJECT_READ:
+                    return n -> {
+                        grid(SRV).cache(n).put("key", "VALUE");
+
+                        req.command(GridRestCommand.CACHE_GET);
+                        req.cacheName(n);
+
+                        restProtocolHandler().handle(req);
+                    };
+
+                case EVT_CACHE_OBJECT_REMOVED:
+                    return n -> {
+                        grid(SRV).cache(n).put("key", "VALUE");
+
+                        req.command(GridRestCommand.CACHE_REMOVE);
+                        req.cacheName(n);
+
+                        restProtocolHandler().handle(req);
                     };
             }
         }
@@ -269,5 +321,41 @@ public class CacheEventsTest extends AbstractSecurityTest {
         }
 
         throw new RuntimeException("Event type is not processed [evtType=" + evtType + ']');
+    }
+
+    /** */
+    private GridRestProtocolHandler restProtocolHandler() throws Exception{
+        Object restPrc = grid(SRV).context().components().stream()
+            .filter(c -> c instanceof GridRestProcessor).findFirst()
+            .orElseThrow(RuntimeException::new);
+
+        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
+
+        fld.setAccessible(true);
+
+        return  (GridRestProtocolHandler)fld.get(restPrc);
+    }
+
+    /**
+     * Consumer that can throw exceptions.
+     */
+    @FunctionalInterface
+    static interface ConsumerX<T> extends Consumer<T> {
+        /**
+         * Consumer body.
+         *
+         * @throws Exception If failed.
+         */
+        void acceptX(T t) throws Exception;
+
+        /** {@inheritDoc} */
+        @Override default void accept(T t) {
+            try {
+                acceptX(t);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }

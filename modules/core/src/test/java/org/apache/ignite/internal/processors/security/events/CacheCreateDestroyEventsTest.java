@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,15 +36,20 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,6 +57,8 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
@@ -119,7 +127,9 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
             new Object[] {2, SRV, EVT_CACHE_STARTED, 9},
             new Object[] {2, CLNT, EVT_CACHE_STARTED, 9},
             new Object[] {2, SRV, EVT_CACHE_STOPPED, 9},
-            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 9}
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 9},
+            new Object[] {1, "rest", EVT_CACHE_STARTED, 10},
+            new Object[] {1, "rest", EVT_CACHE_STOPPED, 11}
         );
     }
 
@@ -166,6 +176,32 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                 grid(login).cluster().state(ClusterState.INACTIVE);
 
                 grid(login).cluster().state(ClusterState.ACTIVE);
+            },
+            ccfgs -> { //10 rest client starts a cache
+                final GridRestCacheRequest req = new GridRestCacheRequest();
+
+                req.command(GET_OR_CREATE_CACHE);
+                req.credentials(new SecurityCredentials("rest", ""));
+                req.cacheName(ccfgs.iterator().next().getName());
+
+                try {
+                    restProtocolHandler().handle(req);
+                } catch (Exception e){
+                    throw new IgniteException(e);
+                }
+            },
+            ccfgs -> { //11 rest client stops a cache
+                final GridRestCacheRequest req = new GridRestCacheRequest();
+
+                req.command(DESTROY_CACHE);
+                req.credentials(new SecurityCredentials("rest", ""));
+                req.cacheName(ccfgs.iterator().next().getName());
+
+                try {
+                    restProtocolHandler().handle(req);
+                } catch (Exception e){
+                    throw new IgniteException(e);
+                }
             }
         );
     }
@@ -173,7 +209,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testDynamicCreateDestroyCache() throws Exception {
-        int expTimes = cacheCnt * (opNum != 9 && (SRV.equals(login) || "thin".equals(login)) ? 2 : 3);
+        int expTimes = cacheCnt * (opNum != 9 && (SRV.equals(login) || "thin".equals(login) || "rest".equals(login)) ? 2 : 3);
 
         Collection<CacheConfiguration> ccfgs = new ArrayList<>(cacheCnt);
 
@@ -234,12 +270,31 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         );
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_CACHE_LIFECYCLE);
+    /**
+     *
+     */
+    private GridRestProtocolHandler restProtocolHandler() throws Exception {
+        Object restPrc = grid(SRV).context().components().stream()
+            .filter(c -> c instanceof GridRestProcessor).findFirst()
+            .orElseThrow(RuntimeException::new);
+
+        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
+
+        fld.setAccessible(true);
+
+        return (GridRestProtocolHandler)fld.get(restPrc);
     }
 
-    /** */
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setIncludeEventTypes(EventType.EVTS_CACHE_LIFECYCLE);
+    }
+
+    /**
+     *
+     */
     private static boolean onEvent(CacheEvent evt, Collection<CacheConfiguration> ccfgs, String expLogin) {
         if (ccfgs.stream().noneMatch(ccfg -> ccfg.getName().equals(evt.cacheName())))
             return false;
