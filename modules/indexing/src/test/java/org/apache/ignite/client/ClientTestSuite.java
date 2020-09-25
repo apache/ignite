@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
@@ -40,6 +41,9 @@ import org.junit.runners.Suite;
     IgniteBinaryTest.class,
     LoadTest.class,
     ReliabilityTest.class,
+    ReliabilityTestAsync.class,
+    ReliabilityTestPartitionAware.class,
+    ReliabilityTestPartitionAwareAsync.class,
     SecurityTest.class,
     FunctionalQueryTest.class,
     IgniteBinaryQueryTest.class,
@@ -55,7 +59,8 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     ThinClientPartitionAwarenessDiscoveryTest.class,
-    ReliableChannelTest.class
+    ReliableChannelTest.class,
+    CacheAsyncTest.class
 })
 public class ClientTestSuite {
     // No-op.

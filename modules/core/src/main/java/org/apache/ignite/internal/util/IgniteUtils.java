@@ -325,6 +325,9 @@ public abstract class IgniteUtils {
     /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
+    /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
+    public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
+
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
@@ -4782,7 +4785,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendClassLoaderHash(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, DFLT_MBEAN_APPEND_CLASS_LOADER_ID)) {
             String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
             sb.a("clsLdr=").a(clsLdrHash).a(',');
@@ -11492,12 +11495,12 @@ public abstract class IgniteUtils {
 
         /**
          * @param delegate RWLock delegate.
-         * @param kctx Kernal context.
+         * @param log Ignite logger.
          * @param readLockThreshold ReadLock threshold timeout.
          *
          */
-        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, GridKernalContext kctx, long readLockThreshold) {
-            log = kctx.cache().context().logger(getClass());
+        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, IgniteLogger log, long readLockThreshold) {
+            this.log = log;
 
             readLock = new ReadLockTracer(delegate, log, readLockThreshold);
 

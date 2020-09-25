@@ -44,7 +44,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 {ClientOp.ClusterIsActive, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterChangeState, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterChangeWalState, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)}
+                {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxStart, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxEnd, new ClientProtocolVersion(1, 5, 0)},
             };
 
         /** */

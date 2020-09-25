@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -103,6 +104,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("IGNITE-13441")
     public void testRestarts() throws Exception {
         startGrids(3);
 

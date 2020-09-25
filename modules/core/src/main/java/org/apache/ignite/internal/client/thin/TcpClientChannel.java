@@ -37,8 +37,11 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -157,6 +160,9 @@ class TcpClientChannel implements ClientChannel {
     /** Closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
@@ -164,6 +170,9 @@ class TcpClientChannel implements ClientChannel {
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
+
+        Executor cfgExec = cfg.getAsyncContinuationExecutor();
+        asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         try {
             sock = createSocket(cfg);
@@ -217,6 +226,24 @@ class TcpClientChannel implements ClientChannel {
         long id = send(op, payloadWriter);
 
         return receive(id, payloadReader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> CompletableFuture<T> serviceAsync(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+    ) {
+        try {
+            long id = send(op, payloadWriter);
+
+            return receiveAsync(id, payloadReader);
+        } catch (Throwable t) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+            fut.completeExceptionally(t);
+
+            return fut;
+        }
     }
 
     /**
@@ -285,16 +312,71 @@ class TcpClientChannel implements ClientChannel {
         }
         catch (IgniteCheckedException e) {
             if (e.getCause() instanceof ClientError)
-                throw (ClientError)e.getCause();
+                throw new ClientException(e.getMessage(), e.getCause());
+
+            if (e.getCause() instanceof ClientConnectionException)
+                throw new ClientConnectionException(e.getMessage(), e.getCause());
 
             if (e.getCause() instanceof ClientException)
-                throw (ClientException)e.getCause();
+                throw new ClientException(e.getMessage(), e.getCause());
 
             throw new ClientException(e.getMessage(), e);
         }
         finally {
             pendingReqs.remove(reqId);
         }
+    }
+
+    /**
+     * Receives the response asynchronously.
+     *
+     * @param reqId ID of the request to receive the response for.
+     * @param payloadReader Payload reader from stream.
+     * @return Future for the operation.
+     */
+    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
+
+        assert pendingReq != null : "Pending request future not found for request " + reqId;
+
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+            try {
+                byte[] payload = payloadFut.get();
+
+                if (payload == null || payloadReader == null) {
+                    fut.complete(null);
+                } else {
+                    T res = payloadReader.apply(new PayloadInputChannel(this, payload));
+                    fut.complete(res);
+                }
+            } catch (Throwable t) {
+                fut.completeExceptionally(convertException(t));
+            } finally {
+                pendingReqs.remove(reqId);
+            }
+        }));
+
+        return fut;
+    }
+
+    /**
+     * Converts exception to {@link org.apache.ignite.internal.processors.platform.client.IgniteClientException}.
+     * @param e Exception to convert.
+     * @return Resulting exception.
+     */
+    private RuntimeException convertException(Throwable e) {
+        if (e.getCause() instanceof ClientError)
+            return new ClientException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientConnectionException)
+            return new ClientConnectionException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientException)
+            return new ClientException(e.getMessage(), e.getCause());
+
+        return new ClientException(e.getMessage(), e);
     }
 
     /**
@@ -385,7 +467,7 @@ class TcpClientChannel implements ClientChannel {
         else {
             resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
 
-            String errMsg = new BinaryReaderExImpl(null, resIn, null, true).readString();
+            String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
             err = new ClientServerError(errMsg, status, resId);
         }
@@ -536,7 +618,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
+        try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();
 
             if (success) {
@@ -622,7 +704,7 @@ class TcpClientChannel implements ClientChannel {
         private long totalBytesRead;
 
         /** Temporary buffer to read long, int and short values. */
-        private byte[] tmpBuf = new byte[Long.BYTES];
+        private final byte[] tmpBuf = new byte[Long.BYTES];
 
         /**
          * @param in Input stream.
@@ -718,7 +800,7 @@ class TcpClientChannel implements ClientChannel {
     /** SSL Socket Factory. */
     private static class ClientSslSocketFactory {
         /** Trust manager ignoring all certificate checks. */
-        private static TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
+        private static final TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
             @Override public X509Certificate[] getAcceptedIssuers() {
                 return null;
             }

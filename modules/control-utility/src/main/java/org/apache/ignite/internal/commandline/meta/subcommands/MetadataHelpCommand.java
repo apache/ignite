@@ -38,11 +38,6 @@ public class MetadataHelpCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean experimentalEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }

@@ -105,11 +105,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
@@ -192,6 +192,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -209,6 +210,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -237,9 +239,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** System view description for partition states. */
     public static final String PART_STATES_VIEW_DESC = "Distribution of cache group partitions across cluster nodes";
 
+    /** @see IgniteSystemProperties#IGNITE_ALLOW_START_CACHES_IN_PARALLEL */
+    public static final boolean DFLT_ALLOW_START_CACHES_IN_PARALLEL = true;
+
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, true);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL,
+            DFLT_ALLOW_START_CACHES_IN_PARALLEL);
 
     /** */
     private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
@@ -677,7 +683,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!ctx.clientNode())
             sharedCtx.time().addTimeoutObject(new PartitionDefferedDeleteQueueCleanupTask(
-                sharedCtx, Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000)));
+                sharedCtx, Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, DFLT_CACHE_REMOVE_ENTRIES_TTL)));
 
         // Notify shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -2744,6 +2750,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
             .collect(Collectors.toList());
 
+        // Wait until all evictions are finished.
         grpsToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
 
         if (!exchActions.cacheStopRequests().isEmpty())
@@ -2875,7 +2882,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (gctx != null && gctx.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
                     GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager)sharedCtx.database();
-                    mngr.removeCheckpointListener((DbCheckpointListener)gctx.offheap());
+                    mngr.removeCheckpointListener((CheckpointListener)gctx.offheap());
                 }
             });
         }

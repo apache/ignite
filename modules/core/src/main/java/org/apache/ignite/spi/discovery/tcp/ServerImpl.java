@@ -184,6 +184,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CONNECTED;
@@ -204,7 +206,8 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 @SuppressWarnings({"IfMayBeConditional"})
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
+    private static final int ENSURED_MSG_HIST_SIZE =
+        getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE);
 
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
@@ -302,7 +305,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
      */
-    private static final int JOINED_NODE_IDS_HISTORY_SIZE = getInteger(IGNITE_NODE_IDS_HISTORY_SIZE, 50);
+    private static final int JOINED_NODE_IDS_HISTORY_SIZE =
+        getInteger(IGNITE_NODE_IDS_HISTORY_SIZE, DFLT_NODE_IDS_HISTORY_SIZE);
 
     /** History of all node UUIDs that current node has seen. */
     private final GridBoundedLinkedHashSet<UUID> nodesIdsHist =
@@ -918,7 +922,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!openedSock && reconCnt == 2)
                             break;
 
-                        if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
+                        if (timeoutHelper.checkFailureTimeoutReached(e))
                             break;
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount())
                             break;
@@ -1572,7 +1576,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     break;
                 }
 
-                if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
+                if (timeoutHelper.checkFailureTimeoutReached(e))
                     break;
 
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
@@ -3473,12 +3477,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            // We re-create the helper here because it could be created earlier with wrong timeout on
-                            // message sending like IgniteConfiguration.failureDetectionTimeout. Here we are in the
-                            // state of conenction recovering and have to work with
-                            // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
-                            if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
+                            if (timeoutHelper == null)
+                                timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
                             boolean success = false;
 
@@ -3517,8 +3517,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    sndState.checkTimeout();
-
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
@@ -3626,20 +3624,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
-                                // Fastens failure detection.
-                                if (sndState != null && sndState.checkTimeout()) {
-                                    segmentLocalNodeOnSendFail(failedNodes);
-
-                                    return; // Nothing to do here.
-                                }
-
                                 if (!openSock)
                                     break; // Don't retry if we can not establish connection.
 
                                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
                                     break;
 
-                                if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
+                                if (timeoutHelper.checkFailureTimeoutReached(e))
                                     break;
                                 else if (!spi.failureDetectionTimeoutEnabled() && (e instanceof
                                     SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class))) {
@@ -3698,8 +3689,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     addFailedNodes(pendingMsg, failedNodes);
 
-                                    if (timeoutHelper == null)
-                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                    if (timeoutHelper == null) {
+                                        timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
+                                            lastRingMsgSentTime);
+                                    }
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3743,7 +3736,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3810,7 +3803,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
 
-                            if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
+                            if (timeoutHelper.checkFailureTimeoutReached(e))
                                 break;
 
                             if (!spi.failureDetectionTimeoutEnabled()) {
@@ -3847,11 +3840,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-                    else if (sndState != null && sndState.checkTimeout()) {
-                        segmentLocalNodeOnSendFail(failedNodes);
-
-                        return; // Nothing to do here.
-                    }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -3883,6 +3871,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             next = ring.nextNode(failedNodes);
                         }
+                    }
+
+                    if (sndState != null && sndState.isFailed()) {
+                        segmentLocalNodeOnSendFail(failedNodes);
+
+                        return; // Nothing to do here.
                     }
 
                     next = null;
@@ -6507,19 +6501,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /**
-     * Creates proper timeout helper taking in account current send state.
-     *
-     * @param sndState Current connection recovering state. Ignored if {@code null}.
-     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
-     * @return Timeout helper.
-     */
-    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
-        long lastOperationNanos) {
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos,
-            sndState == null ? -1 : sndState.failTimeNanos);
-    }
-
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
         lastRingMsgSentTime = System.nanoTime();
@@ -8216,22 +8197,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Checks if message sending has completely failed due to the timeout. Sets {@code RingMessageSendState#FAILED}
-         * if the timeout is reached.
-         *
-         * @return {@code True} if passed timeout is reached. {@code False} otherwise.
-         */
-        boolean checkTimeout() {
-            if (System.nanoTime() >= failTimeNanos) {
-                state = RingMessageSendState.FAILED;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /**
          * Marks last failed node as alive.
          *
          * @return {@code False} if all failed nodes marked as alive or incorrect state.
@@ -8242,6 +8207,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (--failedNodes <= 0) {
                     failedNodes = 0;
+
+                    if (System.nanoTime() - failTimeNanos >= 0) {
+                        state = RingMessageSendState.FAILED;
+
+                        return false;
+                    }
 
                     state = RingMessageSendState.STARTING_POINT;
                 }
