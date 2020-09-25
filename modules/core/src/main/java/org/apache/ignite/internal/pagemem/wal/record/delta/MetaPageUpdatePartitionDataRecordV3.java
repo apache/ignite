@@ -112,7 +112,7 @@ public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartition
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V3;
+        return RecordType.PARTITION_META_PAGE_DELTA_RECORD_V3;
     }
 
     /** {@inheritDoc} */

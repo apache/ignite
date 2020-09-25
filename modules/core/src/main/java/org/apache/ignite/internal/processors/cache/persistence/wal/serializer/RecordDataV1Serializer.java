@@ -397,7 +397,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
                     + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
 
-            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
+            case PARTITION_META_PAGE_DELTA_RECORD_V3:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
                     + /*allocatedIdxCandidate*/ 4 + /*link*/ 8 + /*encrypt page index*/ 4 + /*encrypt pages count*/4;
 
@@ -649,7 +649,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
+            case PARTITION_META_PAGE_DELTA_RECORD_V3:
                 res = new MetaPageUpdatePartitionDataRecordV3(in);
 
                 break;
@@ -1327,7 +1327,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
-            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
+            case PARTITION_META_PAGE_DELTA_RECORD_V3:
                 ((MetaPageUpdatePartitionDataRecord)rec).toBytes(buf);
 
                 break;

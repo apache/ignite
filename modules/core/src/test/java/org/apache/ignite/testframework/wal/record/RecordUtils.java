@@ -145,7 +145,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_DESTROY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V3;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_DELTA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.REENCRYPTION_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.RESERVED;
@@ -219,7 +219,7 @@ public class RecordUtils {
             put(RESERVED, RecordUtils::buildReservedRecord);
             put(ROLLBACK_TX_RECORD, RecordUtils::buildRollbackRecord);
             put(PARTITION_META_PAGE_UPDATE_COUNTERS_V2, RecordUtils::buildMetaPageUpdatePartitionDataRecordV2);
-            put(PARTITION_META_PAGE_UPDATE_COUNTERS_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
+            put(PARTITION_META_PAGE_DELTA_RECORD_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
             put(MASTER_KEY_CHANGE_RECORD, RecordUtils::buildMasterKeyChangeRecord);
             put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecord);
             put(REENCRYPTION_START_RECORD, RecordUtils::buildEncryptionStatusRecord);

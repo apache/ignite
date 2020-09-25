@@ -184,7 +184,7 @@ public class CacheGroupMetricsImpl {
 
         if (ctx.config().isEncryptionEnabled()) {
             mreg.register("ReencryptionFinished",
-                () -> !ctx.shared().kernalContext().encryption().reencryptionRequired(ctx.groupId()),
+                () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),
                 "The flag indicates whether reencryption is finished or not.");
 
             mreg.register("ReencryptionPagesLeft",
@@ -504,7 +504,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getPagesLeftForReencryption() {
-        if (!ctx.shared().kernalContext().encryption().reencryptionRequired(ctx.groupId()))
+        if (!ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()))
             return 0;
 
         long pagesLeft = 0;

@@ -83,12 +83,16 @@ public class BasicRateLimiterTest {
 
         long startTime = System.currentTimeMillis();
 
-        for (int i = 0; i <= totalOps; i++)
+        for (int i = 0; i < totalOps; i++)
             limiter.acquire(permitsPerOp);
 
         long timeSpent = System.currentTimeMillis() - startTime;
 
-        assertEquals((int)(permitsPerOp * totalOps / permitsPerSec), SECONDS.convert(timeSpent, MILLISECONDS));
+        // Rate limiter aims for an average rate of 1/s.
+        long expSecsPerOperation = Math.round(1 / permitsPerSec);
+        long actualSecsPerOperation = Math.round((double)timeSpent / totalOps / 1000);
+
+        assertEquals(expSecsPerOperation, actualSecsPerOperation);
     }
 
     /**

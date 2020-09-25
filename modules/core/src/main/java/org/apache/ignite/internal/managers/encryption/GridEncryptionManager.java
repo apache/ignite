@@ -799,9 +799,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * @param grpId Cache group ID.
-     * @return {@code True} If the specified cache group should be re-encrypted.
+     * @return {@code True} If the specified cache group is currently being re-encrypted.
      */
-    public boolean reencryptionRequired(int grpId) {
+    public boolean reencryptionInProgress(int grpId) {
         // The method guarantees not only the completion of the re-encryption, but also that the clearing of
         // unused keys is complete.
         return reencryptGroups.containsKey(grpId);
