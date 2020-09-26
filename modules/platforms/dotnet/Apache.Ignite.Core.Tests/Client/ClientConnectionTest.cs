@@ -159,6 +159,8 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
+            // TODO: Check that server-side connection count matches client count
+            // Do we have metrics for that?
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 var client1 = StartClient();
