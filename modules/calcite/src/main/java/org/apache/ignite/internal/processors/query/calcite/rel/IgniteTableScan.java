@@ -20,17 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -38,7 +31,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
+public class IgniteTableScan extends ProjectableFilterableTableScan implements IgniteRel {
     /**
      * Constructor used for deserialization.
      *
@@ -57,9 +50,8 @@ public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
     public IgniteTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
-        RelOptTable tbl,
-        @Nullable RexNode cond) {
-        super(cluster, traits, ImmutableList.of(), tbl, cond);
+        RelOptTable tbl) {
+        super(cluster, traits, ImmutableList.of(), tbl);
     }
 
     /**
@@ -72,27 +64,13 @@ public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        @Nullable RexNode cond,
         @Nullable List<RexNode> projections,
-        @Nullable ImmutableBitSet requiredColumns) {
-        super(cluster, traits, ImmutableList.of(), tbl, null);
-
-        projections(projections);
-        requiredColumns(requiredColumns);
+        @Nullable RexNode cond) {
+        super(cluster, traits, ImmutableList.of(), tbl, projections, cond);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        RelOptCost res = super.computeSelfCost(planner, mq);
-
-        if (projections() != null)
-            res.plus(planner.getCostFactory().makeCost(estimateRowCount(mq) * projections().size(), 0, 0));
-
-        return res;
     }
 }

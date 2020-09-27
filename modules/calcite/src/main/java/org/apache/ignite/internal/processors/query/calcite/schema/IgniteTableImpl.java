@@ -32,7 +32,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,9 +83,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         statistic = new StatisticsImpl();
     }
 
-    /** {@inheritDoc} */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return desc.apply(typeFactory);
+    /** */
+    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
+        return desc.rowType((IgniteTypeFactory)typeFactory, bitSet);
     }
 
     /** {@inheritDoc} */
@@ -105,7 +105,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             .replace(distribution())
             .replace(RewindabilityTrait.REWINDABLE);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTbl, null);
+        return new IgniteTableScan(cluster, traitSet, relOptTbl);
     }
 
     /** {@inheritDoc} */
@@ -115,17 +115,17 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(getIndex(idxName).collation());
 
-        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
+        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
     }
 
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filter,
-        Function<Row, Row> pointing,
-        ImmutableBitSet requiredColunms
+        Function<Row, Row> transformer,
+        ImmutableBitSet bitSet
     ) {
-        return new TableScan<>(execCtx, desc, filter, pointing, requiredColunms);
+        return new TableScan<>(execCtx, desc, filter, transformer, bitSet);
     }
 
     /** {@inheritDoc} */
@@ -147,28 +147,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             cctx.gate().leave();
         }
     }
-
-    /** */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
-        RelDataTypeFactory.Builder builder = typeFactory.builder();
-        final List<RelDataTypeField> fieldList = getRowType(typeFactory).getFieldList();
-
-        int startIdx = 0;
-
-        for (;;) {
-            int idx = bitSet.nextSetBit(startIdx);
-
-            if (idx == -1)
-                break;
-
-            startIdx = idx + 1;
-
-            builder.add(fieldList.get(idx));
-        }
-
-        return builder.build();
-    }
-
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {

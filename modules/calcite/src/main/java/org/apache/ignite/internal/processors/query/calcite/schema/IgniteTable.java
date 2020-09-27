@@ -42,8 +42,12 @@ public interface IgniteTable extends TranslatableTable {
      */
     TableDescriptor descriptor();
 
-    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet);
+    /** {@inheritDoc} */
+    default @Override RelDataType getRowType(RelDataTypeFactory typeFactory) {
+        return getRowType(typeFactory, null);
+    }
 
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet);
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
@@ -74,13 +78,15 @@ public interface IgniteTable extends TranslatableTable {
      *
      * @param execCtx Execution context.
      * @param filter
+     * @param transformer
+     * @param bitSet
      * @return Rows iterator.
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filter,
-        Function<Row, Row> pointing,
-        ImmutableBitSet requiredColunms);
+        Function<Row, Row> transformer,
+        ImmutableBitSet bitSet);
 
     /**
      * Returns nodes mapping.

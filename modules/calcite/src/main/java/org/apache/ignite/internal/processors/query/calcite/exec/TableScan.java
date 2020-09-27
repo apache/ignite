@@ -95,7 +95,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         this.pointing = pointing;
         this.requiredColunms = requiredColunms;
 
-        RelDataType rowType = desc.selectRowType(this.ectx.getTypeFactory());
+        RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.planningContext().topologyVersion();

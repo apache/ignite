@@ -1147,8 +1147,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
-                Function<Row, Row> pointing,
-                ImmutableBitSet requiredColunms
+                Function<Row, Row> transformer,
+                ImmutableBitSet bitSet
             ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Igor", 0),
@@ -1174,8 +1174,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
-                Function<Row, Row> pointing,
-                ImmutableBitSet requiredColunms
+                Function<Row, Row> transformer,
+                ImmutableBitSet bitSet
             ) {
                 return Arrays.asList(
                     row(execCtx, 0, "Calcite", 1),
@@ -1426,8 +1426,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
-                Function<Row, Row> pointing,
-                ImmutableBitSet requiredColunms) {
+                Function<Row, Row> transformer,
+                ImmutableBitSet bitSet) {
                 return Arrays.asList(
                     row(execCtx, 0, 1),
                     row(execCtx, 1, 2)
@@ -1450,7 +1450,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
+        String sql = "SELECT ID0 AS RES FROM PUBLIC.TEST_TABLE";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -2645,10 +2645,6 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** */
         private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
-        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
-            return null;
-        }
-
         /** */
         private TestTable(RelDataType type) {
             protoType = RelDataTypeImpl.proto(type);
@@ -2662,7 +2658,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTbl, null);
+            return new IgniteTableScan(cluster, traitSet, relOptTbl);
         }
 
         /** {@inheritDoc} */
@@ -2670,12 +2666,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
+            return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
         }
 
         /** {@inheritDoc} */
-        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-            return protoType.apply(typeFactory);
+        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
+            RelDataType rowType = protoType.apply(typeFactory);
+
+            if (bitSet != null) {
+                RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(typeFactory);
+                for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
+                    b.add(rowType.getFieldList().get(i));
+                rowType = b.build();
+            }
+
+            return rowType;
         }
 
         /** {@inheritDoc} */
@@ -2717,8 +2722,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             Predicate<Row> filter,
-            Function<Row, Row> pointing,
-            ImmutableBitSet requiredColunms
+            Function<Row, Row> transformer,
+            ImmutableBitSet bitSet
         ) {
             throw new AssertionError();
         }

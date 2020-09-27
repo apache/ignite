@@ -49,7 +49,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,7 +67,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
+public class IgniteIndexScan extends ProjectableFilterableTableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
@@ -110,23 +109,13 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-     * @param cond Filters for scan.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName,
-        @Nullable RexNode cond
-    ) {
-        super(cluster, traits, ImmutableList.of(), tbl, cond);
-
-        this.idxName = idxName;
-        RelCollation coll = TraitUtils.collation(traits);
-        collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
-        lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
-        upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
-        buildIndexConditions();
+        String idxName) {
+        this(cluster, traits, tbl, idxName, null, null);
     }
 
     /**
@@ -141,18 +130,17 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        List<RexNode> projections,
-        ImmutableBitSet requiredColumns
+        @Nullable List<RexNode> projections,
+        @Nullable RexNode cond
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, null);
+        super(cluster, traits, ImmutableList.of(), tbl, projections, cond);
 
         this.idxName = idxName;
         RelCollation coll = TraitUtils.collation(traits);
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
         upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
-        projections(projections);
-        requiredColumns(requiredColumns);
+        buildIndexConditions();
     }
 
     /**

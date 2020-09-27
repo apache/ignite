@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
-import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.UnionMergeRule;
@@ -29,10 +28,10 @@ import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConvert
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ProjectableScanRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ProjectScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
@@ -41,6 +40,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJo
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterProjectTransposeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalProjectMergeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalProjectRemoveRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -78,15 +79,16 @@ public enum PlannerPhase {
                 FilterJoinRule.PUSH_JOIN_CONDITION,
                 FilterJoinRule.FILTER_ON_JOIN,
                 ProjectConverterRule.INSTANCE,
-                ProjectMergeRule.INSTANCE,
+                LogicalProjectMergeRule.INSTANCE,
+                LogicalProjectRemoveRule.INSTANCE,
+                ProjectScanMergeRule.TABLE_SCAN,
+                ProjectScanMergeRule.INDEX_SCAN,
                 FilterConverterRule.INSTANCE,
                 LogicalFilterMergeRule.INSTANCE,
                 LogicalFilterProjectTransposeRule.INSTANCE,
+                FilterScanMergeRule.TABLE_SCAN,
+                FilterScanMergeRule.INDEX_SCAN,
                 TableModifyConverterRule.INSTANCE,
-                //PushFilterIntoScanRule.FILTER_INTO_INDEX_SCAN,
-                //PushFilterIntoScanRule.FILTER_INTO_TABLE_SCAN,
-                //ProjectableScanRule.FILTER_WITH_PROJECTIONS_INTO_INDEX_SCAN,
-                ProjectableScanRule.FILTER_WITH_PROJECTIONS_INTO_TABLE_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
                 LogicalOrToUnionRule.INSTANCE,
                 UnionMergeRule.INSTANCE,

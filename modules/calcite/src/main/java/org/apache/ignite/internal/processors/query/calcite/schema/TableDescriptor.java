@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Map;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -50,6 +50,11 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      */
     IgniteDistribution distribution();
 
+    /** {@inheritDoc} */
+    @Override default RelDataType apply(RelDataTypeFactory factory) {
+        return rowType((IgniteTypeFactory)factory, null);
+    }
+
     /**
      * Returns row type excluding effectively virtual fields.
      *
@@ -57,7 +62,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Row type for INSERT operation.
      */
     default RelDataType insertRowType(IgniteTypeFactory factory) {
-        return apply(factory);
+        return rowType(factory, null);
     }
 
     /**
@@ -67,8 +72,16 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Row type for SELECT operation.
      */
     default RelDataType selectRowType(IgniteTypeFactory factory) {
-        return apply(factory);
+        return rowType(factory, null);
     }
+
+    /**
+     * Returns row type.
+     *
+     * @param factory Type factory.
+     * @return Row type.
+     */
+    RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet bitSet);
 
     /**
      * Checks whether is possible to update a column with a given index.

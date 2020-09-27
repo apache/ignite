@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.mapping.MappingType;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -74,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -233,18 +238,51 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
-        RexNode condition = rel.condition();
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
         List<RexNode> projects = rel.projections();
+        RexNode cond = rel.condition();
+        ImmutableBitSet bitSet = null;
 
-        RelDataType cols =
-            rel.getTable().unwrap(IgniteTable.class).getRowType(rel.getCluster().getTypeFactory(),
-                rel.requiredColumns());
+        if (projects != null) {
+            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                    builder.set(ref.getIndex());
+                    return ref;
+                }
+            };
+
+            shuttle.apply(projects);
+
+            bitSet = builder.build();
+
+            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
+                tbl.getRowType(typeFactory).getFieldCount(), bitSet.cardinality());
+
+            for (Ord<Integer> ord : Ord.zip(bitSet))
+                targetMapping.set(ord.e, ord.i);
+
+            shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
+                }
+            };
+
+            projects = shuttle.apply(projects);
+
+            if (cond != null)
+                cond = shuttle.apply(cond);
+        }
+
+        RelDataType cols = tbl.getRowType(typeFactory, bitSet);
+
+        Predicate<Row> filters = cond == null ? null : expressionFactory.predicate(cond, cols);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
 
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, rel.requiredColumns());
+        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, bitSet);
 
         return new ScanNode<>(ctx, rowsIter);
     }

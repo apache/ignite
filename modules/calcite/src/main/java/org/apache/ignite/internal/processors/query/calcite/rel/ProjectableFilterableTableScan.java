@@ -13,35 +13,46 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class FilterableTableScan extends TableScan {
+public class ProjectableFilterableTableScan extends TableScan {
     /** */
     protected final RexNode cond;
 
     /** */
-    private List<RexNode> projections;
+    protected final List<RexNode> projections;
 
     /** */
-    private ImmutableBitSet requiredColumns;
+    public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet,
+        List<RelHint> hints, RelOptTable table) {
+        this(cluster, traitSet, hints, table, null, null);
+    }
 
     /** */
-    public FilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet,
-        List<RelHint> hints, RelOptTable table, @Nullable RexNode cond) {
+    public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet, List<RelHint> hints,
+        RelOptTable table, @Nullable List<RexNode> projections, @Nullable RexNode cond) {
         super(cluster, traitSet, hints, table);
+
+        this.projections = projections;
         this.cond = cond;
     }
 
     /** */
-    public FilterableTableScan(RelInput input) {
+    public ProjectableFilterableTableScan(RelInput input) {
         super(input);
         cond = input.getExpression("filters");
+        projections = input.get("projections") == null ? null : input.getExpressionList("projections");
+    }
+
+    /**
+     * @return Projections.
+     */
+    public List<RexNode> projections() {
+        return projections;
     }
 
     /** */
@@ -63,12 +74,18 @@ public class FilterableTableScan extends TableScan {
 
     /** */
     protected RelWriter explainTerms0(RelWriter pw) {
-        return pw.itemIf("filters", cond, cond != null);
+        return pw
+            .itemIf("filters", cond, cond != null)
+            .itemIf("projections", projections, projections != null);
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount();
+
+        if (projections != null)
+            tableRows += tableRows * projections.size();
+
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }
 
@@ -82,57 +99,11 @@ public class FilterableTableScan extends TableScan {
         return rows;
     }
 
-    /**
-     * @return Projections.
-     */
-    public List<RexNode> projections() {
-        return projections;
-    }
-
-    /**
-     * @param prjs New projections.
-     */
-    public void projections(List<RexNode> prjs) {
-        projections = prjs;
-    }
-
-    /**
-     * @return Required columns.
-     */
-    public ImmutableBitSet requiredColumns() {
-        return requiredColumns;
-    }
-
-    /**
-     * @param requiredCols New required columns.
-     */
-    public void requiredColumns(ImmutableBitSet requiredCols) {
-        requiredColumns = requiredCols;
-    }
-
     /** */
     @Override public RelDataType deriveRowType() {
-        if (F.isEmpty(requiredColumns()))
-            return table.getRowType();
+        if (projections != null)
+            return RexUtil.createStructType(Commons.context(this).typeFactory(), projections);
 
-        final List<RelDataTypeField> fieldList = table.getRowType().getFieldList();
-        final RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-
-        int startIdx = 0;
-
-        ImmutableBitSet columns = requiredColumns();
-
-        for (;;) {
-            int idx = columns.nextSetBit(startIdx);
-
-            if (idx == -1)
-                break;
-
-            startIdx = idx + 1;
-
-            builder.add(fieldList.get(idx));
-        }
-
-        return builder.build();
+        return table.getRowType();
     }
 }

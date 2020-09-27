@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -89,7 +87,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final int affField;
 
     /** */
-    private final BitSet virtualFlags;
+    private final ImmutableBitSet nonVirtualFields;
 
     /** */
     public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
@@ -102,7 +100,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
-        BitSet virtualFlags = new BitSet();
+        ImmutableBitSet.Builder nonVirtualFields = ImmutableBitSet.builder();
 
         descriptors.add(
             new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL));
@@ -125,7 +123,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 keyField = descriptors.size();
 
-                virtualFlags.set(0);
+                nonVirtualFields.set(1);
 
                 descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true, fldIdx++));
             }
@@ -134,12 +132,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
 
-                virtualFlags.set(1);
+                nonVirtualFields.set(0);
             }
             else {
                 GridQueryProperty prop = typeDesc.property(field);
 
-                virtualFlags.set(prop.key() ? 0 : 1);
+                nonVirtualFields.set(prop.key() ? 1 : 0);
 
                 descriptors.add(new FieldDescriptor(prop, fldIdx++));
             }
@@ -152,19 +150,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         this.keyField = keyField;
         this.valField = valField;
         this.affField = affField;
-        this.virtualFlags = virtualFlags;
+        this.nonVirtualFields = nonVirtualFields.build();
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType apply(RelDataTypeFactory factory) {
-        return rowType((IgniteTypeFactory) factory, false);
-    }
-
-    /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
-        return rowType(factory, true);
+        return rowType(factory, nonVirtualFields);
     }
 
     /** {@inheritDoc} */
@@ -198,15 +191,15 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         Row res = factory.create();
 
-        assert handler.columnCount(res) == descriptors.length;
+        assert handler.columnCount(res) == (bitset == null ? descriptors.length : bitset.cardinality());
 
-        for (int i = 0; i < descriptors.length; i++) {
-            if (bitset != null) {
-                if (bitset.get(i))
-                    handler.set(i, res, descriptors[i].value(ectx, cctx, row));
-            }
-            else
+        if (bitset == null) {
+            for (int i = 0; i < descriptors.length; i++)
                 handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+        }
+        else {
+            for (int i = 0, j = bitset.nextSetBit(0); j != -1; j = bitset.nextSetBit(j + 1), i++)
+                handler.set(i, res, descriptors[j].value(ectx, cctx, row));
         }
 
         return res;
@@ -411,15 +404,17 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         return F.t(Objects.requireNonNull(key), null);
     }
 
-    /** */
-    private RelDataType rowType(IgniteTypeFactory factory, boolean skipVirtual) {
+    /** {@inheritDoc} */
+    @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet bitSet) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
-        for (int i = 0; i < descriptors.length; i++) {
-            if (skipVirtual && virtualFlags.get(i))
-                continue;
-
-            b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+        if (bitSet == null) {
+            for (int i = 0; i < descriptors.length; i++)
+                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+        }
+        else {
+            for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
+                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
         return b.build();

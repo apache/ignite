@@ -131,13 +131,12 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteIndexScan rel) {
-        return new IgniteIndexScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.condition());
+        return new IgniteIndexScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.projections(), rel.condition());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
-        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.condition(), rel.projections(),
-            rel.requiredColumns());
+        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.projections(), rel.condition());
     }
 
     /** {@inheritDoc} */
