@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -47,13 +46,9 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.mapping.MappingType;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -142,7 +137,6 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
 
         this.idxName = idxName;
         RelCollation coll = TraitUtils.collation(traits);
-
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
         upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
@@ -398,10 +392,10 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount() * idxSelectivity;
 
-        tableRows = RelMdUtil.addEpsilon(tableRows);
-
         if (projections() != null)
             tableRows += tableRows * projections().size();
+
+        tableRows = RelMdUtil.addEpsilon(tableRows);
 
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }

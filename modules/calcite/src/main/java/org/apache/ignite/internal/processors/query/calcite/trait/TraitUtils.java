@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -32,6 +31,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -41,6 +41,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -49,8 +50,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.plan.RelOptUtil.permutation;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.calcite.rel.core.Project.getPartialMapping;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
@@ -331,5 +334,25 @@ public class TraitUtils {
             out.add(template.build());
 
         return out;
+    }
+
+    /** */
+    public static RelCollation projectCollation(RelCollation collation, List<RexNode> projects, RelDataType inputRowType) {
+        if (collation.getFieldCollations().isEmpty())
+            return RelCollations.EMPTY;
+
+        Mappings.TargetMapping mapping = permutation(projects, inputRowType).inverse();
+
+        return collation.apply(mapping);
+    }
+
+    /** */
+    public static IgniteDistribution projectDistribution(IgniteDistribution distribution, List<RexNode> projects, RelDataType inputRowType) {
+        if (distribution.getType() != HASH_DISTRIBUTED)
+            return distribution;
+
+        Mappings.TargetMapping mapping = getPartialMapping(inputRowType.getFieldCount(), projects);
+
+        return distribution.apply(mapping);
     }
 }

@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
@@ -229,8 +228,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet usedColumns = null;
-        List<RexNode> lowerCond = null;
-        List<RexNode> upperCond = null;
+        List<RexNode> lowerCond = rel.lowerIndexCondition();
+        List<RexNode> upperCond = rel.upperIndexCondition();
 
         if (projects != null) {
             final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
@@ -262,26 +261,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             if (condition != null)
                 condition = shuttle.apply(condition);
-
-            lowerCond = rel.lowerIndexCondition();
-
-            if (lowerCond != null)
-                lowerCond = shuttle.apply(lowerCond);
-
-            upperCond = rel.upperIndexCondition();
-
-            if (upperCond != null)
-                upperCond = shuttle.apply(upperCond);
         }
 
         RelDataType cols = tbl.getRowType(typeFactory, usedColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
-
         Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-
         Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
-
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
 
         IgniteIndex idx = tbl.getIndex(rel.indexName());
@@ -292,11 +278,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
+        RexNode condition = rel.condition();
+        List<RexNode> projects = rel.projections();
+
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        List<RexNode> projects = rel.projections();
-        RexNode cond = rel.condition();
         ImmutableBitSet usedColumns = null;
 
         if (projects != null) {
@@ -327,13 +314,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             projects = shuttle.apply(projects);
 
-            if (cond != null)
-                cond = shuttle.apply(cond);
+            if (condition != null)
+                condition = shuttle.apply(condition);
         }
 
         RelDataType cols = tbl.getRowType(typeFactory, usedColumns);
 
-        Predicate<Row> filters = cond == null ? null : expressionFactory.predicate(cond, cols);
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
 
         Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, usedColumns);

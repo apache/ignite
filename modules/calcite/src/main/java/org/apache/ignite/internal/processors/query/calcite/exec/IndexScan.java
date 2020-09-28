@@ -126,7 +126,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet usedColumns
+        @Nullable ImmutableBitSet requiredColunms
     ) {
         this.ectx = ectx;
         this.desc = desc;
@@ -134,7 +134,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         kctx = cctx.kernalContext();
         coCtx = cctx.cacheObjectContext();
 
-        RelDataType rowType = desc.selectRowType(this.ectx.getTypeFactory());
+        RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         this.idx = idx;
@@ -145,7 +145,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         partsArr = ectx.localPartitions();
         mvccSnapshot = ectx.mvccSnapshot();
         this.rowTransformer = rowTransformer;
-        requiredColunms = usedColumns;
+        this.requiredColunms = requiredColunms;
     }
 
     /** {@inheritDoc} */
