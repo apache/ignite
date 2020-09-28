@@ -421,6 +421,34 @@
           url: extensions-and-integrations/streaming/zeromq-streamer
         - title: Twitter Streamer
           url: extensions-and-integrations/streaming/twitter-streamer
+- title: C# and .NET Specific
+  items:
+    - title: Configuration Options
+      url: net-specific/configuration-options
+    - title: Deployment Options
+      url: net-specific/deployment-options
+    - title: Standalone Nodes
+      url: net-specific/standalone-nodes
+    - title: Logging
+      url: net-specific/logging
+    - title: LINQ
+      url: net-specific/linq
+    - title: Java Services Execution
+      url: net-specific/java-services-execution
+    - title: Plugins
+      url: net-specific/plugins
+    - title: Serialization
+      url: net-specific/serialization
+    - title: Cross-Platform Support
+      url: net-specific/cross-platform-support
+    - title: Platform Interoperability
+      url: net-specific/platform-interoperability
+    - title: Remote Assembly Loading
+      url: net-specific/remote-assembly-loading
+    - title: Troubleshooting
+      url: net-specific/troubleshooting
+    - title: Integrations
+      url: net-specific/integrations
 - title: Plugins
   url: plugins
 - title: SQL Reference
