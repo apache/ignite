@@ -177,14 +177,16 @@ namespace Apache.Ignite.Core.Tests.Client
                 var client3 = StartClient();
                 Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
 
+                // ReSharper disable AccessToDisposedClosure
                 client1.Dispose();
-                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+                TestUtils.WaitForTrueCondition(() => 2 == GetThinClientConnections(ignite).Length);
                 
                 client2.Dispose();
-                Assert.AreEqual(1, GetThinClientConnections(ignite).Length);
+                TestUtils.WaitForTrueCondition(() => 1 == GetThinClientConnections(ignite).Length);
                 
                 client3.Dispose();
-                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
+                TestUtils.WaitForTrueCondition(() => 0 == GetThinClientConnections(ignite).Length);
+                // ReSharper restore AccessToDisposedClosure
             }
         }
 
