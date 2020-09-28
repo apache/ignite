@@ -1845,7 +1845,6 @@ public class IgniteTxHandler {
                                                 /*readThrough*/false,
                                                 /*updateMetrics*/false,
                                                 /*evt*/false,
-                                                securitySubjectId(ctx.kernalContext()),
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,

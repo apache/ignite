@@ -78,7 +78,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Non-transactional local cache.
@@ -458,7 +457,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                         null,
                                         /*update-metrics*/false,
                                         /*event*/evt,
-                                        securitySubjectId(ctx.kernalContext()),
                                         null,
                                         taskName,
                                         expiry,
@@ -486,7 +484,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                         /*read-through*/false,
                                         /*update-metrics*/true,
                                         /*event*/evt,
-                                        securitySubjectId(ctx.kernalContext()),
                                         null,
                                         taskName,
                                         expiry,
@@ -945,7 +942,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             true,
                             filters,
                             intercept,
-                            securitySubjectId(ctx.kernalContext()),
                             taskName,
                             false);
 
@@ -1097,7 +1093,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             /*read-through*/true,
                             /*update-metrics*/true,
                             /*event*/true,
-                            securitySubjectId(ctx.kernalContext()),
                             entryProcessor,
                             taskName,
                             null,
@@ -1237,7 +1232,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /*update-metrics*/true,
                                 /*event*/true,
-                                securitySubjectId(ctx.kernalContext()),
                                 null,
                                 taskName,
                                 null,
@@ -1272,7 +1266,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /*update-metrics*/true,
                                 /*event*/true,
-                                securitySubjectId(ctx.kernalContext()),
                                 null,
                                 taskName,
                                 null,
@@ -1429,7 +1422,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     true,
                     null,
                     false,
-                    securitySubjectId(ctx.kernalContext()),
                     taskName,
                     transformed);
 

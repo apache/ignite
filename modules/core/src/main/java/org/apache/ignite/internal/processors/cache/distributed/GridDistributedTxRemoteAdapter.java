@@ -90,7 +90,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -655,7 +654,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 null,
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer,
-                                                securitySubjectId(cctx.kernalContext()),
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 txEntry.updateCounter());
@@ -679,7 +677,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer,
-                                                securitySubjectId(cctx.kernalContext()),
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 txEntry.updateCounter());
@@ -716,7 +713,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             null,
                                             replicate ? DR_BACKUP : DR_NONE,
                                             near() ? null : explicitVer,
-                                            securitySubjectId(cctx.kernalContext()),
                                             resolveTaskName(),
                                             dhtVer,
                                             txEntry.updateCounter());

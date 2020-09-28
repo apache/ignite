@@ -1448,7 +1448,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         /*read-through*/false,
                                         /*update-metrics*/true,
                                         /*event notification*/req.returnValue(i),
-                                        securitySubjectId(ctx.kernalContext()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,

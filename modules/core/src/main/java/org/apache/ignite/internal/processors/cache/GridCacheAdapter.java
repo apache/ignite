@@ -2107,7 +2107,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 if (storeEnabled) {
                                     res = entry.innerGetAndReserveForLoad(updateMetrics,
                                         evt,
-                                        securitySubjectId(ctx.kernalContext()),
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
@@ -2130,7 +2129,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         null,
                                         updateMetrics,
                                         evt,
-                                        securitySubjectId(ctx.kernalContext()),
                                         null,
                                         taskName,
                                         expiry,
@@ -5320,7 +5318,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*readThrough*/false,
             /*metrics*/false,
             /*evt*/false,
-            /*subjId*/null,
             /*transformClo*/null,
             /*taskName*/null,
             /*expiryPlc*/null,

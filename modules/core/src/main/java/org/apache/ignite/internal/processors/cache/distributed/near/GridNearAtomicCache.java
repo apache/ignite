@@ -203,7 +203,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     expireTime,
                     req.keepBinary(),
                     req.nodeId(),
-                    req.subjectId(),
                     taskName,
                     req.operation() == TRANSFORM);
             }
@@ -220,7 +219,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @param nodeId Node ID.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param transformedValue {@code True} if transformed value.
      * @throws IgniteCheckedException If failed.
@@ -233,7 +231,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         long expireTime,
         boolean keepBinary,
         UUID nodeId,
-        UUID subjId,
         String taskName,
         boolean transformedValue) throws IgniteCheckedException {
         try {
@@ -271,7 +268,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        subjId,
                         taskName,
                         null,
                         null,
@@ -375,7 +371,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             null,
                             false,
                             intercept,
-                            req.subjectId(),
                             taskName,
                             null,
                             null,

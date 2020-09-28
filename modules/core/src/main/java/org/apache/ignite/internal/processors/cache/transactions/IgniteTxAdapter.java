@@ -522,10 +522,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public UUID subjectId() {
-        if (subjId != null)
-            return subjId;
-
-        return originatingNodeId();
+        return subjId;
     }
 
     /** {@inheritDoc} */
@@ -1652,7 +1649,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*read through*/false,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
-                    /*subjId*/subjId,
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
