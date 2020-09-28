@@ -163,8 +163,13 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
+                
                 var client1 = StartClient();
-                Assert.AreEqual(1, GetThinClientConnections(ignite).Length);
+                var thinClientConnections = GetThinClientConnections(ignite);
+                Assert.AreEqual(1, thinClientConnections.Length);
+                StringAssert.Contains(
+                    "rmtAddr=" + client1.GetConnections().Single().LocalEndPoint,
+                    thinClientConnections.Single());
 
                 var client2 = StartClient();
                 Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
