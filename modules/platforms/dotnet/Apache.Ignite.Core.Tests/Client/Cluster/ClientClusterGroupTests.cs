@@ -169,10 +169,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestClusterGroupForPredicateThrowsExceptionIfItNull()
         {
-            TestDelegate action = () => Client.GetCluster().ForPredicate(null);
-
-            var ex = Assert.Throws<ArgumentNullException>(action);
-            Assert.AreEqual("Value cannot be null." + Environment.NewLine + "Parameter name: p", ex.Message);
+            Assert.Throws<ArgumentNullException>(() => Client.GetCluster().ForPredicate(null));
         }
 
         /// <summary>
