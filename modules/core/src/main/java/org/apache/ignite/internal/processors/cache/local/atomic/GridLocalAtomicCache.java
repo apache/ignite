@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -335,7 +334,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
@@ -543,7 +541,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             null,
             opCtx == null || !opCtx.skipStore(),
             false,
-            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),

@@ -658,7 +658,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -672,7 +671,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             null,
             opCtx == null || !opCtx.skipStore(),
             /*don't check local tx. */false,
-            subjId,
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
@@ -687,7 +685,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Keys to get
      * @param readerArgs Reader will be added if not null.
      * @param readThrough Read through flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
@@ -699,7 +696,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Collection<KeyCacheObject> keys,
         @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -711,7 +707,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             readerArgs,
             readThrough,
             /*don't check local tx. */false,
-            subjId,
             taskName,
             false,
             expiry,
@@ -731,7 +726,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param addReaders Add readers flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
@@ -745,7 +739,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean addReaders,
         boolean readThrough,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -759,7 +752,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             keys,
             readThrough,
             topVer,
-            subjId,
             taskNameHash,
             expiry,
             skipVals,
@@ -780,7 +772,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param expiry Expiry.
      * @param skipVals Skip vals flag.
@@ -795,7 +786,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean addRdr,
         boolean readThrough,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -811,7 +801,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             addRdr,
             readThrough,
             topVer,
-            subjId,
             taskNameHash,
             expiry,
             skipVals,
@@ -841,7 +830,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.addReader(),
                 req.readThrough(),
                 req.topologyVersion(),
-                req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
@@ -947,7 +935,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),
-                req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),

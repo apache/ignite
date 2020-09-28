@@ -462,7 +462,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final K key,
         final boolean forcePrimary,
         final boolean skipTx,
-        @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
         final boolean skipVals,
@@ -475,7 +474,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final UUID subjId0 = securitySubjectId(ctx.kernalContext());
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
@@ -485,7 +483,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             @Override public IgniteInternalFuture<V> apply() {
                 return getAsync0(ctx.toCacheKeyObject(key),
                     forcePrimary,
-                    subjId0,
                     taskName,
                     deserializeBinary,
                     recovery,
@@ -507,7 +504,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean readRepair) throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
-            null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
@@ -522,7 +518,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
@@ -532,7 +527,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         return getAllAsyncInternal(keys,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
@@ -545,7 +539,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param readRepair Read Repair flag.
@@ -557,7 +550,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<Map<K, V>> getAllAsyncInternal(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
-        @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
@@ -578,8 +570,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final UUID subjId0 = securitySubjectId(ctx.kernalContext());;
-
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
@@ -589,7 +579,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 @Override public IgniteInternalFuture<Map<K, V>> apply() {
                     return getAllAsync0(ctx.cacheKeysView(keys),
                         forcePrimary,
-                        subjId0,
                         taskName,
                         deserializeBinary,
                         recovery,
@@ -604,7 +593,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             return getAllAsync0(ctx.cacheKeysView(keys),
                 forcePrimary,
-                subjId0,
                 taskName,
                 deserializeBinary,
                 recovery,
@@ -1415,7 +1403,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param key Key.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param readRepair Read Repair flag.
@@ -1427,7 +1414,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private IgniteInternalFuture<V> getAsync0(KeyCacheObject key,
         boolean forcePrimary,
-        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -1461,7 +1447,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             topVer,
             !skipStore,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiry,
@@ -1482,7 +1467,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -1493,7 +1477,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
-        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -1593,7 +1576,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             /*update-metrics*/false,
                                             /*event*/evt,
-                                            subjId,
+                                            securitySubjectId(ctx.kernalContext()),
                                             null,
                                             taskName,
                                             expiry,
@@ -1612,7 +1595,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             /*read-through*/false,
                                             /*update-metrics*/false,
                                             /*event*/evt,
-                                            subjId,
+                                            securitySubjectId(ctx.kernalContext()),
                                             null,
                                             taskName,
                                             expiry,
@@ -1689,7 +1672,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             keys,
             !skipStore,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
@@ -3463,7 +3445,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 req.conflictVersion(i),
                                 false,
                                 intercept,
-                                req.subjectId(),
+                                securitySubjectId(ctx.kernalContext()),
                                 taskName,
                                 prevVal,
                                 updateIdx,

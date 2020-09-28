@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -57,6 +56,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+
 /**
  * Colocated get future.
  */
@@ -76,7 +77,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param recovery Recovery mode flag.
@@ -92,7 +92,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -109,7 +108,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             keys,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiryPlc,
@@ -265,7 +263,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         false,
                         readThrough,
                         topVer,
-                        subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
@@ -518,7 +515,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
+                                securitySubjectId(cctx.kernalContext()),
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -537,7 +534,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 /*read-through*/false,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
+                                securitySubjectId(cctx.kernalContext()),
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -692,7 +689,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 keys,
                 readThrough,
                 topVer,
-                subjId,
+                securitySubjectId(cctx.kernalContext()),
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

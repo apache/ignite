@@ -69,7 +69,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Near cache for atomic cache.
@@ -416,7 +415,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -439,7 +437,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             recovery,

@@ -210,7 +210,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -223,7 +222,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -244,7 +242,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             !skipStore,
             forcePrimary,
             txx,
-            subjId,
             taskName,
             deserializeBinary,
             expiry,

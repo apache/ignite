@@ -633,12 +633,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param tx Transaction.
      * @param key Key.
      * @param reload flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @return Read value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload, UUID subjId,
+    @Nullable protected Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload,
         String taskName) throws IgniteCheckedException {
         return cctx.store().load(tx, key);
     }
@@ -898,7 +897,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            Object storeVal = readThrough(tx0, key, false, subjId, taskName);
+            Object storeVal = readThrough(tx0, key, false, taskName);
 
             ret = cctx.toCacheObject(storeVal);
         }
@@ -1003,7 +1002,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName = cctx.kernalContext().job().currentTaskName();
 
         // Check before load.
-        CacheObject ret = cctx.toCacheObject(readThrough(null, key, true, cctx.localNodeId(), taskName));
+        CacheObject ret = cctx.toCacheObject(readThrough(null, key, true, taskName));
 
         boolean touch = false;
 
@@ -1957,7 +1956,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (readThrough && needVal && old == null &&
                 (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
-                old0 = readThrough(null, key, false, subjId, taskName);
+                old0 = readThrough(null, key, false, taskName);
 
                 old = cctx.toCacheObject(old0);
 

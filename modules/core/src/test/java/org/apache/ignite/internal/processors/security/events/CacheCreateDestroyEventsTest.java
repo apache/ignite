@@ -230,15 +230,13 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
 
         UUID lsnrId = grid(LISTENER_NODE).events().remoteListen(new IgniteBiPredicate<UUID, Event>() {
             @Override public boolean apply(UUID uuid, Event evt) {
-                if (onEvent((CacheEvent)evt, ccfgs, login))
-                    locLoginCnt.incrementAndGet();
+                onEvent((CacheEvent)evt, locLoginCnt, ccfgs, login);
 
                 return true;
             }
         }, new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                if (onEvent((CacheEvent)evt, ccfgs, login))
-                    rmtLoginCnt.incrementAndGet();
+                onEvent((CacheEvent)evt, rmtLoginCnt, ccfgs, login);
 
                 return true;
             }
@@ -295,9 +293,11 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /**
      *
      */
-    private static boolean onEvent(CacheEvent evt, Collection<CacheConfiguration> ccfgs, String expLogin) {
+    private static void onEvent(CacheEvent evt, AtomicInteger cntr, Collection<CacheConfiguration> ccfgs, String expLogin) {
         if (ccfgs.stream().noneMatch(ccfg -> ccfg.getName().equals(evt.cacheName())))
-            return false;
+            return;
+
+        cntr.incrementAndGet();
 
         evtsLatch.countDown();
 
@@ -312,7 +312,5 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-
-        return true;
     }
 }

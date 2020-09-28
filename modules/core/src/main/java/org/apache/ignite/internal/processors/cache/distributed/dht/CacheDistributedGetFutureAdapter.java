@@ -101,9 +101,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** Remap count. */
     protected volatile int remapCnt;
 
-    /** Subject ID. */
-    protected UUID subjId;
-
     /** Task name. */
     protected String taskName;
 
@@ -137,7 +134,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -150,7 +146,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -167,7 +162,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.keys = keys;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;

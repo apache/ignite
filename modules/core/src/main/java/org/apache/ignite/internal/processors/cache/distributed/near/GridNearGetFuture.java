@@ -55,6 +55,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+
 /**
  *
  */
@@ -72,7 +74,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param forcePrimary If {@code true} get will be performed on primary node even if
      *      called on backup node.
      * @param tx Transaction.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -86,7 +87,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean readThrough,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx tx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -100,7 +100,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             keys,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiryPlc,
@@ -242,7 +241,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         false,
                         readThrough,
                         topVer,
-                        subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
@@ -356,7 +354,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/true,
                             /*event*/!skipVals,
-                            subjId,
+                            securitySubjectId(cctx.kernalContext()),
                             null,
                             taskName,
                             expiryPlc,
@@ -375,7 +373,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            subjId,
+                            securitySubjectId(cctx.kernalContext()),
                             null,
                             taskName,
                             expiryPlc,
@@ -503,7 +501,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
-                            subjId,
+                            securitySubjectId(cctx.kernalContext()),
                             null,
                             taskName,
                             expiryPlc,
@@ -522,7 +520,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            subjId,
+                            securitySubjectId(cctx.kernalContext()),
                             null,
                             taskName,
                             expiryPlc,
@@ -754,7 +752,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 keys,
                 readThrough,
                 topVer,
-                subjId,
+                securitySubjectId(cctx.kernalContext()),
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

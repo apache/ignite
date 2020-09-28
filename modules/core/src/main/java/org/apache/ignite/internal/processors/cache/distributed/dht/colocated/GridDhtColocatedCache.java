@@ -182,7 +182,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override protected IgniteInternalFuture<V> getAsync(final K key,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
         final boolean skipVals,
@@ -283,7 +282,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer,
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
-            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
@@ -315,7 +313,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
@@ -405,7 +402,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
             topVer,
-            securitySubjectId(ctx.kernalContext()),
             taskName,
             deserializeBinary,
             recovery,
@@ -437,7 +433,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param readThrough Read through flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -452,7 +447,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean readThrough,
         boolean forcePrimary,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -468,7 +462,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiryPlc,
@@ -489,7 +482,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param readThrough Read through flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -505,7 +497,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean readThrough,
         boolean forcePrimary,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
@@ -598,7 +589,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             null,
                                             /*update-metrics*/false,
                                             /*event*/evt,
-                                            subjId,
+                                            securitySubjectId(ctx.kernalContext()),
                                             null,
                                             taskName,
                                             expiryPlc,
@@ -617,7 +608,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             /*read-through*/false,
                                             /*update-metrics*/false,
                                             /*event*/evt,
-                                            subjId,
+                                            securitySubjectId(ctx.kernalContext()),
                                             null,
                                             taskName,
                                             expiryPlc,
@@ -700,7 +691,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             keys,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,

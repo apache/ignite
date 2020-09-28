@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
@@ -727,7 +726,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -1977,7 +1975,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -2042,7 +2039,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -2097,7 +2093,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param topVer Topology version.
      * @param nearThreadId Near node thread id.
      * @param timeout Timeout.
-     * @param txSubjectId Transaction subject id.
      * @param txTaskNameHash Transaction task name hash.
      * @param snapshot Mvcc snapsht.
      * @return Transaction.
@@ -2111,7 +2106,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         AffinityTopologyVersion topVer,
         long nearThreadId,
         long timeout,
-        UUID txSubjectId,
         int txTaskNameHash,
         MvccSnapshot snapshot
     ) throws IgniteException, IgniteCheckedException {
@@ -2182,7 +2176,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     -1,
                     null,
-                    txSubjectId,
+                    securitySubjectId(ctx.kernalContext()),
                     txTaskNameHash,
                     null,
                     null);
@@ -2291,7 +2285,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     req0.timeout(),
                     -1,
-                    req0.subjectId(),
+                    securitySubjectId(ctx.kernalContext()),
                     req0.taskNameHash(),
                     false,
                     null);
