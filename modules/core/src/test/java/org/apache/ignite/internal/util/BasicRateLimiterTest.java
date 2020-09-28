@@ -24,8 +24,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -33,14 +31,51 @@ import static org.junit.Assert.assertEquals;
  */
 public class BasicRateLimiterTest {
     /**
+     * Check change speed at runtime.
+     */
+    @Test
+    public void checkSpeedLimitChange() throws IgniteInterruptedCheckedException {
+        BasicRateLimiter limiter = new BasicRateLimiter(2);
+
+        checkRate(limiter, 10);
+
+        limiter.setRate(3);
+
+        checkRate(limiter, 15);
+
+        limiter.setRate(0.5);
+
+        checkRate(limiter, 5);
+    }
+
+    /**
+     * Check the average rate of the limiter.
+     *
+     * @param limiter Rate limiter.
+     * @param totalOps Number of operations.
+     */
+    private void checkRate(BasicRateLimiter limiter, int totalOps) throws IgniteInterruptedCheckedException {
+        double permitsPerSec = limiter.getRate();
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 0; i < totalOps; i++)
+            limiter.acquire(1);
+
+        long timeSpent = System.currentTimeMillis() - startTime;
+
+        // Rate limiter aims for an average rate of 1/s.
+        assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * permitsPerSec));
+    }
+
+    /**
      * Check rate limit with multiple threads.
      */
     @Test
     public void checkLimitMultithreaded() throws Exception {
-        int opsPerSec = 1_000;
+        int permitsPerSec = 1_000;
         int totalOps = 10_000;
 
-        BasicRateLimiter limiter = new BasicRateLimiter(opsPerSec);
+        BasicRateLimiter limiter = new BasicRateLimiter(permitsPerSec);
 
         int threads = Runtime.getRuntime().availableProcessors();
 
@@ -67,57 +102,7 @@ public class BasicRateLimiterTest {
 
         long timeSpent = System.currentTimeMillis() - startTime;
 
-        assertEquals(totalOps / opsPerSec, SECONDS.convert(timeSpent, MILLISECONDS));
-    }
-
-    /**
-     * Check that the average speed is limited correctly even if we are acquiring more permits than allowed per second.
-     */
-    @Test
-    public void checkAcquireWithOverflow() throws IgniteInterruptedCheckedException {
-        double permitsPerSec = 0.5;
-        int permitsPerOp = 1;
-        int totalOps = 5;
-
-        BasicRateLimiter limiter = new BasicRateLimiter(permitsPerSec);
-
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < totalOps; i++)
-            limiter.acquire(permitsPerOp);
-
-        long timeSpent = System.currentTimeMillis() - startTime;
-
         // Rate limiter aims for an average rate of 1/s.
-        long expSecsPerOperation = Math.round(1 / permitsPerSec);
-        long actualSecsPerOperation = Math.round((double)timeSpent / totalOps / 1000);
-
-        assertEquals(expSecsPerOperation, actualSecsPerOperation);
-    }
-
-    /**
-     * Check change speed at runtime.
-     */
-    @Test
-    public void checkSpeedLimitChange() throws IgniteInterruptedCheckedException {
-        BasicRateLimiter limiter = new BasicRateLimiter(2);
-
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < 50; i++) {
-            limiter.acquire(1);
-
-            if (i == 10) {
-                long timeSpent = System.currentTimeMillis() - startTime;
-
-                assertEquals(5, SECONDS.convert(timeSpent, MILLISECONDS));
-
-                limiter.setRate(8);
-            }
-        }
-
-        long timeSpent = System.currentTimeMillis() - startTime;
-
-        assertEquals(10, SECONDS.convert(timeSpent, MILLISECONDS));
+        assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * permitsPerSec));
     }
 }
