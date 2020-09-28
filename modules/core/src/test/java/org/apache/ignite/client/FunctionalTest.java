@@ -32,12 +32,12 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -613,16 +613,17 @@ public class FunctionalTest {
             );
             cache.put(0, "value0");
 
-            CyclicBarrier barrier = new CyclicBarrier(2);
-            AtomicReference<Exception> errRef = new AtomicReference<>();
+            Future<?> fut;
 
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
-                Thread t = new Thread(() -> {
+                assertEquals("value0", cache.get(0));
+
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                fut = ForkJoinPool.commonPool().submit(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
                         cache.put(0, "value2");
                         tx2.commit();
-                    } catch (Exception ex) {
-                        errRef.set(ex);
                     } finally {
                         try {
                             barrier.await(2000, TimeUnit.MILLISECONDS);
@@ -632,23 +633,15 @@ public class FunctionalTest {
                     }
                 });
 
-                assertEquals("value0", cache.get(0));
-
-                t.start();
-
                 barrier.await(2000, TimeUnit.MILLISECONDS);
-
-                t.join();
 
                 tx.commit();
             }
 
             assertEquals("value0", cache.get(0));
 
-            Exception err = errRef.get();
-            assertTrue(err.getClass().getName(), err instanceof ClientException);
-            assertTrue(err.getMessage(),
-                    err.getMessage().contains("Failed to acquire lock within provided timeout"));
+            assertThrowsAnyCause(null, fut::get, ClientException.class,
+                    "Failed to acquire lock within provided timeout");
         }
     }
 
