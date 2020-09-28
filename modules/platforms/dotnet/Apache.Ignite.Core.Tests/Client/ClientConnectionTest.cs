@@ -159,11 +159,10 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
-            // Do we have metrics for that?
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
-                
+
                 var client1 = StartClient();
                 var thinClientConnections = GetThinClientConnections(ignite);
                 Assert.AreEqual(1, thinClientConnections.Length);
@@ -173,17 +172,17 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 var client2 = StartClient();
                 Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
-                
+
                 var client3 = StartClient();
                 Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
 
                 // ReSharper disable AccessToDisposedClosure
                 client1.Dispose();
                 TestUtils.WaitForTrueCondition(() => 2 == GetThinClientConnections(ignite).Length);
-                
+
                 client2.Dispose();
                 TestUtils.WaitForTrueCondition(() => 1 == GetThinClientConnections(ignite).Length);
-                
+
                 client3.Dispose();
                 TestUtils.WaitForTrueCondition(() => 0 == GetThinClientConnections(ignite).Length);
                 // ReSharper restore AccessToDisposedClosure
@@ -730,7 +729,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 SocketTimeout = TimeSpan.FromSeconds(10)
             };
         }
-        
+
         /// <summary>
         /// Gets thin client connections for the given server node.
         /// </summary>
