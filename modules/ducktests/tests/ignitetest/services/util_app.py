@@ -21,32 +21,45 @@ import re
 
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
+import base64
+import json
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
-class IgniteApplicationService(IgniteAwareService):
+class UtilApplicationService(IgniteAwareService):
     """
     The base class to build Ignite aware application written on java.
     """
 
-    SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
-
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name, params="", timeout_sec=60, modules=None,
-                 servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
+    def __init__(self, context, config, servicejava_class_name, params="", timeout_sec=60, modules=None,
+                 jvm_opts=None):
         super().__init__(context, config, 1, modules=modules, servicejava_class_name=servicejava_class_name,
-                         java_class_name=java_class_name, params=params, jvm_opts=jvm_opts, start_ignite=start_ignite)
+                         params=params, jvm_opts=jvm_opts)
 
         self.servicejava_class_name = servicejava_class_name
-        self.java_class_name = java_class_name
         self.timeout_sec = timeout_sec
         self.params = params
 
+    def execute(self, cmd):
+        self.params['sql'] = cmd
+        self.spec.args = [
+            str(base64.b64encode(json.dumps(self.params).encode('utf-8')), 'utf-8')
+        ]
+        self.start()
+        self.await_stopped(30)
+        result = self.extract_result("RESULT")
+        self.logger.warn("RESULT")
+        self.logger.warn(result)
+        self.stop()
+        return result
+
     def start(self):
+        # pass
         super().start()
 
-        self.logger.info("Waiting for Ignite Util Application (%s) to start..." % self.java_class_name)
+        self.logger.info("Waiting for Ignite Util Application (%s) to start..." % self.servicejava_class_name)
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
