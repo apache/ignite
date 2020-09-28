@@ -962,7 +962,7 @@ public class FunctionalTest {
 
                 cache.put(0, "value18");
 
-                Thread t = new Thread(() -> {
+                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
                     try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                         cache.put(1, "value19");
 
@@ -983,8 +983,6 @@ public class FunctionalTest {
                     }
                 });
 
-                t.start();
-
                 barrier.await();
 
                 assertEquals("value9", cache.get(1));
@@ -997,7 +995,7 @@ public class FunctionalTest {
 
                 assertEquals("value19", cache.get(1));
 
-                t.join();
+                fut.get();
             }
 
             // Test transaction usage by different threads.
