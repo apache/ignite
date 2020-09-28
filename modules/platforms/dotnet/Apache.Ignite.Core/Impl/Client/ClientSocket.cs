@@ -868,7 +868,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, string host)
         {
-            var stream = new NetworkStream(socket, true)
+            var stream = new NetworkStream(socket, ownsSocket: true)
             {
                 WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
