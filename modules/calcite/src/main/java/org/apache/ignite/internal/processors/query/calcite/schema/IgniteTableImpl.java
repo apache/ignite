@@ -156,7 +156,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(col);
 
-        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
+        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, projects, null);
     }
 
     /** {@inheritDoc} */

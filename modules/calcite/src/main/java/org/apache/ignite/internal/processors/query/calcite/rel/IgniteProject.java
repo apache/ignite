@@ -37,9 +37,13 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
@@ -111,6 +115,8 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
         ImmutableIntList keys = distribution.getKeys();
         List<Integer> srcKeys = new ArrayList<>(keys.size());
+
+        distribution = distribution.apply(mapping);
 
         for (int key : keys) {
             int src = mapping.getSourceOpt(key);
