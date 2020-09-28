@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,7 +88,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final int affField;
 
     /** */
-    private final ImmutableBitSet nonVirtualFields;
+    private final ImmutableBitSet insertFields;
 
     /** */
     public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
@@ -100,7 +101,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
-        ImmutableBitSet.Builder nonVirtualFields = ImmutableBitSet.builder();
+        BitSet virtualFields = new BitSet();
 
         descriptors.add(
             new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL));
@@ -123,7 +124,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 keyField = descriptors.size();
 
-                nonVirtualFields.set(1);
+                virtualFields.set(0);
 
                 descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true, fldIdx++));
             }
@@ -132,12 +133,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
 
-                nonVirtualFields.set(0);
+                virtualFields.set(1);
             }
             else {
                 GridQueryProperty prop = typeDesc.property(field);
 
-                nonVirtualFields.set(prop.key() ? 1 : 0);
+                virtualFields.set(prop.key() ? 0 : 1);
 
                 descriptors.add(new FieldDescriptor(prop, fldIdx++));
             }
@@ -150,14 +151,23 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         this.keyField = keyField;
         this.valField = valField;
         this.affField = affField;
-        this.nonVirtualFields = nonVirtualFields.build();
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
+
+        ImmutableBitSet.Builder b = ImmutableBitSet.builder();
+        for (int i = 0; i < this.descriptors.length; i++) {
+            if (virtualFields.get(i))
+                continue;
+
+            b.set(i);
+        }
+
+        insertFields = b.build();
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
-        return rowType(factory, nonVirtualFields);
+        return rowType(factory, insertFields);
     }
 
     /** {@inheritDoc} */
