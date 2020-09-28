@@ -21,12 +21,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 /**
  * Context with information about current checkpoint.
  */
-public class DbCheckpointContextImpl implements DbCheckpointListener.Context {
+public class CheckpointContextImpl implements CheckpointListener.Context {
     /** Current checkpoint progress. */
     private final CheckpointProgressImpl curr;
 
@@ -46,7 +46,7 @@ public class DbCheckpointContextImpl implements DbCheckpointListener.Context {
     @Nullable private final IgniteThreadPoolExecutor asyncRunner;
 
     /** Heartbeat updater. */
-    private final Runnable heartbeatUpdater;
+    private final WorkProgressDispatcher heartbeatUpdater;
 
     /** Pending tasks from executor. */
     private GridCompoundFuture pendingTaskFuture;
@@ -57,11 +57,11 @@ public class DbCheckpointContextImpl implements DbCheckpointListener.Context {
      * @param asyncRunner Checkpoint runner thread pool.
      * @param heartbeat Heartbeat updater.
      */
-    DbCheckpointContextImpl(
+    CheckpointContextImpl(
         CheckpointProgressImpl curr,
         PartitionAllocationMap map,
         @Nullable IgniteThreadPoolExecutor asyncRunner,
-        Runnable heartbeat
+        WorkProgressDispatcher heartbeat
     ) {
         this.curr = curr;
         this.map = map;
@@ -101,7 +101,7 @@ public class DbCheckpointContextImpl implements DbCheckpointListener.Context {
             try {
                 GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
-                res.listen(fut -> heartbeatUpdater.run());
+                res.listen(fut -> heartbeatUpdater.updateHeartbeat());
 
                 asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 
