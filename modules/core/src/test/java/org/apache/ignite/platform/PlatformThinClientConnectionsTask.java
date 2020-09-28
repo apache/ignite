@@ -17,6 +17,10 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -28,11 +32,6 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Task to get thin client connections.
