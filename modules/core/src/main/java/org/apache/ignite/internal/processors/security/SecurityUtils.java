@@ -221,25 +221,6 @@ public class SecurityUtils {
     }
 
     /**
-     * @return Current security subject's login.
-     */
-    public static String currentLogin(GridKernalContext ctx) {
-        return login(ctx, securitySubjectId(ctx));
-    }
-
-    /**
-     * @return Login related to passed security subject id.
-     */
-    public static String login(GridKernalContext ctx, UUID subjId) {
-        try {
-            return ctx.security().authenticatedSubject(subjId).login().toString();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * Computes a result in a privileged action.
      *
      * @param c Instance of SandboxCallable.
