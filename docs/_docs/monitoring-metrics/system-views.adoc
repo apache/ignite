@@ -150,7 +150,10 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 
 == TASKS
 
-This view exposes information about currently running compute tasks started by a node. For instance, let's assume that an application started a compute task using the thick client's API, and a task's job was executed on a server node. In this case, the thick client will report statistics related to the task through this system view while and not the server node. The latter will only update its job execution statistics.
+This view exposes information about currently running compute tasks started by a node. For instance, let's assume that an
+application started a compute task using the Ignite thick client and the task's job was executed on one of the server nodes.
+In this case, the thick client will report statistics related to the task via this system view while the server node will
+be updating the thick client with task-related execution details.
 
 [{table_opts}]
 |===
