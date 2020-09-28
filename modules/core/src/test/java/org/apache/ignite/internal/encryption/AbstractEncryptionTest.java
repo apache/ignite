@@ -429,14 +429,11 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                         ch.position(pageOff);
                         ch.read(pageBuf);
 
-                        pageBuf.position(realPageSize + encryptionBlockSize);
+                        pageBuf.position(realPageSize + encryptionBlockSize + 4);
 
-                        // If crc present
-                        if (pageBuf.getInt() != 0) {
-                            msg = String.format("Path=%s, page=%d", pageStore.getFileAbsolutePath(), n);
+                        msg = String.format("Path=%s, page=%d", pageStore.getFileAbsolutePath(), n);
 
-                            assertEquals(msg, keyId, pageBuf.get() & 0xff);
-                        }
+                        assertEquals(msg, keyId, pageBuf.get() & 0xff);
                     }
                 }
             }
