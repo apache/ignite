@@ -159,17 +159,27 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
-            // TODO: Check that server-side connection count matches client count
             // Do we have metrics for that?
-            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
+                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
                 var client1 = StartClient();
+                Assert.AreEqual(1, GetThinClientConnections(ignite).Length);
+
                 var client2 = StartClient();
+                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+                
                 var client3 = StartClient();
+                Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
 
                 client1.Dispose();
+                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+                
                 client2.Dispose();
+                Assert.AreEqual(1, GetThinClientConnections(ignite).Length);
+                
                 client3.Dispose();
+                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
             }
         }
 
@@ -712,6 +722,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 Password = "ignite",
                 SocketTimeout = TimeSpan.FromSeconds(10)
             };
+        }
+        
+        /// <summary>
+        /// Gets thin client connections for the given server node.
+        /// </summary>
+        /// <param name="ignite">Ignite server instance.</param>
+        /// <returns>Active thin client connections.</returns>
+        private static string[] GetThinClientConnections(IIgnite ignite)
+        {
+            return ignite.GetCompute().ExecuteJavaTask<string[]>(
+                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", ignite.Name);
         }
 
         /// <summary>
