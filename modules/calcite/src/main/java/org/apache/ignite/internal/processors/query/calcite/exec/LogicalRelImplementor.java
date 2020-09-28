@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
@@ -222,28 +223,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexScan rel) {
         RexNode condition = rel.condition();
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+        List<RexNode> projects = rel.projections();
 
-        List<RexNode> lowerCond = rel.lowerIndexCondition();
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-
-        List<RexNode> upperCond = rel.upperIndexCondition();
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
-
-        IgniteIndex idx = rel.getTable().unwrap(IgniteTable.class).getIndex(rel.indexName());
-        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper);
-
-        return new ScanNode<>(ctx, rowsIter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteTableScan rel) {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        List<RexNode> projects = rel.projections();
-        RexNode cond = rel.condition();
-        ImmutableBitSet bitSet = null;
+        ImmutableBitSet usedColumns = null;
+        List<RexNode> lowerCond = null;
+        List<RexNode> upperCond = null;
 
         if (projects != null) {
             final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
@@ -257,12 +244,79 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             shuttle.apply(projects);
 
-            bitSet = builder.build();
+            usedColumns = builder.build();
 
             Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-                tbl.getRowType(typeFactory).getFieldCount(), bitSet.cardinality());
+                tbl.getRowType(typeFactory).getFieldCount(), usedColumns.cardinality());
 
-            for (Ord<Integer> ord : Ord.zip(bitSet))
+            for (Ord<Integer> ord : Ord.zip(usedColumns))
+                targetMapping.set(ord.e, ord.i);
+
+            shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
+                }
+            };
+
+            projects = shuttle.apply(projects);
+
+            if (condition != null)
+                condition = shuttle.apply(condition);
+
+            lowerCond = rel.lowerIndexCondition();
+
+            if (lowerCond != null)
+                lowerCond = shuttle.apply(lowerCond);
+
+            upperCond = rel.upperIndexCondition();
+
+            if (upperCond != null)
+                upperCond = shuttle.apply(upperCond);
+        }
+
+        RelDataType cols = tbl.getRowType(typeFactory, usedColumns);
+
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
+
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
+
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
+
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
+
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper, prj, usedColumns);
+
+        return new ScanNode<>(ctx, rowsIter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteTableScan rel) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        List<RexNode> projects = rel.projections();
+        RexNode cond = rel.condition();
+        ImmutableBitSet usedColumns = null;
+
+        if (projects != null) {
+            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                    builder.set(ref.getIndex());
+                    return ref;
+                }
+            };
+
+            shuttle.apply(projects);
+
+            usedColumns = builder.build();
+
+            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
+                tbl.getRowType(typeFactory).getFieldCount(), usedColumns.cardinality());
+
+            for (Ord<Integer> ord : Ord.zip(usedColumns))
                 targetMapping.set(ord.e, ord.i);
 
             shuttle = new RexShuttle() {
@@ -277,12 +331,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 cond = shuttle.apply(cond);
         }
 
-        RelDataType cols = tbl.getRowType(typeFactory, bitSet);
+        RelDataType cols = tbl.getRowType(typeFactory, usedColumns);
 
         Predicate<Row> filters = cond == null ? null : expressionFactory.predicate(cond, cols);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, bitSet);
+        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, usedColumns);
 
         return new ScanNode<>(ctx, rowsIter);
     }

@@ -79,9 +79,10 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * Returns row type.
      *
      * @param factory Type factory.
+     * @param usedColumns Used columns numeration.
      * @return Row type.
      */
-    RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet bitSet);
+    RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns);
 
     /**
      * Checks whether is possible to update a column with a given index.
@@ -105,11 +106,12 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      *
      * @param ectx Execution context.
      * @param row Cache row.
+     * @param usedColumns
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
     <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
-                    ImmutableBitSet bitSet) throws IgniteCheckedException;
+                    @Nullable ImmutableBitSet usedColumns) throws IgniteCheckedException;
 
     /**
      * Converts a relational node row to cache key-value tuple;

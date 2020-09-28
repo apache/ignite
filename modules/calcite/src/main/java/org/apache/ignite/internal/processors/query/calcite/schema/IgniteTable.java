@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite table.
@@ -47,7 +48,13 @@ public interface IgniteTable extends TranslatableTable {
         return getRowType(typeFactory, null);
     }
 
-    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet);
+    /**
+     * Returns new type according {@code usedClumns} param.
+     *
+     * @param typeFactory Factory.
+     * @param usedColumns Used columns enumeration.
+     */
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet usedColumns);
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
@@ -78,15 +85,15 @@ public interface IgniteTable extends TranslatableTable {
      *
      * @param execCtx Execution context.
      * @param filter
-     * @param transformer
-     * @param bitSet
+     * @param rowTransformer Row transformer.
+     * @param usedColumns Used columns enumeration.
      * @return Rows iterator.
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filter,
-        Function<Row, Row> transformer,
-        ImmutableBitSet bitSet);
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns);
 
     /**
      * Returns nodes mapping.

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -83,9 +84,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         statistic = new StatisticsImpl();
     }
 
-    /** */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
-        return desc.rowType((IgniteTypeFactory)typeFactory, bitSet);
+    /** {@inheritDoc} */
+    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet usedColumns) {
+        return desc.rowType((IgniteTypeFactory)typeFactory, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -122,10 +123,10 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filter,
-        Function<Row, Row> transformer,
-        ImmutableBitSet bitSet
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns
     ) {
-        return new TableScan<>(execCtx, desc, filter, transformer, bitSet);
+        return new TableScan<>(execCtx, desc, filter, rowTransformer, usedColumns);
     }
 
     /** {@inheritDoc} */

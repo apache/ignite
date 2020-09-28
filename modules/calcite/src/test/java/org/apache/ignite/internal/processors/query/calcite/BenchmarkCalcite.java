@@ -131,7 +131,7 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         for (int i = 1; i <= 100_000; i *= 10) {
-            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+/*            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
                 "select * from TBL1 d where d.amount = ?", i);
 
             Iterator it;
@@ -143,9 +143,9 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
                 }
             }
 
-            query.forEach((q) -> q.close());
+            query.forEach((q) -> q.close());*/
 
-/*            FieldsQueryCursor<List<?>> query = cache1.query(new SqlFieldsQuery("select * from PUBLIC.TBL1 d where d" +
+            FieldsQueryCursor<List<?>> query = cache1.query(new SqlFieldsQuery("select * from PUBLIC.TBL1 d where d" +
                 ".amount = ?").setArgs(i));
 
             Iterator<List<?>> it = query.iterator();
@@ -155,7 +155,7 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
                 it.next();
             }
 
-            query.close();*/
+            query.close();
         }
 
         System.err.println("Complete time: " + (System.currentTimeMillis() - start) + "  " + cnt);
@@ -163,7 +163,7 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
         ignite.cluster().state(ClusterState.INACTIVE);
     }
 
-    @Test
+    //@Test
     public void test3() throws Exception {
         //client = startClientGrid();
 
@@ -237,9 +237,12 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
 
         query.forEach((q) -> q.close());*/
 
-/*        FieldsQueryCursor<List<?>> query = cache1.query(new SqlFieldsQuery("select * from TBL1 t1 LEFT JOIN TBL2 t2 ON t1.amount = t2.amount2"));
+/*        FieldsQueryCursor<List<?>> query = cache1.query(new SqlFieldsQuery("select t1.amount from TBL1 t1 LEFT JOIN TBL2 t2 ON t1.amount = t2.amount2 where t1" +
+                ".amount2 > 10"));
 
-        Iterator<List<?>> it = query.iterator();
+        System.err.println(query.getAll().size());*/
+
+/*        Iterator<List<?>> it = query.iterator();
 
         while (it.hasNext()) {
             cnt++;

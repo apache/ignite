@@ -21,9 +21,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -54,6 +56,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Scan on index.
@@ -101,6 +104,12 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private volatile List<GridDhtLocalPartition> reserved;
 
+    /** */
+    private final Function<Row, Row> rowTransformer;
+
+    /** */
+    private final ImmutableBitSet requiredColunms;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
@@ -115,7 +124,9 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         GridIndex<H2Row> idx,
         Predicate<Row> filters,
         Supplier<Row> lowerBound,
-        Supplier<Row> upperBound
+        Supplier<Row> upperBound,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns
     ) {
         this.ectx = ectx;
         this.desc = desc;
@@ -133,6 +144,8 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         this.upperBound = upperBound;
         partsArr = ectx.localPartitions();
         mvccSnapshot = ectx.mvccSnapshot();
+        this.rowTransformer = rowTransformer;
+        requiredColunms = usedColumns;
     }
 
     /** {@inheritDoc} */
@@ -314,10 +327,15 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
             while (next == null && cursor.next()) {
                 H2Row h2Row = cursor.get();
 
-                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, null);
+                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, requiredColunms);
 
-                if (filters == null || filters.test(r))
-                    next = r;
+                if (filters != null && !filters.test(r))
+                    continue;
+
+                if (rowTransformer != null)
+                    r = rowTransformer.apply(r);
+
+                next = r;
             }
         }
     }

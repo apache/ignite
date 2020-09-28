@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -183,7 +184,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         ExecutionContext<Row> ectx,
         CacheDataRow row,
         RowHandler.RowFactory<Row> factory,
-        ImmutableBitSet bitset
+        @Nullable ImmutableBitSet usedColumns
     ) throws IgniteCheckedException {
         RowHandler<Row> handler = factory.handler();
 
@@ -191,14 +192,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         Row res = factory.create();
 
-        assert handler.columnCount(res) == (bitset == null ? descriptors.length : bitset.cardinality());
+        assert handler.columnCount(res) == (usedColumns == null ? descriptors.length : usedColumns.cardinality());
 
-        if (bitset == null) {
+        if (usedColumns == null) {
             for (int i = 0; i < descriptors.length; i++)
                 handler.set(i, res, descriptors[i].value(ectx, cctx, row));
         }
         else {
-            for (int i = 0, j = bitset.nextSetBit(0); j != -1; j = bitset.nextSetBit(j + 1), i++)
+            for (int i = 0, j = usedColumns.nextSetBit(0); j != -1; j = usedColumns.nextSetBit(j + 1), i++)
                 handler.set(i, res, descriptors[j].value(ectx, cctx, row));
         }
 
@@ -405,15 +406,15 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet bitSet) {
+    @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
-        if (bitSet == null) {
+        if (usedColumns == null) {
             for (int i = 0; i < descriptors.length; i++)
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
         else {
-            for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
+            for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1))
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 

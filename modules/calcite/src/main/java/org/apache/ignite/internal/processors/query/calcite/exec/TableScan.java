@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -75,7 +76,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private volatile List<GridDhtLocalPartition> reserved;
 
     /** */
-    private final Function<Row, Row> pointing;
+    private final Function<Row, Row> rowTransformer;
 
     /** */
     private final ImmutableBitSet requiredColunms;
@@ -85,14 +86,14 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         ExecutionContext<Row> ectx,
         TableDescriptor desc,
         Predicate<Row> filters,
-        Function<Row, Row> pointing,
-        ImmutableBitSet requiredColunms
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColunms
     ) {
         this.ectx = ectx;
         cctx = desc.cacheContext();
         this.desc = desc;
         this.filters = filters;
-        this.pointing = pointing;
+        this.rowTransformer = rowTransformer;
         this.requiredColunms = requiredColunms;
 
         RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
@@ -268,8 +269,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (filters != null && !filters.test(r))
                         continue;
 
-                    if (pointing != null)
-                        r = pointing.apply(r);
+                    if (rowTransformer != null)
+                        r = rowTransformer.apply(r);
 
                     next = r;
                     break;

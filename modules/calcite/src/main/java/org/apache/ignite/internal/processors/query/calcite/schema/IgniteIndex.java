@@ -16,13 +16,16 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite scannable index.
@@ -73,7 +76,10 @@ public class IgniteIndex {
         ExecutionContext<Row> execCtx,
         Predicate<Row> filters,
         Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions) {
-        return new IndexScan<>(execCtx, table().descriptor(), idx, filters, lowerIdxConditions, upperIdxConditions);
+        Supplier<Row> upperIdxConditions,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColunms) {
+        return new IndexScan<>(
+            execCtx, table().descriptor(), idx, filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColunms);
     }
 }

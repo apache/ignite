@@ -776,8 +776,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
-                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
+                    @Override public <Row> Iterable<Row> scan(
+                        ExecutionContext<Row> execCtx,
+                        Predicate<Row> filters,
+                        Supplier<Row> lowerIdxConditions,
+                        Supplier<Row> upperIdxConditions,
+                        Function<Row, Row> rowTransformer,
+                        @Nullable ImmutableBitSet requiredColunms
+                    ) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Igor", 0),
                             row(execCtx, 1, "Roman", 0)
@@ -809,8 +815,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
-                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
+                    @Override public <Row> Iterable<Row> scan(
+                        ExecutionContext<Row> execCtx,
+                        Predicate<Row> filters,
+                        Supplier<Row> lowerIdxConditions,
+                        Supplier<Row> upperIdxConditions,
+                        Function<Row, Row> rowTransformer,
+                        @Nullable ImmutableBitSet requiredColunms
+                    ) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Calcite", 1),
                             row(execCtx, 1, "Ignite", 1)
@@ -2601,10 +2613,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-            assertEquals("" +
-                    "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
-                    "  IgniteProject(DEPTNO=[$0])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
+            assertEquals("IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], projections=[[$t0]])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
                     "    IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));
