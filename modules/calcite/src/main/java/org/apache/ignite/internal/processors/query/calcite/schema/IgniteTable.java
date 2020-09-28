@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -24,6 +25,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -78,7 +80,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param idxName Index name.
      * @return Table relational expression.
      */
-    IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
+    IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName, List<RexNode> projects);
 
     /**
      * Creates rows iterator over the table.

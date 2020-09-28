@@ -25,16 +25,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLocalRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Permutation;
+import org.apache.calcite.util.mapping.MappingType;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,6 +59,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -110,11 +121,40 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+    @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName, List<RexNode> projects) {
+        IgniteDistribution distr = distribution();
+
+        RelCollation col = getIndex(idxName).collation();
+
+        if (projects != null) {
+            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                    builder.set(ref.getIndex());
+                    return ref;
+                }
+            };
+
+            shuttle.apply(projects);
+
+            ImmutableBitSet bitSet = builder.build();
+
+            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_SURJECTION,
+                desc.columnDescriptors().length, bitSet.cardinality());
+
+            for (Ord<Integer> ord : Ord.zip(bitSet))
+                targetMapping.set(ord.e, ord.i);
+
+            distr = distr.apply(targetMapping);
+
+            col = col.apply(targetMapping);
+        }
+
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(distribution())
+            .replace(distr)
             .replace(RewindabilityTrait.REWINDABLE)
-            .replace(getIndex(idxName).collation());
+            .replace(col);
 
         return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
     }

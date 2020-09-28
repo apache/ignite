@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -55,15 +56,16 @@ public class ExposeIndexRule extends RelOptRule {
         RelOptCluster cluster = scan.getCluster();
 
         RelOptTable optTable = scan.getTable();
+        List<RexNode> projects = scan.projections();
         IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
 
         List<IgniteIndexScan> indexes = igniteTable.indexes().keySet().stream()
-            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName))
+            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName, projects))
             .collect(Collectors.toList());
 
         assert indexes.size() > 1;
 
-        Map<RelNode, RelNode> equivMap = new HashMap<>();
+        Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size() - 1);
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
 

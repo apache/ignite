@@ -49,6 +49,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Statistic;
@@ -2672,7 +2673,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+        @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName, List<RexNode> projects) {
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
