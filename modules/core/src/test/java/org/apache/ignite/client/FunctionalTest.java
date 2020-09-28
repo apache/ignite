@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ForkJoinPool;
@@ -662,28 +661,23 @@ public class FunctionalTest {
             final CountDownLatch latch = new CountDownLatch(1);
 
             try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                Thread t = new Thread(() -> {
+                assertEquals("value0", cache.get(0));
+
+                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         cache.put(0, "value2");
                         tx2.commit();
-                    }
-                    catch (Exception ex) {
-                        fail();
                     }
                     finally {
                         latch.countDown();
                     }
                 });
 
-                assertEquals("value0", cache.get(0));
-
-                t.start();
-
                 latch.await();
 
                 cache.put(0, "value1");
 
-                t.join();
+                fut.get();
 
                 assertThrowsAnyCause(null, () -> {
                     tx.commit();
