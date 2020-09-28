@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -27,17 +28,14 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  */
 public class UuidStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override public void run(JsonNode jsonNode) {
-        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(jsonNode.get("cacheName").asText());
+    @Override public void run(JsonNode jNode) {
+        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(jNode.get("cacheName").asText());
 
-        JsonNode jNodeSize = jsonNode.get("size");
-
-        long size = -1L;
+        long size = Optional.ofNullable(jNode.get("size"))
+                .map(JsonNode::asLong)
+                .orElse(-1L);
 
         long cnt = 0L;
-
-        if (jNodeSize != null)
-            size = jNodeSize.asLong();
 
         long start = System.currentTimeMillis();
 

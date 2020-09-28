@@ -77,7 +77,12 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
-            params={"cacheName": "test-cache", "size": 1024})
+            params={"cacheName": "test-cache",
+                    "size": 1024 * 10
+                    # 1024 - number of partitions,
+                    # 10 - experimentally derived figure for filling all partitions.
+                    }
+        )
 
         load(streamer)
 
