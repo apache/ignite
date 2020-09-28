@@ -346,11 +346,11 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      * Ensures that all pages of page store have expected encryption key identifier.
      *
      * @param grpId Cache group ID.
-     * @param keyId Encryption key ID.
+     * @param expKeyId Encryption key ID.
      * @param timeout Timeout to wait for encryption to complete.
      * @throws Exception If failed.
      */
-    protected void checkGroupKey(int grpId, int keyId, long timeout) throws Exception {
+    protected void checkGroupKey(int grpId, int expKeyId, long timeout) throws Exception {
         awaitEncryption(G.allGrids(), grpId, timeout);
 
         for (Ignite g : G.allGrids()) {
@@ -363,7 +363,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             GridEncryptionManager encryption = grid.context().encryption();
 
-            assertEquals(grid.localNode().id().toString(), (byte)keyId, encryption.groupKey(grpId).id());
+            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.groupKey(grpId).id());
 
             IgniteInternalFuture<Void> fut = encryption.reencryptionFuture(grpId);
 
@@ -429,11 +429,26 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                         ch.position(pageOff);
                         ch.read(pageBuf);
 
-                        pageBuf.position(realPageSize + encryptionBlockSize + 4);
+                        pageBuf.position(realPageSize + encryptionBlockSize);
 
-                        msg = String.format("Path=%s, page=%d", pageStore.getFileAbsolutePath(), n);
+                        int pageCrc = pageBuf.getInt();
+                        int pageKeyId = pageBuf.get() & 0xff;
 
-                        assertEquals(msg, keyId, pageBuf.get() & 0xff);
+                        // If this page is empty we can skip it.
+                        if (pageCrc == 0 && pageKeyId == 0) {
+                            pageBuf.position(0);
+
+                            boolean emptyPage = false;
+
+                            while (pageBuf.hasRemaining() && !emptyPage)
+                                emptyPage = pageBuf.getLong() == 0;
+
+                            if (emptyPage)
+                                continue;
+                        }
+
+                        msg = String.format("File=%s, page=%d", pageStore.getFileAbsolutePath(), n);
+                        assertEquals(msg, expKeyId, pageKeyId);
                     }
                 }
             }

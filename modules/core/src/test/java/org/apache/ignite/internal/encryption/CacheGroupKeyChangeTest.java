@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.junit.Test;
 
@@ -107,8 +105,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                     .setPersistenceEnabled(true))
             .setPageSize(4 * 1024)
             .setWalSegmentSize(1024 * 1024)
-            .setWalSegments(10)
-            .setMaxWalArchiveSize(20 * 1024 * 1024)
+            .setWalSegments(20)
+            .setMaxWalArchiveSize(30 * 1024 * 1024)
             .setCheckpointFrequency(30 * 1000L)
             .setWalMode(walMode);
 
@@ -367,6 +365,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             } catch (IgniteException e) {
                 assertTrue(e.getMessage().contains("Cache group key change was rejected. Master key has been changed."));
 
+                // Retry iteration.
                 keyId -= 1;
             }
         }
@@ -561,74 +560,37 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         IgniteEx node0 = grid(GRID_0);
         IgniteEx node1 = grid(GRID_1);
 
+        GridEncryptionManager encrMgr0 = node0.context().encryption();
+        GridEncryptionManager encrMgr1 = node1.context().encryption();
+
         createEncryptedCache(node0, node1, cacheName(), null);
 
         forceCheckpoint();
 
-        IgniteInternalCache<Object, Object> cache = node0.cachex(cacheName());
+        int grpId = CU.cacheId(cacheName());
 
-        AtomicInteger cntr = new AtomicInteger(cache.size());
+        IgniteInternalFuture<?> loadFut = loadDataAsync(node0);
 
-        CountDownLatch startLatch = new CountDownLatch(1);
+        try {
+            IgniteCache<Object, Object> cache = node0.cache(cacheName());
 
-        final Ignite somenode = node0;
+            boolean success = waitForCondition(() -> cache.size() > 2000, MAX_AWAIT_MILLIS);
+            assertTrue(success);
 
-        IgniteInternalFuture<?> loadFut = GridTestUtils.runAsync(() -> {
-            try (IgniteDataStreamer<Integer, String> streamer = somenode.dataStreamer(cacheName())) {
-                while (!Thread.currentThread().isInterrupted()) {
-                    int n = cntr.getAndIncrement();
+            node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
 
-                    streamer.addData(n, String.valueOf(n));
+            awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
-                    if (n == 5000)
-                        startLatch.countDown();
-                }
-            }
-        });
-
-        startLatch.await(MAX_AWAIT_MILLIS, TimeUnit.MILLISECONDS);
-
-        int grpId = cache.context().groupId();
-
-        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
-
-        awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
-
-        forceCheckpoint();
-
-        loadFut.cancel();
-
-        // Ensure that data is encrypted with the new key.
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
-
-        stopAllGrids();
-
-        node0 = startGrid(GRID_0);
-        node1 = startGrid(GRID_1);
-
-        node0.cluster().state(ClusterState.ACTIVE);
-
-        // Wait for WAL segment remove.
-        try (IgniteDataStreamer<Integer, String> streamer = node0.dataStreamer(cacheName())) {
-            int start = cntr.get();
-
-            for (; ; ) {
-                int n = cntr.getAndIncrement();
-
-                streamer.addData(n, String.valueOf(n));
-
-                if (n % 1000 == 0 &&
-                    node0.context().encryption().groupKeyIds(grpId).size() == 1 &&
-                    node1.context().encryption().groupKeyIds(grpId).size() == 1)
-                    break;
-
-                if (n - start == 1_000_000)
-                    break;
-            }
+            waitForCondition(() ->
+                encrMgr0.groupKeyIds(grpId).size() == 1 && encrMgr1.groupKeyIds(grpId).size() == 1, MAX_AWAIT_MILLIS);
+        } finally {
+            loadFut.cancel();
         }
 
-        assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
-        assertEquals(1, node1.context().encryption().groupKeyIds(grpId).size());
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+
+        assertEquals(node0.cluster().localNode().id().toString(), 1, encrMgr0.groupKeyIds(grpId).size());
+        assertEquals(node1.cluster().localNode().id().toString(), 1, encrMgr1.groupKeyIds(grpId).size());
     }
 
     /**
@@ -655,20 +617,14 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         boolean reserved = walMgr.reserve(new FileWALPointer(reservedIdx, 0, 0));
         assertTrue(reserved);
 
-        AtomicBoolean stopFlag = new AtomicBoolean();
-
-        IgniteInternalFuture<?> fut = loadDataAsync(node, stopFlag);
+        IgniteInternalFuture<?> loadFut = loadDataAsync(node);
 
         // Wait until the reserved segment is moved to the archive.
         try {
             boolean success = waitForCondition(() -> walMgr.lastArchivedSegment() >= reservedIdx, MAX_AWAIT_MILLIS);
             assertTrue(success);
         } finally {
-            stopFlag.set(true);
-
-            fut.get(MAX_AWAIT_MILLIS);
-
-            stopFlag.set(false);
+            loadFut.cancel();
         }
 
         forceCheckpoint();
@@ -690,7 +646,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         node.cluster().state(ClusterState.ACTIVE);
 
-        fut = loadDataAsync(node, stopFlag);
+        loadFut = loadDataAsync(node);
 
         // Make sure that unused encryption key has been deleted.
         try {
@@ -699,9 +655,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             boolean success = waitForCondition(() -> encryptMgr.groupKeyIds(grpId).size() == 1, MAX_AWAIT_MILLIS);
             assertTrue(success);
         } finally {
-            stopFlag.set(true);
-
-            fut.get(MAX_AWAIT_MILLIS);
+            loadFut.cancel();
         }
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
@@ -709,14 +663,14 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
     /**
      * @param grid Grid.
-     * @param stopFlag Stop flag.
+     * @return Future for this operation.
      */
-    private IgniteInternalFuture<?> loadDataAsync(Ignite grid, AtomicBoolean stopFlag) {
+    private IgniteInternalFuture<?> loadDataAsync(Ignite grid) {
         return runAsync(() -> {
             long cntr = grid.cache(cacheName()).size();
 
             try (IgniteDataStreamer<Long, String> streamer = grid.dataStreamer(cacheName())) {
-                while (!stopFlag.get() && !Thread.currentThread().isInterrupted()) {
+                while (!Thread.currentThread().isInterrupted()) {
                     streamer.addData(cntr, String.valueOf(cntr));
 
                     ++cntr;
