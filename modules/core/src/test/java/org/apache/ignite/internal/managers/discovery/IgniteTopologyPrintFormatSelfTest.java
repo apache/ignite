@@ -46,6 +46,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CLIENT_NODE = ">>> Number of client nodes";
 
+    /** */
+    public static final String COORDINATOR_CHANGED = "Coordinator changed";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -203,6 +206,30 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         doForceServerAndClientTest(log);
     }
 
+    @Test
+    public void checkMessageOnCoordinatorChangeTest() throws Exception {
+        Ignite server1 = startGrid("server1");
+
+        Ignite client = startClientGrid("client");
+
+        Ignite server2 = startGrid("server2");
+
+        MockLogger log = new MockLogger();
+
+        log.setLevel(Level.INFO);
+
+        setLogger(log, server2);
+
+        server1.close();
+
+        client.close();
+
+        assertEquals("There should be no message that the client was the coordinator", 0,
+                F.view(log.logs(), msg -> msg.contains("Coordinator changed") && (msg.contains("isClient=true")))
+                        .size()
+        );
+    }
+
     /**
      * @param log Log.
      * @throws Exception If failed.
@@ -273,7 +300,8 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             if ((msg != null && !msg.isEmpty()) && (
                 msg.contains(TOPOLOGY_SNAPSHOT)
                 || msg.contains(SERV_NODE)
-                || msg.contains(CLIENT_NODE)))
+                || msg.contains(CLIENT_NODE))
+                || msg.contains(COORDINATOR_CHANGED))
                 logs.add(msg);
 
             super.info(msg);
