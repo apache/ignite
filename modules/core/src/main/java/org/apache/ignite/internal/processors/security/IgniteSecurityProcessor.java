@@ -84,9 +84,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Current security context. */
-    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
-
     /** Grid kernal context. */
     private final GridKernalContext ctx;
 
@@ -104,6 +101,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
+
+    /** Current security context. */
+    private volatile ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
     /**
      * @param ctx Grid kernal context.
@@ -349,6 +349,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(
         boolean clusterRestarted) throws IgniteCheckedException {
+        curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
+
         return secPrc.onReconnected(clusterRestarted);
     }
 

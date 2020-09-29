@@ -73,7 +73,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     /**
      * @return Security subject id.
      */
-    UUID secSubjId() {
+    public UUID secSubjId() {
         return secSubjId;
     }
 
