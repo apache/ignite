@@ -30,7 +30,7 @@ For development process requirements are `python` >= 3.6.
 ```
 ./docker/run_tests.sh --help
 ```
-- Test reports, inclunding service logs, are located under the `${IGNITE_HOME}/results` directory.
+- Test reports, including service logs, are located under the `${IGNITE_HOME}/results` directory.
 
 ## Preparing development environment
 - Create a virtual environment and activate it using following commands:
