@@ -96,7 +96,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         traits = traits.replace(TraitUtils.projectDistribution(
             TraitUtils.distribution(traits), projects, scan.getRowType()));
 
-        projects = new InputRefReplacer().apply(relProject.getProjects());
+        projects = new InputRefReplacer().apply(projects);
 
         call.transformTo(createNode(cluster, scan, traits, projects));
     }

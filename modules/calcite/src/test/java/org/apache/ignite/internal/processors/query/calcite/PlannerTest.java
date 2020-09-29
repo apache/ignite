@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -785,8 +786,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                         @Nullable ImmutableBitSet requiredColunms
                     ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, 0, "Igor", 0),
-                            row(execCtx, 1, "Roman", 0)
+                            row(execCtx, requiredColunms, 0, "Igor", 0),
+                            row(execCtx, requiredColunms, 1, "Roman", 0)
                         ));
                     }
                 };
@@ -824,8 +825,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                         @Nullable ImmutableBitSet requiredColunms
                     ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, 0, "Calcite", 1),
-                            row(execCtx, 1, "Ignite", 1)
+                            row(execCtx, requiredColunms, 0, "Calcite", 1),
+                            row(execCtx, requiredColunms, 1, "Ignite", 1)
                         ));
                     }
                 };
@@ -1160,11 +1161,11 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
-                ImmutableBitSet bitSet
+                ImmutableBitSet requiredColunms
             ) {
                 return Arrays.asList(
-                    row(execCtx, 0, "Igor", 0),
-                    row(execCtx, 1, "Roman", 0)
+                    row(execCtx, requiredColunms, 0, "Igor", 0),
+                    row(execCtx, requiredColunms, 1, "Roman", 0)
                 );
             }
 
@@ -1187,11 +1188,11 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
-                ImmutableBitSet bitSet
+                ImmutableBitSet requiredColunms
             ) {
                 return Arrays.asList(
-                    row(execCtx, 0, "Calcite", 1),
-                    row(execCtx, 1, "Ignite", 1)
+                    row(execCtx, requiredColunms, 0, "Calcite", 1),
+                    row(execCtx, requiredColunms, 1, "Ignite", 1)
                 );
             }
 
@@ -1429,21 +1430,29 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
+        ThreadLocal<List<?>> checkRes = new ThreadLocal<>();
+
         TestTable testTbl = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID0", f.createJavaType(Integer.class))
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
-
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 Predicate<Row> filter,
-                Function<Row, Row> transformer,
-                ImmutableBitSet bitSet) {
-                return Arrays.asList(
-                    row(execCtx, 0, 1),
-                    row(execCtx, 1, 2)
-                );
+                Function<Row, Row> rowTransformer,
+                ImmutableBitSet requiredColunms
+            ) {
+                List<Row> checkRes0 = new ArrayList<>();
+
+                for (int i = 0; i < 10; ++i) {
+                    checkRes0.add(rowTransformer.apply(row(execCtx, requiredColunms,
+                        ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextInt())));
+                }
+
+                checkRes.set(checkRes0);
+
+                return checkRes0;
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -1660,8 +1669,10 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertFalse(res.isEmpty());
 
-            Assert.assertArrayEquals(new Object[]{1}, res.get(0));
-            Assert.assertArrayEquals(new Object[]{3}, res.get(1));
+            int pos = 0;
+
+            for (Object obj : checkRes.get())
+                Assert.assertArrayEquals((Object[]) obj, res.get(pos++));
         }
     }
 
@@ -2631,18 +2642,26 @@ public class PlannerTest extends GridCommonAbstractTest {
     private static <T> List<T> select(List<T> src, int... idxs) {
         ArrayList<T> res = new ArrayList<>(idxs.length);
 
-        for (int idx : idxs) {
+        for (int idx : idxs)
             res.add(src.get(idx));
-        }
 
         return res;
     }
 
     /** */
-    private <Row> Row row(ExecutionContext<Row> ctx, Object... fields) {
+    private <Row> Row row(ExecutionContext<Row> ctx, ImmutableBitSet requiredColunms, Object... fields) {
         Type[] types = new Type[fields.length];
         for (int i = 0; i < fields.length; i++)
             types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+
+        if (requiredColunms == null) {
+            for (int i = 0; i < fields.length; i++)
+                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+        }
+        else {
+            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
+                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+        }
 
         return ctx.rowHandler().factory(types).create(fields);
     }

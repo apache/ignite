@@ -106,12 +106,12 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      *
      * @param ectx Execution context.
      * @param row Cache row.
-     * @param usedColumns
+     * @param requiredColunms
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
     <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
-                    @Nullable ImmutableBitSet usedColumns) throws IgniteCheckedException;
+                    @Nullable ImmutableBitSet requiredColunms) throws IgniteCheckedException;
 
     /**
      * Converts a relational node row to cache key-value tuple;
