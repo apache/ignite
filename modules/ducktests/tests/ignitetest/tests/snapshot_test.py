@@ -20,6 +20,7 @@ Module contains discovery tests.
 import re
 
 from ducktape.mark.resource import cluster
+from ducktape.tests.status import FAIL
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -77,14 +78,10 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
-            params={"cacheName": "test-cache",
-                    "size": 1024 * 10
-                    # 1024 - number of partitions,
-                    # 10 - experimentally derived figure for filling all partitions.
-                    }
+            params={"cacheName": "test-cache"}
         )
 
-        load(streamer)
+        load(streamer, duration=300)
 
         node = service.nodes[0]
 
@@ -125,11 +122,13 @@ class SnapshotTest(IgniteTest):
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
 
-    def tearDown(self):
+    def copy_service_logs(self, test_status):
+        super().copy_service_logs(test_status=test_status)
         """
         Copy root directory to result.
         """
-        self.copy_ignite_root_dir()
+        if test_status == FAIL:
+            self.copy_ignite_root_dir()
 
 
 def get_dump_path(control_utility: ControlUtility, node):
@@ -159,7 +158,7 @@ def check_idle_verify(control_utility: ControlUtility):
     assert 'idle_verify check has finished, no conflicts have been found.' in data, data
 
 
-def load(service_load, duration: int = 60):
+def load(service_load: IgniteApplicationService, duration: int = 60):
     """
     Load.
     """

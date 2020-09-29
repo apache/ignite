@@ -19,8 +19,13 @@ package org.apache.ignite.internal.ducktest.tests;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
@@ -29,11 +34,23 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 public class UuidStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) {
-        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(jNode.get("cacheName").asText());
+        String cacheName = jNode.get("cacheName").asText();
 
-        long size = Optional.ofNullable(jNode.get("size"))
+        int dataSize = Optional.ofNullable(jNode.get("dataSize"))
+                .map(JsonNode::asInt)
+                .orElse(1024);
+
+        long iterSize = Optional.ofNullable(jNode.get("iterSize"))
                 .map(JsonNode::asLong)
                 .orElse(-1L);
+
+        CacheConfiguration<UUID, byte[]> cacheCfg =  new CacheConfiguration<>(cacheName);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setBackups(2);
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheCfg.setIndexedTypes(UUID.class, byte[].class);
+
+        IgniteCache<UUID, byte[]> cache = ignite.getOrCreateCache(cacheCfg);
 
         long cnt = 0L;
 
@@ -41,10 +58,14 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        while (!terminated() && cnt != size) {
+        while (!terminated() && cnt != iterSize) {
             UUID uuid = UUID.randomUUID();
 
-            cache.put(uuid, uuid);
+            byte[] data = new byte[dataSize];
+
+            ThreadLocalRandom.current().nextBytes(data);
+
+            cache.put(uuid, data);
 
             cnt++;
         }
