@@ -1088,7 +1088,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return JDBC property info object.
          */
         DriverPropertyInfo getDriverPropertyInfo() {
-            DriverPropertyInfo dpi = new DriverPropertyInfo(name, valueObject());
+            DriverPropertyInfo dpi = new DriverPropertyInfo(PROP_PREFIX + name, valueObject());
 
             dpi.choices = choices();
             dpi.required = required;
