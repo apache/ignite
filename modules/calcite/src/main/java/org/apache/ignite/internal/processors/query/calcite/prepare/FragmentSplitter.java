@@ -26,31 +26,17 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
  */
-public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
+public class FragmentSplitter extends IgniteRelShuttle {
     /** */
     private final Deque<FragmentProto> stack = new LinkedList<>();
 
@@ -81,90 +67,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteFilter rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTrimExchange rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteProject rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteNestedLoopJoin rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableModify rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteAggregate rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteMapAggregate rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteReduceAggregate rel) {
-        assert cutPoint != rel;
-
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteUnionAll rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSort rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSender rel) {
-        assert cutPoint != rel;
-
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteIndexScan rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableScan rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteValues rel) {
-        assert cutPoint != rel;
-
-        return rel;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
-        assert cutPoint != rel;
-
         curr.remotes.add(rel);
 
         return rel;
@@ -183,7 +86,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     /**
      * Visits all children of a parent.
      */
-    private IgniteRel processNode(IgniteRel rel) {
+    @Override protected IgniteRel processNode(IgniteRel rel) {
         if (rel == cutPoint) {
             cutPoint = null;
 
@@ -196,16 +99,6 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
             visitChild(rel, i, inputs.get(i));
 
         return rel;
-    }
-
-    /**
-     * Visits a particular child of a parent and replaces the child if it was changed.
-     */
-    private void visitChild(IgniteRel parent, int i, IgniteRel child) {
-        IgniteRel newChild = visit(child);
-
-        if (newChild != child)
-            parent.replaceInput(i, newChild);
     }
 
     /** */

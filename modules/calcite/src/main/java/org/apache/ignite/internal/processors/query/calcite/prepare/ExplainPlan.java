@@ -17,9 +17,8 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Query explain plan.
@@ -46,7 +45,7 @@ public class ExplainPlan implements QueryPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan clone(@Nullable PlanningContext ctx) {
+    @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
         return this;
     }
 
