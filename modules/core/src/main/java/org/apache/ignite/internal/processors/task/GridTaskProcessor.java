@@ -94,7 +94,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
@@ -1362,6 +1361,15 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 catch (IgniteException e) {
                     U.error(log, "Failed to unregister job communication message listeners and counters.", e);
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().task(
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getStartTime(),
+                    U.currentTimeMillis() - ses.getStartTime(),
+                    worker.affPartId());
             }
         }
     }

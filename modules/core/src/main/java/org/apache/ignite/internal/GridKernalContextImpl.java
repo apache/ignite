@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -408,6 +409,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor;
 
+    /** Performance statistics processor. */
+    @GridToStringExclude
+    private PerformaceStatisticsProcessor perfStatProc;
+
     /** */
     private Thread.UncaughtExceptionHandler hnd;
 
@@ -695,6 +700,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
+        else if (comp instanceof PerformaceStatisticsProcessor)
+            perfStatProc = (PerformaceStatisticsProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1282,5 +1289,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService buildIndexExecutorService() {
         return buildIdxExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PerformaceStatisticsProcessor performanceStatistics() {
+        return perfStatProc;
     }
 }

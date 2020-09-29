@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -1676,6 +1675,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
+                writeStatistics(tx, true);
+
                 tx.txState().onTxEnd(cctx, tx, true);
             }
 
@@ -1745,6 +1746,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
+                writeStatistics(tx, false);
+
                 tx.txState().onTxEnd(cctx, tx, false);
             }
 
@@ -1797,6 +1800,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else
                         cctx.txMetrics().onTxRollback();
                 }
+
+                writeStatistics(tx, commit);
 
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
@@ -3213,6 +3218,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             alreadyRun.getAndSet(false);
         }
+    }
+
+    /**
+     * Writes transaction performance statistics.
+     *
+     * @param tx Transaction.
+     * @param commited {@code True} if transaction commited.
+     */
+    private void writeStatistics(IgniteInternalTx tx, boolean commited) {
+        if (!cctx.kernalContext().performanceStatistics().enabled() || tx.startTimeNanos() == 0)
+            return;
+
+        cctx.kernalContext().performanceStatistics().transaction(
+            tx.txState().cacheIds(),
+            tx.startTime(),
+            System.nanoTime() - tx.startTimeNanos(),
+            commited);
     }
 
     /**
