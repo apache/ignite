@@ -248,7 +248,7 @@ class CacheGroupEncryptionKeys {
         if (F.isEmpty(keys))
             return false;
 
-        return keys.removeIf(key -> ids.contains(key.unsignedId()));
+        return keys.subList(1, keys.size()).removeIf(key -> ids.contains(key.unsignedId()));
     }
 
     /**

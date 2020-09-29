@@ -756,12 +756,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         for (int i = 0; i < grpIds.length; i++) {
             int grpId = grpIds[i];
-
-            CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
-
-            if (grp == null)
-                continue;
-
             int newKeyId = keyIds[i] & 0xff;
 
             synchronized (metaStorageMux) {
@@ -779,7 +773,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
 
-            reencryptGroups.put(grpId, pageScanner.pagesCount(grp));
+            CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
+
+            if (grp != null && grp.affinityNode())
+                reencryptGroups.put(grpId, pageScanner.pagesCount(grp));
 
             if (log.isInfoEnabled())
                 log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + newKeyId + "]");
@@ -891,7 +888,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        withMasterKeyChangeReadLock( () -> {
+        withMasterKeyChangeReadLock(() -> {
             synchronized (metaStorageMux) {
                 Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
 
@@ -909,9 +906,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                         Set<Integer> keyIds = entry.getValue();
 
-                        boolean rmv = grpKeys.removeKeysById(grpId, keyIds);
-
-                        assert rmv : keyIds;
+                        if (!grpKeys.removeKeysById(grpId, keyIds))
+                            continue;
 
                         writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
 
@@ -1032,7 +1028,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
-            if (grp == null)
+            if (grp == null || !grp.affinityNode())
                 continue;
 
             long[] offsets = pageScanner.pagesCount(grp);

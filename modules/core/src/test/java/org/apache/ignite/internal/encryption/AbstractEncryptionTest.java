@@ -354,12 +354,20 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         awaitEncryption(G.allGrids(), grpId, timeout);
 
         for (Ignite g : G.allGrids()) {
-            info("Validating encryption key [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
-
             IgniteEx grid = (IgniteEx)g;
 
             if (grid.context().clientNode())
                 continue;
+
+            info("Validating encryption key [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
+
+            CacheGroupContext grp = grid.context().cache().cacheGroup(grpId);
+
+            if (grp == null || !grp.affinityNode()) {
+                info("Context doesn't exits on " + grid.localNode().id());
+
+                continue;
+            }
 
             GridEncryptionManager encryption = grid.context().encryption();
 
@@ -384,8 +392,6 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             }, timeout);
 
             assertTrue(fut.isDone());
-
-            CacheGroupContext grp = grid.context().cache().cacheGroup(grpId);
 
             List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
                 .boxed().collect(Collectors.toList());
@@ -494,6 +500,9 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      */
     protected boolean isReencryptionInProgress(IgniteEx node, int grpId) {
         CacheGroupContext grp = node.context().cache().cacheGroup(grpId);
+
+        if (grp == null || !grp.affinityNode())
+            return false;
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             long state = node.context().encryption().getEncryptionState(grpId, p);

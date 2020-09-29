@@ -184,9 +184,9 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
     public IgniteInternalFuture<Void> schedule(int grpId) throws IgniteCheckedException {
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
-        if (grp == null) {
-            if (log.isDebugEnabled())
-                log.debug("Skip reencryption, cache group was destroyed [grp=" + grpId + "]");
+        if (grp == null || !grp.affinityNode()) {
+            if (log.isInfoEnabled())
+                log.info("Skip reencryption, cache group doesn't exist on the local node [grp=" + grpId + "]");
 
             return new GridFinishedFuture<>();
         }

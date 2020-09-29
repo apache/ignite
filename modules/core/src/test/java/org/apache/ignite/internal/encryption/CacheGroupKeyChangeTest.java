@@ -20,9 +20,8 @@ package org.apache.ignite.internal.encryption;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -76,6 +74,9 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     /** Timeout. */
     private static final long MAX_AWAIT_MILLIS = 15_000;
 
+    /** 1 megabyte in bytes. */
+    private static final int MB = 1024 * 1024;
+
     /** */
     private static final String GRID_2 = "grid-2";
 
@@ -84,6 +85,9 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
     /** Count of cache backups. */
     private int backups;
+
+    /** Number of WAL segments. */
+    private int walSegments = 10;
 
     /** WAL mode. */
     private WALMode walMode = LOG_ONLY;
@@ -101,12 +105,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
+                    .setMaxSize(100 * MB)
                     .setPersistenceEnabled(true))
             .setPageSize(4 * 1024)
-            .setWalSegmentSize(1024 * 1024)
-            .setWalSegments(20)
-            .setMaxWalArchiveSize(30 * 1024 * 1024)
+            .setWalSegmentSize(MB)
+            .setWalSegments(walSegments)
+            .setMaxWalArchiveSize(2 * walSegments * MB)
             .setCheckpointFrequency(30 * 1000L)
             .setWalMode(walMode);
 
@@ -500,54 +504,63 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testBasicChange() throws Exception {
+    public void testKeyChangeWithNodeFilter() throws Exception {
         startTestGrids(true);
 
-        IgniteEx node1 = grid(GRID_0);
-        IgniteEx node2 = grid(GRID_1);
+        IgniteEx node0 = grid(GRID_0);
+        IgniteEx node1 = grid(GRID_1);
 
-        createEncryptedCache(node1, node2, cacheName(), null);
+        Object nodeId0 = node0.localNode().consistentId();
+
+        node0.createCache(cacheConfiguration(cacheName(), null)
+            .setNodeFilter(node -> !node.consistentId().equals(nodeId0)));
+
+        loadData(10_000);
 
         forceCheckpoint();
 
-        IgniteInternalCache<Object, Object> cache = node1.cachex(cacheName());
+        int grpId = CU.cacheId(cacheName());
 
-        int grpId = cache.context().groupId();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-        node1.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+        List<Integer> keys0 = node0.context().encryption().groupKeyIds(grpId);
+        List<Integer> keys1 = node1.context().encryption().groupKeyIds(grpId);
 
-        Set<Integer> keys1 = new TreeSet<>(node1.context().encryption().groupKeyIds(grpId));
-        Set<Integer> keys2 = new TreeSet<>(node2.context().encryption().groupKeyIds(grpId));
-
+        assertEquals(2, keys0.size());
         assertEquals(2, keys1.size());
 
-        assertEquals(keys1, keys2);
-
-        info("New key was set on all nodes [grpId=" + grpId + ", keys=" + keys1 + "]");
+        assertTrue(keys0.containsAll(keys1));
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         stopAllGrids();
 
-        node1 = startGrid(GRID_0);
-        node2 = startGrid(GRID_1);
+        startTestGrids(false);
 
-        node1.cluster().state(ClusterState.ACTIVE);
+        node0 = grid(GRID_0);
+        node1 = grid(GRID_1);
 
-        // Previous keys must be deleted when the corresponding WAL segment is deleted.
-        try (IgniteDataStreamer<Integer, String> streamer = node1.dataStreamer(cacheName())) {
-            for (int i = node1.cache(cacheName()).size(); i < 500_000; i++) {
-                streamer.addData(i, String.valueOf(i));
+        IgniteCache<Object, Object> allNodesCache = node0.createCache("cache2");
 
-                if (i % 1_000 == 0 &&
-                    node1.context().encryption().groupKeyIds(grpId).size() == 1 &&
-                    node2.context().encryption().groupKeyIds(grpId).size() == 1)
-                    break;
-            }
-        }
+        // Previous keys must be deleted when the corresponding WAL segment is deleted, so we adding data on all nodes.
+        long endTime = U.currentTimeMillis() + 30_000;
+        int cntr = 0;
 
-        assertEquals(1, node1.context().encryption().groupKeyIds(grpId).size());
-        assertEquals(1, node2.context().encryption().groupKeyIds(grpId).size());
+        do {
+            allNodesCache.put(cntr, String.valueOf(cntr));
+
+            if (node0.context().encryption().groupKeyIds(grpId).size() == 1 &&
+                node1.context().encryption().groupKeyIds(grpId).size() == 1)
+                break;
+
+            ++cntr;
+        } while (U.currentTimeMillis() < endTime);
+
+        assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
+
+        assertEquals(node0.context().encryption().groupKeyIds(grpId), node1.context().encryption().groupKeyIds(grpId));
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -555,6 +568,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      */
     @Test
     public void testBasicChangeWithConstantLoad() throws Exception {
+        walSegments = 20;
+
         startTestGrids(true);
 
         IgniteEx node0 = grid(GRID_0);
