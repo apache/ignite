@@ -1983,10 +1983,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     Arrays.asList(mntcRecord.actionParameters().split(File.separator)))
             );
 
-            mntcRegistry.registerMaintenanceAction(mntcRecord.id(),
-                new CleanCacheStoresMaintenanceAction(workDir,
-                mntcRecord.actionParameters().split(File.separator)));
-
             return;
         }
 

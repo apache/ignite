@@ -22,6 +22,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,15 +39,9 @@ import java.util.UUID;
 @IgniteExperimental
 public interface MaintenanceRegistry {
     /**
-     *
-     * @return {@code True}
+     * @return {@code True} if any maintenance record was found.
      */
-    public boolean prepareMaintenance();
-
-    /**
-     *
-     */
-    public void proceedWithMaintenance();
+    public boolean isMaintenanceMode();
 
     /**
      * @param rec {@link MaintenanceRecord} object with maintenance information that needs
@@ -57,16 +52,6 @@ public interface MaintenanceRegistry {
     public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
 
     /**
-     * @return {@link MaintenanceRecord} object for given maintenance ID or null if no maintenance record was found.
-     */
-    @Nullable public MaintenanceRecord maintenanceRecord(UUID maitenanceId);
-
-    /**
-     * @return {@code True} if any maintenance record was found.
-     */
-    public boolean isMaintenanceMode();
-
-    /**
      * Deletes {@link MaintenanceRecord} of given ID from maintenance registry.
      *
      * @param mntcId
@@ -74,12 +59,9 @@ public interface MaintenanceRegistry {
     public void clearMaintenanceRecord(UUID mntcId);
 
     /**
-     * Registers {@link MaintenanceAction} object with information from corresponding Maintenance record.
-     *
-     * @param mntcId The ID of {@link MaintenanceRecord} action is registered for.
-     * @param action {@link MaintenanceAction} object with executable logic to address given maintenance reason.
+     * @return {@link MaintenanceRecord} object for given maintenance ID or null if no maintenance record was found.
      */
-    public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action);
+    @Nullable public MaintenanceRecord maintenanceRecord(UUID maitenanceId);
 
     /**
      * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
@@ -88,10 +70,33 @@ public interface MaintenanceRegistry {
     public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb);
 
     /**
-     * Gets {@link MaintenanceAction} object for given maintenance record ID.
-     *
-     * @param mntcId ID of {@link MaintenanceRecord}.
-     * @return {@link MaintenanceAction} registered for given ID or null of no actions were registered.
+     * @param maintenanceId
+     * @return
      */
-    @Nullable public MaintenanceAction maintenanceAction(UUID mntcId);
+    public List<MaintenanceAction> actionsForMaintenanceRecord(UUID maintenanceId);
+
+    /**
+     * Examine all components if they need to execute maintenance actions.
+     *
+     * As user may resolve some maintenance situations by hand when the node was turned off,
+     * component may find out that no maintenance is needed anymore.
+     *
+     * {@link MaintenanceRecord Maintenance records} for these components are removed
+     * and their {@link MaintenanceAction maintenance actions} are not executed.
+     *
+     * @return {@code True} if at least one unresolved {@link MaintenanceRecord} was found
+     * and {@code false} if all registered {@link MaintenanceRecord}s are already resolved.
+     */
+    public boolean prepareMaintenance();
+
+    /**
+     * Handles all {@link MaintenanceRecord maintenance records} left
+     * after {@link MaintenanceRegistry#prepareMaintenance()} check.
+     *
+     * If a record defines an action that should be started automatically (e.g. defragmentation starts automatically,
+     * no additional confirmation from user is required), it is executed.
+     *
+     * Otherwise waits for user to trigger actions for maintenance records.
+     */
+    public void proceedWithMaintenance();
 }

@@ -18,13 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.maintenance.MaintenanceAction;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
 /**
  *
  */
-public class CleanCacheStoresMaintenanceAction implements MaintenanceAction {
+public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void> {
+    /** */
+    private static final String ACTION_NAME = "clean-data-files";
+
     /** */
     private final File rootStoreDir;
 
@@ -41,14 +48,28 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction {
     }
 
     /** {@inheritDoc} */
-    @Override public void execute() {
+    @Override public Void execute() {
         for (String cacheStoreDirName : cacheStoreDirs) {
             File cacheStoreDir = new File(rootStoreDir, cacheStoreDirName);
 
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
-                for (File file : cacheStoreDir.listFiles())
-                    file.delete();
+                for (File file : cacheStoreDir.listFiles()) {
+                    if (!file.getName().equals(CACHE_DATA_FILENAME))
+                        file.delete();
+                }
             }
         }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull String name() {
+        return ACTION_NAME;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String description() {
+        return "Cleans data files of cache groups";
     }
 }

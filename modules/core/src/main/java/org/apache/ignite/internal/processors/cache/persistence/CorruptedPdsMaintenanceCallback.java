@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+
 /**
  *
  */
@@ -60,14 +62,18 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public boolean proceedWithMaintenance() {
-        for (String cacheStoreDir : cacheStoreDirs) {
-            File cacheStoreDirFile = new File(workDir, cacheStoreDir);
+        for (String cacheStoreDirName : cacheStoreDirs) {
+            File cacheStoreDir = new File(workDir, cacheStoreDirName);
 
-            if (cacheStoreDirFile.exists()
-                && cacheStoreDirFile.isDirectory()
-                && cacheStoreDirFile.listFiles().length > 0
-            )
-                return true;
+            if (cacheStoreDir.exists()
+                && cacheStoreDir.isDirectory()
+                && cacheStoreDir.listFiles().length > 0
+            ) {
+                for (File f : cacheStoreDir.listFiles()) {
+                    if (!f.getName().equals(CACHE_DATA_FILENAME))
+                        return true;
+                }
+            }
         }
 
         return false;
@@ -75,18 +81,7 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public List<MaintenanceAction> allActions() {
-        MaintenanceAction cleanCorruptedFilesAction = () -> {
-            for (String cacheStoreDir : cacheStoreDirs) {
-                File cacheStoreDirFile = new File(workDir, cacheStoreDir);
-
-                if (cacheStoreDirFile.exists() && cacheStoreDirFile.isDirectory()) {
-                    for (File file : cacheStoreDirFile.listFiles())
-                        file.delete();
-                }
-            }
-        };
-
-        return Arrays.asList(cleanCorruptedFilesAction);
+        return Arrays.asList(new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])));
     }
 
     /** {@inheritDoc} */

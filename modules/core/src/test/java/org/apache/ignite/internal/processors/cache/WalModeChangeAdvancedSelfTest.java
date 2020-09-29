@@ -43,6 +43,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
 /**
  * Concurrent and advanced tests for WAL state change.
@@ -121,6 +122,90 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         for (int i = 0; i < 10; i++)
             assertNotNull(cache1.get(i));
+    }
+
+    /**
+     * If user manually clears corrupted files when node was down, node detects this and not enters maintenance mode
+     * (although still need another restart to get back to normal operations).
+     *
+     * <p>
+     *     Test scenario:
+     *     <ol>
+     *         <li>
+     *             Start server node, create cache, disable WAL for the cache, put some keys to it.
+     *         </li>
+     *         <li>
+     *             Stop server node, remove checkpoint end markers from cp directory
+     *             to make node think it has failed in the middle of checkpoint.
+     *         </li>
+     *         <li>
+     *             Start the node, verify it fails to start because of corrupted PDS of the cache.
+     *         </li>
+     *         <li>
+     *             Clean data directory of the cache, start node again, verify it doesn't report maintenance mode.
+     *         </li>
+     *         <li>
+     *             Restart node and verify it is in normal operations mode.
+     *         </li>
+     *     </ol>
+     * </p>
+     *
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
+        IgniteEx srv = startGrid(config(SRV_1, false, false));
+
+        File cacheToClean = cacheDir(srv, CACHE_NAME);
+
+        String ig0Folder = srv.context().pdsFolderResolver().resolveFolders().folderName();
+        File dbDir = U.resolveWorkDirectory(srv.configuration().getWorkDirectory(), "db", false);
+
+        File ig0LfsDir = new File(dbDir, ig0Folder);
+        File ig0CpDir = new File(ig0LfsDir, "cp");
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+
+        srv.cluster().disableWal(CACHE_NAME);
+
+        for (int i = 0; i < 10; i++)
+            cache1.put(i, i);
+
+        stopAllGrids(true);
+
+        File[] cpMarkers = ig0CpDir.listFiles();
+
+        for (File cpMark : cpMarkers) {
+            if (cpMark.getName().contains("-END"))
+                cpMark.delete();
+        }
+
+        // Node should fail as its PDS may be corrupted because of disabled WAL
+        GridTestUtils.assertThrows(null,
+            () -> startGrid(config(SRV_1, false, false)),
+            Exception.class,
+            null);
+
+        cleanCacheDir(cacheToClean);
+
+        // Node should start successfully and not enter maintenance mode as MaintenanceRecord will be cleaned
+        // automatically because corrupted PDS was deleted during downtime
+        srv = startGrid(config(SRV_1, false, false));
+        assertFalse(srv.context().maintenanceRegistry().isMaintenanceMode());
+
+        stopAllGrids(false);
+
+        // After restart node works normal mode even without executing maintenance action to clear corrupted PDS
+        srv = startGrid(config(SRV_1, false, false));
+        assertFalse(srv.context().maintenanceRegistry().isMaintenanceMode());
+
+        srv.cluster().state(ACTIVE);
+
+        cache1 = srv.getOrCreateCache(CACHE_NAME);
+        assertEquals(0, cache1.size());
     }
 
     /**
@@ -209,7 +294,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     /** */
     private void cleanCacheDir(File cacheDir) {
         for (File f : cacheDir.listFiles()) {
-            if (!f.getName().endsWith(".dat"))
+            if (!f.getName().equals(CACHE_DATA_FILENAME))
                 f.delete();
         }
     }

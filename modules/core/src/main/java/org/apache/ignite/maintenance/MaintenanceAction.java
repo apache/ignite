@@ -18,10 +18,37 @@
 package org.apache.ignite.maintenance;
 
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/** */
+import java.util.UUID;
+
+/**
+ * Maintenance action interface enables user to execute operations related to a particular {@link MaintenanceRecord}.
+ *
+ * These operations may resolve maintenance situation (e.g. remove corrupted data files), get information
+ * about other ongoing maintenance action (e.g. if some action requires a lot of time and user wants to know
+ * current progress of the action) or cancel other ongoing action.
+ *
+ * List of maintenance actions available for each record is defined by {@link MaintenanceWorkflowCallback}.
+ *
+ * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceRecord} with
+ * call {@link MaintenanceRegistry#actionsForMaintenanceRecord(UUID)}
+ *
+ */
 @IgniteExperimental
-public interface MaintenanceAction {
-    /** */
-    public void execute();
+public interface MaintenanceAction<T> {
+    /** Executes operations of current maintenance action and returns results. */
+    public T execute();
+
+    /**
+     * Mandatory human-readable name of maintenance action.
+     * All actions of single {@link MaintenanceWorkflowCallback} should have unique names.
+     */
+    @NotNull public String name();
+
+    /**
+     * Optional user-readable description of maintenance action.
+     */
+    @Nullable public String description();
 }

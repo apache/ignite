@@ -23,6 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -39,9 +40,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
@@ -60,9 +63,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** */
     private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
-
-    /** */
-    private final Map<UUID, MaintenanceAction> registeredActions = new ConcurrentHashMap<>();
 
     /** */
     private final Map<UUID, MaintenanceWorkflowCallback> workflowCallbacks = new ConcurrentHashMap<>();
@@ -123,8 +123,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
 
-            if (!storeDir.exists())
-                return;
+            U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
             mntcRecordsFile = new File(storeDir, MAINTENANCE_FILE_NAME);
 
@@ -158,7 +157,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 " maintenance mode won't be entered", t);
 
             registeredRecords.clear();
-            registeredActions.clear();
 
             if (mntcRecordsFile != null)
                 mntcRecordsFile.delete();
@@ -167,12 +165,38 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public boolean prepareMaintenance() {
-        return false;
+        workflowCallbacks.values().removeIf(cb ->
+            {
+                if (!cb.proceedWithMaintenance()) {
+                    clearMaintenanceRecord(cb.maintenanceId());
+
+                    return true;
+                }
+
+                return false;
+            }
+        );
+
+        return !workflowCallbacks.isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public void proceedWithMaintenance() {
+        for (MaintenanceWorkflowCallback cb : workflowCallbacks.values()) {
+            MaintenanceAction mntcAction = cb.automaticAction();
 
+            if (mntcAction != null) {
+                try {
+                    mntcAction.execute();
+                }
+                catch (Throwable t) {
+                    log.warning("Failed to execute automatic action for maintenance record: " +
+                        registeredRecords.get(cb.maintenanceId()), t);
+
+                    throw t;
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -188,7 +212,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** {@inheritDoc} */
     @Override public void clearMaintenanceRecord(UUID mntcId) {
         registeredRecords.remove(mntcId);
-        registeredActions.remove(mntcId);
 
         if (mntcRecordsFile.exists()) {
             try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, false)) {
@@ -210,18 +233,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMaintenanceAction(@NotNull UUID mntcId, @NotNull MaintenanceAction action) {
-        if (inMemoryMode)
-            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
-
-        if (!registeredRecords.containsKey(mntcId))
-            throw new IgniteException("Maintenance record for given ID not found," +
-                " maintenance action for non-existing record won't be registered: " + mntcId);
-
-        registeredActions.put(mntcId, action);
-    }
-
-    /** {@inheritDoc} */
     @Override public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
@@ -230,16 +241,32 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
         if (!registeredRecords.containsKey(mntcId))
             throw new IgniteException("Maintenance record for given ID not found," +
-                " maintenance action for non-existing record won't be registered: " + mntcId);
+                " maintenance workflow callback for non-existing record won't be registered: " + mntcId);
 
+        List<MaintenanceAction> actions = cb.allActions();
 
+        if (actions == null || actions.isEmpty())
+            throw new IgniteException("Maintenance workflow callback should provide at least one mainetance action");
+
+        int size = actions.size();
+        long distinctSize = actions.stream().map(a -> a.name()).distinct().count();
+
+        if (distinctSize < size)
+            throw new IgniteException("All actions of a single workflow should have unique names: " +
+                actions.stream().map(a -> a.name()).collect(Collectors.joining(", ")));
+
+        workflowCallbacks.put(mntcId, cb);
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MaintenanceAction maintenanceAction(UUID mntcId) {
+    @Override public List<MaintenanceAction> actionsForMaintenanceRecord(UUID maintenanceId) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
-        return registeredActions.get(mntcId);
+        if (!registeredRecords.containsKey(maintenanceId))
+            throw new IgniteException("Maintenance workflow callback for given ID not found, " +
+                "cannot retrieve maintenance actions for it: " + maintenanceId);
+
+        return workflowCallbacks.get(maintenanceId).allActions();
     }
 }

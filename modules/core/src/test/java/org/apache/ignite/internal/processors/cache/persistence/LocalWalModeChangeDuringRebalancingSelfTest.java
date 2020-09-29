@@ -64,6 +64,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -555,6 +556,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
     /**
      * Node doesn't delete consistent PDS when WAL was turned off automatically (disable WAL during rebalancing feature).
+     *
      * <p>
      * Test scenario:
      * <ol>
@@ -585,7 +587,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      *     </li>
      * </ol>
      * </p>
-     *
      *
      * @throws Exception If failed.
      */
@@ -735,10 +736,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
                 MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
 
-                MaintenanceAction mntcAction = mntcRegistry.maintenanceAction(mntcActionId);
+                List<MaintenanceAction> actions = mntcRegistry.actionsForMaintenanceRecord(mntcActionId);
 
-                if (mntcAction != null)
-                    mntcAction.execute();
+                MaintenanceAction action = actions.get(0);
+
+                action.execute();
 
                 mntcRegistry.clearMaintenanceRecord(mntcActionId);
             }
