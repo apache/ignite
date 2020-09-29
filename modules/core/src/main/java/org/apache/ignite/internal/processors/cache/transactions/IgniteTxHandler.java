@@ -88,6 +88,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -1778,53 +1779,60 @@ public class IgniteTxHandler {
                 txCounters.updateCounters(req.updateCounters());
             }
 
-            if (!tx.isSystemInvalidate()) {
-                int idx = 0;
+            IntHashMap<GridDhtLocalPartition> reservationMap = new IntHashMap<>();
 
-                for (IgniteTxEntry entry : req.writes()) {
-                    GridCacheContext cacheCtx = entry.context();
+            try {
+                if (!tx.isSystemInvalidate()) {
+                    int idx = 0;
 
-                    int part = cacheCtx.affinity().partition(entry.key());
+                    for (IgniteTxEntry entry : req.writes()) {
+                        GridCacheContext cacheCtx = entry.context();
 
-                    GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
-                        req.topologyVersion(),
-                        false);
+                        int part = cacheCtx.affinity().partition(entry.key());
 
-                    if (locPart != null && locPart.reserve()) {
                         try {
-                            tx.addWrite(entry, ctx.deploy().globalLoader());
+                            // Avoid enlisting to invalid partition.
+                            boolean reserved = reservationMap.containsKey(part);
 
-                            // Entry will be invalidated if a partition was moved to RENTING.
-                            if (locPart.state() == RENTING)
-                                continue;
+                            if (!reserved) {
+                                GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
+                                    req.topologyVersion(),
+                                    false);
 
-                            if (txCounters != null) {
-                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
-
-                                if (cntr != null) // Counter is null if entry is no-op.
-                                    entry.updateCounter(cntr);
+                                if ((reserved = locPart != null && locPart.reserve()))
+                                    reservationMap.put(part, locPart);
                             }
 
-                            if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
-                                invalidateNearEntry(cacheCtx, entry.key(), req.version());
+                            if (reserved) {
+                                tx.addWrite(entry, ctx.deploy().globalLoader());
 
-                            if (req.needPreloadKey(idx)) {
-                                GridCacheEntryEx cached = entry.cached();
+                                if (txCounters != null) {
+                                    Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
 
-                                if (cached == null)
-                                    cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                                    if (cntr != null) // Counter is null if entry is no-op.
+                                        entry.updateCounter(cntr);
+                                }
 
-                                GridCacheEntryInfo info = cached.info();
+                                if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
+                                    invalidateNearEntry(cacheCtx, entry.key(), req.version());
 
-                                if (info != null && !info.isNew() && !info.isDeleted())
-                                    res.addPreloadEntry(info);
-                            }
+                                if (req.needPreloadKey(idx)) {
+                                    GridCacheEntryEx cached = entry.cached();
 
-                            if (cacheCtx.readThroughConfigured() &&
-                                !entry.skipStore() &&
-                                entry.op() == TRANSFORM &&
-                                entry.oldValueOnPrimary() &&
-                                !entry.hasValue()) {
+                                    if (cached == null)
+                                        cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+
+                                    GridCacheEntryInfo info = cached.info();
+
+                                    if (info != null && !info.isNew() && !info.isDeleted())
+                                        res.addPreloadEntry(info);
+                                }
+
+                                if (cacheCtx.readThroughConfigured() &&
+                                    !entry.skipStore() &&
+                                    entry.op() == TRANSFORM &&
+                                    entry.oldValueOnPrimary() &&
+                                    !entry.hasValue()) {
                                     while (true) {
                                         try {
                                             GridCacheEntryEx cached = entry.cached();
@@ -1853,36 +1861,35 @@ public class IgniteTxHandler {
                                             if (val != null)
                                                 entry.readValue(val);
 
-                                        break;
-                                    }
-                                    catch (GridCacheEntryRemovedException ignored) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Got entry removed exception, will retry: " + entry.txKey());
+                                            break;
+                                        }
+                                        catch (GridCacheEntryRemovedException ignored) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                        entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
+                                            entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
+                                        }
                                     }
                                 }
                             }
+                            else
+                                tx.addInvalidPartition(cacheCtx.cacheId(), part);
                         }
                         catch (GridDhtInvalidPartitionException e) {
-                            tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
+                            tx.addInvalidPartition(cacheCtx.cacheId(), part);
+                        }
 
-                            tx.clearEntry(entry.txKey());
-                        }
-                        finally {
-                            locPart.release();
-                        }
+                        idx++;
                     }
-                    else
-                        tx.addInvalidPartition(cacheCtx.cacheId(), part);
-
-                    idx++;
                 }
-            }
 
-            // Prepare prior to reordering, so the pending locks added
-            // in prepare phase will get properly ordered as well.
-            tx.prepareRemoteTx();
+                // Prepare prior to reordering, so the pending locks added
+                // in prepare phase will get properly ordered as well.
+                tx.prepareRemoteTx();
+            }
+            finally {
+                reservationMap.forEach((k, p) -> p.release());
+            }
 
             if (req.last()) {
                 assert !F.isEmpty(req.transactionNodes()) :

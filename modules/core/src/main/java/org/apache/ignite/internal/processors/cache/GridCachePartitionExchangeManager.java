@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -291,7 +292,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private ExchangeLatchManager latchMgr;
 
     /** List of exchange aware components. */
-    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new CopyOnWriteArrayList<>();
 
     /** Histogram of PME durations. */
     private volatile HistogramMetricImpl durationHistogram;
