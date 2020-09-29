@@ -208,11 +208,11 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
     @Test
     public void checkMessageOnCoordinatorChangeTest() throws Exception {
-        Ignite server1 = startGrid("server1");
+        startGrid(1);
 
-        Ignite client = startClientGrid("client");
+        startClientGrid("client");
 
-        Ignite server2 = startGrid("server2");
+        Ignite server2 = startGrid(2);
 
         MockLogger log = new MockLogger();
 
@@ -220,14 +220,11 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         setLogger(log, server2);
 
-        server1.close();
+        stopGrid(1);
 
-        client.close();
+        stopGrid("client");
 
-        assertEquals("There should be no message that the client was the coordinator", 0,
-                F.view(log.logs(), msg -> msg.contains("Coordinator changed") && (msg.contains("isClient=true")))
-                        .size()
-        );
+        assertFalse(log.logs().stream().anyMatch(msg -> msg.contains("Coordinator changed") && msg.contains("isClient=true")));
     }
 
     /**
