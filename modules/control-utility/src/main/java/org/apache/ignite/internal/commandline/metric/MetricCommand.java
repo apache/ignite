@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.systemview;
+package org.apache.ignite.internal.commandline.metric;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -28,46 +31,50 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TablePrinter;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskArg;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskResult;
-import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.internal.visor.metric.VisorMetricTask;
+import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
 
-import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
+import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
 
-/** Represents command for {@link SystemView} content printing. */
-public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
+/** Represents command for metric values printing. */
+public class MetricCommand implements Command<VisorMetricTaskArg> {
     /**
-     * Argument for the system view content obtainig task.
-     * @see VisorSystemViewTask
+     * Argument for the metric values obtainig task.
+     * @see VisorMetricTask
      */
-    private VisorSystemViewTaskArg taskArg;
+    private VisorMetricTaskArg taskArg;
 
-    /** ID of the node to get the system view content from. */
+    /** ID of the node to get metric values from. */
     private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try {
-            VisorSystemViewTaskResult res;
+            Map<String, ?> res;
 
             try (GridClient client = Command.startClient(clientCfg)) {
                 res = executeTaskByNameOnNode(
                     client,
-                    VisorSystemViewTask.class.getName(),
+                    VisorMetricTask.class.getName(),
                     taskArg,
                     nodeId,
                     clientCfg
                 );
             }
 
-            if (res != null)
-                new TablePrinter(res.attributes(), res.types()).print(res.rows(), log);
+            if (res != null) {
+                List<List<?>> data = res.entrySet().stream()
+                    .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toList());
+
+                new TablePrinter(asList("metric", "value")).print(data, log);
+            }
             else
-                log.info("No system view with specified name was found [name=" + taskArg.systemViewName() + "]");
+                log.info("No metric with specified name was found [name=" + taskArg.name() + "]");
 
             return res;
         }
@@ -83,16 +90,16 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
     @Override public void parseArguments(CommandArgIterator argIter) {
         nodeId = null;
 
-        String sysViewName = null;
+        String metricName = null;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
 
-            SystemViewCommandArg cmdArg = CommandArgUtils.of(arg, SystemViewCommandArg.class);
+            MetricCommandArg cmdArg = CommandArgUtils.of(arg, MetricCommandArg.class);
 
             if (cmdArg == NODE_ID) {
                 String nodeIdArg = argIter.nextArg(
-                    "ID of the node from which system view content should be obtained is expected.");
+                    "ID of the node from which metric values should be obtained is expected.");
 
                 try {
                     nodeId = UUID.fromString(nodeIdArg);
@@ -104,23 +111,21 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
                 }
             }
             else {
-                if (sysViewName != null)
-                    throw new IllegalArgumentException("Multiple system view names are not supported.");
+                if (metricName != null)
+                    throw new IllegalArgumentException("Multiple metric(metric registry) names are not supported.");
 
-                sysViewName = arg;
+                metricName = arg;
             }
         }
 
-        if (sysViewName == null) {
-            throw new IllegalArgumentException(
-                "The name of the system view for which its content should be printed is expected.");
-        }
+        if (metricName == null)
+            throw new IllegalArgumentException("The name of a metric(metric registry) is expected.");
 
-        taskArg = new VisorSystemViewTaskArg(sysViewName);
+        taskArg = new VisorMetricTaskArg(metricName);
     }
 
     /** {@inheritDoc} */
-    @Override public VisorSystemViewTaskArg arg() {
+    @Override public VisorMetricTaskArg arg() {
         return taskArg;
     }
 
@@ -128,17 +133,16 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
     @Override public void printUsage(Logger log) {
         Map<String, String> params = new HashMap<>();
 
-        params.put("node_id", "ID of the node to get the system view from. If not set, random node will be chosen.");
-        params.put("system_view_name", "Name of the system view which content should be printed." +
-            " Both \"SQL\" and \"Java\" styles of system view name are supported" +
-            " (e.g. SQL_TABLES and sql.tables will be handled similarly).");
+        params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
+        params.put("name", "Name of the metric which value should be printed." +
+            " If name of the metric registry is specified, value of all its metrics will be printed.");
 
-        Command.usage(log, "Print system view content:", SYSTEM_VIEW, params, optional(NODE_ID, "node_id"),
-            "system_view_name");
+        Command.usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
+            "name");
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return SYSTEM_VIEW.toCommandName();
+        return METRIC.toCommandName();
     }
 }
