@@ -430,15 +430,15 @@
     - title: Standalone Nodes
       url: net-specific/standalone-nodes
     - title: Logging
-      url: net-specific/logging
+      url: net-specific/net-logging
     - title: LINQ
       url: net-specific/linq
     - title: Java Services Execution
       url: net-specific/java-services-execution
     - title: Plugins
-      url: net-specific/plugins
+      url: net-specific/net-plugins
     - title: Serialization
-      url: net-specific/serialization
+      url: net-specific/net-serialization
     - title: Cross-Platform Support
       url: net-specific/cross-platform-support
     - title: Platform Interoperability
@@ -446,9 +446,15 @@
     - title: Remote Assembly Loading
       url: net-specific/remote-assembly-loading
     - title: Troubleshooting
-      url: net-specific/troubleshooting
+      url: net-specific/net-troubleshooting
     - title: Integrations
-      url: net-specific/integrations
+      items:
+        - title: ASP.NET Output Caching
+          url: net-specific/asp-net-output-caching
+        - title: ASP.NET Session State Caching
+          url: net-specific/asp-net-session-state-caching
+        - title: Entity Framework 2nd Level Cache
+          url: net-specific/entity-framework-cache
 - title: Plugins
   url: plugins
 - title: SQL Reference

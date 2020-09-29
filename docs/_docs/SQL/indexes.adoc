@@ -14,6 +14,10 @@ Ignite automatically creates indexes for each primary key and affinity key field
 When you define an index on a field in the value object, Ignite creates a composite index consisting of the indexed field and the cache's primary key.
 In SQL terms, it means that the index will be composed of two columns: the column you want to index and the primary key column.
 
+== Creating Indexes With SQL
+
+Refer to the link:sql-reference/ddl#create-index[CREATE INDEX] section.
+
 == Configuring Indexes Using Annotations
 
 Indexes, as well as queryable fields, can be configured from code via the `@QuerySqlField` annotation. In the example below, the Ignite SQL engine will create indexes for the `id` and `salary` fields.
@@ -217,10 +221,6 @@ include::{javaFile}[tag=query,indent=0]
 
 Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] command if you need to manage indexes or make new fields of the object visible to the SQL engine at​ runtime.
 ====
-
-== Creating Indexes Using SQL Command
-
-Refer to the link:sql-reference/ddl#create-index[CREATE INDEX] section.
 
 == Configuring Index Inline Size
 
