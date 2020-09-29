@@ -44,7 +44,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1150,25 +1149,22 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
             fut.listen(f -> {
-                try {
-                    f.get();
+                if (f.isCancelled() || f.error() != null) {
+                    log.warning("Reencryption " +
+                        (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
 
-                    withMasterKeyChangeReadLock( () -> {
-                        synchronized (metaStorageMux) {
-                            cleanupKeys(grpId);
+                    return;
+                }
 
-                            reencryptGroups.remove(grpId);
-                        }
+                withMasterKeyChangeReadLock(() -> {
+                    synchronized (metaStorageMux) {
+                        cleanupKeys(grpId);
 
-                        return null;
-                    });
-                }
-                catch (IgniteFutureCancelledCheckedException e) {
-                    log.warning("Reencryption cancelled [grp=" + grpId + "]");
-                }
-                catch (IgniteCheckedException e) {
-                    log.warning("Reencryption failed [grp=" + grpId + "]", e);
-                }
+                        reencryptGroups.remove(grpId);
+                    }
+
+                    return null;
+                });
             });
         }
     }

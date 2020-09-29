@@ -63,7 +63,7 @@ public class BasicRateLimiterTest {
 
         long timeSpent = System.currentTimeMillis() - startTime;
 
-        // Rate limiter aims for an average rate of 1/s.
+        // Rate limiter aims for an average rate of permits per second.
         assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * permitsPerSec));
     }
 
@@ -102,7 +102,7 @@ public class BasicRateLimiterTest {
 
         long timeSpent = System.currentTimeMillis() - startTime;
 
-        // Rate limiter aims for an average rate of 1/s.
+        // Rate limiter aims for an average rate of permits per second.
         assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * permitsPerSec));
     }
 }

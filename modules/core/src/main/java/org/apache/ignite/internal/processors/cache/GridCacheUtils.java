@@ -2021,9 +2021,11 @@ public class GridCacheUtils {
      * @return Page size without encryption overhead.
      */
     public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        assert encSpi.blockSize() >= /* CRC */ 4 + /* Key ID */ 1;
+
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize(); /* For CRC. */
+            - encSpi.blockSize(); /* For CRC and encryption key ID. */
     }
 
     /**
