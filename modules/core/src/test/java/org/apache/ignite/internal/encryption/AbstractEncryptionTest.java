@@ -207,6 +207,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         int size = cache.size();
 
+        assertTrue("Cache cannot be empty", size > 0);
+
         for (long i = 0; i < size; i++)
             assertEquals(generateValue(i), cache.get(i));
     }

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -177,7 +178,11 @@ class CacheGroupEncryptionKeys {
 
         GroupKey newActiveKey = null;
 
-        for (GroupKey key : keys) {
+        ListIterator<GroupKey> itr = keys.listIterator(keys.size());
+
+        while (itr.hasPrevious()) {
+            GroupKey key = itr.previous();
+
             if (key.unsignedId() != newActiveId)
                 continue;
 
@@ -191,7 +196,7 @@ class CacheGroupEncryptionKeys {
         keys.add(0, newActiveKey);
 
         // Remove the duplicate key from the tail of the list.
-        keys.subList(1, keys.size()).remove(newActiveKey);
+        keys.subList(1, keys.size()).removeIf(k -> k.unsignedId() == newActiveId);
 
         return prevKey;
     }

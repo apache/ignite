@@ -222,8 +222,8 @@ class GroupKeyChangeProcess {
                         continue;
 
                     return new GridFinishedFuture<>(
-                        new IgniteException("Cache group key change was rejected. Cannot add new key identifier," +
-                        "it's  already present. There existing WAL segments that encrypted with this key [" +
+                        new IgniteException("Cache group key change was rejected. Cannot add new key identifier, " +
+                        "it's already present. There existing WAL segments that encrypted with this key [" +
                         "grpId=" + grpId + ", newId=" + keyId + ", currId=" + currKey.unsignedId() +
                         ", walSegment=" + walSegment + "]."));
                 }

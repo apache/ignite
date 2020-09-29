@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -504,6 +505,60 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testNodeWithOlderKeyBecameCoordinator() throws Exception {
+        backups = 1;
+
+        startTestGrids(true);
+
+        IgniteEx node0 = grid(GRID_0);
+        IgniteEx node1 = grid(GRID_1);
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        int grpId = CU.cacheId(cacheName());
+
+        stopGrid(GRID_0);
+
+        // Changing encryption key on one node.
+        node1.context().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+
+        stopGrid(GRID_1);
+
+        // The node with only the old key ID has become the coordinator.
+        node0 = startGrid(GRID_0);
+        assertTrue(Collections.singleton(INITIAL_KEY_ID).containsAll(node0.context().encryption().groupKeyIds(grpId)));
+
+        node1 = startGrid(GRID_1);
+        node1.cluster().state(ClusterState.ACTIVE);
+
+        // Wait until cache will be reencrypted with the old key.
+        checkGroupKey(grpId, INITIAL_KEY_ID, MAX_AWAIT_MILLIS);
+
+        IgniteEncryption encrMgr1 = node1.encryption();
+
+        // Changing the encryption key is not possible until the WAL segment,
+        // encrypted (probably) with the previous key, is deleted.
+        assertThrowsAnyCause(log,
+            () -> encrMgr1.changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS),
+            IgniteException.class,
+            "Cache group key change was rejected. Cannot add new key identifier, it's already present.");
+
+        long walIdx = node1.context().cache().context().wal().currentSegment();
+
+        // Simulate WAL segment deletion.
+        for (long n = 0; n <= walIdx; n++)
+            node1.context().encryption().onWalSegmentRemoved(walIdx);
+
+        encrMgr1.changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkEncryptedCaches(node0, node1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testKeyChangeWithNodeFilter() throws Exception {
         startTestGrids(true);
 
@@ -557,10 +612,10 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         } while (U.currentTimeMillis() < endTime);
 
         assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
-
         assertEquals(node0.context().encryption().groupKeyIds(grpId), node1.context().encryption().groupKeyIds(grpId));
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkEncryptedCaches(node0, node1);
     }
 
     /**
@@ -606,6 +661,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(node0.cluster().localNode().id().toString(), 1, encrMgr0.groupKeyIds(grpId).size());
         assertEquals(node1.cluster().localNode().id().toString(), 1, encrMgr1.groupKeyIds(grpId).size());
+
+        checkEncryptedCaches(node0, node1);
     }
 
     /**
@@ -741,6 +798,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         checkEncryptedCaches(node0, client);
 
         checkGroupKey(CU.cacheId(grpName), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+
+        checkEncryptedCaches(node0, node1);
     }
 
     /**
