@@ -369,9 +369,11 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
 
     /** {@inheritDoc} */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
-        return pw.item("index", idxName )
-            .item("collation", collation)
-            .itemIf("filters", cond, cond != null)
+        pw = pw
+            .item("index", idxName)
+            .item("collation", collation);
+        pw = super.explainTerms0(pw);
+        return pw
             .itemIf("lower", lowerIdxCond, !F.isEmpty(lowerIdxCond))
             .itemIf("upper", upperIdxCond, !F.isEmpty(upperIdxCond));
     }

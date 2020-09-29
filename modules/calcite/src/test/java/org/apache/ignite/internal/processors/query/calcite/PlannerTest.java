@@ -1446,8 +1446,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 List<Row> checkRes0 = new ArrayList<>();
 
                 for (int i = 0; i < 10; ++i) {
-                    checkRes0.add(rowTransformer.apply(row(execCtx, requiredColunms,
-                        ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextInt())));
+                    int col = ThreadLocalRandom.current().nextInt(1_000);
+
+                    checkRes0.add(rowTransformer.apply(row(execCtx, requiredColunms, col, col)));
                 }
 
                 checkRes.set(checkRes0);
@@ -1471,7 +1472,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT ID0 AS RES FROM PUBLIC.TEST_TABLE";
+        String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
