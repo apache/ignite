@@ -760,6 +760,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             synchronized (metaStorageMux) {
                 // Set new key as key for writing.
+                // Note that we cannot pass the encrypted key here because the master key may have changed,
+                // in which case we will not be able to decrypt the cache encryption key.
                 GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, newKeyId);
 
                 List<GroupKeyEncrypted> keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
