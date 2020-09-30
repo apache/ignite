@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+_ducktape-tox: &ducktape-tox
+  install: pip install tox
+  before_script: cd modules/ducktests/tests
+
 matrix:
   include:
     - language: java
@@ -52,9 +56,19 @@ matrix:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
 
     - language: python
-      python:
-        - "3.8"
-      install: pip install tox-travis
-      before_script: cd modules/ducktests/tests
+      python: 3.6.12
+      <<: *ducktape-tox
       script:
-        - tox
+        - tox -e py36
+
+    - language: python
+      python: 3.7.9
+      <<: *ducktape-tox
+      script:
+        - tox -e py37
+
+    - language: python
+      python: 3.8.5
+      <<: *ducktape-tox
+      script:
+        - tox -e linter,codestyle,py38
