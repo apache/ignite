@@ -37,7 +37,7 @@ class SnapshotTest(IgniteTest):
     """
     Test Snapshot.
     """
-    NUM_NODES = 4
+    NUM_NODES = 5
 
     SNAPSHOT_NAME = "test_snap"
 
@@ -66,7 +66,7 @@ class SnapshotTest(IgniteTest):
             data_storage=data_cfg,
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 2)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -77,8 +77,12 @@ class SnapshotTest(IgniteTest):
         streamer = IgniteApplicationService(
             self.test_context,
             client_config,
+            num_nodes=2,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
-            params={"cacheName": "test-cache"}
+            params={
+                "cacheName": "test-cache",
+                "iterSize": 128 * 1024
+            }
         )
 
         load(streamer, duration=300)
