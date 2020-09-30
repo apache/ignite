@@ -119,10 +119,11 @@ The `KILL QUERY` command allows you to cancel a running query.
 
 [source,sql]
 ----
-KILL QUERY {ASYNC} '<query_id>'
+KILL QUERY {ASYNC} 'query_id'
 ----
 
 === Description
+`query_id` can be retrived via the `SQL_QUERIES` view.
 `ASYNC` is an optional parameter which returns control immediately without waiting for the cancellation to finish, and `query_id` can be retrieved via the `SQL_QUERIES` view.
 
 When a query cancelled via the `KILL` command, all parts of the query running on all other nodes are cancelled.
