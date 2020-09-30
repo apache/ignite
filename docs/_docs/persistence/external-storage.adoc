@@ -196,12 +196,12 @@ CAUTION: Even though Ignite supports distributed transactions, it doesn't make y
 
 === Cassandra Integration
 
-Ignite provides an out-of-the-box implementation of `CacheStore` that enables you to use Apache Cassandra as a persistent storage. This implementation utilizes Cassandra's link:http://www.datastax.com/dev/blog/java-driver-async-queries[asynchronous queries] to provide high performance batch operations such as `loadAll()`, `writeAll()` and `deleteAll()`, and automatically creates all necessary tables and namespaces in Cassandra.
+Ignite provides an out-of-the-box implementation of `CacheStore` that enables you to use Apache Cassandra as a persistent
+storage. This implementation utilizes Cassandra's link:http://www.datastax.com/dev/blog/java-driver-async-queries[asynchronous queries, window=_blank]
+to provide high performance batch operations such as `loadAll()`, `writeAll()` and `deleteAll()`, and automatically creates
+all necessary tables and namespaces in Cassandra.
 
-////
-TODO
-Refer to the dedicated section on Cassandra integration for more information.
-////
+Refer to link:extensions-and-integrations/cassandra/overview[this documentation section] for configuration and usage guidelines.
 
 ////
 == Implementing Custom CacheStore

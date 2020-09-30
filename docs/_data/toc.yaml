@@ -421,6 +421,16 @@
           url: extensions-and-integrations/streaming/zeromq-streamer
         - title: Twitter Streamer
           url: extensions-and-integrations/streaming/twitter-streamer
+    - title: Cassandra Integration
+      items:
+        - title: Overview
+          url: extensions-and-integrations/cassandra/overview
+        - title: Configuration
+          url: extensions-and-integrations/cassandra/configuration
+        - title: Usage Examples
+          url: extensions-and-integrations/cassandra/usage-examples
+        - title: DDL Generator
+          url: extensions-and-integrations/cassandra/ddl-generator
 - title: C# and .NET Specific
   items:
     - title: Configuration Options
