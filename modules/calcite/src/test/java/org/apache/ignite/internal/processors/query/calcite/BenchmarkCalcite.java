@@ -163,7 +163,7 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
         ignite.cluster().state(ClusterState.INACTIVE);
     }
 
-    //@Test
+    @Test
     public void test3() throws Exception {
         //client = startClientGrid();
 
@@ -186,13 +186,13 @@ public class BenchmarkCalcite extends GridCommonAbstractTest {
         System.err.println("wait:");
 
         // populate
-        for (int i = 0; i < 10_00; ++i) {
+        for (int i = 0; i < 10_000; ++i) {
             cache1.put(i, new MyClass("some data " + i, i));
 
             //cache2.put(i, new MyClass2("other data " + i, i));
         }
 
-        for (int i = 0; i < 10_00; ++i) {
+        for (int i = 0; i < 10_000; ++i) {
             //cache1.put(i, new MyClass("some data " + i, i));
 
             cache2.put(i, new MyClass2("other data " + i, i));

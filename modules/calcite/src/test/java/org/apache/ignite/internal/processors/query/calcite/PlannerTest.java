@@ -1448,7 +1448,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                 for (int i = 0; i < 10; ++i) {
                     int col = ThreadLocalRandom.current().nextInt(1_000);
 
-                    checkRes0.add(rowTransformer.apply(row(execCtx, requiredColunms, col, col)));
+                    Row r = row(execCtx, requiredColunms, col, col);
+
+                    if (rowTransformer != null)
+                        r = rowTransformer.apply(r);
+
+                    checkRes0.add(r);
                 }
 
                 checkRes.set(checkRes0);

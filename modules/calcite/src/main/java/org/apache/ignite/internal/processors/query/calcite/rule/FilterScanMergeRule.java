@@ -27,7 +27,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -35,11 +34,15 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
@@ -53,9 +56,15 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
     public static final FilterScanMergeRule<IgniteIndexScan> INDEX_SCAN =
         new FilterScanMergeRule<IgniteIndexScan>(LogicalFilter.class, IgniteIndexScan.class, "FilterIndexScanMergeRule") {
             /** {@inheritDoc} */
-            @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan, RexNode cond) {
+            @Override protected IgniteIndexScan createNode(
+                RelOptCluster cluster,
+                IgniteIndexScan scan,
+                List<RexNode> projects,
+                RexNode cond,
+                ImmutableBitSet requiredColunms
+            ) {
                 return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(),
-                    scan.projections(), cond, null);
+                    projects, cond, requiredColunms);
             }
         };
 
@@ -63,9 +72,14 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
     public static final FilterScanMergeRule<IgniteTableScan> TABLE_SCAN =
         new FilterScanMergeRule<IgniteTableScan>(LogicalFilter.class, IgniteTableScan.class, "FilterTableScanMergeRule") {
             /** {@inheritDoc} */
-            @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan, RexNode cond) {
-                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), scan.projections(), cond,
-                    null);
+            @Override protected IgniteTableScan createNode(
+                RelOptCluster cluster,
+                IgniteTableScan scan,
+                List<RexNode> projects,
+                RexNode cond,
+                ImmutableBitSet requiredColunms
+            ) {
+                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), projects, cond, requiredColunms);
             }
         };
 
@@ -90,13 +104,15 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RelOptCluster cluster = scan.getCluster();
         RelMetadataQuery mq = call.getMetadataQuery();
 
-        RexNode cond = filter.getCondition();
+        RexNode condition = filter.getCondition();
 
-        if (scan.projections() != null) {
-            Mappings.TargetMapping permutation = permutation(scan.projections(), scan.getTable().getRowType());
+        List<RexNode> projects = scan.projections();
+
+        if (projects != null) {
+            Mappings.TargetMapping permutation = permutation(projects, scan.getTable().getRowType().getFieldCount());
 
             try {
-                cond = new RexShuttle() {
+                condition = new RexShuttle() {
                     @Override public RexNode visitLocalRef(RexLocalRef ref) {
                         int targetRef = permutation.getTargetOpt(ref.getIndex());
 
@@ -105,7 +121,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
                         return new RexLocalRef(targetRef, ref.getType());
                     }
-                }.apply(cond);
+                }.apply(condition);
             }
             catch (ControlFlowException e) {
                 return;
@@ -115,29 +131,38 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RexSimplify simplifier = simplifier(cluster);
 
         // Let's remove from the condition common with the scan filter parts.
-        cond = simplifier
+        condition = simplifier
             .withPredicates(mq.getPulledUpPredicates(scan))
-            .simplifyUnknownAsFalse(cond);
+            .simplifyUnknownAsFalse(condition);
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        cond = cond.accept(new InputRefReplacer());
+        condition = condition.accept(new InputRefReplacer());
 
         // Combine the condition with the scan filter.
-        cond = RexUtil.composeConjunction(builder(cluster), F.asList(cond, scan.condition()));
+        condition = RexUtil.composeConjunction(builder(cluster), F.asList(condition, scan.condition()));
 
         // Final simplification. We need several phases because simplifier sometimes
         // (see RexSimplify.simplifyGenericNode) leaves UNKNOWN nodes that can be
         // eliminated on next simplify attempt. We limit attempts count not to break
         // planning performance on complex condition.
         Set<RexNode> nodes = new HashSet<>();
-        while (nodes.add(cond) && nodes.size() < 3)
-            cond = simplifier.simplifyUnknownAsFalse(cond);
+        while (nodes.add(condition) && nodes.size() < 3)
+            condition = simplifier.simplifyUnknownAsFalse(condition);
 
-        call.transformTo(createNode(cluster, scan, cond));
+        Holder params = precalculation(filter, scan);
+
+        condition = params.conditions == null ? condition : params.conditions;
+
+        projects = params.projects == null ? projects : params.projects;
+
+        ImmutableBitSet requiredColunms = params.requiredColunms;
+
+        call.transformTo(createNode(cluster, scan, projects, condition, requiredColunms));
     }
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, RexNode cond);
+    protected abstract T createNode(RelOptCluster cluster, T scan, List<RexNode> project, RexNode cond,
+                                    ImmutableBitSet requiredColunms);
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
     private static class InputRefReplacer extends RexShuttle {
@@ -146,21 +171,74 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         }
     }
 
-    private static Mappings.TargetMapping permutation(
-        List<RexNode> nodes,
-        RelDataType inputRowType) {
+    private static Mappings.TargetMapping permutation(List<RexNode> nodes, int nodesCount) {
         final Mappings.TargetMapping mapping =
-            Mappings.create(
-                MappingType.PARTIAL_FUNCTION,
-                nodes.size(),
-                inputRowType.getFieldCount());
+            Mappings.create(MappingType.PARTIAL_FUNCTION, nodes.size(), nodesCount);
+
         for (Ord<RexNode> node : Ord.zip(nodes)) {
-            if (node.e instanceof RexLocalRef) {
-                mapping.set(
-                    node.i,
-                    ((RexLocalRef) node.e).getIndex());
-            }
+            if (node.e instanceof RexLocalRef)
+                mapping.set(node.i, ((RexLocalRef) node.e).getIndex());
         }
         return mapping;
+    }
+
+    private Holder precalculation(LogicalFilter filter, T scan) {
+        List<RexNode> projects = scan.projections();
+
+        if (projects != null) {
+            RexNode condition = filter.getCondition();
+
+            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                    builder.set(ref.getIndex());
+                    return ref;
+                }
+            };
+
+            shuttle.apply(projects);
+
+            ImmutableBitSet requiredColunms = builder.build();
+
+            IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
+
+            IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
+
+            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
+                tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
+
+            for (Ord<Integer> ord : Ord.zip(requiredColunms))
+                targetMapping.set(ord.e, ord.i);
+
+            shuttle = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
+                }
+            };
+
+            projects = shuttle.apply(projects);
+
+            if (condition != null)
+                condition = shuttle.apply(condition);
+
+            return new Holder(projects, condition, requiredColunms);
+        }
+        else
+            return Holder.EMPTY;
+    }
+
+    private static class Holder {
+        private static final Holder EMPTY = new Holder(null, null, null);
+
+        private final List<RexNode> projects;
+        private final RexNode conditions;
+        private final ImmutableBitSet requiredColunms;
+
+        Holder(List<RexNode> projects, RexNode conditions, ImmutableBitSet requiredColunms) {
+            this.projects = projects;
+            this.conditions = conditions;
+            this.requiredColunms = requiredColunms;
+        }
     }
 }

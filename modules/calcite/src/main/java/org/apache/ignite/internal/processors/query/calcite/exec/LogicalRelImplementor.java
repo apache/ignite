@@ -227,41 +227,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        ImmutableBitSet requiredColunms = null;
+        ImmutableBitSet requiredColunms = rel.requiredColunms();
         List<RexNode> lowerCond = rel.lowerIndexCondition();
         List<RexNode> upperCond = rel.upperIndexCondition();
-
-/*        if (projects != null) {
-            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
-
-            RexShuttle shuttle = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef ref) {
-                    builder.set(ref.getIndex());
-                    return ref;
-                }
-            };
-
-            shuttle.apply(projects);
-
-            requiredColunms = builder.build();
-
-            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-                tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
-
-            for (Ord<Integer> ord : Ord.zip(requiredColunms))
-                targetMapping.set(ord.e, ord.i);
-
-            shuttle = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
-                }
-            };
-
-            projects = shuttle.apply(projects);
-
-            if (condition != null)
-                condition = shuttle.apply(condition);
-        }*/
 
         RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
 
@@ -280,43 +248,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
         List<RexNode> projects = rel.projections();
+        ImmutableBitSet requiredColunms = rel.requiredColunms();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        ImmutableBitSet requiredColunms = null;
-
-/*        if (projects != null) {
-            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
-
-            RexShuttle shuttle = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef ref) {
-                    builder.set(ref.getIndex());
-                    return ref;
-                }
-            };
-
-            shuttle.apply(projects);
-
-            requiredColunms = builder.build();
-
-            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-                tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
-
-            for (Ord<Integer> ord : Ord.zip(requiredColunms))
-                targetMapping.set(ord.e, ord.i);
-
-            shuttle = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
-                }
-            };
-
-            projects = shuttle.apply(projects);
-
-            if (condition != null)
-                condition = shuttle.apply(condition);
-        }*/
 
         RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
 

@@ -101,7 +101,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
             RexShuttle shuttle = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                @Override public RexNode visitInputRef(RexInputRef ref) {
                     builder.set(ref.getIndex());
                     return ref;
                 }
