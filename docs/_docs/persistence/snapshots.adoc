@@ -144,7 +144,7 @@ The detailed procedure looks as follows:
 link:link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if
 it's not located under the Ignite `work` dir:
     - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory
-    - Remote the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory
+    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory
     - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the
     - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory.
 If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
