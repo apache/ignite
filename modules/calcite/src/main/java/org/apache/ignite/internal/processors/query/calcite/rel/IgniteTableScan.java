@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -65,8 +66,9 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements I
         RelTraitSet traits,
         RelOptTable tbl,
         @Nullable List<RexNode> projections,
-        @Nullable RexNode cond) {
-        super(cluster, traits, ImmutableList.of(), tbl, projections, cond);
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColunms) {
+        super(cluster, traits, ImmutableList.of(), tbl, projections, cond, requiredColunms);
     }
 
     /** {@inheritDoc} */

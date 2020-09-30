@@ -15,6 +15,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,19 +27,22 @@ public class ProjectableFilterableTableScan extends TableScan {
     /** */
     protected final List<RexNode> projections;
 
+    protected final ImmutableBitSet requiredColunms;
+
     /** */
     public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet,
         List<RelHint> hints, RelOptTable table) {
-        this(cluster, traitSet, hints, table, null, null);
+        this(cluster, traitSet, hints, table, null, null, null);
     }
 
     /** */
     public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet, List<RelHint> hints,
-        RelOptTable table, @Nullable List<RexNode> projections, @Nullable RexNode cond) {
+        RelOptTable table, @Nullable List<RexNode> projections, @Nullable RexNode cond, ImmutableBitSet requiredColunms) {
         super(cluster, traitSet, hints, table);
 
         this.projections = projections;
         this.cond = cond;
+        this.requiredColunms = requiredColunms;
     }
 
     /** */
@@ -46,6 +50,7 @@ public class ProjectableFilterableTableScan extends TableScan {
         super(input);
         cond = input.getExpression("filters");
         projections = input.get("projections") == null ? null : input.getExpressionList("projections");
+        requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
     }
 
     /**
@@ -105,5 +110,12 @@ public class ProjectableFilterableTableScan extends TableScan {
             return RexUtil.createStructType(Commons.context(this).typeFactory(), projections);
 
         return table.getRowType();
+    }
+
+    /**
+     * @return Required colunms.
+     */
+    public ImmutableBitSet requiredColunms() {
+        return requiredColunms;
     }
 }

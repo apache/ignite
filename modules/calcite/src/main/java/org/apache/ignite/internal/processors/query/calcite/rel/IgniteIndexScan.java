@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -115,7 +116,7 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName) {
-        this(cluster, traits, tbl, idxName, null, null);
+        this(cluster, traits, tbl, idxName, null, null, null);
     }
 
     /**
@@ -131,9 +132,11 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
         RelOptTable tbl,
         String idxName,
         @Nullable List<RexNode> projections,
-        @Nullable RexNode cond
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, projections, cond);
+        super(cluster, traits, ImmutableList.of(), tbl, projections, cond,
+            requiredColunms);
 
         this.idxName = idxName;
         RelCollation coll = TraitUtils.collation(traits);

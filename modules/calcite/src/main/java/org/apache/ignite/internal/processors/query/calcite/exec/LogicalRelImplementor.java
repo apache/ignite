@@ -231,7 +231,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RexNode> lowerCond = rel.lowerIndexCondition();
         List<RexNode> upperCond = rel.upperIndexCondition();
 
-        if (projects != null) {
+/*        if (projects != null) {
             final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
             RexShuttle shuttle = new RexShuttle() {
@@ -261,7 +261,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             if (condition != null)
                 condition = shuttle.apply(condition);
-        }
+        }*/
 
         RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
 
@@ -286,7 +286,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         ImmutableBitSet requiredColunms = null;
 
-        if (projects != null) {
+/*        if (projects != null) {
             final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
             RexShuttle shuttle = new RexShuttle() {
@@ -316,7 +316,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             if (condition != null)
                 condition = shuttle.apply(condition);
-        }
+        }*/
 
         RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
 

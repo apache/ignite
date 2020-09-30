@@ -54,7 +54,8 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         new FilterScanMergeRule<IgniteIndexScan>(LogicalFilter.class, IgniteIndexScan.class, "FilterIndexScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan, RexNode cond) {
-                return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), scan.projections(), cond);
+                return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(),
+                    scan.projections(), cond, null);
             }
         };
 
@@ -63,7 +64,8 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         new FilterScanMergeRule<IgniteTableScan>(LogicalFilter.class, IgniteTableScan.class, "FilterTableScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan, RexNode cond) {
-                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), scan.projections(), cond);
+                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), scan.projections(), cond,
+                    null);
             }
         };
 
