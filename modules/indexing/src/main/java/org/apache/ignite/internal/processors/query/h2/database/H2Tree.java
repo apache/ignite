@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -208,7 +209,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         IgniteLogger log,
         IoStatisticsHolder stats,
         InlineIndexColumnFactory factory,
-        int configuredInlineSize
+        int configuredInlineSize,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
         super(
             name,
@@ -220,7 +222,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             metaPageId,
             reuseList,
             failureProcessor,
-            null
+            null,
+            pageIoRslvr
         );
 
         this.cctx = cctx;

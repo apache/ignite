@@ -159,8 +159,8 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implemen
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
 
-    public int getPayloadSize() {
+    /** {@inheritDoc} */
+    @Override public int getPayloadSize() {
         return payloadSize;
     }
-
 }

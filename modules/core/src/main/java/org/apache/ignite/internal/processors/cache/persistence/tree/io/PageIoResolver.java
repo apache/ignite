@@ -15,8 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree.util;
+package org.apache.ignite.internal.processors.cache.persistence.tree.io;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /** */
-public interface InsertLast {
+public interface PageIoResolver {
+    /** */
+    public static final PageIoResolver DEFAULT_PAGE_IO_RESOLVER = PageIO::getPageIO;
+
+    /** */
+    PageIO resolve(long pageAddr) throws IgniteCheckedException;
 }

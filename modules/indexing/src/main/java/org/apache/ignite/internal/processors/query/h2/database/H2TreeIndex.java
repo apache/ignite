@@ -40,11 +40,13 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -81,9 +83,6 @@ import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
-import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
-import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -254,24 +253,30 @@ public class H2TreeIndex extends H2TreeIndexBase {
         int segmentsCnt,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        return createIndex(cctx, rowCache, tbl, idxName, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segmentsCnt, cctx.dataRegion().pageMemory(),
-                (integer, treeName) -> getMetaPage(cctx, treeName, integer), log);
+        return createIndex(cctx, rowCache, tbl, idxName, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize,
+            segmentsCnt, cctx.dataRegion().pageMemory(),
+            cctx.offheap(),
+            PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+            log
+        );
     }
 
+    /** */
     public static H2TreeIndex createIndex(
-            GridCacheContext<?, ?> cctx,
-            @Nullable H2RowCache rowCache,
-            GridH2Table tbl,
-            String idxName,
-            boolean pk,
-            boolean affinityKey,
-            List<IndexColumn> unwrappedCols,
-            List<IndexColumn> wrappedCols,
-            int inlineSize,
-            int segmentsCnt,
-            PageMemory pageMemory,
-            IgniteThrowableBiFunction<Integer, String, RootPage> rootPageAllocator,
-            IgniteLogger log
+        GridCacheContext<?, ?> cctx,
+        @Nullable H2RowCache rowCache,
+        GridH2Table tbl,
+        String idxName,
+        boolean pk,
+        boolean affinityKey,
+        List<IndexColumn> unwrappedCols,
+        List<IndexColumn> wrappedCols,
+        int inlineSize,
+        int segmentsCnt,
+        PageMemory pageMemory,
+        IgniteCacheOffheapManager offheap,
+        PageIoResolver pageIoRslvr,
+        IgniteLogger log
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
@@ -302,7 +307,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             db.checkpointReadLock();
 
             try {
-                RootPage page = rootPageAllocator.apply(i, treeName);
+                RootPage page = getMetaPage(offheap, cctx, treeName, i);
 
                 segments[i] = h2TreeFactory.create(
                     cctx,
@@ -311,12 +316,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     idxName,
                     tbl.getName(),
                     tbl.cacheName(),
-                    cctx.offheap().reuseListForIndex(treeName),
+                    offheap.reuseListForIndex(treeName),
                     cctx.groupId(),
                     cctx.group().name(),
                     pageMemory,
                     cctx.shared().wal(),
-                    cctx.offheap().globalRemoveId(),
+                    offheap.globalRemoveId(),
                     page.pageId().pageId(),
                     page.isAllocated(),
                     unwrappedCols,
@@ -330,7 +335,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     log,
                     stats,
                     idxHelperFactory,
-                    inlineSize
+                    inlineSize,
+                    pageIoRslvr
                 );
             }
             finally {
@@ -656,9 +662,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
-    private static RootPage getMetaPage(GridCacheContext<?, ?> cctx, String treeName, int segIdx)
+    private static RootPage getMetaPage(IgniteCacheOffheapManager offheap, GridCacheContext<?, ?> cctx, String treeName, int segIdx)
         throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx);
+        return offheap.rootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
     /**
@@ -1038,7 +1044,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             IgniteLogger log,
             IoStatisticsHolder stats,
             InlineIndexColumnFactory factory,
-            int configuredInlineSize
+            int configuredInlineSize,
+            PageIoResolver pageIoRslvr
         ) throws IgniteCheckedException;
     }
 }

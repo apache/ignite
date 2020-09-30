@@ -63,6 +63,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DefragmentationConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -466,26 +467,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return cfg;
     }
 
+    /** */
     private DataRegionConfiguration createDefragmentationDataRegionConfig(DataStorageConfiguration storageCfg) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
-        DataRegionConfiguration dfltDataRegionCfg = storageCfg.getDefaultDataRegionConfiguration();
+        DefragmentationConfiguration defrgCfg = storageCfg.getDefragmentationConfiguration();
 
         cfg.setName(DEFRAGMENTATION_PART_REGION_NAME);
-        cfg.setInitialSize(dfltDataRegionCfg.getInitialSize()); //TODO use proper configuration.
-        cfg.setMaxSize(dfltDataRegionCfg.getMaxSize()); //TODO Use proper configuration.
+        cfg.setInitialSize(defrgCfg.getRegionSize());
+        cfg.setMaxSize(defrgCfg.getRegionSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
         return cfg;
     }
 
+    /** */
     private DataRegionConfiguration createDefragmentationMappingRegionConfig(DataStorageConfiguration storageCfg) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
+        DefragmentationConfiguration defrgCfg = storageCfg.getDefragmentationConfiguration();
+
         cfg.setName(DEFRAGMENTATION_MAPPING_REGION_NAME);
-        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize()); //TODO use proper configuration.
-        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize()); //TODO Use proper configuration.
+        cfg.setInitialSize(defrgCfg.getMappingRegionSize());
+        cfg.setMaxSize(defrgCfg.getMappingRegionSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 

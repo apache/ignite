@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -659,7 +660,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             IgniteLogger log,
             IoStatisticsHolder stats,
             InlineIndexColumnFactory factory,
-            int configuredInlineSize
+            int configuredInlineSize,
+            PageIoResolver pageIoRslvr
         ) throws IgniteCheckedException {
             super(
                 cctx,
@@ -687,7 +689,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 log,
                 stats,
                 factory,
-                configuredInlineSize
+                configuredInlineSize,
+                pageIoRslvr
             );
         }
 

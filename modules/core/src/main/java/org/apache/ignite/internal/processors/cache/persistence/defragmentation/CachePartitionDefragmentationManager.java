@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -119,6 +120,7 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** */
     private final LightCheckpointManager partitionsCheckpoint;
 
     /**
@@ -193,6 +195,9 @@ public class CachePartitionDefragmentationManager {
                         if (store.tree() != null)
                             cacheDataStores.put(store.partId(), store);
                     }
+
+                    //TODO ensure that there are no races.
+                    dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
@@ -310,14 +315,7 @@ public class CachePartitionDefragmentationManager {
                     idxDfrgFut = new GridFinishedFuture<>();
 
                     if (sharedCtx.pageStore().hasIndexStore(grpId)) {
-                        partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock(); //TODO We should have many small checkpoints.
-
-                        try {
-                            defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
-                        }
-                        finally {
-                            partitionsCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
-                        }
+                        defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
 
                         idxDfrgFut = partitionsCheckpoint
                             .forceCheckpoint("index defragmented", null)
@@ -595,7 +593,9 @@ public class CachePartitionDefragmentationManager {
 
         final GridQueryIndexing idx = query.getIndexing();
 
-        idx.defragmentator().defragmentate(grpCtx, newCtx, defrgCtx, mappingByPartition, log);
+        CheckpointTimeoutLock cpLock = partitionsCheckpoint.checkpointTimeoutLock();
+
+        idx.defragmentator().defragmentate(grpCtx, newCtx, defrgCtx, mappingByPartition, cpLock, log);
     }
 
     /** */

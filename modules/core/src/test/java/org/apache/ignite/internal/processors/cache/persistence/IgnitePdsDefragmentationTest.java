@@ -523,7 +523,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
             ds.allowOverwrite(true);
 
-            for (int i = 0; i < ADDED_KEYS_COUNT / 2; i++)
+            for (int i = 0; i <= ADDED_KEYS_COUNT / 2; i++)
                 ds.removeData(keyMapper.apply(i * 2));
         }
     }

@@ -20,24 +20,29 @@ package org.apache.ignite.internal.processors.query.h2.defragmentation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheData;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.GridQueryIndexingDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TimeTracker;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -45,11 +50,10 @@ import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexColumn;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.AbstractInlineIndexColumn;
+import org.apache.ignite.internal.processors.query.h2.database.io.AbstractH2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.AbstractH2ExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.AbstractH2InnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.AbstractH2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -58,6 +62,13 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.h2.index.Index;
 import org.h2.value.Value;
+
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.CP_LOCK;
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.INIT_TREE;
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.INSERT_ROW;
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.ITERATE;
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.READ_MAP;
+import static org.apache.ignite.internal.processors.query.h2.defragmentation.IndexingDefragmentation.IndexStages.READ_ROW;
 
 /**
  *
@@ -71,12 +82,24 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
         this.indexing = indexing;
     }
 
+    /** */
+    public enum IndexStages {
+        START,
+        CP_LOCK,
+        INIT_TREE,
+        ITERATE,
+        READ_ROW,
+        READ_MAP,
+        INSERT_ROW
+    }
+
     /** {@inheritDoc} */
     @Override public void defragmentate(
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
         CacheDefragmentationContext defrgCtx,
         IntMap<LinkMap> mappingByPartition,
+        CheckpointTimeoutLock cpLock,
         IgniteLogger log
     ) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
@@ -89,81 +112,120 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
 
         Collection<GridH2Table> tables = indexing.schemaManager().dataTables();
 
-        for (GridH2Table table : tables) {
-            GridH2RowDescriptor rowDescriptor = table.rowDescriptor();
+        long cpLockThreshold = 250L;
 
-            ArrayList<Index> indexes = table.getIndexes();
-            H2TreeIndex index = (H2TreeIndex) indexes.get(2);
+        TimeTracker<IndexStages> tracker = new TimeTracker<>(IndexStages.class);
 
-            GridCacheContext cctx = table.cacheContext();
+        cpLock.checkpointReadLock();
+        tracker.complete(CP_LOCK);
 
-            int segments = index.segmentsCount();
+        try {
+            AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
 
-            H2Tree firstTree = index.treeForRead(0);
+            for (GridH2Table table : tables) {
+                GridH2RowDescriptor rowDescriptor = table.rowDescriptor();
 
-            H2TreeIndex newIndex = H2TreeIndex.createIndex(
-                cctx,
-                null,
-                table,
-                index.getName(),
-                firstTree.getPk(),
-                firstTree.getAffinityKey(),
-                Arrays.asList(firstTree.cols()),
-                Arrays.asList(firstTree.cols()),
-                index.inlineSize(),
-                segments,
-                newCachePageMemory,
-                (segIdx, treeName) -> newCtx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx),
-                log
-            );
+                ArrayList<Index> indexes = table.getIndexes();
+                H2TreeIndex index = (H2TreeIndex)indexes.get(2);
 
-            for (int i = 0; i < segments; i++) {
-                H2Tree tree = index.treeForRead(i);
+                GridCacheContext cctx = table.cacheContext();
 
-                treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
-                    BPlusIO<H2Row> h2IO = io;
+                int segments = index.segmentsCount();
 
-                    if (h2IO instanceof H2ExtrasLeafIO)
-                        h2IO = new H2LightweightExtrasLeafIO((H2ExtrasLeafIO) h2IO);
-                    else if (h2IO instanceof H2LeafIO)
-                        h2IO = new H2LightweightLeafIO((H2LeafIO) h2IO);
-                    else if (h2IO instanceof H2MvccExtrasLeafIO)
-                        h2IO = new H2LightweightMvccExtrasLeafIO((H2MvccExtrasLeafIO) h2IO);
-                    else if (h2IO instanceof H2MvccLeafIO)
-                        h2IO = new H2LightweightMvccLeafIO((H2MvccLeafIO) h2IO);
+                H2Tree firstTree = index.treeForRead(0);
 
-                    H2Row row = theTree.getRow(h2IO, pageAddr, idx);
+                //TODO Create new proper GridCacheContext for it.
+                H2TreeIndex newIndex = H2TreeIndex.createIndex(
+                    cctx,
+                    null,
+                    table,
+                    index.getName(),
+                    firstTree.getPk(),
+                    firstTree.getAffinityKey(),
+                    Arrays.asList(firstTree.cols()),
+                    Arrays.asList(firstTree.cols()),
+                    index.inlineSize(),
+                    segments,
+                    newCachePageMemory,
+                    newCtx.offheap(),
+                    pageAddr -> {
+                        PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
 
-                    if (row instanceof H2CacheRowWithIndex) {
-                        H2CacheRowWithIndex h2CacheRow = (H2CacheRowWithIndex) row;
+                        if (io instanceof BPlusMetaIO)
+                            return io;
 
-                        CacheDataRow cacheDataRow = h2CacheRow.getRow();
+                        //noinspection unchecked,rawtypes,rawtypes
+                        return wrap((BPlusIO)io);
+                    },
+                    log
+                );
 
-                        int partition = cacheDataRow.partition();
+                tracker.complete(INIT_TREE);
 
-                        long link = h2CacheRow.link();
+                for (int i = 0; i < segments; i++) {
+                    H2Tree tree = index.treeForRead(i);
 
-                        LinkMap map = mappingByPartition.get(partition);
+                    treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                        tracker.complete(ITERATE);
 
-                        long newLink = map.get(link);
+                        if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
+                            cpLock.checkpointReadUnlock();
 
-                        H2CacheRowWithIndex newRow = H2CacheRowWithIndex.create(
-                            rowDescriptor,
-                            newLink,
-                            h2CacheRow,
-                            ((H2RowLinkIO) io).storeMvccInfo()
-                        );
+                            cpLock.checkpointReadLock();
+                            tracker.complete(CP_LOCK);
 
-                        newIndex.putx(newRow);
-                    }
+                            lastCpLockTs.set(System.currentTimeMillis());
+                        }
 
-                    return true;
-                });
+                        assert 1 == io.getVersion();
+
+                        BPlusIO<H2Row> h2IO = wrap(io);
+
+                        H2Row row = theTree.getRow(h2IO, pageAddr, idx);
+
+                        tracker.complete(READ_ROW);
+
+                        if (row instanceof H2CacheRowWithIndex) {
+                            H2CacheRowWithIndex h2CacheRow = (H2CacheRowWithIndex)row;
+
+                            CacheDataRow cacheDataRow = h2CacheRow.getRow();
+
+                            int partition = cacheDataRow.partition();
+
+                            long link = h2CacheRow.link();
+
+                            LinkMap map = mappingByPartition.get(partition);
+
+                            long newLink = map.get(link);
+
+                            tracker.complete(READ_MAP);
+
+                            H2CacheRowWithIndex newRow = H2CacheRowWithIndex.create(
+                                rowDescriptor,
+                                newLink,
+                                h2CacheRow,
+                                ((H2RowLinkIO)io).storeMvccInfo()
+                            );
+
+                            newIndex.putx(newRow);
+
+                            tracker.complete(INSERT_ROW);
+                        }
+
+                        return true;
+                    });
+                }
             }
         }
+        finally {
+            cpLock.checkpointReadUnlock();
+        }
+
+        System.out.println(tracker.toString());
     }
 
-    private static <T extends BPlusLeafIO<H2Row> & H2RowLinkIO> H2Row lookupRow(
+    /** */
+    private static <T extends BPlusIO<H2Row> & H2RowLinkIO> H2Row lookupRow(
         BPlusTree<H2Row, ?> tree,
         long pageAddr,
         int idx,
@@ -183,7 +245,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
             for (int i = 0; i < inlineIdxs.size(); i++) {
                 AbstractInlineIndexColumn inlineIndexColumn = (AbstractInlineIndexColumn) inlineIdxs.get(i);
 
-                Value value = inlineIndexColumn.get(pageAddr, off + fieldOff, ((AbstractH2ExtrasLeafIO) io).getPayloadSize() - fieldOff);
+                Value value = inlineIndexColumn.get(pageAddr, off + fieldOff, io.getPayloadSize() - fieldOff);
 
                 fieldOff += inlineIndexColumn.inlineSizeOf(value);
 
@@ -206,54 +268,143 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
         return new H2CacheRowWithIndex(row.getDesc(), row.getRow(), values);
     }
 
-    /**
-     * Special version of H2ExtrasLeafIO which doesn't look up data partitions.
-     */
-    private static class H2LightweightExtrasLeafIO extends H2ExtrasLeafIO {
-        /** Constructor. */
-        public H2LightweightExtrasLeafIO(H2ExtrasLeafIO io) {
-            super((short) io.getType(), io.getVersion(), io.getPayloadSize());
+    /** */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static BPlusIO<H2Row> wrap(BPlusIO<H2Row> io) {
+        assert io instanceof H2RowLinkIO;
+
+        if (io instanceof BPlusInnerIO) {
+            assert io instanceof AbstractH2ExtrasInnerIO
+                || io instanceof AbstractH2InnerIO;
+
+            return new BPlusInnerIoDelegate((BPlusInnerIO<H2Row>)io);
         }
+        else {
+            assert io instanceof AbstractH2ExtrasLeafIO
+                || io instanceof AbstractH2LeafIO;
 
-        /** {@inheritDoc} */
-        @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(tree, pageAddr, idx, this);
-        }
-    }
-
-    private static class H2LightweightLeafIO extends H2LeafIO {
-
-        public H2LightweightLeafIO(H2LeafIO io) {
-            super(io.getVersion());
-        }
-
-        /** {@inheritDoc} */
-        @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(tree, pageAddr, idx, this);
+            return new BPlusLeafIoDelegate((BPlusLeafIO<H2Row>)io);
         }
     }
 
-    private static class H2LightweightMvccLeafIO extends H2MvccLeafIO {
+    /** */
+    private static class BPlusInnerIoDelegate<IO extends BPlusInnerIO<H2Row> & H2RowLinkIO>
+        extends BPlusInnerIO<H2Row> implements H2RowLinkIO {
+        /** */
+        private final IO io;
 
-        public H2LightweightMvccLeafIO(H2MvccLeafIO io) {
-            super(io.getVersion());
+        /** */
+        public BPlusInnerIoDelegate(IO io) {
+            super(io.getType(), io.getVersion(), io.canGetRow(), io.getItemSize());
+            this.io = io;
         }
 
         /** {@inheritDoc} */
-        @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public void storeByOffset(long pageAddr, int off, H2Row row) throws IgniteCheckedException {
+            io.storeByOffset(pageAddr, off, row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<H2Row> srcIo, long srcPageAddr, int srcIdx)
+            throws IgniteCheckedException
+        {
+            io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
             return lookupRow(tree, pageAddr, idx, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getLink(long pageAddr, int idx) {
+            return io.getLink(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
+            return io.getMvccCoordinatorVersion(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMvccCounter(long pageAddr, int idx) {
+            return io.getMvccCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+            return io.getMvccOperationCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeMvccInfo() {
+            return io.storeMvccInfo();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getPayloadSize() {
+            return io.getPayloadSize();
         }
     }
 
-    private static class H2LightweightMvccExtrasLeafIO extends H2MvccExtrasLeafIO {
+    /** */
+    private static class BPlusLeafIoDelegate<IO extends BPlusLeafIO<H2Row> & H2RowLinkIO>
+        extends BPlusLeafIO<H2Row> implements H2RowLinkIO {
+        /** */
+        private final IO io;
 
-        public H2LightweightMvccExtrasLeafIO(H2MvccExtrasLeafIO io) {
-            super((short) io.getType(), io.getVersion(), io.getPayloadSize());
+        /** */
+        public BPlusLeafIoDelegate(IO io) {
+            super(io.getType(), io.getVersion(), io.getItemSize());
+            this.io = io;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void storeByOffset(long pageAddr, int off, H2Row row) throws IgniteCheckedException {
+            io.storeByOffset(pageAddr, off, row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<H2Row> srcIo, long srcPageAddr, int srcIdx)
+            throws IgniteCheckedException
+        {
+            io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
         }
 
         /** {@inheritDoc} */
         @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
             return lookupRow(tree, pageAddr, idx, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getLink(long pageAddr, int idx) {
+            return io.getLink(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
+            return io.getMvccCoordinatorVersion(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMvccCounter(long pageAddr, int idx) {
+            return io.getMvccCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+            return io.getMvccOperationCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeMvccInfo() {
+            return io.storeMvccInfo();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getPayloadSize() {
+            return io.getPayloadSize();
         }
     }
 
@@ -296,7 +447,5 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
 
             return values.get(col);
         }
-
     }
-
 }

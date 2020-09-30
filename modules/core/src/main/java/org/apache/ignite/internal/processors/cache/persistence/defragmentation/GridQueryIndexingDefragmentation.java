@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
@@ -33,6 +34,7 @@ public interface GridQueryIndexingDefragmentation {
      * @param newCtx
      * @param defrgCtx
      * @param mappingByPartition
+     * @param cpLock
      * @param log
      *
      * @throws IgniteCheckedException If failed.
@@ -42,6 +44,7 @@ public interface GridQueryIndexingDefragmentation {
         CacheGroupContext newCtx,
         CacheDefragmentationContext defrgCtx,
         IntMap<LinkMap> mappingByPartition,
+        CheckpointTimeoutLock cpLock,
         IgniteLogger log
     ) throws IgniteCheckedException;
 }
