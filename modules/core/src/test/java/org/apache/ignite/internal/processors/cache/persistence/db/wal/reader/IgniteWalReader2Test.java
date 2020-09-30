@@ -67,7 +67,8 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(false))
+                    .setMaxSize(1024L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalSegmentSize(1024 * 1024)
             .setWalSegments(10)
             .setWalMode(LOG_ONLY);
