@@ -644,19 +644,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param key Encryption key.
      */
     void addGroupKey(int grpId, GroupKeyEncrypted key) {
-        withMasterKeyChangeReadLock(() -> {
-            synchronized (metaStorageMux) {
-                try {
-                    grpKeys.addKey(grpId, key);
+        synchronized (metaStorageMux) {
+            try {
+                grpKeys.addKey(grpId, key);
 
-                    writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
-                } catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
-                }
+                writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
+            } catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
             }
-
-            return null;
-        });
+        }
     }
 
     /** {@inheritDoc} */
@@ -847,7 +843,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (encKey == null || ctx.clientNode())
             return;
 
-        addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+        withMasterKeyChangeReadLock(() -> {
+            addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+
+            return null;
+        });
     }
 
     /**

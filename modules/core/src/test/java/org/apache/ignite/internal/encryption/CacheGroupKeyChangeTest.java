@@ -649,8 +649,6 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(node0.cluster().localNode().id().toString(), 1, encrMgr0.groupKeyIds(grpId).size());
         assertEquals(node1.cluster().localNode().id().toString(), 1, encrMgr1.groupKeyIds(grpId).size());
-
-        checkEncryptedCaches(node0, node1);
     }
 
     /**
@@ -828,7 +826,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     }
 
     /**
-     * Ensures that node can join after rotation of encrypion key.
+     * Ensures that node can join after rotation of encryption key.
      *
      * @throws Exception If failed.
      */
@@ -869,6 +867,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(1, encrMgr1.groupKeyIds(grpId).size());
         assertEquals(encrMgr0.groupKeyIds(grpId), encrMgr1.groupKeyIds(grpId));
+
+        startGrid(GRID_2);
 
         resetBaselineTopology();
         awaitPartitionMapExchange();
