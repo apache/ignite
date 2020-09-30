@@ -153,7 +153,7 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
         if (!boundsArePossible())
             return;
 
-        assert cond != null;
+        assert condition() != null;
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields();
 
@@ -240,7 +240,7 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
 
     /** */
     private Map<Integer, List<RexCall>> mapPredicatesToFields() {
-        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(cond);
+        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(condition());
 
         Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
 
@@ -270,10 +270,10 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
 
     /** */
     private boolean boundsArePossible() {
-        if (cond == null)
+        if (condition() == null)
             return false;
 
-        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond);
+        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), condition());
 
         if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
@@ -397,8 +397,8 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount() * idxSelectivity;
 
-        if (projections() != null)
-            tableRows += tableRows * projections().size();
+        if (projects() != null)
+            tableRows += tableRows * projects().size();
 
         tableRows = RelMdUtil.addEpsilon(tableRows);
 
@@ -409,8 +409,8 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double rows = table.getRowCount() * idxSelectivity;
 
-        if (cond != null)
-            rows *= mq.getSelectivity(this, cond);
+        if (condition() != null)
+            rows *= mq.getSelectivity(this, condition());
 
         return rows;
     }

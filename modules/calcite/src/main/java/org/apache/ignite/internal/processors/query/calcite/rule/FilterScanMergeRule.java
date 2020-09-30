@@ -33,7 +33,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
@@ -102,31 +101,11 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         T scan = call.rel(1);
 
         RelOptCluster cluster = scan.getCluster();
+        List<RexNode> projects = scan.projects();
+
         RelMetadataQuery mq = call.getMetadataQuery();
 
         RexNode condition = filter.getCondition();
-
-        List<RexNode> projects = scan.projections();
-
-        if (projects != null) {
-            Mappings.TargetMapping permutation = permutation(projects, scan.getTable().getRowType().getFieldCount());
-
-            try {
-                condition = new RexShuttle() {
-                    @Override public RexNode visitLocalRef(RexLocalRef ref) {
-                        int targetRef = permutation.getTargetOpt(ref.getIndex());
-
-                        if (targetRef == -1)
-                            throw new ControlFlowException();
-
-                        return new RexLocalRef(targetRef, ref.getType());
-                    }
-                }.apply(condition);
-            }
-            catch (ControlFlowException e) {
-                return;
-            }
-        }
 
         RexSimplify simplifier = simplifier(cluster);
 
@@ -149,7 +128,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         while (nodes.add(condition) && nodes.size() < 3)
             condition = simplifier.simplifyUnknownAsFalse(condition);
 
-        Holder params = precalculation(filter, scan);
+        Holder params = projectTransform(filter, scan);
 
         condition = params.conditions == null ? condition : params.conditions;
 
@@ -171,19 +150,13 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         }
     }
 
-    private static Mappings.TargetMapping permutation(List<RexNode> nodes, int nodesCount) {
-        final Mappings.TargetMapping mapping =
-            Mappings.create(MappingType.PARTIAL_FUNCTION, nodes.size(), nodesCount);
-
-        for (Ord<RexNode> node : Ord.zip(nodes)) {
-            if (node.e instanceof RexLocalRef)
-                mapping.set(node.i, ((RexLocalRef) node.e).getIndex());
-        }
-        return mapping;
-    }
-
-    private Holder precalculation(LogicalFilter filter, T scan) {
-        List<RexNode> projects = scan.projections();
+    /** Collects only participating members and applies appropriate mappings.
+     *
+     * @param filter Initial filter.
+     * @param scan TableScan implementation.
+     */
+    private Holder projectTransform(LogicalFilter filter, T scan) {
+        List<RexNode> projects = scan.projects();
 
         if (projects != null) {
             RexNode condition = filter.getCondition();
@@ -202,7 +175,6 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             ImmutableBitSet requiredColunms = builder.build();
 
             IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
-
             IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 
             Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
@@ -228,14 +200,22 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             return Holder.EMPTY;
     }
 
+    /** Transformation params holder. */
     private static class Holder {
+        /** */
         private static final Holder EMPTY = new Holder(null, null, null);
 
+        /** Projects. */
         private final List<RexNode> projects;
+
+        /** Filters. */
         private final RexNode conditions;
+
+        /** Participating columns. */
         private final ImmutableBitSet requiredColunms;
 
-        Holder(List<RexNode> projects, RexNode conditions, ImmutableBitSet requiredColunms) {
+        /** Constructor. */
+        private Holder(List<RexNode> projects, RexNode conditions, ImmutableBitSet requiredColunms) {
             this.projects = projects;
             this.conditions = conditions;
             this.requiredColunms = requiredColunms;

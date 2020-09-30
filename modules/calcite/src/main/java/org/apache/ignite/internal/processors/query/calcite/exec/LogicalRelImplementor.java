@@ -22,20 +22,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.mapping.MappingType;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -222,7 +217,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexScan rel) {
         RexNode condition = rel.condition();
-        List<RexNode> projects = rel.projections();
+        List<RexNode> projects = rel.projects();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -247,7 +242,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
-        List<RexNode> projects = rel.projections();
+        List<RexNode> projects = rel.projects();
         ImmutableBitSet requiredColunms = rel.requiredColunms();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);

@@ -47,7 +47,7 @@ public class ExposeIndexRule extends RelOptRule {
     private static boolean preMatch(IgniteTableScan scan) {
         return scan.getTable().unwrap(IgniteTable.class).indexes().size() > 1     // has indexes to expose
             && scan.condition() == null    // was not modified by FilterScanMergeRule
-            && scan.projections() == null; // was not modified by ProjectScanMergeRule                                          // was not modified by PushFilterIntoScanRule
+            && scan.projects() == null; // was not modified by ProjectScanMergeRule                                          // was not modified by PushFilterIntoScanRule
     }
 
     /** {@inheritDoc} */

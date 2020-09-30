@@ -84,7 +84,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
     /** {@inheritDoc} */
     @Override public boolean matches(RelOptRuleCall call) {
         T rel = call.rel(1);
-        return rel.projections() == null;
+        return rel.projects() == null;
     }
 
     /** {@inheritDoc} */

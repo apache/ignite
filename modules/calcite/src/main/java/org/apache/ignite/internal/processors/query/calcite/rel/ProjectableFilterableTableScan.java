@@ -21,48 +21,63 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class ProjectableFilterableTableScan extends TableScan {
-    /** */
-    protected final RexNode cond;
+    /** Filters. */
+    private final RexNode condition;
+
+    /** Projects. */
+    private final List<RexNode> projects;
+
+    /** Participating colunms. */
+    private final ImmutableBitSet requiredColunms;
 
     /** */
-    protected final List<RexNode> projections;
-
-    protected final ImmutableBitSet requiredColunms;
-
-    /** */
-    public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet,
-        List<RelHint> hints, RelOptTable table) {
-        this(cluster, traitSet, hints, table, null, null, null);
+    public ProjectableFilterableTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable tbl
+    ) {
+        this(cluster, traitSet, hints, tbl, null, null, null);
     }
 
     /** */
-    public ProjectableFilterableTableScan(RelOptCluster cluster, RelTraitSet traitSet, List<RelHint> hints,
-        RelOptTable table, @Nullable List<RexNode> projections, @Nullable RexNode cond, ImmutableBitSet requiredColunms) {
+    public ProjectableFilterableTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable table,
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet reqColunms
+    ) {
         super(cluster, traitSet, hints, table);
 
-        this.projections = projections;
-        this.cond = cond;
-        this.requiredColunms = requiredColunms;
+        projects = proj;
+        condition = cond;
+        requiredColunms = reqColunms;
     }
 
     /** */
     public ProjectableFilterableTableScan(RelInput input) {
         super(input);
-        cond = input.getExpression("filters");
-        projections = input.get("projections") == null ? null : input.getExpressionList("projections");
+        condition = input.getExpression("filters");
+        projects = input.get("projections") == null ? null : input.getExpressionList("projections");
         requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
     }
 
-    /**
-     * @return Projections.
-     */
-    public List<RexNode> projections() {
-        return projections;
+    /** @return Projections. */
+    public List<RexNode> projects() {
+        return projects;
     }
 
-    /** */
+    /** @return Rex condition. */
     public RexNode condition() {
-        return cond;
+        return condition;
+    }
+
+    /** @return Participating colunms. */
+    public ImmutableBitSet requiredColunms() {
+        return requiredColunms;
     }
 
     /** {@inheritDoc} */
@@ -80,16 +95,16 @@ public class ProjectableFilterableTableScan extends TableScan {
     /** */
     protected RelWriter explainTerms0(RelWriter pw) {
         return pw
-            .itemIf("filters", cond, cond != null)
-            .itemIf("projections", projections, projections != null);
+            .itemIf("filters", condition, condition != null)
+            .itemIf("projections", projects, projects != null);
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount();
 
-        if (projections != null)
-            tableRows += tableRows * projections.size();
+        if (projects != null)
+            tableRows += tableRows * projects.size();
 
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }
@@ -98,24 +113,17 @@ public class ProjectableFilterableTableScan extends TableScan {
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double rows = table.getRowCount();
 
-        if (cond != null)
-            rows *= mq.getSelectivity(this, cond);
+        if (condition != null)
+            rows *= mq.getSelectivity(this, condition);
 
         return rows;
     }
 
     /** */
     @Override public RelDataType deriveRowType() {
-        if (projections != null)
-            return RexUtil.createStructType(Commons.context(this).typeFactory(), projections);
+        if (projects != null)
+            return RexUtil.createStructType(Commons.context(this).typeFactory(), projects);
 
         return table.getRowType();
-    }
-
-    /**
-     * @return Required colunms.
-     */
-    public ImmutableBitSet requiredColunms() {
-        return requiredColunms;
     }
 }
