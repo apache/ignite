@@ -610,16 +610,16 @@ The INDEXES view contains information about SQL indexes.
 
 == PAGE_LISTS
 
-The page-list is a data structure used to store a list of partially free data pages (free-lists) and fully free allocated
-pages (reuse-lists). The purpose of the free-lists and reuse lists is to quickly locate a page with enough free space
+The page list is a data structure used to store a list of partially free data pages (free lists) and fully free allocated
+pages (reuse lists). The purpose of the free lists and reuse lists is to quickly locate a page with enough free space
 to save an entry or to determine that no such page exists and a new page should be allocated.
-The page-lists organized in buckets. Each bucket group references pages with about the same size of a free space.
+The page lists are organized in buckets. Each bucket group references pages with about the same size of a free space.
 
-If Ignite persistence is enabled, the page-lists are created for each partition of each cache group. To view such page lists
-use the `CACHE_GROUP_PAGE_LISTS` system view. If Ignite persistence is disabled, the page-lists are created for each data region.
+If Ignite persistence is enabled, the page lists are created for each partition of each cache group. To view such page lists
+use the `CACHE_GROUP_PAGE_LISTS` system view. If Ignite persistence is disabled, the page lists are created for each data region.
 In this case, the `DATA_REGION_PAGE_LISTS` system view needs to used. These views contain information about each bucket
 of each page list that is useful to understand how much data can be inserted into a cache without allocating new pages
-and also helps to detect skews in page-lists utilization.
+and also helps to detect skews in page lists utilization.
 
 
 === CACHE_GROUP_PAGE_LISTS
@@ -629,11 +629,11 @@ and also helps to detect skews in page-lists utilization.
 |Column | Data type |  Description
 |CACHE_GROUP_ID |  int| Cache group ID
 |PARTITION_ID |    int| Partition ID
-|NAME |    string|  Page-list's name
+|NAME |    string|  Page list name
 |BUCKET_NUMBER |   int| Bucket number
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
-|CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page-list cache for this bucket.
+|CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
 |===
 
 === DATA_REGION_PAGE_LISTS
@@ -641,11 +641,11 @@ and also helps to detect skews in page-lists utilization.
 [{table_opts}]
 |===
 |Column | Data type |  Description
-|NAME |    string|  Page-list's name
+|NAME |    string|  Page list name
 |BUCKET_NUMBER |   int| Bucket number
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
-|CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page-list cache for this bucket.
+|CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
 |===
 
 == PARTITION_STATES
