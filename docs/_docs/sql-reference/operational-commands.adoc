@@ -115,7 +115,8 @@ image::images/set-streaming.png[]
 
 == KILL QUERY
 
-The `KILL QUERY` command allows you to cancel a running query.
+The `KILL QUERY` command allows you to cancel a running query. When a query is cancelled with the `KILL` command, all
+parts of the query running on all other nodes are terminated as well.
 
 [tabs]
 --
@@ -142,16 +143,15 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill SQL query_id
+control.bat --kill SQL query_id
 ----
 
 --
 
-=== Description
-`query_id` can be retrived via the `SQL_QUERIES` view.
-`ASYNC` is an optional parameter which returns control immediately without waiting for the cancellation to finish, and `query_id` can be retrieved via the `SQL_QUERIES` view.
+=== Parameters
 
-When a query cancelled via the `KILL` command, all parts of the query running on all other nodes are cancelled.
+* `query_id` - can be retrived via the link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES] view.
+* `ASYNC` - is an optional parameter that returns control immediately without waiting for the cancellation to finish.
 
 == KILL TRANSACTION
 
@@ -159,7 +159,6 @@ The `KILL TRANSACTION` command allows you to cancel a running transaction.
 
 [tabs]
 --
-
 tab:SQL[]
 [source,sql]
 ----
@@ -182,13 +181,14 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill TRANSACTION xid
+control.bat --kill TRANSACTION xid
 ----
-
 --
 
-=== Description
-`xid` of the transaction can be retrived via the `TRANSACTIONS` view.
+=== Parameters
+
+* `xid` - the transaction id that can be retrived via the link:monitoring-metrics/system-views#transactions[TRANSACTIONS] view.
+
 
 == KILL SCAN
 
@@ -219,13 +219,14 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill SCAN origin_node_id cache_name query_id
+control.bat --kill SCAN origin_node_id cache_name query_id
 ----
 
 --
 
-=== Description
-`origin_node_id`, `cache_name`, `query_id` parameters can be retrived via the `SCAN_QUERIES`.
+=== Parameters
+
+* `origin_node_id`, `cache_name`, `query_id` - can be retrived via the link:monitoring-metrics/system-views#scan_queries[SCAN_QUERIES] view.
 
 === Example
 
@@ -262,13 +263,15 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill COMPUTE session_id
+control.bat --kill COMPUTE session_id
 ----
 
 --
 
-=== Description
-`session_id` parameter can be retrived via the `TASKS` or `JOBS` view.
+=== Parameters
+
+* `session_id` - can be retrived via the link:monitoring-metrics/system-views#tasks[TASKS] or
+link:monitoring-metrics/system-views#jobs[JOBS] views.
 
 == KILL CONTINUOUS
 
@@ -299,13 +302,14 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill CONTINUOUS origin_node_id routine_id
+control.bat --kill CONTINUOUS origin_node_id routine_id
 ----
 
 --
 
-=== Description
-`origin_node_id` and `routine_id` can be retrived via `CONTINUOUS_QUERIES` view.
+=== Parameters
+
+* `origin_node_id` and `routine_id` - can be retrived via the link:monitoring-metrics/system-views#continuous_queries[CONTINUOUS_QUERIES] view.
 
 === Example
 
@@ -343,10 +347,12 @@ tab:Unix[]
 tab:Windows[]
 [source,bash]
 ----
-.\control.bat --kill SERVICE name
+control.bat --kill SERVICE name
 ----
 
 --
 
-=== Description
-`name` of the service user specifies on deployment. It can be retrieved via `SERVICES` view, also.
+=== Parameters
+
+* `name` - corresponds to the name you selected for the service upon the deployment time.
+You can always find it with the link:monitoring-metrics/system-views#services[SERVICES] view.

@@ -171,33 +171,35 @@ be updating the thick client with task-related execution details.
 |USER_VERSION | string |  Task user version
 |===
 
-== JOBS - compute jobs
+== JOBS
 
 This system view shows a list of compute jobs started by a node as part of a compute task.
-To view the status of the compute task refer to the TASKS system view.
+To view the status of the compute task refer to the `TASKS` system view.
 
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
 |ID | UUID | Job ID
-|SESSION_ID | UUID | Session ID. Note, `SESSION_ID` equal to `TASKS.SESSION_ID` for the jobs that belong to the specific task
+|SESSION_ID | UUID | Job's session ID. Note, `SESSION_ID` is equal to `TASKS.SESSION_ID` for the jobs belonging to a specific task.
 |ORIGIN_NODE_ID | UUID | The id of the node that started the job
-|TASK_NAME | string | Name of the task
+|TASK_NAME | string | The name of the task
 |TASK_CLASSNAME | string | Class name of the task
-|AFFINITY_CACHE_IDS | string | Affinity cache ids
-|AFFINITY_PARTITION_ID | int | Partition id
-|CREATE_TIME | long | Create time
-|START_TIME | long | Start time
-|FINISH_TIME | long | Finish time
-|EXECUTOR_NAME | string | Name of the executor for task
-|IS_FINISHING | boolean | True if job finishing
-|IS_INTERNAL | boolean | True if job internal
-|IS_STARTED | boolean | True if job started
-|IS_TIMEDOUT | boolean | True if job timed out
+|AFFINITY_CACHE_IDS | string | IDs of one or more caches if the job is executed against one of the `IgniteCompute.affinity..`
+methods. The parameter is empty, if you use `IgniteCompute` APIs that don't target specific caches.
+|AFFINITY_PARTITION_ID | int | IDs of one or more partitions if the job is executed via one of the `IgniteCompute.affinity..`
+methods. The parameter is empty, if you use `IgniteCompute` APIs that don't target specific partitions.
+|CREATE_TIME | long | Job's creation time
+|START_TIME | long | Job's start time
+|FINISH_TIME | long | Job's finish time
+|EXECUTOR_NAME | string | The name of the task's executor
+|IS_FINISHING | boolean | `True` if the job is finishing
+|IS_INTERNAL | boolean | `True` if the job is internal
+|IS_STARTED | boolean | `True` if the job has been started
+|IS_TIMEDOUT | boolean | `True` if the job timed out before completing
 |STATE | string | Possible values: +
-`ACTIVE` - Job executing. +
+`ACTIVE` - Job is being executed. +
 `PASSIVE` - Job is added to the execution queue. Please, see `CollisionSPI` for more details. +
-`CANCELED` - Job canceled.
+`CANCELED` - Job is canceled.
 |===
 
 == SERVICES
