@@ -44,7 +44,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
                 .map(JsonNode::asLong)
                 .orElse(-1L);
 
-        CacheConfiguration<UUID, byte[]> cacheCfg =  new CacheConfiguration<>(cacheName);
+        CacheConfiguration<UUID, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(2);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
