@@ -301,6 +301,22 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         ).forEach(name -> assertEquals("[0, 0, 0, 0, 0, 0]", metrics.get(metricName(mRegName, name))));
 
         assertTrue(metrics.get(metricName(mRegName, "TxKeyCollisions")).isEmpty());
+
+        Map<String, String> cacheGrpMetrics = metrics(ignite0, "cacheGroups.default");
+
+        assertEquals("[default]", cacheGrpMetrics.get("cacheGroups.default.Caches"));
+
+        String idxMRegName = "io.statistics.hashIndexes.default.HASH_PK";
+
+        Map<String, String> idxMetrics = metrics(ignite0, idxMRegName);
+
+        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "PHYSICAL_READS_INNER")));
+        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "LOGICAL_READS_LEAF")));
+        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "PHYSICAL_READS_LEAF")));
+        assertEquals("HASH_PK", idxMetrics.get(metricName(idxMRegName, "indexName")));
+        assertTrue(Long.parseLong(idxMetrics.get(metricName(idxMRegName, "startTime"))) > 0);
+        assertEquals("default", idxMetrics.get(metricName(idxMRegName, "name")));
+        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "LOGICAL_READS_INNER")));
     }
 
     /** */
@@ -536,6 +552,15 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",
             metrics.get(metricName(TX_METRICS, "nodeUserTimeHistogram")));
+    }
+
+    /** */
+    @Test
+    public void testSqlParserMetrics() {
+        Map<String, String> metrics = metrics(ignite0, "sql.parser.cache");
+
+        assertEquals("0", metrics.get("sql.parser.cache.hits"));
+        assertEquals("0", metrics.get("sql.parser.cache.misses"));
     }
 
     /**

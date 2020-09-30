@@ -82,25 +82,25 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
                     return res;
                 }
 
-                mRegName += SEPARATOR;
+                String mRegPrefix = mRegName + SEPARATOR;
 
-                if (!name.startsWith(mRegName))
+                if (!name.startsWith(mRegPrefix))
                     continue;
 
-                if (name.length() == mRegName.length())
+                if (mRegPrefix.equals(name))
                     return null;
 
-                String metricName = name.substring(mRegName.length());
+                String metricName = name.substring(mRegPrefix.length());
 
                 Metric metric = mReg.findMetric(metricName);
 
-                if (metric == null) {
-                    Object val = searchHistogram(metricName, mReg);
+                if (metric != null)
+                    return Collections.singletonMap(name, valueOf(metric));
 
-                    return val == null ? null : Collections.singletonMap(name, val);
-                }
+                Object val = searchHistogram(metricName, mReg);
 
-                return Collections.singletonMap(name, valueOf(metric));
+                if (val != null)
+                    return Collections.singletonMap(name, val);
             }
 
             return null;
