@@ -24,10 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -94,6 +97,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -154,6 +160,7 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_ENABLE_EXPERIMENTAL));
 
         return list.toArray(new String[0]);
     }
@@ -199,6 +206,8 @@ public class CommonArgParser {
         String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
+
+        boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
@@ -321,6 +330,10 @@ public class CommonArgParser {
                         verbose = true;
                         break;
 
+                    case CMD_ENABLE_EXPERIMENTAL:
+                        experimentalEnabled = true;
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -329,6 +342,13 @@ public class CommonArgParser {
 
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
+
+        if (!experimentalEnabled && command.command().experimental()) {
+            logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
+                UTILITY_NAME));
+
+            throw new IllegalArgumentException("Experimental commands disabled");
+        }
 
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation, verbose,

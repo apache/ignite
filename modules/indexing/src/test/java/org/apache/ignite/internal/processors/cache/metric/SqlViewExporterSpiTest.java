@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -71,10 +70,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -94,7 +91,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -121,13 +117,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
-
-        SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
-
-        if (igniteInstanceName.endsWith("1"))
-            sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
-
-        cfg.setMetricExporterSpi(sqlSpi);
 
         return cfg;
     }
@@ -194,29 +183,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String attr : EXPECTED_ATTRIBUTES)
             assertTrue(attr + " should be exported via SQL view", names.contains(attr));
-    }
-
-    /** */
-    @Test
-    public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite1);
-
-        List<List<?>> res = execute(ignite1,
-            "SELECT name, value, description FROM SYS.METRICS " +
-                "WHERE name LIKE 'other.prefix%' OR name LIKE '" + FILTERED_PREFIX + "%'");
-
-        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
-            t("other.prefix.test", "42"),
-            t("other.prefix.test2", "43"),
-            t("other.prefix2.test3", "44")
-        ));
-
-        Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
-
-        for (List<?> row : res)
-            vals.add(t((String)row.get(0), (String)row.get(1)));
-
-        assertEquals(expVals, vals);
     }
 
     /** */
@@ -1102,12 +1068,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(3, view.size());
 
         for (List<?> meta : view) {
-            if (Objects.equals(TestObjectEnum.class.getName(), meta.get(0))) {
+            if (TestObjectEnum.class.getName().contains( meta.get(0).toString())) {
                 assertTrue((Boolean)meta.get(3));
 
                 assertEquals(0, meta.get(1));
             }
-            else if (Objects.equals(TestObjectAllTypes.class.getName(), meta.get(0))) {
+            else if (TestObjectAllTypes.class.getName().contains(meta.get(0).toString())) {
                 assertFalse((Boolean)meta.get(3));
 
                 Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
@@ -1197,14 +1163,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /**
      * Affinity function with fixed partition allocation.
      */
-    private static class TestAffinityFunction implements AffinityFunction {
+    public static class TestAffinityFunction implements AffinityFunction {
         /** Partitions to nodes map. */
         private final String[][] partMap;
 
         /**
          * @param partMap Parition allocation map, contains nodes consistent ids for each partition.
          */
-        private TestAffinityFunction(String[][] partMap) {
+        public TestAffinityFunction(String[][] partMap) {
             this.partMap = partMap;
         }
 

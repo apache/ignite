@@ -53,9 +53,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -345,7 +345,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         long initPageListCacheLimit = pageListCacheLimitHolder.get();
 
         // Add listener after cache is started, so this listener will be triggered after listener for cache.
-        db.addCheckpointListener(new DbCheckpointListener() {
+        db.addCheckpointListener(new CheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                 // Check under checkpoint write lock that page list cache limit is correctly restored.
                 // Need to wait for condition here, since checkpointer can store free-list metadata asynchronously.
